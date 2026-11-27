@@ -253,7 +253,6 @@ export class AgentMultiAutogrowRealignHarness {
   async targetActiveWorkflow(): Promise<void> {
     await loadSeedIntoActiveTab(this.page, seed)
     await this.agentPanel.open()
-    await this.agentPanel.selectWorkflow()
   }
 
   async bindAndAwaitFirstTurn(): Promise<void> {
@@ -489,7 +488,10 @@ export class AgentMultiAutogrowRealignHarness {
     // the only thing that can satisfy the value assertions.
     await this.page.evaluate(() => {
       for (const key of Object.keys(localStorage)) {
-        if (key.startsWith('Comfy.Workflow.Draft')) {
+        if (
+          key.startsWith('Comfy.Workflow.Draft') ||
+          key.startsWith('Comfy.Agent.ThreadId:')
+        ) {
           localStorage.removeItem(key)
         }
       }
@@ -510,7 +512,10 @@ export class AgentMultiAutogrowRealignHarness {
     // tab (`isBoundWorkflowActive` in AgentPanelRoot.vue).
     const reopenedName = this.savedName()
     if (reopenedName === undefined) throw new Error('workflow was not saved')
-    await this.agentPanel.selectWorkflow(reopenedName)
+    await expect(this.topbar.getWorkflowTab(reopenedName)).toBeVisible({
+      timeout: RELOAD_READY_TIMEOUT
+    })
+    await this.topbar.getWorkflowTab(reopenedName).click()
 
     // Proves the reopen actually read the saved bytes back off the mock,
     // rather than the value assertions being satisfiable by draft or cache

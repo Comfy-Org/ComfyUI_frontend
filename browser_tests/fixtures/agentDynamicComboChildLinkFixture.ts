@@ -246,7 +246,6 @@ export const dynamicComboChildLinkTest =
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('hello')
       await expect(agentPanel.root.getByText('hello').first()).toBeVisible()
       await hostSocket.waitForSubscribe()

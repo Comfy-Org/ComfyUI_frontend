@@ -59,6 +59,8 @@ test.describe(
 
       const canvasNodeIds =
         await test.step('agent builds nodes on the canvas', async () => {
+          await agentConversation.persistSavedWorkflow()
+          await agentConversation.topbar.saveWorkflowAs('Unsaved Workflow')
           await agentConversation.runTurns()
           const posted = newChat.postedTurns()
           expect(posted).toHaveLength(1)

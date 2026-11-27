@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useTimeout, useTimeoutFn } from '@vueuse/core'
+import { useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type {
   AgentFreeUseNoticeMetadata,
@@ -27,6 +26,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type { FollowLanding } from '@/workbench/extensions/agent/composables/agent/useAgentWorkflowChatFollow'
 import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -39,11 +39,11 @@ import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
-import EmptyState from './EmptyState.vue'
 import FreeUseNotice from './FreeUseNotice.vue'
+import AgentCostNotice from './AgentCostNotice.vue'
+import NewChatScreen from './NewChatScreen.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
-import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
 import AgentPaywallCard from './message/AgentPaywallCard.vue'
 
 const {
@@ -63,26 +63,27 @@ const {
   derivingWorkflow = false,
   editableWorkflowId,
   activeTab = null,
-  workflowTabs = [],
   visibleTabPath = null,
   followsVisibleWorkflow = false,
-  selectingTabPath = null,
-  selectTab = async () => false,
   workflowDetached = false,
+  targetRestoring = false,
   targetUnavailable = false,
   canvasEmptyAfterTurn = false,
   getMentionNodes = () => [],
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   creditsExhausted = false,
   sessionId = null,
+  chatKey,
   currentChatReady = false,
   customTitle,
   openingWorkflowName,
+  landing = null,
   historyGroups,
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
+  showAgentCostNotice = false,
   syncRetryAvailable = false,
   retryBlocked = false,
   greeting,
@@ -106,12 +107,10 @@ const {
   derivingWorkflow?: boolean
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
-  workflowTabs?: ActiveTab[]
   visibleTabPath?: string | null
   followsVisibleWorkflow?: boolean
-  selectingTabPath?: string | null
-  selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
+  targetRestoring?: boolean
   targetUnavailable?: boolean
   canvasEmptyAfterTurn?: boolean
   getMentionNodes?: () => SelectedNode[]
@@ -123,14 +122,17 @@ const {
    */
   creditsExhausted?: boolean
   sessionId?: string | null
+  chatKey?: string
   currentChatReady?: boolean
   customTitle?: string
   openingWorkflowName?: string
+  landing?: FollowLanding | null
   historyGroups: HistoryGroups
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  showAgentCostNotice?: boolean
   syncRetryAvailable?: boolean
   retryBlocked?: boolean
   greeting?: AgentGreeting
@@ -173,34 +175,23 @@ const emit = defineEmits<{
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
   retrySync: []
+  retryLanding: []
 }>()
 
 const openingChat = computed(() => openingWorkflowName !== undefined)
-const {
-  ready: loadingDelayReady,
-  start: startLoadingDelay,
-  stop: stopLoadingDelay
-} = useTimeout(120, { controls: true, immediate: false })
-watch(
-  openingChat,
-  (opening) => {
-    if (opening) startLoadingDelay()
-    else stopLoadingDelay()
-  },
-  { immediate: true, flush: 'sync' }
-)
-const showChatLoading = computed(
-  () => openingChat.value && loadingDelayReady.value
+
+const detachedChatUnavailable = computed(
+  () => workflowDetached && sessionId !== null && !targetRestoring
 )
 
 const targetNotice = computed(() => {
   if (openingChat.value) return undefined
   if (canvasEmptyAfterTurn) return 'emptyCanvas'
-  if (targetUnavailable) return 'unavailable'
+  if (targetUnavailable || detachedChatUnavailable.value) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
     return 'mismatch'
-  return followsVisibleWorkflow ? 'following' : undefined
+  return undefined
 })
 
 const panelStore = useAgentPanelStore()
@@ -302,7 +293,9 @@ function onClose(): void {
 }
 
 const visibleGreeting = computed(() =>
-  !entries.length && !openingChat.value ? greeting : undefined
+  !entries.length && !openingChat.value && landing === null
+    ? greeting
+    : undefined
 )
 const greetingReplacesIntro = computed(
   () =>
@@ -321,15 +314,10 @@ const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
       immediate: false
     }
   )
-const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
 function onComposerFocus(): void {
   if (runNoticeTimerPending.value || runNoticeReady.value) return
   startRunNoticeTimer()
-}
-
-function onWorkflowTargetRequired(): void {
-  workflowSelectorRef.value?.openPicker()
 }
 
 function onManageSkills(): void {
@@ -341,18 +329,9 @@ async function onBackFromSkills(): Promise<void> {
   await nextTick()
   composerRef.value?.focus()
 }
-
-const { t } = useI18n()
-
 const footerInert = computed(() => openingChat.value || blocked)
 const runNoticeWorkflowName = computed(() =>
   workflowDetached ? undefined : activeTab?.name
-)
-const workflowSelecting = computed(
-  () => selectingTabPath !== null || savingReference
-)
-const selectorDisabled = computed(
-  () => streaming || submitting || savingReference
 )
 
 function addAttachment(attachment: ComposerAttachment): boolean {
@@ -430,6 +409,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <AgentPanelChatControls
         :blocked
         :session-id
+        :chat-key
         :custom-title
         :entries
         @open-history="onOpenHistory"
@@ -438,24 +418,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       />
 
       <div :inert="blocked" class="relative min-h-0 flex-1">
-        <EmptyState
-          v-if="!entries.length"
-          :aria-busy="openingChat"
-          :inert="openingChat"
-          :user-name
-          :greeting="visibleGreeting"
-          :has-selection="hasNodeSelectionModeAddition"
-          @prefilled="onGreetingPrefilled"
-          @insert="
-            (text, prompt) => {
-              composerRef?.insert(text, prompt)
-            }
-          "
-        />
         <ConversationView
-          v-else
-          :aria-busy="openingChat"
-          :inert="openingChat"
+          v-if="entries.length && !openingChat"
           :entries
           :conversation-id="sessionId"
           :editable-turn-id
@@ -486,28 +450,21 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           @delete-pending="emit('deletePending', $event)"
           @new-chat="emit('newChat', 'new_chat_button')"
         />
-        <div
-          v-if="showChatLoading"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          :aria-label="
-            t('agent.openingWorkflowChat', {
-              workflowName: openingWorkflowName
-            })
+        <NewChatScreen
+          v-else
+          :opening-workflow-name
+          :landing
+          :user-name
+          :greeting="visibleGreeting"
+          :has-selection="hasNodeSelectionModeAddition"
+          @prefilled="onGreetingPrefilled"
+          @insert="
+            (text, prompt) => {
+              composerRef?.insert(text, prompt)
+            }
           "
-          class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-background/80 px-6 text-center text-sm"
-        >
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--loader-circle] motion-safe:animate-spin"
-          />
-          {{
-            t('agent.openingWorkflowChat', {
-              workflowName: openingWorkflowName
-            })
-          }}
-        </div>
+          @retry="emit('retryLanding')"
+        />
       </div>
       <slot name="instrument" />
       <footer
@@ -534,14 +491,17 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
             :workflow-name="runNoticeWorkflowName"
+            :follows-visible-workflow
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
+            @new-chat="onNewChat()"
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
             @notice="emit('freeUseNotice', $event)"
           />
+          <AgentCostNotice v-else-if="showAgentCostNotice" />
           <Composer
             ref="composerRef"
             :streaming
@@ -554,8 +514,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :select-workflow-reference
             :available-workflows
             :editable-workflow-id
-            :has-workflow-target="!workflowDetached"
-            :workflow-selecting
+            :has-workflow-target="!workflowDetached && !targetUnavailable"
+            :workflow-selecting="savingReference"
             :deriving-workflow
             :get-mention-nodes
             @focusin="onComposerFocus"
@@ -574,22 +534,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               (workflowId, workflowName) =>
                 emit('openReferenceWorkflow', workflowId, workflowName)
             "
-            @workflow-target-required="onWorkflowTargetRequired"
             @manage-skills="onManageSkills"
-          >
-            <template #header>
-              <WorkflowSelectorChip
-                ref="workflowSelectorRef"
-                :active-tab
-                :tabs="workflowTabs"
-                :visible-tab-path
-                :selecting-tab-path
-                :select-tab
-                :detached="workflowDetached"
-                :disabled="selectorDisabled"
-              />
-            </template>
-          </Composer>
+          />
           <AgentFeedbackCaption />
         </div>
       </footer>

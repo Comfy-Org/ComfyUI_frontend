@@ -6,6 +6,10 @@ import { afterEach, beforeAll, beforeEach, vi } from 'vitest'
 import './vitest.mocks.setup'
 import './vitest.network.setup'
 
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@/base/storage/safeStorage'
 import { clearRegisteredLiteGraphTypes } from '@/lib/litegraph/src/litegraphInstance'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { StubPath2D } from '@/utils/__tests__/stubPath2D'
@@ -79,6 +83,11 @@ vi.mock('@/scripts/appInstance', () => {
 // Settle before vitest.timer.setup.ts resets the document so the app's DOM
 // side effects are cleared like any other import-time DOM.
 beforeAll(() => appBridge.loading)
+beforeEach(() => {
+  safeLocalStorage.reset()
+  safeSessionStorage.reset()
+})
+
 beforeEach(() => appBridge.loading)
 
 // Augment Window interface for tests

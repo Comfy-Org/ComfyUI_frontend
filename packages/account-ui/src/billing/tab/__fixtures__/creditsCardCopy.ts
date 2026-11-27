@@ -21,8 +21,8 @@ export const creditsCardCopy: CreditsCardCopy = {
   tryAgain: 'Try again',
   overdrawn: (count, credits) =>
     credits === 1
-      ? `Your runs used ${count} more credit than you had.`
-      : `Your runs used ${count} more credits than you had.`,
+      ? `You used ${count} more credit than you had. Add credits to keep running.`
+      : `You used ${count} more credits than you had. Add credits to keep running.`,
   plan: 'Plan',
   planTooltip:
     'Credits included with your plan. They refill each billing period.',

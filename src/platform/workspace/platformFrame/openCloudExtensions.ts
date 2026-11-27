@@ -13,8 +13,11 @@ export async function openCloudExtensions(): Promise<boolean> {
   if (!frames.isAvailable()) return openDeployCustomNodesDialog()
   const picked = pickStore.pickedDeployment
   if (picked)
-    return frames.open({ step: 'nodes', deploymentId: picked.deployment_id })
+    return frames.open(
+      { step: 'nodes', deploymentId: picked.deployment_id },
+      'extensions'
+    )
   if (pickStore.deployments.length > 0)
-    return frames.open(NEW_DEPLOYMENT_FROM_NODES)
+    return frames.open(NEW_DEPLOYMENT_FROM_NODES, 'extensions')
   return openDeployCustomNodesDialog(NEW_DEPLOYMENT_FROM_NODES)
 }

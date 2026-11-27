@@ -376,12 +376,6 @@ export function useFeatureFlags() {
         remoteConfig().unified_billing_settings
       )
     },
-    get pricingTableFallback() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.PRICING_TABLE_FALLBACK,
-        remoteConfig().pricing_table_fallback
-      )
-    },
     get oauthConsentSwitchAccountEnabled() {
       return resolveFlag(
         ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
@@ -484,7 +478,6 @@ export function startFeatureFlagTelemetry() {
         flags.billingAutoTopUpAtCheckoutEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
-      [ServerFeatureFlag.PRICING_TABLE_FALLBACK]: flags.pricingTableFallback,
       [ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED]:
         flags.oauthConsentSwitchAccountEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,

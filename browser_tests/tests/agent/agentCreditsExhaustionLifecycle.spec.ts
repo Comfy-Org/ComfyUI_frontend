@@ -29,7 +29,6 @@ test.describe(
         )
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await test.step('show exhaustion after a successful turn', async () => {
         await creditsLifecycle.completeTurn('Build a red fox workflow', {

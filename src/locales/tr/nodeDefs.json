@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAI'nin GPT modelleriyle metin yanıtları oluşturun. Bir metin istemi ve isteğe bağlı olarak bağlam için görseller veya dosyalar sağlayın.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı oluşturmak için kullanılan model."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAI'nin GPT Görüntü 2 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
     "display_name": "OpenAI GPT Görüntü 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stille tutarlı oluşturma için geliştirilmiştir ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash en hızlı ve en ucuz modeldir ve hiçbir stili desteklemez."
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stil açısından tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash, en hızlı ve en ucuz model olan Recraft V4.1 Flash V2'yi çalıştırır ve hiçbir stili desteklemez."
       },
       "model_size": {
         "name": "boyut"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "görüntü"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical, şekilleri birbirinin üzerine katmanlar; cut_out ise çakışmayan şekiller oluşturur; çiziciler, vinil kesiciler ve serigrafi baskı için uygundur."
+      },
+      "version": {
+        "name": "sürüm",
+        "tooltip": "v1_pro (Vectorizer Pro), pürüzsüz eğriler, düz çizgiler ve keskin köşeler içeren daha temiz SVG'ler sunar; yazılar ve karmaşık şekiller için en uygunudur."
       }
     },
     "outputs": {

@@ -32,28 +32,24 @@ function mountPanel() {
 }
 
 describe('Greeting prefill focus and animation', () => {
-  it.for([
-    { control: 'workflow selector', label: enMessages.agent.switchWorkflow },
-    { control: 'reference button', label: enMessages.agent.reference }
-  ])(
-    'preserves the focused $control when a prefill arrives',
-    async ({ label }) => {
-      const view = mountPanel()
-      const control = screen.getByRole('button', { name: label })
-      control.focus()
-      expect(control).toHaveFocus()
+  it('preserves the focused reference button when a prefill arrives', async () => {
+    const view = mountPanel()
+    const control = screen.getByRole('button', {
+      name: enMessages.agent.reference
+    })
+    control.focus()
+    expect(control).toHaveFocus()
 
-      await view.rerender({ greeting: { variant: 'C', canvas: 'workflow' } })
-      await waitFor(() =>
-        expect(screen.getByRole('textbox')).toHaveTextContent(
-          'Help me improve this workflow'
-        )
+    await view.rerender({ greeting: { variant: 'C', canvas: 'workflow' } })
+    await waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveTextContent(
+        'Help me improve this workflow'
       )
-      await nextTick()
+    )
+    await nextTick()
 
-      expect(control).toHaveFocus()
-    }
-  )
+    expect(control).toHaveFocus()
+  })
 
   it('focuses the prefill when the first workflow appears with body focus', async () => {
     const view = mountPanel()

@@ -36,7 +36,7 @@ import {
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
@@ -290,7 +290,7 @@ export function useTemplateWorkflows() {
         true,
         true,
         workflowName,
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       if (loadedWorkflow === false) return 'graph-failed'
       if (loadedWorkflow === undefined) return 'not-started'

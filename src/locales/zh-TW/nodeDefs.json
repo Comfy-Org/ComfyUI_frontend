@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "使用 OpenAI 的 GPT 模型產生文字回應。提供文字提示，並可選擇性地提供圖片或檔案作為上下文。",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於產生回應的模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "透過 OpenAI 的 GPT Image 2 端點同步產生影像。",
     "display_name": "OpenAI GPT Image 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支援任何風格。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 執行 Recraft V4.1 Flash V2，這是最快且最便宜的模型，完全不支援任何風格。"
       },
       "model_size": {
         "name": "size"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "圖片"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical 會將形狀分層堆疊；cut_out 會建立永不重疊的形狀，適用於繪圖機、乙烯基切割機與網版印刷。"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro（Vectorizer Pro）可產生更乾淨的 SVG，具有平滑曲線、直線與銳利轉角，最適合文字設計與精細複雜的形狀。"
       }
     },
     "outputs": {

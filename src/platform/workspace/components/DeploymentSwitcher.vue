@@ -17,7 +17,7 @@
           variant="secondary"
           size="unset"
           :disabled="isSwitching"
-          :tooltip="buildStatus ?? hoverTooltip"
+          :tooltip="buildStatus?.text ?? hoverTooltip"
           tooltip-side="bottom"
           :aria-label="triggerLabel"
           class="group h-8 gap-1 rounded-lg pr-1.5 pl-2 data-[state=open]:bg-accent"
@@ -47,10 +47,20 @@
             class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
           />
+          <template v-if="buildStatus" #tooltip>
+            {{ buildStatus.stage
+            }}<span
+              v-if="buildStatus.step"
+              class="opacity-50"
+              data-testid="deployment-switcher-build-step"
+              >{{ ` ${buildStatus.step}` }}</span
+            >
+          </template>
         </Button>
       </template>
       <DeploymentSwitcherList
         :switching-to
+        :on-team-plan
         @choose="choose"
         @follow="follow"
         @set-default="changeDefault"
@@ -79,6 +89,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
@@ -97,16 +108,22 @@ import {
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { useDeploymentVersionWatch } from '@/platform/workspace/composables/useDeploymentVersionWatch'
 import {
   confirmUnsavedWorkBeforeSwitch,
   unsavedWorkflows
 } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
+import type { UnsavedWorkPrompt } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { openCreateCustomDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import type { BuildStage } from '@/platform/workspace/platformFrame/platformFrameBuild'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { NEW_DEPLOYMENT_FROM_NODES } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+
+const { onTeamPlan = false } = defineProps<{
+  onTeamPlan?: boolean
+}>()
 
 const { t } = useI18n()
 const store = useDeploymentPickStore()
@@ -123,6 +140,12 @@ const { currentLabel } = useDeploymentLabels()
 const { targetLabel, withoutLeavePrompt, reloadOntoCurrent } =
   useDeploymentSwitchGuard()
 const { pickedRow, isAnyStarting } = useDeploymentRows()
+const { flags } = useFeatureFlags()
+const isWatchingVersion = useDeploymentVersionWatch({
+  active: () =>
+    isOffered.value && isVisible.value && flags.customDeploymentsEditorEnabled,
+  reload
+})
 const frames = usePlatformFrameStore()
 const { build } = storeToRefs(frames)
 
@@ -160,7 +183,7 @@ onMounted(() => {
 
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
-  if (listingRefused.value) return
+  if (listingRefused.value || isWatchingVersion.value) return
   if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
   lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {
@@ -268,9 +291,12 @@ function report(summary: string, refusal: string | null) {
   useToast().error(summary, { description: refusal, duration: 8000 })
 }
 
-async function confirmSwitchTo(deployment: string): Promise<boolean> {
+async function confirmSwitchTo(
+  deployment: string,
+  prompt?: UnsavedWorkPrompt
+): Promise<boolean> {
   if (unsavedWorkflows().length > 0) isOpen.value = false
-  return confirmUnsavedWorkBeforeSwitch(deployment)
+  return confirmUnsavedWorkBeforeSwitch(deployment, prompt)
 }
 
 async function choose(deploymentId: string | null) {
@@ -315,9 +341,8 @@ const buildStatus = computed(() => {
     { escapeParameter: false }
   )
   const progress = current.stage === 'building' ? current.progress : null
-  return progress
-    ? `${stage} · ${t('platformFrame.buildStep', progress)}`
-    : stage
+  const step = progress ? t('platformFrame.buildStep', progress) : null
+  return { stage, step, text: step ? `${stage} ${step}` : stage }
 })
 
 const switcher = useTemplateRef<HTMLElement>('switcher')
@@ -328,14 +353,14 @@ function focusTrigger() {
 
 function createCustomDeployment() {
   if (frames.isAvailable()) focusTrigger()
-  if (frames.open(NEW_DEPLOYMENT_FROM_NODES)) return
+  if (frames.open(NEW_DEPLOYMENT_FROM_NODES, 'run_on_row')) return
   void openCreateCustomDeploymentDialog()
 }
 
 function updateDeployment(deploymentId: string) {
   focusTrigger()
   isOpen.value = false
-  frames.open({ step: 'update', deploymentId })
+  frames.open({ step: 'update', deploymentId }, 'pencil')
 }
 
 function reload() {

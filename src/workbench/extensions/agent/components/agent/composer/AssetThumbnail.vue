@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'

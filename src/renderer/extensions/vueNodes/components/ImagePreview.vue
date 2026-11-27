@@ -24,42 +24,29 @@
         "
         @click="openImageInGallery(index)"
       >
-        <div
+        <img
           v-if="url && !failedHdrPreviews[index]"
-          class="pointer-events-none relative size-full"
-        >
-          <img
-            :src="url"
-            :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
-            draggable="false"
-            decoding="async"
-            class="size-full object-contain"
-            @load="updateAspectRatio($event, index)"
-            @error="handleThumbnailError($event, index)"
-          />
-        </div>
-        <div
-          v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-foreground"
-        >
-          <i class="icon-[lucide--sun] size-6" />
-        </div>
+          :src="url"
+          :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
+          draggable="false"
+          decoding="async"
+          class="pointer-events-none size-full object-contain"
+          @load="updateAspectRatio($event, index)"
+          @error="handleThumbnailError($event, index)"
+        />
+        <i v-else class="icon-[lucide--sun] size-6 text-foreground" />
       </Button>
-      <div
+      <Button
         v-if="canExportOutputs"
-        class="invisible absolute top-2 right-2 group-focus-within:visible group-hover:visible"
+        variant="inverted"
+        size="icon"
+        class="invisible absolute top-2 right-2 shadow-md group-focus-within:visible group-hover:visible"
+        :title="$t('g.downloadImages')"
+        :aria-label="$t('g.downloadImages')"
+        @click="handleExportOutputs"
       >
-        <Button
-          variant="inverted"
-          size="icon"
-          class="shadow-md"
-          :title="$t('g.downloadImages')"
-          :aria-label="$t('g.downloadImages')"
-          @click="handleExportOutputs"
-        >
-          <i class="icon-[lucide--folder-down]" />
-        </Button>
-      </div>
+        <i class="icon-[lucide--folder-down]" />
+      </Button>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -104,6 +91,7 @@
       <img
         v-if="
           !imageError &&
+          mainImageSrc &&
           displayUrls[currentIndex] &&
           !failedHdrPreviews[currentIndex]
         "
@@ -225,10 +213,13 @@
       >
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="showLoader"> {{ $t('g.loading') }}... </span>
-      <span v-else>
-        {{ actualDimensions || $t('g.calculatingDimensions') }}
-      </span>
+      <template v-else>
+        {{
+          showLoader
+            ? `${$t('g.loading')}...`
+            : actualDimensions || $t('g.calculatingDimensions')
+        }}
+      </template>
     </div>
 
     <!-- Multiple Images Navigation (gallery mode only) -->
@@ -286,7 +277,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
@@ -537,7 +528,11 @@ async function handleOpenLayerEditor() {
 
 function handleDownload() {
   try {
-    downloadFile(resultItemUrl(items[currentIndex.value]))
+    downloadFile(
+      resultItemUrl(items[currentIndex.value]),
+      undefined,
+      'node_preview'
+    )
   } catch {
     toast.error(t('g.error'), {
       description: t('g.failedToDownloadImage')

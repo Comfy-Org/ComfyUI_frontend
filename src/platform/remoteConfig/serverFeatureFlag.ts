@@ -39,7 +39,6 @@ export enum ServerFeatureFlag {
   BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED = 'billing_auto_top_up_at_checkout_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
-  PRICING_TABLE_FALLBACK = 'pricing_table_fallback',
   OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED = 'oauth_consent_switch_account_enabled',
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',

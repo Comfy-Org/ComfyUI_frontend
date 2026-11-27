@@ -123,6 +123,7 @@ export const TestIds = {
     workflowTabs: 'topbar-workflow-tabs',
     workflowTabStrip: 'workflow-tab-strip',
     workflowTab: 'workflow-tab',
+    workflowTabStatus: 'workflow-tab-status',
     closeWorkflowButton: 'close-workflow-button',
     workflowDirtyIndicator: 'workflow-dirty-indicator',
     integratedTabBarActions: 'integrated-tab-bar-actions',

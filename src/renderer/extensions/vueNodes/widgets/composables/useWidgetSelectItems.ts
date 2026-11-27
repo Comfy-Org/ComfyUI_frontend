@@ -7,25 +7,25 @@ import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import { isGeneratedTempOutput } from '@/platform/assets/composables/media/assetMappers'
+import { isGeneratedTempOutput } from '@/platform/assets/adapters/outputAssetMappers'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
-} from '@/platform/assets/utils/assetFilterUtils'
+} from '@comfyorg/assets-core/filtering'
 import {
   getAssetBaseModels,
   getAssetDisplayName,
   getAssetFilename,
   getOutputSubfolder
-} from '@/platform/assets/utils/assetMetadataUtils'
+} from '@comfyorg/assets-core/metadata'
 import type {
   FilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
+import type { useAssetWidgetData } from '@/platform/assets/composables/useAssetWidgetData'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
   createAnnotatedPath,

@@ -13,12 +13,9 @@ test.use({ connectWebSocketToServer: false })
 test(
   'BE-24672: tells the reader a reloaded reasoning trace was shortened',
   { tag: ['@cloud', '@ui'] },
-  async ({ agentPanel, promptHistory, workflowSelection }) => {
+  async ({ agentPanel, promptHistory }) => {
     await test.step('completes a turn the server stored with a cut round', async () => {
       await agentPanel.open()
-      await agentPanel.chooseWorkflow()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
       await agentPanel.sendMessage('Upscale it')
       await expect.poll(() => promptHistory.requests.length).toBe(1)
 
@@ -49,12 +46,9 @@ test(
 test(
   'BE-24672: stays silent when the reloaded reasoning trace is whole',
   { tag: ['@cloud', '@ui'] },
-  async ({ agentPanel, promptHistory, workflowSelection }) => {
+  async ({ agentPanel, promptHistory }) => {
     await test.step('completes a turn the server stored whole', async () => {
       await agentPanel.open()
-      await agentPanel.chooseWorkflow()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
       await agentPanel.sendMessage('Upscale it')
       await expect.poll(() => promptHistory.requests.length).toBe(1)
 

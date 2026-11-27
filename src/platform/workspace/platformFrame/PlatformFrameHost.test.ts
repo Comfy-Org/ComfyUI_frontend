@@ -13,6 +13,7 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import enMessages from '@/locales/en/main.json'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { useAuthStore } from '@/stores/authStore'
 
 import PlatformFrameHost from './PlatformFrameHost.vue'
@@ -33,6 +34,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/workspace/platformWorkflowHandoff'), { spy: true })
 
 const i18n = createI18n({
   legacy: false,
@@ -85,7 +87,10 @@ describe('PlatformFrameHost', () => {
 
   it('frames the Platform page in a sandbox', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'new', startAtNodes: true })
+    usePlatformFrameStore().open(
+      { step: 'new', startAtNodes: true },
+      'extensions'
+    )
     await nextTick()
 
     const frame = screen.getByTestId('platform-frame')
@@ -98,7 +103,7 @@ describe('PlatformFrameHost', () => {
 
   it('offers Open on Platform when the page does not answer within 10 s', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     await nextTick()
 
     await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
@@ -125,7 +130,7 @@ describe('PlatformFrameHost', () => {
     'points Open on Platform at the page for $label',
     async ({ request, path }) => {
       renderHost()
-      usePlatformFrameStore().open(request)
+      usePlatformFrameStore().open(request, 'extensions')
       await nextTick()
 
       await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
@@ -139,11 +144,73 @@ describe('PlatformFrameHost', () => {
   )
 
   it.for([
+    {
+      label: 'a new Custom Build',
+      request: { step: 'new' as const, handsOverWorkflow: true },
+      handsOver: true
+    },
+    {
+      label: 'an existing Custom Build',
+      request: {
+        step: 'update' as const,
+        deploymentId: 'dep-1',
+        handsOverWorkflow: true
+      },
+      handsOver: false
+    },
+    {
+      label: 'a Custom Build being pre-installed',
+      request: {
+        step: 'preinstall' as const,
+        deploymentId: 'dep-1',
+        handsOverWorkflow: true
+      },
+      handsOver: false
+    }
+  ])(
+    'hands the workflow to a new build from Open on Platform only for $label',
+    async ({ request, handsOver }) => {
+      vi.mocked(handOverWorkflowOnClick).mockClear()
+      const user = renderHost()
+      usePlatformFrameStore().open(request, 'errors_panel')
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
+      await nextTick()
+
+      const stayOnPage = (event: Event) => event.preventDefault()
+      window.addEventListener('click', stayOnPage)
+      await user.click(screen.getByRole('link', { name: 'Open on Platform' }))
+      window.removeEventListener('click', stayOnPage)
+
+      expect(vi.mocked(handOverWorkflowOnClick).mock.calls.length).toBe(
+        handsOver ? 1 : 0
+      )
+    }
+  )
+
+  it("keeps Open on Platform on the Custom Build's page for an existing Custom Build", async () => {
+    renderHost()
+    usePlatformFrameStore().open(
+      { step: 'update', deploymentId: 'dep-1', handsOverWorkflow: true },
+      'errors_panel'
+    )
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(PLATFORM_FRAME_UNANSWERED_MS)
+    await nextTick()
+
+    const link = screen.getByRole('link', { name: 'Open on Platform' })
+    expect(new URL(link.getAttribute('href') ?? '').pathname).toBe(
+      '/profile/deployments/dep-1'
+    )
+    expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it.for([
     { way: 'the close button', close: 'button' },
     { way: 'Escape', close: 'escape' }
   ])('closes on $way', async ({ close }) => {
     const user = renderHost()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     await nextTick()
 
     if (close === 'button')
@@ -155,29 +222,69 @@ describe('PlatformFrameHost', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('frames the pre-install screen in a smaller dialog', async () => {
+  it('frames the pre-install screen', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'preinstall', deploymentId: 'dep-1' })
+    usePlatformFrameStore().open(
+      { step: 'preinstall', deploymentId: 'dep-1' },
+      'preinstall'
+    )
     await nextTick()
 
-    const dialog = screen.getByRole('dialog', {
-      name: 'Pre-install models to run this workflow'
-    })
-    expect(dialog).toHaveClass('max-w-180')
-    expect(dialog).not.toHaveClass('max-w-240')
+    expect(
+      screen.getByRole('dialog', {
+        name: 'Pre-install models to run this workflow'
+      })
+    ).toBeInTheDocument()
     expect(screen.getByTestId('platform-frame').getAttribute('src')).toMatch(
       /^https:\/\/platform\.comfy\.org\/embed\/custom-deployment\?step=preinstall&.*deployment=dep-1/
     )
   })
 
-  it('keeps the full-size dialog for the other screens', async () => {
+  it('grows the pre-install frame to the wizard once Platform shows the models step', async () => {
     renderHost()
-    usePlatformFrameStore().open({ step: 'update', deploymentId: 'dep-1' })
+    const store = usePlatformFrameStore()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'preinstall')
+    await nextTick()
+    expect(
+      screen.getByRole('dialog', {
+        name: 'Pre-install models to run this workflow'
+      })
+    ).toBeInTheDocument()
+
+    const platformPage = fromPartial<Window>({ postMessage: vi.fn() })
+    store.attach(platformPage)
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: { type: 'step-shown', step: 'models' },
+        origin: 'https://platform.comfy.org',
+        source: platformPage
+      })
+    )
     await nextTick()
 
     expect(
-      screen.getByRole('dialog', { name: 'Custom deployment' })
-    ).toHaveClass('max-w-240')
+      screen.getByRole('dialog', { name: 'Custom Build' })
+    ).toBeInTheDocument()
+  })
+
+  it('fits the pre-install frame to the height Platform asks for', async () => {
+    renderHost()
+    const store = usePlatformFrameStore()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'preinstall')
+    store.contentHeight = 304
+    await nextTick()
+
+    expect(screen.getByTestId('platform-frame-host').style.height).toBe('304px')
+  })
+
+  it('keeps the full frame for the other steps', async () => {
+    renderHost()
+    const store = usePlatformFrameStore()
+    store.open({ step: 'new' }, 'extensions')
+    store.contentHeight = 304
+    await nextTick()
+
+    expect(screen.getByTestId('platform-frame-host').style.height).toBe('')
   })
 
   it('follows a build kept from before the editor reloaded, with the frame hidden', async () => {
@@ -250,7 +357,7 @@ describe('PlatformFrameHost', () => {
     const runOn = screen.getByRole('button', { name: 'Run on' })
     runOn.focus()
 
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     await vi.waitFor(() => expect(frame).toHaveFocus())
     await user.keyboard('{Escape}')
 
@@ -275,7 +382,7 @@ describe('PlatformFrameHost', () => {
         setup: () => ({
           cardOpen,
           create: () => {
-            usePlatformFrameStore().open({ step: 'new' })
+            usePlatformFrameStore().open({ step: 'new' }, 'extensions')
             cardOpen.value = false
           }
         }),
@@ -366,7 +473,7 @@ describe('PlatformFrameHost', () => {
 
   it('moves focus into the frame when it opens and keeps Tab inside the dialog', async () => {
     const user = renderHost()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
 
     const frame = await screen.findByTestId('platform-frame')
     await vi.waitFor(() => expect(frame).toHaveFocus())
@@ -387,7 +494,7 @@ describe('PlatformFrameHost', () => {
     )
     const runOn = screen.getByRole('button', { name: 'Run on' })
     runOn.focus()
-    usePlatformFrameStore().open({ step: 'new' })
+    usePlatformFrameStore().open({ step: 'new' }, 'extensions')
     const frame = await screen.findByTestId('platform-frame')
     await vi.waitFor(() => expect(frame).toHaveFocus())
 

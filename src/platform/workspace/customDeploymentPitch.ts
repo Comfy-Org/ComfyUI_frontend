@@ -3,14 +3,16 @@ import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBr
 import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
 import type { PlatformLinkSurface } from '@/platform/workspace/utils/platformLink'
 
-/** One line of what a workflow lacks: how many of a kind, then their names. */
+/** One line of what a workflow lacks: how many of a kind, the first by name, then how many more and which. */
 export interface MissingItemsRow {
   label: string
-  names: string
+  name: string
+  more?: string
+  others?: string
 }
 
 /** The workflow a brief names, serialized when the brief is handed over; null once it is unloaded. */
-export interface BriefWorkflow {
+interface BriefWorkflow {
   fileName: string
   serialize: () => string | null
 }
@@ -18,13 +20,12 @@ export interface BriefWorkflow {
 /** The copy a custom deployment dialog shows. */
 export interface CustomDeploymentPitch {
   title: string
-  body: string
+  body?: string
   points: readonly string[]
   platformLabel: string
   brief: string
   workflow?: BriefWorkflow
   missing?: readonly MissingItemsRow[]
-  note?: string
 }
 
 /** Platform's Deploy page at its Builds, where a custom deployment starts. */

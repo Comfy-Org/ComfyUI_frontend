@@ -85,6 +85,10 @@ import { createDisposablePinia } from '@/testing/pinia'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
+import {
+  isStorageAvailable,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -266,6 +270,7 @@ function installServer(
     session: initial,
     requests: [] as SessionRequest[],
     dropPosts: false,
+    deleteStatus: 200,
     revokeAllStatus: 200,
     revokeAllRequests: [] as {
       authorization: string | null
@@ -305,6 +310,9 @@ function installServer(
   const answerSession = (method: string): Response => {
     if (method === 'POST') return answerCreate()
     if (method === 'DELETE') {
+      if (server.deleteStatus !== 200) {
+        return jsonResponse({}, server.deleteStatus)
+      }
       server.session = 'revoked'
       return jsonResponse({ success: true })
     }
@@ -371,6 +379,7 @@ describe('cloud app on the shared web session', () => {
   let hooks: ReturnType<typeof effectScope> | undefined
 
   beforeEach(() => {
+    resetStorageAvailable()
     identity.reset()
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
@@ -414,6 +423,23 @@ describe('cloud app on the shared web session', () => {
     await vi.waitFor(() =>
       expect(methodsOf(server.requests)).toEqual(['POST', 'GET'])
     )
+  })
+
+  it('completes sign-out and reports a failed session-cookie delete', async () => {
+    const server = installServer({ userId: 'user-a' })
+    server.deleteStatus = 503
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+
+    await expect(useCloudWebSessionStore().signOut()).resolves.toBeUndefined()
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'auth',
+      errorType: 'auth_session_cookie_delete_failed',
+      level: 'error',
+      tags: { failure_code: 'SESSION_UNAVAILABLE', outcome: 'degraded' }
+    })
   })
 
   it.for([
@@ -499,6 +525,44 @@ describe('cloud app on the shared web session', () => {
       name: 'session_signed_out_remotely',
       properties: { origin: location.origin }
     })
+    expect(isStorageAvailable()).toBe(false)
+  })
+
+  it('reports and reopens workflow storage when local sign-out after revocation fails', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    vi.mocked(firebaseSignOut).mockRejectedValue(new Error('offline'))
+
+    server.session = 'revoked'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(firebaseSignOut).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(isStorageAvailable()).toBe(true))
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'auth',
+      errorType: 'failure_signing_out_revoked_web_session_locally',
+      level: 'error',
+      tags: { outcome: 'degraded' }
+    })
+  })
+
+  it('leaves workflow storage open when a signed-in restore is refused', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+
+    server.session = 'sso_required'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(useCloudWebSessionStore().state).toMatchObject({
+      phase: 'signed_out',
+      outcome: 'restore_failed'
+    })
+    expect(firebaseSignOut).not.toHaveBeenCalled()
+    expect(isStorageAvailable()).toBe(true)
   })
 
   it.for([
@@ -561,6 +625,7 @@ describe('cloud app on the shared web session', () => {
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
     expect(firebaseSignOut).toHaveBeenCalledOnce()
+    expect(isStorageAvailable()).toBe(false)
     expect(api.resetSocket).toHaveBeenCalledOnce()
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
@@ -651,6 +716,7 @@ function capabilitiesResponse({
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
       can_view_auto_top_up: false,

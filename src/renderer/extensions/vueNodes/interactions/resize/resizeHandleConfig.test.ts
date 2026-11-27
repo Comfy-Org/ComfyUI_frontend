@@ -2,29 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 
-import { RESIZE_HANDLES, hasNorthEdge, hasWestEdge } from './resizeHandleConfig'
-
-describe('hasWestEdge', () => {
-  it.for<[CompassCorners, boolean]>([
-    ['NW', true],
-    ['SW', true],
-    ['NE', false],
-    ['SE', false]
-  ])('corner %s -> %s', ([corner, expected]) => {
-    expect(hasWestEdge(corner)).toBe(expected)
-  })
-})
-
-describe('hasNorthEdge', () => {
-  it.for<[CompassCorners, boolean]>([
-    ['NW', true],
-    ['NE', true],
-    ['SW', false],
-    ['SE', false]
-  ])('corner %s -> %s', ([corner, expected]) => {
-    expect(hasNorthEdge(corner)).toBe(expected)
-  })
-})
+import { RESIZE_HANDLES } from './resizeHandleConfig'
 
 describe('RESIZE_HANDLES', () => {
   it('defines exactly one entry per CompassCorners member', () => {

@@ -4,8 +4,11 @@ import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useSettingStore } from '@/platform/settings/settingStore'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 function setupComposable(): ReturnType<typeof useReconnectingNotification> {
   const i18n = createI18n({
@@ -15,8 +18,10 @@ function setupComposable(): ReturnType<typeof useReconnectingNotification> {
       en: {
         g: {
           reconnecting: 'Reconnecting',
-          reconnected: 'Reconnected'
-        }
+          reconnected: 'Reconnected',
+          sessionRevoked: 'Access ended'
+        },
+        auth: { signOut: { signOut: 'Log Out' } }
       }
     }
   })
@@ -117,6 +122,65 @@ describe('useReconnectingNotification', () => {
 
     onReconnected()
     expect(useToast().toasts.map(({ kind }) => kind)).toEqual(['success'])
+  })
+
+  describe('access revoked', () => {
+    it('replaces the reconnecting toast with a persistent access-lost toast', () => {
+      const { onReconnecting, onRevokedSocketEnded } = setupComposable()
+
+      onReconnecting()
+      vi.advanceTimersByTime(2000)
+      onRevokedSocketEnded()
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Access ended',
+          duration: Number.POSITIVE_INFINITY,
+          actions: [expect.objectContaining({ label: 'Log Out' })]
+        })
+      ])
+    })
+
+    it('cancels a reconnecting toast that has not shown yet', () => {
+      const { onReconnecting, onRevokedSocketEnded } = setupComposable()
+
+      onReconnecting()
+      onRevokedSocketEnded()
+      vi.advanceTimersByTime(2000)
+
+      expect(useToast().toasts.map(({ title }) => title)).toEqual([
+        'Access ended'
+      ])
+    })
+
+    it('signs the user out from the toast action', async () => {
+      const { onRevokedSocketEnded } = setupComposable()
+
+      onRevokedSocketEnded()
+      await useToast().toasts[0].actions[0].onClick()
+
+      expect(useCurrentUser().handleSignOut).toHaveBeenCalledOnce()
+    })
+
+    it('clears the access-lost toast once realtime reconnects', () => {
+      const { onRevokedSocketEnded, onReconnected } = setupComposable()
+
+      onRevokedSocketEnded()
+      onReconnected()
+
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('clears the access-lost toast when the user signs out', () => {
+      const { onRevokedSocketEnded } = setupComposable()
+      const [[signedOut]] = vi.mocked(useCurrentUser().onUserLogout).mock.calls
+
+      onRevokedSocketEnded()
+      signedOut()
+
+      expect(useToast().toasts).toEqual([])
+    })
   })
 
   describe('tab visibility regained', () => {
