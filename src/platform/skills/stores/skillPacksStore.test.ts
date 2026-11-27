@@ -129,18 +129,21 @@ describe('skillPacksStore', () => {
   it.for<{
     change: string
     apply: (store: ReturnType<typeof useSkillPacksStore>) => void
+    expectedLoadFailed: boolean
   }>([
     {
       change: 'upsert',
-      apply: (store) => store.upsertPack(makePack())
+      apply: (store) => store.upsertPack(makePack()),
+      expectedLoadFailed: false
     },
     {
       change: 'remove',
-      apply: (store) => store.removePack('my-pack')
+      apply: (store) => store.removePack('my-pack'),
+      expectedLoadFailed: true
     }
   ])(
-    'clears stale catalog errors after a successful local $change',
-    ({ apply }) => {
+    'reconciles stale catalog errors after a local $change',
+    ({ apply, expectedLoadFailed }) => {
       const store = useSkillPacksStore()
       store.catalogUnavailable = true
       store.loadFailed = true
@@ -149,8 +152,10 @@ describe('skillPacksStore', () => {
       apply(store)
 
       expect(store.catalogUnavailable).toBe(false)
-      expect(store.loadFailed).toBe(false)
-      expect(store.loadFailureReason).toBeUndefined()
+      expect(store.loadFailed).toBe(expectedLoadFailed)
+      expect(store.loadFailureReason).toBe(
+        expectedLoadFailed ? 'stale failure' : undefined
+      )
     }
   )
 
@@ -166,6 +171,23 @@ describe('skillPacksStore', () => {
     expect(store.catalogConfirmed).toBe(false)
     store.removePack('my-pack')
     expect(store.catalogConfirmed).toBe(false)
+  })
+
+  it('keeps a failed unconfirmed catalog retryable after a local removal', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('unavailable', 503)
+    )
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    await store.refreshPacks()
+    expect(store.loadFailed).toBe(true)
+
+    store.removePack('my-pack')
+
+    expect(store.catalogConfirmed).toBe(false)
+    expect(store.hasLoaded).toBe(false)
+    expect(store.loadFailed).toBe(true)
+    expect(store.loadFailureReason).toBeUndefined()
   })
 
   it('keeps a confirmed catalog available after a background 404', async () => {

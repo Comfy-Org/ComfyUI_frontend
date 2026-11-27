@@ -231,8 +231,12 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     fetchGeneration++
     inFlight = undefined
     loading.value = false
-    loadFailed.value = false
-    loadFailureReason.value = undefined
+    if (catalogConfirmed.value) {
+      loadFailed.value = false
+      loadFailureReason.value = undefined
+    } else if (loadFailed.value) {
+      hasLoaded.value = false
+    }
     catalogUnavailable.value = false
     packs.value = packs.value.filter((pack) => pack.name !== name)
   }
