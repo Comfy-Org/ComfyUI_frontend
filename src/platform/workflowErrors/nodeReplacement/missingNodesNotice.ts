@@ -1,7 +1,13 @@
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type {
+  MissingNodeType,
+  WorkflowOpening
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
-type MissingNodesNotice = (nodeTypes: readonly MissingNodeType[]) => void
+type MissingNodesNotice = (
+  nodeTypes: readonly MissingNodeType[],
+  opening: WorkflowOpening
+) => void
 
 const showErrorOverlay: MissingNodesNotice = () =>
   useExecutionErrorStore().showErrorOverlay()
@@ -10,9 +16,10 @@ let notice: MissingNodesNotice = showErrorOverlay
 
 /** Tells the user that a workflow just opened needs nodes this editor lacks: the error overlay, unless a surface set its own notice. */
 export function showMissingNodesNotice(
-  nodeTypes: readonly MissingNodeType[]
+  nodeTypes: readonly MissingNodeType[],
+  opening: WorkflowOpening = 'brought_in'
 ): void {
-  notice(nodeTypes)
+  notice(nodeTypes, opening)
 }
 
 /** Replaces the notice `showMissingNodesNotice` gives; the returned function puts the error overlay back. */

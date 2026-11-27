@@ -150,7 +150,7 @@ describe('BillingCreditsCard', () => {
       date: 'Refills October 1, 2026',
       used: '100% used',
       inUse: false,
-      note: 'Your runs used 211 more credits than you had.'
+      note: 'You used 211 more credits than you had. Add credits to keep running.'
     },
     {
       case: 'no plan',

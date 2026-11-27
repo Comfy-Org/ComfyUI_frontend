@@ -295,6 +295,26 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       await expect(hardnessDisplay).toHaveText('90%')
     })
 
+    test('Hardness slider accepts a click just above its track', async ({
+      comfyPage
+    }) => {
+      const hardnessRow = comfyPage.vueNodes
+        .getNodeLocator('1')
+        .getByTestId('painter-hardness-row')
+      const track = hardnessRow.locator('[data-slot="slider"]')
+      const hardnessDisplay = hardnessRow.getByTestId('painter-hardness-value')
+      await expect(hardnessDisplay).toHaveText('100%')
+
+      const box = await track.boundingBox()
+      if (!box) throw new Error('Hardness slider has no bounds')
+      await comfyPage.page.mouse.click(
+        box.x + box.width / 4,
+        box.y + box.height / 2 - 6
+      )
+
+      await expect(hardnessDisplay).not.toHaveText('100%')
+    })
+
     test('Color picker changes the color of drawn strokes', async ({
       comfyPage
     }) => {

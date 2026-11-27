@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
@@ -20,7 +20,27 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
 import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
+import { useIssuesToastBuildOffer } from '@/platform/workspace/composables/useIssuesToastBuildOffer'
+
 import ErrorOverlay from './ErrorOverlay.vue'
+
+const distribution = vi.hoisted(() => ({
+  DISTRIBUTION: 'localhost' as const,
+  isDesktop: false,
+  isCloud: false,
+  isNightly: false
+}))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+
+vi.mock(import('@/platform/workspace/composables/useIssuesToastBuildOffer'))
+
+type BuildOffer = ReturnType<typeof useIssuesToastBuildOffer>['offer']['value']
+
+const buildOffer = ref<BuildOffer>(null)
+const openBuildOffer = vi.fn()
+
+const CLOUD_MISSING_NODES_MESSAGE =
+  "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
 
 const askAgentMock = {
   canAskAgent: ref(true),
@@ -81,7 +101,17 @@ function createTestI18n() {
           multipleIssuesMessage:
             'Resolve these issues before running the workflow.',
           viewDetails: 'View details',
-          askAgent: 'Ask agent'
+          askAgent: 'Ask agent',
+          switchBuild: 'Switch build',
+          switchBuildTo: 'Switch to {build}',
+          createCustomBuild: 'Create Custom Build',
+          missingNodesOnCloud:
+            "Required custom nodes aren't supported on Cloud."
+        },
+        errorCatalog: {
+          missingErrors: {
+            missing_node: { displayMessageCloud: CLOUD_MISSING_NODES_MESSAGE }
+          }
         },
         agent: {
           errorContext: {
@@ -133,6 +163,12 @@ describe('ErrorOverlay', () => {
     mockErrorGroups.missingMediaGroups.value = []
     mockErrorGroups.swapNodeGroups.value = []
     askAgentMock.canAskAgent.value = true
+    distribution.isCloud = false
+    buildOffer.value = null
+    vi.mocked(useIssuesToastBuildOffer).mockReturnValue({
+      offer: computed(() => buildOffer.value),
+      open: openBuildOffer
+    })
   })
 
   it.for([
@@ -514,5 +550,96 @@ describe('ErrorOverlay', () => {
     expect(emitted('viewErrors')).toEqual([
       [['execution:missing_connection', 'missing_node']]
     ])
+  })
+
+  describe('Custom Build offer', () => {
+    beforeEach(() => {
+      distribution.isCloud = true
+    })
+
+    async function showMissingNodesToast(props: { appMode?: boolean } = {}) {
+      mockAllErrorGroups.value = [
+        {
+          type: 'missing_node',
+          severity: 'missing',
+          groupKey: 'missing_node',
+          displayTitle: 'Unsupported Node Packs',
+          displayMessage: CLOUD_MISSING_NODES_MESSAGE,
+          count: 1,
+          priority: 1,
+          blockedLastRun: false
+        }
+      ]
+      renderOverlay(props)
+      useExecutionErrorStore().showErrorOverlay()
+      await nextTick()
+    }
+
+    it('offers no Custom Build and keeps the full message without an offer', async () => {
+      await showMissingNodesToast()
+
+      expect(screen.queryByTestId('error-overlay-custom-build')).toBeNull()
+      expect(screen.getByRole('status')).toHaveTextContent(
+        CLOUD_MISSING_NODES_MESSAGE
+      )
+    })
+
+    it('offers to switch to the build that runs the workflow, last in the footer', async () => {
+      buildOffer.value = { kind: 'switch', buildName: 'Portrait Studio' }
+      await showMissingNodesToast()
+
+      const button = screen.getByTestId('error-overlay-custom-build')
+      expect(button).toHaveTextContent('Switch build')
+      expect(button).toHaveAttribute('title', 'Switch to Portrait Studio')
+      expect(screen.getAllByRole('button').at(-2)).toBe(button)
+      expect(screen.getByRole('status')).not.toHaveTextContent(
+        'Replace them with supported nodes.'
+      )
+    })
+
+    it('offers to create a Custom Build and opens the offer on click', async () => {
+      buildOffer.value = { kind: 'create' }
+      await showMissingNodesToast()
+
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Create Custom Build' }))
+
+      expect(openBuildOffer).toHaveBeenCalledOnce()
+      expect(
+        screen.getByTestId('error-overlay-custom-build')
+      ).not.toHaveAttribute('title')
+    })
+
+    it('offers no Custom Build on a toast that shows no missing nodes', async () => {
+      buildOffer.value = { kind: 'create' }
+      mockAllErrorGroups.value = [
+        {
+          type: 'missing_model',
+          severity: 'missing',
+          groupKey: 'missing_model',
+          displayTitle: 'Missing models',
+          displayMessage: 'A required model is missing.',
+          count: 1,
+          priority: 1,
+          blockedLastRun: false
+        }
+      ]
+      renderOverlay()
+      useExecutionErrorStore().showErrorOverlay()
+      await nextTick()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'A required model is missing.'
+      )
+      expect(screen.queryByTestId('error-overlay-custom-build')).toBeNull()
+    })
+
+    it('offers no Custom Build in app mode', async () => {
+      buildOffer.value = { kind: 'create' }
+      await showMissingNodesToast({ appMode: true })
+
+      expect(screen.queryByTestId('error-overlay-custom-build')).toBeNull()
+    })
   })
 })

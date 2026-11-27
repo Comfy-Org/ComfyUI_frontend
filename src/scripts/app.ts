@@ -151,6 +151,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
@@ -818,7 +819,10 @@ export class ComfyApp implements IComfyApp {
           workspace.spinner = false
           reportActiveWorkflowIfCurrent(activatedByDrop)
         }
-        useWorkflowService().showPendingWarnings()
+        useWorkflowService().showPendingWarnings(
+          undefined,
+          activatedByDrop ? { opening: 'brought_in' } : undefined
+        )
       } catch (error: unknown) {
         if (isGraphLoadFailurePresented(error)) return
         useToast().warning(
@@ -1283,6 +1287,7 @@ export class ComfyApp implements IComfyApp {
       nodeDefArray
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
+    useModelToNodeStore().registerDefaults()
   }
 
   async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
@@ -1455,6 +1460,7 @@ export class ComfyApp implements IComfyApp {
       openSource,
       shareId,
       deferWarnings = false,
+      opening,
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
@@ -1922,7 +1928,8 @@ export class ComfyApp implements IComfyApp {
           if (!skipAssetScans) await scanAssets()
           if (deferWarnings || this.rootGraph !== graph) return
           useWorkflowService().showPendingWarnings(undefined, {
-            silent: silentAssetErrors
+            silent: silentAssetErrors,
+            opening: opening ?? 'brought_in'
           })
         }
 
