@@ -126,38 +126,21 @@ describe('skillPacksStore', () => {
     }
   )
 
-  it.for<{
-    change: string
-    apply: (store: ReturnType<typeof useSkillPacksStore>) => void
-    expectedLoadFailed: boolean
-  }>([
-    {
-      change: 'upsert',
-      apply: (store) => store.upsertPack(makePack()),
-      expectedLoadFailed: false
-    },
-    {
-      change: 'remove',
-      apply: (store) => store.removePack('my-pack'),
-      expectedLoadFailed: true
-    }
-  ])(
-    'reconciles stale catalog errors after a local $change',
-    ({ apply, expectedLoadFailed }) => {
-      const store = useSkillPacksStore()
-      store.catalogUnavailable = true
-      store.loadFailed = true
-      store.loadFailureReason = 'stale failure'
+  it('reconciles an unavailable catalog after a local upsert', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('unavailable', 404)
+    )
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+    await store.refreshPacks()
+    expect(store.catalogUnavailable).toBe(true)
 
-      apply(store)
+    store.upsertPack(makePack())
 
-      expect(store.catalogUnavailable).toBe(false)
-      expect(store.loadFailed).toBe(expectedLoadFailed)
-      expect(store.loadFailureReason).toBe(
-        expectedLoadFailed ? 'stale failure' : undefined
-      )
-    }
-  )
+    expect(store.catalogUnavailable).toBe(false)
+    expect(store.loadFailed).toBe(false)
+    expect(store.packs).toEqual([makePack()])
+  })
 
   it('leaves a never-confirmed catalog unconfirmed when local CRUD supersedes its first listing', async () => {
     const store = useSkillPacksStore()
@@ -174,11 +157,12 @@ describe('skillPacksStore', () => {
   })
 
   it('keeps a failed unconfirmed catalog retryable after a local removal', async () => {
-    vi.mocked(listSkillPacks).mockRejectedValueOnce(
-      new SkillPacksApiError('unavailable', 503)
-    )
+    vi.mocked(listSkillPacks)
+      .mockRejectedValueOnce(new SkillPacksApiError('unavailable', 503))
+      .mockResolvedValueOnce([makePack({ id: 'pack-2', name: 'complete' })])
     const store = useSkillPacksStore()
     store.flagsEnabled = true
+    store.upsertPack(makePack())
     await store.refreshPacks()
     expect(store.loadFailed).toBe(true)
 
@@ -188,6 +172,11 @@ describe('skillPacksStore', () => {
     expect(store.hasLoaded).toBe(false)
     expect(store.loadFailed).toBe(true)
     expect(store.loadFailureReason).toBeUndefined()
+
+    await store.ensurePacks()
+
+    expect(store.loadFailed).toBe(false)
+    expect(store.packs).toEqual([makePack({ id: 'pack-2', name: 'complete' })])
   })
 
   it('keeps a confirmed catalog available after a background 404', async () => {
@@ -567,9 +556,12 @@ describe('skillPacksStore', () => {
     expect(store.loadFailureReason).toBeUndefined()
   })
 
-  it('retries a failed listing when the settings gate starts again', async () => {
+  it.for([
+    { name: '503 response', error: new SkillPacksApiError('boom', 503) },
+    { name: 'network rejection', error: new TypeError('network unavailable') }
+  ])('retries $name when the settings gate starts again', async ({ error }) => {
     vi.mocked(listSkillPacks)
-      .mockRejectedValueOnce(new SkillPacksApiError('boom', 503))
+      .mockRejectedValueOnce(error)
       .mockResolvedValueOnce([makePack()])
     const store = useSkillPacksStore()
 

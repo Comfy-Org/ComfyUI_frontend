@@ -14,11 +14,6 @@ import { MAX_NAME_LENGTH, PACK_NAME_PATTERN } from '@/platform/skills/types'
 
 const LOOPBACK_ONLY_CODE = 'agent_loopback_only'
 
-/**
- * A list 404 means the skills gate is off for this account. A 403 with
- * `code: agent_loopback_only` is the local host refusing a non-loopback page;
- * its message is the reason to show.
- */
 export class SkillPacksApiError extends Error {
   constructor(
     message: string,

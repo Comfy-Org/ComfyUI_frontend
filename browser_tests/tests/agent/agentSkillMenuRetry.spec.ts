@@ -59,27 +59,30 @@ test.describe(
         agentPanel,
         skillCatalog
       }) => {
-        await agentPanel.open()
-        await agentPanel.composer.fill('/')
-
         const menu = page.getByRole('menu', {
           name: enMessages.agent.skills,
           exact: true
         })
-        await expect(menu.getByRole('status')).toContainText(
-          enMessages.agent.skillsUnavailable
-        )
-        await expect(
-          menu.getByRole('button', { name: enMessages.g.retry, exact: true })
-        ).toBeHidden()
 
-        skillCatalog.healthy = true
-        await agentPanel.composer.fill('')
-        await agentPanel.composer.fill('/')
+        await test.step('Opening skills explains unavailability', async () => {
+          await agentPanel.open()
+          await agentPanel.composer.fill('/')
+          await expect(menu.getByRole('status')).toContainText(
+            enMessages.agent.skillsUnavailable
+          )
+          await expect(
+            menu.getByRole('button', { name: enMessages.g.retry, exact: true })
+          ).toBeHidden()
+        })
 
-        await expect(
-          menu.getByRole('menuitem', { name: SKILL_NAME, exact: true })
-        ).toBeVisible()
+        await test.step('Reopening skills loads the catalog', async () => {
+          skillCatalog.healthy = true
+          await agentPanel.composer.fill('')
+          await agentPanel.composer.fill('/')
+          await expect(
+            menu.getByRole('menuitem', { name: SKILL_NAME, exact: true })
+          ).toBeVisible()
+        })
       })
     })
   }

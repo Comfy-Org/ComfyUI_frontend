@@ -224,6 +224,27 @@ describe('Composer skill selection', () => {
     expect(listSkillPacks).toHaveBeenCalledTimes(2)
   })
 
+  it('shows the local host instruction in the slash menu', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError(
+        'Open http://127.0.0.1:8188 to use the agent.',
+        403,
+        'agent_loopback_only'
+      )
+    )
+    const { skills } = mount()
+    skills.packs = []
+    skills.hasLoaded = false
+    skills.catalogConfirmed = false
+
+    await type('/')
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Open http://127.0.0.1:8188 to use the agent.'
+    )
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+  })
+
   it.for([404, 503])(
     'shows loading, then a retryable error, after a %s response to a confirmed catalog',
     async (status) => {
