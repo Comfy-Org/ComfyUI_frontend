@@ -106,6 +106,7 @@ describe('assetsStore - resolved history outputs', () => {
     vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     const client = new ComfyApi({
       isCloud: false,
+      clientVersion: '1.0.0',
       featureFlagOverride: () => undefined,
       onFreeMemory: () => {}
     })

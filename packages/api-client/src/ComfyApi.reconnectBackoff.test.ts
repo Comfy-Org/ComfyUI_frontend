@@ -5,6 +5,7 @@ import type { ComfyApiPorts } from './ComfyApi'
 
 const ports: ComfyApiPorts = {
   isCloud: false,
+  clientVersion: '1.0.0',
   featureFlagOverride: () => undefined,
   onFreeMemory: () => {}
 }

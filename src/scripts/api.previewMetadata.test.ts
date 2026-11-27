@@ -50,6 +50,7 @@ describe('ComfyApi type-4 preview metadata', () => {
     vi.stubGlobal('WebSocket', FakeWebSocket)
     api = new ComfyApi({
       isCloud: false,
+      clientVersion: '1.0.0',
       featureFlagOverride: () => undefined,
       onFreeMemory: () => {}
     })

@@ -1835,6 +1835,7 @@ describe('useMediaAssetActions', () => {
       async ({ response, successes, errors }) => {
         const client = new ComfyApi({
           isCloud: false,
+          clientVersion: '1.0.0',
           featureFlagOverride: () => undefined,
           onFreeMemory: () => undefined
         })
