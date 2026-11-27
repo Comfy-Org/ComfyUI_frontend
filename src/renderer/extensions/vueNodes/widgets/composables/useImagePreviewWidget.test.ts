@@ -32,8 +32,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-// oxlint-disable-next-line vitest/prefer-import-in-mock -- import() would mark createImageHost used and retire its knip tag
-vi.mock('@/scripts/ui/imagePreview', () => ({
+vi.mock(import('@/scripts/ui/imagePreview'), () => ({
   calculateImageGrid: vi.fn(() => ({
     cellWidth: 100,
     cellHeight: 100,
