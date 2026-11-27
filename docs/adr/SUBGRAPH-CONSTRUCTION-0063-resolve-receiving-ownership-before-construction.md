@@ -36,15 +36,16 @@ and their supplied schema and instance defaults in the same owner registration.
 Runtime structural metadata follows the node's owned definition; static catalog
 metadata remains available.
 
-Batch conversion checks every member's availability before constructing any
-member. It validates completed construction receipts before attaching nodes.
+Required conversion checks every member's availability before constructing any
+member. Construction receipts remain owned through callback-bearing expansion,
+as described in [ADR-SUBGRAPH-LIFETIME-0064](./SUBGRAPH-LIFETIME-0064-own-core-work-through-callback-completion.md).
 The follower classifies recovery from the actual construction outcome and
 builds a replacement before removing the incumbent shell. Its existing graph
 identity, live layout, and remote-write provenance remain authoritative.
 
-Enroll core constructor subscriptions in one abort controller per construction.
-Abort those subscriptions if construction fails or a caller abandons an
-unattached batch. Do not invoke arbitrary removal callbacks on unattached nodes.
+Enroll core subscriptions and deferred input work in a complete node lifetime.
+Cancel that work if construction fails or its operation abandons the node.
+Do not invoke arbitrary removal callbacks on unattached nodes.
 
 ## Alternatives and consequences
 

@@ -9,9 +9,11 @@ import type {
   IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 import {
+  LGraphNode,
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { prepareNodeConstruction } from '@/lib/litegraph/src/nodeConstruction'
 import {
   createTestRootGraph,
@@ -351,7 +353,10 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     const subgraphId = '00000000-0000-4000-8000-000000000127'
     const graph = createTestRootGraph()
     const definition = graph.createSubgraph(
-      createTestSubgraphData({ id: subgraphId })
+      createTestSubgraphData({
+        id: subgraphId,
+        inputs: [{ id: 'value', name: 'value', type: 'INT' }]
+      })
     )
     useLitegraphService().registerSubgraphNodeDef(
       createNodeDefV1({ name: subgraphId, output: [] }),
@@ -391,8 +396,24 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     assert.instanceOf(sibling, SubgraphNode)
     graph.add(sibling)
 
+    const abandonedInput = abandoned.inputs[0]
+    const replacedInput = sibling.inputs[0]
+    assert.exists(abandonedInput)
+    assert.exists(replacedInput)
+    sibling.configure(subgraphInstanceData(subgraphId))
+    const currentInput = sibling.inputs[0]
+    assert.exists(currentInput)
+    const definitionInput = definition.inputNode.slots[0]
+    assert.exists(definitionInput)
+    const interiorInput = new LGraphNode('Interior').addInput('value', 'INT', {
+      shape: RenderShape.GRID
+    })
+    definitionInput.events.dispatch('input-connected', { input: interiorInput })
     definition.addOutput('liveResult', 'MASK')
 
+    expect(currentInput.shape).toBe(RenderShape.GRID)
+    expect(replacedInput.shape).toBeUndefined()
+    expect(abandonedInput.shape).toBeUndefined()
     expect(abandoned.outputs).toEqual([])
     expect(sibling.outputs.map(({ name, type }) => ({ name, type }))).toEqual([
       { name: 'liveResult', type: 'MASK' }

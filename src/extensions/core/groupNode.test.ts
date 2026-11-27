@@ -35,7 +35,7 @@ const {
   groupNodeExtension
 } = await import('./groupNode')
 
-function makeNode(type: string): ComfyNode {
+function makeNode(type: string) {
   return {
     id: 1,
     type,
@@ -45,7 +45,7 @@ function makeNode(type: string): ComfyNode {
     order: 0,
     mode: 0,
     properties: {}
-  }
+  } satisfies ComfyNode
 }
 
 describe('replaceLegacySeparators', () => {
@@ -1011,12 +1011,17 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
     expect(handler.convertToNodes()).toEqual({
       refused: true,
-      memberType: refusedType
+      memberType: refusedType,
+      interference: {
+        phase: 'construction',
+        cause: new Error('construction failed'),
+        cleanupErrors: []
+      }
     })
     expect(graph.nodes).toEqual([group])
   })
 
-  it('stops updating an attached subgraph prefix when a later member fails', () => {
+  it('stops updating an abandoned subgraph prefix when a later member fails', () => {
     const graph = createTestRootGraph()
     const definitionData = createTestSubgraph({
       id: crypto.randomUUID()
@@ -1075,9 +1080,10 @@ describe('GroupNodeHandler.convertToNodes', () => {
       })
     )
 
-    expect(handler.convertToNodes()).toEqual({
+    expect(handler.convertToNodes()).toMatchObject({
       refused: true,
-      memberType: throwingType
+      memberType: throwingType,
+      interference: { phase: 'construction', cleanupErrors: [] }
     })
     const abandoned = constructed.at(-1)
     assert.exists(abandoned)
@@ -1158,7 +1164,380 @@ describe('GroupNodeHandler.convertToNodes', () => {
   })
 })
 
+describe('legacy group lifecycle ownership', () => {
+  function groupWithMembers(graph: LGraph, types: string[]) {
+    const group = new LGraphNode('Retained legacy group')
+    graph.add(group)
+    const handler = new GroupNodeHandler(
+      group,
+      new GroupNodeConfig('lifecycle', {
+        nodes: types.map(makeNode),
+        links: []
+      })
+    )
+    return { group, handler }
+  }
+
+  it.for([
+    { hook: 'onConfigure', order: [1, 0], phase: 'configure' },
+    { hook: 'onAdded', order: [0, 1], phase: 'attach' }
+  ] as const)(
+    'retains the original when $hook invalidates another member',
+    ({ hook, order, phase }) => {
+      const graph = new LGraph()
+      const definition = createTestSubgraph({
+        id: crypto.randomUUID()
+      }).asSerialisable()
+      const owned = graph.createSubgraph(definition)
+      useSubgraphService().registerNewSubgraph(owned, definition)
+      class ReplacingMember extends LGraphNode {}
+      ReplacingMember.prototype[hook] = () => {
+        graph.releaseSubgraphs([owned])
+        const replacement = graph.createSubgraph(definition)
+        useSubgraphService().registerNewSubgraph(replacement, definition)
+      }
+      const type = `test/group-replacing-${hook}`
+      LiteGraph.registerNodeType(type, ReplacingMember)
+      const types = [definition.id, type]
+      const { group, handler } = groupWithMembers(
+        graph,
+        order.map((index) => types[index])
+      )
+
+      const result = handler.convertToNodes()
+
+      expect(result).toMatchObject({
+        refused: true,
+        interference: { phase }
+      })
+      expect(graph.nodes).toEqual([group])
+      expect(graph.subgraphs.get(definition.id)).not.toBe(owned)
+    }
+  )
+
+  it('does not attach a draft released by normal last-host removal', () => {
+    const graph = new LGraph()
+    const definition = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const owned = graph.createSubgraph(definition)
+    useSubgraphService().registerNewSubgraph(owned, definition)
+    const liveHost = LiteGraph.createNode(definition.id, undefined, {
+      targetGraph: graph
+    })
+    assert(liveHost)
+    graph.add(liveHost)
+    const attachedHost = liveHost
+    class RemovingMember extends LGraphNode {
+      override onConfigure() {
+        graph.remove(attachedHost)
+      }
+    }
+    const type = 'test/group-removes-last-host'
+    LiteGraph.registerNodeType(type, RemovingMember)
+    const { group, handler } = groupWithMembers(graph, [type, definition.id])
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({
+      refused: true,
+      interference: { phase: 'configure' }
+    })
+    expect(graph.nodes).toEqual([group])
+    expect(graph.subgraphs.has(definition.id)).toBe(false)
+  })
+
+  it('preserves serialized graph and original links when a later constructor throws', () => {
+    class ValidMember extends LGraphNode {}
+    class ThrowingMember extends LGraphNode {
+      constructor() {
+        super('Throwing member')
+        throw new Error('later construction failed')
+      }
+    }
+    LiteGraph.registerNodeType('test/group-valid-prefix', ValidMember)
+    LiteGraph.registerNodeType('test/group-throwing-suffix', ThrowingMember)
+    const graph = new LGraph()
+    const { group, handler } = groupWithMembers(graph, [
+      'test/group-valid-prefix',
+      'test/group-throwing-suffix'
+    ])
+    group.addInput('in', '*')
+    const upstream = new LGraphNode('Upstream')
+    upstream.addOutput('out', '*')
+    graph.add(upstream)
+    upstream.connect(0, group, 0)
+    const before = graph.serialize()
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({ refused: true })
+    expect(graph.serialize()).toEqual(before)
+    expect(group.getInputLink(0)?.origin_id).toBe(upstream.id)
+  })
+
+  it.for(['construction', 'configure'] as const)(
+    'abandons a registration replaced during %s and only removes attached members',
+    (phase) => {
+      const removed = vi.fn()
+      class OriginalMember extends LGraphNode {
+        override onRemoved = removed
+      }
+      class ReplacementMember extends LGraphNode {}
+      const replaceRegistration = () =>
+        LiteGraph.registerNodeType(
+          'test/group-replaced-constructor',
+          ReplacementMember
+        )
+      class ReplacingMember extends LGraphNode {
+        constructor() {
+          super('Replacing member')
+          if (phase === 'construction') replaceRegistration()
+        }
+
+        override onConfigure() {
+          if (phase === 'configure') replaceRegistration()
+        }
+      }
+      LiteGraph.registerNodeType(
+        'test/group-replaced-constructor',
+        OriginalMember
+      )
+      LiteGraph.registerNodeType(
+        'test/group-replacing-constructor',
+        ReplacingMember
+      )
+      const graph = new LGraph()
+      const { group, handler } = groupWithMembers(graph, [
+        'test/group-replaced-constructor',
+        'test/group-replacing-constructor'
+      ])
+      const before = graph.serialize()
+
+      const result = handler.convertToNodes()
+
+      expect(result).toMatchObject({
+        refused: true,
+        interference: { phase, cleanupErrors: [] }
+      })
+      expect(graph.nodes).toEqual([group])
+      if (phase === 'construction') {
+        expect(graph.serialize()).toEqual(before)
+        expect(removed).not.toHaveBeenCalled()
+      } else {
+        expect(removed).toHaveBeenCalledOnce()
+      }
+    }
+  )
+
+  it.for(['configure', 'attach'] as const)(
+    'cleans up the owned prefix when %s throws without releasing shared definitions',
+    (phase) => {
+      const graph = new LGraph()
+      const definition = createTestSubgraph({
+        id: crypto.randomUUID()
+      }).asSerialisable()
+      const owned = graph.createSubgraph(definition)
+      useSubgraphService().registerNewSubgraph(owned, definition)
+      const cause = new Error(`${phase} failed`)
+      class ThrowingMember extends LGraphNode {
+        override onConfigure() {
+          if (phase === 'configure') throw cause
+        }
+
+        override onAdded() {
+          if (phase === 'attach') throw cause
+        }
+      }
+      LiteGraph.registerNodeType('test/group-throwing-add', ThrowingMember)
+      const { group, handler } = groupWithMembers(graph, [
+        definition.id,
+        'test/group-throwing-add'
+      ])
+
+      const result = handler.convertToNodes()
+
+      expect(result).toMatchObject({
+        refused: true,
+        interference: { phase, cause, cleanupErrors: [] }
+      })
+      expect(graph.nodes).toEqual([group])
+      expect(graph.subgraphs.get(definition.id)).toBe(owned)
+    }
+  )
+
+  it('detects invalidation during original removal instead of reporting success', () => {
+    const graph = new LGraph()
+    const definition = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const owned = graph.createSubgraph(definition)
+    useSubgraphService().registerNewSubgraph(owned, definition)
+    const { group, handler } = groupWithMembers(graph, [definition.id])
+    group.onRemoved = () => graph.releaseSubgraphs([owned])
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({
+      refused: true,
+      interference: { phase: 'remove' }
+    })
+    expect(graph.nodes).toEqual([])
+  })
+
+  it('retains the group when copying a live widget invalidates a member', () => {
+    const graph = new LGraph()
+    const definition = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const owned = graph.createSubgraph(definition)
+    useSubgraphService().registerNewSubgraph(owned, definition)
+    class WidgetMember extends LGraphNode {
+      constructor() {
+        super('Widget member')
+        const widget = this.addWidget('text', 'label', 'inner', () => {})
+        Object.defineProperty(widget, 'value', {
+          get: () => 'inner',
+          set: () => graph.releaseSubgraphs([owned])
+        })
+      }
+    }
+    LiteGraph.registerNodeType('test/group-widget-interference', WidgetMember)
+    const { group, handler } = groupWithMembers(graph, [
+      'test/group-widget-interference',
+      definition.id
+    ])
+    group.addWidget('text', 'label', 'edited outer value', () => {})
+    handler.groupData.oldToNewWidgetMap[0] = { label: 'label' }
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({
+      refused: true,
+      interference: { phase: 'widgets' }
+    })
+    expect(graph.nodes).toEqual([group])
+  })
+
+  it('retains the group when an internal connection invalidates a member', () => {
+    const graph = new LGraph()
+    const definition = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const owned = graph.createSubgraph(definition)
+    useSubgraphService().registerNewSubgraph(owned, definition)
+    class SourceMember extends LGraphNode {
+      constructor() {
+        super('Source member')
+        this.addOutput('out', '*')
+      }
+
+      override onConnectionsChange() {
+        graph.releaseSubgraphs([owned])
+      }
+    }
+    class SinkMember extends LGraphNode {
+      constructor() {
+        super('Sink member')
+        this.addInput('in', '*')
+      }
+    }
+    LiteGraph.registerNodeType('test/group-link-source', SourceMember)
+    LiteGraph.registerNodeType('test/group-link-sink', SinkMember)
+    const { group, handler } = groupWithMembers(graph, [
+      definition.id,
+      'test/group-link-source',
+      'test/group-link-sink'
+    ])
+    handler.groupData.nodeData.links = [[1, 0, 2, 0, 0]]
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({
+      refused: true,
+      interference: { phase: 'links' }
+    })
+    expect(graph.nodes).toEqual([group])
+    expect(graph.links.size).toBe(0)
+  })
+
+  it('does not remove an unrelated node replacing the original during configuration', () => {
+    const graph = new LGraph()
+    const { group, handler } = groupWithMembers(graph, [
+      'test/group-original-replacement'
+    ])
+    const replacement = new LGraphNode('Replacement')
+    class ReplacingMember extends LGraphNode {
+      override onConfigure() {
+        graph.remove(group)
+        replacement.id = group.id
+        graph.add(replacement)
+      }
+    }
+    LiteGraph.registerNodeType(
+      'test/group-original-replacement',
+      ReplacingMember
+    )
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({
+      refused: true,
+      interference: { phase: 'configure' }
+    })
+    expect(graph.nodes).toEqual([replacement])
+  })
+})
+
 describe('convertLoadedGroupNodes via groupNodeExtension.afterConfigureGraph', () => {
+  it('rejects repackaging when its closing callback invalidates a newly constructed nested host', async () => {
+    const graph = new LGraph()
+    graph.events.addEventListener('subgraph-created', (event) =>
+      useSubgraphService().registerNewSubgraph(
+        event.detail.subgraph,
+        event.detail.data
+      )
+    )
+    const definition = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const owned = graph.createSubgraph(definition)
+    const group = new LGraphNode('Migrating group')
+    graph.add(group)
+    const config = new GroupNodeConfig('migrationInterference', {
+      nodes: [makeNode(definition.id)],
+      links: []
+    })
+    graph.extra.groupNodes = { migrationInterference: config.nodeData }
+    const handler = new GroupNodeHandler(group, config)
+    vi.spyOn(GroupNodeHandler, 'isGroupNode').mockImplementation(
+      (node) => node === group
+    )
+    vi.spyOn(GroupNodeHandler, 'getHandler').mockReturnValue(handler)
+    const callbackOwned = new LGraphNode('Callback-owned member')
+    graph.events.addEventListener('convert-to-subgraph', (event) => {
+      event.detail.subgraph.add(callbackOwned)
+      graph.onAfterChange = () => graph.releaseSubgraphs([owned])
+    })
+
+    await groupNodeExtension.afterConfigureGraph?.([], app, {
+      graph,
+      workflow: null
+    })
+
+    expect(graph.nodes).toEqual([])
+    expect(callbackOwned.graph?.getNodeById(callbackOwned.id)).toBe(
+      callbackOwned
+    )
+    expect(graph.extra.groupNodes).toEqual({
+      migrationInterference: config.nodeData
+    })
+    expect(reportError).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'failure_migrating_legacy_group' })
+    )
+  })
+
   it('leaves a refused group node in place instead of removing it', async () => {
     const convertToNodes = vi.fn(() => ({
       refused: true,
