@@ -265,6 +265,24 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
     ])
   })
 
+  it('adds bytes the workspace already stored without sending a piece', async () => {
+    const ingest = ingestAnswers([])
+    ingest.create.mockResolvedValue({ blobId: BLOB_ID, deduplicated: true })
+
+    await expect(upload(modelFile(2)).result).resolves.toEqual({
+      ok: true,
+      modelId: MODEL_ID
+    })
+    expect(ingest.add).toHaveBeenCalledWith(
+      'ws-1',
+      'dep-1',
+      { blobId: BLOB_ID, type: 'loras' },
+      expect.any(AbortSignal)
+    )
+    expect(StorageRequest.sent).toHaveLength(0)
+    expect(ingest.complete).not.toHaveBeenCalled()
+  })
+
   it("passes comfy-deploy's sentence on a refused add and sends no piece", async () => {
     const ingest = ingestAnswers([piece(1)])
     const message = 'This deployment already has a model named my_style_v2.'

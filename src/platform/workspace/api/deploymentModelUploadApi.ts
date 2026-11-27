@@ -194,13 +194,14 @@ async function addToDeployment(
   const { signal } = options
   const sha256 = await fileSha256(file, signal)
   if (sha256 === undefined) return { ok: false, reason: 'cancelled' }
-  const { blobId, parts } = await workspaceApi.createDeploymentModelUpload(
-    workspaceId,
-    deploymentId,
-    { filename: file.name, sizeBytes: file.size, sha256, parts: true },
-    signal
-  )
-  if (!parts?.length) {
+  const { blobId, deduplicated, parts } =
+    await workspaceApi.createDeploymentModelUpload(
+      workspaceId,
+      deploymentId,
+      { filename: file.name, sizeBytes: file.size, sha256, parts: true },
+      signal
+    )
+  if (!deduplicated && !parts?.length) {
     return { ok: false, reason: 'failed', cause: 'upload has no pieces' }
   }
   const added = await workspaceApi.addDeploymentModel(
@@ -210,6 +211,7 @@ async function addToDeployment(
     signal
   )
   if (added === 'notOn') return { ok: false, reason: 'notOn' }
+  if (deduplicated || !parts) return { ok: true, modelId: added.id }
   try {
     const stopped = await sendAddedFile(file, target, blobId, parts, options)
     if (signal.aborted) {
