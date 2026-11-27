@@ -20,10 +20,6 @@ export function useAgentDockMount(): AgentDockMount {
   const { subscription, fetchStatus, fetchStatusFresh, type } =
     useBillingContext()
 
-  // This composable is owned by the persistent graph/linear hosts, unlike the
-  // dock component, which is unmounted whenever the panel closes. Keep the
-  // exhaustion episode synchronized here so funds recovery while closed can
-  // re-arm the next impression.
   watch(
     () => subscription.value?.agentHasFunds,
     (hasFunds) => {
@@ -33,21 +29,6 @@ export function useAgentDockMount(): AgentDockMount {
   )
 
   const consentStore = useAgentConsentStore()
-  watch(
-    () => consentStore.confirmedAcceptances,
-    (count) => {
-      if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
-      agentPanelStore.billingRefreshedAcceptances = count
-      void fetchStatus({ fresh: true }).catch((error: unknown) => {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'error_refreshing_agent_billing_status'
-        })
-      })
-    },
-    { immediate: true, flush: 'sync' }
-  )
-
   const billingIdentity = useBillingIdentity()
 
   function reportBillingRefreshError(error: unknown): void {
@@ -56,6 +37,40 @@ export function useAgentDockMount(): AgentDockMount {
       surface: 'agent'
     })
   }
+
+  function acceptanceRefreshKey(
+    billingType: string,
+    identity: string,
+    acceptances: number
+  ): string {
+    return `${billingType}:${identity}:acceptance:${acceptances}`
+  }
+
+  const readBillingFresh = async (): Promise<boolean> => {
+    return fetchStatusFresh?.({ fresh: true }) ?? false
+  }
+
+  watch(
+    () => consentStore.confirmedAcceptances,
+    (count) => {
+      if (!count || count <= agentPanelStore.billingRefreshedAcceptances) return
+      agentPanelStore.billingRefreshedAcceptances = count
+      if (fetchStatusFresh === undefined || type.value === 'unknown') {
+        void fetchStatus({ fresh: true }).catch(reportBillingRefreshError)
+        return
+      }
+      const identity = billingIdentity.value
+      const read = agentPanelStore.refreshBillingStatus(
+        acceptanceRefreshKey(type.value, identity, count),
+        readBillingFresh,
+        false,
+        reportBillingRefreshError
+      )
+      agentPanelStore.recordAcceptanceBillingRefresh(type.value, identity, read)
+      void read.catch(reportBillingRefreshError)
+    },
+    { immediate: true, flush: 'sync' }
+  )
 
   function adoptTransitionBaseline(
     billingType: string,
@@ -98,6 +113,7 @@ export function useAgentDockMount(): AgentDockMount {
     const identity = expectedIdentity
     const scopedHasFunds = subscription.value?.agentScopedHasFunds
     if (scopedHasFunds === undefined) return
+    if (subscription.value?.agentScopedHasFundsAuthoritative !== true) return
     const refresh = agentPanelStore.creditTransitionRefresh
     if (refresh?.identity !== identity) {
       agentPanelStore.observeAgentScopedFunds(identity, scopedHasFunds)
@@ -114,6 +130,7 @@ export function useAgentDockMount(): AgentDockMount {
     [
       billingIdentity,
       () => subscription.value?.agentScopedHasFunds,
+      () => subscription.value?.agentScopedHasFundsAuthoritative,
       () => agentPanelStore.creditTransitionRefresh
     ],
     () => observeFreshScopedFunds(),
@@ -128,6 +145,26 @@ export function useAgentDockMount(): AgentDockMount {
     }
   })
 
+  function refreshOnOpen(
+    identity: string,
+    epoch: number,
+    readStatus?: () => Promise<boolean>,
+    afterCurrent = true
+  ): void {
+    const statusReader = readStatus ?? fetchStatusFresh
+    if (statusReader === undefined) return
+    if (!agentPanelStore.isOpen || agentPanelStore.panelOpenEpoch !== epoch)
+      return
+    void agentPanelStore
+      .refreshBillingStatus(
+        `${type.value}:${identity}:reopen:${epoch}`,
+        statusReader,
+        afterCurrent,
+        reportBillingRefreshError
+      )
+      .catch(reportBillingRefreshError)
+  }
+
   watch(
     () => agentPanelStore.isOpen,
     (isOpen, wasOpen) => {
@@ -138,15 +175,22 @@ export function useAgentDockMount(): AgentDockMount {
         refreshTransitionBaseline(identity, refresh.epoch)
         return
       }
-      if (fetchStatusFresh === undefined) return
-      void agentPanelStore
-        .refreshBillingStatus(
-          `${type.value}:${identity}:reopen:${agentPanelStore.panelOpenEpoch}`,
-          fetchStatusFresh,
-          true,
-          reportBillingRefreshError
+      const epoch = agentPanelStore.panelOpenEpoch
+      const accepted = agentPanelStore.acceptanceBillingRefreshForOpen(
+        type.value,
+        identity
+      )
+      if (accepted) {
+        void accepted.then(
+          (adopted) => {
+            if (!adopted)
+              refreshOnOpen(identity, epoch, readBillingFresh, false)
+          },
+          () => refreshOnOpen(identity, epoch, readBillingFresh, false)
         )
-        .catch(reportBillingRefreshError)
+        return
+      }
+      refreshOnOpen(identity, epoch)
     }
   )
 

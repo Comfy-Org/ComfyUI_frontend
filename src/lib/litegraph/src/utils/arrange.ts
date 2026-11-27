@@ -80,14 +80,12 @@ function arrangeNodes(
   action: AlignAction,
   reference?: LGraphNode
 ): NewNodePosition[] {
-  const isDistribute = action === 'distributeX' || action === 'distributeY'
-  const framed = isDistribute ? nodes.filter((node) => !node.pinned) : nodes
   const after = arrangePlacements(
-    placementsOf(framed),
+    placementsOf(nodes),
     action,
     reference && nodeBox(reference)
   )
-  return framed.flatMap((node) => {
+  return nodes.flatMap((node) => {
     const placement = after.get(node.id)
     return placement && !node.pinned
       ? [{ node, newPos: placement.position }]
@@ -121,11 +119,12 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
   return { top, right, bottom, left }
 }
 
-/** Positions that space the unpinned nodes' visual boxes evenly along `axis` between the outermost ones. */
+/** Positions that space the nodes' visual boxes evenly along `axis` between the outermost ones; none when any node is pinned. */
 export function distributeNodes(
   nodes: LGraphNode[],
   axis: Axis
 ): NewNodePosition[] {
+  if (nodes.some((node) => node.pinned)) return []
   return arrangeNodes(nodes, axis === 'x' ? 'distributeX' : 'distributeY')
 }
 

@@ -39,7 +39,6 @@ async function arrangePlansEntry(page: Page, ended = false) {
         subscription_required: true,
         billing_new_ux_enabled: true,
         unified_billing_settings: true,
-        pricing_table_fallback: false,
         free_tier_balance: { remaining: 5, allowance: 5, used: 0 }
       })
     )

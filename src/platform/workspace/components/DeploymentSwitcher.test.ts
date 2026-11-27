@@ -40,7 +40,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
 
@@ -89,7 +89,7 @@ vi.mock(
     spy: true
   }
 )
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
@@ -1530,7 +1530,7 @@ describe('DeploymentSwitcher', () => {
         mockWorkspaceApi.listDeployments
           .mockResolvedValueOnce(boot)
           .mockResolvedValue(next)
-        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+        vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(null)
         const user = renderSwitcher()
         await screen.findByTestId('deployment-switcher-trigger')
         await openList(user)
@@ -1538,7 +1538,7 @@ describe('DeploymentSwitcher', () => {
         await act(user)
 
         await waitFor(() =>
-          expect(useDialogService().confirm).toHaveBeenCalledWith(
+          expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
             expect.objectContaining({
               message,
               itemList: ['workflows/portrait.json']
@@ -1561,7 +1561,7 @@ describe('DeploymentSwitcher', () => {
       async ({ answer, saved }) => {
         mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
         mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
-        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+        vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(answer)
         const user = renderSwitcher()
         await openList(user)
 
@@ -1585,15 +1585,13 @@ describe('DeploymentSwitcher', () => {
         settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
       })
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(null)
       const user = renderSwitcher()
       await openList(user)
 
       await user.click(screen.getByTestId(`deployment-row-${D2}`))
 
-      await waitFor(() =>
-        expect(useDialogService().confirm).toHaveBeenCalledOnce()
-      )
+      await waitFor(() => expect(showUnsavedWorkDialog).toHaveBeenCalledOnce())
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
       await waitFor(() =>
         expect(
@@ -1604,7 +1602,7 @@ describe('DeploymentSwitcher', () => {
 
     it('stays put when a save does not finish', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(true)
       vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValueOnce(false)
       const user = renderSwitcher()
       await openList(user)
@@ -1623,7 +1621,7 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.pickDeployment.mockRejectedValue(
         new WorkspaceApiError('deployment is not in this workspace', 403)
       )
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(false)
       const user = renderSwitcher()
       await openList(user)
 
@@ -1648,7 +1646,7 @@ describe('DeploymentSwitcher', () => {
 
       await user.click(screen.getByTestId(`default-row-${D2}`))
 
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
     })
 
@@ -1670,7 +1668,7 @@ describe('DeploymentSwitcher', () => {
           'ws-1'
         )
       )
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
     })
 
@@ -1700,7 +1698,7 @@ describe('DeploymentSwitcher', () => {
       expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1', {
         follow: 'workspace'
       })
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
     })
   })

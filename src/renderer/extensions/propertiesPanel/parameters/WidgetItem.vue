@@ -16,17 +16,12 @@ import {
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import type {
   SimplifiedWidget,
   WidgetValue as SimplifiedWidgetValue
 } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
@@ -34,6 +29,7 @@ import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 import WidgetActions from './WidgetActions.vue'
+import { getWidgetState } from '@/composables/graph/widgetValue'
 
 const {
   widget,
@@ -64,7 +60,6 @@ const { t } = useI18n()
 
 const canvasStore = useCanvasStore()
 const nodeDefStore = useNodeDefStore()
-const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const linkStore = useLinkStore()
 const isEditing = ref(false)
@@ -82,13 +77,7 @@ const isLinked = computed(() => {
 })
 
 const simplifiedWidget = computed((): SimplifiedWidget => {
-  const graphId = node.graph?.rootGraph.id
-  const bareNodeId = stripGraphPrefix(node.id)
-  const widgetState = widget.widgetId
-    ? useWidgetValueStore().getWidget(widget.widgetId)
-    : graphId && bareNodeId
-      ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
-      : undefined
+  const widgetState = getWidgetState(node, widget)
   const widgetName = widgetState?.name ?? widget.name
   const widgetType = widgetState?.type ?? widget.type
 
