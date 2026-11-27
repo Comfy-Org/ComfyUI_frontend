@@ -252,10 +252,18 @@ const { proactiveAssignment } = defineProps<{
 const { t } = useI18n()
 const toast = useToast()
 let errorAttachRun = 0
-let nodeAskRun = 0
+let nodeAskScope = 0
+const nodeAskQueue: AgentNodeAsk[] = []
+let drainingNodeAsks = false
+
+function invalidateNodeAsks(): void {
+  nodeAskScope++
+  nodeAskQueue.length = 0
+}
+
 onBeforeUnmount(() => {
   errorAttachRun++
-  nodeAskRun++
+  invalidateNodeAsks()
 })
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
@@ -2384,7 +2392,7 @@ async function onSelectHistory(
       cancelled.revision
     )
   errorAttachRun++
-  nodeAskRun++
+  invalidateNodeAsks()
   composerStore.clearErrorContext()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
@@ -3019,15 +3027,31 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
   await dispatchRetryPendingSend(retryClientMessageId, retried)
 }
 
+function matchesNodeAskWorkflow(
+  workflow: ComfyWorkflow | null,
+  ask: AgentNodeAsk
+): boolean {
+  const pathMatches = workflow?.path === ask.workflowPath
+  const instanceMatches =
+    ask.workflowInstanceId === undefined ||
+    workflow?.instanceId === ask.workflowInstanceId
+  return pathMatches && instanceMatches
+}
+
 function nodeAskWorkflowOpen(ask: AgentNodeAsk): boolean {
-  if (workflowStore.activeWorkflow?.path === ask.workflowPath) return true
+  if (matchesNodeAskWorkflow(workflowStore.activeWorkflow, ask)) return true
   toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
   return false
 }
 
-function holdNodeAsk(ask: AgentNodeAsk): void {
+function holdNodeAsk(
+  ask: AgentNodeAsk,
+  warningKey:
+    | 'agent.nodeAsk.busy'
+    | 'agent.nodeAsk.notSent' = 'agent.nodeAsk.busy'
+): void {
   if (composerStore.hasDraft) {
-    toast.warning(t('agent.nodeAsk.busy'), { duration: 5000 })
+    toast.warning(t(warningKey), { duration: 5000 })
     return
   }
   replaceSelectionTags(ask.nodes)
@@ -3041,11 +3065,9 @@ function holdNodeAsk(ask: AgentNodeAsk): void {
 }
 
 function nodeAskTargetMismatch(ask: AgentNodeAsk): boolean {
-  if (
-    ask.workflowPath === undefined ||
-    selectedTarget.value?.path === ask.workflowPath
-  )
+  if (ask.workflowPath === undefined && ask.workflowInstanceId === undefined)
     return false
+  if (matchesNodeAskWorkflow(selectedTarget.value, ask)) return false
   toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
   return true
 }
@@ -3054,41 +3076,59 @@ function isChatBusyForNodeAsk(): boolean {
   return isStreaming.value || isSending.value || status.value === 'thinking'
 }
 
-async function sendNodeAsk(ask: AgentNodeAsk): Promise<void> {
-  const run = ++nodeAskRun
-  const workflow = workflowStore.activeWorkflow
-  if (!nodeAskWorkflowOpen(ask)) return
-  const needsFollow =
-    workflow !== null &&
-    (selectedTarget.value?.path !== workflow.path ||
-      (threadId.value === null &&
-        conversationStore.activeBlankChatId !== blankChatIdFor(workflow)))
-  if (needsFollow) await followTab(workflow)
-  if (isHydrating.value) await until(isHydrating).toBe(false)
-  if (run !== nodeAskRun || !nodeAskWorkflowOpen(ask)) return
-  agentPanelStore.retainWorkflowTarget()
-  if (nodeAskTargetMismatch(ask)) return
-  if (isChatBusyForNodeAsk()) {
-    holdNodeAsk(ask)
-    return
-  }
+function needsNodeAskFollow(workflow: ComfyWorkflow | null): boolean {
+  if (workflow === null) return false
+  if (
+    selectedTarget.value?.path !== workflow.path ||
+    selectedTarget.value?.instanceId !== workflow.instanceId
+  )
+    return true
+  return (
+    threadId.value === null &&
+    conversationStore.activeBlankChatId !== blankChatIdFor(workflow)
+  )
+}
+
+async function submitPreparedNodeAsk(ask: AgentNodeAsk): Promise<void> {
   const outcome = await onSendDirect({
     text: ask.text,
     nodes: ask.nodes,
     inputMethod: ask.inputMethod
   })
   if (outcome === 'rejected') holdNodeAsk(ask)
+  else if (outcome === 'withdrawn_unrestored')
+    holdNodeAsk(ask, 'agent.nodeAsk.notSent')
 }
 
-watch(
-  () => agentPanelStore.pendingNodeAsk,
-  (ask) => {
-    if (!ask) return
-    agentPanelStore.pendingNodeAsk = null
-    void sendNodeAsk(ask)
-  },
-  { immediate: true }
-)
+async function sendNodeAsk(ask: AgentNodeAsk, scope: number): Promise<void> {
+  const workflow = workflowStore.activeWorkflow
+  if (!nodeAskWorkflowOpen(ask)) return
+  if (needsNodeAskFollow(workflow) && workflow !== null)
+    await followTab(workflow)
+  if (isHydrating.value) await until(isHydrating).toBe(false)
+  if (scope !== nodeAskScope || !nodeAskWorkflowOpen(ask)) return
+  agentPanelStore.retainWorkflowTarget()
+  if (nodeAskTargetMismatch(ask)) return
+  if (isChatBusyForNodeAsk()) {
+    holdNodeAsk(ask)
+    return
+  }
+  void submitPreparedNodeAsk(ask)
+}
+
+async function drainNodeAskQueue(): Promise<void> {
+  if (drainingNodeAsks) return
+  drainingNodeAsks = true
+  try {
+    while (nodeAskQueue.length > 0) {
+      const ask = nodeAskQueue.shift()
+      if (!ask) continue
+      await sendNodeAsk(ask, nodeAskScope)
+    }
+  } finally {
+    drainingNodeAsks = false
+  }
+}
 function onStop(method: AgentStopMethod): void {
   if (gateHoldOnCurrentChat.value) {
     const cancelled = composerStore.cancelGateHold()
@@ -3149,7 +3189,7 @@ function resetComposerForChatSwitch(): void {
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
   errorAttachRun++
-  nodeAskRun++
+  invalidateNodeAsks()
 }
 
 function openFailedBlankTab(blankChatId: string): ComfyWorkflow | undefined {
@@ -3694,6 +3734,17 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
 
 const agentPanelRenderStore = useAgentPanelRenderStore()
 onMounted(() => agentPanelRenderStore.reach('drawn'))
+
+watch(
+  () => agentPanelStore.pendingNodeAsk,
+  (ask) => {
+    if (!ask) return
+    agentPanelStore.pendingNodeAsk = null
+    nodeAskQueue.push(ask)
+    void drainNodeAskQueue()
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

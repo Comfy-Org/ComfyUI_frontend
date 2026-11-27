@@ -6879,7 +6879,8 @@
         "combine": "Combine these into one workflow",
         "explainGroup": "Explain this group"
       },
-      "busy": "Comfy Agent is still working. Send your question when it's done."
+      "busy": "Comfy Agent is still working. Send your question when it's done.",
+      "notSent": "Your question wasn't sent because you already have a draft in the chat."
     }
   },
   "skillPacks": {

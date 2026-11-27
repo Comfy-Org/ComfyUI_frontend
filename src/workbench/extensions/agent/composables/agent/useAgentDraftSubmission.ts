@@ -96,6 +96,7 @@ export type DirectSubmissionOutcome =
   | 'sent'
   | 'rejected'
   | 'withdrawn'
+  | 'withdrawn_unrestored'
   | 'failed'
 
 export function useAgentDraftSubmission(
@@ -137,12 +138,12 @@ export function useAgentDraftSubmission(
     clientMessageId: string,
     snapshot?: GateHoldSnapshot,
     expectedRevision?: number
-  ): void {
+  ): boolean {
     const pending = conversation.takePendingSend(clientMessageId)
     composer.clearPendingSendDraft(clientMessageId)
     if (!pending || !snapshot) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
-      return
+      return false
     }
     if (!conversation.isOriginOnScreen(pending.origin)) {
       composer.restoreKeptDraftSnapshot(
@@ -150,11 +151,11 @@ export function useAgentDraftSubmission(
         snapshot
       )
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
-      return
+      return true
     }
     if (!canRestoreOnScreen(expectedRevision, snapshot.external)) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
-      return
+      return false
     }
     const targetInstanceId = options.target()?.instanceId ?? null
     composer.restorePrompt(
@@ -180,6 +181,7 @@ export function useAgentDraftSubmission(
     }
     composer.markRejectedDraft()
     composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+    return true
   }
 
   function validateSubmissionTarget(
@@ -326,31 +328,33 @@ export function useAgentDraftSubmission(
   function settleSubmissionOutcome(
     outcome: DraftSendOutcome,
     staged: ReturnType<typeof stageSubmission>
-  ): void {
+  ): DirectSubmissionOutcome {
     composer.releaseGateHold(staged.gateId)
     if (outcome === 'withdrawn') {
-      withdrawSubmission(
+      const restored = withdrawSubmission(
         staged.clientMessageId,
         staged.snapshot,
         staged.gateRevision
       )
-      return
+      return restored ? 'withdrawn' : 'withdrawn_unrestored'
     }
     if (!conversation.getPendingSend(staged.clientMessageId)) {
       composer.clearPendingSendDraft(staged.clientMessageId)
       composer.releaseRetainedAssets(
         pendingAssetOwnerKey(staged.clientMessageId)
       )
-      return
+      return outcome
     }
     composer.releaseUnusedAssets()
+    return outcome
   }
 
   async function runStagedSubmission(
     text: string,
     staged: ReturnType<typeof stageSubmission>
-  ): Promise<DraftSendOutcome> {
+  ): Promise<DirectSubmissionOutcome> {
     let outcome: DraftSendOutcome = 'failed'
+    let settled: DirectSubmissionOutcome
     let threw = false
     try {
       outcome = await options.send(
@@ -377,9 +381,9 @@ export function useAgentDraftSubmission(
           'sending'
           ? 'withdrawn'
           : outcome
-      settleSubmissionOutcome(effectiveOutcome, staged)
+      settled = settleSubmissionOutcome(effectiveOutcome, staged)
     }
-    return outcome
+    return settled
   }
 
   async function submit(

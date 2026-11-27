@@ -908,7 +908,7 @@ describe('Agent draft submission', () => {
       'selection_toolbox'
     )
 
-    expect(outcome).toBe('withdrawn')
+    expect(outcome).toBe('withdrawn_unrestored')
     expect(composer.draft).toBe(original.draft)
     expect(composer.promptOrigin).toBe('suggestion')
     expect(composer.starterPrompt).toEqual({ id: 'slot_2', clickId: 'click-4' })

@@ -9,5 +9,6 @@ export interface AgentNodeAsk {
   text: string
   nodes: SelectedNode[]
   workflowPath?: string
+  workflowInstanceId?: string
   inputMethod: NodeAskInputMethod
 }

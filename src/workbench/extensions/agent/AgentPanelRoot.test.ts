@@ -21372,6 +21372,50 @@ describe('AgentPanelRoot node ask from the selection toolbox', () => {
     await settleFollow()
     expect(useAgentComposerStore().draft).toBe('draft on A')
   })
+
+  it('sends a pending node ask that is already queued when the panel mounts', async () => {
+    const tab = makeBoundTab()
+    useAgentConversationStore().setThreadId('th-1')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panel = useAgentPanelStore()
+    panel.setWorkflowTarget(fromPartial<ComfyWorkflow>(tab))
+    panel.pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: 'What does this node do?',
+      selection: { node_ids: ['7'] }
+    })
+  })
+
+  it('sends nothing when a different workflow instance is open at the same path', async () => {
+    const tab = makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: 'replaced-instance-id',
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these nodes is no longer open, so nothing was sent.'
+      )
+    )
+    expect(bodies).toHaveLength(0)
+  })
 })
 
 describe('AgentPanelRoot node ask while the chat is busy', () => {
@@ -21568,6 +21612,101 @@ describe('AgentPanelRoot node ask while the chat is busy', () => {
     await waitFor(() =>
       expect(useAgentComposerStore().draft.trim()).toBe(QUESTION)
     )
+    expect(posts()).toEqual([])
+  })
+
+  it('keeps both asks when a second ask arrives while hydration is still pending', async () => {
+    const tab = makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    let releaseHydration: ((response: Response) => void) | undefined
+    let releaseFirstPost: ((response: Response) => void) | undefined
+    const base = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      const url = String(input)
+      if (
+        url.includes('/api/agent/threads/th-1/messages') &&
+        init?.method !== 'POST'
+      ) {
+        return new Promise<Response>((resolve) => {
+          releaseHydration = resolve
+        })
+      }
+      if (url.includes('/messages') && init?.method === 'POST') {
+        bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
+        return new Promise<Response>((resolve) => {
+          releaseFirstPost = resolve
+        })
+      }
+      return base(input, init)
+    })
+    renderWithSelectedTarget()
+
+    await waitFor(() => expect(releaseHydration).toBeDefined())
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'First question',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+    await nextTick()
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'Second question',
+      nodes: [{ id: '8', title: 'VAE Decode' }],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox_suggestion'
+    }
+    await nextTick()
+
+    releaseHydration!(
+      new Response(JSON.stringify({ messages: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ content: 'First question' })
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe('Second question')
+    )
+    expect(bodies).toHaveLength(1)
+
+    releaseFirstPost?.(
+      new Response(JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }), {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    await waitFor(() =>
+      expect(useAgentConversationStore().hasSendingPendingSend).toBe(false)
+    )
+  })
+
+  it('warns without replacing an existing panel draft when a direct node ask withdraws', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    await waitForInitialHydration()
+    useAgentComposerStore().setText('half-written thought')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    withConsent.mockResolvedValueOnce(undefined)
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        "Your question wasn't sent because you already have a draft in the chat."
+      )
+    )
+    expect(useAgentComposerStore().draft).toBe('half-written thought')
     expect(posts()).toEqual([])
   })
 })

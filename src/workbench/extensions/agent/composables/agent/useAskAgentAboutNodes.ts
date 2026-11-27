@@ -29,6 +29,7 @@ export function useAskAgentAboutNodes() {
   ): Promise<void> {
     const question = text.trim()
     if (!panelStore.enabled || !question || !nodes.length) return
+    const activeWorkflow = workflowStore.activeWorkflow
     const request: AgentNodeAsk = {
       text: question,
       nodes: nodes.map((node) => ({
@@ -36,12 +37,20 @@ export function useAskAgentAboutNodes() {
         locatorId: workflowStore.nodeToNodeLocatorId(node),
         title: node.title || node.type
       })),
-      workflowPath: workflowStore.activeWorkflow?.path,
+      workflowPath: activeWorkflow?.path,
+      workflowInstanceId: activeWorkflow?.instanceId,
       inputMethod
     }
 
     const send = (): void => {
       if (!panelStore.enabled) return
+      const current = workflowStore.activeWorkflow
+      if (
+        request.workflowInstanceId !== undefined &&
+        (current?.instanceId !== request.workflowInstanceId ||
+          current.path !== request.workflowPath)
+      )
+        return
       panelStore.view = { screen: 'chat' }
       panelStore.open('selection_toolbox')
       panelStore.pendingNodeAsk = request

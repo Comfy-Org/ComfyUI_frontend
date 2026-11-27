@@ -47,7 +47,10 @@ describe('useAskAgentAboutNodes', () => {
     const workflowStore = useWorkflowStore()
     Object.defineProperty(workflowStore, 'activeWorkflow', {
       configurable: true,
-      value: createMockLoadedWorkflow({ path: 'workflows/current.json' })
+      value: createMockLoadedWorkflow({
+        path: 'workflows/current.json',
+        instanceId: 'wf-instance-1'
+      })
     })
     vi.spyOn(workflowStore, 'nodeToNodeLocatorId').mockImplementation(
       (node) =>
@@ -60,6 +63,7 @@ describe('useAskAgentAboutNodes', () => {
   it('opens a closed panel on the chat and hands it the question with the nodes', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
+    const activeWorkflow = useWorkflowStore().activeWorkflow!
     const { askAgentAboutNodes } = useAskAgentAboutNodes()
 
     await askAgentAboutNodes('  What does this node do? ', [
@@ -80,6 +84,7 @@ describe('useAskAgentAboutNodes', () => {
         { id: '8', locatorId: 'root:8', title: 'VAEDecode' }
       ],
       workflowPath: 'workflows/current.json',
+      workflowInstanceId: activeWorkflow.instanceId,
       inputMethod: 'selection_toolbox'
     })
   })
@@ -116,14 +121,40 @@ describe('useAskAgentAboutNodes', () => {
   })
 
   it.for([
-    { text: '   ', nodes: [KSAMPLER] },
-    { text: 'What does this node do?', nodes: [] }
-  ])('ignores an empty question or selection', async ({ text, nodes }) => {
+    { label: 'an empty question', text: '   ', nodes: [KSAMPLER] },
+    {
+      label: 'an empty selection',
+      text: 'What does this node do?',
+      nodes: []
+    }
+  ])('ignores $label', async ({ text, nodes }) => {
     const panel = useAgentPanelStore()
     panel.enabled = true
     const { askAgentAboutNodes } = useAskAgentAboutNodes()
 
     await askAgentAboutNodes(text, nodes)
+
+    expect(panel.isOpen).toBe(false)
+    expect(panel.pendingNodeAsk).toBeNull()
+  })
+
+  it('ignores the ask when a different workflow instance opens at the same path during consent', async () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    const workflowStore = useWorkflowStore()
+    consent.withConsent.mockImplementation(async (_trigger, onAccept) => {
+      Object.defineProperty(workflowStore, 'activeWorkflow', {
+        configurable: true,
+        value: createMockLoadedWorkflow({
+          path: 'workflows/current.json',
+          instanceId: 'wf-instance-2'
+        })
+      })
+      onAccept()
+    })
+    const { askAgentAboutNodes } = useAskAgentAboutNodes()
+
+    await askAgentAboutNodes('What does this node do?', [KSAMPLER])
 
     expect(panel.isOpen).toBe(false)
     expect(panel.pendingNodeAsk).toBeNull()
