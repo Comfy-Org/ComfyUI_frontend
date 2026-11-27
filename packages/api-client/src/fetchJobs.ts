@@ -8,6 +8,7 @@
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { JobId } from './executionTypes'
 
 import type {
@@ -21,6 +22,7 @@ import type {
 import {
   zJobAssetsResponse,
   zJobDetail,
+  zJobsListEnvelope,
   zJobsListResponse,
   zRawJobListItem,
   zWorkflowContainer
@@ -36,11 +38,39 @@ interface FetchJobsRawResult {
 
 class JobsApiError extends Error {}
 
-function parseJobListItem(job: unknown): RawJobListItem[] {
-  const parsed = zRawJobListItem.safeParse(job)
-  if (parsed.success) return [parsed.data]
-  console.warn('[Jobs API] Dropping a job outside the contract:', parsed.error)
-  return []
+function jobIdOf(job: unknown): string | undefined {
+  if (typeof job !== 'object' || job === null || !('id' in job)) return
+  return typeof job.id === 'string' ? job.id : undefined
+}
+
+function keepContractJobs(jobs: unknown[]): RawJobListItem[] {
+  const parsed = jobs.map((job) => ({
+    job,
+    result: zRawJobListItem.safeParse(job)
+  }))
+  const dropped = parsed.filter(({ result }) => !result.success)
+  if (dropped.length > 0) {
+    reportError(new Error('[Jobs API] Dropped jobs outside the contract'), {
+      errorType: 'jobs_list_job_outside_contract',
+      surface: 'platform',
+      level: 'warning',
+      sentryMode: 'once_per_page',
+      context: {
+        droppedCount: dropped.length,
+        jobIds: dropped.map(({ job }) => jobIdOf(job)),
+        issues: dropped.map(({ result }) =>
+          result.error?.issues.map(({ code, path }) => ({ code, path }))
+        )
+      }
+    })
+  }
+  return parsed.flatMap(({ result }) => (result.success ? [result.data] : []))
+}
+
+function parseJobsList(body: unknown, strict: boolean) {
+  if (strict) return zJobsListResponse.parse(body)
+  const envelope = zJobsListEnvelope.parse(body)
+  return { ...envelope, jobs: keepContractJobs(envelope.jobs) }
 }
 
 interface FetchJobsOptions {
@@ -75,9 +105,9 @@ async function fetchJobsRaw(
     if (!res.ok) {
       throw new JobsApiError(`Failed to fetch jobs: ${res.status}`)
     }
-    const data = zJobsListResponse.parse(await res.json())
+    const data = parseJobsList(await res.json(), !!options?.throwOnError)
     return {
-      jobs: data.jobs.flatMap(parseJobListItem),
+      jobs: data.jobs,
       total: data.pagination.total,
       offset: data.pagination.offset,
       limit: data.pagination.limit,

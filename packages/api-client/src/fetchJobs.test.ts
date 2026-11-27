@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -11,6 +12,10 @@ import {
 } from './fetchJobs'
 import type { RawJobListItem, zJobsListResponse } from './jobTypes'
 import type { z } from 'zod'
+
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 type JobsFetchApi = Parameters<typeof fetchHistory>[0]
@@ -286,7 +291,7 @@ describe('fetchJobs', () => {
       expect(result[0].execution_error?.node_errors).toEqual(expected)
     })
 
-    it.for([
+    const offContractJobs = [
       {
         name: 'a fractional outputs_count',
         job: { ...createMockJob('bad'), outputs_count: 1.5 }
@@ -308,8 +313,10 @@ describe('fetchJobs', () => {
         }
       },
       { name: 'a null entry', job: null }
-    ])('keeps the other jobs when one has $name', async ({ job }) => {
-      const mockFetch = vi.fn().mockResolvedValue({
+    ]
+
+    function fetchWithJobBetweenTwoGoodOnes(job: unknown) {
+      return vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
@@ -317,12 +324,36 @@ describe('fetchJobs', () => {
             jobs: [createMockJob('job1'), job, createMockJob('job3')]
           })
       })
+    }
 
-      const result = await fetchHistory(mockFetch)
+    it.for(offContractJobs)(
+      'keeps the other jobs when one has $name',
+      async ({ job }) => {
+        const result = await fetchHistory(fetchWithJobBetweenTwoGoodOnes(job))
 
-      expect(result.map(({ id }) => id)).toEqual(['job1', 'job3'])
-      expect(console.warn).toHaveBeenCalledOnce()
-    })
+        expect(result.map(({ id }) => id)).toEqual(['job1', 'job3'])
+        expect(reportError).toHaveBeenCalledOnce()
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'jobs_list_job_outside_contract',
+            context: expect.objectContaining({ droppedCount: 1 })
+          })
+        )
+      }
+    )
+
+    it.for(offContractJobs)(
+      'rejects the whole list when one has $name and throwOnError is set',
+      async ({ job }) => {
+        await expect(
+          fetchHistory(fetchWithJobBetweenTwoGoodOnes(job), 200, 0, {
+            throwOnError: true
+          })
+        ).rejects.toThrow()
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    )
 
     it('returns server pagination metadata for history pages', async () => {
       const mockFetch = vi.fn().mockResolvedValue({

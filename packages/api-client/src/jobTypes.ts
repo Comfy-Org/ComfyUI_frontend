@@ -102,10 +102,14 @@ const zPaginationInfo = z.object({
   has_more: z.boolean()
 })
 
-/** Jobs list envelope; validate each job with `zRawJobListItem`. */
 export const zJobsListResponse = z.object({
-  jobs: z.array(z.unknown()),
+  jobs: z.array(zRawJobListItem),
   pagination: zPaginationInfo
+})
+
+/** Jobs list with each job left unvalidated, for per-job parsing. */
+export const zJobsListEnvelope = zJobsListResponse.extend({
+  jobs: z.array(z.unknown())
 })
 
 /**
