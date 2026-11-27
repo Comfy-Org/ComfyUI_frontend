@@ -15,7 +15,7 @@
         effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
         {
           'lg-slot--connected': props.connected,
-          'lg-slot--compatible': props.compatible || dragCompatible,
+          'lg-slot--compatible': isCompatible,
           'opacity-40': shouldDim
         },
         props.socketless && 'pointer-events-none invisible'
@@ -139,6 +139,7 @@ const dragCompatible = computed(() => {
   if (ioInputType === undefined) return undefined
   return LiteGraph.isValidConnection(ioInputType, props.slotData.type)
 })
+const isCompatible = computed(() => props.compatible || dragCompatible.value)
 const shouldDim = computed(() => dragCompatible.value === false)
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
