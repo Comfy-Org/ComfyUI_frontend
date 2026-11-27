@@ -4,18 +4,24 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowSidebarFileResponse } from '@comfyorg/ingest-types'
 
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
   finishSave: (success: boolean) => void
+  pauseMessagePosts: () => void
+  resumeMessagePosts: () => void
   pauseWorkflowLookups: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
+  openTemporaryTab: (filename: string) => Promise<void>
+  suppressActivationNudge: () => Promise<void>
 }
 
 function moveSavedWorkflow(
@@ -67,6 +73,8 @@ export const workflowSelectionTest = base.extend<{
     let finishSave = (_success: boolean) => {}
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
+    let pendingPost: Promise<void> | undefined
+    let resumeMessagePosts = () => {}
     let lookupCount = 0
     function forgetSavedWorkflow(path: string): void {
       const name = path.slice('workflows/'.length, -'.json'.length)
@@ -93,9 +101,29 @@ export const workflowSelectionTest = base.extend<{
         })
       )
     })
-    await page.route('**/api/agent/threads**', (route) => {
-      if (route.request().method() === 'POST')
+    await page.route('**/api/workflows/*/sidebar-file', (route) => {
+      const workflowId = decodeURIComponent(
+        new URL(route.request().url()).pathname
+          .split('/workflows/')[1]
+          .split('/')[0]
+      )
+      const workflow = workflows.find(({ id }) => id === workflowId)
+      if (!workflow) return route.fulfill({ status: 404 })
+      const path = `workflows/${workflow.name}.json`
+      const file = savedFiles.find((candidate) => candidate.path === path)
+      if (!file) return route.fulfill({ status: 409 })
+      const sidebarFile: WorkflowSidebarFileResponse = {
+        path,
+        modified: file.modified,
+        size: file.size
+      }
+      return route.fulfill(jsonRoute(sidebarFile))
+    })
+    await page.route('**/api/agent/threads**', async (route) => {
+      if (route.request().method() === 'POST') {
         postedMessages.push(route.request().postData() ?? '')
+        await pendingPost
+      }
       return route.fulfill(jsonRoute(emptyAgentThreadList()))
     })
     await page.route('**/api/userdata?*', (route) => {
@@ -175,15 +203,35 @@ export const workflowSelectionTest = base.extend<{
       savedPaths,
       postedMessages,
       finishSave: (success) => finishSave(success),
+      pauseMessagePosts: () => {
+        pendingPost = new Promise<void>((resolve) => {
+          resumeMessagePosts = resolve
+        })
+      },
+      resumeMessagePosts: () => resumeMessagePosts(),
       pauseWorkflowLookups: () => {
         pendingLookup = new Promise<void>((resolve) => {
           resumeWorkflowLookups = resolve
         })
       },
       resumeWorkflowLookups: () => resumeWorkflowLookups(),
-      workflowLookups: () => lookupCount
+      workflowLookups: () => lookupCount,
+      openTemporaryTab: async (filename: string) => {
+        await page.evaluate(async (name) => {
+          const store = (window.app!.extensionManager as WorkspaceStore)
+            .workflow
+          const blank = store.createTemporary(name)
+          await store.openWorkflow(blank)
+        }, filename)
+      },
+      suppressActivationNudge: async () => {
+        await page.evaluate(() =>
+          localStorage.setItem('Comfy.AgentPanel.activationVisits', '2')
+        )
+      }
     })
     finishSave(false)
     resumeWorkflowLookups()
+    resumeMessagePosts()
   }
 })

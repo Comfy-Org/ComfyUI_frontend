@@ -1180,7 +1180,7 @@ describe('useSubscriptionCheckout', () => {
       ['TRANSITION_NOT_ALLOWED', 'payment_failed'],
       ['TRANSITION_NOT_ALLOWED', 'paused']
     ] as const)(
-      'routes %s previews to the billing portal',
+      'routes %s previews to the billing portal when billing status is %s',
       async ([code, status]) => {
         if (status) {
           mockGetBillingStatus.mockResolvedValueOnce({ billing_status: status })

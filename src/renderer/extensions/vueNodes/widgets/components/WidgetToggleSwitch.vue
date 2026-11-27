@@ -10,8 +10,9 @@
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
-      :disabled="Boolean(widget.options?.read_only)"
+      :disabled="isLabelledLocked"
       :class="cn(WidgetInputBaseClass, 'w-full min-w-0 p-1')"
+      data-part="widget-toggle-group"
       @update:model-value="(v) => handleOptionChange(v as string)"
     >
       <ToggleGroupItem
@@ -20,6 +21,7 @@
         :aria-label="widget.options?.off ?? t('widgets.boolean.false')"
         size="sm"
         class="flex-1 truncate"
+        data-part="widget-toggle-option"
       >
         {{ widget.options?.off ?? t('widgets.boolean.false') }}
       </ToggleGroupItem>
@@ -29,6 +31,7 @@
         :aria-label="widget.options?.on ?? t('widgets.boolean.true')"
         size="sm"
         class="flex-1 truncate"
+        data-part="widget-toggle-option"
       >
         {{ widget.options?.on ?? t('widgets.boolean.true') }}
       </ToggleGroupItem>
@@ -46,6 +49,7 @@
     >
       <Switch
         :id="inputId"
+        data-part="widget-switch"
         :model-value
         :disabled="Boolean(widget.options?.disabled)"
         :readonly="Boolean(widget.options?.read_only)"
@@ -85,6 +89,10 @@ const { t } = useI18n()
 const hasLabels = computed(() => {
   return widget.options?.on != null || widget.options?.off != null
 })
+
+const isLabelledLocked = computed(() =>
+  Boolean(widget.options?.read_only || widget.options?.disabled)
+)
 
 function handleOptionChange(value: string | undefined) {
   if (value) {

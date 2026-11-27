@@ -20,10 +20,12 @@ import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/componen
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import SharedNodeTooltip from '@/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { growableRegionsKey } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
 const observers: TestResizeObserver[] = []
 class TestResizeObserver implements ResizeObserver {
@@ -67,6 +69,56 @@ const WidgetStub = markRaw(
     template:
       '<div data-testid="widget-wrapper"><input data-testid="widget-control" :aria-invalid="invalid || undefined" /></div>'
   })
+)
+
+it.for([false, true])(
+  'updates error accessibility from a lazy getter with grouped=%s',
+  async (grouped) => {
+    const missing = ref(false)
+    const error = computed(() => missing.value)
+    const name = grouped ? 'loras.0.model' : 'file'
+    const row: WidgetGridItem = {
+      ...widget(name, 'string', 0),
+      simplified: {
+        name,
+        type: 'string',
+        value: '',
+        label: grouped ? 'LoRA #1 model' : 'File'
+      },
+      get hasError() {
+        return error.value
+      }
+    }
+    const header: WidgetGridItem = {
+      renderKey: 'header',
+      visible: true,
+      vueComponent: markRaw(WidgetDynamicGroupRow),
+      simplified: {
+        name: 'loras.0',
+        type: 'dynamic_group_row',
+        value: undefined,
+        label: 'LoRA #1'
+      }
+    }
+    const { unmount } = renderGrid(grouped ? [header, row] : [row], false)
+    expect(screen.getByTestId('widget-control')).not.toHaveAttribute(
+      'aria-invalid'
+    )
+
+    missing.value = true
+    await nextTick()
+    expect(screen.getByTestId('widget-control')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+
+    missing.value = false
+    await nextTick()
+    expect(screen.getByTestId('widget-control')).not.toHaveAttribute(
+      'aria-invalid'
+    )
+    unmount()
+  }
 )
 
 const AttrsDroppingWidgetStub = defineComponent({
@@ -143,7 +195,7 @@ function renderLayoutGrid(syncLayout = true) {
   grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
   let socketTop = 140
   const socket = screen.getByTestId('slot-dot')
-  socket.getBoundingClientRect = () => new DOMRect(0, socketTop, 8, 8)
+  socket.getBoundingClientRect = () => new DOMRect(-4, socketTop, 8, 8)
   const moveSocket = (top: number) => {
     socketTop = top
   }
@@ -234,6 +286,7 @@ describe('WidgetGrid', () => {
     ])
 
     const [fixedRow, declaredRow] = screen.getAllByTestId('node-widget')
+    expect(fixedRow).toHaveAttribute('data-widget-type', 'textarea')
     expect(fixedRow.style.minHeight).toBe('23px')
     expect(declaredRow.style.minHeight).toBe('60px')
 
@@ -465,31 +518,42 @@ describe('WidgetGrid', () => {
 
   it('anchors widget tooltips to async widgets that drop attrs inside fragment-root AppInputs', async () => {
     const user = userEvent.setup()
-    render(WidgetGrid, {
-      props: {
-        nodeId: toNodeId(1),
-        nodeType: 'TestNode',
-        processedWidgets: [
-          {
-            ...widget('seed', 'number', 0),
-            tooltipText: 'Widget value',
-            vueComponent: markRaw(
-              defineAsyncComponent(async () => AttrsDroppingWidgetStub)
-            )
+    const processedWidgets = [
+      {
+        ...widget('seed', 'number', 0),
+        tooltipText: 'Widget value',
+        vueComponent: markRaw(
+          defineAsyncComponent(async () => AttrsDroppingWidgetStub)
+        )
+      }
+    ]
+    render(
+      () =>
+        h(TooltipProvider, { delayDuration: 0 }, () => [
+          h(WidgetGrid, {
+            nodeId: toNodeId(1),
+            nodeType: 'TestNode',
+            processedWidgets
+          }),
+          h(SharedNodeTooltip)
+        ]),
+      {
+        global: {
+          stubs: {
+            AppInput: AppInputStub,
+            InputSlot: InputSlotStub
           }
-        ]
-      },
-      global: {
-        stubs: {
-          AppInput: AppInputStub,
-          InputSlot: InputSlotStub
         }
       }
-    })
+    )
 
     await user.hover(await screen.findByTestId('widget-control'))
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'top'
+    )
     await waitFor(() =>
       expect(screen.getByTestId('tooltip-content').style.animation).toBe('')
     )

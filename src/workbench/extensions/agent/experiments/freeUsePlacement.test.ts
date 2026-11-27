@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import {
@@ -11,25 +8,28 @@ import {
   useFreeUsePlacement
 } from './freeUsePlacement'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@comfyorg/telemetry'))
 
 describe('useFreeUsePlacement', () => {
   beforeEach(() => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = {
-      'agent-free-use-message-placement': 'near-composer'
-    }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'near-composer' },
+      true
+    )
   })
 
-  it('keeps Cloud on control after the placement experiment ends', () => {
+  it('keeps the selected near-composer notice on Cloud after the experiment ends', () => {
     const telemetry = useTelemetry()!
     const { variant, reportNotice } = useFreeUsePlacement(true)
 
-    expect(variant.value).toBe('control')
+    expect(variant.value).toBe(LOCAL_FREE_USE_PLACEMENT)
     reportNotice({ action: 'shown', placement: 'near-composer' })
     expect(telemetry.trackAgentFreeUseExposure).not.toHaveBeenCalled()
-    expect(telemetry.trackAgentFreeUseNotice).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentFreeUseNotice).toHaveBeenCalledExactlyOnceWith({
+      action: 'shown',
+      placement: LOCAL_FREE_USE_PLACEMENT,
+      deployment: 'cloud'
+    })
   })
 
   it('retains the Local notice and its interaction telemetry', () => {

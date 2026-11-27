@@ -194,6 +194,42 @@ describe('ActivityTrace', () => {
     expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
   })
 
+  it('names the model file while the agent downloads it and after', async () => {
+    const download = 'flux1-dev.safetensors'
+    const { rerender } = render(ActivityTrace, {
+      props: { parts: [{ ...tool('c1', 'bash', 'streaming'), download }] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Downloading flux1-dev.safetensors')
+    ).toHaveAttribute('title', 'Downloading flux1-dev.safetensors')
+    expect(screen.queryByText('Bash')).not.toBeInTheDocument()
+
+    await rerender({
+      parts: [{ ...tool('c1', 'bash', 'done', true), download }]
+    })
+    expect(
+      screen.getByText('Downloaded flux1-dev.safetensors')
+    ).toBeInTheDocument()
+
+    await rerender({
+      parts: [{ ...tool('c1', 'bash', 'done', false), download }]
+    })
+    expect(
+      screen.getByText('Failed to download flux1-dev.safetensors')
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the plain tool label for a bash call that downloads nothing', () => {
+    render(ActivityTrace, {
+      props: { parts: [tool('c1', 'bash', 'streaming')] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Bash')).toBeInTheDocument()
+  })
+
   it('names a skill load that finishes with an error', () => {
     render(ActivityTrace, {
       props: {

@@ -34,7 +34,11 @@ export function openFeedbackDialog(source: FeedbackSource) {
       client: agentClientSessionId(),
       consent: consentState(Boolean(resolvedUserInfo.value?.id)),
       held: heldSendGate ?? 'none',
-      composer: useAgentComposerStore().submission?.phase ?? 'idle'
+      composer: useAgentComposerStore().gateHold
+        ? 'pending'
+        : useAgentConversationStore().hasSendingPendingSend
+          ? 'pending'
+          : 'idle'
     }
   })
 }

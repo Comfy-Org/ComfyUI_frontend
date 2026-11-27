@@ -15,7 +15,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import SubscribeToRun from './SubscribeToRun.vue'
 
 const mockCanManageSubscription = ref(true)
-const mockIsMdOrLarger = ref(true)
 
 vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
@@ -28,16 +27,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@comfyorg/telemetry'))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  breakpointsTailwind: { md: 768 },
-  createSharedComposable: (composable: () => unknown) => composable,
-  useBreakpoints: () => ({
-    greaterOrEqual: () => mockIsMdOrLarger
-  }),
-  useDocumentVisibility: () => ref('visible'),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -79,7 +68,6 @@ describe('SubscribeToRun', () => {
   beforeEach(() => {
     useBillingUI()
     mockCanManageSubscription.value = true
-    mockIsMdOrLarger.value = true
   })
 
   it('shows the subscribe label for owners who can manage the subscription', () => {

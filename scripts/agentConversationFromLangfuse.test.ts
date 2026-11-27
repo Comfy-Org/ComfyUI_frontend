@@ -504,6 +504,23 @@ describe('fetchObservations', () => {
     expect(observation.output).toBe('plain answer, not JSON')
   })
 
+  it('keeps paging past an empty page that still carries a cursor', async () => {
+    const observations = await fetchObservations(
+      env,
+      { sessionId: 'session-1' },
+      async (url) => {
+        const cursor = new URL(url).searchParams.get('cursor')
+        if (cursor === null) return page([span('o-1', {})], 'c-1')
+        if (cursor === 'c-1') return page([], 'c-2')
+        return page([span('o-2', {})])
+      }
+    )
+    expect(observations.map((observation) => observation.id)).toEqual([
+      'o-1',
+      'o-2'
+    ])
+  })
+
   it('refuses a cursor the server repeats instead of paging forever', async () => {
     let calls = 0
     const failure = await fetchObservations(

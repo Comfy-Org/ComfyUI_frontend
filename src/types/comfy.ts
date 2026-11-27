@@ -9,7 +9,10 @@ import type {
   Vector2
 } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type {
+  MissingNodeType,
+  WorkflowOpening
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import type {
   ComfyApiWorkflow,
@@ -83,14 +86,17 @@ export interface LoadGraphDataOptions {
   openSource?: WorkflowOpenSource
   shareId?: string
   deferWarnings?: boolean
+  opening?: WorkflowOpening
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
+  restoreHistory?: boolean
   workflowNavigationId?: number
   isCurrent?: () => boolean
   /** Checked once when the load reaches the front of the queue; false skips it. */
   isReady?: () => boolean
   /** Graph to load, produced at the front of the queue; undefined skips the load. */
   resolveGraphData?: () => ComfyWorkflowJSON | undefined
+  initiator?: 'user'
 }
 
 /**
@@ -181,6 +187,12 @@ export interface ComfyApp {
     workflow?: string | null | ComfyWorkflow,
     options?: LoadGraphDataOptions
   ): Promise<LoadedComfyWorkflow | boolean | undefined>
+  /** Create a root graph wired with the app's per-graph lifecycle hooks. */
+  createRootGraph(): LGraph
+  /** Make `graph` the root graph shown on the canvas. */
+  activateRootGraph(graph: LGraph): void
+  /** Run `operation` after every earlier graph load or root graph switch has settled. */
+  enqueueGraphLoad<T>(operation: () => Promise<T>): Promise<T>
   refreshMissingModels(options?: {
     silent?: boolean
     reloadDefs?: boolean
@@ -205,6 +217,7 @@ export interface ComfyApp {
     options?: {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
+      initiator?: 'user'
     }
   ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
@@ -215,14 +228,14 @@ export interface ComfyApp {
   isApiJson(data: unknown): data is ComfyApiWorkflow
   loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
-    options?: { deferWarnings?: boolean }
+    fileName?: string,
+    options?: { deferWarnings?: boolean; initiator?: 'user' }
   ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]
   reloadNodeDefs(defs?: Record<string, ComfyNodeDef>): Promise<boolean>
-  refreshComboInNodes(): Promise<void>
+  refreshComboInNodes(): Promise<boolean>
   clean(): void
   clientPosToCanvasPos(pos: Vector2): Vector2
   canvasPosToClientPos(pos: Vector2): Vector2
@@ -295,6 +308,12 @@ export interface ActionBarButton {
    * Click handler for the button
    */
   onClick: () => void
+}
+
+/** The graph a configure hook runs for and the workflow that owns it, if any. */
+export interface GraphConfigureContext {
+  graph: LGraph
+  workflow: ComfyWorkflow | null
 }
 
 export interface ComfyExtension {
@@ -437,21 +456,25 @@ export interface ComfyExtension {
    * @param graphData The graph data
    * @param missingNodeTypes The missing node types
    * @param app The app instance
+   * @param context The graph being configured, which may not be `app.rootGraph`
    */
   beforeConfigureGraph?(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    app: ComfyApp
+    app: ComfyApp,
+    context: GraphConfigureContext
   ): Promise<void> | void
 
   /**
    * Allows the extension to run code after the graph is configured.
    * @param missingNodeTypes The missing node types
    * @param app The app instance
+   * @param context The graph that was configured, which may not be `app.rootGraph`
    */
   afterConfigureGraph?(
     missingNodeTypes: MissingNodeType[],
-    app: ComfyApp
+    app: ComfyApp,
+    context: GraphConfigureContext
   ): Promise<void> | void
 
   /**

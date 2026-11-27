@@ -19,11 +19,42 @@ export function getLiveCloudDestinationViolation(
 
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
 
-export function getBlockedRequestViolation(url: URL, method: string): string {
+function isBackgroundWrite(
+  url: URL,
+  method: string,
+  appOrigin?: string
+): boolean {
+  if (method.toUpperCase() !== 'POST') return false
+  const { hostname, pathname } = url
+  if (url.origin === appOrigin) {
+    return (
+      /^\/cdn-cgi\/challenge-platform\/[\w./:-]+$/.test(pathname) ||
+      ['/reslyf/settings', '/reslyf/log'].includes(pathname)
+    )
+  }
+  return (
+    /^browser-intake-([a-z0-9]+-)?datadoghq\.com$/.test(hostname) ||
+    /\.ingest(\.[a-z]+)?\.sentry\.io$/.test(hostname) ||
+    hostname === 'mp.comfy.org' ||
+    hostname === 't.comfy.org'
+  )
+}
+
+export function getBlockedWriteViolation(
+  url: URL,
+  method: string,
+  appOrigin?: string
+): string {
   const destination = `${url.origin}${url.pathname}`
-  return SAFE_METHODS.includes(method.toUpperCase())
-    ? `${method} ${destination}`
+  return isBackgroundWrite(url, method, appOrigin)
+    ? `Background ${method} ${destination}`
     : `Mutation ${method} ${destination}`
+}
+
+export function getBlockedRequestViolation(url: URL, method: string): string {
+  return SAFE_METHODS.includes(method.toUpperCase())
+    ? `${method} ${url.origin}${url.pathname}`
+    : getBlockedWriteViolation(url, method)
 }
 
 // A live run reports only these entries; an off-origin read the page happened
@@ -55,6 +86,8 @@ export function isLiveCloudMutationAllowed(
   }
   return (
     url.origin === config.PLAYWRIGHT_SETUP_API_URL &&
-    ['/api/auth/token', '/api/auth/session'].includes(url.pathname)
+    ['/api/auth/token', '/api/auth/session', '/api/auth/sso/discover'].includes(
+      url.pathname
+    )
   )
 }

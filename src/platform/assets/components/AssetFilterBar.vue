@@ -63,12 +63,12 @@ import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import type {
   AssetFilterState,
   AssetSortOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 
 const { t } = useI18n()
 

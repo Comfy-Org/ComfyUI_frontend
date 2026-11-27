@@ -17,6 +17,7 @@ export type WebEntryErrorCode =
   | 'INVALID_TEAM_CREDIT_STOP_ID'
   | 'INVALID_PROMOTION_CODE'
   | 'INVALID_OPERATION_ID'
+  | 'INVALID_PURCHASE_ID'
 
 export type WebEntryBounceReason =
   | 'pricing_link'

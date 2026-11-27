@@ -7,17 +7,19 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
+import { useThemeStore } from '@/platform/theme/themeStore'
+
 import type { MenuOption } from './menuOption'
 import { useNodeCustomization } from './useNodeCustomization'
 
 export function useGroupMenuOptions() {
   const { t } = useI18n()
+  const themeStore = useThemeStore()
   const canvasStore = useCanvasStore()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const canvasRefresh = useCanvasRefresh()
-  const { shapeOptions, colorOptions, applyColor, isLightTheme } =
-    useNodeCustomization()
+  const { shapeOptions, colorOptions, applyColor } = useNodeCustomization()
 
   const getFitGroupToNodesOption = (groupContext: LGraphGroup): MenuOption => ({
     id: 'fitGroup',
@@ -69,9 +71,7 @@ export function useGroupMenuOptions() {
     isColorPicker: true,
     submenu: colorOptions.map((colorOption) => ({
       label: colorOption.localizedName,
-      color: isLightTheme.value
-        ? colorOption.value.light
-        : colorOption.value.dark,
+      color: themeStore.toNodeColor(colorOption.value),
       action: () => {
         applyColor(colorOption.name === 'noColor' ? null : colorOption)
         bump()

@@ -13,4 +13,4 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Check docs/adr references resolve
-        run: ./scripts/cicd/check-adr-links.sh
+        run: ./tools/ci/src/cicd/check-adr-links.sh

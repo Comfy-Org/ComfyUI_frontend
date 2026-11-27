@@ -44,6 +44,18 @@ describe('LGraphNode widget input slot arrangement', () => {
     )
   })
 
+  it('arranges a node that is drawn after it left its graph', () => {
+    const graph = new LGraph()
+    const node = createTestWidgetNode(graph)
+    node.pos = [0, 0]
+    node.size = [200, 1]
+    graph.remove(node)
+    expect(node.graph).toBeFalsy()
+
+    expect(() => node.arrange()).not.toThrow()
+    expect(node.widgets?.[0].computedHeight).toBeGreaterThan(0)
+  })
+
   it('keeps the same pos array when the widget row has not moved', () => {
     const node = createWidgetInputNode()
     node.arrange()

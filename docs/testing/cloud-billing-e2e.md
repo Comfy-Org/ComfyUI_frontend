@@ -9,8 +9,7 @@ notice window, direct Plans hand-off with an in-app pricing-table fallback,
 static auto top-up notice for members, and Activity without the member column.
 Turning it on selects the new dialog, served notice audience/start, refusal
 and blocked-tab explanations, same-tab Plans entry, member auto top-up status,
-and Activity member column. `pricing_table_fallback`
-continues to select the old Plans fallback while the new UX is enabled.
+and Activity member column.
 
 The locked-credit Subscribe to Run entry already shipped in Cloud 1.60 and stays
 independent of this flag. SDK payment-rail flags remain independent.
@@ -54,7 +53,10 @@ op run --env-file <file-with-secret-references> -- pnpm exec cross-env DISTRIBUT
 
 For a local frontend, start `pnpm dev:cloud` and use its Vite URL with
 `PLAYWRIGHT_SETUP_API_URL=https://testcloud.comfy.org`. The test routes browser
-API requests directly to the selected sandbox, independently of the local Vite proxy. Production targets are rejected.
+API requests directly to the selected sandbox, independently of the local Vite proxy.
+Against a deployed sandbox the two origins are the same and the browser sends
+its API requests itself, because Cloud refuses a session read that does not
+come from the browser. Production targets are rejected.
 
 The fixture disables `onboarding_survey_enabled` through the existing dev-only
 feature-flag helper before navigation. Deployed builds ignore this override, so
@@ -64,9 +66,15 @@ The smoke test signs in, validates the browser's real billing-status response,
 waits for app readiness, and checks that the graph canvas is visible.
 It attaches a post-login screenshot. The shared network boundary rejects mutations except the specific
 POST endpoints used for Firebase sign-in/token refresh, customer provisioning,
-and Cloud auth tokens/session cookies. A rejected mutation fails the test even
-if the app catches the request error. Checkout, payment, and reset mutations
-are blocked in both browser routing and Playwright API clients.
+the SSO lookup, and Cloud auth tokens/session cookies. A rejected mutation fails
+the test even if the app catches the request error. Checkout, payment, and reset
+mutations are blocked in both browser routing and Playwright API clients.
+
+POSTs a deployed build sends on its own are blocked as well but do not fail the
+test: Datadog RUM, Sentry, Mixpanel, PostHog (so a run has no live PostHog
+flags), and, on the app's own origin, the Cloudflare bot check and the RES4LYF
+custom-node extension. `blocked-egress.json` lists them with a `Background`
+prefix.
 
 Use a dedicated sandbox account. Checkout recovery tests in #17481 additionally
 require a personal workspace with no paid plan or saved card. Those tests own

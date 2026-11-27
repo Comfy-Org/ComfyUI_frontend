@@ -81,6 +81,21 @@ describe('foldActivity', () => {
     ])
   })
 
+  it('keeps each downloaded file as its own step', () => {
+    const rows = foldActivity([
+      tool('bash'),
+      { ...tool('bash'), download: 'flux1-dev.safetensors' },
+      { ...tool('bash'), download: 'ae.safetensors' },
+      { ...tool('bash'), download: 'ae.safetensors' }
+    ])
+
+    expect(rows).toEqual([
+      expect.objectContaining({ name: 'bash', download: undefined, count: 1 }),
+      expect.objectContaining({ download: 'flux1-dev.safetensors', count: 1 }),
+      expect.objectContaining({ download: 'ae.safetensors', count: 2 })
+    ])
+  })
+
   it('uses the latest settled outcome and retains the in-flight state', () => {
     const rows = foldActivity([
       tool('add_node', true, 100),

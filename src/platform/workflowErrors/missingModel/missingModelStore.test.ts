@@ -124,7 +124,8 @@ describe('missingModelStore', () => {
         .spyOn(app, 'refreshMissingModels')
         .mockResolvedValue({
           missingModels: [],
-          confirmedCandidates: []
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
         })
 
       await store.refreshMissingModels()
@@ -139,7 +140,8 @@ describe('missingModelStore', () => {
         .spyOn(app, 'refreshMissingModels')
         .mockResolvedValue({
           missingModels: [],
-          confirmedCandidates: []
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
         })
 
       await store.refreshMissingModels({ reloadDefs: false })
@@ -157,7 +159,11 @@ describe('missingModelStore', () => {
       const refreshSpy = vi.spyOn(app, 'refreshMissingModels').mockReturnValue(
         new Promise((resolve) => {
           resolveRefresh = () =>
-            resolve({ missingModels: [], confirmedCandidates: [] })
+            resolve({
+              missingModels: [],
+              confirmedCandidates: [],
+              surfaced: Promise.resolve()
+            })
         })
       )
 
@@ -168,6 +174,26 @@ describe('missingModelStore', () => {
 
       expect(refreshSpy).toHaveBeenCalledTimes(1)
       expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
+    it('returns once the scan starts and stays refreshing until the verified candidates reach the store', async () => {
+      const store = useMissingModelStore()
+      let surface: () => void = () => undefined
+      vi.spyOn(app, 'refreshMissingModels').mockResolvedValue({
+        missingModels: [],
+        confirmedCandidates: [],
+        surfaced: new Promise((resolve) => {
+          surface = resolve
+        })
+      })
+
+      await store.refreshMissingModels()
+      expect(store.isRefreshingMissingModels).toBe(true)
+
+      surface()
+      await vi.waitFor(() =>
+        expect(store.isRefreshingMissingModels).toBe(false)
+      )
     })
 
     it('shows a toast when the refresh pipeline fails', async () => {

@@ -5,12 +5,17 @@ import type {
   agentSocketAuthParams as realAgentSocketAuthParams,
   ensureSignedIn as realEnsureSignedIn,
   hasAgentCredential as realHasAgentCredential,
+  peekLastAgentCredential as realPeekLastAgentCredential,
   withAgentAuth as realWithAgentAuth
 } from '@/workbench/extensions/agent/services/agent/agentAuth'
 
 export const withAgentAuth = vi.fn<typeof realWithAgentAuth>(
   async (init) => init
 )
+
+export const peekLastAgentCredential = vi.fn<
+  typeof realPeekLastAgentCredential
+>(() => null)
 
 export const agentSettingsAuthHeader = vi.fn<
   typeof realAgentSettingsAuthHeader

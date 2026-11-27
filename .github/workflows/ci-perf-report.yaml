@@ -32,16 +32,33 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-run == 'true' && github.repository == 'Comfy-Org/ComfyUI_frontend' }}
     runs-on: ubuntu-latest
+    # main runs 3 repeats; one unsharded job took ~36m of a 45m limit
     timeout-minutes: 30
+    name: perf-tests (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: localhost 1/3
+            id: localhost-1
+            shard: 1/3
+          - name: localhost 2/3
+            id: localhost-2
+            shard: 2/3
+          - name: localhost 3/3
+            id: localhost-3
+            shard: 3/3
+          - name: cloud
+            id: cloud
+            cloud: true
     container:
       image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     permissions:
-      contents: write
+      contents: read
       packages: read
-      actions: read
 
     steps:
       - name: Checkout repository
@@ -57,64 +74,97 @@ jobs:
       - name: Start ComfyUI server
         uses: ./.github/actions/start-comfyui-server
 
-      # PRs run each test twice to expose noise; main runs 3× so the
-      # baseline saved to perf-data has enough samples to median over noise.
-      - name: Run localhost performance tests
-        id: perf_localhost
-        continue-on-error: true
-        env:
-          PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
-        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each="$PERF_REPEAT" --grep-invert @cloud
-
-      - name: Preserve localhost performance metrics
-        if: always() && hashFiles('test-results/perf-metrics.json') != ''
-        run: mv test-results/perf-metrics.json /tmp/perf-metrics-localhost.json
-
       # Cloud-only surfaces such as the Agent panel are compiled out of the
-      # localhost production artifact. Rebuild before measuring them instead
-      # of timing out without failing the PR job against a UI that cannot
+      # localhost production artifact. Build the cloud frontend before
+      # measuring them instead of timing out against a UI that cannot
       # expose the workload.
       - name: Build cloud frontend for cloud performance tests
+        if: matrix.cloud
         run: pnpm build:cloud
         env:
           VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
-      - name: Run cloud performance tests
-        id: perf_cloud
+      # PRs run each test twice to expose noise; main runs 3× so the
+      # baseline saved to perf-data has enough samples to median over noise.
+      - name: Run performance tests
+        id: perf
         continue-on-error: true
         env:
-          DISTRIBUTION: cloud
+          DISTRIBUTION: ${{ matrix.cloud && 'cloud' || 'localhost' }}
           PERF_REPEAT: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '3' || '2' }}
-        run: pnpm exec playwright test --project=performance --workers=1 --repeat-each="$PERF_REPEAT" --grep @cloud
-
-      - name: Merge distribution performance metrics
-        if: always()
+          PERF_GREP: ${{ matrix.cloud && '--grep' || '--grep-invert' }}
+          PERF_SHARD: ${{ matrix.shard }}
+        shell: bash
         run: |
-          if [ -f /tmp/perf-metrics-localhost.json ] && [ -f test-results/perf-metrics.json ]; then
-            node -e '
-              const fs = require("node:fs");
-              const localhost = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-              const cloud = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
-              process.stdout.write(JSON.stringify({
-                ...cloud,
-                measurements: [...localhost.measurements, ...cloud.measurements]
-              }));
-            ' /tmp/perf-metrics-localhost.json test-results/perf-metrics.json \
-              > /tmp/perf-metrics-merged.json
-            mv /tmp/perf-metrics-merged.json test-results/perf-metrics.json
-          elif [ -f /tmp/perf-metrics-localhost.json ]; then
-            mkdir -p test-results
-            cp /tmp/perf-metrics-localhost.json test-results/perf-metrics.json
-          fi
+          args=(--project=performance --workers=1 --repeat-each="$PERF_REPEAT" "$PERF_GREP" @cloud)
+          if [ -n "$PERF_SHARD" ]; then args+=(--shard="$PERF_SHARD"); fi
+          pnpm exec playwright test "${args[@]}"
+
+      - name: Upload shard perf metrics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: perf-metrics-${{ matrix.id }}
+          path: test-results/perf-metrics.json
+          retention-days: 1
+          if-no-files-found: warn
+
+      - name: Fail if performance tests failed
+        if: steps.perf.outcome == 'failure' && github.event_name == 'push'
+        run: |
+          echo "::error::Performance tests failed; partial metrics were saved when available."
+          exit 1
+
+      - name: Warn if performance tests failed on a PR
+        if: steps.perf.outcome == 'failure' && github.event_name == 'pull_request'
+        run: echo "::warning::Performance tests failed; the metrics may be incomplete."
+
+  perf-report:
+    needs: perf-tests
+    if: ${{ always() && needs.perf-tests.result != 'skipped' && github.repository == 'Comfy-Org/ComfyUI_frontend' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Download shard perf metrics
+        uses: actions/download-artifact@v8
+        with:
+          pattern: perf-metrics-*
+          path: /tmp/perf-shards
+
+      - name: Merge shard perf metrics
+        run: |
+          mkdir -p test-results
+          node -e '
+            const fs = require("node:fs");
+            const path = require("node:path");
+            const root = process.argv[1];
+            const files = fs.existsSync(root)
+              ? [path.join(root, "perf-metrics.json"), ...fs.readdirSync(root).sort()
+                  .map((dir) => path.join(root, dir, "perf-metrics.json"))]
+              : [];
+            const reports = files
+              .filter((file) => fs.existsSync(file) && fs.statSync(file).isFile())
+              .map((file) => JSON.parse(fs.readFileSync(file, "utf8")));
+            if (reports.length === 0) process.exit(0);
+            fs.writeFileSync("test-results/perf-metrics.json", JSON.stringify({
+              ...reports[0],
+              measurements: reports.flatMap((report) => report.measurements)
+            }));
+          ' /tmp/perf-shards
 
       - name: Upload perf metrics
-        if: always()
+        if: hashFiles('test-results/perf-metrics.json') != ''
         uses: actions/upload-artifact@v6
         with:
           name: perf-metrics
           path: test-results/perf-metrics.json
           retention-days: 30
-          if-no-files-found: warn
 
       # Save whenever metrics exist, not only when every perf test passed.
       # Gating on a test step's success let a single failing test
@@ -159,16 +209,6 @@ jobs:
           git worktree remove /tmp/perf-data --force 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fail if performance tests failed
-        if: (steps.perf_localhost.outcome == 'failure' || steps.perf_cloud.outcome == 'failure') && github.event_name == 'push'
-        run: |
-          echo "::error::Performance tests failed; partial metrics were saved when available."
-          exit 1
-
-      - name: Warn if performance tests failed on a PR
-        if: (steps.perf_localhost.outcome == 'failure' || steps.perf_cloud.outcome == 'failure') && github.event_name == 'pull_request'
-        run: echo "::warning::Performance tests failed; the metrics may be incomplete."
 
   perf-baseline-freshness:
     if: github.event_name == 'schedule' && github.repository == 'Comfy-Org/ComfyUI_frontend'

@@ -508,17 +508,15 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         load3d.updateStatusMouseOnViewer(true)
       }
 
-      // Viewer-lifetime setup belongs to instance creation, not to this
-      // request: a concurrent initializeStandaloneViewer() call reuses the
-      // instance through loadStandaloneModel() and can supersede this load.
       isPreview.value = true
       setupAnimationEvents()
 
       const outcome = await load3d.loadModel(modelUrl)
       reportLoadModelOutcome(outcome)
+      if (outcome === 'cancelled') return
+      restoreStandaloneConfig(modelUrl)
       if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
-      restoreStandaloneConfig(modelUrl)
       captureAdapterFlags(load3d)
       persistStandaloneThumbnail(modelUrl)
     } catch (error) {

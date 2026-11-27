@@ -3,7 +3,7 @@ import {
   useEventListener,
   useIntervalFn
 } from '@vueuse/core'
-import { computed, shallowReadonly, shallowRef, watch } from 'vue'
+import { computed, nextTick, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
   useBillingClient,
@@ -55,8 +55,19 @@ import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
 import { platformPlansUrl } from '@/checkout/platformLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
+import type { Promotion } from '@/checkout/promoAutoApply'
+import {
+  createAutoApplyClaim,
+  autoAppliesCode,
+  awaitPromotion
+} from '@/checkout/promoAutoApply'
+import type { PromoRemoval } from '@/checkout/promoMemory'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
-import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
+import {
+  checkoutIdentity,
+  createPromoMemory,
+  createPromoRemoval
+} from '@/checkout/promoMemory'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import {
   outcomeFor,
@@ -82,6 +93,7 @@ import {
   checkoutAttemptOf,
   createSubscriptionCheckoutTelemetry
 } from '@/telemetry/subscriptionCheckoutTelemetry'
+import { reportBillingWebError } from '@/telemetry/rum'
 
 /**
  * What Pay charges: a new method's token, a saved method, or the method on
@@ -233,6 +245,11 @@ export function useFullPageCheckout() {
   const journey = useCheckoutJourney('full_page')
   journey.enter()
   const planChangeCardChoice = awaitPlanChangeCardChoice()
+  const promotion = awaitPromotion()
+  let servedPromotion: Promotion | null = null
+  void promotion.then((served) => {
+    servedPromotion = served
+  })
 
   const page = shallowRef<CheckoutPage>(
     arrivalPage({ entry, error: unreadableLink })
@@ -337,10 +354,16 @@ export function useFullPageCheckout() {
   const promoMemory = createPromoMemory(() =>
     checkoutIdentity(entry.value, billedWorkspace())
   )
+  const claimAutoApply = createAutoApplyClaim(() =>
+    checkoutIdentity(entry.value, billedWorkspace())
+  )
 
   const promo = useCheckoutPromo({
     prefill: entry.value,
     memory: promoMemory,
+    removal: campaignRemoval(
+      createPromoRemoval(() => checkoutIdentity(entry.value, billedWorkspace()))
+    ),
     live: () => promoLive.value,
     requote: async (promotionCode) => {
       const arrival = entry.value
@@ -480,6 +503,38 @@ export function useFullPageCheckout() {
     if (preview.value && !acceptsPromoCode(preview.value)) promo.withdraw()
     await reconciliationSettled()
     dispatch(event)
+    if (autoAppliesCode(await promotion, arrival.promotionCode))
+      await autoApplyCarriedPromo()
+  }
+
+  function claimAutoApplyAttempt(): boolean {
+    if (!claimAutoApply()) return false
+    journey.markPromoAutoApply(true)
+    return true
+  }
+
+  function campaignRemoval(removal: PromoRemoval): PromoRemoval {
+    return {
+      removed: removal.removed,
+      remember: (code) => {
+        if (autoAppliesCode(servedPromotion, code)) removal.remember(code)
+      }
+    }
+  }
+
+  async function autoApplyCarriedPromo() {
+    if (!(await promo.applyCarried(claimAutoApplyAttempt))) return
+    await nextTick()
+    journey.markPromoAutoApply(false)
+    const settled = promo.entry.value
+    if (settled.kind === 'rejected' && settled.reason === 'unchecked')
+      reportBillingWebError(
+        new Error('Checkout could not check the promo code it applied itself'),
+        {
+          errorType: 'promo_auto_apply_unchecked',
+          context: { ui_mode: 'full_page' }
+        }
+      )
   }
 
   function arrivalOf(

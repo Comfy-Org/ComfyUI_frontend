@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 
 import {
@@ -85,5 +87,56 @@ describe('agentTabTitlePrefix', () => {
 
     vi.advanceTimersByTime(50_000)
     expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
+
+  describe('Desktop attention', () => {
+    const setAttentionNeeded = vi.fn<(needed: boolean) => void>()
+
+    beforeEach(() => {
+      setAgentTabTitlePrefix(null)
+      vi.stubGlobal('__comfyDesktop2', { setAttentionNeeded })
+    })
+
+    it('asks Desktop for the user while the prefix shows, and stops when it clears', () => {
+      setAgentTabTitlePrefix('Input needed')
+      setAgentTabTitlePrefix(null)
+
+      expect(setAttentionNeeded.mock.calls).toEqual([[true], [false]])
+    })
+
+    it('keeps asking through a hold and stops when the hold clears', () => {
+      setAgentTabTitlePrefix('Input needed')
+      holdAgentTabTitlePrefixUntil(Date.now() + 60_000)
+      expect(setAttentionNeeded).toHaveBeenLastCalledWith(true)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(setAttentionNeeded).toHaveBeenLastCalledWith(false)
+    })
+
+    it('does not fail on a Desktop build without the bridge member', () => {
+      vi.stubGlobal('__comfyDesktop2', {})
+
+      setAgentTabTitlePrefix('Input needed')
+
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('keeps the tab title working and reports a warning when the bridge call throws', () => {
+      const failure = new Error('ipc gone')
+      setAttentionNeeded.mockImplementationOnce(() => {
+        throw failure
+      })
+
+      setAgentTabTitlePrefix('Input needed')
+
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'agent',
+        errorType: 'failure_setting_desktop_attention',
+        level: 'warning'
+      })
+    })
   })
 })

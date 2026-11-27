@@ -46,7 +46,9 @@ test.describe(
     test('opens the Missing models dialog when Cloud lacks a checkpoint', async ({
       comfyPage,
       checkCloudCompatibility,
-      openOnCloudDialog
+      openOnCloudDialog,
+      cloudOrigin,
+      request
     }) => {
       const checkpoint = '3Guofeng3_v32Light.safetensors'
       await comfyPage.workflow.loadWorkflow(
@@ -60,29 +62,42 @@ test.describe(
 
       await expect(openOnCloudDialog.missingModelHeading).toBeVisible()
       await expect(openOnCloudDialog.missingModel(checkpoint)).toBeVisible()
-      await expect(openOnCloudDialog.uploadsUnavailableNotice).toBeVisible()
+      const features = await request.get(`${cloudOrigin}/api/features`)
+      expect(features.ok()).toBe(true)
+      const rolloutEnabled =
+        (await features.json()).open_on_cloud_model_upload_enabled === true
+      await expect(openOnCloudDialog.signInToUploadButton).toHaveCount(
+        rolloutEnabled ? 1 : 0
+      )
       await expect(openOnCloudDialog.uploadButton).toHaveCount(0)
       await comfyPage.attachScreenshot('missing-cloud-model.png', {
         runInCI: true
       })
     })
 
-    test('offers to open a workflow that Cloud can run', async ({
+    test('offers to open a workflow that Cloud can run, then opens it', async ({
       comfyPage,
       checkCloudCompatibility,
-      openOnCloudDialog
+      openOnCloudDialog,
+      cloudOrigin
     }) => {
       await comfyPage.workflow.loadWorkflow('openOnCloud/01-runnable-on-cloud')
+      let openedTabs = 0
+      comfyPage.page.on('popup', () => openedTabs++)
       const compatibility = await checkCloudCompatibility()
       expect(compatibility.missing_node_types).toEqual([])
       expect(compatibility.missing_models ?? []).toEqual([])
-
-      await expect(openOnCloudDialog.runHeading).toBeVisible()
-      await expect(openOnCloudDialog.signInNotice).toBeVisible()
       await expect(openOnCloudDialog.openOnCloudButton).toBeVisible()
-      await comfyPage.attachScreenshot('runnable-on-cloud.png', {
-        runInCI: true
-      })
+      expect(openedTabs).toBe(0)
+
+      const [cloudTab] = await Promise.all([
+        comfyPage.page.waitForEvent('popup'),
+        openOnCloudDialog.openOnCloudButton.click()
+      ])
+      await expect.poll(() => new URL(cloudTab.url()).origin).toBe(cloudOrigin)
+      expect(openedTabs).toBe(1)
+      await expect(openOnCloudDialog.root).toBeHidden()
+      await cloudTab.close()
     })
   }
 )
