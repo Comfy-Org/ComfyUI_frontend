@@ -66,11 +66,11 @@ function expectZoomSteps(
   )
 }
 
-async function snapReach(comfyPage: ComfyPage, scale: number) {
+async function snapEnterDistance(comfyPage: ComfyPage, scale: number) {
   const distance = await comfyPage.settings.getSetting<number>(
     'Comfy.Canvas.SmartGuides.SnapDistance'
   )
-  return thresholdAt(scale, distance).exit
+  return thresholdAt(scale, distance).enter
 }
 
 async function findEmptyPoint(comfyPage: ComfyPage) {
@@ -232,14 +232,14 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  const reach = await snapReach(comfyPage, scale)
+  const snapDistance = await snapEnterDistance(comfyPage, scale)
   expect(positions).toHaveLength(steps.length + 1)
   steps.forEach((step, index) => {
     const moved = positions[index + 1] - positions[index]
     expect(
       Math.abs(moved - step),
       `nudge ${index} moved ${moved}, pointer travelled ${step}`
-    ).toBeLessThanOrEqual(reach)
+    ).toBeLessThanOrEqual(snapDistance)
   })
   return measurement
 }
