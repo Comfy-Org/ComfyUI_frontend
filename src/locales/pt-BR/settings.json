@@ -59,6 +59,28 @@
     "name": "Mostrar caixa de ferramentas de seleção",
     "tooltip": "Exibe uma barra de ferramentas flutuante quando os nós estão selecionados, proporcionando acesso rápido a ações comuns."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Encaixar em nós, grupos e conexões próximos ao arrastar e redimensionar",
+    "tooltip": "Mostra linhas-guia e encaixa em bordas alinhadas, espaçamento uniforme e conexões retas. Mantenha Shift pressionada para encaixar na grade."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Espaçamento ao encaixar ao lado de outro nó"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Distância de encaixe (pixels da tela)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Encaixar nas bordas de outros nós e grupos"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Encaixar em espaçamentos uniformes entre nós"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Encaixar para que as conexões fiquem retas"
+  },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Perguntar antes de enviar nomes de nós e modelos para verificar a compatibilidade com o Comfy Cloud"
+  },
   "Comfy_ConfirmClear": {
     "name": "Exigir confirmação ao limpar o fluxo de trabalho"
   },
@@ -87,6 +109,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "Mostrar modelos ausentes na aba de problemas",
     "tooltip": "Quando desativado, os arquivos de modelo não encontrados não são listados na aba de problemas e seus nós não são destacados."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Mostrar nós ausentes na aba de problemas",
+    "tooltip": "Quando desativado, os pacotes de nós ausentes não são listados na aba de problemas, e seus nós não são destacados. O fluxo de trabalho ainda não poderá ser executado até que sejam instalados."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Método de visualização ao vivo",
@@ -468,10 +494,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Mostrar mídias ausentes na aba de problemas",
     "tooltip": "Quando desativado, as imagens, os vídeos e os áudios de entrada não encontrados não são listados na aba de problemas e seus nós não são destacados."
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "Mostrar nós ausentes na aba de problemas",
-    "tooltip": "Quando desativado, os pacotes de nós ausentes não são listados na aba de problemas e seus nós não são destacados. O fluxo de trabalho ainda não poderá ser executado até que sejam instalados."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Ordenar IDs dos nós ao salvar fluxo de trabalho"

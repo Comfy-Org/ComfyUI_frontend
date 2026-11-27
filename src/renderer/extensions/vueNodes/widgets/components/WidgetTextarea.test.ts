@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -320,16 +321,6 @@ describe('WidgetTextarea Value Binding', () => {
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
     })
-
-    it('applies the generic hover background class to the wrapper when editable', () => {
-      const widget = createTextareaWidget('editable value')
-      const { container } = renderComponent(widget, 'editable value')
-
-      // hover class lives on wrapper <div>, not the <textarea>
-      // oxlint-disable-next-line testing-library/no-node-access
-      const wrapper = container.firstElementChild
-      expect(wrapper?.className).toContain(HOVER_CLASS)
-    })
   })
 
   describe('Edge Cases', () => {
@@ -467,6 +458,15 @@ describe('WidgetTextarea expand to editor', () => {
         within(actions).queryByRole('button', { name: 'textEditor.expand' })
       )
     ).toBe(shown)
+  })
+
+  it('reports the dialog arm as exposed when Expand opens the dialog', async () => {
+    const expose = vi.spyOn(usePromptEditorExperimentStore(), 'expose')
+    renderWithDialogHost()
+
+    await openEditor()
+
+    expect(expose).toHaveBeenCalledWith('control')
   })
 
   it.for([

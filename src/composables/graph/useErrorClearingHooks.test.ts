@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -76,6 +77,24 @@ function createNestedSubgraphRuntime() {
     innerSubgraphNode,
     outerSubgraphNode
   }
+}
+
+function createSelfReferencingSubgraphRuntime() {
+  const rootGraph = new LGraph()
+  const cyclicSubgraph: Subgraph = createTestSubgraph({ rootGraph })
+
+  const innerSelfReference = createTestSubgraphNode(cyclicSubgraph, {
+    parentGraph: cyclicSubgraph,
+    id: 101
+  })
+  cyclicSubgraph.add(innerSelfReference)
+
+  const hostNode = createTestSubgraphNode(cyclicSubgraph, {
+    parentGraph: rootGraph,
+    id: 102
+  })
+
+  return { rootGraph, cyclicSubgraph, innerSelfReference, hostNode }
 }
 
 function setNodeMode(
@@ -466,6 +485,77 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Install again on the same graph — should be a no-op for existing nodes
     installErrorClearingHooks(graph)
     expect(node.onConnectionsChange).toBe(chainedAfterFirst)
+  })
+
+  it('restores hooks when disposing a retained self-referencing subgraph', () => {
+    const { rootGraph, hostNode, innerSelfReference } =
+      createSelfReferencingSubgraphRuntime()
+    const originalHostCallback = hostNode.onConnectionsChange
+    const originalInnerCallback = innerSelfReference.onConnectionsChange
+    const cleanup = installErrorClearingHooks(rootGraph)
+
+    expect(() => rootGraph.add(hostNode)).not.toThrow()
+    expect(hostNode.onConnectionsChange).not.toBe(originalHostCallback)
+    expect(innerSelfReference.onConnectionsChange).not.toBe(
+      originalInnerCallback
+    )
+
+    cleanup()
+
+    expect(hostNode.onConnectionsChange).toBe(originalHostCallback)
+    expect(innerSelfReference.onConnectionsChange).toBe(originalInnerCallback)
+  })
+
+  it('restores hooks when disposing a retained ancestor subgraph cycle', () => {
+    const rootGraph = new LGraph()
+    const first = createTestSubgraph({ rootGraph })
+    const second = createTestSubgraph({ rootGraph })
+    const back = createTestSubgraphNode(first, {
+      parentGraph: second,
+      id: 30
+    })
+    second.add(back)
+    const middle = createTestSubgraphNode(second, {
+      parentGraph: first,
+      id: 20
+    })
+    first.add(middle)
+    const host = createTestSubgraphNode(first, {
+      parentGraph: rootGraph,
+      id: 10
+    })
+    rootGraph.add(host)
+    const nodes = [host, middle, back]
+    const originals = nodes.map((node) => node.onConnectionsChange)
+
+    const cleanup = installErrorClearingHooks(rootGraph)
+
+    expect(
+      nodes.map((node, index) => node.onConnectionsChange === originals[index])
+    ).toEqual([false, false, false])
+
+    cleanup()
+
+    expect(nodes.map((node) => node.onConnectionsChange)).toEqual(originals)
+  })
+
+  it('restores hooks without stack-overflowing when a self-referencing subgraph host is removed', () => {
+    const { rootGraph, hostNode, innerSelfReference } =
+      createSelfReferencingSubgraphRuntime()
+    const originalOnConnectionsChange = hostNode.onConnectionsChange
+    const originalInnerOnConnectionsChange =
+      innerSelfReference.onConnectionsChange
+
+    const cleanup = installErrorClearingHooks(rootGraph)
+    rootGraph.add(hostNode)
+
+    expect(() => rootGraph.remove(hostNode)).not.toThrow()
+    expect(hostNode.onConnectionsChange).toBe(originalOnConnectionsChange)
+    expect(innerSelfReference.onConnectionsChange).toBe(
+      originalInnerOnConnectionsChange
+    )
+
+    cleanup()
   })
 
   it('scans added-node missing models after widget values are restored', async () => {

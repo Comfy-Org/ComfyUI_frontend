@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "使用 OpenAI 的 GPT 模型產生文字回應。提供文字提示，並可選擇性地提供圖片或檔案作為上下文。",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於產生回應的模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "透過 OpenAI 的 GPT Image 2 端點同步產生影像。",
     "display_name": "OpenAI GPT Image 2",
@@ -22118,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "輸出影格率。「source」會保留影片的影格率，最高為 60。較高的影格率會以插幀產生。輸出超過 30 fps 的費用為兩倍。"
+        "tooltip": "輸出影格率。'source' 會保留影片的影格率，最高為 60。較高的影格率會經由插補產生。除 turbo 外，輸出超過 30 fps 的費用會加倍。"
       },
       "target": {
         "name": "目標",
@@ -22126,7 +22159,7 @@
       },
       "turbo": {
         "name": "高速",
-        "tooltip": "以相同價格更快地升頻，但細節較柔和。"
+        "tooltip": "以較低價格更快速地放大，但細節會較柔和。"
       },
       "video": {
         "name": "影片",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支援任何風格。"
+        "tooltip": "用於生成的模型。recraftv4_styles 模型專為風格一致的生成而設計，且一律需要 style_id 或 style_references；recraftv4_1_flash 執行 Recraft V4.1 Flash V2，這是最快且最便宜的模型，完全不支援任何風格。"
       },
       "model_size": {
         "name": "size"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "圖片"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical 會將形狀分層堆疊；cut_out 會建立永不重疊的形狀，適用於繪圖機、乙烯基切割機與網版印刷。"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro（Vectorizer Pro）可產生更乾淨的 SVG，具有平滑曲線、直線與銳利轉角，最適合文字設計與精細複雜的形狀。"
       }
     },
     "outputs": {
@@ -29256,7 +29297,7 @@
       },
       "face_limit": {
         "name": "面數限制",
-        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 約 200 萬面）。Tripo 會在背景限制：v2.5 為 500,000，四邊形網格為 150,000。"
+        "tooltip": "最大面數。-1 讓 Tripo 自動調整選擇（v3.x 標準版約 140 萬面，詳細版約 200 萬面）。Tripo 會在不提示的情況下將四邊形網格限制為 150,000 面。"
       },
       "geometry_quality": {
         "name": "幾何品質"
@@ -29333,7 +29374,7 @@
       },
       "face_limit": {
         "name": "面數上限",
-        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會自動限制：v2.5 為 500,000，四邊形網格為 150,000。"
+        "tooltip": "最大面數。-1 讓 Tripo 自動調整選擇（v3.x 標準版約 140 萬面，詳細版約 200 萬面）。Tripo 會在不提示的情況下將四邊形網格限制為 150,000 面。"
       },
       "geometry_quality": {
         "name": "幾何品質"
@@ -29476,7 +29517,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 約 200 萬面）。Tripo 會在背景限制：v2.5 為 500,000，四邊形網格為 150,000。"
+        "tooltip": "最大面數。-1 讓 Tripo 自動調整選擇（v3.x 標準版約 140 萬面，詳細版約 200 萬面）。Tripo 會在不提示的情況下將四邊形網格限制為 150,000 面。"
       },
       "geometry_quality": {
         "name": "幾何品質"
@@ -30248,7 +30289,7 @@
       },
       "face_limit": {
         "name": "面數限制",
-        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約為 140 萬面，detailed 為 200 萬面）。Tripo 會靜默限制：v2.5 為 500,000，四邊形網格為 150,000。"
+        "tooltip": "最大面數。-1 讓 Tripo 自動調整選擇（v3.x 標準版約 140 萬面，詳細版約 200 萬面）。Tripo 會在不提示的情況下將四邊形網格限制為 150,000 面。"
       },
       "geometry_quality": {
         "name": "幾何品質"
@@ -30325,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面數。-1 讓 Tripo 自動選擇（v3.x standard 約 140 萬面，detailed 為 200 萬面）。Tripo 會無提示地限制：v2.5 為 500,000，四邊形網格為 150,000。"
+        "tooltip": "最大面數。-1 讓 Tripo 自動調整選擇（v3.x 標準版約 140 萬面，詳細版約 200 萬面）。Tripo 會在不提示的情況下將四邊形網格限制為 150,000 面。"
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30392,8 +30433,7 @@
         "name": "模型任務ID"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "貼圖模型：v3.0 用於以 v3.x 產生的網格，v2.5 用於以 v2.5 產生的網格。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30456,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "模型版本",
-        "tooltip": "紋理模型：v3.0 適用於以 v3.x 產生的網格，v2.5 適用於以 v2.5 產生的網格。"
+        "name": "模型版本"
       },
       "part_names": {
         "name": "零件名稱",

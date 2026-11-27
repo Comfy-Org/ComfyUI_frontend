@@ -197,6 +197,29 @@ test.describe('Workflow tabs', () => {
     await expect(closeButton).toBeHidden()
   })
 
+  test(
+    'keeps the unsaved indicator visible on hover when Close fits beside it',
+    {
+      tag: '@ui'
+    },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler', {
+        fileName: 'W'
+      })
+      const tab = comfyPage.menu.topbar.getWorkflowTab('W')
+      const indicator = tab.getByTestId(TestIds.topbar.workflowDirtyIndicator)
+      const closeButton = tab.getByTestId(TestIds.topbar.closeWorkflowButton)
+
+      await comfyPage.canvas.hover()
+      await expect(indicator).toBeVisible()
+      await expect(closeButton).toBeHidden()
+
+      await tab.hover()
+      await expect(closeButton).toBeVisible()
+      await expect(indicator).toBeVisible()
+    }
+  )
+
   test('Can drag tab to end', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
 
@@ -352,7 +375,7 @@ test.describe('Workflow tabs', () => {
     )
 
     test(
-      'Compact inactive tabs reveal their close button to keyboard only',
+      'Compact inactive tabs reveal their close button on hover and to the keyboard',
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
@@ -367,14 +390,14 @@ test.describe('Workflow tabs', () => {
 
         const inactiveTab = topbar.getTab(9)
 
-        await test.step('hide Close on inactive tab hover', async () => {
+        await test.step('replace the unsaved dot with Close on hover', async () => {
           await inactiveTab.hover()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.workflowDirtyIndicator)
-          ).toBeVisible()
+          ).toBeHidden()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
-          ).toBeHidden()
+          ).toBeVisible()
 
           const activeTab = topbar.getActiveTab()
           await activeTab.hover()

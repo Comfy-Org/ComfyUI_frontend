@@ -62,6 +62,7 @@
       "body": "Ouvrez la section Facturation pour vérifier que la recharge automatique est activée.",
       "title": "Crédits ajoutés"
     },
+    "balanceAfter": "Après ce rechargement : {credits} crédits.",
     "blocked": {
       "action": "Ouvrir le paiement",
       "body": "Votre navigateur a bloqué le nouvel onglet. Ouvrez le paiement pour finaliser le règlement.",
@@ -84,7 +85,7 @@
       "title": "Votre paiement de {amount} doit être vérifié",
       "titleNoAmount": "Votre paiement doit être vérifié"
     },
-    "negativeBalance": "Votre solde est de −{credits} crédits. Ce rechargement le couvre d’abord.",
+    "negativeBalance": "Votre solde est de −{credits} crédits.",
     "notAllowed": {
       "body": "Consultez les paramètres de facturation pour savoir pourquoi.",
       "title": "Vous ne pouvez pas ajouter de crédits pour le moment"
@@ -127,6 +128,7 @@
       "bodyNoWait": "Réessayez plus tard ou {support}.",
       "title": "Vous avez atteint la limite de rechargements pour le moment"
     },
+    "stillNegativeAfter": "Solde toujours négatif après ce rechargement : −{credits} crédits.",
     "title": "Ajouter des crédits",
     "wait": {
       "day": "un jour",
@@ -142,6 +144,8 @@
     "addNodesFromGraph": "Mentionner des nœuds du graphe",
     "addSkill": "Ajouter une compétence",
     "addToPrompt": "Ajouter au prompt",
+    "agentCostNotice": "Comfy Agent utilise les crédits de votre espace de travail. Les coûts varient selon le modèle et la demande.",
+    "agentCostNoticeLabel": "Avis sur le coût de l’agent",
     "askUnavailable": "L’agent attend une étape que ce panneau ne peut pas afficher.",
     "askUser": {
       "answerRejected": "L’agent n’a pas pu accepter cette réponse. Modifiez vos choix ou arrêtez le tour.",
@@ -166,6 +170,7 @@
     "attach": "Joindre un fichier",
     "attachFiles": "Téléverser des images ou des fichiers",
     "attachmentCountExceeded": "Seuls {count} fichiers peuvent être joints à un message",
+    "attachmentEmpty": "{name} est vide et n’a pas pu être joint",
     "attachmentInvalidVideo": "{name} n’est pas un fichier vidéo valide. Supprimez-le et essayez un autre fichier.",
     "attachmentNamesOverflow": "{names} et {count} autres",
     "attachmentTooLarge": "{name} dépasse {limit}",
@@ -179,10 +184,8 @@
     "beta": "BÊTA",
     "canvasIsEmptyAfterTurn": "Ce canevas est vide — aucun élément n’y a été ajouté. Il n’y a encore rien à exécuter, enregistrer ou exporter.",
     "canvasNotReadyForSend": "Le canevas de cet onglet n’est pas encore prêt ; votre message n’a donc pas été envoyé. Réessayez dans un instant.",
-    "changeWorkflowForChat": "Modifier le workflow que l’agent peut modifier",
     "chatOptions": "Options de discussion",
     "chooseWorkflow": "Choisir un workflow",
-    "chooseWorkflowForChat": "Choisir un workflow pour cette conversation",
     "close": "Fermer",
     "coachBody": "Décrivez vos idées, demandez-lui de créer et d’exécuter des workflows. Il voit votre canevas et vos fichiers.",
     "coachHistoryBody": "Les conversations précédentes sont enregistrées ici. Ouvrez-en une pour la consulter ou continuer à travailler avec l’agent.",
@@ -190,7 +193,7 @@
     "coachHoldNotice": "Votre message sera envoyé lorsque vous terminerez ou passerez la visite guidée.",
     "coachProgress": "{current} sur {total}",
     "coachTitle": "Faites connaissance avec votre agent Comfy",
-    "coachWorkflowBody": "Le nom de ce workflow apparaît en haut de la zone de message. Cliquez sur son nom pour en choisir un autre. Cliquer sur un onglet de workflow peut ouvrir son chat le plus récent, sauf si la zone de message contient un brouillon.",
+    "coachWorkflowBody": "Chaque onglet de workflow possède ses propres conversations. Changer d’onglet vous fait passer à la conversation de cet onglet.",
     "coachWorkflowTitle": "L’agent modifie un workflow à la fois",
     "consent": {
       "accept": "Commencer à utiliser Comfy Agent",
@@ -217,7 +220,6 @@
     "copyUnavailable": "Seule la conversation actuelle peut être copiée dans cette version",
     "creditTransitionNotice": "Vous avez utilisé vos crédits d'agent gratuits. Toute activité ultérieure de l'agent utilise les crédits de votre espace de travail, qui peuvent inclure des crédits payants.",
     "creditsUsed": "L’agent a utilisé {credits} crédit | L’agent a utilisé {credits} crédits",
-    "currentTab": "Onglet actuel",
     "delete": "Supprimer",
     "deleteApproval": {
       "answered": "Répondu",
@@ -287,10 +289,10 @@
       "restartHint": "Cela prendra effet après le redémarrage de ComfyUI. Rechargez cette page après le redémarrage."
     },
     "feedbackCaption": "Partager vos commentaires",
+    "firstChatFreeNotice": "Essayez votre premier chat gratuitement !",
     "focusNode": "Afficher sur le canevas",
     "focusNodeLabel": "Afficher {node} sur le canevas",
     "followedChatOpenFailed": "Impossible d’ouvrir le chat pour {workflowName}.",
-    "freeUseNotice": "Essayez votre première discussion gratuitement !",
     "freeUseNoticeLabel": "Avis d'utilisation gratuite",
     "friend": "là",
     "gotIt": "Compris",
@@ -307,6 +309,7 @@
     "historyYesterday": "Hier",
     "latest": "Dernier",
     "loadFailed": "Échec du chargement du panneau de l’agent.",
+    "loadingWorkflowChats": "Chargement des conversations pour {workflowName}",
     "malformedEvent": "L’agent a envoyé un événement que ce panneau ne peut pas lire",
     "manageSkills": "Gérer les compétences",
     "maximize": "Agrandir le panneau",
@@ -334,7 +337,6 @@
     "openWorkflowTab": "Ouvrir {name}",
     "openingChat": "Ouverture du chat…",
     "openingWorkflowChat": "Ouverture du chat pour {workflowName}…",
-    "otherOpenWorkflows": "Autres workflows ouverts",
     "paused": {
       "recheck": "Il réessaiera automatiquement dans environ {seconds} seconde. | Il réessaiera automatiquement dans environ {seconds} secondes.",
       "resume": "Reprendre",
@@ -410,6 +412,7 @@
       "answerSuperseded": "Cette question a déjà reçu une réponse ailleurs, qui a donc été utilisée à la place de la vôtre.",
       "answerUncertain": "Impossible de confirmer que votre réponse est parvenue à l’agent. Elle a peut-être tout de même été appliquée — rechargez la page pour voir où en sont les choses.",
       "cancel": "Annuler",
+      "estimateAtLeast": "Coût estimé : au moins {credits} crédits",
       "lead": "Comfy Agent souhaite exécuter le workflow :",
       "leadBound": "Comfy Agent souhaite exécuter ce workflow.",
       "question": "Approuvez-vous ?",
@@ -434,8 +437,6 @@
     "runPermissions": "Autorisations d’exécution",
     "runPermissionsDescription": "Choisissez quand l’agent doit obtenir votre consentement",
     "savingWorkflow": "Enregistrement du workflow",
-    "searchWorkflows": "Rechercher des workflows",
-    "selectWorkflowForAgent": "Sélectionnez un workflow dans lequel l’agent pourra travailler",
     "selectWorkflowForNodes": "Veuillez d’abord sélectionner un workflow",
     "selectWorkflowToGenerate": "Sélectionner un workflow dans lequel générer",
     "send": "Envoyer",
@@ -444,7 +445,14 @@
     "sendBlockedByUnsupportedType": "{name} n’est pas un type de fichier accepté par l’agent. Supprimez-le pour l’envoyer.",
     "sendBusy": "Un message est déjà en cours d’envoi",
     "sendFailed": "Échec de l’envoi du message",
+    "sendFailedDisownedWorkflow": "Ce workflow n’est plus disponible.",
+    "sendFailedNetwork": "Le message n’est pas parvenu au serveur. Vérifiez votre connexion et réessayez.",
+    "sendFailedOffscreen": "Votre message n’a pas pu être envoyé",
+    "sendFailedOffscreenShow": "Afficher",
+    "sendFailedTurnInProgress": "Une réponse était encore en cours dans cette conversation.",
+    "sendFailedUncertain": "Impossible de confirmer si le serveur a reçu votre message. Vérifiez votre conversation avant de l’envoyer à nouveau.",
     "sendTurnInProgress": "Une réponse est toujours en cours dans cette conversation. Attendez qu'elle se termine ou arrêtez-la, puis renvoyez votre message.",
+    "sendingMessage": "Envoi en cours…",
     "showChatHistory": "Afficher l’historique des discussions",
     "showLess": "Afficher moins",
     "showMore": "Afficher plus",
@@ -472,6 +480,7 @@
     "skillsLoading": "Chargement des compétences…",
     "skillsUnavailable": "Les compétences ne sont pas disponibles pour le moment.",
     "skip": "Passer",
+    "startNewChat": "Démarrer une nouvelle conversation",
     "stop": "Arrêter",
     "stopShortcut": "Échap",
     "suggestedPrompts": {
@@ -499,11 +508,8 @@
         ]
       }
     },
-    "switchWorkflow": "Changer de workflow",
     "switchWorkflowForNodes": "Basculez vers {workflowName} pour ajouter des nœuds.",
     "takeTour": "Faire la visite guidée",
-    "targetFollowsVisibleWorkflow": "Le workflow cible suit l’onglet visible jusqu’à ce que vous choisissiez une cible, des nœuds de référence ou envoyiez un message.",
-    "targetForThisChat": "Cible de l’agent pour cette discussion",
     "targetNavigationUnavailable": "Cette cible de workflow n'est plus disponible.",
     "targetWorkflowOpenFailed": "Impossible d'ouvrir le workflow cible.",
     "targetWorkflowUnavailable": "Le workflow cible n'est plus disponible.",
@@ -545,7 +551,7 @@
     "workedForMinutes": "A travaillé pendant {minutes} min {seconds} s",
     "workedForSeconds": "A travaillé pendant {seconds} secondes",
     "workedNotConfirmedOnCanvas": "Modifications non confirmées sur votre canevas",
-    "workflowEditNotice": "L’agent peut désormais modifier {workflow}. Il fonctionne sur un seul workflow à la fois, et vous pouvez changer de workflow pendant la discussion.",
+    "workflowEditNotice": "L’agent peut désormais modifier {workflow}. Il ne traite qu’un workflow à la fois.",
     "workflowReferenceUnavailableReason": "Ce workflow référencé n’est plus disponible ou vous n’y avez pas accès.",
     "workflowSyncFailedDetail": "Ce workflow a été créé avec une version de document incompatible. Votre canevas est resté inchangé.",
     "workflowSyncFailedDetailCatalogMismatch": "Un nœud de ce flux de travail a changé depuis que l’agent l’a vu pour la dernière fois. Votre canevas est resté inchangé. Votre prochain message envoie votre canevas afin que l’agent puisse reconstruire sa copie du flux de travail.",
@@ -726,6 +732,7 @@
     },
     "modelName": "Nom du modèle",
     "modelNamePlaceholder": "Entrez un nom pour ce modèle",
+    "modelTypeNotAddable": "Ce type de modèle ne peut pas être ajouté au canevas depuis la bibliothèque de modèles. Ajoutez un nœud qui le charge, puis choisissez le modèle à cet endroit.",
     "modelTypeSelectorLabel": "Quel type de modèle est-ce ?",
     "modelTypeSelectorPlaceholder": "Sélectionnez le type de modèle",
     "modelUploaded": "Modèle importé avec succès.",
@@ -779,7 +786,8 @@
     "uploadModelHelpVideo": "Vidéo d'aide à l'importation de modèle",
     "uploadModelHowDoIFindThis": "Comment trouver ceci ?",
     "uploadSuccess": "Modèle importé avec succès !",
-    "uploadingModel": "Importation du modèle..."
+    "uploadingModel": "Importation du modèle...",
+    "useDisabledNoProvider": "Ce type de modèle n’est pas encore pris en charge"
   },
   "auth": {
     "accountChanged": {
@@ -1499,7 +1507,8 @@
       "apiNodeUsage": "Utilisation du nœud partenaire",
       "apiUsage": "Utilisation de l'API",
       "creditAdded": "Crédits ajoutés",
-      "gpuUsage": "Utilisation du GPU"
+      "gpuUsage": "Utilisation du GPU",
+      "routerUsage": "Utilisation du Router"
     },
     "faqs": "FAQ",
     "formerMember": "{name} (ancien membre)",
@@ -1516,6 +1525,15 @@
     "member": "Membre",
     "messageSupport": "Contacter le support",
     "model": "Modèle",
+    "personalWallet": {
+      "addCredits": "Ajouter des crédits personnels",
+      "apiKeyDescription": "Cette clé facture votre compte personnel. Créez une clé API d’équipe ou ajoutez des crédits personnels.",
+      "createTeamApiKey": "Créer une clé API d’équipe",
+      "sessionDescription": "Cette session facture votre compte personnel. Pour facturer une équipe à la place, basculez vers son espace de travail.",
+      "sessionNoTeamsDescription": "Cette session facture votre compte personnel. Ajoutez des crédits personnels pour continuer.",
+      "switchTo": "Basculer vers {workspaceName}",
+      "title": "Votre compte personnel n’a plus de crédits"
+    },
     "purchaseCredits": "Acheter des crédits",
     "refreshes": "Rafraîchit le {date}",
     "time": "Heure",
@@ -1528,6 +1546,7 @@
         "setUp": "Configurer"
       },
       "awaitingBankApprovalBody": "Votre banque doit approuver ce paiement avant que vos crédits soient ajoutés. Vous pouvez finaliser l’opération depuis l’application de votre banque ou via le lien de paiement de cet achat. Vous ne pourrez pas commencer un nouveau rechargement tant que celui-ci n’est pas terminé ou expiré.",
+      "balanceAfterTopup": "Après ce rechargement : {credits} crédit. | Après ce rechargement : {credits} crédits.",
       "buy": "Acheter",
       "buyCredits": "Continuer vers le paiement",
       "buyNow": "Acheter maintenant",
@@ -1558,7 +1577,7 @@
       "minRequired": "Minimum {credits} crédits",
       "minimumPurchase": "Achat minimum de ${amount} ({credits} crédits)",
       "needMore": "Besoin de plus ?",
-      "negativeBalanceNotice": "Votre solde est de −{credits} crédit. Ce rechargement le couvre d'abord. | Votre solde est de −{credits} crédits. Ce rechargement les couvre d'abord.",
+      "negativeBalanceNotice": "Votre solde est de −{credits} crédit. | Votre solde est de −{credits} crédits.",
       "noPaymentMethodCheckoutHint": "Cet espace de travail n'a aucune carte enregistrée pour les rechargements en un clic. Payez plutôt sur une page de paiement, ou définissez une carte par défaut afin que les prochains rechargements soient débités directement.",
       "openCheckout": "Ouvrir la page de paiement",
       "openPaymentPage": "Ouvrir la page de paiement",
@@ -1581,6 +1600,7 @@
       "setDefaultCard": "Définir une carte par défaut",
       "setDefaultCardError": "Impossible d'ouvrir les paramètres de la carte",
       "startOver": "Recommencer",
+      "stillNegativeAfterTopup": "Solde toujours négatif après ce rechargement : −{credits} crédit. | Solde toujours négatif après ce rechargement : −{credits} crédits.",
       "templateNote": "*Généré avec le modèle Wan Fun Control",
       "topUp": "Recharger",
       "unknownError": "Une erreur inconnue est survenue",
@@ -1745,21 +1765,21 @@
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
     "compatibleEnvironments": "Environnements compatibles",
-    "createCustomDeployment": "Créer un déploiement personnalisé",
+    "createCustomDeployment": "Créer une build personnalisée",
     "currentTooltip": "Exécuté sur {deployment}",
     "customDeployment": {
-      "body": "Un déploiement personnalisé ajoute les nœuds personnalisés et les modèles que Comfy Cloud n'a pas. Configurez-le sur la Platform, et il apparaîtra dans Exécuter sur pour votre espace de travail.",
+      "body": "Une build personnalisée ajoute les nœuds personnalisés et les modèles que Comfy Cloud ne propose pas. Vous la configurez sur Platform, puis elle apparaît sous Exécuter sur pour votre espace de travail.",
       "createOnPlatform": "Créer sur la Platform",
       "pointApi": "Appelez-le depuis votre produit comme une API à mise à l'échelle automatique",
       "pointGpu": "Travaillez dans ComfyUI sur le GPU de votre choix",
       "pointNodes": "Utilisez des nœuds personnalisés et des modèles qui ne sont pas disponibles sur Comfy Cloud",
-      "title": "Créer un déploiement personnalisé"
+      "title": "Créer une build personnalisée"
     },
     "defaultDeleted": "Supprimé",
     "defaultGone": "Le déploiement par défaut de l’espace de travail a été supprimé, les membres démarrent donc sur Comfy Cloud.",
     "defaultGoneOwner": "Le déploiement par défaut de l’espace de travail a été supprimé, les membres démarrent donc sur Comfy Cloud. Choisissez-en un nouveau sous Déploiement par défaut de l’espace de travail.",
     "deployCustomNodes": {
-      "body": "Créez un déploiement personnalisé qui exécute vos nœuds personnalisés et modèles sur Comfy Cloud, et qui apparaît dans Exécuter sur pour votre espace de travail.",
+      "body": "Créez une build personnalisée qui exécute vos nœuds personnalisés et vos modèles sur Comfy Cloud, puis apparaît sous Exécuter sur pour votre espace de travail.",
       "pointNodes": "Déployez les packs de nœuds personnalisés ou privés dont vos workflows ont besoin",
       "title": "Déployer des nœuds personnalisés sur Comfy Cloud"
     },
@@ -1772,18 +1792,20 @@
     "incompatibleEnvironments": "Environnements incompatibles",
     "labelWithDetail": "{label} · {detail}",
     "landed": "Exécuté sur {deployment}",
+    "later": "Plus tard",
     "linkRefused": "Impossible d’ouvrir ce déploiement",
     "linkTimedOut": "Ce déploiement a mis trop de temps à s’ouvrir. Réessayez le lien.",
     "linkWorkspaceRefused": "Impossible de basculer vers cet espace de travail. Vous êtes toujours dans {workspaceName}.",
     "lookupUnavailable": "Impossible de vérifier sur quel déploiement cet éditeur s’exécute.",
     "lookupUnavailableDetail": "Les modèles affichés sont ceux de Comfy Cloud. Rechargez pour réessayer.",
-    "manageDeployments": "Gérer les déploiements",
+    "manageBuilds": "Gérer les builds",
     "manageDeploymentsTooltip": "Gérez vos Builds et leurs déploiements sur la Developer Platform.",
     "membersStartOn": "Les membres sans sélection propre démarrent sur",
     "missingNodes": "Nœud {count} manquant | Nœuds {count} manquants",
     "missingNodesAfterReason": "Il ne peut pas exécuter ce workflow. Il lui manque {nodes}.",
     "missingNodesNamed": "{deployment} ne peut pas exécuter ce workflow. Il lui manque {nodes}.",
     "namedDeployment": "{name}",
+    "newDeploymentName": "Nouveau déploiement",
     "noDeployments": "Cet espace de travail n’a pas encore de déploiement.",
     "notChecked": "Non vérifié",
     "notCheckedAfterReason": "Impossible de vérifier s'il peut exécuter ce workflow.",
@@ -1801,6 +1823,10 @@
       "stopped": "{deployment} est arrêté. Démarrez-le pour y exécuter des tâches."
     },
     "releaseChanged": "Ce déploiement exécute désormais une autre version. Rechargez pour obtenir ses nœuds.",
+    "releaseChangedRun": "{deployment} exécute désormais la v{version}. Rechargez pour l’exécuter dessus.",
+    "releaseChangedRunNoVersion": "{deployment} exécute désormais une version différente. Rechargez pour l’exécuter dessus.",
+    "releaseChangedRunUnknown": "Les exécutions sont désormais dirigées vers une version différente. Rechargez pour l’exécuter dessus.",
+    "releaseChangedRunUnknownTarget": "la nouvelle version",
     "reload": "Recharger",
     "retry": "Réessayer",
     "retryLabel": "Réessayer de démarrer {deployment}",
@@ -1824,6 +1850,7 @@
     "startLabel": "Démarrer {deployment}",
     "startOnPlatformLabel": "Démarrer {deployment} sur la Developer Platform",
     "status": {
+      "building": "Création en cours",
       "failed": "Échec",
       "notReady": "Non prêt",
       "provisioning": "Démarrage",
@@ -1842,25 +1869,31 @@
     "unnamedDeployment": "Déploiement {id}",
     "unsaved": {
       "message": "Passer à {deployment} recharge l’onglet. Ces workflows comportent des modifications qui ne sont pas encore enregistrées.",
+      "reloadMessage": "Recharger l’onglet l’exécute sur {deployment}. Ces workflows comportent des modifications qui ne sont pas encore enregistrées.",
+      "reloadTitle": "Enregistrer vos workflows avant de recharger ?",
+      "reloadWithoutSaving": "Recharger sans enregistrer",
+      "saveAndReload": "Enregistrer et recharger",
       "saveAndSwitch": "Enregistrer et changer",
       "switchWithoutSaving": "Changer sans enregistrer",
       "tabsReturn": "Vos onglets ouverts réapparaîtront après le rechargement dans tous les cas.",
       "title": "Enregistrer vos workflows avant de changer ?"
     },
     "version": "v{version}",
+    "versionChanged": "{deployment} exécute désormais la v{version}. Rechargez pour utiliser ses nœuds.",
+    "versionChangedNoVersion": "{deployment} exécute désormais une version différente. Rechargez pour utiliser ses nœuds.",
     "workflowNeedsDeployment": {
-      "andMore": "{names} et {count} autres",
-      "buildOnPlatform": "Créer sur Platform",
-      "installBody": "Déployez une Build personnalisée pour ajouter les nœuds personnalisés et les modèles dont Comfy Cloud ne dispose pas. Configurez-la sur Platform, et elle apparaîtra sous Exécuter sur dans votre espace de travail.",
-      "installTitle": "Installez vos nœuds personnalisés manquants",
+      "createBody": "Un build personnalisé ajoute ce qui manque à Comfy Cloud pour que ce workflow fonctionne simplement.",
+      "createCustomBuild": "Créer une build personnalisée",
+      "createTitle": "Créer un build personnalisé pour exécuter ce workflow",
       "missingModels": "{count} modèle manquant | {count} modèles manquants",
       "missingNodes": "{count} nœud manquant | {count} nœuds manquants",
       "missingPacks": "{count} pack de nœuds manquant | {count} packs de nœuds manquants",
-      "noneRunIt": "Aucun déploiement dans cet espace de travail ne possède tous ces nœuds.",
+      "more": "+{count} de plus",
+      "pointBilling": "Ne payez que lorsque le GPU est en cours d’exécution, plus le stockage",
+      "showLess": "Afficher moins",
       "switch": "Basculer",
       "switchBody": "Comfy Cloud ne dispose pas de ces éléments. Basculez vers un déploiement qui les possède et continuez à travailler depuis celui-ci.",
-      "title": "Exécuter ce workflow sur un déploiement personnalisé",
-      "titleNoneRunIt": "Créez un déploiement pour exécuter ce workflow sur Comfy Cloud"
+      "title": "Exécuter ce workflow sur une build personnalisée"
     },
     "workspaceDefault": "Déploiement par défaut de l’espace de travail"
   },
@@ -2109,6 +2142,13 @@
         "title": "Échec de la génération",
         "toastMessage": "Mémoire GPU insuffisante. Essayez de réduire la résolution de l'image ou la taille du lot, puis relancez.",
         "toastTitle": "Échec de la génération"
+      },
+      "personal_wallet_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Cette exécution a été facturée à votre compte personnel, qui n’a plus de crédits.",
+        "title": "Crédits insuffisants",
+        "toastMessage": "Cette exécution a été facturée à votre compte personnel, qui n’a plus de crédits.",
+        "toastTitle": "Crédits insuffisants"
       },
       "preprocessing_failed": {
         "itemLabel": "{nodeName}",
@@ -2362,16 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "Demander à l’agent",
+    "createCustomBuild": "Créer un build personnalisé",
     "missingMedia": "Certains nœuds n'ont pas les entrées requises",
     "missingModels": "{count} modèle requis est manquant | {count} modèles requis sont manquants",
     "missingNodes": "Certains nœuds sont manquants et doivent être installés",
-    "moreDeployments": "{count} de plus",
+    "missingNodesOnCloud": "Les nœuds personnalisés requis ne sont pas pris en charge sur Cloud.",
     "multipleIssueCount": "{count} problème détecté | {count} problèmes détectés",
     "multipleIssuesMessage": "Résolvez ces problèmes avant d’exécuter le workflow.",
-    "runOnCustomDeployment": "Exécuter sur un déploiement personnalisé",
-    "runsOn": "S’exécute sur {deployment}",
-    "setUpCustomDeployment": "Configurer",
-    "switchDeployment": "Changer",
+    "switchBuild": "Changer de build",
+    "switchBuildTo": "Passer à {build}",
     "viewDetails": "Voir les détails"
   },
   "errorPanelSurvey": {
@@ -2443,10 +2482,19 @@
     "agentCreated": "Créé par l’agent",
     "agentExtensionAdded": "Votre agent a ajouté {name}",
     "agentExtensionDisableFailed": "Impossible de désactiver l’extension. Réessayez.",
+    "agentFinishedUnseen": "L’agent a répondu",
     "agentInputNeededShort": "Saisie requise",
     "agentModified": "L’agent a mis à jour ce workflow",
     "agentNeedsApproval": "L’agent attend votre réponse",
     "agentWorking": "L’agent travaille sur ce workflow",
+    "agentWorkingAndWorkflowRunning": "L’agent travaille et le workflow est en cours d’exécution",
+    "align": "Aligner",
+    "alignBottom": "Aligner les bords inférieurs",
+    "alignHorizontalCenters": "Aligner les centres horizontalement",
+    "alignLeft": "Aligner les bords gauches",
+    "alignRight": "Aligner les bords droits",
+    "alignTop": "Aligner les bords supérieurs",
+    "alignVerticalCenters": "Aligner les centres verticalement",
     "all": "Tout",
     "allKeybindingsReset": "Tous les raccourcis clavier ont été réinitialisés par défaut",
     "amount": "Quantité",
@@ -2530,6 +2578,9 @@
     "disabling": "Désactivation de {id}",
     "disconnectedFromBackend": "Déconnecté du backend. Vérifiez si le serveur est en cours d’exécution.",
     "dismiss": "Fermer",
+    "distributeGap": "Espacement entre les nœuds répartis",
+    "distributeHorizontally": "Répartir horizontalement",
+    "distributeVertically": "Répartir verticalement",
     "download": "Télécharger",
     "downloadAudio": "Télécharger l'audio",
     "downloadImage": "Télécharger l'image",
@@ -2592,6 +2643,7 @@
     "galleryThumbnail": "Miniature de la galerie",
     "galleryThumbnailPosition": "Miniature de la galerie {index} sur {total}",
     "gapHandle": "Espacement entre les nœuds",
+    "gapValue": "{value} unité de canevas | {value} unités de canevas",
     "getHelpAction": "Obtenir de l'aide",
     "goToNode": "Aller au nœud",
     "graphNavigation": "Navigation dans le graphe",
@@ -2665,6 +2717,8 @@
     "logs": "Journaux",
     "manageExtensions": "Gérer les extensions",
     "markdown": "markdown",
+    "matchHeight": "Uniformiser la hauteur",
+    "matchWidth": "Uniformiser la largeur",
     "maximizeDialog": "Agrandir la boîte de dialogue",
     "megapixelsValue": "{count} MP",
     "micPermissionDenied": "Permission du microphone refusée",
@@ -2714,6 +2768,7 @@
     "openLayerEditor": "Ouvrir l’éditeur de calques",
     "openManager": "Ouvrir le gestionnaire",
     "openNewIssue": "Ouvrir un nouveau problème",
+    "openWorkflows": "Workflows ouverts",
     "or": "ou",
     "output": "Sortie",
     "overwrite": "Écraser",
@@ -2812,6 +2867,7 @@
     "selectItemsToRename": "Sélectionnez les éléments à renommer",
     "selected": "Sélectionné",
     "selectedFile": "Fichier sélectionné",
+    "sessionRevoked": "Votre accès à cet espace de travail a pris fin. Connectez-vous à nouveau pour vous reconnecter.",
     "setAKeybindingForTheFollowing": "Définir un raccourci clavier pour :",
     "setAsBackground": "Définir comme arrière-plan",
     "settings": "Paramètres",
@@ -2848,7 +2904,7 @@
     "terminal": "Terminal",
     "textFailedToLoad": "Échec du chargement du texte",
     "tidyUp": "Ranger",
-    "tidyUpTooltip": "Aligner les nœuds en lignes et en colonnes et égaliser les espacements",
+    "tidyUpTooltip": "Alignez les nœuds en lignes et en colonnes, et uniformisez les espacements",
     "title": "Titre",
     "triggerPhrase": "Phrase déclencheuse",
     "unknownError": "Erreur inconnue",
@@ -3454,6 +3510,27 @@
     "newerVersionRequired": "Certains nœuds nécessitent une version plus récente de ComfyUI (actuelle : {version}). Veuillez effectuer la mise à jour pour utiliser tous les nœuds.",
     "newerVersionRequiredGeneric": "Certains nœuds nécessitent une version plus récente de ComfyUI. Veuillez effectuer la mise à jour pour utiliser tous les nœuds.",
     "unknownVersion": "inconnue"
+  },
+  "localMcp": {
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "connected": "Connecté : un agent a exécuté un workflow ici via Comfy MCP.",
+    "copyConfig": "Copier",
+    "description": "Permettez à un agent IA tel que Claude ou Cursor d’exécuter des workflows sur cette instance de ComfyUI via Comfy MCP. Comfy MCP s’exécute sur votre machine.",
+    "label": "Agent",
+    "locations": {
+      "claudeDesktop": "Ajoutez à claude_desktop_config.json (Paramètres > Développeur > Modifier la configuration), puis redémarrez Claude Desktop.",
+      "cursor": "Ajoutez à ~/.cursor/mcp.json, ou à .cursor/mcp.json dans un projet."
+    },
+    "openDocs": "Guide de configuration complet",
+    "step1": "1. Installez Comfy MCP",
+    "step2": "2. Ajoutez-le à votre client",
+    "step3": "3. Demandez à votre agent d’exécuter un workflow",
+    "step3Hint": "Redémarrez votre client, puis demandez-lui de confirmer que votre ComfyUI local est en cours d’exécution et d’exécuter un workflow. Ce panneau affiche « Connecté » après la première exécution.",
+    "title": "Connectez votre agent IA"
   },
   "logsTerminal": {
     "loadError": "Impossible de charger les journaux, veuillez vous assurer que votre backend ComfyUI est à jour.",
@@ -4282,6 +4359,18 @@
       "workspaceLabel": "Espace de travail"
     },
     "scopes": {
+      "comfy-mcp:tools:call": {
+        "label": "Exécuter des workflows et des modèles partenaires en votre nom, en utilisant vos crédits"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "Afficher les outils de workflow auxquels vous avez accès"
+      },
+      "comfy-router:models:invoke": {
+        "label": "Exécuter des modèles partenaires via Comfy Router, en utilisant vos crédits"
+      },
+      "comfy-router:models:read": {
+        "label": "Afficher le catalogue de modèles Comfy Router"
+      },
       "mcp:tools:call": {
         "label": "Exécuter des workflows en votre nom"
       },
@@ -4414,12 +4503,13 @@
     "cloudButton": {
       "checking": "Vérification de Comfy Cloud…",
       "resumeUpload": "Reprendre l’importation du modèle",
-      "tooltip": "Exécuter sur Comfy Cloud",
+      "tooltip": "Exécuter ce workflow sur Comfy Cloud",
       "uploading": "Importation des modèles vers Comfy Cloud, {percent} %"
     },
     "deploySetup": "Déployez votre configuration sur Comfy Cloud",
     "deploySetupDialog": {
       "body": "Déployez votre configuration locale sur Comfy Cloud sous forme de Build, puis utilisez-la dans ComfyUI ou appelez-la comme une API à mise à l’échelle automatique.",
+      "missingNodesBody": "Comfy Cloud ne dispose pas de certains nœuds utilisés par ce workflow. Déployez votre configuration locale sur Comfy Cloud en tant que Build, puis utilisez-la dans ComfyUI ou appelez-la comme une API avec mise à l’échelle automatique.",
       "platformTabBlocked": "Workflow enregistré. Cliquez à nouveau sur Déployer sur la plateforme pour continuer.",
       "pointGpu": "Exécutez sur de puissants GPU dans le cloud",
       "pointNodes": "Apportez vos nœuds personnalisés et vos modèles",
@@ -4477,10 +4567,18 @@
     "prepareFailed": "Impossible de préparer ce workflow pour Comfy Cloud",
     "prepareFailedDetail": "Vérifiez si le workflow contient des erreurs, enregistrez-le, puis réessayez.",
     "runDialog": {
-      "asksToSignIn": "Comfy Cloud vous demandera de vous connecter.",
+      "askAgainNotSaved": "Comfy Cloud demandera avant chaque vérification jusqu’à ce que vous rechargiez, mais pourrait cesser de demander ensuite.",
+      "body": "Ouvrez ce workflow sur Comfy Cloud, ou déployez votre configuration locale en tant que Build s’il nécessite des nœuds personnalisés.",
+      "checkCompatibility": "Vérifier la compatibilité",
+      "consentNotSaved": "Impossible d’enregistrer votre choix de vérification Comfy Cloud",
+      "dontAskAgain": "Ne plus demander",
+      "dontAskAgainNotSaved": "Comfy Cloud pourra vous le redemander la prochaine fois que vous ouvrirez ComfyUI.",
       "openOnCloud": "Ouvrir dans Comfy Cloud",
+      "pointApi": "Utilisez-le dans ComfyUI ou appelez-le comme une API",
       "ready": "Comfy Cloud dispose de chaque nœud et modèle utilisés par ce workflow. Il s’ouvre dans un nouvel onglet, prêt à être exécuté.",
-      "title": "Exécuter sur Comfy Cloud"
+      "readyWithUncheckedInputs": "Comfy Cloud possède tous les nœuds et modèles qu’il a pu vérifier. Il n’a pas pu vérifier les modèles pour ces entrées : {inputs}. Il s’ouvre dans un nouvel onglet.",
+      "sends": "La vérification enverra les noms des nœuds et des modèles de ce workflow à Comfy Cloud.",
+      "uncheckedInput": "{input} sur {nodeType}"
     },
     "verifyAccessFailed": "Impossible de vérifier l’accès à Comfy Cloud",
     "verifyAccessFailedDetail": "Si le bouton Cloud est toujours disponible, sélectionnez à nouveau Ouvrir dans Comfy Cloud."
@@ -4537,6 +4635,33 @@
     "tooltip": "Les nœuds partenaires exécutent des modèles propriétaires tels que Kling ou Veo sur le matériel du fournisseur, via Comfy. Ils utilisent des crédits ; le reste de Comfy reste gratuit.",
     "unmuteOpen": "Activer le son du clip à poids ouverts",
     "unmutePartner": "Activer le son du clip de nœud partenaire"
+  },
+  "platformFrame": {
+    "buildFailed": "Échec de la création. {deployment} n’a pas été déployé.",
+    "buildStep": "Étape {step} sur {of}",
+    "buildTakesMinutes": "Cela prend quelques minutes. Vous pouvez continuer à travailler.",
+    "building": "Création de {deployment}",
+    "deployFailed": "Échec du déploiement. {deployment} a été créé, mais n’a pas été déployé.",
+    "deploying": "Déploiement de {deployment}",
+    "finishingOnPrevious": "Finalisation de votre tâche sur la v{version}. | Finalisation de {count} de vos tâches sur la v{version}.",
+    "getStarted": "Commencer",
+    "later": "Plus tard",
+    "nothingChanged": "Aucune modification : {deployment} fonctionne toujours avec la v{version}.",
+    "nothingChangedNoVersion": "Aucune modification : {deployment} fonctionne toujours comme avant.",
+    "openOnPlatform": "Ouvrir sur la plateforme",
+    "preinstallTitle": "Préinstallez des modèles pour exécuter ce workflow",
+    "readyNew": "{deployment} est prêt",
+    "readyUpdate": "{deployment} fonctionne désormais avec la v{version}.",
+    "readyUpdateReload": "{deployment} fonctionne désormais avec la v{version}. Rechargez pour utiliser ses nœuds.",
+    "reload": "Recharger",
+    "switch": "Basculer",
+    "switchListingUnavailable": "Vos déploiements n’ont pas pu être chargés. Réessayez depuis Exécuter sur.",
+    "title": "Build personnalisée",
+    "unanswered": "La plateforme ne s’est pas ouverte ici.",
+    "updateDeployment": "Mettre à jour {deployment}",
+    "updateShortcut": "Appuyez sur E pour le mettre à jour.",
+    "updateUnfinished": "{deployment} n’a pas terminé sa mise à jour vers la v{version}.",
+    "viewDetails": "Voir les détails"
   },
   "profileMenu": {
     "balanceUnavailable": "Impossible de charger votre solde.",
@@ -4636,13 +4761,16 @@
   },
   "rightSidePanel": {
     "addFavorite": "Favori",
-    "addToDeploymentBuild": "Ajoutez-les au build de {deployment} sur la plateforme, puis déployez une nouvelle version.",
+    "addMissingItems": "Ajouter les éléments manquants au build",
+    "addMissingModelsToBuild": "Ajouter les modèles manquants à la compilation",
+    "addToDeploymentBuild": "Ajoutez-les au build de {deployment} sur Platform, puis déployez une nouvelle version.",
     "advancedInputs": "ENTRÉES AVANCÉES",
     "askAgent": "Demander à l’agent",
     "askAgentAbout": "Demander à l’agent à propos de {title}",
     "askAgentAboutAll": "Demander à l’agent à propos de {count} problème | Demander à l’agent à propos des {count} problèmes",
     "blockedLastRun": "Bloqué lors de la dernière exécution",
     "bypass": "Contourner",
+    "cloudLacksCustomNodes": "Comfy Cloud ne dispose pas de ces nœuds personnalisés",
     "collapse": "Réduire",
     "color": "Couleur du nœud",
     "editBuildOnPlatform": "Modifier le build sur la plateforme",
@@ -4784,6 +4912,7 @@
     "seeError": "Voir l'erreur",
     "selectedNodeErrors": "{node} — {count} problème | {node} — {count} problèmes",
     "selectedNodesErrors": "{nodes} nœuds sélectionnés — {count} problème | {nodes} nœuds sélectionnés — {count} problèmes",
+    "setUpCustomDeployment": "Configurer un build personnalisé",
     "settings": "Paramètres",
     "setupFilter": "Configuration requise : {count}",
     "setupNodeSummary": "{nodes} nœud — {count} élément | {nodes} nœud — {count} éléments",
@@ -5032,6 +5161,7 @@
     "Canvas Navigation": "Navigation sur le canevas",
     "ColorPalette": "Palette de Couleurs",
     "Comfy": "Confort",
+    "Comfy Cloud": "Comfy Cloud",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "Menu Contextuel",
     "Credits": "Crédits",
@@ -5077,6 +5207,7 @@
     "Server-Config": "Config-Serveur",
     "Settings": "Paramètres",
     "Sidebar": "Barre Latérale",
+    "Smart Guides": "Repères intelligents",
     "Tree Explorer": "Explorateur d'Arbre",
     "UV": "UV",
     "User": "Utilisateur",
@@ -5152,6 +5283,7 @@
     "viewControls": "Contrôles d'affichage"
   },
   "sideToolbar": {
+    "addModelsToDeployment": "Ajouter des modèles à ce déploiement",
     "assets": "Ressources",
     "backToAssets": "Retour à toutes les ressources",
     "browseTemplates": "Parcourir les modèles d'exemple",
@@ -5318,6 +5450,7 @@
     "templates": "Modèles",
     "themeToggle": "Basculer le thème",
     "workflowTab": {
+      "bookmarkSaveFailed": "La modification de votre favori n’a pas été enregistrée. Vérifiez votre connexion et réessayez.",
       "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce flux de travail ?",
       "confirmDeleteTitle": "Supprimer le flux de travail ?",
       "confirmOverwrite": "Le fichier ci-dessous existe déjà. Souhaitez-vous le remplacer ?",
@@ -5325,17 +5458,37 @@
       "deleteFailed": "La tentative de suppression du flux de travail a échoué.",
       "deleteFailedTitle": "Échec de la suppression",
       "deleted": "Flux de travail supprimé",
+      "deletedButBookmarksNotUpdated": "Workflow supprimé, mais vos favoris n’ont pas pu être mis à jour",
       "dirtyClose": "Les fichiers ci-dessous ont été modifiés. Souhaitez-vous les enregistrer avant de fermer ?",
       "dirtyCloseAnyway": "Fermer quand même",
       "dirtyCloseHint": "Maintenez Shift pour fermer sans invite",
       "dirtyCloseTitle": "Enregistrer les modifications ?",
+      "renamedButBookmarksNotUpdated": "Workflow renommé, mais vos favoris n’ont pas pu être mis à jour",
+      "status": {
+        "agentReplied": "L’agent a répondu",
+        "agentWorking": "L’agent travaille",
+        "runFailed": "Exécution échouée",
+        "runFinished": "Exécution terminée",
+        "unsavedChanges": "Modifications non enregistrées",
+        "waitingForAnswer": "L’agent attend votre réponse",
+        "workflowRunning": "Workflow en cours d’exécution"
+      },
       "workflowTreeType": {
         "bookmarks": "Favoris",
         "browse": "Parcourir",
         "open": "Ouvrir"
       }
     },
-    "workflows": "Flux de travail"
+    "workflows": "Flux de travail",
+    "workspaceLibrary": {
+      "blockedByModelRules": "Bloqué par les règles de modèle de ce build",
+      "empty": "Aucun modèle dans la bibliothèque de votre espace de travail.",
+      "explainer": "Modèles dans votre espace de travail. Ceux qui ne sont pas inclus dans cette build sont téléchargés lorsqu’une tâche en a besoin.",
+      "fromWorkspace": "Depuis votre espace de travail",
+      "loadFailed": "Impossible de charger la bibliothèque de votre espace de travail.",
+      "modelCount": "{count} modèle | {count} modèles",
+      "title": "Bibliothèque de l’espace de travail"
+    }
   },
   "skillPacks": {
     "errors": {
@@ -6053,6 +6206,7 @@
     "a1111CoreNodesUnavailable": "Impossible de charger le workflow car cette installation de ComfyUI ne dispose pas des nœuds principaux. Vérifiez que le backend a démarré correctement.",
     "a1111EmbeddingsUnavailable": "Les embeddings n’ont pas pu être chargés depuis le serveur. Le workflow a été importé, mais les noms des embeddings ont été conservés sous forme de texte brut.",
     "assetDropFailed": "Impossible de charger la ressource déposée",
+    "batchStoppedOnWorkflowChange": "Mise en file d’attente de {queued} éléments sur {requested}. Opération arrêtée, car vous avez changé de workflow et le reste aurait exécuté le mauvais workflow.",
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",
     "couldNotDetermineFileType": "Impossible de déterminer le type de fichier",
     "dropFileError": "Impossible de traiter l'élément déposé : {error}",
@@ -6282,6 +6436,12 @@
       "placeholderModel": "Sélectionner un modèle...",
       "placeholderUnknown": "Sélectionner un média...",
       "placeholderVideo": "Sélectionner une vidéo...",
+      "thumbnailSize": "Taille des miniatures",
+      "thumbnailSizes": {
+        "compact": "Compact",
+        "large": "Grande",
+        "standard": "Standard"
+      },
       "topResult": "Meilleur résultat : {result}"
     },
     "valueControl": {
@@ -6511,7 +6671,7 @@
         "available": "Disponible",
         "availableUntil": "Disponible jusqu’au {date}",
         "inUse": "Utilisés actuellement",
-        "overdrawn": "Vos exécutions ont utilisé {count} crédit de plus que vous n’en aviez. | Vos exécutions ont utilisé {count} crédits de plus que vous n’en aviez.",
+        "overdrawn": "Vous avez utilisé {count} crédit de plus que vous n’en aviez. Ajoutez des crédits pour continuer à l’utiliser. | Vous avez utilisé {count} crédits de plus que vous n’en aviez. Ajoutez des crédits pour continuer à l’utiliser.",
         "plan": "Forfait",
         "planOfPool": "{remaining} sur {total}",
         "planTooltip": "Les crédits du forfait sont utilisés avant les crédits de recharge.",

@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAIのGPTモデルでテキスト応答を生成します。テキストプロンプトを指定し、必要に応じて画像やファイルをコンテキストとして指定できます。",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "応答の生成に使用するモデル。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAIのGPT Image 2エンドポイントを通じて同期的に画像を生成します。",
     "display_name": "OpenAI GPT Image 2",
@@ -22118,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "出力フレームレート。'source'を選択すると、最大60 fpsまで動画のレートを維持します。より高いレートは補間されます。30 fpsを超える出力は料金が2倍になります。"
+        "tooltip": "出力フレームレート。'source' は動画のレートを最大60まで維持します。より高いレートは補間されます。turbo を使用する場合を除き、30 fpsを超える出力はコストが2倍になります。"
       },
       "target": {
         "name": "ターゲット",
@@ -22126,7 +22159,7 @@
       },
       "turbo": {
         "name": "ターボ",
-        "tooltip": "同じ価格で、ディテールはやや柔らかくなりますが、より高速にアップスケールします。"
+        "tooltip": "より低価格で、ディテールをやや柔らかくした高速アップスケール。"
       },
       "video": {
         "name": "動画",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデルです。recraftv4_stylesモデルはスタイルの一貫した生成向けに構築されており、常にstyle_idまたはstyle_referencesが必要です。recraftv4_1_flashは最速かつ最も低コストのモデルで、スタイルは一切サポートしません。"
+        "tooltip": "生成に使用するモデル。recraftv4_stylesモデルはスタイルの一貫した生成用に構築されており、常にstyle_idまたはstyle_referencesが必要です。recraftv4_1_flashは最速かつ最も低コストなモデルであるRecraft V4.1 Flash V2を実行し、スタイルを一切サポートしません。"
       },
       "model_size": {
         "name": "サイズ"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "画像"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchicalは形状を互いの上に重ねた階層レイヤーにします。cut_outは、プロッター、ビニールカッター、スクリーン印刷向けに、決して重ならない形状を作成します。"
+      },
+      "version": {
+        "name": "バージョン",
+        "tooltip": "v1_pro（Vectorizer Pro）は、滑らかな曲線、直線、シャープな角を備えたよりクリーンなSVGを生成し、レタリングや複雑な形状に最適です。"
       }
     },
     "outputs": {
@@ -29256,7 +29297,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1ではTripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します: v2.5は500,000、クアッドメッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -29333,7 +29374,7 @@
       },
       "face_limit": {
         "name": "面数上限",
-        "tooltip": "最大面数。-1 を指定すると Tripo が適応的に選択します（v3.x standard では約140万面、detailed では200万面）。Tripo は上限を自動的に適用します：v2.5 は500,000、四角形メッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -29476,7 +29517,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1ではTripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します: v2.5は500,000、クアッドメッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -30248,7 +30289,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは自動的に上限を適用します：v2.5は500,000、四角形メッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -30325,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します：v2.5は500,000、四角形メッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30392,8 +30433,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "テクスチャモデル：v3.xで生成したメッシュにはv3.0、v2.5で生成したメッシュにはv2.5。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30456,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "テクスチャモデル: v3.xで生成されたメッシュにはv3.0、v2.5で生成されたメッシュにはv2.5。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
