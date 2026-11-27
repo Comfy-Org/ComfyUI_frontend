@@ -2727,12 +2727,16 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
   it('drops the Build name while the spinner follows a build', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,
-      picked_deployment_id: D1
+      picked_deployment_id: D2
     })
     following('building', null)
     renderSwitcher()
 
-    await screen.findByTestId('deployment-switcher-building')
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/Studio Build/))
+    expect(
+      screen.getByTestId('deployment-switcher-building')
+    ).toBeInTheDocument()
     expect(
       screen.queryByTestId('deployment-switcher-build-name')
     ).not.toBeInTheDocument()
