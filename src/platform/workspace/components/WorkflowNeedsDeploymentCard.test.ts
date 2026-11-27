@@ -144,7 +144,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'A Custom Build adds what Comfy Cloud is missing, so this workflow runs as it is.'
+        'A Custom Build adds what Comfy Cloud is missing, so this workflow just runs.'
       )
     ).toBeInTheDocument()
     expect(
