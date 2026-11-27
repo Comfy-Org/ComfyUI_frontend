@@ -778,7 +778,16 @@ export type RunOnCloudTelemetryEvent =
       readonly name: typeof TelemetryEvents.RUN_ON_CLOUD_CHECK_FAILED
       readonly properties:
         | {
-            readonly reason: 'no_verdict' | 'empty_workflow'
+            readonly reason:
+              | 'no_verdict'
+              | 'empty_workflow'
+              | 'unreachable'
+              | 'busy'
+              | 'workspace'
+              | 'too_big'
+              | 'outdated'
+              | 'unreadable'
+              | 'switched_off'
           }
         | {
             readonly reason: 'unreadable_model_loader'
@@ -803,6 +812,7 @@ export type CustomDeploymentEntry =
   | 'model_library'
   | 'preinstall'
   | 'errors_panel'
+  | 'issues_toast'
 
 export type CustomDeploymentStep =
   | 'new'
@@ -1551,6 +1561,28 @@ export interface WidgetFavoriteToggledMetadata {
   source: 'right_side_panel'
 }
 
+/** PostHog variant keys of `$feature/prompt-editor-surface`. */
+export type PromptEditorSurfaceVariant = 'control' | 'panel'
+interface PromptEditorExperimentMetadata {
+  '$feature/prompt-editor-surface': PromptEditorSurfaceVariant
+}
+export interface PromptEditorExposureMetadata
+  extends Record<string, unknown>, PromptEditorExperimentMetadata {
+  variant: PromptEditorSurfaceVariant
+}
+/** An expanded text widget editor; `focus_view` is the full-screen dialog opened from the prompt panel. */
+export interface PromptEditorOpenedMetadata
+  extends Record<string, unknown>, Partial<PromptEditorExperimentMetadata> {
+  surface: 'dialog' | 'panel'
+  trigger: 'expand_button' | 'focus_view'
+}
+export interface PromptEditorClosedMetadata extends PromptEditorOpenedMetadata {
+  end_reason: 'close' | 'pagehide'
+  duration_ms: number
+  input_count: number
+  node_switch_count: number
+}
+
 /**
  * Fired once per duplicate link dropped during workflow load, when the loser
  * has a *different origin* from the survivor — i.e. a connection the file
@@ -2019,6 +2051,10 @@ export interface TelemetryProvider {
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
 
+  trackPromptEditorExposure?(metadata: PromptEditorExposureMetadata): void
+  trackPromptEditorOpened?(metadata: PromptEditorOpenedMetadata): void
+  trackPromptEditorClosed?(metadata: PromptEditorClosedMetadata): void
+
   // Named values shadow-diff diagnostics
   trackNamedValuesShadowDiffMismatch?(
     metadata: NamedValuesShadowDiffMismatchMetadata
@@ -2218,6 +2254,10 @@ export const TelemetryEvents = {
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',
 
+  PROMPT_EDITOR_EXPOSURE: 'app:prompt_editor_exposure',
+  PROMPT_EDITOR_OPENED: 'app:prompt_editor_opened',
+  PROMPT_EDITOR_CLOSED: 'app:prompt_editor_closed',
+
   // Named Values Shadow Diff (Comfy.Workflow.NamedValuesRestore diagnostics)
   NAMED_VALUES_SHADOW_DIFF_MISMATCH: 'app:named_values_shadow_diff_mismatch',
   NAMED_VALUES_SHADOW_DIFF_SUMMARY: 'app:named_values_shadow_diff_summary',
@@ -2333,6 +2373,9 @@ export type TelemetryEventProperties =
   | LocalMcpTelemetryEvent['properties']
   | CustomDeploymentTelemetryEvent['properties']
   | WidgetFavoriteToggledMetadata
+  | PromptEditorExposureMetadata
+  | PromptEditorOpenedMetadata
+  | PromptEditorClosedMetadata
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
   | LinkDedupDropMetadata

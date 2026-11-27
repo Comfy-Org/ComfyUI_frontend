@@ -1,17 +1,15 @@
 <template>
-  <div class="flex flex-col gap-1">
-    <Button
-      class="w-full border-0 bg-input p-2 text-foreground"
-      :aria-label="widget.label"
-      size="sm"
-      variant="textonly"
-      v-bind="filteredProps"
-      @click="handleClick"
-    >
-      {{ widget.label ?? widget.name }}
-      <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
-    </Button>
-  </div>
+  <Button
+    class="w-full border-0 bg-input p-2 text-foreground"
+    :aria-label="widget.label"
+    size="sm"
+    variant="textonly"
+    v-bind="filteredProps"
+    @click="handleClick"
+  >
+    {{ widget.label ?? widget.name }}
+    <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
+  </Button>
 </template>
 
 <script setup lang="ts">

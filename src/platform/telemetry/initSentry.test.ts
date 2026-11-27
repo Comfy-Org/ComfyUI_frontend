@@ -14,9 +14,11 @@ vi.mock(import('@sentry/vue'), { spy: true })
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { initSentry, resolveSentryEnvironment } from './initSentry'
+import { resetSentryRepeatCapForTests } from './sentryRepeatCap'
 
 beforeEach(() => {
   vi.mocked(sentryInit).mockReturnValue(undefined)
+  resetSentryRepeatCapForTests()
 })
 
 function initOptions(isCloud: boolean) {
@@ -138,6 +140,26 @@ it('groups WorkspaceApiError events in the send sanitizer', () => {
   ).toMatchObject({
     fingerprint: ['WorkspaceApiError', 'listWorkspaces', '503', 'unavailable']
   })
+})
+
+it('caps outgoing redacted fingerprints as one signature', () => {
+  const beforeSend = initOptions(true).beforeSend
+  assert.exists(beforeSend)
+  const kept = Array.from({ length: 4 }, (_, token) =>
+    Boolean(
+      beforeSend(
+        fromPartial({
+          fingerprint: [
+            'asset',
+            `https://files.example/image.png?token=${token}`
+          ]
+        }),
+        {}
+      )
+    )
+  )
+
+  expect(kept).toEqual([true, true, true, false])
 })
 
 it('redacts URL secrets from events, breadcrumbs, and spans', () => {

@@ -254,7 +254,8 @@ function createMockCanvas(): Partial<LGraphCanvas> {
     draw: vi.fn(),
     selectItems: vi.fn(),
     setDirty: vi.fn(),
-    setGraph: vi.fn()
+    setGraph: vi.fn(),
+    finalizeGhostPlacement: vi.fn()
   }
 }
 
@@ -2485,6 +2486,20 @@ describe('ComfyApp', () => {
       }
 
       expect(mockWorkflowService.showPendingWarnings).not.toHaveBeenCalled()
+    })
+
+    it('tells the warnings how a loaded workflow was opened', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, null, {
+        opening: 'reopened'
+      })
+
+      expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledWith(
+        undefined,
+        expect.objectContaining({ opening: 'reopened' })
+      )
     })
 
     it('keeps a configured load when the next queued configure fails without clearing it', async () => {
@@ -7552,6 +7567,38 @@ describe('ComfyApp', () => {
       } finally {
         releaseOpenWorkflow()
       }
+    })
+
+    it('tells the warnings a dropped workflow was brought in', async () => {
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      })
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      await useRealWorkflowService()
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: { '1': { class_type: 'test/DroppedNode', inputs: {} } }
+      })
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+        createTestFile('workflow.json', 'application/json')
+      ])
+      vi.mocked(useWorkflowStore().openWorkflow).mockImplementation(
+        async (workflow: ComfyWorkflow) => {
+          useWorkflowStore().activeWorkflow = markLoaded(workflow)
+          return markLoaded(workflow)
+        }
+      )
+      addScopedDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+
+      await vi.waitFor(() => {
+        expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledWith(
+          undefined,
+          { opening: 'brought_in' }
+        )
+      })
     })
 
     it('claims but ignores a drop while the canvas is select-only', async () => {

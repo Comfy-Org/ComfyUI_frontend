@@ -1595,6 +1595,7 @@
     "downloadingModel": "Downloading {name}",
     "downloadingModelOf": "Downloading {name} ({index} of {count})",
     "downloadedOfTotal": "{downloaded} of {total}",
+    "onBuild": "{detail} · {build}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
@@ -3177,7 +3178,9 @@
       "maximumAmount": "${amount} max.",
       "minRequired": "{credits} credits minimum",
       "maxAllowed": "{credits} credits maximum.",
-      "negativeBalanceNotice": "Your balance is −{credits} credit. This top-up covers that first. | Your balance is −{credits} credits. This top-up covers that first.",
+      "negativeBalanceNotice": "Your balance is −{credits} credit. | Your balance is −{credits} credits.",
+      "balanceAfterTopup": "After this top-up: {credits} credit. | After this top-up: {credits} credits.",
+      "stillNegativeAfterTopup": "Still negative after this top-up: −{credits} credit. | Still negative after this top-up: −{credits} credits.",
       "creditsPerDollar": "credits per dollar",
       "amountToPayLabel": "Amount to pay in dollars",
       "creditsToReceiveLabel": "Credits to receive",
@@ -3840,7 +3843,7 @@
         "available": "Available",
         "availableUntil": "Available until {date}",
         "inUse": "In use now",
-        "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
+        "overdrawn": "You used {count} more credit than you had. Add credits to keep running. | You used {count} more credits than you had. Add credits to keep running.",
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
         "planUsed": "{percent}% used",
@@ -4371,15 +4374,15 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a Custom Build",
-      "installTitle": "Install your missing custom nodes",
-      "installBody": "Create a Custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "createTitle": "Create a Custom Build to run this workflow",
+      "createBody": "A Custom Build adds what Comfy Cloud is missing, so this workflow just runs.",
+      "pointBilling": "Pay only while the GPU is running, plus storage",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
-      "andMore": "{names}, and {count} more",
-      "titleNoneRunItCustomBuild": "Create a Custom Build to run this workflow on Comfy Cloud",
+      "more": "+{count} more",
+      "showLess": "Show less",
       "createCustomBuild": "Create a Custom Build",
-      "noneRunIt": "No deployment in this workspace has all of these nodes.",
       "switchBody": "Comfy Cloud is missing these. Switch to a deployment that has them and keep working from there.",
       "switch": "Switch"
     },
@@ -4569,7 +4572,14 @@
       "cancelled": "Upload cancelled.",
       "failed": "Upload failed. Try again."
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "checkFailure": {
+      "unreachable": "Could not reach Comfy Cloud. Check your internet connection, then try again.",
+      "busy": "Comfy Cloud is busy right now. Try again in a minute.",
+      "workspace": "Could not use your Comfy Cloud workspace. Try again in a minute, or sign out and back in.",
+      "tooBig": "This workflow is too big to check on Comfy Cloud. It can have up to 2,000 node types and 500 models.",
+      "outdated": "This version of ComfyUI can't read Comfy Cloud's answer. Update ComfyUI, then try again.",
+      "unreadable": "Could not read this workflow to check it. Reload ComfyUI, then try again."
+    },
     "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
@@ -4649,6 +4659,11 @@
   "textEditor": {
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
+    "focusView": "Expand to focus view",
+    "noPrompt": "{node} has no prompt.",
+    "noPromptHint": "Select a node with a text input to edit its prompt here.",
+    "nodeSettings": "Node settings",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "widgetFileUpload": {
@@ -4864,6 +4879,7 @@
   "assetBrowser": {
     "library": "Library",
     "errorLoadingModels": "Some models couldn’t load. Reopen the Model Library to try again.",
+    "useDisabledNoProvider": "This model type is not supported yet",
     "allCategory": "All {category}",
     "allModels": "All Models",
     "byType": "By type",
@@ -5548,8 +5564,9 @@
     "finishSetupBeforeRun": "Finish setup before running the workflow",
     "cloudLacksCustomNodes": "Comfy Cloud doesn't have these custom nodes",
     "setUpCustomDeployment": "Set up a Custom Build",
-    "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new release.",
+    "addToDeploymentBuild": "Add these to {deployment}'s build on Platform, then deploy a new version.",
     "editBuildOnPlatform": "Edit build on Platform",
+    "addMissingItems": "Add missing items to Build",
     "openBuildsOnPlatform": "Open Builds on Platform",
     "addMissingModelsToBuild": "Add the missing models to the build",
     "severityCountsStatus": "{errors} blocking, {setup} setup required",
@@ -5646,6 +5663,10 @@
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
     "askAgent": "Ask agent",
+    "switchBuild": "Switch build",
+    "switchBuildTo": "Switch to {build}",
+    "createCustomBuild": "Create Custom Build",
+    "missingNodesOnCloud": "Required custom nodes aren't supported on Cloud.",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
     "missingMedia": "Some nodes are missing required inputs"
@@ -6443,6 +6464,8 @@
     "creditsUsed": "Agent used {credits} credit | Agent used {credits} credits",
     "freeUseNoticeLabel": "Free use notice",
     "firstChatFreeNotice": "Try your first chat for free!",
+    "agentCostNoticeLabel": "Agent cost notice",
+    "agentCostNotice": "Comfy Agent uses your workspace credits. Costs vary by model and request.",
     "creditTransitionNotice": "You've used your free agent credits. Further agent activity uses your workspace credits, which may include paid credits.",
     "runNotice": "The agent can modify the graph. Use Run permissions in the composer toolbar to control whether it asks before executing.",
     "runNoticeExpanded": "The agent can modify your workflow. Use Run permissions in the composer toolbar to control whether it asks before executing.",
@@ -6875,7 +6898,9 @@
       "above_max": "The largest top-up is {amount}. Add more with another top-up.",
       "whole_dollars": "Whole dollars only."
     },
-    "negativeBalance": "Your balance is −{credits} credits. This top-up covers that first.",
+    "negativeBalance": "Your balance is −{credits} credits.",
+    "balanceAfter": "After this top-up: {credits} credits.",
+    "stillNegativeAfter": "Still negative after this top-up: −{credits} credits.",
     "planLine": {
       "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",

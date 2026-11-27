@@ -35,6 +35,7 @@ import {
   nodePositionView,
   nodeSizeBuffer,
   nodeSizeView,
+  readNodePosition,
   readNodeRenderingSize,
   refreshNodeGeometry,
   setNodePosition,
@@ -891,7 +892,9 @@ export class LGraphNode
     const bounds = this._boundingRect
     const measured = this._measuredPos
     if (!measured) return bounds
-    const [x, y] = this.pos
+    const pos = readNodePosition(this)
+    const x = pos[0]
+    const y = pos[1]
     bounds[0] += x - measured[0]
     bounds[1] += y - measured[1]
     measured[0] = x
@@ -901,11 +904,9 @@ export class LGraphNode
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
   get boundingOffset(): Readonly<Point> {
-    const {
-      pos: [posX, posY],
-      boundingRect: [bX, bY]
-    } = this
-    return [posX - bX, posY - bY]
+    const { boundingRect } = this
+    const pos = readNodePosition(this)
+    return [pos[0] - boundingRect[0], pos[1] - boundingRect[1]]
   }
 
   get _posSize(): Rectangle {

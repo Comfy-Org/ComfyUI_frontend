@@ -9,7 +9,10 @@ import type {
   Vector2
 } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type {
+  MissingNodeType,
+  WorkflowOpening
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import type {
   ComfyApiWorkflow,
@@ -83,6 +86,7 @@ export interface LoadGraphDataOptions {
   openSource?: WorkflowOpenSource
   shareId?: string
   deferWarnings?: boolean
+  opening?: WorkflowOpening
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
   restoreHistory?: boolean

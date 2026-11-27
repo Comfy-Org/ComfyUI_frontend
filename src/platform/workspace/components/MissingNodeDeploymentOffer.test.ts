@@ -25,14 +25,14 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentPickState } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 
 import MissingNodeDeploymentOffer from './MissingNodeDeploymentOffer.vue'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
@@ -173,7 +173,7 @@ describe('MissingNodeDeploymentOffer', () => {
       deployment_id: agencyA.deployment_id
     })
     expect(reload).toHaveBeenCalledOnce()
-    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
   })
 
   describe('with unsaved workflows', () => {
@@ -196,13 +196,13 @@ describe('MissingNodeDeploymentOffer', () => {
     })
 
     it('asks to save them first, the same as the Run-bar switcher, and changes nothing on Cancel', async () => {
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(null)
       renderOffer()
 
       await userEvent.click(await offeredAgencyA())
 
       await waitFor(() =>
-        expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
           expect.objectContaining({
             message:
               "Switching to Agency A krea · dep-agency-a reloads the tab. These workflows have changes that aren't saved yet.",
@@ -221,7 +221,7 @@ describe('MissingNodeDeploymentOffer', () => {
     ])(
       'switches on $choice, and that reload skips the leave prompt',
       async ({ answer, saved }) => {
-        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+        vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(answer)
         renderOffer()
 
         await userEvent.click(await offeredAgencyA())

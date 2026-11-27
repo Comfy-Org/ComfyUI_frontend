@@ -16,6 +16,7 @@ import type {
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { withTextareaFloor } from '@/renderer/extensions/vueNodes/widgets/textareaFloor'
 import { useApp } from '@/scripts/appInstance'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -506,17 +507,21 @@ function processWidget(
     )
   )
 
+  const vueComponent = resolveWidgetComponent(type, renderState, liveWidget)
+  const rendersTextarea = vueComponent === getComponent('textarea')
+
   return {
     handleContextMenu: widgetContextMenu(ctx, widgetState.name),
     get sizing() {
-      return live ? getWidgetSizing(live.widget, live.node) : undefined
+      const sizing = live ? getWidgetSizing(live.widget, live.node) : undefined
+      return rendersTextarea ? withTextareaFloor(sizing) : sizing
     },
     get hasError() {
       return error.value
     },
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent: resolveWidgetComponent(type, renderState, liveWidget),
+    vueComponent,
     simplified,
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,

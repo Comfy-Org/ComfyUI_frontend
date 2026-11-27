@@ -180,6 +180,7 @@ const {
   maxTopupCents,
   suggestedTopupCents,
   negativeBalanceCredits,
+  quoteScope,
   pendingTopup,
   planLine,
   autoTopUp = { kind: 'hidden' },
@@ -200,6 +201,8 @@ const {
   maxTopupCents?: number
   suggestedTopupCents?: number | null
   negativeBalanceCredits?: number
+  /** Names the authenticated account behind the quote, e.g. the workspace; a change requests a fresh quote. */
+  quoteScope?: string
   pendingTopup?: AddCreditsPendingTopup
   planLine?: AddCreditsPlanLine
   autoTopUp?: AddCreditsAutoTopUpOffer
@@ -266,6 +269,8 @@ const dialog = useAddCreditsDialog({
   ports,
   initialAmount: initialAddCreditsAmount(suggestedTopupCents),
   autoTopUp: autoTopUpFields.request,
+  balanceCredits: () => negativeBalanceCredits,
+  quoteScope: () => quoteScope,
   facts: () => ({
     bounds: bounds.value,
     canTopUp,
