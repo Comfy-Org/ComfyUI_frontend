@@ -8,7 +8,10 @@ import type {
   ExportedSubgraphInstance,
   IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { prepareNodeConstruction } from '@/lib/litegraph/src/nodeConstruction'
 import {
   createTestRootGraph,
@@ -179,6 +182,7 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       useNodeDefStore().fromLGraphNode(explicitVisibleNode)?.display_name
     ).toBe('Visible subgraph')
 
+    Reflect.set(app, 'rootGraph', visibleGraph)
     const backgroundClone = backgroundNode.clone()
     assert.instanceOf(backgroundClone, SubgraphNode)
     expect(backgroundClone.subgraph).toBe(backgroundSubgraph)
@@ -204,23 +208,38 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     )
     Reflect.set(app, 'rootGraph', visibleGraph)
     useLitegraphService().registerSubgraphNodeDef(
-      createNodeDefV1({ name: subgraphId }),
+      createNodeDefV1({
+        name: subgraphId,
+        display_name: 'Owner A',
+        output: [],
+        output_name: [],
+        output_is_list: []
+      }),
       visibleSubgraph,
       subgraphInstanceData(subgraphId)
     )
     useLitegraphService().registerSubgraphNodeDef(
-      createNodeDefV1({ name: subgraphId }),
+      createNodeDefV1({
+        name: subgraphId,
+        display_name: 'Owner B',
+        output: [],
+        output_name: [],
+        output_is_list: []
+      }),
       backgroundSubgraph,
       subgraphInstanceData(subgraphId)
     )
     const Registered = LiteGraph.registered_node_types[subgraphId]
     assert.exists(Registered)
     const constructorTitles: string[] = []
+    const constructorOutputs: string[][] = []
     class DerivedSubgraphNode extends Registered {
       constructor(title: string) {
         super(title)
         constructorTitles.push(title)
         this.properties.extensionOwner = this.graph?.id
+        visibleSubgraph.addOutput('extensionResult', 'MASK')
+        constructorOutputs.push(this.outputs.map(({ name }) => name))
       }
 
       override getTitle() {
@@ -237,10 +256,13 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     assert.instanceOf(node, SubgraphNode)
     expect(node).toBeInstanceOf(DerivedSubgraphNode)
     expect(constructorTitles).toEqual(['Explicit A'])
-    expect(node.getTitle()).toBe('Extension: Test Node')
+    expect(constructorOutputs).toEqual([['extensionResult']])
+    expect(visibleGraph.nodes).not.toContain(node)
+    expect(node.getTitle()).toBe('Extension: Owner B')
     expect(node.properties.extensionOwner).toBe(visibleGraph.id)
     expect(node.graph).toBe(visibleGraph)
     expect(node.subgraph).toBe(visibleSubgraph)
+    expect(useNodeDefStore().fromLGraphNode(node)?.display_name).toBe('Owner A')
   })
 
   it('preserves outer ownership across nested factory construction and an inner constructor failure', () => {
