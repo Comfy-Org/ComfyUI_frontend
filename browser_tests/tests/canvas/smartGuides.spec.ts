@@ -302,7 +302,19 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           exact: true
         })
 
+        const distribute = comfyPage.page.getByRole('button', {
+          name: 'Distribute horizontally',
+          exact: true
+        })
+
         await expect(matchHeight).toBeInViewport({ ratio: 1 })
+        await expect(async () => {
+          const [distributeBox, matchHeightBox] = await Promise.all([
+            distribute.boundingBox(),
+            matchHeight.boundingBox()
+          ])
+          expect(distributeBox?.y).toBe(matchHeightBox?.y)
+        }).toPass({ timeout: 5000 })
         await matchHeight.click()
 
         await expect
