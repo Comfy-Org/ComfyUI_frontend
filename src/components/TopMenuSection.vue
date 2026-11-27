@@ -243,6 +243,7 @@ import { useManagerState } from '@/platform/customNodes/manager/composables/useM
 import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useOfferMissingModelsDialog } from '@/platform/workflowErrors/missingModel/composables/useOfferMissingModelsDialog'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -345,6 +346,7 @@ const shouldShowRedDot = computed((): boolean => {
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 const { viewErrorsInGraph } = useViewErrorsInGraph()
+useOfferMissingModelsDialog()
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
