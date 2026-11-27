@@ -7,6 +7,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
@@ -392,6 +394,27 @@ describe('ensureSignedIn', () => {
     )
 
     await expect(ensureSignedIn()).resolves.toBe(false)
+  })
+
+  it('reports the failure that kept the sign-in dialog from opening', async () => {
+    const failure = new Error('chunk failed')
+    userHeader(null)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockRejectedValue(failure)
+
+    await expect(ensureSignedIn()).resolves.toBe(false)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'agent',
+      errorType: 'failure_opening_agent_sign_in_dialog',
+      level: 'warning'
+    })
+  })
+
+  it('does not report when the user simply declines to sign in', async () => {
+    userHeader(null)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
+
+    await expect(ensureSignedIn()).resolves.toBe(false)
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it.for([
