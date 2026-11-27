@@ -1,7 +1,14 @@
 import { cleanup, render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, useTemplateRef } from 'vue'
+import {
+  KeepAlive,
+  defineComponent,
+  h,
+  nextTick,
+  ref,
+  useTemplateRef
+} from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -205,6 +212,61 @@ describe('mounted Vue node measurements', () => {
     expect(observer.observe).toHaveBeenCalledTimes(2)
     observer.resize(element, 225, 150)
     expect(dirty).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the measurement but stops observing while a KeepAlive node is inactive', async () => {
+    const active = ref(true)
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(KeepAlive, () => (active.value ? h(TrackedNode) : null))
+      })
+    )
+    await nextTick()
+    const element = screen.getByTestId('node')
+    const observer = [...Observer.live][0]
+    expect(observer.observe).toHaveBeenCalledExactlyOnceWith(element)
+    observer.resize(element, 225, 150)
+
+    active.value = false
+    await nextTick()
+    expect(observer.unobserve).toHaveBeenCalledWith(element)
+    expect(Observer.live.size).toBe(0)
+    expect(readMountedNodeSize(graph, id, { collapsed: false })?.width).toBe(
+      225
+    )
+
+    active.value = true
+    await nextTick()
+    expect([...Observer.live][0].observe).toHaveBeenCalledExactlyOnceWith(
+      element
+    )
+  })
+
+  it('stops observing a widget grid while its KeepAlive node is inactive', async () => {
+    const active = ref(true)
+    const WidgetGrid = defineComponent({
+      setup() {
+        useWidgetGridResizeTracking(id)
+        return () => h('div', { 'data-testid': 'widgets' })
+      }
+    })
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(KeepAlive, () => (active.value ? h(WidgetGrid) : null))
+      })
+    )
+    await nextTick()
+    const element = screen.getByTestId('widgets')
+
+    active.value = false
+    await nextTick()
+    expect(Observer.live.size).toBe(0)
+
+    active.value = true
+    await nextTick()
+    expect([...Observer.live][0].observe).toHaveBeenCalledWith(element)
   })
 
   it('refreshes slot offsets for a widget grid without reporting a node size', async () => {

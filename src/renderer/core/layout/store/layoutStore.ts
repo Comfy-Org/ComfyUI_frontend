@@ -360,6 +360,11 @@ class LayoutStoreImpl {
     return ynode ? yNodeToLayout(ynode) : null
   }
 
+  /** Counter that moves whenever this node's layout entry is written. */
+  getNodeRevision(rootGraphId: UUID, nodeId: NodeId): number {
+    return this.nodeRevisions.get(makeScopedLayoutKey(rootGraphId, nodeId)) ?? 0
+  }
+
   private triggerNodeLayout(nodeKey: ScopedLayoutKey): void {
     this.nodeRevisions.set(nodeKey, (this.nodeRevisions.get(nodeKey) ?? 0) + 1)
   }

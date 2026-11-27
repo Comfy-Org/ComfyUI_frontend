@@ -1,5 +1,6 @@
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { ensureNodesAddressable } from '@e2e/fixtures/utils/lodZoom'
 
 interface FitToViewOptions {
   selectionOnly?: boolean
@@ -99,5 +100,5 @@ export async function fitToViewInstant(
     { bounds, zoom }
   )
 
-  await comfyPage.nextFrame()
+  await ensureNodesAddressable(comfyPage)
 }

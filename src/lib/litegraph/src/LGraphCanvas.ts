@@ -786,27 +786,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   // Cached LOD threshold values for performance
   private _lowQualityZoomThreshold: number = 0
   private _isLowQuality: boolean = false
+  private _lowQualityDpr: number = 0
 
   /**
    * Updates the low quality zoom threshold based on current settings.
    * Called when min_font_size_for_lod or DPR changes.
    */
   private updateLowQualityThreshold(): void {
+    this._lowQualityDpr = window.devicePixelRatio || 1
     if (this._min_font_size_for_lod === 0) {
-      // LOD disabled
       this._lowQualityZoomThreshold = 0
       this._isLowQuality = false
       return
     }
 
-    const baseFontSize = LiteGraph.NODE_TEXT_SIZE // 14px
-    const dprAdjustment = Math.sqrt(this.dpr) //Using sqrt here because higher DPR monitors do not linearily scale the readability of the font, instead they increase the font by some heurisitc, and to approximate we use sqrt to say basically a DPR of 2 increases the readability by 40%, 3 by 70%
+    const baseFontSize = LiteGraph.NODE_TEXT_SIZE
+    const dprAdjustment = Math.sqrt(this._lowQualityDpr)
 
-    // Calculate the zoom level where text becomes unreadable
     this._lowQualityZoomThreshold =
       this._min_font_size_for_lod / (baseFontSize * dprAdjustment)
 
-    // Update current state based on current zoom
     this._isLowQuality = this.ds.scale < this._lowQualityZoomThreshold
   }
 
@@ -814,6 +813,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Render low quality when zoomed out based on minimum readable font size.
    */
   get low_quality(): boolean {
+    if (this._lowQualityDpr !== (window.devicePixelRatio || 1)) {
+      this.updateLowQualityThreshold()
+    }
     return this._isLowQuality
   }
 
@@ -3121,7 +3123,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private _processNodeClick(e: CanvasPointerEvent, node: LGraphNode): void {
-    if (LiteGraph.vueNodesMode) {
+    const suspended = LiteGraph.vueNodesMode && LiteGraph.vueNodesSuspended
+    if (LiteGraph.vueNodesMode && !suspended) {
       return
     }
 
@@ -3138,12 +3141,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const inCollapse = node.isPointInCollapse(x, y)
-    if (inCollapse) {
+    if (inCollapse && !suspended) {
       pointer.onClick = () => {
         node.collapse()
         this.setDirty(true, true)
       }
-    } else if (!node.flags.collapsed) {
+    } else if (!node.flags.collapsed && !suspended) {
       const { inputs, outputs } = node
 
       for (const [i, output] of outputs.entries()) {
@@ -3229,7 +3232,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const pos: Point = [x - node.pos[0], y - node.pos[1]]
 
-    const widget = node.getWidgetOnPos(x, y)
+    const widget = suspended ? undefined : node.getWidgetOnPos(x, y)
     if (widget) {
       this.processWidgetClick(e, node, widget)
       this.node_widget = [node, widget]
@@ -3250,7 +3253,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.processNodeDblClicked(node)
       }
 
-      if (node.title_buttons.length && !node.flags.collapsed) {
+      if (node.title_buttons.length && !node.flags.collapsed && !suspended) {
         const nodeRelativeX = pos[0]
         const nodeRelativeY = pos[1]
 
@@ -3266,14 +3269,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
       }
-      for (const badge of node.badges.map(toValue).filter((b) => b.onClick)) {
+      const clickableBadges = suspended
+        ? []
+        : node.badges.map(toValue).filter((b) => b.onClick)
+      for (const badge of clickableBadges) {
         if (isInRect(pos[0], pos[1], badge.boundingRect)) {
           pointer.onClick = badge.onClick
           return
         }
       }
 
-      if (node.onMouseDown?.(e, pos, this)) {
+      if (!suspended && node.onMouseDown?.(e, pos, this)) {
         pointer.onClick = () => {}
         return
       }

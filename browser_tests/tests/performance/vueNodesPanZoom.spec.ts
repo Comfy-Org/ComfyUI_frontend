@@ -14,6 +14,7 @@ import {
 const NODE_COUNTS = [60, 245] as const
 const TEST_TIMEOUT_MS = 300_000
 const QUEUE_PANEL_SETTING = 'Comfy.Queue.QPOV2'
+const NO_LOD_SETTINGS = { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 }
 const QUEUE_LAYOUTS = [
   { name: 'floating-queue', docked: false },
   { name: 'docked-queue', docked: true }
@@ -50,7 +51,9 @@ function definePanZoomTests(renderer: Renderer) {
 
   for (const { name, docked } of QUEUE_LAYOUTS) {
     test.describe(name, () => {
-      test.use({ initialSettings: { [QUEUE_PANEL_SETTING]: docked } })
+      test.use({
+        initialSettings: { ...NO_LOD_SETTINGS, [QUEUE_PANEL_SETTING]: docked }
+      })
 
       for (const nodeCount of NODE_COUNTS) {
         test(`${renderer} ${nodeCount} nodes current node progress`, async ({
@@ -75,7 +78,11 @@ function definePanZoomTests(renderer: Renderer) {
   }
 }
 
-test.use({ trace: 'off', video: 'off' })
+test.use({
+  trace: 'off',
+  video: 'off',
+  initialSettings: NO_LOD_SETTINGS
+})
 
 test.describe('Vue nodes pan/zoom', { tag: ['@perf', '@vue-nodes'] }, () => {
   test.setTimeout(TEST_TIMEOUT_MS)

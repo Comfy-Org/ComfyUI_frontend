@@ -17,13 +17,19 @@
       @pointermove.capture="forwardPointerMovePanEvent"
       @keydown.space="forwardSpaceKeyEvent"
     >
-      <LGraphNode
-        v-for="nodeData in allNodes"
-        :key="nodeData.id"
-        :node-data
-        :data-node-id="nodeData.id"
-      />
+      <KeepAlive v-for="nodeData in allNodes" :key="nodeData.id">
+        <LGraphNode
+          v-if="isNodeMounted(nodeData.id)"
+          :node-data
+          :data-node-id="nodeData.id"
+        />
+      </KeepAlive>
     </TransformPane>
+    <NodeBoxOverlay
+      v-if="shouldRenderVueNodes && comfyAppReady && isLowQuality"
+      :get-boxes="getNodeBoxes"
+      :content-version="boxContentVersion"
+    />
     <LinkOverlayCanvas
       v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
       :canvas="comfyApp.canvas"
@@ -123,7 +129,7 @@ let activeStartup: symbol | undefined
 </script>
 
 <script setup lang="ts">
-import { until, useEventListener } from '@vueuse/core'
+import { until, useElementSize, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -196,6 +202,19 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import type { NodeBox } from '@/renderer/core/canvas/nodeBoxRenderer'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { boundsIntersect } from '@/renderer/core/layout/utils/layoutMath'
+import NodeBoxOverlay from '@/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue'
+import { useLowQualityRendering } from '@/renderer/extensions/vueNodes/composables/useLowQualityRendering'
+import { useDeferredNodeMount } from '@/renderer/extensions/vueNodes/composables/useDeferredNodeMount'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { createNodeBox } from '@/renderer/extensions/vueNodes/utils/createNodeBox'
+import { findLodPinnedNodeIds } from '@/renderer/extensions/vueNodes/utils/findLodPinnedNodeIds'
+import { isRenderableColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { isNodeExcludedFromCulling } from '@/services/vueNodeCullingService'
 import SharedNodeTooltip from '@/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
@@ -369,6 +388,129 @@ const allNodes = computed((): NodeState[] => {
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
 })
+
+function toRenderableNodeColor(color: string | undefined) {
+  const nodeColor = themeStore.toNodeColor(color)
+  return isRenderableColor(nodeColor) ? nodeColor : undefined
+}
+const nodeColors = computed(
+  () =>
+    new Map(
+      allNodes.value.map((node) => [
+        node.id,
+        {
+          body: toRenderableNodeColor(node.bgcolor),
+          title: toRenderableNodeColor(node.color)
+        }
+      ])
+    )
+)
+
+const nodeBoxCache = new Map<NodeId, { box: NodeBox; revision: number }>()
+let nodeBoxCacheKey: unknown[] = []
+
+function invalidateNodeBoxCache(): void {
+  const key = [
+    layoutStore.slotOffsetVersion,
+    boxContentVersion.value,
+    canvasStore.currentGraph
+  ]
+  if (key.every((part, index) => part === nodeBoxCacheKey[index])) return
+  nodeBoxCache.clear()
+  nodeBoxCacheKey = key
+}
+
+const { isLowQuality } = useLowQualityRendering(
+  computed(() => canvasStore.canvas ?? undefined)
+)
+const lodPinnedNodeIds = shallowRef<ReadonlySet<NodeId>>(new Set())
+watch(
+  isLowQuality,
+  (lowQuality) => {
+    lodPinnedNodeIds.value = lowQuality
+      ? findLodPinnedNodeIds(
+          vueNodeDropTarget.value,
+          canvasStore.canvas?.linkConnector
+        )
+      : new Set()
+  },
+  { flush: 'sync' }
+)
+const detailedNodeIds = computed(() => {
+  const nodeIds = new Set(lodPinnedNodeIds.value)
+  for (const { id } of allNodes.value) {
+    if (isNodeExcludedFromCulling(id)) nodeIds.add(id)
+  }
+  return nodeIds
+})
+
+const { camera } = useTransformState()
+const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasRef)
+function isNodeInView(nodeId: NodeId): boolean {
+  const { rootGraphId } = canvasStore
+  const bounds =
+    rootGraphId && layoutStore.getNodeLayout(rootGraphId, nodeId)?.bounds
+  if (!bounds) return true
+  const scale = camera.z || 1
+  return boundsIntersect(bounds, {
+    x: -camera.x,
+    y: -camera.y - LiteGraph.NODE_TITLE_HEIGHT,
+    width: canvasWidth.value / scale,
+    height: canvasHeight.value / scale + LiteGraph.NODE_TITLE_HEIGHT
+  })
+}
+const { isNodeMounted } = useDeferredNodeMount({
+  nodeIds: computed(() => allNodes.value.map(({ id }) => id)),
+  isLowQuality,
+  keptNodeIds: detailedNodeIds,
+  isNodeInView,
+  viewVersion: () => [
+    camera.x,
+    camera.y,
+    camera.z,
+    canvasWidth.value,
+    canvasHeight.value,
+    layoutStore.layoutVersion
+  ]
+})
+
+const boxContentVersion = ref(0)
+watch(
+  [nodeColors, detailedNodeIds, () => canvasStore.currentGraph?._version],
+  () => boxContentVersion.value++
+)
+
+function* getNodeBoxes(viewport: Bounds): Generator<NodeBox> {
+  invalidateNodeBoxCache()
+
+  const graph = canvasStore.currentGraph
+  const boxOptions = {
+    colourGetter: canvasStore.canvas?.colourGetter,
+    getSlotPosition,
+    isSlotColorRenderable: isRenderableColor,
+    widgetHeight: LiteGraph.NODE_WIDGET_HEIGHT
+  }
+
+  const { rootGraphId } = canvasStore
+  for (const { id } of allNodes.value) {
+    if (detailedNodeIds.value.has(id)) continue
+
+    const revision = rootGraphId
+      ? layoutStore.getNodeRevision(rootGraphId, id)
+      : 0
+    let cached = nodeBoxCache.get(id)
+    if (cached?.revision !== revision) {
+      const node = graph?.getNodeById(id)
+      if (!node) continue
+      cached = {
+        box: createNodeBox(node, nodeColors.value.get(id), boxOptions),
+        revision
+      }
+      nodeBoxCache.set(id, cached)
+    }
+    if (boundsIntersect(cached.box.bounds, viewport)) yield cached.box
+  }
+}
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return
   canvasStore.canvas.overlayCanvas = el

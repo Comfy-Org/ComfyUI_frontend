@@ -278,10 +278,24 @@ export class VueNodeHelpers {
         window.app!.extensionManager.setting.get('Comfy.VueNodes.Enabled') &&
         window.app!.canvas.graph!.nodes.length > 0
     )
-    if (expectsNodes) {
-      await expect(this.nodes.first()).toBeVisible()
-    } else {
-      await expect(this.nodes).toHaveCount(0)
+    try {
+      if (expectsNodes) {
+        await expect(this.nodes.first()).toBeVisible()
+      } else {
+        await expect(this.nodes).toHaveCount(0)
+      }
+    } catch (error) {
+      const suspendedAt = await this.page.evaluate(() =>
+        window.LiteGraph?.vueNodesSuspended ? window.app!.canvas.ds.scale : null
+      )
+
+      if (suspendedAt !== null) {
+        throw new Error(
+          `No Vue nodes are addressable: at canvas zoom ${suspendedAt.toFixed(3)} nodes render as level-of-detail canvas boxes with no [data-node-id] element. Call ensureNodesAddressable(comfyPage) after loading.`,
+          { cause: error }
+        )
+      }
+      throw error
     }
   }
 

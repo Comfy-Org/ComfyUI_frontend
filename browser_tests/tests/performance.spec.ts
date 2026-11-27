@@ -327,12 +327,19 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
   })
 
   test.describe('vue renderer large graph', { tag: '@vue-nodes' }, () => {
+    test.use({ initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 } })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('large-graph-workflow')
     })
 
     test.describe('workflow image', () => {
-      test.use({ initialSettings: { 'Comfy.PromptFilename': false } })
+      test.use({
+        initialSettings: {
+          'LiteGraph.Canvas.MinFontSizeForLOD': 0,
+          'Comfy.PromptFilename': false
+        }
+      })
 
       test('export', async ({ comfyPage }, testInfo) => {
         const download = comfyPage.page.waitForEvent('download')
@@ -467,91 +474,99 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
         })
     })
 
-    test('zoom out idle', async ({ comfyPage }) => {
-      // This test previously claimed to measure size-based culling
-      // (isNodeTooSmall / isNodeInViewport) and asserted scale < 0.02.
-      // No such culling exists in production source: GraphCanvas.vue mounts
-      // every Vue node from allNodes at any zoom, and the only
-      // isNodeTooSmall / isNodeInViewport matches in the repo are stale
-      // comments in this file. The helper sent wheel events over an overlay,
-      // leaving the workflow's 0.5 scale unchanged; the old <0.02 assertion
-      // was also below the real ds.min_scale clamp (0.1). This kept the perf
-      // job red and the baseline pipeline dead (issue #15545).
-      //
-      // Until renderer-owned LOD lands (PR #15031 replaces Vue widget DOM
-      // below the readable-font threshold, reachable at production zoom),
-      // this measures the honest current behavior: frame cost at maximum
-      // supported zoom-out with all Vue node DOM still mounted.
-      // Zoom out to the ds.min_scale clamp (0.1) before measuring so the
-      // metric captures only idle frames at minimum scale, not zoom
-      // input/render cost.
-      const box = await comfyPage.canvas.boundingBox()
-      if (!box) throw new Error('Canvas bounding box not available')
-      await comfyPage.page.mouse.move(
-        box.x + box.width / 2,
-        box.y + box.height / 2
+    test('zoom out culling', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'LiteGraph.Canvas.MinFontSizeForLOD',
+        8
       )
+      await comfyPage.canvasOps.setScale(1)
+      const canvasBox = await comfyPage.canvas.boundingBox()
+      if (!canvasBox) throw new Error('Canvas bounding box not available')
+
+      const centerX = canvasBox.x + canvasBox.width / 2
+      const centerY = canvasBox.y + canvasBox.height / 2
+      const lodThreshold = await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const textSize = window.LiteGraph!.NODE_TEXT_SIZE
+        const dprAdjustment = Math.sqrt(window.devicePixelRatio || 1)
+        return canvas.min_font_size_for_lod / (textSize * dprAdjustment)
+      })
+
+      await comfyPage.perf.startMeasuring()
+
+      await comfyPage.page.mouse.move(centerX, centerY)
       for (let i = 0; i < 20; i++) {
         await comfyPage.page.mouse.wheel(0, 100)
         await comfyPage.nextFrame()
       }
+
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
-        .toBeCloseTo(0.1, 5)
+        .toBeLessThan(lodThreshold)
 
-      await comfyPage.perf.startMeasuring()
-
-      // Idle at maximum zoom-out with everything mounted.
       for (let i = 0; i < 60; i++) {
         await comfyPage.nextFrame()
       }
 
-      const m = await comfyPage.perf.stopMeasuring('vue-zoom-out-idle')
+      for (let i = 0; i < 20; i++) {
+        await comfyPage.page.mouse.wheel(0, -100)
+        await comfyPage.nextFrame()
+      }
+
+      const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
       recordMeasurement(m)
       console.log(
-        `Vue zoom out idle: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
+        `Vue zoom culling: ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.frameDurationMs.toFixed(1)}ms/frame`
       )
     })
   })
 
-  test(
-    'subgraph transition (enter and exit)',
-    { tag: ['@vue-nodes'] },
-    async ({ comfyPage }, testInfo) => {
-      // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
-      // The signal is dominated by N=80 mount cost, so a single sample per
-      // CI invocation is sufficient — early-return on subsequent repeats.
-      if (testInfo.repeatEachIndex > 0) return
+  test.describe('subgraph transition', () => {
+    test.use({ initialSettings: { 'LiteGraph.Canvas.MinFontSizeForLOD': 0 } })
 
-      // Load workflow with a subgraph containing 80 interior nodes.
-      // Entering the subgraph unmounts root nodes and mounts all 80 interior
-      // nodes synchronously — this is the bottleneck we're measuring.
-      await comfyPage.workflow.loadWorkflow('subgraphs/large-subgraph-80-nodes')
+    test(
+      'subgraph transition (enter and exit)',
+      { tag: ['@vue-nodes'] },
+      async ({ comfyPage }, testInfo) => {
+        // Heaviest perf test: loads an 80-node subgraph and pays ~30s/repeat.
+        // The signal is dominated by N=80 mount cost, so a single sample per
+        // CI invocation is sufficient — early-return on subsequent repeats.
+        if (testInfo.repeatEachIndex > 0) return
 
-      await comfyPage.idleFrames(30)
+        // Load workflow with a subgraph containing 80 interior nodes.
+        // Entering the subgraph unmounts root nodes and mounts all 80 interior
+        // nodes synchronously — this is the bottleneck we're measuring.
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/large-subgraph-80-nodes'
+        )
 
-      await comfyPage.vueNodes.enterSubgraph()
-      await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
-      await comfyPage.idleFrames(30)
+        await comfyPage.idleFrames(30)
 
-      // Exit back to root graph before measuring a fresh enter/exit cycle
-      await comfyPage.subgraph.exitViaBreadcrumb()
-      await comfyPage.idleFrames(10)
+        await comfyPage.vueNodes.enterSubgraph()
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
+        await comfyPage.idleFrames(30)
 
-      // Start measuring the enter transition
-      await comfyPage.perf.startMeasuring()
+        // Exit back to root graph before measuring a fresh enter/exit cycle
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await comfyPage.idleFrames(10)
 
-      await comfyPage.vueNodes.enterSubgraph()
-      await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
-      await comfyPage.idleFrames(30)
+        // Start measuring the enter transition
+        await comfyPage.perf.startMeasuring()
 
-      const m = await comfyPage.perf.stopMeasuring('subgraph-transition-enter')
-      recordMeasurement(m)
-      console.log(
-        `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
-      )
-    }
-  )
+        await comfyPage.vueNodes.enterSubgraph()
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(80)
+        await comfyPage.idleFrames(30)
+
+        const m = await comfyPage.perf.stopMeasuring(
+          'subgraph-transition-enter'
+        )
+        recordMeasurement(m)
+        console.log(
+          `Subgraph enter (80 nodes): ${m.taskDurationMs.toFixed(0)}ms task, ${m.layouts} layouts, TBT=${m.totalBlockingTimeMs.toFixed(0)}ms`
+        )
+      }
+    )
+  })
 
   test('workflow execution', async ({ comfyPage }) => {
     // Uses lightweight PrimitiveString → PreviewAny workflow (no GPU needed)

@@ -209,6 +209,10 @@ test.describe(
 
       const before = await graphLinkIds(page)
 
+      await comfyPage.settings.setSetting(
+        'LiteGraph.Canvas.MinFontSizeForLOD',
+        0
+      )
       await comfyPage.canvasOps.setScale(0.5)
       await comfyPage.canvasOps.setOffset([-1500, -600])
 

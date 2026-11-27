@@ -1,7 +1,15 @@
 import type * as Litegraph from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import * as VueUse from '@vueuse/core'
 import {
   computed,
@@ -12,6 +20,7 @@ import {
   shallowRef
 } from 'vue'
 
+import { isNodeExcludedFromCulling } from '@/services/vueNodeCullingService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -19,6 +28,12 @@ import { useTransformState } from '@/renderer/core/layout/transform/useTransform
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
+
+function targetFor(nodeId: ReturnType<typeof toNodeId>) {
+  const target = canvasNodeTarget(nodeId)
+  onTestFinished(() => target.dispose?.())
+  return target
+}
 
 const TITLE_HEIGHT = 30
 
@@ -96,8 +111,10 @@ describe('canvasNodeTarget', () => {
 
   it('releases what it watches when the tour drops it', () => {
     useCanvasStore().currentGraph = graph('root')
-    const target = canvasNodeTarget(toNodeId(1))
+    const nodeId = toNodeId(1)
+    const target = targetFor(nodeId)
     expect(state.releaseBounds).not.toHaveBeenCalled()
+    expect(isNodeExcludedFromCulling(nodeId)).toBe(true)
 
     target.dispose?.()
 
@@ -105,6 +122,7 @@ describe('canvasNodeTarget', () => {
       state.releaseBounds,
       'nothing here runs from a component, so unreleased observers outlive every tour'
     ).toHaveBeenCalledTimes(1)
+    expect(isNodeExcludedFromCulling(nodeId)).toBe(false)
   })
 
   it('places the rect over the node, title bar included', () => {
@@ -112,7 +130,7 @@ describe('canvasNodeTarget', () => {
     placeNode({ x: 100, y: 200, width: 80, height: 40 })
 
     expect(
-      canvasNodeTarget(toNodeId(6)).getRect(),
+      targetFor(toNodeId(6)).getRect(),
       'layout holds the body box, but the node renders its title above it'
     ).toEqual(new DOMRect(100, 200 - TITLE_HEIGHT, 80, 40 + TITLE_HEIGHT))
   })
@@ -124,7 +142,7 @@ describe('canvasNodeTarget', () => {
     state.canvasOffset = { left: 5, top: 7 }
 
     expect(
-      canvasNodeTarget(toNodeId(6)).getRect(),
+      targetFor(toNodeId(6)).getRect(),
       'the ring has to land on the node wherever the camera puts it'
     ).toEqual(
       new DOMRect(
@@ -142,7 +160,7 @@ describe('canvasNodeTarget', () => {
     const nodeId = toNodeId(6)
 
     expect(
-      canvasNodeTarget(nodeId).getRect(),
+      targetFor(nodeId).getRect(),
       'a step must wait for its target rather than spotlight nothing'
     ).toBeNull()
     expect(state.layoutReads).toHaveBeenCalledWith(rootGraphId, nodeId)
@@ -151,7 +169,7 @@ describe('canvasNodeTarget', () => {
   it('withholds a rect once the graph it resolved against is gone', () => {
     useCanvasStore().currentGraph = graph('root')
     placeNode()
-    const target = canvasNodeTarget(toNodeId(6))
+    const target = targetFor(toNodeId(6))
     expect(target.getRect()).not.toBeNull()
 
     useCanvasStore().currentGraph = graph('another-workflow')
@@ -168,7 +186,7 @@ describe('canvasNodeTarget', () => {
     state.collapsed.add('6')
 
     expect(
-      canvasNodeTarget(toNodeId(6)).getRect(),
+      targetFor(toNodeId(6)).getRect(),
       'a collapsed node hides the widget the card asks the user to use'
     ).toBeNull()
   })
@@ -176,7 +194,7 @@ describe('canvasNodeTarget', () => {
   it('reports the node itself changing, which the camera never announces', async () => {
     const scope = effectScope()
     const notify = vi.fn()
-    scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
+    scope.run(() => targetFor(toNodeId(1)).onMove(notify))
 
     placeNode({ x: 40, y: 60, width: 80, height: 30 })
     await nextTick()
@@ -191,7 +209,7 @@ describe('canvasNodeTarget', () => {
   it('reports a resize, which moves the canvas under a still camera', () => {
     const scope = effectScope()
     const notify = vi.fn()
-    scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
+    scope.run(() => targetFor(toNodeId(1)).onMove(notify))
 
     window.dispatchEvent(new Event('resize'))
 
@@ -205,7 +223,7 @@ describe('canvasNodeTarget', () => {
   it('reports the camera moving, which fires no scroll or resize event', async () => {
     const scope = effectScope()
     const notify = vi.fn()
-    scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
+    scope.run(() => targetFor(toNodeId(1)).onMove(notify))
 
     state.camera.x = 250
     await nextTick()
@@ -220,7 +238,7 @@ describe('canvasNodeTarget', () => {
   it('stops reporting once the step that subscribed has gone', async () => {
     const scope = effectScope()
     const notify = vi.fn()
-    const stop = scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))!
+    const stop = scope.run(() => targetFor(toNodeId(1)).onMove(notify))!
     stop()
 
     state.camera.x = 120
