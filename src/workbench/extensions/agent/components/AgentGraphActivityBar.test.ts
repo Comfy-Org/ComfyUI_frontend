@@ -113,6 +113,19 @@ describe('AgentGraphActivityBar', () => {
     remountedView.unmount()
   })
 
+  it('frames an unframed materialized batch after the activity bar remounts', async () => {
+    node.pos = [7000, 6500]
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn()
+    activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
+
+    const view = mount()
+    await settle()
+
+    expect(canvas.animateToBounds).toHaveBeenCalledTimes(1)
+    view.unmount()
+  })
+
   it('frames the combined batch when its nodes arrive in separate materializations', async () => {
     node.pos = [7000, 6500]
     const view = mount()

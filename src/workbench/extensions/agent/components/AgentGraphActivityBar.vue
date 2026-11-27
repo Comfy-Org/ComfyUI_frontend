@@ -119,7 +119,7 @@ watch(
     if (settleTimer !== undefined) clearTimeout(settleTimer)
     settleTimer = setTimeout(frameBatchIfUnseen, BATCH_SETTLE_MS)
   },
-  { flush: 'post' }
+  { flush: 'post', immediate: true }
 )
 onUnmounted(() => {
   if (settleTimer !== undefined) clearTimeout(settleTimer)
