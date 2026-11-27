@@ -40,7 +40,8 @@ ADR-THEME-DOMAIN-0055 already treats the palette file format and the legacy
 Add four extension points. Core's own non-solid themes use the same points, so
 core is the first consumer of the API.
 
-1. **Provided themes.** `ComfyExtension` gains `themes?: ThemePreset[]`. Core
+1. **Provided themes.** `ComfyExtension` gains
+   `themes?: { preset: ThemePreset; stylesheetUrl?: string }[]`. Core
    validates each preset with `themePresetSchema` and lists it in the palette
    picker with the extension as its source. Core holds provided themes in
    memory and never writes them to `Comfy.CustomColorPalettes`, so a provided
@@ -56,11 +57,26 @@ core is the first consumer of the API.
    extension registers after startup, as late custom nodes do
    (ADR-EXTENSION-LOADING-0048), or fails to load once.
 
-   Core rejects an id that collides with a built-in or user palette and logs
-   one console warning.
+   Core rejects a provided id that matches a built-in palette. When two
+   extensions provide the same id, the first registration wins. Each
+   rejection logs one console warning. An extension claims all of its ids at
+   once, before core waits on any stylesheet, so a slow load cannot hand a
+   later id to another extension.
 
-2. **Stylesheet by URL.** A preset's `stylesheet` may be the existing id or
-   `{ id, url }`. While that theme is active, core imports the URL into the
+   A provided theme hides a saved user palette with the same id while its
+   extension is loaded. Core keeps the saved copy in
+   `Comfy.CustomColorPalettes`, refuses to delete it while it is hidden, and
+   lists it again once the extension is gone. This is the migration path for
+   an extension that saved its theme with `addCustomColorPalette`: it moves to
+   `themes` with the same id, and the user's selection keeps working. When
+   the stored selection names a theme an extension provides, core applies it
+   on registration, even if the saved palette with that id is already active.
+
+2. **Stylesheet by URL.** The URL sits beside the preset, in the
+   `stylesheetUrl` of the extension's `themes` entry. The preset's
+   `stylesheet` stays the id that becomes `data-theme`, so the palette format
+   from ADR-THEME-DOMAIN-0055 does not change, and exporting a provided theme
+   writes no URL. While that theme is active, core imports the URL into the
    `presets` cascade layer. Core removes it when the next theme commits, not
    when the switch starts.
 
@@ -84,10 +100,16 @@ core is the first consumer of the API.
    the dark border and how much to scale the width.
 
    `LINK_STYLE` becomes an open string that core looks up in the registry, and
-   an unknown name draws solid links. Core rejects a name that is already
-   registered, core's `chalk` included, and logs one console warning. Core
-   registers chalk through the registry. The snapping link moves onto the path
-   renderer before the registry lands, so a registered style covers every link.
+   an unknown name draws solid links. This is the one change this decision
+   makes to the palette format from ADR-THEME-DOMAIN-0055: the key widens from
+   a fixed set of names to any string, and every existing value stays valid.
+   A frontend from before this change rejects a palette that names a
+   registered style, so such a palette needs a current frontend.
+
+   Core rejects a name that is already registered, core's `chalk` included,
+   and logs one console warning. Core registers chalk through the registry.
+   The snapping link moves onto the path renderer before the registry lands,
+   so a registered style covers every link.
 
 Deliver in that order: provided themes and stylesheet URLs together, then the
 hook contract, then the link registry.
@@ -97,6 +119,13 @@ hook contract, then the link registry.
 - Keep `addCustomColorPalette` as the only route. It persists third-party
   presets into user data, errors on every reload after the first, and outlives
   the extension.
+- Put the URL in the preset, with `stylesheet` taking `{ id, url }`. That
+  changes the palette format from ADR-THEME-DOMAIN-0055, older frontends
+  reject the new shape, and exporting the palette writes a URL that only
+  resolves while that extension is installed.
+- Reject a provided id that matches a saved user palette. An extension that
+  saved its theme with `addCustomColorPalette` could then never move to
+  `themes` without renaming it and losing the user's selection.
 - Document `@layer presets` as the convention and let extensions inject their
   own CSS. The cascade would match built-in themes, but each extension would
   keep its CSS loaded for the whole session, and nodes would render with the
