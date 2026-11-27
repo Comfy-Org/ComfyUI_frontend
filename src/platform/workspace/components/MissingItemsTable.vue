@@ -18,7 +18,14 @@
         >
           {{ row.name }}, {{ row.others }}
         </span>
-        <span v-else class="min-w-0 flex-1 truncate" :title="row.name">
+        <span
+          v-else-if="row.more"
+          class="min-w-0 flex-1 truncate"
+          :title="row.name"
+        >
+          {{ row.name }}
+        </span>
+        <span v-else class="min-w-0 flex-1 wrap-break-word">
           {{ row.name }}
         </span>
         <button
