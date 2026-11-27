@@ -23,54 +23,91 @@ import {
   zJobAssetsResponse,
   zJobDetail,
   zJobsListEnvelope,
-  zJobsListResponse,
   zRawJobListItem,
   zWorkflowContainer
 } from './jobTypes'
 
+interface ListedJob {
+  job: RawJobListItem
+  position: number
+}
+
 interface FetchJobsRawResult {
-  jobs: RawJobListItem[]
+  jobs: ListedJob[]
   total: number
   offset: number
   limit: number
   hasMore: boolean
 }
 
+interface ContractIssue {
+  code: string
+  path: PropertyKey[]
+}
+
+interface OffContractJob {
+  job: unknown
+  issues: ContractIssue[]
+}
+
 class JobsApiError extends Error {}
+
+const REPORT_SAMPLE_SIZE = 5
+const reportedOffContractJobKeys = new Set<string>()
 
 function jobIdOf(job: unknown): string | undefined {
   if (typeof job !== 'object' || job === null || !('id' in job)) return
   return typeof job.id === 'string' ? job.id : undefined
 }
 
-function keepContractJobs(jobs: unknown[]): RawJobListItem[] {
-  const parsed = jobs.map((job) => ({
-    job,
-    result: zRawJobListItem.safeParse(job)
-  }))
-  const dropped = parsed.filter(({ result }) => !result.success)
-  if (dropped.length > 0) {
-    reportError(new Error('[Jobs API] Dropped jobs outside the contract'), {
-      errorType: 'jobs_list_job_outside_contract',
-      surface: 'platform',
-      level: 'warning',
-      sentryMode: 'once_per_page',
-      context: {
-        droppedCount: dropped.length,
-        jobIds: dropped.map(({ job }) => jobIdOf(job)),
-        issues: dropped.map(({ result }) =>
-          result.error?.issues.map(({ code, path }) => ({ code, path }))
-        )
-      }
-    })
-  }
-  return parsed.flatMap(({ result }) => (result.success ? [result.data] : []))
+function reportOffContractJobs(offContract: OffContractJob[]): void {
+  const keys = offContract.map(({ job }) => jobIdOf(job) ?? JSON.stringify(job))
+  if (keys.every((key) => reportedOffContractJobKeys.has(key))) return
+  keys.forEach((key) => reportedOffContractJobKeys.add(key))
+  reportError(new Error('[Jobs API] Jobs outside the contract'), {
+    errorType: 'jobs_list_job_outside_contract',
+    surface: 'platform',
+    level: 'warning',
+    context: {
+      count: offContract.length,
+      samples: offContract
+        .slice(0, REPORT_SAMPLE_SIZE)
+        .map(({ job, issues }) => ({
+          jobId: jobIdOf(job),
+          issues: issues.slice(0, REPORT_SAMPLE_SIZE)
+        }))
+    }
+  })
 }
 
-function parseJobsList(body: unknown, strict: boolean) {
-  if (strict) return zJobsListResponse.parse(body)
-  const envelope = zJobsListEnvelope.parse(body)
-  return { ...envelope, jobs: keepContractJobs(envelope.jobs) }
+function parseJobsList(jobs: unknown[], strict: boolean): ListedJob[] {
+  const parsed = jobs.map((job, position) => ({
+    job,
+    position,
+    result: zRawJobListItem.safeParse(job)
+  }))
+  const offContract = parsed.flatMap(({ job, result }) =>
+    result.success
+      ? []
+      : [
+          {
+            job,
+            issues: result.error.issues.map(({ code, path }) => ({
+              code,
+              path
+            }))
+          }
+        ]
+  )
+  if (offContract.length > 0) {
+    reportOffContractJobs(offContract)
+    if (strict) {
+      throw new JobsApiError(`${offContract.length} jobs outside the contract`)
+    }
+  }
+  return parsed.flatMap(({ position, result }) =>
+    result.success ? [{ job: result.data, position }] : []
+  )
 }
 
 interface FetchJobsOptions {
@@ -105,9 +142,9 @@ async function fetchJobsRaw(
     if (!res.ok) {
       throw new JobsApiError(`Failed to fetch jobs: ${res.status}`)
     }
-    const data = parseJobsList(await res.json(), !!options?.throwOnError)
+    const data = zJobsListEnvelope.parse(await res.json())
     return {
-      jobs: data.jobs,
+      jobs: parseJobsList(data.jobs, !!options?.throwOnError),
       total: data.pagination.total,
       offset: data.pagination.offset,
       limit: data.pagination.limit,
@@ -128,13 +165,17 @@ const QUEUE_PRIORITY_BASE = 1_000_000
  * Only assigns if job doesn't already have a server-provided priority.
  */
 function assignPriority(
-  jobs: RawJobListItem[],
+  jobs: ListedJob[],
   basePriority: number
 ): JobListItem[] {
-  return jobs.map((job, index) => ({
+  return jobs.map(({ job, position }) => ({
     ...job,
-    priority: job.priority ?? basePriority - index
+    priority: job.priority ?? basePriority - position
   }))
+}
+
+function inListOrder(jobs: RawJobListItem[]): ListedJob[] {
+  return jobs.map((job, position) => ({ job, position }))
 }
 
 /**
@@ -193,15 +234,20 @@ export async function fetchQueue(
     options
   )
 
-  const running = jobs.filter((j) => j.status === 'in_progress')
-  const pending = jobs.filter((j) => j.status === 'pending')
+  const running = jobs.flatMap(({ job }) =>
+    job.status === 'in_progress' ? [job] : []
+  )
+  const pending = jobs.flatMap(({ job }) =>
+    job.status === 'pending' ? [job] : []
+  )
 
-  // Pending gets highest priority, then running
-  // Both are above any history job due to QUEUE_PRIORITY_BASE
   return {
-    Running: assignPriority(running, QUEUE_PRIORITY_BASE + running.length),
+    Running: assignPriority(
+      inListOrder(running),
+      QUEUE_PRIORITY_BASE + running.length
+    ),
     Pending: assignPriority(
-      pending,
+      inListOrder(pending),
       QUEUE_PRIORITY_BASE + running.length + pending.length
     )
   }

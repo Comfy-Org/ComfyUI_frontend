@@ -315,15 +315,23 @@ describe('fetchJobs', () => {
       { name: 'a null entry', job: null }
     ]
 
-    function fetchWithJobBetweenTwoGoodOnes(job: unknown) {
+    function fetchJobsList(jobs: unknown[]) {
       return vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
-            ...createMockResponse([], 3),
-            jobs: [createMockJob('job1'), job, createMockJob('job3')]
+            ...createMockResponse([], jobs.length),
+            jobs
           })
       })
+    }
+
+    function fetchWithJobBetweenTwoGoodOnes(job: unknown) {
+      return fetchJobsList([createMockJob('job1'), job, createMockJob('job3')])
+    }
+
+    function offContractJob(id: string) {
+      return { ...createMockJob(id), status: 'archived' }
     }
 
     it.for(offContractJobs)(
@@ -332,14 +340,6 @@ describe('fetchJobs', () => {
         const result = await fetchHistory(fetchWithJobBetweenTwoGoodOnes(job))
 
         expect(result.map(({ id }) => id)).toEqual(['job1', 'job3'])
-        expect(reportError).toHaveBeenCalledOnce()
-        expect(reportError).toHaveBeenCalledWith(
-          expect.any(Error),
-          expect.objectContaining({
-            errorType: 'jobs_list_job_outside_contract',
-            context: expect.objectContaining({ droppedCount: 1 })
-          })
-        )
       }
     )
 
@@ -351,9 +351,80 @@ describe('fetchJobs', () => {
             throwOnError: true
           })
         ).rejects.toThrow()
-        expect(reportError).not.toHaveBeenCalled()
       }
     )
+
+    it('keeps the server position as the priority of jobs after a dropped one', async () => {
+      const result = await fetchHistory(
+        fetchWithJobBetweenTwoGoodOnes(offContractJob('priority-gap'))
+      )
+
+      expect(result.map(({ id, priority }) => [id, priority])).toEqual([
+        ['job1', 3],
+        ['job3', 1]
+      ])
+    })
+
+    it('reports the same off-contract jobs once across refreshes', async () => {
+      const jobs = [offContractJob('repeat-a'), offContractJob('repeat-b')]
+
+      await fetchHistory(fetchJobsList(jobs))
+      await fetchHistory(fetchJobsList(jobs))
+
+      expect(reportError).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'jobs_list_job_outside_contract',
+          context: expect.objectContaining({
+            count: 2,
+            samples: [
+              expect.objectContaining({ jobId: 'repeat-a' }),
+              expect.objectContaining({ jobId: 'repeat-b' })
+            ]
+          })
+        })
+      )
+    })
+
+    it('reports again when a new job falls outside the contract', async () => {
+      await fetchHistory(fetchJobsList([offContractJob('known')]))
+      await fetchHistory(
+        fetchJobsList([offContractJob('known'), offContractJob('new')])
+      )
+
+      expect(reportError).toHaveBeenCalledTimes(2)
+    })
+
+    it('reports off-contract jobs before rejecting with throwOnError', async () => {
+      await expect(
+        fetchQueue(fetchJobsList([offContractJob('strict-queue')]), {
+          throwOnError: true
+        })
+      ).rejects.toThrow()
+
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('caps the reported samples and keeps the full count', async () => {
+      const jobs = Array.from({ length: 7 }, (_, index) =>
+        offContractJob(`capped-${index}`)
+      )
+
+      await fetchHistory(fetchJobsList(jobs))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            count: 7,
+            samples: expect.toSatisfy(
+              (samples: unknown[]) => samples.length === 5
+            )
+          })
+        })
+      )
+    })
 
     it('returns server pagination metadata for history pages', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
