@@ -211,15 +211,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'removing-input',
       (e) => {
-        const widget = e.detail.input._widget
-        if (widget) this.ensureWidgetRemoved(widget)
-
         const input = hostInputOf(this, e.detail.input)
+        const widget = input?._widget ?? e.detail.input._widget
+        const id = input?.widgetId
         if (input) {
           input._listenerController?.abort()
           this.unbindDynamicInput(input)
         }
         this.removeInput(input ? this.inputs.indexOf(input) : e.detail.index)
+        if (input) this._demoteInputWidget(input, widget, id)
+        else if (widget) this.ensureWidgetRemoved(widget)
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
