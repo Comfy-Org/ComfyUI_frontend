@@ -62,6 +62,7 @@
       "body": "Otomatik kredi yüklemenin açık olduğunu kontrol etmek için Faturalandırma'yı açın.",
       "title": "Krediler eklendi"
     },
+    "balanceAfter": "Bu yüklemeden sonra: {credits} kredi.",
     "blocked": {
       "action": "Ödeme sayfasını aç",
       "body": "Tarayıcınız yeni sekmeyi engelledi. Ödemeyi tamamlamak için ödeme sayfasını açın.",
@@ -84,7 +85,7 @@
       "title": "{amount} tutarındaki ödemenizin doğrulanması gerekiyor",
       "titleNoAmount": "Ödemenizin doğrulanması gerekiyor"
     },
-    "negativeBalance": "Bakiyeniz −{credits} kredi. Bu yükleme önce bunu karşılar.",
+    "negativeBalance": "Bakiyeniz −{credits} kredi.",
     "notAllowed": {
       "body": "Nedenini görmek için Faturalandırma ayarlarını kontrol edin.",
       "title": "Şu anda kredi ekleyemezsiniz"
@@ -127,6 +128,7 @@
       "bodyNoWait": "Daha sonra tekrar deneyin veya {support}.",
       "title": "Şimdilik yükleme sınırına ulaştınız"
     },
+    "stillNegativeAfter": "Bu yüklemeden sonra hâlâ negatif: −{credits} kredi.",
     "title": "Kredi ekle",
     "wait": {
       "day": "bir gün",
@@ -1544,6 +1546,7 @@
         "setUp": "Ayarla"
       },
       "awaitingBankApprovalBody": "Kredileriniz eklenmeden önce bankanızın bu ödemeyi onaylaması gerekiyor. İşlemi bankanızın uygulamasından veya bu satın alma için ödeme bağlantısından tamamlayabilirsiniz. Bu işlem tamamlanana ya da süresi dolana kadar yeni bir kredi yüklemesi başlatılamaz.",
+      "balanceAfterTopup": "Bu yüklemeden sonra: {credits} kredi. | Bu yüklemeden sonra: {credits} kredi.",
       "buy": "Satın Al",
       "buyCredits": "Ödemeye devam et",
       "buyNow": "Şimdi al",
@@ -1574,7 +1577,7 @@
       "minRequired": "En az {credits} kredi",
       "minimumPurchase": "En az ${amount} ({credits} kredi)",
       "needMore": "Daha fazlasına mı ihtiyacınız var?",
-      "negativeBalanceNotice": "Bakiyeniz −{credits} kredi. Bu yükleme önce bunu karşılar. | Bakiyeniz −{credits} kredi. Bu yükleme önce bunu karşılar.",
+      "negativeBalanceNotice": "Bakiyeniz −{credits} kredi. | Bakiyeniz −{credits} kredi.",
       "noPaymentMethodCheckoutHint": "Bu çalışma alanında tek tıklamayla bakiye yüklemeleri için kayıtlı kart yok. Bunun yerine ödeme sayfasında ödeme yapın veya gelecekteki yüklemelerin doğrudan bu karttan tahsil edilmesi için varsayılan bir kart belirleyin.",
       "openCheckout": "Ödeme sayfasını aç",
       "openPaymentPage": "Ödeme sayfasını aç",
@@ -1597,6 +1600,7 @@
       "setDefaultCard": "Varsayılan kartı ayarla",
       "setDefaultCardError": "Kart ayarları açılamadı",
       "startOver": "Baştan başla",
+      "stillNegativeAfterTopup": "Bu yüklemeden sonra hâlâ negatif: −{credits} kredi. | Bu yüklemeden sonra hâlâ negatif: −{credits} kredi.",
       "templateNote": "*Wan Fun Control şablonu ile oluşturuldu",
       "topUp": "Yükleme Yap",
       "unknownError": "Bilinmeyen bir hata oluştu",
@@ -1878,18 +1882,18 @@
     "versionChanged": "{deployment} artık v{version} çalıştırıyor. Düğümlerini kullanmak için yeniden yükleyin.",
     "versionChangedNoVersion": "{deployment} artık farklı bir sürüm çalıştırıyor. Düğümlerini kullanmak için yeniden yükleyin.",
     "workflowNeedsDeployment": {
-      "andMore": "{names} ve {count} tane daha",
+      "createBody": "Özel Derleme, Comfy Cloud'da eksik olanları ekler; böylece bu iş akışı doğrudan çalışır.",
       "createCustomBuild": "Özel Derleme oluştur",
-      "installBody": "Comfy Cloud'da olmayan özel düğümleri ve modelleri eklemek için bir Özel Derleme oluşturun. Bunu Platform'da ayarlarsınız ve çalışma alanınız için Çalıştır altında görünür.",
-      "installTitle": "Eksik özel düğümlerinizi yükleyin",
+      "createTitle": "Bu iş akışını çalıştırmak için Özel Derleme oluşturun",
       "missingModels": "{count} eksik model | {count} eksik model",
       "missingNodes": "{count} eksik düğüm | {count} eksik düğüm",
       "missingPacks": "{count} eksik düğüm paketi | {count} eksik düğüm paketi",
-      "noneRunIt": "Bu çalışma alanındaki hiçbir dağıtım bu düğümlerin tümüne sahip değil.",
+      "more": "+{count} daha fazla",
+      "pointBilling": "Yalnızca GPU çalışırken ödeme yapın; depolama ücreti hariç",
+      "showLess": "Daha az göster",
       "switch": "Geçiş yap",
       "switchBody": "Comfy Cloud'da bunlar eksik. Bunlara sahip bir dağıtıma geçin ve oradan çalışmaya devam edin.",
-      "title": "Bu iş akışını bir Özel Derlemede çalıştır",
-      "titleNoneRunItCustomBuild": "Bu iş akışını Comfy Cloud'da çalıştırmak için bir Özel Derleme oluşturun"
+      "title": "Bu iş akışını bir Özel Derlemede çalıştır"
     },
     "workspaceDefault": "Çalışma alanı varsayılanı"
   },
@@ -2398,11 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "Ajana sor",
+    "createCustomBuild": "Özel Derleme oluştur",
     "missingMedia": "Bazı düğümler gerekli girdilerden yoksun",
     "missingModels": "{count} gerekli model eksik | {count} gerekli model eksik",
     "missingNodes": "Bazı düğümler eksik ve yüklenmesi gerekiyor",
+    "missingNodesOnCloud": "Gerekli özel düğümler Cloud'da desteklenmiyor.",
     "multipleIssueCount": "{count} sorun bulundu | {count} sorun bulundu",
     "multipleIssuesMessage": "İş akışını çalıştırmadan önce bu sorunları çözün.",
+    "switchBuild": "Derlemeyi değiştir",
+    "switchBuildTo": "{build} derlemesine geç",
     "viewDetails": "Detayları görüntüle"
   },
   "errorPanelSurvey": {
@@ -6663,7 +6671,7 @@
         "available": "Kullanılabilir",
         "availableUntil": "{date} tarihine kadar kullanılabilir",
         "inUse": "Şu anda kullanımda",
-        "overdrawn": "Çalıştırmalarınız, sahip olduğunuzdan {count} kredi daha fazla kullandı. | Çalıştırmalarınız, sahip olduğunuzdan {count} kredi daha fazla kullandı.",
+        "overdrawn": "Sahip olduğunuzdan {count} kredi daha fazla kullandınız. Çalışmaya devam etmek için kredi ekleyin. | Sahip olduğunuzdan {count} kredi daha fazla kullandınız. Çalışmaya devam etmek için kredi ekleyin.",
         "plan": "Plan",
         "planOfPool": "{total} kredinin {remaining}'i",
         "planTooltip": "Plan kredileri, yükleme kredilerinden önce harcanır.",

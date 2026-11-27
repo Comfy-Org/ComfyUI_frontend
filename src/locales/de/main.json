@@ -62,6 +62,7 @@
       "body": "Öffnen Sie „Abrechnung“, um zu prüfen, ob das automatische Aufladen aktiviert ist.",
       "title": "Credits hinzugefügt"
     },
+    "balanceAfter": "Nach dieser Aufladung: {credits} Credits.",
     "blocked": {
       "action": "Checkout öffnen",
       "body": "Ihr Browser hat den neuen Tab blockiert. Öffnen Sie den Checkout, um die Zahlung abzuschließen.",
@@ -84,7 +85,7 @@
       "title": "Ihre Zahlung über {amount} muss verifiziert werden",
       "titleNoAmount": "Ihre Zahlung muss verifiziert werden"
     },
-    "negativeBalance": "Ihr Guthaben beträgt −{credits} Credits. Diese Aufladung deckt das zuerst ab.",
+    "negativeBalance": "Ihr Guthaben beträgt −{credits} Credits.",
     "notAllowed": {
       "body": "Überprüfen Sie die Abrechnungseinstellungen, um den Grund zu erfahren.",
       "title": "Sie können derzeit keine Credits hinzufügen"
@@ -127,6 +128,7 @@
       "bodyNoWait": "Versuchen Sie es später erneut oder {support}.",
       "title": "Sie haben vorerst das Aufladungslimit erreicht"
     },
+    "stillNegativeAfter": "Nach dieser Aufladung weiterhin negativ: −{credits} Credits.",
     "title": "Credits hinzufügen",
     "wait": {
       "day": "einem Tag",
@@ -1544,6 +1546,7 @@
         "setUp": "Einrichten"
       },
       "awaitingBankApprovalBody": "Ihre Bank muss diese Zahlung genehmigen, bevor Ihr Guthaben hinzugefügt wird. Sie können den Vorgang über die App Ihrer Bank oder den Zahlungslink für diesen Kauf abschließen. Eine neue Aufladung kann erst gestartet werden, wenn diese abgeschlossen ist oder abläuft.",
+      "balanceAfterTopup": "Nach dieser Aufladung: {credits} Credit. | Nach dieser Aufladung: {credits} Credits.",
       "buy": "Kaufen",
       "buyCredits": "Weiter zur Zahlung",
       "buyNow": "Jetzt kaufen",
@@ -1574,7 +1577,7 @@
       "minRequired": "Mindestens {credits} Credits",
       "minimumPurchase": "${amount} Mindestbetrag ({credits} Credits)",
       "needMore": "Benötigen Sie mehr?",
-      "negativeBalanceNotice": "Ihr Guthaben beträgt −{credits} Credit. Diese Aufladung wird zuerst damit verrechnet. | Ihr Guthaben beträgt −{credits} Credits. Diese Aufladung wird zuerst damit verrechnet.",
+      "negativeBalanceNotice": "Ihr Guthaben beträgt −{credits} Credit. | Ihr Guthaben beträgt −{credits} Credits.",
       "noPaymentMethodCheckoutHint": "In diesem Workspace ist keine Karte für Aufladungen mit einem Klick gespeichert. Bezahlen Sie stattdessen über eine Checkout-Seite oder legen Sie eine Standardkarte fest, damit zukünftige Aufladungen direkt über diese abgerechnet werden.",
       "openCheckout": "Checkout öffnen",
       "openPaymentPage": "Zahlungsseite öffnen",
@@ -1597,6 +1600,7 @@
       "setDefaultCard": "Standardkarte festlegen",
       "setDefaultCardError": "Karteneinstellungen konnten nicht geöffnet werden",
       "startOver": "Von vorn beginnen",
+      "stillNegativeAfterTopup": "Nach dieser Aufladung weiterhin negativ: −{credits} Credit. | Nach dieser Aufladung weiterhin negativ: −{credits} Credits.",
       "templateNote": "*Generiert mit der Vorlage „Wan 2.2 Image-to-Video“",
       "topUp": "Aufladen",
       "unknownError": "Ein unbekannter Fehler ist aufgetreten",
@@ -1878,18 +1882,18 @@
     "versionChanged": "{deployment} führt jetzt v{version} aus. Laden Sie neu, um seine Nodes zu verwenden.",
     "versionChangedNoVersion": "{deployment} führt jetzt eine andere Version aus. Laden Sie neu, um seine Nodes zu verwenden.",
     "workflowNeedsDeployment": {
-      "andMore": "{names} und {count} weitere",
+      "createBody": "Ein Custom Build ergänzt, was Comfy Cloud fehlt, damit dieser Workflow einfach läuft.",
       "createCustomBuild": "Custom Build erstellen",
-      "installBody": "Erstellen Sie einen Custom Build, um die benutzerdefinierten Nodes und Modelle hinzuzufügen, die Comfy Cloud nicht hat. Sie richten ihn auf der Platform ein, und er erscheint unter „Ausführen auf“ für Ihren Workspace.",
-      "installTitle": "Installieren Sie Ihre fehlenden Custom Nodes",
+      "createTitle": "Erstellen Sie einen Custom Build, um diesen Workflow auszuführen",
       "missingModels": "{count} fehlendes Modell | {count} fehlende Modelle",
       "missingNodes": "{count} fehlender Node | {count} fehlende Nodes",
       "missingPacks": "{count} fehlendes Node-Paket | {count} fehlende Node-Pakete",
-      "noneRunIt": "Kein Deployment in diesem Workspace verfügt über all diese Nodes.",
+      "more": "+{count} weitere",
+      "pointBilling": "Zahlen Sie nur, während die GPU läuft, zuzüglich Speicher",
+      "showLess": "Weniger anzeigen",
       "switch": "Wechseln",
       "switchBody": "Diese sind auf Comfy Cloud nicht verfügbar. Wechseln Sie zu einem Deployment, das darüber verfügt, und arbeiten Sie dort weiter.",
-      "title": "Diesen Workflow auf einem Custom Build ausführen",
-      "titleNoneRunItCustomBuild": "Erstellen Sie einen Custom Build, um diesen Workflow auf Comfy Cloud auszuführen"
+      "title": "Diesen Workflow auf einem Custom Build ausführen"
     },
     "workspaceDefault": "Workspace-Standard"
   },
@@ -2398,11 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "Agent fragen",
+    "createCustomBuild": "Custom Build erstellen",
     "missingMedia": "Bei einigen Nodes fehlen erforderliche Eingaben",
     "missingModels": "{count} erforderliches Modell fehlt | {count} erforderliche Modelle fehlen",
     "missingNodes": "Einige Nodes fehlen und müssen installiert werden",
+    "missingNodesOnCloud": "Erforderliche Custom Nodes werden in der Cloud nicht unterstützt.",
     "multipleIssueCount": "{count} Problem gefunden | {count} Probleme gefunden",
     "multipleIssuesMessage": "Beheben Sie diese Probleme, bevor Sie den Workflow ausführen.",
+    "switchBuild": "Build wechseln",
+    "switchBuildTo": "Zu {build} wechseln",
     "viewDetails": "Details anzeigen"
   },
   "errorPanelSurvey": {
@@ -6663,7 +6671,7 @@
         "available": "Verfügbar",
         "availableUntil": "Verfügbar bis {date}",
         "inUse": "Derzeit verwendet",
-        "overdrawn": "Ihre Ausführungen haben {count} Guthaben mehr verbraucht, als Sie hatten. | Ihre Ausführungen haben {count} Guthaben mehr verbraucht, als Sie hatten.",
+        "overdrawn": "Sie haben {count} Credit mehr verbraucht, als Sie hatten. Fügen Sie Credits hinzu, um fortzufahren. | Sie haben {count} Credits mehr verbraucht, als Sie hatten. Fügen Sie Credits hinzu, um fortzufahren.",
         "plan": "Plan",
         "planOfPool": "{remaining} von {total}",
         "planTooltip": "Plan-Credits werden vor Auflade-Credits verwendet.",

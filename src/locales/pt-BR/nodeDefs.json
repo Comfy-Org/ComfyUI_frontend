@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "limite_de_faces",
-        "tooltip": "Número máximo de faces. -1 permite que o Tripo escolha de forma adaptativa (cerca de 1,4 M de faces no padrão v3.x, 2 M em detailed). O Tripo limita silenciosamente: v2.5 a 500.000, malhas de quads a 150.000."
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha de forma adaptativa (cerca de 1,4 milhão de faces no padrão v3.x, 2 milhões no detalhado). O Tripo limita silenciosamente malhas de quadriláteros a 150.000."
       },
       "geometry_quality": {
         "name": "qualidade_da_geometria"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha adaptativamente (cerca de 1,4 M de faces no padrão v3.x, 2 M em detailed). O Tripo limita silenciosamente: v2.5 em 500.000, malhas quad em 150.000."
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha de forma adaptativa (cerca de 1,4 milhão de faces no padrão v3.x, 2 milhões no detalhado). O Tripo limita silenciosamente malhas de quadriláteros a 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "limite_de_faces",
-        "tooltip": "Número máximo de faces. -1 permite que o Tripo escolha de forma adaptativa (cerca de 1,4 M de faces no padrão v3.x, 2 M em detailed). O Tripo limita silenciosamente: v2.5 a 500.000, malhas de quads a 150.000."
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha de forma adaptativa (cerca de 1,4 milhão de faces no padrão v3.x, 2 milhões no detalhado). O Tripo limita silenciosamente malhas de quadriláteros a 150.000."
       },
       "geometry_quality": {
         "name": "qualidade_da_geometria"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "limite_de_faces",
-        "tooltip": "Número máximo de faces. -1 permite que a Tripo escolha adaptativamente (cerca de 1,4 M de faces no padrão v3.x, 2 M em detailed). A Tripo limita silenciosamente: v2.5 a 500.000, malhas quad a 150.000."
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha de forma adaptativa (cerca de 1,4 milhão de faces no padrão v3.x, 2 milhões no detalhado). O Tripo limita silenciosamente malhas de quadriláteros a 150.000."
       },
       "geometry_quality": {
         "name": "qualidade_da_geometria"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha adaptativamente (cerca de 1,4 milhão de faces no padrão v3.x, 2 milhões no detailed). O Tripo limita silenciosamente: v2.5 a 500.000, malhas quad a 150.000."
+        "tooltip": "Contagem máxima de faces. -1 permite que o Tripo escolha de forma adaptativa (cerca de 1,4 milhão de faces no padrão v3.x, 2 milhões no detalhado). O Tripo limita silenciosamente malhas de quadriláteros a 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30433,8 +30433,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modelo de textura: v3.0 para malhas geradas com v3.x, v2.5 para malhas geradas com v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modelo de textura: v3.0 para malhas geradas com v3.x, v2.5 para malhas geradas com v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

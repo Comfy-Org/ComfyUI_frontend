@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1ではTripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します: v2.5は500,000、クアッドメッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "面数上限",
-        "tooltip": "最大面数。-1 を指定すると Tripo が適応的に選択します（v3.x standard では約140万面、detailed では200万面）。Tripo は上限を自動的に適用します：v2.5 は500,000、四角形メッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1ではTripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します: v2.5は500,000、クアッドメッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは自動的に上限を適用します：v2.5は500,000、四角形メッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "ジオメトリ品質"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは上限を自動的に適用します：v2.5は500,000、四角形メッシュは150,000。"
+        "tooltip": "面数の上限。-1の場合、Tripoが適応的に選択します（v3.x standardでは約140万面、detailedでは200万面）。Tripoは四角形メッシュを150,000面に暗黙的に制限します。"
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30433,8 +30433,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "テクスチャモデル：v3.xで生成したメッシュにはv3.0、v2.5で生成したメッシュにはv2.5。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "テクスチャモデル: v3.xで生成されたメッシュにはv3.0、v2.5で生成されたメッシュにはv2.5。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

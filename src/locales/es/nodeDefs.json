@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "límite_de_caras",
-        "tooltip": "Número máximo de caras. -1 permite que Tripo elija adaptativamente (aproximadamente 1,4 M de caras en el estándar v3.x, 2 M en detailed). Tripo limita silenciosamente: v2.5 a 500.000 y las mallas quad a 150.000."
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1.4M caras en el modo estándar v3.x, 2M en el detallado). Tripo limita silenciosamente las mallas de cuadriláteros a 150,000."
       },
       "geometry_quality": {
         "name": "calidad_de_geometría"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (unas 1.4M caras en v3.x standard, 2M en detailed). Tripo limita silenciosamente: v2.5 a 500,000 y las mallas quad a 150,000."
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1.4M caras en el modo estándar v3.x, 2M en el detallado). Tripo limita silenciosamente las mallas de cuadriláteros a 150,000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "límite_de_caras",
-        "tooltip": "Número máximo de caras. -1 permite que Tripo elija adaptativamente (aproximadamente 1,4 M de caras en el estándar v3.x, 2 M en detailed). Tripo limita silenciosamente: v2.5 a 500.000 y las mallas quad a 150.000."
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1.4M caras en el modo estándar v3.x, 2M en el detallado). Tripo limita silenciosamente las mallas de cuadriláteros a 150,000."
       },
       "geometry_quality": {
         "name": "calidad_de_geometría"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "límite_de_caras",
-        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1.4M caras en v3.x estándar, 2M en detailed). Tripo limita silenciosamente: v2.5 a 500,000, mallas de cuadriláteros a 150,000."
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1.4M caras en el modo estándar v3.x, 2M en el detallado). Tripo limita silenciosamente las mallas de cuadriláteros a 150,000."
       },
       "geometry_quality": {
         "name": "calidad_de_geometría"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1,4 M de caras en v3.x estándar, 2 M en detailed). Tripo limita silenciosamente: v2.5 a 500.000, mallas quad a 150.000."
+        "tooltip": "Número máximo de caras. -1 permite que Tripo elija de forma adaptativa (aproximadamente 1.4M caras en el modo estándar v3.x, 2M en el detallado). Tripo limita silenciosamente las mallas de cuadriláteros a 150,000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30433,8 +30433,7 @@
         "name": "id_de_tarea_del_modelo"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modelo de textura: v3.0 para mallas generadas con v3.x, v2.5 para mallas generadas con v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modelo de texturas: v3.0 para mallas generadas con v3.x, v2.5 para mallas generadas con v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "얼굴 제한",
-        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응형으로 선택합니다(v3.x standard에서 약 140만 면, detailed에서 200만 면). Tripo는 자동으로 제한합니다: v2.5는 500,000, 쿼드 메시 는 150,000."
+        "tooltip": "최대 면 개수입니다. -1로 설정하면 Tripo가 적응적으로 선택합니다(v3.x standard에서는 약 140만 면, detailed에서는 200만 면). Tripo는 쿼드 메시를 150,000개에서 별도 알림 없이 제한합니다."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응형으로 선택합니다(v3.x standard에서 약 1.4M면, detailed에서 2M면). Tripo는 자동으로 제한합니다. v2.5는 500,000개, quad 메시는 150,000개입니다."
+        "tooltip": "최대 면 개수입니다. -1로 설정하면 Tripo가 적응적으로 선택합니다(v3.x standard에서는 약 140만 면, detailed에서는 200만 면). Tripo는 쿼드 메시를 150,000개에서 별도 알림 없이 제한합니다."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "얼굴 제한",
-        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응형으로 선택합니다(v3.x standard에서 약 140만 면, detailed에서 200만 면). Tripo는 자동으로 제한합니다: v2.5는 500,000, 쿼드 메시는 150,000."
+        "tooltip": "최대 면 개수입니다. -1로 설정하면 Tripo가 적응적으로 선택합니다(v3.x standard에서는 약 140만 면, detailed에서는 200만 면). Tripo는 쿼드 메시를 150,000개에서 별도 알림 없이 제한합니다."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "얼굴 제한",
-        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응적으로 선택합니다(v3.x standard에서 약 140만 면, detailed에서 200만 면). Tripo는 자동으로 제한합니다: v2.5는 500,000, 쿼드 메시는 150,000."
+        "tooltip": "최대 면 개수입니다. -1로 설정하면 Tripo가 적응적으로 선택합니다(v3.x standard에서는 약 140만 면, detailed에서는 200만 면). Tripo는 쿼드 메시를 150,000개에서 별도 알림 없이 제한합니다."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "면 제한",
-        "tooltip": "최대 면 수입니다. -1이면 Tripo가 적응적으로 선택합니다(v3.x standard에서 약 140만 면, detailed에서 200만 면). Tripo는 자동으로 제한합니다. v2.5는 500,000, 쿼드 메시는 150,000입니다."
+        "tooltip": "최대 면 개수입니다. -1로 설정하면 Tripo가 적응적으로 선택합니다(v3.x standard에서는 약 140만 면, detailed에서는 200만 면). Tripo는 쿼드 메시를 150,000개에서 별도 알림 없이 제한합니다."
       },
       "geometry_quality": {
         "name": "지오메트리 품질"
@@ -30433,8 +30433,7 @@
         "name": "모델 작업 ID"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "텍스처 모델: v3.x로 생성한 메시에는 v3.0, v2.5로 생성한 메시에는 v2.5를 사용합니다."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "모델 task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "텍스처 모델: v3.x로 생성된 메시에는 v3.0, v2.5로 생성된 메시에는 v2.5를 사용합니다."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

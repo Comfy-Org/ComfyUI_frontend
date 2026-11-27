@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "yüz_sınırı",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standardında yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500.000, dörtgen ağlarda 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standard'da yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500,000, quad mesh'lerde 150,000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "yüz_sınırı",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standardında yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500.000, dörtgen ağlarda 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "yüz_sınırı",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standard için yaklaşık 1,4M yüz, detailed için 2M). Tripo sessizce sınırlar: v2.5 için 500.000, dörtgen ağlar için 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasını sağlar (v3.x standard sürümünde yaklaşık 1,4M yüz, detailed sürümünde 2M). Tripo sessizce sınırlar: v2.5'te 500.000, quad ağlarda 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30433,8 +30433,7 @@
         "name": "model_görev_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Doku modeli: v3.x ile oluşturulmuş ağlar için v3.0, v2.5 ile oluşturulmuş ağlar için v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Doku modeli: v3.x ile oluşturulan ağlar için v3.0, v2.5 ile oluşturulan ağlar için v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

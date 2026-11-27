@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "Flächenlimit",
-        "tooltip": "Maximale Flächenanzahl. -1 lässt Tripo adaptiv wählen (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500.000, Quad-Meshes auf 150.000."
+        "tooltip": "Maximale Anzahl von Flächen. Mit -1 wählt Tripo die Anzahl adaptiv aus (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt Quad-Meshes stillschweigend auf 150.000."
       },
       "geometry_quality": {
         "name": "Geometriequalität"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximale Anzahl an Flächen. -1 lässt Tripo adaptiv wählen (etwa 1.4M Flächen bei v3.x standard, 2M bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500,000, Quad-Meshes auf 150,000."
+        "tooltip": "Maximale Anzahl von Flächen. Mit -1 wählt Tripo die Anzahl adaptiv aus (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt Quad-Meshes stillschweigend auf 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximale Flächenanzahl. -1 lässt Tripo adaptiv wählen (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500.000, Quad-Meshes auf 150.000."
+        "tooltip": "Maximale Anzahl von Flächen. Mit -1 wählt Tripo die Anzahl adaptiv aus (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt Quad-Meshes stillschweigend auf 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximale Flächenanzahl. -1 lässt Tripo adaptiv wählen (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500.000, Quad-Meshes auf 150.000."
+        "tooltip": "Maximale Anzahl von Flächen. Mit -1 wählt Tripo die Anzahl adaptiv aus (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt Quad-Meshes stillschweigend auf 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximale Anzahl an Flächen. -1 lässt Tripo adaptiv wählen (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt stillschweigend: v2.5 auf 500.000, Quad-Meshes auf 150.000."
+        "tooltip": "Maximale Anzahl von Flächen. Mit -1 wählt Tripo die Anzahl adaptiv aus (etwa 1,4 Mio. Flächen bei v3.x standard, 2 Mio. bei detailed). Tripo begrenzt Quad-Meshes stillschweigend auf 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30433,8 +30433,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Texturmodell: v3.0 für mit v3.x generierte Meshes, v2.5 für mit v2.5 generierte Meshes."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Texturmodell: v3.0 für mit v3.x generierte Meshes, v2.5 für mit v2.5 generierte Meshes."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

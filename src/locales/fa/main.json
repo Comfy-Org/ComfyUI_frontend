@@ -62,6 +62,7 @@
       "body": "بخش صورتحساب را باز کنید تا بررسی کنید افزایش خودکار اعتبار فعال است.",
       "title": "اعتبار افزوده شد"
     },
+    "balanceAfter": "پس از این شارژ: {credits} اعتبار.",
     "blocked": {
       "action": "باز کردن صفحهٔ پرداخت",
       "body": "مرورگر شما زبانهٔ جدید را مسدود کرد. برای تکمیل پرداخت، صفحهٔ پرداخت را باز کنید.",
@@ -84,7 +85,7 @@
       "title": "پرداخت {amount} شما نیاز به تأیید دارد",
       "titleNoAmount": "پرداخت شما نیاز به تأیید دارد"
     },
-    "negativeBalance": "موجودی شما −{credits} اعتبار است. این شارژ ابتدا آن را پوشش می‌دهد.",
+    "negativeBalance": "موجودی شما ‎−{credits} اعتبار است.",
     "notAllowed": {
       "body": "برای مشاهدهٔ دلیل، تنظیمات صورت‌حساب را بررسی کنید.",
       "title": "در حال حاضر نمی‌توانید اعتبار اضافه کنید"
@@ -127,6 +128,7 @@
       "bodyNoWait": "بعداً دوباره تلاش کنید، یا {support}.",
       "title": "فعلاً به سقف شارژ رسیده‌اید"
     },
+    "stillNegativeAfter": "پس از این شارژ همچنان منفی است: ‎−{credits} اعتبار.",
     "title": "افزودن اعتبار",
     "wait": {
       "day": "یک روز",
@@ -1544,6 +1546,7 @@
         "setUp": "راه‌اندازی"
       },
       "awaitingBankApprovalBody": "بانک شما باید این پرداخت را تأیید کند تا اعتبارهای شما افزوده شوند. می‌توانید آن را از برنامهٔ بانک خود یا پیوند پرداخت این خرید تکمیل کنید. تا زمانی که این مورد تکمیل یا منقضی نشود، نمی‌توان افزایش اعتبار جدیدی را آغاز کرد.",
+      "balanceAfterTopup": "پس از این شارژ: {credits} اعتبار. | پس از این شارژ: {credits} اعتبار.",
       "buy": "خرید",
       "buyCredits": "ادامه به پرداخت",
       "buyNow": "هم‌اکنون خرید کنید",
@@ -1574,7 +1577,7 @@
       "minRequired": "حداقل {credits} اعتبار",
       "minimumPurchase": "حداقل {amount} ({credits} اعتبار)",
       "needMore": "بیشتر نیاز دارید؟",
-      "negativeBalanceNotice": "مانده شما −{credits} اعتبار است. این افزایش اعتبار ابتدا آن را پوشش می‌دهد. | مانده شما −{credits} اعتبار است. این افزایش اعتبار ابتدا آن را پوشش می‌دهد.",
+      "negativeBalanceNotice": "موجودی شما ‎−{credits} اعتبار است. | موجودی شما ‎−{credits} اعتبار است.",
       "noPaymentMethodCheckoutHint": "این فضای کاری هیچ کارتی برای افزایش اعتبار با یک کلیک ذخیره نکرده است. به‌جای آن در صفحه پرداخت کنید، یا یک کارت پیش‌فرض تنظیم کنید تا افزایش‌های اعتبار بعدی مستقیماً از آن کسر شوند.",
       "openCheckout": "باز کردن صفحه پرداخت",
       "openPaymentPage": "باز کردن صفحه پرداخت",
@@ -1597,6 +1600,7 @@
       "setDefaultCard": "تنظیم کارت پیش‌فرض",
       "setDefaultCardError": "تنظیمات کارت باز نشد",
       "startOver": "شروع مجدد",
+      "stillNegativeAfterTopup": "پس از این شارژ همچنان منفی است: ‎−{credits} اعتبار. | پس از این شارژ همچنان منفی است: ‎−{credits} اعتبار.",
       "templateNote": "*تولید شده با قالب Wan Fun Control",
       "topUp": "افزایش اعتبار",
       "unknownError": "خطای ناشناخته رخ داد",
@@ -1878,18 +1882,18 @@
     "versionChanged": "{deployment} اکنون نسخهٔ v{version} را اجرا می‌کند. برای استفاده از نودهای آن، بارگذاری مجدد کنید.",
     "versionChangedNoVersion": "{deployment} اکنون نسخه‌ای متفاوت را اجرا می‌کند. برای استفاده از نودهای آن، بارگذاری مجدد کنید.",
     "workflowNeedsDeployment": {
-      "andMore": "{names} و {count} مورد دیگر",
+      "createBody": "یک بیلد سفارشی امکاناتی را که Comfy Cloud ندارد اضافه می‌کند تا این workflow بدون مشکل اجرا شود.",
       "createCustomBuild": "ایجاد یک Custom Build",
-      "installBody": "برای افزودن نودها و مدل‌های سفارشی‌ای که Comfy Cloud ندارد، یک Custom Build ایجاد کنید. آن را در Platform تنظیم می‌کنید و سپس زیر «اجرا در» برای فضای کاری شما ظاهر می‌شود.",
-      "installTitle": "nodeهای سفارشیِ موجودِ خود را نصب کنید",
+      "createTitle": "برای اجرای این workflow یک بیلد سفارشی ایجاد کنید",
       "missingModels": "{count} مدل گمشده | {count} مدل گمشده",
       "missingNodes": "{count} node گمشده | {count} node گمشده",
       "missingPacks": "{count} بسته node گمشده | {count} بسته node گمشده",
-      "noneRunIt": "هیچ استقراری در این workspace همه این nodeها را ندارد.",
+      "more": "+{count} مورد دیگر",
+      "pointBilling": "فقط هنگام اجرای GPU، به‌علاوهٔ هزینهٔ ذخیره‌سازی پرداخت کنید",
+      "showLess": "نمایش کمتر",
       "switch": "جابه‌جایی",
       "switchBody": "Comfy Cloud این موارد را ندارد. به استقراری که آن‌ها را دارد جابه‌جا شوید و کار را از آنجا ادامه دهید.",
-      "title": "اجرای این workflow روی یک ساخت سفارشی",
-      "titleNoneRunItCustomBuild": "برای اجرای این workflow در Comfy Cloud، یک Custom Build ایجاد کنید"
+      "title": "اجرای این workflow روی یک ساخت سفارشی"
     },
     "workspaceDefault": "پیش‌فرض workspace"
   },
@@ -2398,11 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "پرسیدن از عامل",
+    "createCustomBuild": "ایجاد بیلد سفارشی",
     "missingMedia": "برخی از نودها ورودی‌های مورد نیاز را ندارند",
     "missingModels": "{count} مدل مورد نیاز مفقود است | {count} مدل مورد نیاز مفقود هستند",
     "missingNodes": "برخی از نودها مفقود هستند و باید نصب شوند",
+    "missingNodesOnCloud": "nodeهای سفارشی موردنیاز در Cloud پشتیبانی نمی‌شوند.",
     "multipleIssueCount": "{count} مشکل یافت شد | {count} مشکل یافت شد",
     "multipleIssuesMessage": "پیش از اجرای workflow، این مشکلات را برطرف کنید.",
+    "switchBuild": "تغییر بیلد",
+    "switchBuildTo": "تغییر به {build}",
     "viewDetails": "مشاهده جزئیات"
   },
   "errorPanelSurvey": {
@@ -6663,7 +6671,7 @@
         "available": "موجود",
         "availableUntil": "موجود تا {date}",
         "inUse": "اکنون در حال استفاده",
-        "overdrawn": "اجرای شما {count} اعتبار بیشتر از موجودی‌تان مصرف کرد. | اجرای شما {count} اعتبار بیشتر از موجودی‌تان مصرف کرد.",
+        "overdrawn": "شما {count} اعتبار بیشتر از موجودی‌تان استفاده کرده‌اید. برای ادامه، اعتبار اضافه کنید. | شما {count} اعتبار بیشتر از موجودی‌تان استفاده کرده‌اید. برای ادامه، اعتبار اضافه کنید.",
         "plan": "طرح",
         "planOfPool": "{remaining} از {total}",
         "planTooltip": "اعتبارهای طرح پیش از اعتبارهای شارژ مصرف می‌شوند.",

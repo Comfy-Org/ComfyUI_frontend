@@ -62,6 +62,7 @@
       "body": "Apri Fatturazione per verificare che la ricarica automatica sia attiva.",
       "title": "Crediti aggiunti"
     },
+    "balanceAfter": "Dopo questa ricarica: {credits} crediti.",
     "blocked": {
       "action": "Apri il checkout",
       "body": "Il browser ha bloccato la nuova scheda. Apri il checkout per completare il pagamento.",
@@ -84,7 +85,7 @@
       "title": "Il tuo pagamento di {amount} richiede una verifica",
       "titleNoAmount": "Il tuo pagamento richiede una verifica"
     },
-    "negativeBalance": "Il tuo saldo è di −{credits} crediti. Questa ricarica copre prima questo importo.",
+    "negativeBalance": "Il tuo saldo è di −{credits} crediti.",
     "notAllowed": {
       "body": "Controlla le impostazioni di fatturazione per scoprirne il motivo.",
       "title": "Al momento non puoi aggiungere crediti"
@@ -127,6 +128,7 @@
       "bodyNoWait": "Riprova più tardi oppure {support}.",
       "title": "Per ora hai raggiunto il limite di ricarica"
     },
+    "stillNegativeAfter": "Ancora negativo dopo questa ricarica: −{credits} crediti.",
     "title": "Aggiungi crediti",
     "wait": {
       "day": "un giorno",
@@ -1544,6 +1546,7 @@
         "setUp": "Configura"
       },
       "awaitingBankApprovalBody": "La tua banca deve approvare questo pagamento prima che i crediti vengano aggiunti. Puoi completarlo dall'app della tua banca o dal link di pagamento per questo acquisto. Non puoi avviare una nuova ricarica finché questa non viene completata o scade.",
+      "balanceAfterTopup": "Dopo questa ricarica: {credits} credito. | Dopo questa ricarica: {credits} crediti.",
       "buy": "Acquista",
       "buyCredits": "Continua al pagamento",
       "buyNow": "Acquista ora",
@@ -1574,7 +1577,7 @@
       "minRequired": "Minimo {credits} crediti",
       "minimumPurchase": "Minimo ${amount} ({credits} crediti)",
       "needMore": "Hai bisogno di più?",
-      "negativeBalanceNotice": "Il tuo saldo è di −{credits} credito. Questa ricarica lo copre prima. | Il tuo saldo è di −{credits} crediti. Questa ricarica lo copre prima.",
+      "negativeBalanceNotice": "Il tuo saldo è di −{credits} credito. | Il tuo saldo è di −{credits} crediti.",
       "noPaymentMethodCheckoutHint": "Questo spazio di lavoro non ha una carta salvata per ricariche con un clic. Paga invece nella pagina di checkout oppure imposta una carta predefinita affinché le ricariche future vengano addebitate direttamente su di essa.",
       "openCheckout": "Apri il checkout",
       "openPaymentPage": "Apri la pagina di pagamento",
@@ -1597,6 +1600,7 @@
       "setDefaultCard": "Imposta una carta predefinita",
       "setDefaultCardError": "Impossibile aprire le impostazioni della carta",
       "startOver": "Ricomincia",
+      "stillNegativeAfterTopup": "Ancora negativo dopo questa ricarica: −{credits} credito. | Ancora negativo dopo questa ricarica: −{credits} crediti.",
       "templateNote": "*Generato con il template Wan 2.2 Immagine-a-Video",
       "topUp": "Ricarica",
       "unknownError": "Si è verificato un errore sconosciuto",
@@ -1878,18 +1882,18 @@
     "versionChanged": "{deployment} ora esegue la v{version}. Ricarica per usare i suoi nodi.",
     "versionChangedNoVersion": "{deployment} ora esegue una versione diversa. Ricarica per usare i suoi nodi.",
     "workflowNeedsDeployment": {
-      "andMore": "{names} e altri {count}",
+      "createBody": "Una Build personalizzata aggiunge ciò che manca a Comfy Cloud, così questo workflow funziona senza problemi.",
       "createCustomBuild": "Crea una Custom Build",
-      "installBody": "Crea una Custom Build per aggiungere i nodi personalizzati e i modelli che Comfy Cloud non dispone. La configuri su Platform e apparirà in Esegui su per il tuo spazio di lavoro.",
-      "installTitle": "Installa i nodi personalizzati mancanti",
+      "createTitle": "Crea una Build personalizzata per eseguire questo workflow",
       "missingModels": "{count} modello mancante | {count} modelli mancanti",
       "missingNodes": "{count} nodo mancante | {count} nodi mancanti",
       "missingPacks": "{count} pacchetto di nodi mancante | {count} pacchetti di nodi mancanti",
-      "noneRunIt": "Nessun deployment in questo spazio di lavoro dispone di tutti questi nodi.",
+      "more": "+{count} altri",
+      "pointBilling": "Paga solo mentre la GPU è in esecuzione, più lo spazio di archiviazione",
+      "showLess": "Mostra meno",
       "switch": "Passa",
       "switchBody": "A Comfy Cloud mancano questi elementi. Passa a un deployment che li contiene e continua a lavorare da lì.",
-      "title": "Esegui questo workflow su una build personalizzata",
-      "titleNoneRunItCustomBuild": "Crea una Custom Build per eseguire questo workflow su Comfy Cloud"
+      "title": "Esegui questo workflow su una build personalizzata"
     },
     "workspaceDefault": "Predefinita dell'area di lavoro"
   },
@@ -2398,11 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "Chiedi all'agente",
+    "createCustomBuild": "Crea una Build personalizzata",
     "missingMedia": "Alcuni nodi non hanno gli input richiesti",
     "missingModels": "{count} modello richiesto mancante | {count} modelli richiesti mancanti",
     "missingNodes": "Alcuni nodi sono mancanti e devono essere installati",
+    "missingNodesOnCloud": "I nodi personalizzati richiesti non sono supportati su Cloud.",
     "multipleIssueCount": "{count} problema rilevato | {count} problemi rilevati",
     "multipleIssuesMessage": "Risolvi questi problemi prima di eseguire il workflow.",
+    "switchBuild": "Cambia build",
+    "switchBuildTo": "Passa a {build}",
     "viewDetails": "Visualizza dettagli"
   },
   "errorPanelSurvey": {
@@ -6663,7 +6671,7 @@
         "available": "Disponibili",
         "availableUntil": "Disponibile fino al {date}",
         "inUse": "Attualmente in uso",
-        "overdrawn": "Le tue esecuzioni hanno utilizzato {count} credito in più di quelli disponibili. | Le tue esecuzioni hanno utilizzato {count} crediti in più di quelli disponibili.",
+        "overdrawn": "Hai usato {count} credito in più di quanti ne avevi. Aggiungi crediti per continuare a eseguire. | Hai usato {count} crediti in più di quanti ne avevi. Aggiungi crediti per continuare a eseguire.",
         "plan": "Piano",
         "planOfPool": "{remaining} di {total}",
         "planTooltip": "I crediti del piano vengono utilizzati prima dei crediti ricaricati.",

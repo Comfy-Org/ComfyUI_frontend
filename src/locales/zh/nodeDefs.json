@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "面数限制",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "面数上限",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，详细模式约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "面数限制",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "面数限制",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准版约 140 万面，详细版约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30433,8 +30433,7 @@
         "name": "模型任务ID"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "纹理模型：v3.0 用于由 v3.x 生成的网格，v2.5 用于由 v2.5 生成的网格。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "纹理模型：v3.0 用于由 v3.x 生成的网格，v2.5 用于由 v2.5 生成的网格。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
