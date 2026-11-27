@@ -36,6 +36,7 @@ interface MentionPickerOptions {
   selectionTags: () => SelectedNode[]
   workflows: () => WorkflowReferenceOption[]
   skills: () => SkillReferenceMetadata[]
+  comfySkills?: () => SkillReferenceMetadata[]
   skillsEnabled: () => boolean
   assets: () => ComposerAttachment[]
   nodeReferenceDisabledReason: () => string | undefined
@@ -51,6 +52,25 @@ interface MentionPickerOptions {
   pickAsset: (asset: ComposerAttachment) => void
   requestWorkflows: () => void
 }
+
+export type MentionMatch =
+  | { kind: 'section'; id: 'nodes' | 'workflows'; label: string }
+  | { kind: 'back'; id: 'back'; label: string }
+  | { kind: 'node'; id: string; label: string; node: SelectedNode }
+  | { kind: 'asset'; id: string; label: string; asset: ComposerAttachment }
+  | {
+      kind: 'skill'
+      id: string
+      label: string
+      skill: SkillReferenceMetadata
+      group: 'user' | 'comfy'
+    }
+  | {
+      kind: 'workflow'
+      id: string
+      label: string
+      workflow: WorkflowReferenceOption
+    }
 
 export function useAgentMentionPicker(options: MentionPickerOptions) {
   const { t } = useI18n()
@@ -73,24 +93,6 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
     mention.value.status === 'open' ? mention.value.activeIndex : 0
   )
 
-  type MentionMatch =
-    | { kind: 'section'; id: 'nodes' | 'workflows'; label: string }
-    | { kind: 'back'; id: 'back'; label: string }
-    | { kind: 'node'; id: string; label: string; node: SelectedNode }
-    | { kind: 'asset'; id: string; label: string; asset: ComposerAttachment }
-    | {
-        kind: 'skill'
-        id: string
-        label: string
-        skill: SkillReferenceMetadata
-      }
-    | {
-        kind: 'workflow'
-        id: string
-        label: string
-        workflow: WorkflowReferenceOption
-      }
-
   const stagedKeys = computed(
     () => new Set(options.selectionTags().map((tag) => selectedNodeKey(tag)))
   )
@@ -101,15 +103,26 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   ): MentionMatch[] {
     const search = query.toLowerCase()
     if (section === 'skills') {
-      return options
+      const userMatches: MentionMatch[] = options
         .skills()
         .filter(({ name }) => name.toLowerCase().includes(search))
         .map((skill) => ({
           kind: 'skill',
           id: skill.name,
           label: skill.name,
-          skill
+          skill,
+          group: 'user'
         }))
+      const comfyMatches: MentionMatch[] = (options.comfySkills?.() ?? [])
+        .filter(({ name }) => name.toLowerCase().includes(search))
+        .map((skill) => ({
+          kind: 'skill',
+          id: skill.name,
+          label: skill.name,
+          skill,
+          group: 'comfy'
+        }))
+      return [...userMatches, ...comfyMatches]
     }
     if (section === 'root') {
       const sections: MentionMatch[] = [
@@ -269,7 +282,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
   }
 
   watch(
-    () => options.skills(),
+    () => [options.skills(), options.comfySkills?.() ?? []] as const,
     (_next, previous) => {
       const state = mention.value
       if (
@@ -278,7 +291,7 @@ export function useAgentMentionPicker(options: MentionPickerOptions) {
         state.activeIndex < 0
       )
         return
-      const selected = previous
+      const selected = [...previous[0], ...previous[1]]
         .filter(({ name }) =>
           name.toLowerCase().includes(state.query.toLowerCase())
         )

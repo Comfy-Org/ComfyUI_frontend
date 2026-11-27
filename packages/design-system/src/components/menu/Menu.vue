@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import {
-  DropdownMenuLabel,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
+import { DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import type { DropdownMenuContentProps } from 'reka-ui'
 
 import MenuContent from './MenuContent.vue'
 import MenuItems from './MenuItems.vue'
+import MenuLabel from './MenuLabel.vue'
 import type { MenuItem, MenuItemAction } from './types'
 
 defineOptions({ inheritAttrs: false })
@@ -50,12 +47,9 @@ const emit = defineEmits<{ activate: [item: MenuItemAction] }>()
       v-bind="$attrs"
       :class="$attrs.class"
     >
-      <DropdownMenuLabel
-        v-if="label"
-        class="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
-      >
+      <MenuLabel v-if="label">
         {{ label }}
-      </DropdownMenuLabel>
+      </MenuLabel>
       <slot>
         <MenuItems
           :items

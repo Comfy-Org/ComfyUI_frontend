@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
-import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import {
+  listBuiltinSkills,
+  listSkillPacks
+} from '@/platform/skills/api/skillsApi'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -48,6 +52,7 @@ const PORTRAIT = pack('portrait', 'Compose a portrait')
 
 function seedSkills(packs: SkillPack[]) {
   vi.mocked(listSkillPacks).mockResolvedValue(packs)
+  vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
   const skills = useSkillPacksStore()
   skills.flagsEnabled = true
   skills.hasLoaded = true
@@ -73,6 +78,19 @@ describe('AgentPanel skills screen', () => {
     expect(screen.queryByTestId('agent-panel-chat-controls')).toBeNull()
     expect(screen.queryByTestId('agent-panel-footer')).toBeNull()
     expect(screen.getByRole('button', { name: 'New chat' })).toBeVisible()
+  })
+
+  it('lists only user skills in Manage skills even when built-in skills are loaded', async () => {
+    seedSkills([PORTRAIT])
+    const builtinSkills = useBuiltinSkillsStore()
+    builtinSkills.skills = [
+      { name: 'batch-generation', description: 'Built-in batch generation' }
+    ]
+    builtinSkills.catalogConfirmed = true
+    mount()
+
+    expect(await screen.findByText('portrait')).toBeVisible()
+    expect(screen.queryByText('batch-generation')).toBeNull()
   })
 
   it('returns to the chat with the draft intact and the prompt focused', async () => {

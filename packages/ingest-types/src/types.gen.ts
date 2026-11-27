@@ -972,6 +972,27 @@ export type AgentSkillListResponse = {
 }
 
 /**
+ * One on-demand skill the agent itself ships.
+ */
+export type AgentBuiltinSkill = {
+  /**
+   * The skill's flat identifier and the load_skill argument.
+   */
+  name: string
+  /**
+   * What the model reads to decide when to load the skill. It is written for the model and can run to several sentences.
+   */
+  description: string
+}
+
+/**
+ * The on-demand skills the agent itself ships, ordered by name.
+ */
+export type AgentBuiltinSkillListResponse = {
+  skills: Array<AgentBuiltinSkill>
+}
+
+/**
  * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
  */
 export type AgentSkillPublishRequest = {
@@ -12035,6 +12056,57 @@ export type AgentPublishSkillResponses = {
 
 export type AgentPublishSkillResponse =
   AgentPublishSkillResponses[keyof AgentPublishSkillResponses]
+
+export type AgentListBuiltinSkillsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/agent/skills/builtin'
+}
+
+export type AgentListBuiltinSkillsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized. An ingest refusal, such as the web session's, is ErrorResponse; the agent service's identity-header rejection is AgentError and carries `kind`.
+   */
+  401: ErrorResponse | AgentError
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * The caller is not enrolled in the cohort gate fronting the skill routes: the agent-skill-packs flag, or the agent-in-app-experience flag gating the whole /api/agent surface. Both default off and fail closed (a missing evaluation context resolves to false), and both answer 404 rather than 403 so the surface is invisible when off. Ingest-raised, so the body is the standard ErrorResponse shape.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error (ingest-raised failures use the standard ErrorResponse shape instead)
+   */
+  500: AgentError
+  /**
+   * Agent service unavailable
+   */
+  502: ErrorResponse
+  /**
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   */
+  503: ErrorResponse
+}
+
+export type AgentListBuiltinSkillsError =
+  AgentListBuiltinSkillsErrors[keyof AgentListBuiltinSkillsErrors]
+
+export type AgentListBuiltinSkillsResponses = {
+  /**
+   * The skills the agent itself ships.
+   */
+  200: AgentBuiltinSkillListResponse
+}
+
+export type AgentListBuiltinSkillsResponse =
+  AgentListBuiltinSkillsResponses[keyof AgentListBuiltinSkillsResponses]
 
 export type AgentDeleteSkillData = {
   body?: never

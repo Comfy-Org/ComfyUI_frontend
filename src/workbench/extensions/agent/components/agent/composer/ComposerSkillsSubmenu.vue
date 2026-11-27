@@ -1,27 +1,45 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import MenuGroup from '@comfyorg/design-system/menu/MenuGroup'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
+import MenuLabel from '@comfyorg/design-system/menu/MenuLabel'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
 import MenuSub from '@comfyorg/design-system/menu/MenuSub'
 import MenuSubContent from '@comfyorg/design-system/menu/MenuSubContent'
 import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import { SKILL_CATALOG_STATUS_LABELS } from '@/platform/skills/composables/useSkillCatalogStatus'
-import type { SkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
+import type {
+  BuiltinSkillCatalogStatus,
+  SkillCatalogStatus
+} from '@/platform/skills/composables/useSkillCatalogStatus'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
+import ComposerBuiltinSkillsGroup from './ComposerBuiltinSkillsGroup.vue'
 
-const { skills, status } = defineProps<{
+const {
+  skills,
+  status,
+  comfySkills = [],
+  comfyStatus
+} = defineProps<{
   skills: SkillReferenceMetadata[]
   status?: SkillCatalogStatus
+  comfySkills?: SkillReferenceMetadata[]
+  comfyStatus?: BuiltinSkillCatalogStatus
 }>()
 const emit = defineEmits<{
   opened: []
   pick: [skill: SkillReferenceMetadata]
   retry: []
+  retryComfy: []
   manage: []
 }>()
 const { t } = useI18n()
 const open = ref(false)
+const userSkillsLabelId = useId()
+const showComfyGroup = computed(
+  () => comfySkills.length > 0 || comfyStatus !== undefined
+)
 watch(open, (isOpen) => {
   if (isOpen) emit('opened')
 })
@@ -46,39 +64,62 @@ watch(open, (isOpen) => {
         <i aria-hidden="true" class="icon-[lucide--chevron-left]" />
         <span>{{ t('g.back') }}</span>
       </MenuItem>
-      <MenuItem
-        v-for="skill in skills"
-        :key="skill.name"
-        :aria-label="skill.name"
-        :aria-description="skill.description"
-        @select="emit('pick', skill)"
+      <component
+        :is="showComfyGroup ? MenuGroup : 'div'"
+        :aria-labelledby="showComfyGroup ? userSkillsLabelId : undefined"
+        :class="showComfyGroup ? undefined : 'contents'"
       >
-        <i aria-hidden="true" class="icon-[lucide--book-open-text]" />
-        <span class="flex max-w-64 min-w-0 flex-col">
-          <span class="truncate">{{ skill.name }}</span>
-          <span
-            v-if="skill.description"
-            class="truncate text-xs text-muted-foreground"
-            >{{ skill.description }}</span
-          >
-        </span>
-      </MenuItem>
+        <MenuLabel v-if="showComfyGroup" :id="userSkillsLabelId">
+          {{ t('agent.yourSkills') }}
+        </MenuLabel>
+        <MenuItem
+          v-for="skill in skills"
+          :key="skill.name"
+          :aria-label="skill.name"
+          :aria-description="skill.description"
+          @select="emit('pick', skill)"
+        >
+          <i aria-hidden="true" class="icon-[lucide--book-open-text]" />
+          <span class="flex max-w-64 min-w-0 flex-col">
+            <span class="truncate">{{ skill.name }}</span>
+            <span
+              v-if="skill.description"
+              class="truncate text-xs text-muted-foreground"
+              >{{ skill.description }}</span
+            >
+          </span>
+        </MenuItem>
+        <div
+          v-if="status"
+          role="status"
+          class="px-2 py-1 text-xs text-muted-foreground"
+        >
+          {{ t(SKILL_CATALOG_STATUS_LABELS[status]) }}
+        </div>
+        <MenuItem v-if="status === 'failed'" @select.prevent="emit('retry')">
+          <i aria-hidden="true" class="icon-[lucide--rotate-cw]" />
+          <span>{{ t('g.retry') }}</span>
+        </MenuItem>
+      </component>
+      <template v-if="showComfyGroup">
+        <MenuSeparator />
+        <ComposerBuiltinSkillsGroup
+          :skills="comfySkills"
+          :status="comfyStatus"
+          @pick="emit('pick', $event)"
+          @retry="emit('retryComfy')"
+        />
+      </template>
       <div
-        v-if="status"
-        role="status"
-        class="px-2 py-1 text-xs text-muted-foreground"
+        data-testid="skills-submenu-footer"
+        class="sticky -bottom-1 -mx-1 bg-background px-1 pb-1"
       >
-        {{ t(SKILL_CATALOG_STATUS_LABELS[status]) }}
+        <MenuSeparator />
+        <MenuItem @select="emit('manage')">
+          <i aria-hidden="true" class="icon-[lucide--settings-2]" />
+          <span>{{ t('agent.manageSkills') }}</span>
+        </MenuItem>
       </div>
-      <MenuItem v-if="status === 'failed'" @select.prevent="emit('retry')">
-        <i aria-hidden="true" class="icon-[lucide--rotate-cw]" />
-        <span>{{ t('g.retry') }}</span>
-      </MenuItem>
-      <MenuSeparator />
-      <MenuItem @select="emit('manage')">
-        <i aria-hidden="true" class="icon-[lucide--settings-2]" />
-        <span>{{ t('agent.manageSkills') }}</span>
-      </MenuItem>
     </MenuSubContent>
   </MenuSub>
 </template>
