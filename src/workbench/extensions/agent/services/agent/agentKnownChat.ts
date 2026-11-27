@@ -1,3 +1,4 @@
+import { findLast } from '@/utils/arrayUtil'
 import type {
   AgentMessages,
   TurnId
@@ -208,7 +209,8 @@ export function pruneSettledLocalTurns(
 }
 
 export function latestWorkflowIdOf(history: AgentMessages): string | undefined {
-  return history.findLast(
+  return findLast(
+    history,
     (row) => row.role === 'assistant' && Boolean(row.workflow_id)
   )?.workflow_id
 }
