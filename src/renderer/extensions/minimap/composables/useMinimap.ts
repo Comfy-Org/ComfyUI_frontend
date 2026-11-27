@@ -50,9 +50,9 @@ export function useMinimap({
   const documentVisibility = useDocumentVisibility()
   const width = 250
   const height = 200
-  const graph = computed(() => canvasStore.currentGraph)
-  const canvas = computed<MinimapCanvas | null>(() =>
-    graph.value ? canvasStore.canvas : null
+  const graph = computed(() => canvasStore.currentGraph ?? undefined)
+  const canvas = computed<MinimapCanvas | undefined>(() =>
+    graph.value ? (canvasStore.canvas ?? undefined) : undefined
   )
   const active = computed(
     () =>

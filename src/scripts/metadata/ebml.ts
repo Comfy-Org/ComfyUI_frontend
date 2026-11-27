@@ -35,19 +35,18 @@ const MASK = {
 const hasWebmSignature = (data: Uint8Array): boolean =>
   WEBM_SIGNATURE.every((byte, index) => data[index] === byte)
 
-const readVint = (data: Uint8Array, pos: number): VInt | null => {
-  if (pos >= data.length) return null
+const readVint = (data: Uint8Array, pos: number): VInt | undefined => {
+  if (pos >= data.length) return undefined
 
   const byte = data[pos]
 
-  // Fast path for common case (1-byte vint)
   if ((byte & MASK.MSB) === MASK.MSB) {
     return { value: byte & ~MASK.MSB, length: 1 }
   }
 
   const length = findFirstSetBitPosition(byte)
   if (length === 0 || pos + length > data.length) {
-    return null
+    return undefined
   }
 
   return {
@@ -91,14 +90,14 @@ const matchesId = (data: Uint8Array, pos: number, id: Uint8Array): boolean => {
 const findNextTag = (
   data: Uint8Array,
   pos: number
-): { tagEnd: number; contents: EbmlTagPosition | null } | null => {
-  if (!matchesId(data, pos, EBML_ID.SIMPLE_TAG)) return null
+): { tagEnd: number; contents: EbmlTagPosition | undefined } | undefined => {
+  if (!matchesId(data, pos, EBML_ID.SIMPLE_TAG)) return undefined
 
   const tagSize = readVint(data, pos + 2)
-  if (!tagSize || tagSize.value <= 0) return null
+  if (!tagSize || tagSize.value <= 0) return undefined
 
   const tagEnd = pos + 2 + tagSize.length + tagSize.value
-  if (tagEnd > data.length) return null
+  if (tagEnd > data.length) return undefined
 
   const contents = extractTagContents(data, pos + 2 + tagSize.length, tagEnd)
   return { tagEnd, contents }
@@ -108,11 +107,11 @@ const extractTagContents = (
   data: Uint8Array,
   start: number,
   end: number
-): EbmlTagPosition | null => {
+): EbmlTagPosition | undefined => {
   const nameInfo = findElementsInTag(data, start, end, EBML_ID.TAG_NAME)
   const valueInfo = findElementsInTag(data, start, end, EBML_ID.TAG_VALUE)
 
-  if (!nameInfo || !valueInfo) return null
+  if (!nameInfo || !valueInfo) return undefined
 
   return {
     name: nameInfo,
@@ -125,7 +124,7 @@ const findElementsInTag = (
   start: number,
   end: number,
   id: Uint8Array
-): EbmlElementRange | null => {
+): EbmlElementRange | undefined => {
   for (let pos = start; pos < end - 1;) {
     if (matchesId(data, pos, id)) {
       const size = readVint(data, pos + 2)
@@ -137,7 +136,7 @@ const findElementsInTag = (
     pos++
   }
 
-  return null
+  return undefined
 }
 
 const processTagContents = (
@@ -155,11 +154,11 @@ const processTagContents = (
       contents.value.pos,
       contents.value.len
     )
-    if (value !== null) {
+    if (value !== undefined) {
       meta[name.toLowerCase()] = value
     }
   } catch {
-    // Silently continue on error
+    return
   }
 }
 
@@ -168,7 +167,7 @@ const extractEbmlTagValue = (
   name: string,
   pos: number,
   len: number
-): string | ComfyWorkflowJSON | ComfyApiWorkflow | null => {
+): string | ComfyWorkflowJSON | ComfyApiWorkflow | undefined => {
   if (
     name === ComfyMetadataTags.PROMPT ||
     name === ComfyMetadataTags.WORKFLOW
@@ -183,11 +182,11 @@ const extractEbmlTagName = (
   data: Uint8Array,
   start: number,
   length: number
-): string | null => {
-  if (length <= 0) return null
+): string | undefined => {
+  if (length <= 0) return undefined
 
   const textRange = findReadableTextRange(data, start, length)
-  if (!textRange) return null
+  if (!textRange) return undefined
 
   return new TextDecoder()
     .decode(data.subarray(textRange.start, textRange.end))
@@ -198,7 +197,7 @@ const findReadableTextRange = (
   data: Uint8Array,
   start: number,
   length: number
-): TextRange | null => {
+): TextRange | undefined => {
   const isPrintableAscii = (byte: number) =>
     byte >= ASCII.PRINTABLE_MIN && byte <= ASCII.PRINTABLE_MAX
 
@@ -207,7 +206,7 @@ const findReadableTextRange = (
     textStart++
   }
 
-  if (textStart >= start + length) return null
+  if (textStart >= start + length) return undefined
 
   let textEnd = textStart
   while (textEnd < start + length && data[textEnd] !== ASCII.NULL) {
@@ -221,13 +220,13 @@ const readJson = (
   data: Uint8Array,
   start: number,
   length: number
-): ComfyWorkflowJSON | ComfyApiWorkflow | null => {
-  if (length <= 0) return null
+): ComfyWorkflowJSON | ComfyApiWorkflow | undefined => {
+  if (length <= 0) return undefined
 
   const nullTerminatorPos = findNullTerminator(data, start, length)
   const jsonStartPos = findJsonStart(data, start, nullTerminatorPos - start)
 
-  if (jsonStartPos === null) return null
+  if (jsonStartPos === undefined) return undefined
 
   const jsonText = decodeJsonText(data, jsonStartPos, nullTerminatorPos)
   return parseJsonText(jsonText)
@@ -243,16 +242,16 @@ const decodeJsonText = (
 
 const parseJsonText = (
   jsonText: string
-): ComfyWorkflowJSON | ComfyApiWorkflow | null => {
+): ComfyWorkflowJSON | ComfyApiWorkflow | undefined => {
   const jsonEndPos = findJsonEnd(jsonText)
-  if (jsonEndPos === null) return null
+  if (jsonEndPos === undefined) return undefined
 
   try {
     return parseJsonWithNonFinite<ComfyWorkflowJSON | ComfyApiWorkflow>(
       jsonText.substring(0, jsonEndPos)
     )
   } catch {
-    return null
+    return undefined
   }
 }
 
@@ -274,17 +273,17 @@ const findJsonStart = (
   data: Uint8Array,
   start: number,
   length: number
-): number | null => {
+): number | undefined => {
   for (let pos = start; pos < start + length; pos++) {
     if (data[pos] === ASCII.OPEN_BRACE) return pos
   }
 
-  return null
+  return undefined
 }
 
-const findJsonEnd = (text: string): number | null => {
+const findJsonEnd = (text: string): number | undefined => {
   let braceCount = 1
-  let pos = 1 // Start after the opening brace
+  let pos = 1
 
   while (braceCount > 0 && pos < text.length) {
     if (text[pos] === '{') braceCount++
@@ -292,7 +291,7 @@ const findJsonEnd = (text: string): number | null => {
     pos++
   }
 
-  return braceCount === 0 ? pos : null
+  return braceCount === 0 ? pos : undefined
 }
 
 const ebmlToString = (

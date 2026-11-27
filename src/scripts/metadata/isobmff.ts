@@ -62,29 +62,28 @@ const findIsobmffBoxByType = (
 ): IsobmffBoxContentRange => {
   for (let pos = startPos; pos < endPos - 8; pos++) {
     const size = readUint32(data, pos)
-    if (size < SIZES.ITEM_MIN) continue // Minimum size is 8 bytes
+    if (size < SIZES.ITEM_MIN) continue
 
     if (bufferMatchesBoxType(data, pos + 4, boxType))
-      return { start: pos + SIZES.HEADER, end: pos + size } // Skip header
+      return { start: pos + SIZES.HEADER, end: pos + size }
 
-    // If type doesn't match, ensure size is valid before skipping
-    if (pos + size > endPos) return null
+    if (pos + size > endPos) return undefined
 
-    pos += size - 1 // Skip to the next potential box start
+    pos += size - 1
   }
-  return null
+  return undefined
 }
 
 const extractJson = (
   data: Uint8Array,
   start: number,
   end: number
-): ComfyWorkflowJSON | ComfyApiWorkflow | null => {
+): ComfyWorkflowJSON | ComfyApiWorkflow | undefined => {
   let jsonStart = start
   while (jsonStart < end && data[jsonStart] !== ASCII.OPEN_BRACE) {
     jsonStart++
   }
-  if (jsonStart >= end) return null
+  if (jsonStart >= end) return undefined
 
   try {
     const jsonText = new TextDecoder().decode(data.slice(jsonStart, end))
@@ -92,7 +91,7 @@ const extractJson = (
       jsonText
     )
   } catch {
-    return null
+    return undefined
   }
 }
 
@@ -133,9 +132,9 @@ const extractMetadataValueFromDataBox = (
   dataBoxStart: number,
   dataBoxEnd: number,
   keyName: string
-): ComfyWorkflowJSON | ComfyApiWorkflow | null => {
+): ComfyWorkflowJSON | ComfyApiWorkflow | undefined => {
   const valueStart = dataBoxStart + SIZES.VERSION + SIZES.LOCALE
-  if (valueStart >= dataBoxEnd) return null
+  if (valueStart >= dataBoxEnd) return undefined
 
   const lowerKeyName = keyName.toLowerCase()
   if (
@@ -144,7 +143,7 @@ const extractMetadataValueFromDataBox = (
   ) {
     return extractJson(data, valueStart, dataBoxEnd)
   }
-  return null
+  return undefined
 }
 
 const parseIlstItem = (
@@ -177,7 +176,7 @@ const parseIlstItem = (
       dataBox.end,
       keyName
     )
-    if (value !== null) {
+    if (value !== undefined) {
       metadata[keyName.toLowerCase() as keyof ComfyMetadata] = value
     }
   }
@@ -218,7 +217,6 @@ const parseIlstBox = (
 }
 
 const findUserDataBox = (data: Uint8Array): IsobmffBoxContentRange => {
-  // Metadata can be in 'udta' at top level or inside 'moov'
   const topLevelBox = findIsobmffBoxByType(
     data,
     0,
@@ -228,7 +226,7 @@ const findUserDataBox = (data: Uint8Array): IsobmffBoxContentRange => {
   if (topLevelBox) return topLevelBox
 
   const moovBox = findIsobmffBoxByType(data, 0, data.length, BOX_TYPES.MOVIE)
-  if (!moovBox) return null
+  if (!moovBox) return undefined
   return findIsobmffBoxByType(
     data,
     moovBox.start,
@@ -300,7 +298,7 @@ const readBoxSize = (header: Uint8Array): number | null => {
 const findTopLevelMetadataBox = async (
   file: File
 ): Promise<IsobmffBoxContentRange> => {
-  let movieBox: IsobmffBoxContentRange = null
+  let movieBox: IsobmffBoxContentRange
   let pos = 0
   while (pos + SIZES.HEADER <= file.size) {
     const header = await readFileRange(file, pos, pos + LARGE_HEADER_BYTES)

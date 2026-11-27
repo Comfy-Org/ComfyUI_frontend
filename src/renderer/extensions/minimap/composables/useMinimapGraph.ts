@@ -72,21 +72,21 @@ function readGraphState(graph: LGraph) {
   }
 }
 
-export function useMinimapGraph(graph: Readonly<Ref<LGraph | null>>) {
+export function useMinimapGraph(graph: Readonly<Ref<LGraph | undefined>>) {
   let checkForChanges: () => MinimapChange = () => 'none'
 
   watch(
     graph,
     (installedGraph, _, onCleanup) => {
       if (!installedGraph) return
-      let baseline: ReturnType<typeof readGraphState> | null = null
+      let baseline: ReturnType<typeof readGraphState> | undefined
       const onConfigured = () => {
-        baseline = null
+        baseline = undefined
       }
       installedGraph.events.addEventListener('configured', onConfigured)
       onCleanup(() => {
         installedGraph.events.removeEventListener('configured', onConfigured)
-        baseline = null
+        baseline = undefined
         checkForChanges = () => 'none'
       })
 

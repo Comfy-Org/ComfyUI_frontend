@@ -14,11 +14,11 @@ import type {
 
 export class MinimapDataSource {
   constructor(
-    private readonly graph: LGraph | null,
+    private readonly graph: LGraph | undefined,
     private readonly nodeProgressStates: MinimapNodeProgressStates = {}
   ) {}
 
-  private nodes: MinimapNodeData[] | null = null
+  private nodes: MinimapNodeData[] | undefined
 
   getNodes(): MinimapNodeData[] {
     this.nodes ??= this.buildNodes()

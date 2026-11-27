@@ -13,7 +13,7 @@ import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const MAX_READ_BYTES = 1 << 20
 
-const isJsonChunk = (chunk: GltfChunkHeader | null): boolean =>
+const isJsonChunk = (chunk: GltfChunkHeader | undefined): boolean =>
   !!chunk && chunk.chunkTypeIdentifier === ASCII.JSON
 
 const isValidChunkRange = (
@@ -25,11 +25,11 @@ const isValidChunkRange = (
 const byteArrayToString = (bytes: Uint8Array): string =>
   new TextDecoder().decode(bytes)
 
-const parseGltfBinaryHeader = (dataView: DataView): GltfHeader | null => {
-  if (dataView.byteLength < GltfSizeBytes.HEADER) return null
+const parseGltfBinaryHeader = (dataView: DataView): GltfHeader | undefined => {
+  if (dataView.byteLength < GltfSizeBytes.HEADER) return undefined
 
   const magicNumber = dataView.getUint32(0, true)
-  if (magicNumber !== ASCII.GLTF) return null
+  if (magicNumber !== ASCII.GLTF) return undefined
 
   return {
     magicNumber,
@@ -41,8 +41,9 @@ const parseGltfBinaryHeader = (dataView: DataView): GltfHeader | null => {
 const parseChunkHeaderAtOffset = (
   dataView: DataView,
   offset: number
-): GltfChunkHeader | null => {
-  if (offset + GltfSizeBytes.CHUNK_HEADER > dataView.byteLength) return null
+): GltfChunkHeader | undefined => {
+  if (offset + GltfSizeBytes.CHUNK_HEADER > dataView.byteLength)
+    return undefined
 
   return {
     chunkLengthBytes: dataView.getUint32(offset, true),
@@ -52,15 +53,15 @@ const parseChunkHeaderAtOffset = (
 
 const extractJsonChunk = (
   buffer: ArrayBuffer
-): { start: number; length: number } | null => {
+): { start: number; length: number } | undefined => {
   const dataView = new DataView(buffer)
 
   const header = parseGltfBinaryHeader(dataView)
-  if (!header) return null
+  if (!header) return undefined
 
   const chunkOffset = GltfSizeBytes.HEADER
   const firstChunk = parseChunkHeaderAtOffset(dataView, chunkOffset)
-  if (!firstChunk || !isJsonChunk(firstChunk)) return null
+  if (!firstChunk || !isJsonChunk(firstChunk)) return undefined
 
   const jsonStart = chunkOffset + GltfSizeBytes.CHUNK_HEADER
   const isValid = isValidChunkRange(
@@ -68,14 +69,14 @@ const extractJsonChunk = (
     firstChunk.chunkLengthBytes,
     dataView.byteLength
   )
-  if (!isValid) return null
+  if (!isValid) return undefined
 
   return { start: jsonStart, length: firstChunk.chunkLengthBytes }
 }
 
-const extractJsonChunkData = (buffer: ArrayBuffer): Uint8Array | null => {
+const extractJsonChunkData = (buffer: ArrayBuffer): Uint8Array | undefined => {
   const chunkLocation = extractJsonChunk(buffer)
-  if (!chunkLocation) return null
+  if (!chunkLocation) return undefined
 
   return new Uint8Array(buffer, chunkLocation.start, chunkLocation.length)
 }

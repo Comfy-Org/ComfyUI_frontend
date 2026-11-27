@@ -43,18 +43,18 @@ interface UrlActionStep {
 }
 
 type UrlActionLoaders = {
-  workflowLinkUrlLoader: ReturnType<typeof useWorkflowLinkUrlLoader> | null
-  deploymentUrlLoader: ReturnType<typeof useDeploymentUrlLoader> | null
-  workspaceUrlLoader: ReturnType<typeof useWorkspaceUrlLoader> | null
-  inviteUrlLoader: ReturnType<typeof useInviteUrlLoader> | null
-  createWorkspaceUrlLoader: ReturnType<
-    typeof useCreateWorkspaceUrlLoader
-  > | null
-  pricingTableUrlLoader: ReturnType<typeof usePricingTableUrlLoader> | null
-  topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | null
-  settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | null
-  assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | null
-  localHandoffUrlLoader: ReturnType<typeof useLocalHandoffUrlLoader> | null
+  workflowLinkUrlLoader: ReturnType<typeof useWorkflowLinkUrlLoader> | undefined
+  localHandoffUrlLoader: ReturnType<typeof useLocalHandoffUrlLoader> | undefined
+  deploymentUrlLoader: ReturnType<typeof useDeploymentUrlLoader> | undefined
+  workspaceUrlLoader: ReturnType<typeof useWorkspaceUrlLoader> | undefined
+  inviteUrlLoader: ReturnType<typeof useInviteUrlLoader> | undefined
+  createWorkspaceUrlLoader:
+    | ReturnType<typeof useCreateWorkspaceUrlLoader>
+    | undefined
+  pricingTableUrlLoader: ReturnType<typeof usePricingTableUrlLoader> | undefined
+  topUpUrlLoader: ReturnType<typeof useTopUpUrlLoader> | undefined
+  settingsUrlLoader: ReturnType<typeof useSettingsUrlLoader> | undefined
+  assetsUrlLoader: ReturnType<typeof useAssetsUrlLoader> | undefined
 }
 
 /**
@@ -298,7 +298,7 @@ async function runUrlActionSteps(steps: UrlActionStep[]): Promise<boolean> {
  * not wait on it.
  */
 function schedulePendingCheckoutRecovery(
-  subscriptionDialog: ReturnType<typeof useSubscriptionDialog> | null
+  subscriptionDialog: ReturnType<typeof useSubscriptionDialog> | undefined
 ) {
   if (!subscriptionDialog) return
 
@@ -312,9 +312,8 @@ function schedulePendingCheckoutRecovery(
   )
 }
 
-/** Calls a composable only on the cloud distribution; `null` off it. */
-function useIfCloud<T>(create: () => T): T | null {
-  return isCloud ? create() : null
+function useIfCloud<T>(create: () => T): T | undefined {
+  return isCloud ? create() : undefined
 }
 
 /**

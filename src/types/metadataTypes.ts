@@ -66,11 +66,7 @@ export type GltfChunkHeader = {
   chunkTypeIdentifier: number
 }
 
-/**
- * Represents the content range [start, end) of an ISOBMFF box, excluding its header.
- * Null if the box was not found.
- */
-export type IsobmffBoxContentRange = { start: number; end: number } | null
+export type IsobmffBoxContentRange = { start: number; end: number } | undefined
 
 export type AvifInfeBox = {
   box_header: {

@@ -27,7 +27,7 @@ import {
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
 
-function createReader(initialGraph: LGraph | null) {
+function createReader(initialGraph?: LGraph) {
   const graph = shallowRef(initialGraph)
   const scope = effectScope()
   onTestFinished(() => scope.stop())
@@ -399,12 +399,12 @@ describe('useMinimapGraph', () => {
     expect(graph.onConnectionChange).toBe(callback)
   })
 
-  it('detaches null graphs and starts restored graphs with fresh geometry', async () => {
+  it('detaches absent graphs and starts restored graphs with fresh geometry', async () => {
     const graph = createGraph()
     const remove = vi.spyOn(graph.events, 'removeEventListener')
     const reader = createReader(graph)
     reader.checkForChanges()
-    reader.graph.value = null
+    reader.graph.value = undefined
     expect(reader.checkForChanges()).toBe('none')
     await nextTick()
     expect(remove).toHaveBeenCalledExactlyOnceWith(
@@ -461,7 +461,7 @@ describe('useMinimapGraph', () => {
       const replacementAdd = vi.spyOn(replacement.events, 'addEventListener')
       const reader = createReader(graph)
       reader.checkForChanges()
-      reader.graph.value = transition === 'null' ? null : replacement
+      reader.graph.value = transition === 'null' ? undefined : replacement
       reader.scope.stop()
       expect(remove).toHaveBeenCalledExactlyOnceWith(
         'configured',
@@ -474,8 +474,8 @@ describe('useMinimapGraph', () => {
     }
   )
 
-  it('handles an initially null graph without subscriptions', () => {
-    const reader = createReader(null)
+  it('handles an initially absent graph without subscriptions', () => {
+    const reader = createReader()
     expect(reader.checkForChanges()).toBe('none')
     reader.scope.stop()
     expect(reader.checkForChanges()).toBe('none')

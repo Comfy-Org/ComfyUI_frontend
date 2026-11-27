@@ -52,8 +52,8 @@ function runUniforms(sources: UniformSources) {
   return useGLSLUniforms(
     computed<UUID | undefined>(() => GRAPH_ID),
     computed<NodeId | undefined>(() => HOST_NODE_ID),
-    computed<LGraphNode | null>(() => null),
-    computed<UniformSources | null>(() => sources),
+    computed<LGraphNode | undefined>(() => undefined),
+    computed(() => sources),
     computed(() => rendererConfig)
   )
 }

@@ -1,6 +1,6 @@
 import { useRafFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { shallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
@@ -47,7 +47,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should initialize with default bounds', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -64,7 +64,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should calculate graph bounds from nodes', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -82,7 +82,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should handle empty graph', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
     viewport.updateBounds(
@@ -101,7 +101,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should update canvas dimensions', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -114,7 +114,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should calculate viewport transform', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -134,7 +134,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should maintain strict reference equality for viewportTransform when canvas state is unchanged', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -161,7 +161,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should center view on world coordinates', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -183,7 +183,7 @@ describe('useMinimapViewport', () => {
       pause: stopSyncMock
     })
 
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -194,8 +194,8 @@ describe('useMinimapViewport', () => {
     expect(stopSyncMock).toHaveBeenCalled()
   })
 
-  it('should handle null canvas gracefully', () => {
-    const canvasRef = ref<MinimapCanvas | null>(null)
+  it('should handle an absent canvas gracefully', () => {
+    const canvasRef = shallowRef<MinimapCanvas>()
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 
@@ -205,7 +205,7 @@ describe('useMinimapViewport', () => {
   })
 
   it('should calculate scale correctly', () => {
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
     const graph = createMockLGraph({
       _nodes: [
         createMockLGraphNode({ pos: [0, 0], renderingSize: [5000, 2500] })
@@ -226,7 +226,7 @@ describe('useMinimapViewport', () => {
       configurable: true
     })
 
-    const canvasRef = ref<MinimapCanvas | null>(mockCanvas)
+    const canvasRef = shallowRef(mockCanvas)
 
     const viewport = useMinimapViewport(canvasRef, 250, 200)
 

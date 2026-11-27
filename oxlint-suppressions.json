@@ -2843,11 +2843,6 @@
       "count": 1
     }
   },
-  "src/composables/useUrlActionLoaders.ts": {
-    "typescript/no-restricted-types": {
-      "count": 12
-    }
-  },
   "src/composables/useWaveAudioPlayer.test.ts": {
     "typescript/no-restricted-types": {
       "count": 2
@@ -7073,42 +7068,17 @@
   },
   "src/renderer/extensions/minimap/composables/useMinimap.ts": {
     "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapGraph.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapGraph.ts": {
-    "typescript/no-restricted-types": {
       "count": 2
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapInteraction.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 11
+      "count": 1
     }
   },
   "src/renderer/extensions/minimap/composables/useMinimapInteraction.ts": {
     "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapViewport.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 11
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimapViewport.ts": {
-    "typescript/no-restricted-types": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/minimap/data/MinimapDataSource.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
     }
   },
   "src/renderer/extensions/minimap/data/minimapExecutionState.ts": {
@@ -7637,11 +7607,6 @@
       "count": 1
     }
   },
-  "src/renderer/glsl/sharedGLContext.ts": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
   "src/renderer/glsl/useGLSLPreview.test.ts": {
     "typescript/no-restricted-types": {
       "count": 7
@@ -7649,7 +7614,7 @@
   },
   "src/renderer/glsl/useGLSLPreview.ts": {
     "typescript/no-restricted-types": {
-      "count": 14
+      "count": 3
     }
   },
   "src/renderer/glsl/useGLSLRenderer.ts": {
@@ -7657,22 +7622,12 @@
       "count": 10
     },
     "typescript/no-restricted-types": {
-      "count": 18
-    }
-  },
-  "src/renderer/glsl/useGLSLUniforms.promotedRead.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
+      "count": 4
     }
   },
   "src/renderer/glsl/useGLSLUniforms.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
-    }
-  },
-  "src/renderer/glsl/useGLSLUniforms.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
     }
   },
   "src/renderer/hdr/hdrStats.ts": {
@@ -7747,19 +7702,9 @@
       "count": 3
     }
   },
-  "src/scripts/metadata/ebml.ts": {
-    "typescript/no-restricted-types": {
-      "count": 12
-    }
-  },
-  "src/scripts/metadata/gltf.ts": {
-    "typescript/no-restricted-types": {
-      "count": 5
-    }
-  },
   "src/scripts/metadata/isobmff.ts": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 3
     }
   },
   "src/scripts/metadata/legacyComment.ts": {
@@ -8117,11 +8062,6 @@
   "src/types/index.ts": {
     "comfy/no-reexports": {
       "count": 35
-    }
-  },
-  "src/types/metadataTypes.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
     }
   },
   "src/types/slotId.test.ts": {
@@ -8679,7 +8619,7 @@
   },
   "src/workbench/extensions/agent/crdt/docFrameClient.ts": {
     "typescript/no-restricted-types": {
-      "count": 15
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/docOpMinter.ts": {
