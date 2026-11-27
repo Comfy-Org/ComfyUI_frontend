@@ -14,6 +14,7 @@ import type {
 } from '@sentry/vue'
 
 import { sentryBeforeSend } from './sentryBeforeSend'
+import { capRepeatedSentryEvent } from './sentryRepeatCap'
 import {
   REDACTION_SENTINEL,
   redactTelemetryUrls,
@@ -34,7 +35,7 @@ function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
   for (const exception of filtered.exception?.values ?? []) {
     redactSentryException(exception)
   }
-  return filtered
+  return capRepeatedSentryEvent(filtered) ?? null
 }
 
 /**
@@ -53,6 +54,11 @@ function redactSharedSentryEventFields(event: Event): void {
   }
   if (event.transaction) {
     event.transaction = redactTelemetryUrls(event.transaction)
+  }
+  if (event.fingerprint) {
+    event.fingerprint = event.fingerprint.map((part) =>
+      redactTelemetryUrls(part)
+    )
   }
   if (event.tags) {
     event.tags = Object.fromEntries(
