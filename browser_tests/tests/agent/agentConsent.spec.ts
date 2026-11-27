@@ -95,11 +95,6 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       const billingRefresh = page.waitForResponse((response) =>
         isBillingStatusRead(response.url(), response.request().method())
       )
-      // Counted as the page issues them, not as the fixture serves them:
-      // `statusRequestCount` advances while a route is handled, so two reads
-      // issued back to back are counted on either side of the first response
-      // depending on how the handlers interleave. That is the whole reason the
-      // duplicate below stayed invisible on `main` and failed on `core/1.60`.
       let billingReadsAfterAccept = 0
       page.on('request', (request) => {
         if (isBillingStatusRead(request.url(), request.method()))
@@ -129,14 +124,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       expect(agentBilling.statusRequestCount).toBe(
         billingRequestsBeforeAccept + 1
       )
-      // Acceptance refreshes billing and then opens the panel, and the open has
-      // its own fresh-read path. The two must collapse to a single
-      // `GET /api/billing/status`: at 100% Cloud exposure a duplicate here is a
-      // second identical read for every user who accepts the card.
       expect(billingReadsAfterAccept).toBe(1)
-      // Watched from the other side too, because which side sees the duplicate
-      // is pure timing: it was issued before this response on `core/1.60` and
-      // ~128ms after it on `main`, where the counts above therefore miss it.
       const duplicateBillingRead = page
         .waitForRequest(
           (request) => isBillingStatusRead(request.url(), request.method()),

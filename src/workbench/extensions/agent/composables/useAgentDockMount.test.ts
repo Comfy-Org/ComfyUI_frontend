@@ -761,8 +761,6 @@ describe('useAgentDockMount', () => {
         useAgentConsentStore().confirmedAcceptances += 1
         await nextTick()
 
-        // `fetchStatus` owes the fresh read until routing resolves; the keyed
-        // rail would drop it.
         expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
         expect(fetchStatusFresh).not.toHaveBeenCalled()
       })
