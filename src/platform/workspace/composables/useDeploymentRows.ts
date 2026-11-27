@@ -22,7 +22,11 @@ import {
   deploymentRowAction,
   deploymentRowReason
 } from '@/platform/workspace/deploymentStartState'
+import type { FollowedBuild } from '@/platform/workspace/platformFrame/platformFrameBuild'
+import { isInFlight } from '@/platform/workspace/platformFrame/platformFrameBuild'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { recommendedDeploymentId } from '@/platform/workspace/recommendedDeployment'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
 
 type DeploymentSectionKey = 'runOn' | 'current' | 'compatible' | 'incompatible'
@@ -46,6 +50,7 @@ export interface DeploymentRow extends DeploymentRowLabels, MarkedRow {
   actionIcon: string | null
   ariaLabel: string | undefined
   problem: DeploymentStartProblem | null
+  updatable: boolean
 }
 
 interface DeploymentSection<Row> {
@@ -136,6 +141,7 @@ export function useDeploymentRows() {
   const { starts } = storeToRefs(useDeploymentStartStore())
   const { deploymentRowLabels, deploymentFullLabel } = useDeploymentLabels()
   const { markFor } = useDeploymentCompatibility()
+  const frames = usePlatformFrameStore()
 
   function text(key: string, label: string): string {
     return t(key, { deployment: label }, { escapeParameter: false })
@@ -224,6 +230,27 @@ export function useDeploymentRows() {
     }
   }
 
+  const recommendedValue = computed(() => {
+    const picked = pickedDeployment.value
+    if (picked === null || picked.status === 'ready') return null
+    return (
+      recommendedDeploymentId(
+        deployments.value,
+        markFor,
+        picked.deployment_id
+      ) ?? COMFY_CLOUD_ROW
+    )
+  })
+
+  function switchOffer(value: string): Pick<DeploymentRow, 'actionLabel'> {
+    return {
+      actionLabel:
+        value === recommendedValue.value
+          ? t('deploymentSwitcher.workflowNeedsDeployment.switch')
+          : null
+    }
+  }
+
   function cloudRow(): DeploymentRow {
     const mark = markFor(null)
     const label = deploymentFullLabel(null)
@@ -232,7 +259,9 @@ export function useDeploymentRows() {
       mark,
       note: note(mark, label, null),
       ...actionFor('pick', label),
-      problem: null
+      ...switchOffer(COMFY_CLOUD_ROW),
+      problem: null,
+      updatable: false
     }
   }
 
@@ -262,13 +291,61 @@ export function useDeploymentRows() {
         reason === null ? null : text(REASON_KEYS[reason], label)
       ),
       ...actionFor(action, label),
-      problem: problemFor(label, start)
+      ...(action === 'pick' ? switchOffer(labels.value) : {}),
+      problem: problemFor(label, start),
+      updatable: true
     }
   }
 
+  function listedBuildDeploymentId(build: FollowedBuild): string | undefined {
+    if (!build.deploymentName) return undefined
+    return deployments.value.find(
+      (d) =>
+        d.release_id === build.releaseId &&
+        d.deployment_name === build.deploymentName
+    )?.deployment_id
+  }
+
+  const buildingValue = computed(() => {
+    const build = frames.build
+    if (!build || !isInFlight(build)) return undefined
+    return build.deploymentId || listedBuildDeploymentId(build) || build.buildId
+  })
+
+  function unlistedBuildRow(
+    build: FollowedBuild,
+    value: string
+  ): DeploymentRow {
+    const label =
+      build.deploymentName || t('deploymentSwitcher.newDeploymentName')
+    return {
+      value,
+      deploymentId: value,
+      title: label,
+      name: null,
+      detail: t('deploymentSwitcher.status.building'),
+      tooltip: text('platformFrame.building', label),
+      tone: 'pending',
+      mark: null,
+      note: text(REASON_KEYS.notReady, label),
+      ...actionFor('none', label),
+      problem: null,
+      updatable: Boolean(build.deploymentId)
+    }
+  }
+
+  const unlistedBuildRows = computed(() => {
+    const value = buildingValue.value
+    const build = frames.build
+    if (value === undefined || !build) return []
+    if (deployments.value.some((d) => d.deployment_id === value)) return []
+    return [unlistedBuildRow(build, value)]
+  })
+
   const rows = computed(() => [
     cloudRow(),
-    ...deployments.value.map(deploymentRow)
+    ...deployments.value.map(deploymentRow),
+    ...unlistedBuildRows.value
   ])
 
   const pickedValue = computed(
@@ -289,5 +366,14 @@ export function useDeploymentRows() {
     rows.value.some((row) => row.tone === 'pending')
   )
 
-  return { sections, pickedValue, pickedRow, isAnyStarting }
+  const listsDeployments = computed(() => rows.value.length > 1)
+
+  return {
+    sections,
+    pickedValue,
+    pickedRow,
+    isAnyStarting,
+    buildingValue,
+    listsDeployments
+  }
 }

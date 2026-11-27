@@ -15,6 +15,9 @@ import { useApp } from '@/scripts/appInstance'
 import { createImageOutput } from '@comfyorg/mask-editor/imageOutput'
 import { imageLayerFilenamesByTimestamp } from './layerFilenames'
 import { isResultItemType } from '@/utils/typeGuardUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+
+const CLIPSPACE_SUBFOLDER = 'clipspace'
 
 export function useMaskEditorSaver() {
   const dataStore = useMaskEditorDataStore()
@@ -97,6 +100,7 @@ export function useMaskEditorSaver() {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('type', 'input')
+    formData.append('subfolder', CLIPSPACE_SUBFOLDER)
 
     const response = await api.fetchApi('/upload/image', {
       method: 'POST',
@@ -155,20 +159,16 @@ export function useMaskEditorSaver() {
     if (!node.graph) return
 
     const mainRef = outputData.paintedMaskedImage.ref
+    const savedImage = {
+      filename: mainRef.filename,
+      subfolder: mainRef.subfolder,
+      type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
+    }
 
-    writeImageWidgetValue(
-      node,
-      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
-    )
+    writeImageWidgetValue(node, createAnnotatedPath(savedImage))
 
     node.imgs = undefined
-    nodeOutputStore.replaceNodeOutputImages(node, [
-      {
-        filename: mainRef.filename,
-        subfolder: mainRef.subfolder,
-        type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
-      }
-    ])
+    nodeOutputStore.replaceNodeOutputImages(node, [savedImage])
     node.graph.setDirtyCanvas(true)
   }
 
@@ -190,7 +190,7 @@ export function useMaskEditorSaver() {
   function createFileRef(filename: string): ImageRef {
     return {
       filename,
-      subfolder: 'clipspace',
+      subfolder: CLIPSPACE_SUBFOLDER,
       type: 'input'
     }
   }

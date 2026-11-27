@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -5,7 +6,10 @@ import type {
   RenderContext
 } from '@/renderer/core/canvas/pathRenderer'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
+import {
+  CanvasPathRenderer,
+  dustWithChalk
+} from '@/renderer/core/canvas/pathRenderer'
 
 function createMockCtx(): CanvasRenderingContext2D {
   return {
@@ -925,6 +929,88 @@ describe('CanvasPathRenderer', () => {
         const lineToCalls = vi.mocked(path.lineTo).mock.calls
 
         expect(lineToCalls[0]).toEqual(expectedInnerA)
+      }
+    )
+  })
+
+  describe('chalk links', () => {
+    it.for([
+      {
+        state: 'a live link',
+        color: '#c0ffee',
+        link: {},
+        style: {},
+        strokes: ['grain']
+      },
+      {
+        state: 'a low quality link',
+        color: '#c0ffef',
+        link: {},
+        style: { lowQuality: true },
+        strokes: ['#c0ffef']
+      },
+      {
+        state: 'a disabled link',
+        color: '#c0fff0',
+        link: { disabled: true },
+        style: {},
+        strokes: ['rgba(0,0,0,0.5)', '#c0fff0']
+      }
+    ])('strokes $state with $strokes', ({ color, link, style, strokes }) => {
+      const grain = fromPartial<CanvasPattern>({})
+      const tile = document.createElement('canvas')
+      Object.defineProperty(tile, 'getContext', {
+        value: () =>
+          fromPartial<CanvasRenderingContext2D>({
+            fillRect: vi.fn(),
+            getImageData: () => new ImageData(64, 64),
+            putImageData: vi.fn()
+          })
+      })
+      vi.spyOn(document, 'createElement').mockReturnValue(tile)
+      const ctx = createMockCtx()
+      ctx.createPattern = vi.fn(() => grain)
+      const stroked: Array<string | CanvasGradient | CanvasPattern> = []
+      vi.mocked(ctx.stroke).mockImplementation(() => {
+        stroked.push(ctx.strokeStyle)
+      })
+
+      renderer.drawLink(
+        ctx,
+        makeLink({ color, ...link }),
+        makeContext({
+          style: {
+            mode: 'spline',
+            connectionWidth: 3,
+            borderWidth: 2,
+            chalk: true,
+            ...style
+          }
+        })
+      )
+
+      expect(
+        stroked.map((strokeStyle) =>
+          strokeStyle === grain ? 'grain' : strokeStyle
+        )
+      ).toEqual(strokes)
+    })
+  })
+
+  describe('chalk grain', () => {
+    it.for([
+      { colour: 'transparent', alpha: 0, brightestGrain: 0 },
+      { colour: 'half-transparent', alpha: 128, brightestGrain: 128 },
+      { colour: 'opaque', alpha: 255, brightestGrain: 255 }
+    ])(
+      'keeps the grain within a $colour link colour',
+      ({ alpha, brightestGrain }) => {
+        const pixels = new Uint8ClampedArray(64 * 64 * 4).fill(alpha)
+
+        dustWithChalk(pixels)
+
+        const alphas = pixels.filter((_, index) => index % 4 === 3)
+        expect(Math.max(...alphas)).toBeCloseTo(brightestGrain, -1)
       }
     )
   })

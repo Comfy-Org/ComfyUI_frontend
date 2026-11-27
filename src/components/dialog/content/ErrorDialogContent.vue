@@ -81,7 +81,7 @@ import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatal
 import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'
@@ -165,16 +165,13 @@ const message = computed(
       .join('\n\n') || error.exceptionMessage
 )
 
-/**
- * Open contact support flow from error dialog and track telemetry.
- */
-const showContactSupport = async () => {
+const showContactSupport = () => {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
     source: 'error_dialog'
   })
-  await useCommandStore().execute('Comfy.ContactSupport')
+  openSupportForm('bug')
 }
 
 onMounted(async () => {

@@ -3,8 +3,10 @@
     ref="grid"
     data-testid="node-widgets"
     class="lg-node-widgets contents text-xs text-node-foreground"
+    :data-expands="expands"
   >
-    <div
+    <component
+      :is="section.element"
       v-for="(section, sectionIndex) in sections"
       :key="section.key"
       :role="section.role"
@@ -18,17 +20,26 @@
         <div
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
+          :data-autogrow-group="row.autogrowGroup"
+          :data-part="row.part"
+          :data-widget-type="row.widget.simplified.type"
+          :data-linked="row.linked"
           :style="row.style"
           :class="
             cn(
               'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
               row.flexClass,
               rowSpacingClass(row.showsControl),
-              rowEdgeClass(sectionIndex, rowIndex)
+              rowEdgeClass(sectionIndex, rowIndex),
+              row.highlightClass
             )
           "
         >
-          <div :class="row.slotClass">
+          <div
+            class="z-10 flex items-stretch"
+            :class="row.slotClass"
+            data-part="row-slot"
+          >
             <InputSlot
               v-if="row.widget.slotMetadata"
               :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
@@ -36,11 +47,14 @@
                 name: row.widget.simplified.name,
                 label: row.widget.simplified.label,
                 type: row.widget.slotMetadata.type,
+                shape: row.widget.slotMetadata.shape,
                 boundingRect: [0, 0, 0, 0]
               }"
               :node-id
               :has-error="row.widget.hasError"
               :index="row.widget.slotMetadata.index"
+              :connected="row.widget.slotMetadata.linked"
+              :compatible="row.inHoveredGroup"
               :socketless="row.widget.simplified.spec?.socketless"
               :standalone="row.standalone"
               :dot-only="row.showsControl"
@@ -52,31 +66,26 @@
             :name="row.widget.simplified.name"
             :enable="row.selectable"
           >
-            <Tooltip :disabled="!row.widget.tooltipText">
-              <TooltipTrigger as-child>
-                <div :class="row.controlClass">
-                  <component
-                    :is="row.widget.vueComponent"
-                    :model-value="row.widget.simplified.value"
-                    :widget="row.widget.simplified"
-                    :node-id
-                    :node-type
-                    :node-title
-                    :invalid="row.widget.hasError"
-                    :aria-invalid="row.widget.hasError || undefined"
-                    :class="
-                      cn('col-span-full', row.widget.hasError && 'font-bold')
-                    "
-                    @update:model-value="row.widget.updateHandler"
-                    @contextmenu="row.widget.handleContextMenu"
-                    @removed="restoreRowFocus"
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="left">{{
-                row.widget.tooltipText
-              }}</TooltipContent>
-            </Tooltip>
+            <div
+              :data-node-tooltip="row.widget.tooltipText"
+              data-node-tooltip-side="top"
+              :class="row.controlClass"
+            >
+              <component
+                :is="row.widget.vueComponent"
+                :model-value="row.widget.simplified.value"
+                :widget="row.widget.simplified"
+                :node-id
+                :node-type
+                :node-title
+                :invalid="row.widget.hasError"
+                :aria-invalid="row.widget.hasError || undefined"
+                :class="cn('col-span-full', row.widget.hasError && 'font-bold')"
+                @update:model-value="row.widget.updateHandler"
+                @contextmenu="row.widget.handleContextMenu"
+                @removed="restoreRowFocus"
+              />
+            </div>
           </AppInput>
           <GrowableRegionHandle
             v-if="row.growable"
@@ -95,7 +104,7 @@
           />
         </div>
       </template>
-    </div>
+    </component>
   </div>
 </template>
 
@@ -109,17 +118,20 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
+import type { FunctionalComponent } from 'vue'
 
 import { useResizeObserver } from '@vueuse/core'
 
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  autogrowIoInputDragType,
+  hoveredAutogrowGroup
+} from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useWidgetGridResizeTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import {
   growableRegionsKey,
   userHeightTrack
@@ -132,6 +144,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import InputSlot from './InputSlot.vue'
+
+const SectionContents: FunctionalComponent = (_, { slots }) => slots.default?.()
+SectionContents.inheritAttrs = false
 
 const grid = useTemplateRef<HTMLElement>('grid')
 
@@ -202,8 +217,58 @@ const {
   syncLayout?: boolean
 }>()
 
-useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
+useWidgetGridResizeTracking(syncLayout ? String(nodeId ?? '') : '')
 const canvasStore = useCanvasStore()
+const hoveredGroupName = computed(() => {
+  const hovered = hoveredAutogrowGroup.value
+  return hovered && hovered.nodeId === nodeId ? hovered.groupName : undefined
+})
+
+function revealedAutogrowGroup(widget: WidgetGridItem) {
+  const slot = widget.slotMetadata
+  if (widget.inputRole !== 'autogrowGroup' || !slot) return undefined
+  const dragType = autogrowIoInputDragType.value
+  const accepts =
+    dragType !== undefined && LiteGraph.isValidConnection(dragType, slot.type)
+  return slot.linked || accepts ? widget.simplified.name : undefined
+}
+
+function isInHoveredGroup(name: string) {
+  const group = hoveredGroupName.value
+  return !!group && (name === group || name.startsWith(`${group}.`))
+}
+
+const socketRow = {
+  showsControl: false,
+  part: 'socket-row',
+  testId: undefined,
+  slotClass: 'col-span-full'
+}
+const rowKinds = {
+  control: {
+    showsControl: true,
+    part: 'widget-row',
+    standalone: false,
+    testId: 'node-widget',
+    slotClass:
+      'h-(--node-widget-height) min-h-full w-3 **:data-[part=slot-dot]:after:inset-[0_-6px_0_-9px] **:data-[part=slot-dot]:after:w-auto opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+  },
+  socket: { ...socketRow, standalone: true },
+  convertedSocket: { ...socketRow, standalone: false }
+}
+
+function rowKind(widget: WidgetGridItem, autogrowGroup?: string) {
+  const { slotMetadata, suppressedByConnection } = widget
+  if (isConvertedWidgetType(widget.simplified.type)) {
+    if (!slotMetadata) return undefined
+    return suppressedByConnection ? 'socket' : 'convertedSocket'
+  }
+  if (widget.visible)
+    return widget.inputRole === 'socket' ? 'socket' : 'control'
+  const revealed = suppressedByConnection || autogrowGroup
+  return revealed && slotMetadata ? 'socket' : undefined
+}
+
 const renderedRows = computed(() => fillWithLastLegacyRow(rawRows.value))
 
 function fillWithLastLegacyRow(rows: typeof rawRows.value) {
@@ -226,34 +291,26 @@ function fillWithLastLegacyRow(rows: typeof rawRows.value) {
 
 const rawRows = computed(() =>
   processedWidgets.flatMap((widget) => {
-    const isConverted = isConvertedWidgetType(widget.simplified.type)
-    const showsControl = !isConverted && widget.visible
-    const shouldRender = isConverted
-      ? !!widget.slotMetadata
-      : widget.visible ||
-        (!!widget.suppressedByConnection && !!widget.slotMetadata)
-    if (!shouldRender) return []
-
+    const autogrowGroup = revealedAutogrowGroup(widget)
+    const kind = rowKind(widget, autogrowGroup)
+    if (!kind) return []
+    const { showsControl } = rowKinds[kind]
     const sizing = showsControl ? widget.sizing : undefined
+    const inHoveredGroup = isInHoveredGroup(widget.simplified.name)
     return [
       {
+        ...rowKinds[kind],
         widget,
-        showsControl,
-        slotClass: cn(
-          'z-10 flex items-stretch',
-          showsControl
-            ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
-            : 'col-span-full',
-          widget.slotMetadata?.linked && 'opacity-100'
-        ),
-        standalone: !showsControl && !!widget.suppressedByConnection,
-        testId: showsControl ? 'node-widget' : undefined,
         selectable: canSelectInputs && !widget.simplified.options?.disabled,
+        linked: !showsControl && widget.suppressedByConnection ? '' : undefined,
         ...rowSizing(
           widget.simplified.name,
           showsControl && shouldExpand(widget.simplified.type, sizing),
           sizing
-        )
+        ),
+        autogrowGroup,
+        inHoveredGroup,
+        highlightClass: inHoveredGroup && 'rounded-sm ring-1 ring-primary'
       }
     ]
   })
@@ -278,6 +335,7 @@ function withShortFieldLabel(
 const sections = computed(() => {
   const result: {
     key: string
+    element: 'div' | FunctionalComponent
     name?: string
     label?: string
     role?: 'group'
@@ -288,6 +346,7 @@ const sections = computed(() => {
     if (type === 'dynamic_group_row') {
       result.push({
         key: row.widget.renderKey,
+        element: label ? 'div' : SectionContents,
         name,
         label,
         role: label ? 'group' : undefined,
@@ -297,7 +356,11 @@ const sections = computed(() => {
     }
     const section = result.at(-1)
     if (!section?.name || !name.startsWith(`${section.name}.`)) {
-      result.push({ key: row.widget.renderKey, rows: [row] })
+      result.push({
+        key: row.widget.renderKey,
+        element: SectionContents,
+        rows: [row]
+      })
       continue
     }
     section.rows.push({
@@ -330,6 +393,10 @@ async function restoreRowFocus(name: string) {
     }
   }
 }
+
+const expands = computed(
+  () => renderedRows.value.some((row) => row.growable) || undefined
+)
 
 const layoutKey = computed(() =>
   renderedRows.value

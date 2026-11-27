@@ -39,10 +39,10 @@ jobs:
 
       - name: Audit new findings
         id: audit
-        uses: fallow-rs/fallow@34269241152fa2e7e6a9de1aba698dcae93035b3 # v3.41.0
+        uses: fallow-rs/fallow@b6a3e048dc882bdf11c8269c73167223b9e32774 # v3.43.2
         with:
           command: audit
-          version: '3.24.1'
+          version: '3.43.2'
           format: json
           branded-token: false
           changed-since: ${{ steps.audit-base.outputs.sha }}
@@ -63,7 +63,7 @@ jobs:
           # renderer already makes for an error envelope.
           completed=true
           if [ -s "$RESULTS" ]; then
-            npx tsx scripts/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
+            npx tsx tools/ci/src/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
             if grep -q '"error"[[:space:]]*:[[:space:]]*true' "$RESULTS"; then
               completed=false
             fi

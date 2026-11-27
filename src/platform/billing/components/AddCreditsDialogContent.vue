@@ -7,6 +7,7 @@
     :max-topup-cents="balance?.maxTopupCents"
     :suggested-topup-cents="balance?.suggestedTopupAmountCents"
     :negative-balance-credits="negativeBalanceCredits"
+    :quote-scope="`${workspaceIdentity.workspaceTransitionGeneration}:${workspaceIdentity.activeWorkspaceId}`"
     :pending-topup="pendingTopup"
     :plan-line="planLine"
     :auto-top-up="autoTopUpChoice.offer.value"
@@ -34,7 +35,10 @@
 import { computed, nextTick, onMounted, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
+import type {
+  AddCreditsTranslate,
+  AutoTopUpActivation
+} from '@comfyorg/account-core/billing'
 import { addCreditsRefusalFor } from '@comfyorg/account-core/billing'
 import type { AddCreditsPorts } from '@comfyorg/account-ui/billing'
 import { AddCreditsDialog } from '@comfyorg/account-ui/billing'
@@ -50,6 +54,7 @@ import {
 } from '@/platform/billing/addCredits/addCreditsFacts'
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { billingWebTopupUrl } from '@/platform/billing/addCredits/billingWebTopup'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   issueLocalBillingHandoff,
@@ -68,32 +73,32 @@ import { useBillingDialogsAccess } from '@/platform/billing/subscription/composa
 import { useAddCreditsPlanLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
+import type { CheckoutJourneyRecord } from '@/platform/billing/utils/checkoutJourney'
 import {
+  getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
   resolveEntrySource
 } from '@/platform/billing/utils/checkoutJourney'
 import {
+  handOffCheckoutJourney,
   trackCheckoutJourneyPhase,
   useCheckoutJourneyExit
 } from '@/platform/billing/utils/checkoutJourneyTelemetry'
+import { buildSupportUrl } from '@/platform/support/config'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { buildSupportFormUrl } from '@/utils/supportFormUrl'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
   source?: PaymentIntentSource
 }>()
 
-const BILLING_SUPPORT_URL =
-  'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue'
-
 const authStore = useAuthStore()
 const billingSupportUrl = computed(() =>
-  buildSupportFormUrl(BILLING_SUPPORT_URL, {
+  buildSupportUrl('billing', {
     email: authStore.userEmail,
     userId: authStore.userId
   })
@@ -112,7 +117,8 @@ const { canTopUp, topUpDenial } = useBillingCapabilities()
 const autoTopUpOffer = useAutoTopUpSetupOffer()
 const autoTopUpChoice = useAddCreditsAutoTopUpOffer()
 const { payment: processingPayment } = useProcessingTopupPayment()
-const { topupOperation, createHostedCheckout, quoteTopup } = useTopupOperation()
+const { topupOperation, createHostedCheckout, openTopupPurchase, quoteTopup } =
+  useTopupOperation()
 const planLine = useAddCreditsPlanLine()
 
 const negativeBalanceCredits = computed(() => {
@@ -129,10 +135,45 @@ const pendingTopup = computed(() =>
 
 let paymentWatched = false
 const readingActivation = shallowRef(false)
+let ownedJourney: CheckoutJourneyRecord | null = null
+let checkoutReached = false
+
+function activeOwnedJourney(): CheckoutJourneyRecord | null {
+  const active = getActiveCheckoutJourney()
+  return ownedJourney !== null && active?.journey_id === ownedJourney.journey_id
+    ? active
+    : null
+}
+
+function trackTopupStarted(amountCents: number): void {
+  telemetry?.trackBillingEvent({
+    operation: 'topup',
+    stage: 'started',
+    outcome: 'pending',
+    payment_intent_source: source,
+    amount_cents: amountCents,
+    plan_line: planLine.value ?? 'none'
+  })
+  if (checkoutReached) return
+  const journey = activeOwnedJourney()
+  if (journey) trackCheckoutJourneyPhase(journey, { phase: 'submitted' })
+}
+
+function trackTopupCheckoutFailed(startedAt: number): void {
+  telemetry?.trackBillingEvent({
+    operation: 'topup',
+    stage: 'failed',
+    outcome: 'failure',
+    payment_intent_source: source,
+    failure_category: 'unknown',
+    duration_ms: Date.now() - startedAt
+  })
+}
 
 interface OwnedCheckout {
   readonly generation: number
   readonly activationSessionId?: string
+  readonly activationUnreadable?: boolean
 }
 let ownedCheckout: OwnedCheckout | undefined
 function ownsCheckout(
@@ -156,11 +197,12 @@ async function reopenForCurrentFlag(): Promise<void> {
 
 async function createHandoffCheckout(
   amountCents: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
 ): ReturnType<AddCreditsPorts['createCheckout']> {
   const generation = workspaceIdentity.workspaceTransitionGeneration
   const issued = await issueLocalBillingHandoff(
-    { intent: 'top-up', amountCents },
+    { intent: 'top-up', amountCents, autoTopUp },
     signal
   )
   if (issued.status === 'error') {
@@ -174,17 +216,111 @@ async function createHandoffCheckout(
       }
     }
   }
-  ownedCheckout = { generation }
+  ownedCheckout = { generation, activationUnreadable: autoTopUp !== undefined }
   return { status: 'ok', url: issued.url }
+}
+
+let popupBlocked = false
+let quotedPayment: { amountCents: number; configured: boolean } | undefined
+
+function reservePurchaseTab() {
+  const tab = reserveBillingTab()
+  if (tab === null) popupBlocked = true
+  return tab
+}
+
+function opensBillingWeb(amountCents: number): boolean {
+  return (
+    !popupBlocked &&
+    quotedPayment?.amountCents === amountCents &&
+    quotedPayment.configured &&
+    flags.unifiedBillingSettingsEnabled &&
+    !handsPopupsToSystemBrowser()
+  )
+}
+
+async function billingWebPurchaseUrl(
+  amountCents: number,
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
+): Promise<string | undefined> {
+  const purchaseId = await openTopupPurchase(amountCents, signal, autoTopUp)
+  if (purchaseId === undefined) return undefined
+  return billingWebTopupUrl(
+    amountCents,
+    autoTopUp,
+    workspaceIdentity.activeWorkspaceId ?? undefined,
+    purchaseId
+  )
+}
+
+async function openBillingWebCheckout(
+  amountCents: number,
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
+): ReturnType<AddCreditsPorts['createCheckout']> {
+  const checkout = {
+    generation: workspaceIdentity.workspaceTransitionGeneration,
+    activationUnreadable: autoTopUp !== undefined
+  }
+  if (!balance.value) await Promise.allSettled([fetchBalance()])
+  const url = await billingWebPurchaseUrl(amountCents, signal, autoTopUp)
+  if (url === undefined)
+    return createHostedTopupCheckout(amountCents, signal, autoTopUp)
+  if (!ownsCheckout(checkout)) {
+    return { status: 'error', refusal: { kind: 'checkout_failed' } }
+  }
+  ownedCheckout = checkout
+  return { status: 'ok', url }
+}
+
+async function createHostedTopupCheckout(
+  amountCents: number,
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
+): ReturnType<AddCreditsPorts['createCheckout']> {
+  const returnUrl = topupCheckoutReturnUrl()
+  if (!returnUrl) {
+    return { status: 'error', refusal: { kind: 'checkout_failed' } }
+  }
+  const generation = workspaceIdentity.workspaceTransitionGeneration
+  try {
+    if (!balance.value) await Promise.allSettled([fetchBalance()])
+    const { url, sessionId } = await createHostedCheckout(
+      amountCents,
+      returnUrl,
+      signal,
+      autoTopUp
+    )
+    const checkout = {
+      generation,
+      activationSessionId: autoTopUp && sessionId
+    }
+    if (!ownsCheckout(checkout)) {
+      return { status: 'error', refusal: { kind: 'checkout_failed' } }
+    }
+    ownedCheckout = checkout
+    return { status: 'ok', url }
+  } catch (error) {
+    return {
+      status: 'error',
+      refusal: addCreditsRefusalFor(topupCheckoutFailure(error))
+    }
+  }
 }
 
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
-    const credits = await quoteTopup(amountCents, signal)
-    return credits === null ? { status: 'error' } : { status: 'ok', credits }
+    const quoted = await quoteTopup(amountCents, signal)
+    if (quoted === null) return { status: 'error' }
+    quotedPayment = { amountCents, configured: quoted.paymentConfigured }
+    const { credits, balanceAfter } = quoted
+    return balanceAfter === undefined
+      ? { status: 'ok', credits }
+      : { status: 'ok', credits, balanceAfter }
   },
   get activatesAutoTopUp() {
-    return !opensHandoff && flags.billingAutoTopUpAtCheckoutEnabled
+    return autoTopUpChoice.activatesAtCheckout()
   },
   singleUseCheckout: opensHandoff,
   async createCheckout(amountCents, signal, autoTopUp) {
@@ -198,37 +334,17 @@ const ports: AddCreditsPorts = {
       void reopenForCurrentFlag()
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
     }
-    if (opensHandoff) return createHandoffCheckout(amountCents, signal)
-    const returnUrl = topupCheckoutReturnUrl()
-    if (!returnUrl) {
-      return { status: 'error', refusal: { kind: 'checkout_failed' } }
-    }
-    const generation = workspaceIdentity.workspaceTransitionGeneration
-    try {
-      if (!balance.value) await Promise.allSettled([fetchBalance()])
-      const { url, sessionId } = await createHostedCheckout(
-        amountCents,
-        returnUrl,
-        signal,
-        autoTopUp
-      )
-      const checkout = {
-        generation,
-        activationSessionId: autoTopUp && sessionId
-      }
-      if (!ownsCheckout(checkout)) {
-        return { status: 'error', refusal: { kind: 'checkout_failed' } }
-      }
-      ownedCheckout = checkout
-      return { status: 'ok', url }
-    } catch (error) {
-      return {
-        status: 'error',
-        refusal: addCreditsRefusalFor(topupCheckoutFailure(error))
-      }
-    }
+    const startedAt = Date.now()
+    trackTopupStarted(amountCents)
+    const result = await (opensHandoff
+      ? createHandoffCheckout(amountCents, signal, autoTopUp)
+      : opensBillingWeb(amountCents)
+        ? openBillingWebCheckout(amountCents, signal, autoTopUp)
+        : createHostedTopupCheckout(amountCents, signal, autoTopUp))
+    if (result.status === 'error') trackTopupCheckoutFailed(startedAt)
+    return result
   },
-  reserveTab: opensHandoff ? reserveBillingHandoffTab : reserveBillingTab,
+  reserveTab: opensHandoff ? reserveBillingHandoffTab : reservePurchaseTab,
   watchPayment(landed) {
     if (!ownsCheckout(ownedCheckout)) return () => {}
     paymentWatched = true
@@ -243,7 +359,12 @@ const ports: AddCreditsPorts = {
         const checkout = ownedCheckout
         if (!ownsCheckout(checkout)) return
         const { activationSessionId } = checkout
-        if (activationSessionId === undefined) return landed()
+        if (activationSessionId === undefined)
+          return landed(
+            checkout.activationUnreadable
+              ? { status: 'unconfirmed' }
+              : undefined
+          )
         readingActivation.value = true
         const activation = await readAutoTopUpActivation(
           (signal) => billingApi.getTopupCheckout(activationSessionId, signal),
@@ -271,7 +392,12 @@ const ports: AddCreditsPorts = {
     }
   },
   autoTopUpSetupUrl: autoTopUpOffer.setupUrl,
-  ownsCheckout: () => ownsCheckout(ownedCheckout)
+  ownsCheckout: () => ownsCheckout(ownedCheckout),
+  checkoutOpened() {
+    if (checkoutReached || !activeOwnedJourney()) return
+    checkoutReached = true
+    handOffCheckoutJourney()
+  }
 }
 
 function close() {
@@ -296,7 +422,9 @@ function enterTopupJourney(): void {
     intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
-  if (resolved.status === 'blocked' || resolved.resumed) return
+  if (resolved.status === 'blocked') return
+  ownedJourney = resolved.record
+  if (resolved.resumed) return
 
   trackCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
 }

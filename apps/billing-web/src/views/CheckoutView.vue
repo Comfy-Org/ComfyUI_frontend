@@ -39,6 +39,7 @@ import {
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
+import { createNamedSignup } from '@/checkout/namedSignup'
 import { quoteFailureEndingOf } from '@/checkout/checkoutJourney'
 import type { PaymentChoice } from '@/checkout/checkoutRequest'
 import {
@@ -156,8 +157,10 @@ async function quotePlan(
   return result
 }
 
+const namedSignup = createNamedSignup()
+
 onMounted(() => {
-  void lifecycle.recover()
+  void lifecycle.recover(namedSignup.recoverOptions(entry.value))
   void quotePlan(planSlug.value, teamCreditStopId.value)
 })
 
@@ -579,6 +582,7 @@ async function pay(choice: PaymentChoice) {
   journey.methodSelected(selectedRailOf(choice), methodType)
   const press = journey.submitted()
   payingOnOwnSite.value = paysOnOwnSite(methodType)
+  namedSignup.replaced(entry.value)
   let result: SubscriptionCommandResult
   try {
     result = await attempts.run(checkoutAttemptOf(quoted, entry.value), () =>

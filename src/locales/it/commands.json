@@ -149,6 +149,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Esporta workflow (formato API)"
   },
+  "Comfy_ExportWorkflowImage": {
+    "label": "Esporta immagine del flusso di lavoro"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Converti selezione in Subgraph"
   },

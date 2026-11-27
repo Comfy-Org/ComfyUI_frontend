@@ -16,6 +16,7 @@ import {
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -99,7 +100,7 @@ describe('useBillingSdkStore', () => {
       useWorkspaceAuthStore().getUnifiedSessionClient()
     )
     expect(options.resolveUrl).toBe(ingestApiUrl)
-    expect(options.pointerStorage).toBe(sessionStorage)
+    expect(options.pointerStorage).toBe(safeSessionStorage)
   })
 
   it.for(['stripe', 'billing_web'] as const)(

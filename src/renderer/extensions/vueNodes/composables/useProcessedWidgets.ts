@@ -9,7 +9,11 @@ import type {
   ProcessedWidget,
   WidgetUiCallbacks
 } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
-import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
+import {
+  computeInputRows,
+  computeProcessedWidgets,
+  withInputRows
+} from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
@@ -29,7 +33,8 @@ function getHostNode(nodeData: NodeState): LGraphNode | null {
 
 export function useProcessedWidgets(
   nodeDataGetter: () => NodeState | undefined,
-  widgetIdsGetter: () => readonly WidgetId[] | undefined = () => undefined
+  widgetIdsGetter: () => readonly WidgetId[] | undefined = () => undefined,
+  { contextMenu = true }: { contextMenu?: boolean } = {}
 ) {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
@@ -41,7 +46,7 @@ export function useProcessedWidgets(
 
   const ui: WidgetUiCallbacks = {
     getTooltipText: getWidgetTooltip,
-    handleNodeRightClick
+    handleNodeRightClick: contextMenu ? handleNodeRightClick : undefined
   }
 
   const showAdvanced = computed(
@@ -73,8 +78,20 @@ export function useProcessedWidgets(
     })
   )
 
+  const inputRows = computed(() =>
+    computeInputRows(
+      nodeDataGetter(),
+      useApp().isGraphReady ? useApp().rootGraph : null
+    )
+  )
+
+  const gridRows = computed(() =>
+    withInputRows(processedWidgets.value, inputRows.value)
+  )
+
   return {
     canSelectInputs,
+    gridRows,
     nodeType,
     processedWidgets
   }

@@ -20,6 +20,15 @@ import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 const CLOUD_BASE_URL = 'https://cloud.local-billing.test'
 const BILLING_WEB_ORIGIN = 'https://billing.local-billing.test'
 export const ENTRY_URL = `${BILLING_WEB_ORIGIN}/handoff#token=one-time-handoff`
+
+/** `ENTRY_URL` as the app opens it: tagged with the local build, on the page `view` names. */
+export function taggedEntryUrl(view?: string): string {
+  const url = new URL(ENTRY_URL)
+  url.searchParams.set('utm_source', 'comfyui')
+  url.searchParams.set('utm_medium', 'app')
+  if (view) url.searchParams.set('view', view)
+  return url.href
+}
 export const WORKSPACE_ID = 'ws-personal'
 export const OWNER_ONLY_MESSAGE = 'Only the workspace owner can open billing'
 
@@ -59,6 +68,7 @@ export const OWNER_ONLY: HandoffReply = {
 export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   localBillingWeb: boolean
   cloudBillingNewUx: boolean
+  cloudAutoTopUpAtCheckout: boolean
   autoTopUpOffered: boolean
   handoffReply: HandoffReply
   handoffRequests: Request[]
@@ -68,6 +78,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
 }>({
   localBillingWeb: [false, { option: true }],
   cloudBillingNewUx: [false, { option: true }],
+  cloudAutoTopUpAtCheckout: [false, { option: true }],
   autoTopUpOffered: [false, { option: true }],
   handoffReply: [ISSUED, { option: true }],
   handoffRequests: async ({ browserName: _browserName }, use) => {
@@ -100,6 +111,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
       page,
       localBillingWeb,
       cloudBillingNewUx,
+      cloudAutoTopUpAtCheckout,
       autoTopUpOffered,
       handoffReply,
       handoffRequests,
@@ -136,7 +148,8 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
       await route.fulfill(
         jsonRoute({
           local_billing_web: localBillingWeb,
-          billing_new_ux_enabled: cloudBillingNewUx
+          billing_new_ux_enabled: cloudBillingNewUx,
+          billing_auto_top_up_at_checkout_enabled: cloudAutoTopUpAtCheckout
         })
       )
       cloudFlagReads.push(route.request())

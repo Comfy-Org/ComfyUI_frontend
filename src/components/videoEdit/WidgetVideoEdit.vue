@@ -61,8 +61,8 @@ const features = computed(
 )
 
 const node = useWidgetHostNode(
-  () => widget.nodeLocatorId,
-  () => nodeId
+  () => nodeId,
+  () => widget.nodeLocatorId
 )
 
 const { videoUrl, status, onError, retry } = useVideoSourceUrl(node)

@@ -115,18 +115,8 @@
       @close="emit('close')"
     />
     <AddCreditsAutoTopUpResultStep
-      v-else-if="state.step === 'auto_top_up_on'"
-      :settings="state.settings"
-      :link-url="billingLink"
-      :translate
-      :format
-      :ui
-      @close="emit('close')"
-      @open-billing="openBilling"
-    />
-    <AddCreditsAutoTopUpResultStep
-      v-else-if="state.step === 'auto_top_up_failed'"
-      :link-url="linkTo(failedSetupUrl)"
+      v-else-if="autoTopUpResult"
+      v-bind="autoTopUpResult"
       :translate
       :format
       :ui
@@ -190,6 +180,7 @@ const {
   maxTopupCents,
   suggestedTopupCents,
   negativeBalanceCredits,
+  quoteScope,
   pendingTopup,
   planLine,
   autoTopUp = { kind: 'hidden' },
@@ -210,6 +201,8 @@ const {
   maxTopupCents?: number
   suggestedTopupCents?: number | null
   negativeBalanceCredits?: number
+  /** Names the authenticated account behind the quote, e.g. the workspace; a change requests a fresh quote. */
+  quoteScope?: string
   pendingTopup?: AddCreditsPendingTopup
   planLine?: AddCreditsPlanLine
   autoTopUp?: AddCreditsAutoTopUpOffer
@@ -276,6 +269,8 @@ const dialog = useAddCreditsDialog({
   ports,
   initialAmount: initialAddCreditsAmount(suggestedTopupCents),
   autoTopUp: autoTopUpFields.request,
+  balanceCredits: () => negativeBalanceCredits,
+  quoteScope: () => quoteScope,
   facts: () => ({
     bounds: bounds.value,
     canTopUp,
@@ -286,11 +281,18 @@ const dialog = useAddCreditsDialog({
 })
 const state = dialog.state
 
-const failedSetupUrl = computed(() =>
-  state.value.step === 'auto_top_up_failed' && !autoTopUpSetupHidden
-    ? state.value.setupUrl
-    : undefined
-)
+const autoTopUpResult = computed(() => {
+  const current = state.value
+  if (current.step === 'auto_top_up_on')
+    return { settings: current.settings, linkUrl: billingLink.value }
+  if (current.step === 'auto_top_up_unconfirmed')
+    return { unconfirmed: true, linkUrl: billingLink.value }
+  if (current.step === 'auto_top_up_failed')
+    return {
+      linkUrl: linkTo(autoTopUpSetupHidden ? undefined : current.setupUrl)
+    }
+  return undefined
+})
 const offerSetupUrl = computed(() =>
   state.value.step === 'auto_top_up_offer' && !autoTopUpSetupHidden
     ? state.value.setupUrl
@@ -318,6 +320,9 @@ const title = computed(() => {
   }
   if (state.value.step === 'auto_top_up_failed') {
     return translate('autoTopUpFailed.title')
+  }
+  if (state.value.step === 'auto_top_up_unconfirmed') {
+    return translate('autoTopUpUnconfirmed.title')
   }
   if (state.value.step === 'checkout_opened') {
     return translate(

@@ -9,44 +9,46 @@
       cn(!isReadOnly && 'hover:bg-muted', size === 'large' && 'py-3 text-sm')
     "
   >
-    <div class="relative h-full">
-      <Loader
-        v-if="loading"
-        size="sm"
-        class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-foreground"
-      />
-      <button
-        v-if="pathProvider"
-        :id="inputId"
-        type="button"
-        :aria-label="widget.name"
-        :disabled="isReadOnly"
-        class="h-full w-full truncate px-2 text-right text-xs"
-        @pointerdown.stop
-        @click.stop="openPathEditor"
-      >
-        {{ modelValue || $t('pathCompletion.title') }}
-      </button>
-      <Input
-        v-else
-        v-bind="filteredProps"
-        :id="inputId"
-        v-model="modelValue"
-        :class="
-          cn(
-            WidgetInputBaseClass,
-            'h-auto min-w-[4ch] truncate',
-            size === 'large' ? 'py-3' : 'text-xs',
-            'h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
-            loading && 'pl-9'
-          )
-        "
-        :size="1"
-        :aria-label="widget.name"
-        :aria-invalid="invalid || undefined"
-        :readonly="isReadOnly"
-      />
-    </div>
+    <Loader
+      v-if="loading"
+      size="sm"
+      class="absolute top-1/2 left-3 z-10 -translate-y-1/2 text-foreground"
+    />
+    <button
+      v-if="pathProvider"
+      :id="inputId"
+      type="button"
+      :aria-label="widget.name"
+      :disabled="isReadOnly"
+      class="absolute inset-0 h-full w-full truncate px-2 text-right text-xs"
+      data-part="widget-text-input"
+      :data-size="size"
+      @pointerdown.stop
+      @click.stop="openPathEditor"
+    >
+      {{ modelValue || $t('pathCompletion.title') }}
+    </button>
+    <Input
+      v-else
+      v-bind="filteredProps"
+      :id="inputId"
+      v-model="modelValue"
+      :class="
+        cn(
+          WidgetInputBaseClass,
+          'h-auto min-w-[4ch] truncate',
+          size === 'large' ? 'py-3' : 'text-xs',
+          'absolute inset-0 h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
+          loading && 'pl-9'
+        )
+      "
+      :size="1"
+      data-part="widget-text-input"
+      :data-size="size"
+      :aria-label="widget.name"
+      :aria-invalid="invalid || undefined"
+      :readonly="isReadOnly"
+    />
     <PathCompletionDialog
       v-if="session && pathProvider && pathTarget"
       :provider="pathProvider"

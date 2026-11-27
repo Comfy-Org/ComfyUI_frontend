@@ -68,6 +68,7 @@ const STATES = {
   autoTopUpOffer: { step: 'auto_top_up_offer', setupUrl: SETUP_URL },
   autoTopUpOn: { step: 'auto_top_up_on', settings: ACTIVATED },
   autoTopUpFailed: { step: 'auto_top_up_failed', setupUrl: SETUP_URL },
+  autoTopUpUnconfirmed: { step: 'auto_top_up_unconfirmed' },
   landed: { step: 'landed' }
 } as const satisfies Record<string, AddCreditsState>
 
@@ -99,6 +100,10 @@ const EVENTS = {
     type: 'payment_landed',
     autoTopUpSetupUrl: SETUP_URL,
     activation: { status: 'failed' }
+  },
+  landedUnconfirmed: {
+    type: 'payment_landed',
+    activation: { status: 'unconfirmed' }
   }
 } as const satisfies Record<string, AddCreditsEvent>
 
@@ -120,7 +125,8 @@ const TRANSITIONS: Partial<
     landed: STATES.landed,
     landedOfferingAutoTopUp: STATES.autoTopUpOffer,
     landedTurningOn: STATES.autoTopUpOn,
-    landedFailingToTurnOn: STATES.autoTopUpFailed
+    landedFailingToTurnOn: STATES.autoTopUpFailed,
+    landedUnconfirmed: STATES.autoTopUpUnconfirmed
   },
   openingWithoutTab: {
     created: STATES.blocked,
@@ -129,7 +135,8 @@ const TRANSITIONS: Partial<
     landed: STATES.landed,
     landedOfferingAutoTopUp: STATES.autoTopUpOffer,
     landedTurningOn: STATES.autoTopUpOn,
-    landedFailingToTurnOn: STATES.autoTopUpFailed
+    landedFailingToTurnOn: STATES.autoTopUpFailed,
+    landedUnconfirmed: STATES.autoTopUpUnconfirmed
   },
   reopening: {
     created: STATES.opened,
@@ -138,7 +145,8 @@ const TRANSITIONS: Partial<
     landed: STATES.landed,
     landedOfferingAutoTopUp: STATES.autoTopUpOffer,
     landedTurningOn: STATES.autoTopUpOn,
-    landedFailingToTurnOn: STATES.autoTopUpFailed
+    landedFailingToTurnOn: STATES.autoTopUpFailed,
+    landedUnconfirmed: STATES.autoTopUpUnconfirmed
   },
   opened: {
     requested: STATES.reopening,
@@ -146,7 +154,8 @@ const TRANSITIONS: Partial<
     landed: STATES.landed,
     landedOfferingAutoTopUp: STATES.autoTopUpOffer,
     landedTurningOn: STATES.autoTopUpOn,
-    landedFailingToTurnOn: STATES.autoTopUpFailed
+    landedFailingToTurnOn: STATES.autoTopUpFailed,
+    landedUnconfirmed: STATES.autoTopUpUnconfirmed
   },
   blocked: {
     requested: STATES.openingWithTab,
@@ -155,7 +164,8 @@ const TRANSITIONS: Partial<
     landed: STATES.landed,
     landedOfferingAutoTopUp: STATES.autoTopUpOffer,
     landedTurningOn: STATES.autoTopUpOn,
-    landedFailingToTurnOn: STATES.autoTopUpFailed
+    landedFailingToTurnOn: STATES.autoTopUpFailed,
+    landedUnconfirmed: STATES.autoTopUpUnconfirmed
   },
   blockedBeforeIssuing: {
     requested: STATES.openingWithTab,
@@ -163,7 +173,8 @@ const TRANSITIONS: Partial<
     landed: STATES.landed,
     landedOfferingAutoTopUp: STATES.autoTopUpOffer,
     landedTurningOn: STATES.autoTopUpOn,
-    landedFailingToTurnOn: STATES.autoTopUpFailed
+    landedFailingToTurnOn: STATES.autoTopUpFailed,
+    landedUnconfirmed: STATES.autoTopUpUnconfirmed
   },
   blockedWhileOpened: {
     requested: STATES.reopening,
@@ -171,7 +182,8 @@ const TRANSITIONS: Partial<
     landed: STATES.landed,
     landedOfferingAutoTopUp: STATES.autoTopUpOffer,
     landedTurningOn: STATES.autoTopUpOn,
-    landedFailingToTurnOn: STATES.autoTopUpFailed
+    landedFailingToTurnOn: STATES.autoTopUpFailed,
+    landedUnconfirmed: STATES.autoTopUpUnconfirmed
   }
 }
 

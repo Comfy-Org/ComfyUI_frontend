@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { WorkspaceLibraryModels } from '@/platform/assets/services/assetService'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -27,7 +28,7 @@ describe('useDeploymentLibraryModelsStore', () => {
   beforeEach(() => {
     library.clear()
     vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
-      async (folder) => library.get(folder) ?? []
+      async (folder) => ({ names: library.get(folder) ?? [], blocked: [] })
     )
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     useDeploymentPickStore().bootDeployment = deployment
@@ -54,12 +55,12 @@ describe('useDeploymentLibraryModelsStore', () => {
   })
 
   it('ignores a read that started before the flag turned off', async () => {
-    let answerStale: (names: string[]) => void = () => {}
-    const staleRead = new Promise<string[]>((resolve) => {
+    let answerStale: (models: WorkspaceLibraryModels) => void = () => {}
+    const staleRead = new Promise<WorkspaceLibraryModels>((resolve) => {
       answerStale = resolve
     })
-    let answerFresh: (names: string[]) => void = () => {}
-    const freshRead = new Promise<string[]>((resolve) => {
+    let answerFresh: (models: WorkspaceLibraryModels) => void = () => {}
+    const freshRead = new Promise<WorkspaceLibraryModels>((resolve) => {
       answerFresh = resolve
     })
     vi.mocked(assetService.getWorkspaceLibraryModels)
@@ -70,13 +71,54 @@ describe('useDeploymentLibraryModelsStore', () => {
 
     vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = false
     vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
-    answerFresh(['a.safetensors'])
+    answerFresh({ names: ['a.safetensors'], blocked: [] })
     await freshRead
-    answerStale(['a.safetensors', 'b.safetensors'])
+    answerStale({ names: ['a.safetensors', 'b.safetensors'], blocked: [] })
     await staleRead
 
     expect(store.namesIn('loras')).toEqual(['a.safetensors'])
     expect(store.statusOf('loras')).toBe('ready')
+  })
+
+  it("offers the library models the Build runs and keeps the ones its model rules block apart, read from the listing's mark", async () => {
+    vi.mocked(assetService.getWorkspaceLibraryModels).mockRestore()
+    const row = (id: string, name: string): AssetItem => ({
+      id,
+      name,
+      tags: ['models', 'loras'],
+      created_at: '2026-10-29T00:00:00Z',
+      updated_at: '2026-10-29T00:00:00Z'
+    })
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          assets: [
+            row('3f0b6c1e-0000-4000-8000-000000000021', 'unmarked.safetensors'),
+            {
+              ...row(
+                '3f0b6c1e-0000-4000-8000-000000000022',
+                'banned.safetensors'
+              ),
+              blocked_by_model_policy: true
+            },
+            {
+              ...row('3f0b6c1e-0000-4000-8000-000000000023', 'banned.ckpt'),
+              blocked_by_model_policy: true
+            }
+          ],
+          total: 3,
+          has_more: false
+        }),
+        { status: 200 }
+      )
+    )
+    const store = useDeploymentLibraryModelsStore()
+
+    store.refresh('loras')
+    await store.waitForSettled('loras')
+
+    expect(store.namesIn('loras')).toEqual(['unmarked.safetensors'])
+    expect(store.blockedIn('loras')).toEqual(['banned.safetensors'])
   })
 
   it('moves a model from its old folder to its new one when its type changes', async () => {

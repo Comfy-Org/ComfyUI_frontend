@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./presets/*.css": "./src/presets/*.css",
     "./*": {
       "@comfyorg/theme-core": "./src/*.ts",
       "types": "./dist-types/*.d.ts",

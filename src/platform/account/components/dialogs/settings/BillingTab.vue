@@ -16,16 +16,19 @@
     />
     <BillingBanner
       v-if="planNotStarted"
-      :view="planNotStartedView(planNotStarted)"
+      :view="
+        planNotStartedView(planNotStarted, capabilities.canOpenPlans.value)
+      "
       :copy="bannerCopy"
     >
-      <template #action="{ label, variant }">
+      <template #action="{ action: shown, href, label, variant }">
         <Button
+          v-bind="planNotStartedButton(shown, href)"
           :variant
           size="md"
-          class="shrink-0"
+          class="shrink-0 no-underline"
           :loading="signupPayment.isOpeningPayment.value"
-          @click="signupPayment.finishPayment"
+          @click="followPlanNotStartedAction(shown)"
         >
           {{ label }}
           <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -221,6 +224,7 @@ import {
   planRowAction
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
+import type { BillingBannerAction } from '@comfyorg/account-ui/billing'
 import {
   BillingAutoTopUpCard,
   BillingAutoTopUpMemberBlock,
@@ -234,6 +238,7 @@ import {
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
+import { usePrefetchAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
@@ -332,6 +337,7 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
+usePrefetchAddCreditsAutoTopUpOffer()
 const autoTopUpSection = computed(() =>
   deriveAutoTopUpSection({
     autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
@@ -396,6 +402,20 @@ function planActionButton(shown: PlanRowAction) {
 
 function followPlanAction(shown: PlanRowAction) {
   if (shown !== 'contactSales') openPlans()
+}
+
+function planNotStartedButton(shown: BillingBannerAction, href: string | null) {
+  if (shown === 'viewPlans') return plansButton.value
+  return href
+    ? { as: 'a', href, target: '_blank', rel: 'noopener' }
+    : { as: 'button' }
+}
+
+function followPlanNotStartedAction(shown: BillingBannerAction) {
+  if (shown === 'finishPayment') void signupPayment.finishPayment()
+  else if (shown === 'verifyPayment')
+    signupPayment.refreshOnVerificationReturn()
+  else if (shown === 'viewPlans') openPlans()
 }
 
 async function retryBalance() {

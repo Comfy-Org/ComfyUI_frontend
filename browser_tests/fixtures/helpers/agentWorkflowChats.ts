@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import type {
   AgentMessage,
   AgentThreadSummary,
+  WorkflowSidebarFileResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
@@ -82,6 +83,20 @@ export class AgentWorkflowChatsMock {
     await page.route('**/api/workflows?*', (route) =>
       route.fulfill(jsonRoute(cloudWorkflows))
     )
+    await page.route('**/api/workflows/*/sidebar-file', (route) => {
+      const workflowId = decodeURIComponent(
+        new URL(route.request().url()).pathname.split('/')[3]
+      )
+      const workflow = workflows.find(({ id }) => id === workflowId)
+      if (workflow?.content === undefined)
+        return route.fulfill({ status: 409, json: { error: 'out of sync' } })
+      const sidebarFile: WorkflowSidebarFileResponse = {
+        path: `workflows/${workflow.name}.json`,
+        modified: Date.parse(SAVED_AT),
+        size: JSON.stringify(workflow.content).length
+      }
+      return route.fulfill(jsonRoute(sidebarFile))
+    })
     await page.route(
       (url) =>
         url.pathname.endsWith('/api/userdata') &&

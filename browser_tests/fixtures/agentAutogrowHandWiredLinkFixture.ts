@@ -244,15 +244,9 @@ async function setUpFixture(page: Page) {
   const gptNodeId = String(GPT_NODE_ID)
   const panel = page.locator('#agent-panel-root')
 
-  await test.step('open the agent panel and target the workflow', async () => {
+  await test.step('open the agent panel', async () => {
     await loadSeedIntoActiveTab(page, seed)
     await new AgentPanel(page).open()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
   })
 
   await test.step('first agent turn binds the workflow and materializes the graph', async () => {

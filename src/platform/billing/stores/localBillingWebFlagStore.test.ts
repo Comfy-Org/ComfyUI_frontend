@@ -19,9 +19,12 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { showsCloudBillingNewUxOnLocal } from '@/platform/billing/localBillingWebEnabled'
+import {
+  offersAutoTopUpAtLocalCheckout,
+  showsCloudBillingNewUxOnLocal
+} from '@/platform/billing/localBillingWebEnabled'
 import { useLocalBillingWebFlagStore as defineFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -141,7 +144,7 @@ describe('useLocalBillingWebFlagStore', () => {
   )
 
   it('exposes only its two flags from a Cloud document with other keys', async () => {
-    const localConfig = { ...remoteConfig.value }
+    const localConfig = { ...useRemoteConfigStore().config }
     serveFlags({
       local_billing_web: true,
       unified_billing_settings: true,
@@ -152,7 +155,7 @@ describe('useLocalBillingWebFlagStore', () => {
     const { store } = await signInAndRead()
 
     expect(store.enabled).toBe(true)
-    expect(remoteConfig.value).toEqual(localConfig)
+    expect(useRemoteConfigStore().config).toEqual(localConfig)
   })
 
   it('reads the new billing UX from the same request as the handoff flag', async () => {
@@ -183,6 +186,25 @@ describe('useLocalBillingWebFlagStore', () => {
 
       expect(store.enabled).toBe(true)
       expect(showsCloudBillingNewUxOnLocal()).toBe(false)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: 'true', expected: false }
+  ])(
+    'reads auto top-up at checkout as $expected when served $served from the same request as the handoff flag',
+    async ({ served, expected }) => {
+      serveFlags({
+        local_billing_web: true,
+        billing_auto_top_up_at_checkout_enabled: served
+      })
+
+      await signInAndRead()
+
+      expect(offersAutoTopUpAtLocalCheckout()).toBe(expected)
+      expect(fetchRequests(FEATURES)).toHaveLength(1)
     }
   )
 

@@ -140,10 +140,10 @@ class StubWidget<T extends WidgetValue> extends BaseWidget {
   }
   override set value(_: T) {}
 }
-function connectedInputsFor(node: LGraphNode, prefix: string = 'autogrow.') {
+function connectedInputsFor(node: LGraphNode) {
   return computed(() =>
     node.inputs
-      .filter((input) => input.name.startsWith(prefix) && input.link)
+      .filter((input) => input.name.startsWith('autogrow.') && input.link)
       .map((input) => input.label ?? input.localized_name ?? input.name)
   )
 }

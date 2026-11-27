@@ -2,98 +2,92 @@
   <div
     :class="
       cn(
-        'group relative rounded-lg transition-all focus-within:ring focus-within:ring-ring',
-        !isReadOnly && 'hover:bg-muted',
+        'group relative flex size-full flex-col overflow-hidden rounded-md border-(length:--node-widget-border-width) border-node-border transition-all focus-within:ring focus-within:ring-ring',
+        !widget.options?.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input'),
         widget.borderStyle
       )
     "
+    data-part="widget-textarea"
   >
-    <div
-      :class="
-        cn(
-          'flex size-full flex-col overflow-hidden rounded-md border-(length:--node-widget-border-width) border-node-border',
-          !widget.options?.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input')
-        )
-      "
-    >
-      <div class="flex h-6 shrink-0 items-center gap-2 px-3">
-        <label
-          v-if="!hideLayoutField"
-          :for="id"
-          class="min-w-0 truncate text-2xs text-node-foreground"
-          @pointerdown.stop
-          @pointermove.stop
-          @pointerup.stop
+    <div class="flex h-6 shrink-0 items-center gap-2 px-3">
+      <label
+        v-if="!hideLayoutField"
+        :for="id"
+        class="min-w-0 truncate text-2xs text-node-foreground"
+        @pointerdown.stop
+        @pointermove.stop
+        @pointerup.stop
+      >
+        {{ displayName }}
+      </label>
+      <div
+        role="group"
+        :aria-label="$t('g.actions')"
+        data-part="widget-textarea-actions"
+        class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
+      >
+        <span
+          class="inline-flex items-center text-2xs text-muted-foreground tabular-nums after:mr-1 after:ml-1.5 after:h-3 after:w-px after:bg-border"
         >
-          {{ displayName }}
-        </label>
-        <div
-          role="group"
-          :aria-label="$t('g.actions')"
-          class="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
+          {{ characterCount }}
+        </span>
+        <Button
+          variant="textonly"
+          size="icon-sm"
+          :class="actionButtonClass"
+          :title="isCopied ? $t('g.copied') : $t('g.copyToClipboard')"
+          :aria-label="isCopied ? $t('g.copied') : $t('g.copyToClipboard')"
+          @click="handleCopy"
+          @pointerdown.capture.stop
         >
-          <span class="pr-1 text-2xs text-muted-foreground tabular-nums">
-            {{ characterCount }}
-          </span>
-          <span aria-hidden="true" class="mr-1 h-3 w-px bg-border" />
-          <Button
-            variant="textonly"
-            size="icon-sm"
-            :class="actionButtonClass"
-            :title="isCopied ? $t('g.copied') : $t('g.copyToClipboard')"
-            :aria-label="isCopied ? $t('g.copied') : $t('g.copyToClipboard')"
-            @click="handleCopy"
-            @pointerdown.capture.stop
-          >
-            <i
-              :class="
-                cn(
-                  'size-3',
-                  isCopied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-                )
-              "
-            />
-          </Button>
-          <Button
-            v-if="!widget.linkedUpstream"
-            variant="textonly"
-            size="icon-sm"
-            :class="actionButtonClass"
-            :title="$t('textEditor.expand')"
-            :aria-label="$t('textEditor.expand')"
-            @click="openTextEditor"
-            @pointerdown.capture.stop
-          >
-            <i class="icon-[lucide--maximize-2] size-3" />
-          </Button>
-        </div>
+          <i
+            :class="
+              cn(
+                'size-3',
+                isCopied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
+              )
+            "
+          />
+        </Button>
+        <Button
+          v-if="!widget.linkedUpstream"
+          variant="textonly"
+          size="icon-sm"
+          :class="actionButtonClass"
+          :title="$t('textEditor.expand')"
+          :aria-label="$t('textEditor.expand')"
+          @click="openTextEditor"
+          @pointerdown.capture.stop
+        >
+          <i class="icon-[lucide--maximize-2] size-3" />
+        </Button>
       </div>
-      <Textarea
-        v-bind="filteredProps"
-        :id
-        ref="textAreaRef"
-        :model-value="text"
-        class="min-h-0 flex-1 resize-none overflow-hidden rounded-none bg-transparent pt-0 pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:text-foreground hover:overflow-auto focus:overflow-auto focus-visible:ring-0"
-        :placeholder
-        :readonly="isReadOnly"
-        data-capture-wheel="true"
-        @pointerdown.capture.stop="trackFocus"
-        @pointermove.capture.stop
-        @pointerup.capture.stop
-        @contextmenu.capture="handleContextMenu"
-        @update:model-value="(value) => (modelValue = String(value))"
-      />
-      <TextareaAugmentations
-        :element="textareaElement"
-        :enabled="!isReadOnly"
-        :target="{
-          nodeType: widget.nodeType ?? nodeType,
-          widgetName: widget.name
-        }"
-        :value="text"
-        teleported
-      />
     </div>
+    <Textarea
+      v-bind="filteredProps"
+      :id
+      ref="textAreaRef"
+      :model-value="text"
+      class="min-h-0 flex-1 resize-none overflow-hidden rounded-none bg-transparent pt-0 pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:text-foreground hover:overflow-auto focus:overflow-auto focus-visible:ring-0"
+      :placeholder
+      :readonly="isReadOnly"
+      data-capture-wheel="true"
+      @pointerdown.capture.stop="trackFocus"
+      @pointermove.capture.stop
+      @pointerup.capture.stop
+      @contextmenu.capture="handleContextMenu"
+      @update:model-value="(value) => (modelValue = String(value))"
+    />
+    <TextareaAugmentations
+      :element="textareaElement"
+      :enabled="!isReadOnly"
+      :target="{
+        nodeType: widget.nodeType ?? nodeType,
+        widgetName: widget.name
+      }"
+      :value="text"
+      teleported
+    />
   </div>
 </template>
 

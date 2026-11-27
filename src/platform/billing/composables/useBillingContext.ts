@@ -3,9 +3,9 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
-import { createSharedComposable, until } from '@vueuse/core'
+import { createSharedComposable, until, useDebounceFn } from '@vueuse/core'
 
 import {
   KEY_TO_TIER,
@@ -24,6 +24,7 @@ import {
 } from '@/platform/billing/billingRefresh'
 import type { BillingRefreshScope } from '@/platform/billing/billingRefresh'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { api } from '@/scripts/api'
 
 import type {
   BalanceInfo,
@@ -45,6 +46,9 @@ const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
 const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
 
 const ROUTING_WAIT_TIMEOUT_MS = 10_000
+
+const BILLING_PUSH_DEBOUNCE_MS = 1_000
+const BILLING_PUSH_MAX_WAIT_MS = 5_000
 
 class BillingRoutingUnavailableError extends Error {}
 
@@ -126,6 +130,10 @@ function useBillingContextInternal(): BillingContext {
 
   const plans = computed(() => toValue(activeContext.value.plans))
 
+  const balanceReadFailed = computed(() =>
+    toValue(activeContext.value.balanceReadFailed)
+  )
+
   const currentPlanSlug = computed(() =>
     toValue(activeContext.value.currentPlanSlug)
   )
@@ -160,13 +168,14 @@ function useBillingContextInternal(): BillingContext {
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
   const freeTierQuota = useFreeTierQuota()
+  const remoteConfigStore = useRemoteConfigStore()
 
   const canRunWorkflows = computed(
     () =>
       canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
         !isCloud ||
-        !isAuthenticatedConfigLoaded.value ||
+        !remoteConfigStore.isAuthenticatedConfigLoaded ||
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 
@@ -270,7 +279,10 @@ function useBillingContextInternal(): BillingContext {
       try {
         await initialize()
       } catch (err) {
-        console.error('Failed to initialize billing context:', err)
+        reportError(err, {
+          surface: 'billing',
+          errorType: 'error_initializing_billing_context'
+        })
       }
       await runOwedFreshStatusRead()
     },
@@ -382,9 +394,18 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchStatus(options)
   }
 
-  async function fetchBalance(): Promise<void> {
+  async function fetchStatusFresh(
+    options?: BillingStatusReadOptions
+  ): Promise<boolean> {
+    if (type.value === 'unknown') return false
+    return (await activeContext.value.fetchStatusFresh?.(options)) ?? false
+  }
+
+  async function fetchBalance(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
     if (type.value === 'unknown') return
-    return activeContext.value.fetchBalance()
+    return activeContext.value.fetchBalance(options)
   }
 
   // Reconcile and the checkout-operation read run once after a Stripe redirect
@@ -412,7 +433,59 @@ function useBillingContextInternal(): BillingContext {
   }
 
   onScopeDispose(onBillingRefresh(refreshFor))
+
   onScopeDispose(provideCheckoutOperationReader(readCheckoutOperation))
+
+  if (isCloud) {
+    let disposed = false
+    let pushReadOwedFor: string | undefined
+    const readAfterPush = useDebounceFn(
+      async () => {
+        if (disposed) return
+        if (!isInitialized.value || type.value === 'unknown') {
+          pushReadOwedFor = store.activeWorkspace?.id
+          return
+        }
+        const account = activeContext.value
+        await Promise.all([
+          reportPushedReadFailure(
+            account.fetchStatus({ fresh: true }),
+            'error_refreshing_billing_status_after_push'
+          ),
+          reportPushedReadFailure(
+            account.fetchBalance({ fresh: true }),
+            'error_refreshing_billing_balance_after_push'
+          )
+        ])
+      },
+      BILLING_PUSH_DEBOUNCE_MS,
+      { maxWait: BILLING_PUSH_MAX_WAIT_MS }
+    )
+    watch(isInitialized, (ready) => {
+      if (!ready || pushReadOwedFor === undefined) return
+      const owedFor = pushReadOwedFor
+      pushReadOwedFor = undefined
+      if (owedFor === store.activeWorkspace?.id) void readAfterPush()
+    })
+    const onBillingStatusPush = () => void readAfterPush()
+    api.addEventListener('billing_status', onBillingStatusPush)
+    onScopeDispose(() => {
+      disposed = true
+      readAfterPush.cancel()
+      api.removeEventListener('billing_status', onBillingStatusPush)
+    })
+  }
+
+  async function reportPushedReadFailure(
+    read: Promise<void>,
+    errorType: string
+  ): Promise<void> {
+    try {
+      await read
+    } catch (err) {
+      reportError(err, { surface: 'billing', errorType })
+    }
+  }
 
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
     if (!(await whenRoutingKnown())) return
@@ -480,6 +553,7 @@ function useBillingContextInternal(): BillingContext {
     occupiedSeats,
     isLoading,
     error,
+    balanceReadFailed,
     showsSubscribeToRunPrompt,
     canAccessSubscriptionFeatures,
     canRunWorkflows,
@@ -498,6 +572,7 @@ function useBillingContextInternal(): BillingContext {
 
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     reconcileSubscriptionSuccess,
     subscribe,

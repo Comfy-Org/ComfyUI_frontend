@@ -12,8 +12,8 @@ import {
 } from '@/platform/workflow/core/utils/modelRequirements'
 import type { MissingModelCandidate } from './types'
 import { findModelReplacements } from './modelReplacements'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@comfyorg/assets-core/metadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   inputForWidget,
   promotedInputWidgets
@@ -31,7 +31,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@comfyorg/graph-model/widgets'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   collectAllNodes,
@@ -516,6 +516,20 @@ function collectEmbeddedModels(
   return result
 }
 
+const ASSET_LOAD_ATTEMPTS = 2
+
+async function loadAssetsOrFailure(
+  store: ReturnType<typeof useAssetsStore>,
+  nodeType: string
+): Promise<unknown> {
+  try {
+    await store.updateModelsForNodeType(nodeType)
+    return store.getError(nodeType)
+  } catch (err) {
+    return err ?? new Error('asset load failed')
+  }
+}
+
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal
@@ -548,15 +562,16 @@ export async function verifyAssetSupportedCandidates(
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
-      if (signal?.aborted) return
-      try {
-        await store.updateModelsForNodeType(nodeType)
-      } catch (err) {
+      for (let attempt = 1; !signal?.aborted; attempt++) {
+        const failure = await loadAssetsOrFailure(store, nodeType)
+        if (failure === undefined) return
+        if (attempt < ASSET_LOAD_ATTEMPTS && !signal?.aborted) continue
         failedNodeTypes.add(nodeType)
         console.warn(
           `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
-          err
+          failure
         )
+        return
       }
     })
   )

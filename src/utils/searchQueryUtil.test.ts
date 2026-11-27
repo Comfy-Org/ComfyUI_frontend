@@ -60,19 +60,6 @@ describe('toRepoName', () => {
     },
     { query: 'GitHub.com/kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
     { query: 'github.com/kijai/kjnodes', expected: 'kjnodes' },
-    ...[
-      '?tab=readme-ov-file',
-      '/tree/main',
-      '/blob/main/nodes.py',
-      '/issues/123',
-      '/pulls',
-      '.git',
-      '/',
-      '#readme'
-    ].map((tail) => ({
-      query: `https://github.com/kijai/ComfyUI-KJNodes${tail}`,
-      expected: 'ComfyUI-KJNodes'
-    })),
     {
       query: 'git@github.com:kijai/ComfyUI-KJNodes.git',
       expected: 'ComfyUI-KJNodes'
@@ -98,6 +85,21 @@ describe('toRepoName', () => {
     }
   ])('strips "$query" to "$expected"', ({ query, expected }) => {
     expect(toRepoName(query)).toBe(expected)
+  })
+
+  it.for([
+    '?tab=readme-ov-file',
+    '/tree/main',
+    '/blob/main/nodes.py',
+    '/issues/123',
+    '/pulls',
+    '.git',
+    '/',
+    '#readme'
+  ])('strips the URL tail "%s" from a GitHub repo URL', (tail) => {
+    expect(toRepoName(`https://github.com/kijai/ComfyUI-KJNodes${tail}`)).toBe(
+      'ComfyUI-KJNodes'
+    )
   })
 
   it('strips the tail after a long run of inner spaces', () => {

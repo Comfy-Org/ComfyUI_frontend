@@ -9,8 +9,9 @@ export const ADD_CREDITS_COPY = {
   'amountError.above_max':
     'The largest top-up is {amount}. Add more with another top-up.',
   'amountError.whole_dollars': 'Whole dollars only.',
-  negativeBalance:
-    'Your balance is −{credits} credits. This top-up covers that first.',
+  negativeBalance: 'Your balance is −{credits} credits.',
+  balanceAfter: 'After this top-up: {credits} credits.',
+  stillNegativeAfter: 'Still negative after this top-up: −{credits} credits.',
   'planLine.no_plan':
     "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
   'planLine.ended':
@@ -107,7 +108,9 @@ export const ADD_CREDITS_COPY = {
   'autoTopUpOn.done': 'Done',
   'autoTopUpFailed.title': "Auto top-up didn't turn on",
   'autoTopUpFailed.body':
-    'Your credits were added. Set up auto top-up in Billing to try again.'
+    'Your credits were added. Set up auto top-up in Billing to try again.',
+  'autoTopUpUnconfirmed.title': 'Credits added',
+  'autoTopUpUnconfirmed.body': 'Open Billing to check that auto top-up is on.'
 } as const satisfies Record<string, string>
 
 export type AddCreditsCopyKey = keyof typeof ADD_CREDITS_COPY

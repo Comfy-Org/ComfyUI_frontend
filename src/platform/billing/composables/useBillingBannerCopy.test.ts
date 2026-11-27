@@ -42,7 +42,10 @@ function renderBanner(banner: PlanCheckoutBanner) {
   return { onDismiss }
 }
 
-function renderPlanNotStarted(banner: PlanNotStartedBanner) {
+function renderPlanNotStarted(
+  banner: PlanNotStartedBanner,
+  canOpenPlans = true
+) {
   const onAction = vi.fn()
   render(
     {
@@ -50,7 +53,7 @@ function renderPlanNotStarted(banner: PlanNotStartedBanner) {
         const { copy, planNotStartedView } = useBillingBannerCopy()
         return () =>
           h(BillingBanner, {
-            view: planNotStartedView(banner),
+            view: planNotStartedView(banner, canOpenPlans),
             copy: copy.value,
             onAction
           })
@@ -141,11 +144,14 @@ describe('useBillingBannerCopy plan checkout banner', () => {
   })
 })
 
+const CHECKOUT_URL =
+  'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly'
+
 describe('useBillingBannerCopy plan not started banner', () => {
   it('names the served plan and offers a white Finish payment with no Dismiss', async () => {
     const { onAction } = renderPlanNotStarted({
       planTier: 'CREATOR',
-      paymentPage: 'hostedPage'
+      paymentPage: { kind: 'hostedPage' }
     })
 
     const banner = screen.getByRole('status')
@@ -162,33 +168,51 @@ describe('useBillingBannerCopy plan not started banner', () => {
     expect(onAction).toHaveBeenCalledWith('finishPayment')
   })
 
-  it('falls back to a generic title when no plan is served', () => {
-    renderPlanNotStarted({ planTier: null, paymentPage: 'unknown' })
+  it('links Complete verification to billing-web checkout when the operation serves only a client secret', () => {
+    renderPlanNotStarted({
+      planTier: 'CREATOR',
+      paymentPage: { kind: 'clientSecretOnly', checkoutUrl: CHECKOUT_URL }
+    })
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Your plan hasn’t started'
-    )
+    const banner = screen.getByRole('status')
+    expect(banner).toHaveTextContent('Your Creator plan hasn’t started')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    expect(
+      screen.getByRole('link', { name: 'Complete verification' })
+    ).toHaveAttribute('href', CHECKOUT_URL)
+    expect(
+      screen.queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
   })
 
-  it.for([
-    {
-      case: 'offers Finish payment while the operation is unread or its read failed',
-      paymentPage: 'unknown',
-      finishPayment: 1
-    },
-    {
-      case: 'offers no Finish payment when the operation serves no hosted payment page',
-      paymentPage: 'noHostedPage',
-      finishPayment: 0
-    }
-  ] as const)('$case', ({ paymentPage, finishPayment }) => {
-    renderPlanNotStarted({ planTier: 'CREATOR', paymentPage })
+  it('says the plan starts once the payment goes through and offers View on Plans when no way to pay loaded', async () => {
+    const { onAction } = renderPlanNotStarted({
+      planTier: null,
+      paymentPage: { kind: 'unavailable' }
+    })
+
+    const banner = screen.getByRole('status')
+    expect(banner).toHaveTextContent('Your plan hasn’t started')
+    expect(banner).toHaveTextContent(
+      'Your plan starts once the payment goes through.'
+    )
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'View on Plans' }))
+
+    expect(onAction).toHaveBeenCalledWith('viewPlans')
+  })
+
+  it('offers no View on Plans when the server does not let this person open Plans', () => {
+    renderPlanNotStarted(
+      { planTier: null, paymentPage: { kind: 'unavailable' } },
+      false
+    )
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Your Creator plan hasn’t started'
+      'Your plan starts once the payment goes through.'
     )
-    expect(
-      screen.queryAllByRole('button', { name: 'Finish payment' })
-    ).toHaveLength(finishPayment)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 })

@@ -13,7 +13,10 @@ import {
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { AddCreditsPlanLine } from '@comfyorg/account-core/billing'
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
+
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -29,11 +32,20 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
+import {
+  setLocalAutoTopUpAtCheckoutEnabled,
+  setLocalBillingWebEnabled
+} from '@/platform/billing/localBillingWebEnabled'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/billing/utils/checkoutJourney'
+import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import type { BillingTab } from '@/platform/billing/billingTab'
@@ -59,7 +71,27 @@ const hoisted = vi.hoisted(() => ({
   issueHandoff: vi.fn<typeof issueLocalBillingHandoff>(),
   handoffTabs: [] as (BillingTab | null)[],
   openPlatformBilling: vi.fn<() => Promise<void>>(async () => undefined),
-  reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined)
+  reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined),
+  cloudTabNavigate: vi.fn<(url: string) => void>(),
+  paymentConfigured: true,
+  planLine: undefined as AddCreditsPlanLine | undefined,
+  openTopupPurchase:
+    vi.fn<
+      (
+        amountCents: number,
+        signal: AbortSignal,
+        autoTopUp: unknown
+      ) => Promise<string | undefined>
+    >(),
+  billingWebTopupUrl:
+    vi.fn<
+      (
+        amountCents: number,
+        autoTopUp: unknown,
+        workspaceId: string | undefined,
+        purchaseId: string
+      ) => string | undefined
+    >()
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -87,7 +119,11 @@ vi.mock(
         createHostedCheckout: hoisted.createHostedCheckout,
         dismissOperation: vi.fn(),
         adoptPendingOperation: vi.fn(),
-        quoteTopup: async () => 10_550
+        openTopupPurchase: hoisted.openTopupPurchase,
+        quoteTopup: async () => ({
+          credits: 10_550,
+          paymentConfigured: hoisted.paymentConfigured
+        })
       })
     }
   }
@@ -115,7 +151,7 @@ vi.mock(
   import('@/platform/billing/composables/useTopUpPlanCreditCopy'),
   async () => {
     const { computed } = await import('vue')
-    return { useAddCreditsPlanLine: () => computed(() => undefined) }
+    return { useAddCreditsPlanLine: () => computed(() => hoisted.planLine) }
   }
 )
 vi.mock(import('@/platform/billing/composables/usePendingTopup'), () => ({
@@ -135,8 +171,8 @@ vi.mock(import('@/platform/billing/composables/topupBalanceRefresh'), () => ({
 vi.mock(import('@/platform/billing/topupCheckoutReturnUrl'), () => ({
   topupCheckoutReturnUrl: () => RETURN_URL
 }))
-vi.mock(import('@/platform/billing/billingTab'), () => ({
-  reserveBillingTab: () => ({ navigate: vi.fn(), close: vi.fn() })
+vi.mock(import('@/platform/billing/addCredits/billingWebTopup'), () => ({
+  billingWebTopupUrl: hoisted.billingWebTopupUrl
 }))
 vi.mock(
   import('@/platform/billing/subscription/composables/billingDialogsAccess'),
@@ -156,6 +192,31 @@ vi.mock(import('@/platform/billing/localBillingHandoff'), () => ({
 }))
 
 vi.mock(import('firebase/auth'), { spy: true })
+
+function fakeTab() {
+  return {
+    opener: window as Window | null,
+    closed: false,
+    focus: vi.fn(),
+    close: vi.fn(),
+    location: {
+      set href(url: string) {
+        hoisted.cloudTabNavigate(url)
+      }
+    }
+  }
+}
+
+let openedTabs: ReturnType<typeof fakeTab>[] = []
+
+beforeEach(() => {
+  openedTabs = []
+  vi.spyOn(window, 'open').mockImplementation(() => {
+    const tab = fakeTab()
+    openedTabs.push(tab)
+    return tab as never
+  })
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -541,6 +602,55 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
     }
   )
 
+  it('offers the checkbox when Cloud serves auto top-up at checkout to the local account, carries the ticked settings through the handoff, and after paying sends the owner to Billing instead of claiming it turned on', async () => {
+    hoisted.balanceIncreased = undefined
+    hoisted.handoffTabs = [handoffTab()]
+    setLocalAutoTopUpAtCheckoutEnabled(true)
+    onTestFinished(() => setLocalAutoTopUpAtCheckoutEnabled(false))
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(
+      await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
+    )
+    await user.click(continueButton())
+
+    expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith(
+      {
+        intent: 'top-up',
+        amountCents: 5000,
+        autoTopUp: {
+          threshold_credits: 1000,
+          target_credits: 11_550,
+          monthly_budget_cents: null
+        }
+      },
+      expect.any(AbortSignal)
+    )
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    await hoisted.balanceIncreased!()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Credits added' })
+    ).toBeVisible()
+    expect(
+      screen.getByText('Open Billing to check that auto top-up is on.')
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: /Manage/ })).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'Auto top-up is on' })
+    ).toBeNull()
+    expect(hoisted.setupUrl).not.toHaveBeenCalled()
+    expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
+  })
+
+  it('offers no checkbox on local when Cloud does not serve auto top-up at checkout, even with the flag on for Cloud', async () => {
+    renderDialog({ atCheckout: true })
+    await nextTick()
+
+    expect(billingApi.listSavedPaymentMethods).not.toHaveBeenCalled()
+    expect(checkbox()).toBeNull()
+  })
+
   it('issues a fresh handoff from the blocked step instead of showing a link', async () => {
     const tab = handoffTab()
     hoisted.handoffTabs = [null, tab]
@@ -680,5 +790,391 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
     expect(signal.aborted).toBe(true)
     await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
     expect(tab.navigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () => {
+  const TOPUP_PAGE = 'https://billing.comfy.org/v1/top-up?amount_cents=5000'
+
+  beforeEach(() => {
+    stubFirebaseAuthHarness()
+    hoisted.balanceIncreased = undefined
+    hoisted.setupUrl.mockResolvedValue(null)
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    hoisted.billingWebTopupUrl.mockReturnValue(TOPUP_PAGE)
+    hoisted.paymentConfigured = true
+    hoisted.openTopupPurchase.mockReset()
+    let purchases = 0
+    hoisted.openTopupPurchase.mockImplementation(
+      async () => `tpp_${++purchases}`
+    )
+  })
+
+  afterEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = false
+  })
+
+  it.for<{
+    name: string
+    on: boolean
+    page: string | undefined
+    opens: string
+    noPurchase?: boolean
+    unconfigured?: boolean
+  }>([
+    {
+      name: 'unified_billing_settings on',
+      on: true,
+      page: TOPUP_PAGE,
+      opens: TOPUP_PAGE
+    },
+    {
+      name: 'unified_billing_settings off',
+      on: false,
+      page: TOPUP_PAGE,
+      opens: CHECKOUT_URL
+    },
+    {
+      name: 'unified_billing_settings on but no billing-web entry to build',
+      on: true,
+      page: undefined,
+      opens: CHECKOUT_URL
+    },
+    {
+      name: 'unified_billing_settings on but Cloud opened no purchase',
+      on: true,
+      page: TOPUP_PAGE,
+      opens: CHECKOUT_URL,
+      noPurchase: true
+    },
+    {
+      name: 'unified_billing_settings on but the quote names no payment configuration',
+      on: true,
+      page: TOPUP_PAGE,
+      opens: CHECKOUT_URL,
+      unconfigured: true
+    }
+  ])(
+    'Continue opens $opens with $name',
+    async ({ on, page, opens, noPurchase, unconfigured }) => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
+      hoisted.billingWebTopupUrl.mockReturnValue(page)
+      hoisted.paymentConfigured = !unconfigured
+      if (noPurchase) hoisted.openTopupPurchase.mockResolvedValue(undefined)
+      const { user } = renderDialog({ atCheckout: false })
+
+      await user.click(continueButton())
+
+      await waitFor(() =>
+        expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(opens)
+      )
+      expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(
+        opens === CHECKOUT_URL ? 1 : 0
+      )
+      if (unconfigured) expect(hoisted.openTopupPurchase).not.toHaveBeenCalled()
+    }
+  )
+
+  it('carries the ticked auto top-up to billing-web and watches the balance for the payment', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    const { user } = renderDialog({ atCheckout: true })
+
+    await user.click(
+      await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
+    )
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(TOPUP_PAGE)
+    )
+    const ticked = {
+      threshold_credits: 1000,
+      target_credits: 11_550,
+      monthly_budget_cents: null
+    }
+    expect(hoisted.openTopupPurchase).toHaveBeenCalledExactlyOnceWith(
+      5000,
+      expect.any(AbortSignal),
+      ticked
+    )
+    expect(hoisted.billingWebTopupUrl.mock.calls[0]).toEqual([
+      5000,
+      ticked,
+      undefined,
+      'tpp_1'
+    ])
+    expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    await hoisted.balanceIncreased!()
+    expect(billingApi.getTopupCheckout).not.toHaveBeenCalled()
+    expect(
+      await screen.findByText('Open Billing to check that auto top-up is on.')
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'Auto top-up is on' })
+    ).toBeNull()
+  })
+
+  it('reads the balance before opening billing-web, so a payment made there counts against the balance from before it', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(TOPUP_PAGE)
+    )
+    const [balanceRead] = vi.mocked(useBillingContext().fetchBalance).mock
+      .invocationCallOrder
+    expect(balanceRead).toBeLessThan(
+      hoisted.cloudTabNavigate.mock.invocationCallOrder[0]
+    )
+  })
+
+  it.for([
+    { name: 'billing-web', on: true },
+    { name: 'hosted checkout', on: false }
+  ])(
+    'Reopen on $name opens a new page on a new purchase, which Cloud makes the only payable one',
+    async ({ on }) => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
+      const { user } = renderDialog({ atCheckout: false })
+
+      await user.click(continueButton())
+      await waitFor(() => expect(hoisted.cloudTabNavigate).toHaveBeenCalled())
+      await user.click(
+        await screen.findByRole('button', { name: 'Reopen checkout' })
+      )
+
+      await waitFor(() => expect(openedTabs).toHaveLength(2))
+      await waitFor(() =>
+        expect(hoisted.cloudTabNavigate).toHaveBeenCalledTimes(2)
+      )
+      if (on)
+        expect(
+          hoisted.billingWebTopupUrl.mock.calls.map(([, , , id]) => id)
+        ).toEqual(['tpp_1', 'tpp_2'])
+      else expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it('recovers a blocked popup on the hosted checkout, so following its link and then Reopen leave no second billing-web page to pay on', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    const link = await screen.findByTestId('add-credits-open-checkout')
+    expect(link).toHaveAttribute('href', CHECKOUT_URL)
+    await user.click(link)
+    await user.click(
+      await screen.findByRole('button', { name: 'Reopen checkout' })
+    )
+
+    await waitFor(() =>
+      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(CHECKOUT_URL)
+    )
+    expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(2)
+    expect(hoisted.cloudTabNavigate).not.toHaveBeenCalledWith(TOPUP_PAGE)
+  })
+
+  it('keeps the hosted checkout on Desktop, where the browser tab it opens cannot be found again', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    vi.stubGlobal('__comfyDesktop2', {})
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(window.open).toHaveBeenCalledWith(CHECKOUT_URL, '_blank')
+    )
+    expect(hoisted.billingWebTopupUrl).not.toHaveBeenCalled()
+  })
+})
+
+describe('AddCreditsDialogContent top-up telemetry', () => {
+  beforeEach(() => {
+    stubFirebaseAuthHarness()
+    hoisted.balanceIncreased = undefined
+    hoisted.setupUrl.mockResolvedValue(null)
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = false
+    Object.assign(useAuthStore(), { userId: 'user-1' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
+    clearCheckoutJourney()
+    vi.mocked(useTelemetry()!.trackBillingEvent).mockClear()
+    vi.mocked(useTelemetry()!.trackCheckoutJourneyEvent).mockClear()
+  })
+
+  function trackedBillingEvents() {
+    return vi
+      .mocked(useTelemetry()!.trackBillingEvent)
+      .mock.calls.map(([event]) => `${event.operation}.${event.stage}`)
+  }
+
+  function trackedJourneyPhases() {
+    return vi
+      .mocked(useTelemetry()!.trackCheckoutJourneyEvent)
+      .mock.calls.map(([event]) => event.phase)
+  }
+
+  it('reports the top-up started and submitted, and leaves its success to the server-confirmed completion that outlives the dialog', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+
+    expect(useTelemetry()!.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'topup',
+        stage: 'started',
+        amount_cents: 5000
+      })
+    )
+
+    await hoisted.balanceIncreased!()
+    unmount()
+
+    expect(trackedBillingEvents()).toEqual(['topup.intent', 'topup.started'])
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it.for<{ shown: AddCreditsPlanLine | undefined; reported: string }>([
+    { shown: 'no_plan', reported: 'no_plan' },
+    { shown: undefined, reported: 'none' }
+  ])(
+    'reports plan line $reported on the top-up started',
+    async ({ shown, reported }) => {
+      hoisted.planLine = shown
+      onTestFinished(() => {
+        hoisted.planLine = undefined
+      })
+      hoisted.createHostedCheckout.mockResolvedValue({
+        url: CHECKOUT_URL,
+        sessionId: 'cs_1'
+      })
+      const { user } = renderDialog({ atCheckout: false })
+
+      await user.click(continueButton())
+
+      await waitFor(() =>
+        expect(useTelemetry()!.trackBillingEvent).toHaveBeenCalledWith(
+          expect.objectContaining({ stage: 'started', plan_line: reported })
+        )
+      )
+    }
+  )
+
+  it('does not count closing the dialog on the opened checkout as abandoning it', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('counts closing the dialog as abandoning when the popup was blocked and the checkout link was never followed', async () => {
+    vi.mocked(window.open).mockReturnValue(null)
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await screen.findByTestId('add-credits-open-checkout')
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual([
+      'entered',
+      'submitted',
+      'abandoned'
+    ])
+  })
+
+  it('does not count closing the dialog as abandoning once the blocked checkout link was followed', async () => {
+    vi.mocked(window.open).mockReturnValue(null)
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    const link = await screen.findByTestId('add-credits-open-checkout')
+    link.addEventListener('click', (event) => event.preventDefault())
+    await user.click(link)
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('keeps an opened checkout handed off when a later reopen from the dialog fails', async () => {
+    hoisted.createHostedCheckout.mockResolvedValueOnce({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    hoisted.createHostedCheckout.mockRejectedValueOnce(new Error('offline'))
+    await user.click(screen.getByTestId('add-credits-reopen'))
+    await waitFor(() =>
+      expect(trackedBillingEvents()).toContain('topup.failed')
+    )
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('leaves a journey another checkout took over untouched', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+    clearCheckoutJourney()
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'initial_subscription',
+      entrySource: 'pricing',
+      assignment: { status: 'unavailable' }
+    })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered'])
+  })
+
+  it('reports the top-up failed when its checkout cannot open', async () => {
+    hoisted.createHostedCheckout.mockRejectedValue(new Error('offline'))
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(trackedBillingEvents()).toEqual([
+        'topup.intent',
+        'topup.started',
+        'topup.failed'
+      ])
+    )
+    expect(hoisted.balanceIncreased).toBeUndefined()
   })
 })

@@ -120,20 +120,20 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
 
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
     if (!missingMediaCandidates.value) return
-    missingMediaCandidates.value = missingMediaCandidates.value.filter(
+    const remaining = missingMediaCandidates.value.filter(
       (m) => !(String(m.nodeId) === nodeId && m.widgetName === widgetName)
     )
-    if (!missingMediaCandidates.value.length)
-      missingMediaCandidates.value = null
+    if (remaining.length === missingMediaCandidates.value.length) return
+    missingMediaCandidates.value = remaining.length ? remaining : null
   }
 
   function removeMissingMediaByNodeId(nodeId: string) {
     if (!missingMediaCandidates.value) return
-    missingMediaCandidates.value = missingMediaCandidates.value.filter(
+    const remaining = missingMediaCandidates.value.filter(
       (m) => String(m.nodeId) !== nodeId
     )
-    if (!missingMediaCandidates.value.length)
-      missingMediaCandidates.value = null
+    if (remaining.length === missingMediaCandidates.value.length) return
+    missingMediaCandidates.value = remaining.length ? remaining : null
   }
 
   /**

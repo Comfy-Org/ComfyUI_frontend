@@ -47,6 +47,7 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     | undefined
   let lastEnding: CheckoutEndingKind | undefined
   let left = false
+  let promoAutoApplying = false
 
   function track(phase: CheckoutJourneyPhaseEvent) {
     if (phase.phase !== 'abandoned' && phase.phase !== 'ended')
@@ -116,8 +117,15 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     track({
       phase: 'promo',
       result,
-      prefilled: code.toLowerCase() === arrival?.promotionCode?.toLowerCase()
+      prefilled: code.toLowerCase() === arrival?.promotionCode?.toLowerCase(),
+      ...(uiMode === 'full_page' && { auto_applied: promoAutoApplying })
     })
+    promoAutoApplying = false
+  }
+
+  /** The promo settlement that follows, if any, comes from checkout's own automatic Apply. */
+  function markPromoAutoApply(on: boolean) {
+    promoAutoApplying = on
   }
 
   /** The full-page checkout's promo entry moved. */
@@ -191,6 +199,7 @@ export function useCheckoutJourney(uiMode: 'embedded' | 'full_page') {
     operationIssued,
     methodSelected,
     promoEntryChanged,
+    markPromoAutoApply,
     promoQuoted,
     quoted,
     observe

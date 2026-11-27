@@ -230,7 +230,7 @@ describe('inline prompt', () => {
   )
 
   it.for(['video', 'audio'] as const)(
-    'retains $mediaKind preview metadata when round-tripping inline assets',
+    'retains %s preview metadata when round-tripping inline assets',
     (mediaKind) => {
       const draft: ComposerPrompt = {
         text: 'Inspect ',

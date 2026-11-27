@@ -1,15 +1,13 @@
 <template>
   <div class="relative" @pointerdown.stop>
-    <div class="mb-4">
-      <Button
-        class="w-full border-0"
-        :disabled="isRecording || readonly"
-        @click="handleStartRecording"
-      >
-        {{ t('g.startRecording', 'Start Recording') }}
-        <i-lucide:mic class="ml-1" />
-      </Button>
-    </div>
+    <Button
+      class="mb-4 flex w-full border-0"
+      :disabled="isRecording || readonly"
+      @click="handleStartRecording"
+    >
+      {{ t('g.startRecording', 'Start Recording') }}
+      <i-lucide:mic class="ml-1" />
+    </Button>
     <div
       v-if="isRecording || isPlaying || recordedURL"
       class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-node px-3 text-muted-foreground"
@@ -86,10 +84,9 @@ import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -151,12 +148,9 @@ const { isRecording, recordedURL } = recorder
 const { waveformBars } = waveform
 const { isPlaying, audioElementKey } = playback
 
-// Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const litegraphNode = useLiveGraphNode(() =>
-  props.nodeId ? useApp().canvas.graph?.getNodeById(props.nodeId) : null
-)
+const litegraphNode = useWidgetHostNode(() => props.nodeId)
 
 function handleRecordingComplete(blob: Blob) {
   // Create a widget-owned blob URL (independent of useAudioRecorder's

@@ -175,9 +175,9 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
 import {
   ComfyWorkflow,
-  useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -303,7 +303,8 @@ function workflowContextMenuItems(workflow: ComfyWorkflow): MenuItem[] {
   const duplicate: MenuItem = {
     label: t('g.duplicate'),
     icon: 'icon-[lucide--file-output]',
-    command: () => workflowService.duplicateWorkflow(workflow)
+    command: () =>
+      workflowService.duplicateWorkflow(workflow, { initiator: 'user' })
   }
   if (isAppMode.value) return [duplicate]
 
@@ -322,11 +323,12 @@ function workflowLeafActions(
   const actions: Partial<TreeExplorerNode<ComfyWorkflow>> = {
     contextMenuItems: () => workflowContextMenuItems(workflow),
     draggable: true,
-    handleRename: (newName: string) =>
-      workflowService.renameWorkflow(
+    handleRename: async (newName: string) => {
+      await workflowService.renameWorkflow(
         workflow,
         renamedWorkflowPath(workflow, type, newName)
       )
+    }
   }
   if (!workflow.isTemporary) {
     actions.handleDelete = async () => {

@@ -12,7 +12,7 @@ import path from 'node:path'
 
 import { z } from 'zod'
 
-import { isMainModule } from '../isMainModule'
+import { isMainModule } from '@comfyorg/ci/isMainModule'
 import type { ChangedRange, Finding } from '../server-fact-gate-core'
 import { changedRanges, isGatedPath } from '../server-fact-gate-core'
 import { SERVER_FACT_CONFIG, lintSnapshot } from '../server-fact-oxlint'

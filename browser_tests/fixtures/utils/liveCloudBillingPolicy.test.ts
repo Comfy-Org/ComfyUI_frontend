@@ -4,6 +4,7 @@ import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBilli
 
 import {
   getBlockedRequestViolation,
+  getBlockedWriteViolation,
   getLiveCloudDestinationViolation,
   isLiveCloudMutationAllowed,
   isReportedViolation
@@ -23,6 +24,8 @@ describe('live Cloud mutation policy', () => {
     { method: 'POST', path: '/customers', allowed: false },
     { method: 'POST', path: '/api/auth/token', allowed: true },
     { method: 'POST', path: '/api/auth/session', allowed: true },
+    { method: 'POST', path: '/api/auth/sso/discover', allowed: true },
+    { method: 'POST', path: '/api/auth/sso/start', allowed: false },
     { method: 'POST', path: '/api/billing/subscribe', allowed: false },
     { method: 'POST', path: '/api/billing/payment-portal', allowed: false },
     { method: 'DELETE', path: '/customers', allowed: false },
@@ -42,20 +45,31 @@ describe('live Cloud mutation policy', () => {
 
   it.for([
     {
+      endpoint: 'identitytoolkit accounts:signInWithPassword',
       url: 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=test',
       allowed: true
     },
     {
+      endpoint: 'identitytoolkit accounts:lookup',
       url: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
       allowed: true
     },
-    { url: 'https://securetoken.googleapis.com/v1/token', allowed: true },
     {
+      endpoint: 'securetoken token',
+      url: 'https://securetoken.googleapis.com/v1/token',
+      allowed: true
+    },
+    {
+      endpoint: 'identitytoolkit accounts:delete',
       url: 'https://identitytoolkit.googleapis.com/v1/accounts:delete',
       allowed: false
     },
-    { url: 'https://securetoken.googleapis.com/customers', allowed: false }
-  ])('auth POST $url allowed=$allowed', ({ url, allowed }) => {
+    {
+      endpoint: 'securetoken customers',
+      url: 'https://securetoken.googleapis.com/customers',
+      allowed: false
+    }
+  ])('auth POST to $endpoint allowed=$allowed', ({ url, allowed }) => {
     expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(
       allowed
     )
@@ -70,6 +84,8 @@ describe('live Cloud mutation origins', () => {
     'http://localhost:5173/customers',
     'http://localhost:5173/api/auth/token',
     'http://localhost:5173/api/auth/session',
+    'http://localhost:5173/api/auth/sso/discover',
+    'https://testapi.comfy.org/api/auth/sso/discover',
     'https://testapi.comfy.org/api/auth/token',
     'https://testapi.comfy.org/api/auth/session',
     'https://stagingapi.comfy.org/customers',
@@ -180,6 +196,68 @@ describe('blocked request violations', () => {
     }
   ])('$method $url', ({ method, url, violation }) => {
     expect(getBlockedRequestViolation(new URL(url), method)).toBe(violation)
+  })
+
+  const appOrigin = 'https://stagingcloud.comfy.org'
+
+  it.for([
+    'https://browser-intake-us5-datadoghq.com/api/v2/rum?dd-api-key=redacted',
+    'https://o1.ingest.us.sentry.io/api/2/envelope/',
+    'https://mp.comfy.org/track/',
+    'https://mp.comfy.org/engage/',
+    'https://t.comfy.org/flags/',
+    'https://stagingcloud.comfy.org/cdn-cgi/challenge-platform/h/b/jsd/oneshot/1/0.2:3:-a_b/4',
+    'https://stagingcloud.comfy.org/reslyf/settings'
+  ])('records background POST %s without reporting it', (url) => {
+    const { origin, pathname } = new URL(url)
+    const violation = getBlockedWriteViolation(new URL(url), 'POST', appOrigin)
+    expect(violation).toBe(`Background POST ${origin}${pathname}`)
+    expect(isReportedViolation(violation)).toBe(false)
+  })
+
+  it.for([
+    {
+      method: 'POST',
+      url: 'https://stagingcloud.comfy.org/api/billing/subscribe'
+    },
+    { method: 'POST', url: 'https://stagingcloud.comfy.org/customers' },
+    {
+      method: 'POST',
+      url: 'https://stagingcloud.comfy.org/reslyf/..%2fapi/billing/subscribe'
+    },
+    {
+      method: 'POST',
+      url: 'https://stagingcloud.comfy.org/cdn-cgi/challenge-platform/..%2f..%2fapi/billing/subscribe'
+    },
+    { method: 'PATCH', url: 'https://stagingcloud.comfy.org/reslyf/settings' },
+    { method: 'POST', url: 'https://external.invalid/reslyf/settings' },
+    {
+      method: 'POST',
+      url: 'https://external.invalid/cdn-cgi/challenge-platform/h/b'
+    },
+    { method: 'DELETE', url: 'https://mp.comfy.org/track/' },
+    {
+      method: 'POST',
+      url: 'https://sentry.io.external.invalid/api/2/envelope/'
+    },
+    { method: 'POST', url: 'https://mp.comfy.org.external.invalid/track/' },
+    {
+      method: 'POST',
+      url: 'https://browser-intake-externaldatadoghq.com/api/v2/rum'
+    }
+  ])('reports $method $url as a mutation', ({ method, url }) => {
+    const violation = getBlockedWriteViolation(new URL(url), method, appOrigin)
+    expect(violation).toMatch(new RegExp(`^Mutation ${method} `))
+    expect(isReportedViolation(violation)).toBe(true)
+  })
+
+  it('matches the app-origin background paths only when given the app origin', () => {
+    expect(
+      getBlockedRequestViolation(
+        new URL('https://stagingcloud.comfy.org/reslyf/settings'),
+        'POST'
+      )
+    ).toBe('Mutation POST https://stagingcloud.comfy.org/reslyf/settings')
   })
 
   it.for([

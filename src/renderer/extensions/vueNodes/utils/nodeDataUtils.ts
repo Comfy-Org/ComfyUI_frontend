@@ -1,6 +1,8 @@
 import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isSlotObject } from '@/utils/typeGuardUtil'
@@ -42,4 +44,11 @@ export function linkedWidgetedInputs(
         linkStore.isInputSlotConnected(scope, nodeId, index)
     )
     .map(coerceINodeSlot)
+}
+
+export function isAdvancedSocketInput(node: LGraphNode, input: INodeInputSlot) {
+  return (
+    !input.widget &&
+    !!useNodeDefStore().getInputSpecForWidget(node, input.name)?.advanced
+  )
 }

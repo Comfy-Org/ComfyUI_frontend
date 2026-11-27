@@ -24,20 +24,6 @@ function mismatchInfo(): ISerialisedNode {
   }
 }
 
-function agreeingInfo(): ISerialisedNode {
-  return {
-    id: 1,
-    type: 'TestNode',
-    pos: [0, 0],
-    size: [200, 100],
-    flags: {},
-    order: 0,
-    mode: 0,
-    widgets_values: [30, 12345],
-    widgets_values_named: { steps: 30, seed: 12345 }
-  }
-}
-
 describe('LGraphNode configure named values shadow diff', () => {
   let node: LGraphNode
 
@@ -51,77 +37,29 @@ describe('LGraphNode configure named values shadow diff', () => {
     LiteGraph.namedValuesRestore = false
   })
 
-  it('applies legacy positional values and still reports the shadow mismatch when the flag is off', () => {
+  it('applies legacy positional values when the flag is off', () => {
     LiteGraph.namedValuesRestore = false
 
     node.configure(mismatchInfo())
 
     expect(node.widgets!.map((w) => w.value)).toStrictEqual([30, 12345])
-    expect(
-      useTelemetry()?.trackNamedValuesShadowDiffMismatch
-    ).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        mismatch_widget_count: 1,
-        checked_widget_count: 2
-      })
-    )
   })
 
-  it('applies named values and reports the shadow mismatch without crashing when the flag is on', () => {
+  it('applies named values without crashing when the flag is on', () => {
     LiteGraph.namedValuesRestore = true
 
     expect(() => node.configure(mismatchInfo())).not.toThrow()
 
     expect(node.widgets!.map((w) => w.value)).toStrictEqual([15, 12345])
-    expect(
-      useTelemetry()?.trackNamedValuesShadowDiffMismatch
-    ).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        mismatch_widget_count: 1,
-        checked_widget_count: 2
-      })
-    )
   })
 
-  it('does not fire the mismatch event when named and legacy values agree', () => {
+  it('does not emit the retired per-node event for a mismatch', () => {
     LiteGraph.namedValuesRestore = true
 
-    node.configure(agreeingInfo())
+    node.configure(mismatchInfo())
 
     expect(
       useTelemetry()?.trackNamedValuesShadowDiffMismatch
     ).not.toHaveBeenCalled()
-  })
-
-  it('reports has_on_serialize_hook and has_on_configure_hook as false with no hooks set', () => {
-    LiteGraph.namedValuesRestore = true
-
-    node.configure(mismatchInfo())
-
-    expect(
-      useTelemetry()?.trackNamedValuesShadowDiffMismatch
-    ).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        has_on_serialize_hook: false,
-        has_on_configure_hook: false
-      })
-    )
-  })
-
-  it('reports has_on_serialize_hook and has_on_configure_hook as true when set', () => {
-    LiteGraph.namedValuesRestore = true
-    node.onSerialize = () => {}
-    node.onConfigure = () => {}
-
-    node.configure(mismatchInfo())
-
-    expect(
-      useTelemetry()?.trackNamedValuesShadowDiffMismatch
-    ).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        has_on_serialize_hook: true,
-        has_on_configure_hook: true
-      })
-    )
   })
 })

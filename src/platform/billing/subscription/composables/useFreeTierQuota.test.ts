@@ -2,13 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useFreeTierQuota } from './useFreeTierQuota'
-
-vi.mock(import('@vueuse/core'), () => ({
-  createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
-    fn
-}))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -23,8 +18,6 @@ vi.mock<unknown>(import('@/systems/badgeSystem'), () => ({
   graphCreditsBadges: () => mockCreditBadges.value
 }))
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-
 describe('useFreeTierQuota', () => {
   let scope: EffectScope
 
@@ -38,9 +31,10 @@ describe('useFreeTierQuota', () => {
     scope = effectScope()
     mockIsCloud.value = true
     mockCreditBadges.value = []
-    remoteConfig.value = {
-      free_tier_balance: { allowance: 5, used: 0, remaining: 5 }
-    }
+    useRemoteConfigStore().acceptConfig(
+      { free_tier_balance: { allowance: 5, used: 0, remaining: 5 } },
+      false
+    )
   })
 
   afterEach(() => {
@@ -73,7 +67,7 @@ describe('useFreeTierQuota', () => {
   })
 
   it('keeps the quota disabled when the backend sends no free-tier balance', () => {
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
 
     const quota = createQuota()
 
@@ -84,9 +78,10 @@ describe('useFreeTierQuota', () => {
   it('updates the quota when remote config changes', async () => {
     const quota = createQuota()
 
-    remoteConfig.value = {
-      free_tier_balance: { allowance: 10, used: 7, remaining: 3 }
-    }
+    useRemoteConfigStore().acceptConfig(
+      { free_tier_balance: { allowance: 10, used: 7, remaining: 3 } },
+      false
+    )
     await nextTick()
 
     expect(quota.available.value).toBe(3)

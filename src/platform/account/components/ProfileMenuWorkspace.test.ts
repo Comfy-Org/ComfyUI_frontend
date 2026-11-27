@@ -1,5 +1,5 @@
 import type { WorkspacePlanSummary } from '@comfyorg/ingest-types'
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
@@ -47,11 +47,20 @@ const WorkspaceSwitcherFlyoutStub = defineComponent({
   `
 })
 
+const WorkspaceProfilePicStub = defineComponent({
+  props: ['subscriptionTier'],
+  template:
+    '<div data-testid="workspace-avatar" :data-tier="subscriptionTier" />'
+})
+
 const ProfileMenuCreditsFlyoutStub = defineComponent({
   emits: ['openBilling'],
   template: `
     <div data-testid="credits-flyout">
-      <button data-testid="stub-open-billing" @click="$emit('openBilling')" />
+      <button>Add credits</button>
+      <button data-testid="stub-open-billing" @click="$emit('openBilling')">
+        Billing settings
+      </button>
     </div>
   `
 })
@@ -92,6 +101,7 @@ function renderMenu(served: Partial<Served> = {}) {
       name: 'Comfy Team',
       type: 'team',
       role,
+      subscription_tier: 'TEAM',
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z',
       ...(planSummary && { plan_summary: planSummary })
@@ -109,7 +119,7 @@ function renderMenu(served: Partial<Served> = {}) {
       stubs: {
         WorkspaceSwitcherFlyout: WorkspaceSwitcherFlyoutStub,
         ProfileMenuCreditsFlyout: ProfileMenuCreditsFlyoutStub,
-        WorkspaceProfilePic: true
+        WorkspaceProfilePic: WorkspaceProfilePicStub
       }
     }
   })
@@ -120,7 +130,18 @@ describe('ProfileMenuWorkspace', () => {
   beforeEach(() => {
     useCurrentUser().userDisplayName = computed(() => 'Mariana Martinho')
     useCurrentUser().userEmail = computed(() => 'mariana@comfy.org')
+    useCurrentUser().userPhotoUrl = computed(() => undefined)
     vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
+  })
+
+  it('uses the workspace plan color in the profile menu header', () => {
+    renderMenu()
+
+    const header = screen.getByTestId('workspace-switcher-trigger')
+    expect(within(header).getByTestId('workspace-avatar')).toHaveAttribute(
+      'data-tier',
+      'TEAM'
+    )
   })
 
   describe('the plan line under the workspace name', () => {
@@ -329,6 +350,115 @@ describe('ProfileMenuWorkspace', () => {
       expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
     })
 
+    describe('opened from the keyboard', () => {
+      const flyoutAction = (name: string) =>
+        within(screen.getByTestId('credits-flyout')).getByRole('button', {
+          name
+        })
+
+      it.for(['{Enter}', '{ArrowRight}'])(
+        'moves focus to the first action on %s',
+        async (key) => {
+          const { user, credits } = setup()
+          credits.focus()
+
+          await user.keyboard(key)
+
+          expect(flyoutAction('Add credits')).toHaveFocus()
+        }
+      )
+
+      it('lets Tab reach every action and keeps focus inside the flyout', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        const addCredits = flyoutAction('Add credits')
+        const billingSettings = flyoutAction('Billing settings')
+
+        await user.tab()
+        expect(billingSettings).toHaveFocus()
+        await user.tab()
+        expect(addCredits).toHaveFocus()
+      })
+
+      it('opens the preview on the first fresh hover after Escape', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        expect(
+          screen.getByRole('dialog', { name: 'Credits' })
+        ).toBeInTheDocument()
+        await user.keyboard('{Escape}')
+        await settleHoverTimers()
+        expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+
+        await user.hover(credits)
+        await settleHoverTimers()
+
+        expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+        expect(
+          screen.queryByRole('dialog', { name: 'Credits' })
+        ).not.toBeInTheDocument()
+      })
+
+      it('names the pinned flyout Credits for assistive technology', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+
+        expect(
+          screen.getByRole('dialog', { name: 'Credits' })
+        ).toBeInTheDocument()
+      })
+
+      it('moves focus back into the pinned flyout when Credits is pressed again', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        credits.focus()
+        await settleHoverTimers()
+        expect(
+          screen.getByRole('dialog', { name: 'Credits' })
+        ).toBeInTheDocument()
+
+        await user.keyboard('{Enter}')
+
+        expect(flyoutAction('Add credits')).toHaveFocus()
+      })
+
+      it('closes on Escape and returns focus to the Credits row', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        await user.tab()
+        expect(flyoutAction('Billing settings')).toHaveFocus()
+
+        await user.keyboard('{Escape}')
+        await settleHoverTimers()
+
+        expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+        expect(credits).toHaveFocus()
+        expect(credits).toHaveAttribute('aria-expanded', 'false')
+      })
+    })
+
+    it('previews on hover and closes once the pointer moves on', async () => {
+      const { user, credits } = setup()
+
+      await user.hover(credits)
+      await settleHoverTimers()
+      expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+
+      const identity = screen.getByTestId('current-user-identity')
+      await user.pointer([
+        { target: identity, coords: { clientX: 0, clientY: 300 } },
+        { target: identity, coords: { clientX: 0, clientY: 600 } }
+      ])
+      await settleHoverTimers()
+      expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+      expect(credits).toHaveAttribute('aria-expanded', 'false')
+    })
+
     it('opens Settings › Billing from Billing settings and closes the menu', async () => {
       const { user, credits, closed } = setup()
       await user.click(credits)
@@ -360,8 +490,36 @@ describe('ProfileMenuWorkspace', () => {
 
     const identity = screen.getByTestId('current-user-identity')
     expect(within(identity).getByText('M')).toBeInTheDocument()
+    expect(within(identity).queryByRole('img')).not.toBeInTheDocument()
     expect(within(identity).getByText('Mariana Martinho')).toBeInTheDocument()
     expect(within(identity).getByText('mariana@comfy.org')).toBeInTheDocument()
+  })
+
+  it('shows the account photo instead of the monogram', () => {
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/mariana.jpg'
+    )
+    renderMenu()
+
+    const identity = screen.getByTestId('current-user-identity')
+    expect(within(identity).getByRole('img')).toHaveAttribute(
+      'src',
+      'https://example.com/mariana.jpg'
+    )
+    expect(within(identity).queryByText('M')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the monogram when the account photo fails to load', async () => {
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/broken.jpg'
+    )
+    renderMenu()
+
+    const identity = screen.getByTestId('current-user-identity')
+    await fireEvent.error(within(identity).getByRole('img'))
+
+    expect(within(identity).getByText('M')).toBeInTheDocument()
+    expect(within(identity).queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('toggles the workspace switcher from the header row', async () => {

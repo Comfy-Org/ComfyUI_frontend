@@ -13,6 +13,7 @@ import type { RawJobListItem, zJobsListResponse } from './jobTypes'
 import type { z } from 'zod'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
+type JobsFetchApi = Parameters<typeof fetchHistory>[0]
 
 function createMockJob(
   id: string,
@@ -188,6 +189,103 @@ describe('fetchJobs', () => {
       expect(result[2].id).toBe('no-preview-job')
     })
 
+    const contractNodeErrors = {
+      '4': {
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: ['9'],
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Value not in list',
+            details: 'ckpt_name: missing.safetensors',
+            extra_info: {
+              input_name: 'ckpt_name',
+              received_value: 'missing.safetensors'
+            }
+          }
+        ]
+      }
+    }
+    const rawComfyNodeErrors = {
+      '4': {
+        class_type: 'LoadImage',
+        dependent_outputs: ['9'],
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Value not in list',
+            details: 'image',
+            extra_info: { input_name: 'image', received_value: ['a.png'] }
+          }
+        ]
+      }
+    }
+
+    it.for([
+      {
+        name: 'keeps node errors in the contract shape',
+        nodeErrors: contractNodeErrors,
+        expected: contractNodeErrors
+      },
+      {
+        name: 'keeps a node whose errors are outside the contract shape, without those errors',
+        nodeErrors: rawComfyNodeErrors,
+        expected: { '4': { ...rawComfyNodeErrors['4'], errors: [] } }
+      },
+      {
+        name: 'keeps a malformed node with its parts outside the contract emptied',
+        nodeErrors: {
+          ...contractNodeErrors,
+          '7': {
+            class_type: 'LoadImage',
+            errors: contractNodeErrors['4'].errors
+          },
+          '8': null
+        },
+        expected: {
+          ...contractNodeErrors,
+          '7': {
+            class_type: 'LoadImage',
+            dependent_outputs: [],
+            errors: contractNodeErrors['4'].errors
+          },
+          '8': { class_type: '', dependent_outputs: [], errors: [] }
+        }
+      },
+      {
+        name: 'drops node errors that are not a node map and keeps the job',
+        nodeErrors: ['not', 'a', 'map'],
+        expected: undefined
+      }
+    ])('$name', async ({ nodeErrors, expected }) => {
+      const failedJob = {
+        ...createMockJob('job1', 'failed'),
+        execution_error: {
+          node_id: '4',
+          node_type: 'CheckpointLoaderSimple',
+          exception_message: 'Prompt outputs failed validation',
+          exception_type: 'ValidationError',
+          traceback: [],
+          node_errors: nodeErrors
+        }
+      }
+      const mockFetch = vi.fn<JobsFetchApi>().mockResolvedValue(
+        Response.json({
+          ...createMockResponse([createMockJob('job2', 'completed')]),
+          jobs: [failedJob, createMockJob('job2', 'completed')]
+        })
+      )
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result.map((job) => job.id)).toEqual(['job1', 'job2'])
+      expect(result[0].execution_error).toMatchObject({
+        exception_type: 'ValidationError',
+        exception_message: 'Prompt outputs failed validation'
+      })
+      expect(result[0].execution_error?.node_errors).toEqual(expected)
+    })
+
     it('returns server pagination metadata for history pages', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -216,6 +314,74 @@ describe('fetchJobs', () => {
       expect(result.hasMore).toBe(true)
       expect(result.jobs[0].priority).toBe(5)
       expect(result.jobs[1].priority).toBe(4)
+    })
+  })
+
+  describe('capped totals', () => {
+    it.for([
+      {
+        list: 'history',
+        fetchList: (fetchApi: JobsFetchApi) =>
+          fetchHistory(fetchApi, 200, 0, { cappedTotal: true }),
+        url: '/jobs?status=completed,failed,cancelled&limit=200&offset=0&capped_total=true'
+      },
+      {
+        list: 'queue',
+        fetchList: (fetchApi: JobsFetchApi) =>
+          fetchQueue(fetchApi, { cappedTotal: true }),
+        url: '/jobs?status=in_progress,pending&limit=200&offset=0&capped_total=true'
+      }
+    ])(
+      'asks for a capped total on the $list list',
+      async ({ fetchList, url }) => {
+        const mockFetch = vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(createMockResponse([]))
+        })
+
+        await fetchList(mockFetch)
+
+        expect(mockFetch).toHaveBeenCalledWith(url)
+      }
+    )
+
+    it('keeps history pages in order when the total is capped', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createMockResponse(
+                [createMockJob('newest'), createMockJob('second')],
+                10_000,
+                { offset: 0, limit: 2, has_more: true }
+              )
+            )
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              createMockResponse(
+                [createMockJob('third'), createMockJob('fourth')],
+                10_000,
+                { offset: 2, limit: 2, has_more: true }
+              )
+            )
+        })
+
+      const firstPage = await fetchHistoryPage(mockFetch, 2, 0, {
+        cappedTotal: true
+      })
+      const secondPage = await fetchHistoryPage(mockFetch, 2, 2, {
+        cappedTotal: true
+      })
+
+      expect(
+        [...firstPage.jobs, ...secondPage.jobs].map((job) => job.priority)
+      ).toEqual([10_000, 9_999, 9_998, 9_997])
+      expect(secondPage.hasMore).toBe(true)
     })
   })
 
@@ -320,6 +486,30 @@ describe('fetchJobs', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/jobs/job1', {
         signal: controller.signal
+      })
+    })
+
+    it('reads a failed job whose execution error has a null traceback', async () => {
+      const jobDetail = {
+        ...createMockJob('job1', 'failed'),
+        execution_error: {
+          node_id: '5',
+          node_type: 'KSampler',
+          exception_message: 'boom',
+          exception_type: 'RuntimeError',
+          traceback: null
+        }
+      }
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(jobDetail)
+      })
+
+      const result = await fetchJobDetail(mockFetch, 'job1')
+
+      expect(result?.execution_error).toMatchObject({
+        exception_message: 'boom',
+        traceback: null
       })
     })
 

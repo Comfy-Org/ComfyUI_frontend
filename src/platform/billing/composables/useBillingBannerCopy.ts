@@ -41,7 +41,8 @@ export function useBillingBannerCopy() {
       resumePlan: t(`${bs}.ending.reactivate`),
       choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
       contactSales: t(`${bs}.ending.contactSales`),
-      finishPayment: t('subscription.signupPaymentRecovery.finishPayment')
+      finishPayment: t('subscription.signupPaymentRecovery.finishPayment'),
+      viewPlans: t(`${bs}.planNotStarted.viewPlans`)
     },
     planCheckout: {
       verifyPayment: {
@@ -94,18 +95,39 @@ export function useBillingBannerCopy() {
     href: CONTACT_SUPPORT_URL
   }))
 
-  function planNotStartedView({
-    planTier,
-    paymentPage
-  }: PlanNotStartedBanner): BillingBannerView {
+  function planNotStartedView(
+    { planTier, paymentPage }: PlanNotStartedBanner,
+    canOpenPlans: boolean
+  ): BillingBannerView {
     const plan = formatTierName(planTier, false)
-    return {
-      kind: 'planNotStarted',
-      title: plan
-        ? t(`${bs}.planNotStarted.title`, { plan })
-        : t(`${bs}.planNotStarted.titleNoPlan`),
-      body: t(`${bs}.planNotStarted.body`),
-      action: paymentPage === 'noHostedPage' ? null : 'finishPayment'
+    const title = plan
+      ? t(`${bs}.planNotStarted.title`, { plan })
+      : t(`${bs}.planNotStarted.titleNoPlan`)
+    switch (paymentPage.kind) {
+      case 'hostedPage':
+        return {
+          kind: 'planNotStarted',
+          title,
+          body: t(`${bs}.planNotStarted.body`),
+          action: 'finishPayment',
+          href: null
+        }
+      case 'clientSecretOnly':
+        return {
+          kind: 'planNotStarted',
+          title,
+          body: t(`${bs}.planNotStarted.body`),
+          action: 'verifyPayment',
+          href: paymentPage.checkoutUrl
+        }
+      case 'unavailable':
+        return {
+          kind: 'planNotStarted',
+          title,
+          body: t(`${bs}.planNotStarted.bodyUnavailable`),
+          action: canOpenPlans ? 'viewPlans' : null,
+          href: null
+        }
     }
   }
 

@@ -3,7 +3,7 @@ import { installFakeStripe } from './fixtures/stripe'
 import { expect, test } from './fixtures/test'
 
 const TOPUP_LANDING =
-  /\/v1\/top-up\?product=comfyui&return_to=comfyui_credits&amount_cents=2500$/
+  /\/v1\/top-up\?product=comfyui&return_to=platform_billing&amount_cents=2500$/
 
 test.beforeEach(async ({ context, cloud }) => {
   await installFakeStripe(context)
@@ -40,6 +40,43 @@ test('a handoff for Add credits opens the top-up checkout for its amount and kee
 
   await expect(page).toHaveURL(TOPUP_LANDING)
   await expect(summary).toContainText('Add credits · Acme')
+})
+
+test('a handoff for Add credits with auto top-up shows the consent with the monthly limit and pays on the hosted checkout with the settings', async ({
+  page,
+  cloud
+}) => {
+  const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test_front4122'
+  cloud.reply('POST', '/billing/topup/checkout', () => ({
+    body: { checkout_url: checkoutUrl, session_id: 'cs_test_front4122' }
+  }))
+  await page.goto(
+    '/handoff?intent=top-up&amount_cents=2500&auto_top_up_threshold_credits=1000&auto_top_up_target_credits=11550&auto_top_up_monthly_budget_cents=10000#token=one-time-token'
+  )
+
+  await expect(page.getByTestId('checkout-auto-top-up-consent')).toHaveText(
+    'Top-ups are charged to your default card, Visa ···· 4242, up to $100.00 a month. Turn this off anytime in Billing.'
+  )
+  const leavesForStripe = page.waitForRequest(checkoutUrl)
+  await page.getByRole('button', { name: 'Pay' }).click()
+  await leavesForStripe
+
+  const checkout = cloud.requests.find(
+    (request) => request.path === '/billing/topup/checkout'
+  )
+  expect(checkout?.authorization).toBe('Bearer handoff-scoped-session')
+  expect(checkout?.body).toMatchObject({
+    amount_cents: 2500,
+    return_url: expect.stringMatching(/\/return\/topup$/),
+    auto_top_up: {
+      threshold_credits: 1000,
+      target_credits: 11550,
+      monthly_budget_cents: 10000
+    }
+  })
+  expect(
+    cloud.requests.some((request) => request.path === '/billing/topup')
+  ).toBe(false)
 })
 
 test('a handoff with an unknown intent opens the billing home', async ({

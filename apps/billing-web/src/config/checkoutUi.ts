@@ -195,3 +195,23 @@ export function awaitUnifiedBillingSettings(): Promise<boolean> {
 export function awaitPlanChangeCardChoice(): Promise<boolean> {
   return awaitFlag('billing_web_plan_change_card_choice', parseBoolean, false)
 }
+
+/** Never rejects; `false` unless Cloud serves `billing_web_topup_hosted_methods: true`. */
+export function awaitTopupHostedMethods(): Promise<boolean> {
+  return awaitFlag('billing_web_topup_hosted_methods', parseBoolean, false)
+}
+
+/** Never rejects; `false` unless Cloud serves `billing_web_promo_auto_apply: true`. */
+export function awaitPromoAutoApply(): Promise<boolean> {
+  return awaitFlag('billing_web_promo_auto_apply', parseBoolean, false)
+}
+
+/**
+ * Never rejects. Whether a top-up pays in the page with a saved or new card: a
+ * handoff tab always does (it exists only under `local_billing_web`), any other
+ * tab while Cloud serves `unified_billing_settings: true`.
+ */
+export function awaitInPageTopup(): Promise<boolean> {
+  if (handoffTab.value !== undefined) return Promise.resolve(true)
+  return awaitUnifiedBillingSettings()
+}
