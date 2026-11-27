@@ -309,9 +309,9 @@ async function driveThroughToolCallDone(
     panel.getByRole('button', {
       name:
         order === 'docUpdateBeforeToolCall'
-          ? enMessages.agent.worked
+          ? new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
           : enMessages.agent.workedNotConfirmedOnCanvas,
-      exact: true
+      exact: order !== 'docUpdateBeforeToolCall'
     })
   ).toBeVisible()
 
@@ -379,8 +379,7 @@ test.describe(
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
       await expect(
         panel.getByRole('button', {
-          name: enMessages.agent.worked,
-          exact: true
+          name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
         })
       ).toBeVisible()
     })
@@ -493,8 +492,7 @@ test.describe(
 
       const panel = page.locator('#agent-panel-root')
       const workSummary = panel.getByRole('button', {
-        name: enMessages.agent.worked,
-        exact: true
+        name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
       })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')

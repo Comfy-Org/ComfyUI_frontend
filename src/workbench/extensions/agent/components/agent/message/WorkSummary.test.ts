@@ -291,7 +291,7 @@ describe('ActivityTrace', () => {
 })
 
 describe('WorkSummary', () => {
-  it('uses a timing-free collapsed label', () => {
+  it('shows the total elapsed work in the collapsed label', () => {
     render(WorkSummary, {
       props: {
         parts: [
@@ -302,17 +302,34 @@ describe('WorkSummary', () => {
             durationMs: 100
           },
           tool('c1', 'add_node', 'done', true, 1300),
-          tool('c2', 'switch_tab', 'done', true, 900)
+          tool('c2', 'switch_tab', 'done', true, 900),
+          tool('c3', 'list_slots', 'done', true)
         ]
       },
       global: { plugins: [i18n] }
     })
 
     const trigger = screen.getByRole('button', {
-      name: /^worked$/i
+      name: 'Worked for 3 seconds'
     })
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Add node')).not.toBeInTheDocument()
+  })
+
+  it('formats a minute or more as minutes and seconds', () => {
+    render(WorkSummary, {
+      props: {
+        parts: [
+          tool('c1', 'add_node', 'done', true, 59_100),
+          tool('c2', 'switch_tab', 'done', true, 2_000)
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Worked for 1m 2s' })
+    ).toBeInTheDocument()
   })
 
   it('reveals the whole trace on click', async () => {
