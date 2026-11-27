@@ -194,6 +194,39 @@ describe('AgentSkillList', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
+  it('says skills are unavailable, without an error or Retry, when the first listing 404s', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('not found', 404)
+    )
+    forgetCatalog()
+    mount()
+
+    expect(
+      await screen.findByText("Skills aren't available right now.")
+    ).toBeVisible()
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add skill' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Back to chat' })).toBeVisible()
+  })
+
+  it('shows why the local agent refused the page instead of the generic error', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError(
+        'Open http://127.0.0.1:8188 to use the agent.',
+        403,
+        'agent_loopback_only'
+      )
+    )
+    forgetCatalog()
+    mount()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Open http://127.0.0.1:8188 to use the agent.'
+    )
+    expect(screen.queryByText('Could not load skills. Try again.')).toBeNull()
+  })
+
   it('does not ask the server when skills are not enabled', () => {
     useSkillPacksStore().flagsEnabled = false
     mount()

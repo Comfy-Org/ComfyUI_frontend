@@ -201,8 +201,31 @@ describe('Composer skill selection', () => {
     expect(composer.draft).toBe('/por')
   })
 
+  it('says skills are unavailable after a first-listing 404, then lists them again when / reopens', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('not found', 404)
+    )
+    const { skills } = mount()
+    skills.packs = []
+    skills.hasLoaded = false
+    skills.catalogConfirmed = false
+    await type('/')
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      "Skills aren't available right now."
+    )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+
+    await userEvent.keyboard('{Backspace}')
+    await type('/')
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'portrait' })
+    ).toBeVisible()
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+  })
+
   it.for([404, 503])(
-    'shows loading, then a retryable error, after a %s response',
+    'shows loading, then a retryable error, after a %s response to a confirmed catalog',
     async (status) => {
       let reject: (reason: unknown) => void = () => {}
       vi.mocked(listSkillPacks).mockReturnValueOnce(
@@ -1074,7 +1097,7 @@ describe('Composer skill catalog preload', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 
-  it('asks a failed skills service again each time the composer reappears', async () => {
+  it('asks an unavailable skills service again each time the composer reappears', async () => {
     vi.mocked(api.getServerFeature).mockImplementation(
       <T>(name: string, fallback?: T) =>
         name === 'agent' ? { state: 'ready' } : fallback
@@ -1089,7 +1112,7 @@ describe('Composer skill catalog preload', () => {
     }
 
     const first = render(Composer, options)
-    await waitFor(() => expect(skills.loadFailed).toBe(true))
+    await waitFor(() => expect(skills.catalogUnavailable).toBe(true))
     first.unmount()
     render(Composer, options)
 
@@ -1111,7 +1134,7 @@ describe('Composer skill catalog preload', () => {
     }
 
     const first = render(Composer, options)
-    await waitFor(() => expect(skills.loadFailed).toBe(true))
+    await waitFor(() => expect(skills.catalogUnavailable).toBe(true))
     skills.markUnavailable()
     first.unmount()
     const second = render(Composer, options)

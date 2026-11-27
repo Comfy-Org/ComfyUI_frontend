@@ -137,7 +137,7 @@ onMounted(async () => {
         {{ t('agent.skills') }}
       </h2>
       <Button
-        v-if="skills.enabled"
+        v-if="skills.enabled && status !== 'unavailable'"
         :id="addButtonId"
         type="button"
         variant="secondary"
@@ -166,7 +166,7 @@ onMounted(async () => {
         />
       </ul>
       <p
-        v-if="!skills.enabled"
+        v-if="!skills.enabled || status === 'unavailable'"
         class="m-0 px-2 py-8 text-center text-sm text-muted-foreground"
       >
         {{ t('agent.skillsUnavailable') }}
@@ -183,7 +183,9 @@ onMounted(async () => {
         class="flex flex-col items-center gap-3 px-2 py-8"
       >
         <p role="alert" class="m-0 text-center text-sm text-muted-foreground">
-          {{ t(SKILL_CATALOG_STATUS_LABELS.failed) }}
+          {{
+            skills.loadFailureReason ?? t(SKILL_CATALOG_STATUS_LABELS.failed)
+          }}
         </p>
         <Button
           type="button"

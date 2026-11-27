@@ -20,7 +20,7 @@ const SKILLS: AgentSkillListResponse = {
 
 type SkillRetryFixtures = {
   skillRequests: string[]
-  skillCatalog: { healthy: boolean }
+  skillCatalog: { healthy: boolean; failureStatus: number }
 }
 
 export const agentSkillMenuRetryTest = agentTest.extend<SkillRetryFixtures>({
@@ -28,14 +28,17 @@ export const agentSkillMenuRetryTest = agentTest.extend<SkillRetryFixtures>({
     await use([])
   },
   skillCatalog: async ({ browserName: _browserName }, use) => {
-    await use({ healthy: false })
+    await use({ healthy: false, failureStatus: 503 })
   },
   page: async ({ page, skillRequests, skillCatalog }, use) => {
     await page.route('**/api/agent/skills', (route) => {
       skillRequests.push(route.request().url())
       return skillCatalog.healthy
         ? route.fulfill(jsonRoute(SKILLS))
-        : route.fulfill({ status: 404, json: { error: 'Not found' } })
+        : route.fulfill({
+            status: skillCatalog.failureStatus,
+            json: { error: 'Skills failed' }
+          })
     })
     await use(page)
   }

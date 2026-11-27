@@ -406,7 +406,7 @@ describe('skillPacksStore', () => {
     expect(listSkillPacks).toHaveBeenCalledOnce()
   })
 
-  it('keeps a hosted-agent skills failure retryable after a 404', async () => {
+  it('marks a hosted-agent catalog unavailable, without reporting, after a 404', async () => {
     mocks.isFeatureEnabled.mockReturnValue(undefined)
     vi.mocked(listSkillPacks).mockRejectedValue(
       new SkillPacksApiError('not found', 404)
@@ -415,10 +415,12 @@ describe('skillPacksStore', () => {
     const store = useSkillPacksStore()
 
     await store.startFlagGate()
-    await vi.waitFor(() => expect(store.loadFailed).toBe(true))
+    await vi.waitFor(() => expect(store.catalogUnavailable).toBe(true))
 
+    expect(store.loadFailed).toBe(false)
     expect(store.routesAvailable).toBe(true)
     expect(store.enabled).toBe(true)
+    expect(mocks.reportError).not.toHaveBeenCalled()
   })
 
   it('allows the feature gate to retry after setup fails', async () => {
@@ -439,24 +441,70 @@ describe('skillPacksStore', () => {
     expect(listSkillPacks).toHaveBeenCalledOnce()
   })
 
-  it('keeps the surface retryable when the routes answer 404 at runtime', async () => {
+  it('treats a first listing 404 as skills being unavailable, not as a failure', async () => {
     vi.mocked(listSkillPacks).mockRejectedValue(
       new SkillPacksApiError('not found', 404)
     )
     const store = useSkillPacksStore()
     store.flagsEnabled = true
 
-    await expect(store.fetchPacks()).rejects.toThrow('not found')
+    await expect(store.fetchPacks()).resolves.toBe(false)
 
+    expect(store.catalogUnavailable).toBe(true)
+    expect(store.loadFailed).toBe(false)
+    expect(store.catalogConfirmed).toBe(false)
     expect(store.routesAvailable).toBe(true)
-    expect(store.loadFailed).toBe(true)
     expect(store.enabled).toBe(true)
     expect(store.packs).toEqual([])
   })
 
-  it('retries a failed listing when the settings gate starts again', async () => {
+  it('lists again on the next open after skills were unavailable', async () => {
     vi.mocked(listSkillPacks)
       .mockRejectedValueOnce(new SkillPacksApiError('not found', 404))
+      .mockResolvedValueOnce([makePack()])
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+
+    await store.refreshPacks()
+    expect(store.catalogUnavailable).toBe(true)
+    await store.ensurePacks()
+
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+    expect(store.catalogUnavailable).toBe(false)
+    expect(store.packs).toEqual([makePack()])
+    expect(mocks.reportError).not.toHaveBeenCalled()
+  })
+
+  it('keeps the host reason when the local agent refuses a non-loopback page', async () => {
+    const refusal = new SkillPacksApiError(
+      'Open http://127.0.0.1:8188 to use the agent.',
+      403,
+      'agent_loopback_only'
+    )
+    vi.mocked(listSkillPacks).mockRejectedValue(refusal)
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+
+    await store.refreshPacks()
+
+    expect(store.loadFailed).toBe(true)
+    expect(store.loadFailureReason).toBe(
+      'Open http://127.0.0.1:8188 to use the agent.'
+    )
+    expect(mocks.reportError).toHaveBeenCalledWith(refusal, {
+      errorType: 'error_fetching_agent_skill_packs',
+      surface: 'agent',
+      sentryMode: 'never'
+    })
+
+    vi.mocked(listSkillPacks).mockResolvedValueOnce([])
+    await store.ensurePacks()
+    expect(store.loadFailureReason).toBeUndefined()
+  })
+
+  it('retries a failed listing when the settings gate starts again', async () => {
+    vi.mocked(listSkillPacks)
+      .mockRejectedValueOnce(new SkillPacksApiError('boom', 503))
       .mockResolvedValueOnce([makePack()])
     const store = useSkillPacksStore()
 

@@ -8,12 +8,20 @@ import { api } from '@/scripts/api'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { listSkillPacks } from '@/platform/skills/api/skillsApi'
+import {
+  isLoopbackOnlyRefusal,
+  listSkillPacks,
+  SkillPacksApiError
+} from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
 import { skillPacksReporting } from '@/platform/skills/api/skillPacksReporting'
 
 const AGENT_EXPERIENCE_FLAG = 'agent-in-app-experience'
 const SKILL_PACKS_FLAG = 'agent-skill-packs'
+
+function isGateOff(error: unknown): boolean {
+  return error instanceof SkillPacksApiError && error.status === 404
+}
 
 export const useSkillPacksStore = defineStore('skillPacks', () => {
   const packs = ref<SkillPack[]>([])
@@ -23,6 +31,11 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Refreshes keep the last confirmation until a response replaces it.
   const catalogConfirmed = ref(false)
   const loadFailed = ref(false)
+  // The host's own words for a refusal the user can act on (loopback fence).
+  const loadFailureReason = ref<string>()
+  // A list 404 before any confirmed catalog: the skills gate is off for this
+  // account. Not an error; the next open lists again (FRONT-4314).
+  const catalogUnavailable = ref(false)
   const flagsEnabled = ref(false)
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
@@ -57,6 +70,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     hasLoaded.value = false
     catalogConfirmed.value = false
     loadFailed.value = false
+    loadFailureReason.value = undefined
+    catalogUnavailable.value = false
     routesAvailable.value = true
   }
 
@@ -166,6 +181,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     packs.value = nextPacks
     hasLoaded.value = true
     catalogConfirmed.value = true
+    catalogUnavailable.value = false
     routesAvailable.value = true
   }
 
@@ -174,6 +190,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     const requestScope = scope.value
     loading.value = true
     loadFailed.value = false
+    loadFailureReason.value = undefined
     try {
       const nextPacks = await listSkillPacks()
       if (isSuperseded(generation, requestScope)) return false
@@ -181,7 +198,14 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
       return true
     } catch (error) {
       if (isSuperseded(generation, requestScope)) return false
+      // A confirmed catalog keeps FRONT-4314's retryable failure instead.
+      if (isGateOff(error) && !catalogConfirmed.value) {
+        packs.value = []
+        catalogUnavailable.value = true
+        return false
+      }
       loadFailed.value = true
+      if (isLoopbackOnlyRefusal(error)) loadFailureReason.value = error.message
       throw error
     } finally {
       if (generation === fetchGeneration) loading.value = false
@@ -252,6 +276,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     catalogConfirmed,
     catalogGeneration,
     loadFailed,
+    loadFailureReason,
+    catalogUnavailable,
     scope,
     enabled,
     flagsEnabled,
