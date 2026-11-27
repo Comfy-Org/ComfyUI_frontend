@@ -76,7 +76,7 @@ test.describe(
       await openMoreOptions(comfyPage)
       await comfyPage.page.getByText('Rename', { exact: true }).click()
       const input = comfyPage.page.locator(
-        '.group-title-editor.node-title-editor .editable-text input'
+        '.group-title-editor.node-title-editor input.editable-text'
       )
       await expect(input).toBeVisible()
       await input.fill('RenamedNode')

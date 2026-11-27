@@ -47,6 +47,7 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { OpenWorkflowFailure } from '@/platform/workflow/core/services/workflowService'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -158,6 +159,12 @@ vi.mock(import('@/platform/customNodes/lateLoading/lateNodeTypes'), {
   spy: true
 })
 vi.mock(import('@/platform/customNodes/lateLoading/waitingNodes'))
+vi.mock(
+  import('@/platform/workflowErrors/nodeReplacement/missingNodesNotice'),
+  {
+    spy: true
+  }
+)
 
 const storeThumbnailMock = vi.hoisted(() => vi.fn())
 
@@ -3511,6 +3518,143 @@ describe('useWorkflowService', () => {
         useMissingNodesErrorStore().surfaceMissingNodes
       ).toHaveBeenCalledWith(['CustomNode1'])
       expect(workflow.pendingWarnings).not.toBeNull()
+    })
+
+    it('tells the missing nodes notice that an opened workflow was reopened', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+
+      await useWorkflowService().openWorkflow(workflow, { force: true })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledWith(
+        ['CustomNode1'],
+        'reopened'
+      )
+    })
+
+    it('tells the missing nodes notice a workflow was brought in when the caller says so', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+
+      await useWorkflowService().openWorkflow(workflow, {
+        force: true,
+        opening: 'brought_in'
+      })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledWith(
+        ['CustomNode1'],
+        'brought_in'
+      )
+    })
+
+    it('keeps a brought in workflow brought in when it is opened again without saying how', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      await service.openWorkflow(workflow, {
+        force: true,
+        opening: 'brought_in'
+      })
+      await service.openWorkflow(workflow, { force: true })
+
+      expect(showMissingNodesNotice).toHaveBeenLastCalledWith(
+        ['CustomNode1'],
+        'brought_in'
+      )
+    })
+
+    it('remembers the opening of a silent activation for a later notice', () => {
+      const workflow = createWorkflow({ missingNodeTypes: ['CustomNode1'] })
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      service.showPendingWarnings(workflow, {
+        silent: true,
+        defaultOpening: 'reopened'
+      })
+      service.showPendingWarnings(workflow)
+
+      expect(showMissingNodesNotice).toHaveBeenCalledExactlyOnceWith(
+        ['CustomNode1'],
+        'reopened'
+      )
+    })
+
+    it('does not remember the fallback when no caller says how it was opened', () => {
+      const workflow = createWorkflow({ missingNodeTypes: ['CustomNode1'] })
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      service.showPendingWarnings(workflow, { silent: true })
+      service.showPendingWarnings(workflow, { defaultOpening: 'reopened' })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledExactlyOnceWith(
+        ['CustomNode1'],
+        'reopened'
+      )
+    })
+
+    it('keeps a dropped workflow brought in when late node packs reload it', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+      workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      vi.mocked(nodeTypesMayStillArrive).mockReturnValue(true)
+      service.showPendingWarnings(undefined, { opening: 'brought_in' })
+      vi.mocked(nodeTypesMayStillArrive).mockReturnValue(false)
+      await service.openWorkflow(workflow, { force: true })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledExactlyOnceWith(
+        ['CustomNode1'],
+        'brought_in'
+      )
+    })
+
+    it('keeps a reopened workflow reopened when its warnings surface again', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      await service.openWorkflow(workflow, { force: true })
+      service.showPendingWarnings(workflow)
+
+      expect(showMissingNodesNotice).toHaveBeenLastCalledWith(
+        ['CustomNode1'],
+        'reopened'
+      )
     })
 
     it('should show each workflow warnings only when that tab is focused', async () => {
