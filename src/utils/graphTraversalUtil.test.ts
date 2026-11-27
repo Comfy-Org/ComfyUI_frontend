@@ -432,6 +432,55 @@ describe('graphTraversalUtil', () => {
         expect(results).toHaveLength(5)
         expect(results).toContain('node-300')
       })
+
+      it('terminates on a self-referencing subgraph', () => {
+        const innerNodes: LGraphNode[] = []
+        const subgraph = createMockSubgraph('self-cycle-uuid', innerNodes)
+        innerNodes.push(
+          createMockNode(10, { isSubgraph: true, subgraph }),
+          createMockNode(11)
+        )
+
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph })
+        ])
+
+        const results = mapAllNodes(graph, (node) => Number(node.id))
+
+        expect(results).toEqual([10, 11, 1])
+      })
+
+      it('terminates on an ancestor subgraph reference', () => {
+        const firstNodes: LGraphNode[] = []
+        const first = createMockSubgraph('first-cycle-uuid', firstNodes)
+        const second = createMockSubgraph('second-cycle-uuid', [
+          createMockNode(20, { isSubgraph: true, subgraph: first })
+        ])
+        firstNodes.push(
+          createMockNode(10, { isSubgraph: true, subgraph: second })
+        )
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: first })
+        ])
+
+        expect(mapAllNodes(graph, (node) => Number(node.id))).toEqual([
+          20, 10, 1
+        ])
+      })
+
+      it('visits a shared subgraph for each sibling host node', () => {
+        const innerNode = createMockNode(100)
+        const subgraph = createMockSubgraph('shared-uuid', [innerNode])
+
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph }),
+          createMockNode(2, { isSubgraph: true, subgraph })
+        ])
+
+        const results = mapAllNodes(graph, (node) => Number(node.id))
+
+        expect(results).toEqual([100, 1, 100, 2])
+      })
     })
 
     describe('mapUniqueNodes', () => {
@@ -535,6 +584,64 @@ describe('graphTraversalUtil', () => {
         })
 
         expect(matchingNodes).toEqual([2, 4])
+      })
+
+      it('terminates on a self-referencing subgraph', () => {
+        const innerNodes: LGraphNode[] = []
+        const subgraph = createMockSubgraph('self-cycle-uuid', innerNodes)
+        innerNodes.push(
+          createMockNode(10, { isSubgraph: true, subgraph }),
+          createMockNode(11)
+        )
+
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph })
+        ])
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(Number(node.id))
+        })
+
+        expect(visited).toEqual([10, 11, 1])
+      })
+
+      it('terminates on an ancestor subgraph reference', () => {
+        const firstNodes: LGraphNode[] = []
+        const first = createMockSubgraph('first-cycle-uuid', firstNodes)
+        const second = createMockSubgraph('second-cycle-uuid', [
+          createMockNode(20, { isSubgraph: true, subgraph: first })
+        ])
+        firstNodes.push(
+          createMockNode(10, { isSubgraph: true, subgraph: second })
+        )
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph: first })
+        ])
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(Number(node.id))
+        })
+
+        expect(visited).toEqual([20, 10, 1])
+      })
+
+      it('visits a shared subgraph for each sibling host node', () => {
+        const innerNode = createMockNode(100)
+        const subgraph = createMockSubgraph('shared-uuid', [innerNode])
+
+        const graph = createMockGraph([
+          createMockNode(1, { isSubgraph: true, subgraph }),
+          createMockNode(2, { isSubgraph: true, subgraph })
+        ])
+
+        const visited: number[] = []
+        forEachNode(graph, (node) => {
+          visited.push(Number(node.id))
+        })
+
+        expect(visited).toEqual([100, 1, 100, 2])
       })
     })
 

@@ -81,8 +81,7 @@ vi.mock(
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'),
   () => ({
-    useMountedNodeSize: vi.fn(),
-    useWidgetGridResizeTracking: vi.fn()
+    useMountedNodeSize: vi.fn()
   })
 )
 

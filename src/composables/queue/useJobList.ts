@@ -21,7 +21,7 @@ import {
 } from '@/utils/dateTimeUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { clampPercentInt } from '@/utils/numberUtil'
-import { buildJobDisplay } from '@/utils/queueDisplay'
+import { buildJobDisplay, withDeploymentBuildName } from '@/utils/queueDisplay'
 import { isActiveJobState, jobStateFromTask } from '@/utils/queueUtil'
 
 import type { JobTab } from '@/composables/queue/jobTabs'
@@ -342,7 +342,7 @@ export function useJobList() {
       return {
         id: task.jobId,
         title: display.primary,
-        meta: display.secondary,
+        meta: withDeploymentBuildName(display.secondary, task, t),
         state,
         iconName: display.iconName,
         iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,

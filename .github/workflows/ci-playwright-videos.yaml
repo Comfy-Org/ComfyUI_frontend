@@ -42,6 +42,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DEFAULT_BRANCH_REF: origin/${{ github.event.pull_request.base.repo.default_branch }}
         run: |
           bash tools/ci/src/cicd/select-pr-playwright-specs.sh "$BASE_SHA" "$HEAD_SHA" > /tmp/video-specs.txt
           echo "files=$(jq -Rsc 'split("\n") | map(select(length > 0))' /tmp/video-specs.txt)" >> "$GITHUB_OUTPUT"
