@@ -9,10 +9,8 @@ import {
   fetchJobDetail,
   fetchQueue
 } from './fetchJobs'
-import type { RawJobListItem, zJobsListResponse } from './jobTypes'
-import type { z } from 'zod'
+import type { RawJobListItem, JobsListResponse } from './jobTypes'
 
-type JobsListResponse = z.infer<typeof zJobsListResponse>
 type JobsFetchApi = Parameters<typeof fetchHistory>[0]
 
 function createMockJob(

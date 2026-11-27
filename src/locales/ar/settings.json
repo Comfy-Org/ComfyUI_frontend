@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "الالتقاط بحيث تصبح الأسلاك مستقيمة"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "اسأل قبل إرسال أسماء العُقد والنماذج للتحقق من توافق Comfy Cloud"
+  },
   "Comfy_ConfirmClear": {
     "name": "طلب التأكيد عند مسح سير العمل"
   },

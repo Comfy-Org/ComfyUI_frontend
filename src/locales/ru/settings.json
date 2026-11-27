@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "Привязка так, чтобы связи становились прямыми"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Спрашивать перед отправкой названий узлов и моделей для проверки совместимости с Comfy Cloud"
+  },
   "Comfy_ConfirmClear": {
     "name": "Требовать подтверждение при очистке рабочего процесса"
   },

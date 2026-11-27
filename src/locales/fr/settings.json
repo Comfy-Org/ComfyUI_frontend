@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "Aligner de sorte que les connexions deviennent droites"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Demander avant d’envoyer les noms des nœuds et des modèles afin de vérifier la compatibilité avec Comfy Cloud"
+  },
   "Comfy_ConfirmClear": {
     "name": "Demander une confirmation lors de l'effacement du flux de travail"
   },
