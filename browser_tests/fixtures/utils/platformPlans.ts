@@ -28,7 +28,7 @@ export async function expectPlatformPlansOpened(
   return plans
 }
 
-/** Turns the pricing table fallback on and blocks only the Plans tab, so the app opens the in-app pricing table; a `window.open` stub installed later still handles every other URL. */
+/** Turns the new billing UX off and blocks only the Plans tab, so the app opens the in-app pricing table; a `window.open` stub installed later still handles every other URL. */
 export async function keepPricingTableInApp(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const fetchFeatures = window.fetch.bind(window)
@@ -43,7 +43,7 @@ export async function keepPricingTableInApp(page: Page): Promise<void> {
       }
       const features: Record<string, unknown> = await response.json()
       return new Response(
-        JSON.stringify({ ...features, pricing_table_fallback: true }),
+        JSON.stringify({ ...features, billing_new_ux_enabled: false }),
         { status: response.status, headers: response.headers }
       )
     }
