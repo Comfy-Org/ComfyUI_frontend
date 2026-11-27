@@ -27,6 +27,7 @@ interface TextEditorOptions {
   nodeTitle?: string
   readOnly: () => boolean
   trigger?: PromptEditorOpenedMetadata['trigger']
+  maximized?: boolean
   onEdit: (text: string) => void
   textareaAttributes?: () => TextareaHTMLAttributes
 }
@@ -37,6 +38,7 @@ export function showTextEditor({
   nodeTitle,
   readOnly,
   trigger = 'expand_button',
+  maximized = false,
   onEdit,
   textareaAttributes
 }: TextEditorOptions): () => void {
@@ -95,6 +97,7 @@ export function showTextEditor({
       size: 'lg',
       flush: true,
       maximizable: true,
+      maximized,
       onRemoved: () => {
         isOpen = false
         stopPageHideReport()
