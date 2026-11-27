@@ -954,6 +954,25 @@ describe('Composer skill selection', () => {
       expect(screen.getByRole('menuitem', { name: 'Back' })).toBeVisible()
     })
 
+    it('shows why the local agent refused the page in the skills submenu', async () => {
+      vi.mocked(listSkillPacks).mockRejectedValueOnce(
+        new SkillPacksApiError(
+          'Open http://127.0.0.1:8188 to use the agent.',
+          403,
+          'agent_loopback_only'
+        )
+      )
+      const { skills } = mount()
+      forgetCatalog(skills)
+
+      await openSkillsSubmenu()
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'Open http://127.0.0.1:8188 to use the agent.'
+      )
+      expect(screen.getByRole('menuitem', { name: 'Retry' })).toBeVisible()
+    })
+
     it('says there are no skills yet for an empty list it already confirmed, including while it refreshes', async () => {
       const resolve = pendingListing()
       const { skills } = mount()

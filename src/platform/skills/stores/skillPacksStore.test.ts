@@ -126,6 +126,34 @@ describe('skillPacksStore', () => {
     }
   )
 
+  it.for<{
+    change: string
+    apply: (store: ReturnType<typeof useSkillPacksStore>) => void
+  }>([
+    {
+      change: 'upsert',
+      apply: (store) => store.upsertPack(makePack())
+    },
+    {
+      change: 'remove',
+      apply: (store) => store.removePack('my-pack')
+    }
+  ])(
+    'clears stale catalog errors after a successful local $change',
+    ({ apply }) => {
+      const store = useSkillPacksStore()
+      store.catalogUnavailable = true
+      store.loadFailed = true
+      store.loadFailureReason = 'stale failure'
+
+      apply(store)
+
+      expect(store.catalogUnavailable).toBe(false)
+      expect(store.loadFailed).toBe(false)
+      expect(store.loadFailureReason).toBeUndefined()
+    }
+  )
+
   it('leaves a never-confirmed catalog unconfirmed when local CRUD supersedes its first listing', async () => {
     const store = useSkillPacksStore()
     store.flagsEnabled = true
@@ -464,9 +492,11 @@ describe('skillPacksStore', () => {
       .mockResolvedValueOnce([makePack()])
     const store = useSkillPacksStore()
     store.flagsEnabled = true
+    store.upsertPack(makePack({ name: 'partial-cache' }))
 
     await store.refreshPacks()
     expect(store.catalogUnavailable).toBe(true)
+    expect(store.hasLoaded).toBe(false)
     await store.ensurePacks()
 
     expect(listSkillPacks).toHaveBeenCalledTimes(2)
@@ -499,6 +529,19 @@ describe('skillPacksStore', () => {
 
     vi.mocked(listSkillPacks).mockResolvedValueOnce([])
     await store.ensurePacks()
+    expect(store.loadFailureReason).toBeUndefined()
+  })
+
+  it('falls back to the generic error when the local refusal has no reason', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('   ', 403, 'agent_loopback_only')
+    )
+    const store = useSkillPacksStore()
+    store.flagsEnabled = true
+
+    await store.refreshPacks()
+
+    expect(store.loadFailed).toBe(true)
     expect(store.loadFailureReason).toBeUndefined()
   })
 

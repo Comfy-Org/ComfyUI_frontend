@@ -238,6 +238,18 @@ describe('AgentSkillList', () => {
     expect(screen.queryByText('Could not load skills. Try again.')).toBeNull()
   })
 
+  it('uses the generic error when the local refusal reason is blank', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('   ', 403, 'agent_loopback_only')
+    )
+    forgetCatalog()
+    mount()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not load skills. Try again.'
+    )
+  })
+
   it('does not ask the server when skills are not enabled', () => {
     useSkillPacksStore().flagsEnabled = false
     mount()

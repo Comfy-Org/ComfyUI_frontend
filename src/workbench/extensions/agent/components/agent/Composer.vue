@@ -417,6 +417,9 @@ const skillsRetryVisible = computed(
   () => mentionSection.value === 'skills' && skills.loadFailed
 )
 const skillsMenuStatus = useSkillCatalogStatus()
+const skillsMenuStatusMessage = computed(() =>
+  skillsMenuStatus.value === 'failed' ? skills.loadFailureReason : undefined
+)
 const emptyMentionLabel = computed(() =>
   mentionSection.value === 'skills'
     ? skillsEmptyLabel()
@@ -796,6 +799,7 @@ defineExpose({
               :skills-enabled="skills.enabled"
               :skills="skills.packs"
               :skills-status="skillsMenuStatus"
+              :skills-status-message="skillsMenuStatusMessage"
               @select-nodes="onSelectNodes"
               @attach="emit('attach')"
               @open-assets="emit('openAssets')"

@@ -188,6 +188,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loading.value = true
     loadFailed.value = false
     loadFailureReason.value = undefined
+    catalogUnavailable.value = false
     try {
       const nextPacks = await listSkillPacks()
       if (isSuperseded(generation, requestScope)) return false
@@ -197,11 +198,13 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
       if (isSuperseded(generation, requestScope)) return false
       if (isGateOff(error) && !catalogConfirmed.value) {
         packs.value = []
+        hasLoaded.value = false
         catalogUnavailable.value = true
         return false
       }
       loadFailed.value = true
-      if (isLoopbackOnlyRefusal(error)) loadFailureReason.value = error.message
+      if (isLoopbackOnlyRefusal(error))
+        loadFailureReason.value = error.message.trim() || undefined
       throw error
     } finally {
       if (generation === fetchGeneration) loading.value = false
@@ -216,6 +219,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loading.value = false
     hasLoaded.value = true
     loadFailed.value = false
+    loadFailureReason.value = undefined
+    catalogUnavailable.value = false
     const rest = packs.value.filter((existing) => existing.name !== pack.name)
     packs.value = [...rest, pack].sort((a, b) => a.name.localeCompare(b.name))
   }
@@ -226,6 +231,9 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     fetchGeneration++
     inFlight = undefined
     loading.value = false
+    loadFailed.value = false
+    loadFailureReason.value = undefined
+    catalogUnavailable.value = false
     packs.value = packs.value.filter((pack) => pack.name !== name)
   }
 
