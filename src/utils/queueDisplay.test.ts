@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { JobState } from '@/types/queue'
@@ -375,5 +376,21 @@ describe('withDeploymentBuildName', () => {
         createCtx().t
       )
     ).toBe('en-US:1710000000000')
+  })
+
+  it('keeps punctuation in the detail as plain text', () => {
+    const { t } = createI18n({
+      legacy: false,
+      locale: 'en',
+      escapeParameter: true,
+      messages: { en: { queue: { onBuild: '{detail} · {build}' } } }
+    }).global
+    const task = createTask({
+      job: { status: 'pending', deployment: onFluxStudio }
+    })
+
+    expect(withDeploymentBuildName('Pass 1/2 <b>', task, t)).toBe(
+      'Pass 1/2 <b> · Flux Studio'
+    )
   })
 })

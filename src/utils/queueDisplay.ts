@@ -79,14 +79,25 @@ const deploymentBuildName = (task: TaskItemImpl): string | undefined => {
   return build_name?.trim() || name?.trim() || undefined
 }
 
+type PlainTextTranslate = (
+  key: string,
+  named: Record<string, unknown>,
+  options: { escapeParameter: boolean }
+) => string
+
 export const withDeploymentBuildName = (
   secondary: string,
   task: TaskItemImpl,
-  t: BuildJobDisplayCtx['t']
+  t: PlainTextTranslate
 ): string => {
   const build = deploymentBuildName(task)
   if (!build) return secondary
-  return secondary ? t('queue.onBuild', { detail: secondary, build }) : build
+  if (!secondary) return build
+  return t(
+    'queue.onBuild',
+    { detail: secondary, build },
+    { escapeParameter: false }
+  )
 }
 
 export const buildJobDisplay = (
