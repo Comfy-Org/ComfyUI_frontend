@@ -71,6 +71,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import {
   getWidgetState,
+  getWidgetTextareaAttributes,
   isWidgetAttached,
   isWidgetReadOnly,
   useSetWidgetValue
@@ -147,6 +148,7 @@ function openFocusView({ node, widget }: PromptPanelTarget) {
     widgetLabel: state?.label || widget.label || widget.name,
     nodeTitle: node.title,
     readOnly: () => isWidgetReadOnly(node, widget),
+    textareaAttributes: () => getWidgetTextareaAttributes(node, widget),
     maximized: true,
     trigger: 'focus_view',
     onEdit: (text) => {

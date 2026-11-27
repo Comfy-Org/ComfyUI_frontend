@@ -216,6 +216,22 @@ describe('PromptPanel', () => {
     expect(within(dialog).getByRole('textbox')).toHaveAttribute('readonly')
   })
 
+  it('stops typing at the widget limit in the focus view', async () => {
+    render(GlobalDialog, { global: { plugins: [i18n] } })
+    const { promptPanelStore } = renderOpenPanel()
+    const target = promptPanelStore.target
+    assert.exists(target)
+    Object.assign(target.widget.options, { maxlength: 12 })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Expand to focus view' })
+    )
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.type(within(dialog).getByRole('textbox'), ', oil paint')
+
+    expect(target.widget.value).toBe('a portrait, ')
+  })
+
   it('ends the session when the panel is closed from its toggle', async () => {
     const { promptPanelStore } = renderOpenPanel()
 

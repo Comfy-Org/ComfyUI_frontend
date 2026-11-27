@@ -20,7 +20,6 @@
 </template>
 
 <script setup lang="ts">
-import { omit } from 'es-toolkit'
 import {
   computed,
   onBeforeUnmount,
@@ -31,6 +30,7 @@ import {
 
 import {
   getWidgetState,
+  getWidgetTextareaAttributes,
   isWidgetAttached,
   isWidgetReadOnly,
   useSetWidgetValue
@@ -39,10 +39,6 @@ import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { PromptPanelTarget } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
-import {
-  INPUT_EXCLUDED_PROPS,
-  filterWidgetProps
-} from '@/utils/widgetPropFilter'
 
 const { target } = defineProps<{ target: PromptPanelTarget }>()
 
@@ -56,13 +52,7 @@ const widgetLabel = computed(
 )
 const isReadOnly = computed(() => isWidgetReadOnly(target.node, target.widget))
 const textareaAttributes = computed(() =>
-  omit(
-    filterWidgetProps(
-      widgetState.value?.options ?? target.widget.options,
-      INPUT_EXCLUDED_PROPS
-    ),
-    ['disabled']
-  )
+  getWidgetTextareaAttributes(target.node, target.widget)
 )
 
 let isEdited = false

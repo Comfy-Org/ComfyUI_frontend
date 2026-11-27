@@ -1,3 +1,5 @@
+import { omit } from 'es-toolkit'
+
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -12,6 +14,10 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import {
+  INPUT_EXCLUDED_PROPS,
+  filterWidgetProps
+} from '@/utils/widgetPropFilter'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
 /** The store state behind a widget shown in the properties panel. */
@@ -33,7 +39,6 @@ export function isWidgetAttached(node: LGraphNode, widget: IBaseWidget) {
   return node.widgets?.includes(widget) ?? false
 }
 
-/** Whether an upstream link feeds the widget's input, so execution ignores its own value. */
 function isWidgetLinked(node: LGraphNode, widget: IBaseWidget) {
   const graph = node.graph
   const slot = node.inputs.findIndex(
@@ -50,6 +55,7 @@ export function isWidgetReadOnly(
 ): boolean {
   const state = getWidgetState(node, widget)
   const options = state?.options ?? widget.options
+  const isLinked = isWidgetLinked(node, widget)
   const isMarkedReadOnly = Boolean(
     options.read_only ||
     options.disabled ||
@@ -57,7 +63,7 @@ export function isWidgetReadOnly(
     widget.disabled ||
     widget.computedDisabled
   )
-  return isMarkedReadOnly || isWidgetLinked(node, widget)
+  return isLinked || isMarkedReadOnly
 }
 
 /** Writes a widget value and clears the execution errors it resolves. */
@@ -112,4 +118,17 @@ export function useSetWidgetValue() {
     clearWidgetErrors(widgetNode, widget, value)
     canvasStore.canvas?.setDirty(true, true)
   }
+}
+
+export function getWidgetTextareaAttributes(
+  node: LGraphNode,
+  widget: IBaseWidget
+) {
+  return omit(
+    filterWidgetProps(
+      getWidgetState(node, widget)?.options ?? widget.options,
+      INPUT_EXCLUDED_PROPS
+    ),
+    ['disabled']
+  )
 }

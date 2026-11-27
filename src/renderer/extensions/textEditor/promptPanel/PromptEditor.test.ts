@@ -209,6 +209,25 @@ describe('PromptEditor', () => {
     expect(widget.value).toBe('a portrait')
   })
 
+  it('takes edits again once the upstream link is removed', async () => {
+    const { node, widget } = renderEditor()
+    const input = node.addInput('text', 'STRING')
+    input.widget = { name: 'text' }
+    const source = new LGraphNode('Primitive String')
+    source.addOutput('STRING', 'STRING')
+    node.graph?.add(source)
+    const slot = node.inputs.indexOf(input)
+    source.connect(0, node, slot)
+    const editor = screen.getByRole('textbox', { name: 'text' })
+    await waitFor(() => expect(editor).toHaveAttribute('readonly'))
+
+    node.disconnectInput(slot)
+
+    await waitFor(() => expect(editor).not.toHaveAttribute('readonly'))
+    await userEvent.type(editor, '!')
+    expect(widget.value).toBe('a portrait!')
+  })
+
   it('marks the workflow modified while typing without recording undo history', async () => {
     const user = userEvent.setup()
     renderEditor()
