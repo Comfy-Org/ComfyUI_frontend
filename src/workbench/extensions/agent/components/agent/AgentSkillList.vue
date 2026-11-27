@@ -41,6 +41,20 @@ const draftButtonId = useId()
 const rowButtonIdPrefix = useId()
 
 const canAdd = computed(() => skills.enabled && skills.catalogConfirmed)
+const catalogStatusVisible = computed(
+  () =>
+    !skills.enabled ||
+    status.value === 'unavailable' ||
+    status.value === 'loading'
+)
+const catalogStatusRole = computed(() =>
+  skills.enabled ? 'status' : undefined
+)
+const catalogStatusLabel = computed(() =>
+  skills.enabled && status.value === 'loading'
+    ? SKILL_CATALOG_STATUS_LABELS.loading
+    : 'agent.skillsUnavailable'
+)
 
 const newDraftTitle = computed(
   () => drafts.newSkillDraft?.name.trim() || t('agent.untitledSkill')
@@ -166,18 +180,11 @@ onMounted(async () => {
         />
       </ul>
       <p
-        v-if="!skills.enabled || status === 'unavailable'"
-        :role="status === 'unavailable' ? 'status' : undefined"
+        v-if="catalogStatusVisible"
+        :role="catalogStatusRole"
         class="m-0 px-2 py-8 text-center text-sm text-muted-foreground"
       >
-        {{ t('agent.skillsUnavailable') }}
-      </p>
-      <p
-        v-else-if="status === 'loading'"
-        role="status"
-        class="m-0 px-2 py-8 text-center text-sm text-muted-foreground"
-      >
-        {{ t(SKILL_CATALOG_STATUS_LABELS.loading) }}
+        {{ t(catalogStatusLabel) }}
       </p>
       <div
         v-else-if="status === 'failed'"

@@ -194,18 +194,27 @@ describe('AgentSkillList', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
-  it('says skills are unavailable, without an error or Retry, when the first listing 404s', async () => {
-    vi.mocked(listSkillPacks).mockRejectedValueOnce(
-      new SkillPacksApiError('not found', 404)
+  it('keeps the live region mounted while a first-listing 404 changes loading to unavailable', async () => {
+    let rejectListing: (error: unknown) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise<SkillPack[]>((_resolve, reject) => {
+        rejectListing = reject
+      })
     )
     forgetCatalog()
     mount()
+
+    const liveRegion = screen.getByRole('status')
+    expect(liveRegion).toHaveTextContent('Loading skills')
+
+    rejectListing(new SkillPacksApiError('not found', 404))
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
         "Skills aren't available right now."
       )
     )
+    expect(screen.getByRole('status')).toBe(liveRegion)
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Add skill' })).toBeNull()
