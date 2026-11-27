@@ -7568,6 +7568,38 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('tells the warnings a dropped workflow was brought in', async () => {
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      })
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      await useRealWorkflowService()
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        prompt: { '1': { class_type: 'test/DroppedNode', inputs: {} } }
+      })
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+        createTestFile('workflow.json', 'application/json')
+      ])
+      vi.mocked(useWorkflowStore().openWorkflow).mockImplementation(
+        async (workflow: ComfyWorkflow) => {
+          useWorkflowStore().activeWorkflow = markLoaded(workflow)
+          return markLoaded(workflow)
+        }
+      )
+      addScopedDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+
+      await vi.waitFor(() => {
+        expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledWith(
+          undefined,
+          { opening: 'brought_in' }
+        )
+      })
+    })
+
     it('claims but ignores a drop while the canvas is select-only', async () => {
       app.canvas = fromPartial<LGraphCanvas>({
         ...createMockCanvas(),

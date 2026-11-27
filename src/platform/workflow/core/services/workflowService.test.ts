@@ -3616,6 +3616,28 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('keeps a dropped workflow brought in when late node packs reload it', async () => {
+      const workflow = createWorkflow(
+        { missingNodeTypes: ['CustomNode1'] },
+        { loadable: true }
+      )
+      workflowStore.activeWorkflow = workflow as LoadedComfyWorkflow
+      vi.mocked(
+        useMissingNodesErrorStore().surfaceMissingNodes
+      ).mockReturnValue(true)
+      const service = useWorkflowService()
+
+      vi.mocked(nodeTypesMayStillArrive).mockReturnValue(true)
+      service.showPendingWarnings(undefined, { opening: 'brought_in' })
+      vi.mocked(nodeTypesMayStillArrive).mockReturnValue(false)
+      await service.openWorkflow(workflow, { force: true })
+
+      expect(showMissingNodesNotice).toHaveBeenCalledExactlyOnceWith(
+        ['CustomNode1'],
+        'brought_in'
+      )
+    })
+
     it('keeps a reopened workflow reopened when its warnings surface again', async () => {
       const workflow = createWorkflow(
         { missingNodeTypes: ['CustomNode1'] },

@@ -819,7 +819,10 @@ export class ComfyApp implements IComfyApp {
           workspace.spinner = false
           reportActiveWorkflowIfCurrent(activatedByDrop)
         }
-        useWorkflowService().showPendingWarnings()
+        useWorkflowService().showPendingWarnings(
+          undefined,
+          activatedByDrop ? { opening: 'brought_in' } : undefined
+        )
       } catch (error: unknown) {
         if (isGraphLoadFailurePresented(error)) return
         useToast().warning(
@@ -1926,7 +1929,7 @@ export class ComfyApp implements IComfyApp {
           if (deferWarnings || this.rootGraph !== graph) return
           useWorkflowService().showPendingWarnings(undefined, {
             silent: silentAssetErrors,
-            opening
+            opening: opening ?? 'brought_in'
           })
         }
 
