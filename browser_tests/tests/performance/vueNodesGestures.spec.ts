@@ -19,6 +19,7 @@ const TEST_TIMEOUT_MS = 600_000
 const MID_SCALE = 0.5
 const FAR_SCALE = 0.2
 const ACTUAL_SIZE_SCALE = 1
+const GRID_SPACING = 10
 
 function defineGestureTest(renderer: 'vue' | 'litegraph') {
   test(`${renderer} ${NODE_COUNT} nodes`, async ({ comfyPage }) => {
@@ -56,7 +57,11 @@ function defineGestureTest(renderer: 'vue' | 'litegraph') {
   })
 }
 
-test.use({ trace: 'off', video: 'off' })
+test.use({
+  trace: 'off',
+  video: 'off',
+  initialSettings: { 'Comfy.SnapToGrid.GridSize': GRID_SPACING }
+})
 
 test.describe('Vue nodes gestures', { tag: ['@perf', '@vue-nodes'] }, () => {
   test.setTimeout(TEST_TIMEOUT_MS)
