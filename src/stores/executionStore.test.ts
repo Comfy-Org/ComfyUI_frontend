@@ -1048,6 +1048,37 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-a')
   })
 
+  it('records structured cloud validation node errors instead of an execution failure', () => {
+    callStoreJob('job-a', workflowA)
+    fireExecutionError('job-a', {
+      node_id: '72',
+      node_type: 'CheckpointLoaderSimple',
+      exception_message:
+        "Prompt outputs failed validation. node 72 (CheckpointLoaderSimple): ckpt_name — value_not_in_list: Value not in list (ckpt_name: 'missing.safetensors' is not a valid value).",
+      exception_type: 'ValidationError',
+      node_errors: {
+        '72': {
+          class_type: 'CheckpointLoaderSimple',
+          dependent_outputs: ['75'],
+          errors: [
+            {
+              type: 'value_not_in_list',
+              message: 'Value not in list',
+              details: "ckpt_name: 'missing.safetensors' is not a valid value",
+              extra_info: {
+                input_name: 'ckpt_name',
+                received_value: 'missing.safetensors'
+              }
+            }
+          ]
+        }
+      }
+    })
+
+    expect(errorStore.lastExecutionError).toBeNull()
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['72'])
+  })
+
   it('routes background validation node errors to their own workflow', () => {
     callStoreJob('job-b', workflowB)
     fireExecutionError('job-b', {

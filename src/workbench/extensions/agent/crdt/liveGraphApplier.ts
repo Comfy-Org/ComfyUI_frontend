@@ -22,6 +22,10 @@ import {
 } from '@/core/graph/widgets/documentSlots'
 import type { INodeFlags } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import {
+  isValueControlWidget,
+  isValueControlMode
+} from '@/core/graph/widgets/valueControl'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
@@ -53,7 +57,6 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { zComfyNode, zGroup } from '@comfyorg/graph-model/workflowSchema'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
-import { isValueControlMode } from '@/core/graph/widgets/valueControl'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -461,9 +464,15 @@ function actorKind(actor: unknown): ActorKind {
   return kind === 'agent' || kind === 'human' ? kind : 'unknown'
 }
 
+const NON_IDENTIFYING_ACTORS: ReadonlySet<string> = new Set([
+  'agent-remote',
+  'agent-collected',
+  'system:client-seed',
+  'system:mint'
+])
+
 function diagnosticActor(actor: string): string {
-  const kind = actorKind(actor)
-  return kind !== 'unknown' && actor.split(':').length === 3 ? kind : actor
+  return NON_IDENTIFYING_ACTORS.has(actor) ? actor : actorKind(actor)
 }
 
 function diagnosticApplyContext(context: RemoteApplyContext) {
@@ -922,6 +931,24 @@ function selectionDependentAbsence(node: LGraphNode, name: string): boolean {
     : index < widestSelectionWidgetCount(node)
 }
 
+function removedValueControl(node: LGraphNode, name: string): boolean {
+  return (node.widgets ?? []).some((widget) =>
+    widget.linkedWidgets?.some(
+      (linked) => linked.name === name && isValueControlWidget(linked)
+    )
+  )
+}
+
+function explainedWidgetAbsence(
+  node: LGraphNode,
+  name: string,
+  placeholder: boolean
+): boolean {
+  if (hiddenRowController(node, name)) return true
+  if (selectionDependentAbsence(node, name)) return true
+  return !placeholder && removedValueControl(node, name)
+}
+
 function documentWidget(
   node: LGraphNode,
   name: string
@@ -1089,12 +1116,24 @@ function isUnregisteredPlaceholder(node: LGraphNode): boolean {
   )
 }
 
+/**
+ * Shells `missingNode` stood up because construction failed. A successfully
+ * constructed node with execution errors also sets `has_errors`, but only a
+ * shell stands in for an edit the live graph never actually applied.
+ */
+const constructorFallbackShells = new WeakSet<LGraphNode>()
+
+function isConstructorFallbackShell(node: LGraphNode): boolean {
+  return constructorFallbackShells.has(node)
+}
+
 function missingNode(docNode: DocNode): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
     docNode.type
   )
   node.has_errors = true
+  constructorFallbackShells.add(node)
   return node
 }
 
@@ -1928,10 +1967,10 @@ export class LiveGraphApplier {
     unresolved: readonly [string, WidgetValue][],
     reportMissing: boolean
   ): void {
-    const placeholder = isUnregisteredPlaceholder(node)
+    const placeholder =
+      isUnregisteredPlaceholder(node) || isConstructorFallbackShell(node)
     for (const [name] of unresolved) {
-      if (hiddenRowController(node, name)) continue
-      if (selectionDependentAbsence(node, name)) continue
+      if (explainedWidgetAbsence(node, name, placeholder)) continue
       if (!reportMissing && overflowWidgetIndex(name) === null) continue
       if (undeclaredByNodeDefinition(node, name)) {
         this.incrementFailureCount()

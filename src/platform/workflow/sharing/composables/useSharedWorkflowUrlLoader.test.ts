@@ -226,7 +226,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url', shareId: 'share-id-1' }
+      { openSource: 'shared_url', shareId: 'share-id-1', initiator: 'user' }
     )
     expect(useTelemetry()?.trackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
@@ -441,7 +441,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url', shareId: 'share-id-1' }
+      { openSource: 'shared_url', shareId: 'share-id-1', initiator: 'user' }
     )
     expect(useToast().error).toHaveBeenCalledWith(expect.any(String), {
       description: 'Failed to import workflow assets'
@@ -572,7 +572,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Open shared workflow',
-      { openSource: 'shared_url', shareId: 'share-id-1' }
+      { openSource: 'shared_url', shareId: 'share-id-1', initiator: 'user' }
     )
   })
 })

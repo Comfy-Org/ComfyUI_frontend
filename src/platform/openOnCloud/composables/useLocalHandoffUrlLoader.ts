@@ -42,7 +42,13 @@ async function openHandedOffWorkflow(
     return
   }
   try {
-    const outcome = await useApp().loadGraphData(workflow, true, true, filename)
+    const outcome = await useApp().loadGraphData(
+      workflow,
+      true,
+      true,
+      filename,
+      { initiator: 'user' }
+    )
     if (outcome === false || outcome === undefined) return
   } catch (error) {
     reportError(error, {

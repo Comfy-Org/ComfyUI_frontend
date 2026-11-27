@@ -35,14 +35,25 @@ async function renderHoverHost(nodeId: NodeId) {
         h('canvas', {
           'data-testid': 'widget',
           onPointermove: (e: PointerEvent) => e.stopPropagation()
-        })
+        }),
+        h('div', { class: 'lg-node-widget' }, [
+          h('input', { 'data-testid': 'widget-input' })
+        ]),
+        h('div', { class: 'lg-slot', 'data-testid': 'slot' })
       ])
   })
   render(Host)
   await nextTick()
   const nodeEl = screen.getByTestId('node')
   const widgetEl = screen.getByTestId('widget')
+  const doubleClick = (element: HTMLElement) =>
+    element.dispatchEvent(
+      new MouseEvent('dblclick', { clientX: 130, clientY: 245, bubbles: true })
+    )
   return {
+    doubleClick: () => doubleClick(nodeEl),
+    doubleClickWidget: () => doubleClick(screen.getByTestId('widget-input')),
+    doubleClickSlot: () => doubleClick(screen.getByTestId('slot')),
     enter: () =>
       nodeEl.dispatchEvent(
         new PointerEvent('pointerenter', { clientX: 130, clientY: 245 })
@@ -142,6 +153,108 @@ describe('useNodeMouseCallbacks', () => {
 
     expect(onMouseDown).not.toHaveBeenCalled()
     expect(canvas.pointer_is_down).toBe(false)
+  })
+
+  it('calls onDblClick with a node-relative position for a double click on the node, as the canvas renderer does', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Opener')
+    node.pos = [100, 200]
+    graph.add(node)
+    const canvas = createCanvas(graph)
+    const clicks: {
+      event: { type: string; canvasX: number; canvasY: number }
+      isPointerEvent: boolean
+      pos: number[]
+      canvas: LGraphCanvas
+    }[] = []
+    node.onDblClick = (e, pos, eventCanvas) => {
+      clicks.push({
+        event: { type: e.type, canvasX: e.canvasX, canvasY: e.canvasY },
+        isPointerEvent: 'pointerId' in e,
+        pos: [...pos],
+        canvas: eventCanvas
+      })
+    }
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.doubleClick()
+
+    expect(clicks).toEqual([
+      {
+        event: { type: 'dblclick', canvasX: 130, canvasY: 245 },
+        isPointerEvent: false,
+        pos: [30, 45],
+        canvas
+      }
+    ])
+  })
+
+  it('leaves a double click on a widget or a slot to it, as the canvas renderer does', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Opener')
+    graph.add(node)
+    createCanvas(graph)
+    const onDblClick = vi.fn()
+    node.onDblClick = onDblClick
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.doubleClickWidget()
+    pointer.doubleClickSlot()
+
+    expect(onDblClick).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      mode: 'read-only',
+      nodeAllowsInteraction: true,
+      restrict: (canvas: LGraphCanvas) => (canvas.read_only = true)
+    },
+    {
+      mode: 'select-only',
+      nodeAllowsInteraction: true,
+      restrict: (canvas: LGraphCanvas) => (canvas.selectOnly = true)
+    },
+    {
+      mode: 'non-interactive',
+      nodeAllowsInteraction: false,
+      restrict: (canvas: LGraphCanvas) => (canvas.allow_interaction = false)
+    }
+  ])(
+    'does not call onDblClick while the canvas is $mode (node allow_interaction: $nodeAllowsInteraction)',
+    async ({ restrict, nodeAllowsInteraction }) => {
+      const graph = new LGraph()
+      const node = new LGraphNode('Opener')
+      node.flags.allow_interaction = nodeAllowsInteraction
+      graph.add(node)
+      restrict(createCanvas(graph))
+      const onDblClick = vi.fn()
+      node.onDblClick = onDblClick
+      await nextTick()
+
+      const pointer = await renderHoverHost(node.id)
+      pointer.doubleClick()
+
+      expect(onDblClick).not.toHaveBeenCalled()
+    }
+  )
+
+  it('calls onDblClick on a non-interactive canvas when the node allows interaction, as the canvas renderer does', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Opener')
+    node.flags.allow_interaction = true
+    graph.add(node)
+    createCanvas(graph).allow_interaction = false
+    const onDblClick = vi.fn()
+    node.onDblClick = onDblClick
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.doubleClick()
+
+    expect(onDblClick).toHaveBeenCalledOnce()
   })
 
   it('delivers the leave to the node that received the enter after the graph changes', async () => {

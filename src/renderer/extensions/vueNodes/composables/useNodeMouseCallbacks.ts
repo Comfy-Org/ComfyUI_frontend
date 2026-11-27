@@ -4,37 +4,52 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { CanvasMouseEvent } from '@comfyorg/graph-model/events'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { cancelNodePress } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 
-type MouseCallbackInvoker = (
-  node: LGraphNode,
-  event: CanvasPointerEvent,
-  pos: Point,
-  canvas: LGraphCanvas
-) => boolean | void
+interface DeliveredEvents {
+  onDblClick: MouseEvent
+  onMouseDown: PointerEvent
+  onMouseEnter: PointerEvent
+  onMouseLeave: PointerEvent
+  onMouseMove: PointerEvent
+}
 
-const invokers = {
+type MouseCallback = keyof DeliveredEvents
+
+type CanvasEventFor<C extends MouseCallback> = DeliveredEvents[C] &
+  CanvasMouseEvent
+
+const invokers: {
+  [C in MouseCallback]: (
+    node: LGraphNode,
+    event: CanvasEventFor<C>,
+    pos: Point,
+    canvas: LGraphCanvas
+  ) => boolean | void
+} = {
   onMouseEnter: (node, event) => node.onMouseEnter?.(event),
   onMouseMove: (node, event, pos, canvas) =>
     node.onMouseMove?.(event, pos, canvas),
   onMouseLeave: (node, event) => node.onMouseLeave?.(event),
   onMouseDown: (node, event, pos, canvas) =>
-    node.onMouseDown?.(event, pos, canvas)
-} satisfies Record<string, MouseCallbackInvoker>
+    node.onMouseDown?.(event, pos, canvas),
+  onDblClick: (node, event, pos, canvas) =>
+    node.onDblClick?.(event, pos, canvas)
+}
 
-type MouseCallback = keyof typeof invokers
+const OWN_DOUBLE_CLICK_TARGETS = '.lg-slot, .lg-node-widget'
 
 const reportedFailures = new Set<string>()
 
-function toCanvasPointerEvent(
+function toCanvasEvent<E extends MouseEvent>(
   canvas: LGraphCanvas,
-  event: PointerEvent
-): CanvasPointerEvent {
+  event: E
+): E & CanvasMouseEvent {
   canvas.adjustMouseEvent(event)
   return event
 }
@@ -70,7 +85,7 @@ function reportMouseCallbackFailure(
   })
 }
 
-/** Calls a node's classic `onMouseEnter`, `onMouseMove`, `onMouseLeave`, and `onMouseDown` callbacks for pointer input on its Vue node element. */
+/** Calls a node's classic `onMouseEnter`, `onMouseMove`, `onMouseLeave`, `onMouseDown` and `onDblClick` callbacks for pointer input on its Vue node element, as the canvas renderer does. */
 export function useNodeMouseCallbacks(
   nodeId: MaybeRefOrGetter<NodeId>,
   target: MaybeRefOrGetter<HTMLElement | null>
@@ -78,15 +93,15 @@ export function useNodeMouseCallbacks(
   const canvasStore = useCanvasStore()
   let hoveredNode: LGraphNode | undefined
 
-  function deliver(
+  function deliver<C extends MouseCallback>(
     node: LGraphNode | undefined,
-    callback: MouseCallback,
-    pointerEvent: PointerEvent
+    callback: C,
+    domEvent: DeliveredEvents[C]
   ): boolean {
     const canvas = canvasStore.canvas
     if (!canvas || !node?.[callback]) return false
     canvas.setDirty(true)
-    const event = toCanvasPointerEvent(canvas, pointerEvent)
+    const event = toCanvasEvent(canvas, domEvent)
     try {
       const pos: Point = [
         event.canvasX - node.pos[0],
@@ -119,6 +134,19 @@ export function useNodeMouseCallbacks(
     if (event.button !== 0 || !node?.onMouseDown) return
     holdCanvasPointerUntilRelease(canvas, event.pointerId)
     if (deliver(node, 'onMouseDown', event)) cancelNodePress(event.pointerId)
+  })
+
+  useEventListener(target, 'dblclick', (event: MouseEvent) => {
+    const canvas = canvasStore.canvas
+    if (!canvas || canvasStore.isReadOnly || canvas.selectOnly) return
+    if (
+      event.target instanceof Element &&
+      event.target.closest(OWN_DOUBLE_CLICK_TARGETS)
+    )
+      return
+    const node = canvas.graph?.getNodeById(toValue(nodeId)) ?? undefined
+    if (!(canvas.allow_interaction || node?.flags.allow_interaction)) return
+    deliver(node, 'onDblClick', event)
   })
 
   useEventListener(target, 'pointerleave', (event: PointerEvent) => {

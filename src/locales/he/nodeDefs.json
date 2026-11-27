@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "יצירת תגובות טקסט באמצעות מודלי GPT של OpenAI. ספקו פרומפט טקסט, ובאופן אופציונלי תמונות או קבצים כהקשר.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל המשמש ליצירת התגובה."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של OpenAI GPT Image.",
     "display_name": "OpenAI GPT Image 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד מחייבים style_id או style_references; ‏recraftv4_1_flash הוא המודל המהיר והזול ביותר ואינו תומך בסגנונות כלל."
+        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles בנויים ליצירה עקבית בסגנון ותמיד דורשים style_id או style_references; ‏recraftv4_1_flash מפעיל את Recraft V4.1 Flash V2, המודל המהיר והזול ביותר, ואינו תומך בסגנונות כלל."
       },
       "model_size": {
         "name": "גודל"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "תמונה"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "שכבות היררכיות מציבות צורות זו מעל זו; cut_out יוצר צורות שאינן חופפות לעולם, עבור פלוטרים, חותכי ויניל והדפסת משי."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) מספק קובצי SVG נקיים יותר עם עקומות חלקות, קווים ישרים ופינות חדות, ומתאים במיוחד לכיתוב ולצורות מורכבות."
       }
     },
     "outputs": {

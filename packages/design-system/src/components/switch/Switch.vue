@@ -16,8 +16,16 @@ const {
 
 const modelValue = defineModel<boolean>({ default: false })
 
+let toggleRequestedByModifiedEnter = false
+
+function trackModifiedEnter(event: KeyboardEvent) {
+  if (event.key !== 'Enter' || !(event.ctrlKey || event.metaKey)) return
+  toggleRequestedByModifiedEnter = true
+  queueMicrotask(() => (toggleRequestedByModifiedEnter = false))
+}
+
 function updateModelValue(value: boolean) {
-  if (readonly) return
+  if (readonly || toggleRequestedByModifiedEnter) return
   modelValue.value = value
 }
 </script>
@@ -33,6 +41,7 @@ function updateModelValue(value: boolean) {
         customClass
       )
     "
+    @keydown="trackModifiedEnter"
     @update:model-value="updateModelValue"
   >
     <span
