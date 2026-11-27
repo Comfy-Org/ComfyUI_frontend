@@ -186,7 +186,7 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     expect(restoredNode.subgraph.name).toBe('Background definition')
   })
 
-  it('constructs an extension subclass through the graph-aware factory', () => {
+  it('executes a title-only extension constructor and override for explicit A while B is active', () => {
     const subgraphId = '00000000-0000-4000-8000-000000000125'
     const visibleGraph = createTestRootGraph()
     const backgroundGraph = createTestRootGraph()
@@ -209,21 +209,114 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     )
     const Registered = LiteGraph.registered_node_types[subgraphId]
     assert.exists(Registered)
+    const constructorTitles: string[] = []
     class DerivedSubgraphNode extends Registered {
       constructor(title: string) {
         super(title)
+        constructorTitles.push(title)
+        this.properties.extensionOwner = this.graph?.id
+      }
+
+      override getTitle() {
+        return `Extension: ${super.getTitle()}`
       }
     }
     LiteGraph.registerNodeType(subgraphId, DerivedSubgraphNode)
+    Reflect.set(app, 'rootGraph', backgroundGraph)
 
-    const node = LiteGraph.createNode(subgraphId, undefined, {
+    const node = LiteGraph.createNode(subgraphId, 'Explicit A', {
       targetGraph: visibleGraph
     })
 
     assert.instanceOf(node, SubgraphNode)
     expect(node).toBeInstanceOf(DerivedSubgraphNode)
+    expect(constructorTitles).toEqual(['Explicit A'])
+    expect(node.getTitle()).toBe('Extension: Test Node')
+    expect(node.properties.extensionOwner).toBe(visibleGraph.id)
     expect(node.graph).toBe(visibleGraph)
-    expect(node.subgraph.rootGraph).toBe(visibleGraph)
+    expect(node.subgraph).toBe(visibleSubgraph)
+  })
+
+  it('preserves outer ownership across nested factory construction and an inner constructor failure', () => {
+    const subgraphId = '00000000-0000-4000-8000-000000000126'
+    const innerType = 'TestNestedOwnedSubgraph'
+    const throwingType = 'TestThrowingNestedOwnedSubgraph'
+    const graphA = createTestRootGraph()
+    const graphB = createTestRootGraph()
+    const subgraphA = graphA.createSubgraph(
+      createTestSubgraphData({ id: subgraphId, name: 'A definition' })
+    )
+    const subgraphB = graphB.createSubgraph(
+      createTestSubgraphData({ id: subgraphId, name: 'B definition' })
+    )
+    useLitegraphService().registerSubgraphNodeDef(
+      createNodeDefV1({ name: subgraphId }),
+      subgraphA,
+      subgraphInstanceData(subgraphId)
+    )
+    useLitegraphService().registerSubgraphNodeDef(
+      createNodeDefV1({ name: subgraphId }),
+      subgraphB,
+      subgraphInstanceData(subgraphId)
+    )
+    const Registered = LiteGraph.registered_node_types[subgraphId]
+    assert.exists(Registered)
+    const nestedNodes: ReturnType<typeof LiteGraph.createNode>[] = []
+    const failedInnerDefinitions: SubgraphNode['subgraph'][] = []
+    class InnerSubgraphNode extends Registered {}
+    class ThrowingSubgraphNode extends Registered {
+      constructor(title: string) {
+        super(title)
+        assert.instanceOf(this, SubgraphNode)
+        failedInnerDefinitions.push(this.subgraph)
+        throw new Error('Nested constructor failed')
+      }
+    }
+    class OuterSubgraphNode extends Registered {
+      constructor(title: string) {
+        nestedNodes.push(
+          LiteGraph.createNode(innerType, 'Inner B', { targetGraph: graphB })
+        )
+        nestedNodes.push(
+          LiteGraph.createNode(throwingType, 'Throwing B', {
+            targetGraph: graphB
+          })
+        )
+        super(title)
+      }
+    }
+    LiteGraph.registerNodeType(innerType, InnerSubgraphNode)
+    LiteGraph.registerNodeType(throwingType, ThrowingSubgraphNode)
+    LiteGraph.registerNodeType(subgraphId, OuterSubgraphNode)
+    Reflect.set(app, 'rootGraph', graphB)
+
+    const outer = LiteGraph.createNode(subgraphId, 'Outer A', {
+      targetGraph: graphA
+    })
+    const subsequent = LiteGraph.createNode(innerType, 'Subsequent A', {
+      targetGraph: graphA
+    })
+    const direct = new InnerSubgraphNode('Active B')
+
+    assert.instanceOf(outer, SubgraphNode)
+    expect(outer).toBeInstanceOf(OuterSubgraphNode)
+    expect(outer.subgraph).toBe(subgraphA)
+    expect(outer.graph).toBe(graphA)
+    const [inner, failed] = nestedNodes
+    assert.instanceOf(inner, SubgraphNode)
+    expect(inner.subgraph).toBe(subgraphB)
+    expect(inner.graph).toBe(graphB)
+    expect(failed).toBeNull()
+    expect(failedInnerDefinitions).toEqual([subgraphB])
+    expect(console.error).toHaveBeenCalledWith(
+      new Error('Nested constructor failed')
+    )
+    assert.instanceOf(subsequent, SubgraphNode)
+    expect(subsequent.subgraph).toBe(subgraphA)
+    expect(subsequent.graph).toBe(graphA)
+    assert.instanceOf(direct, SubgraphNode)
+    expect(direct.subgraph).toBe(subgraphB)
+    expect(direct.graph).toBe(graphB)
   })
 
   it('reports and refuses a subgraph type missing from the target graph', () => {
