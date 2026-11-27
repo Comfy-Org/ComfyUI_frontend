@@ -463,6 +463,24 @@ describe('DeploymentSwitcher', () => {
     ).toHaveTextContent(/^Studio Build$/)
   })
 
+  it('shows only the icon on a deployment without a Build name', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2,
+      items: [
+        { ...listing.items[0], build_name: undefined },
+        ...listing.items.slice(1)
+      ]
+    })
+    renderSwitcher()
+
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/production/))
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
   it('shows only the icon on Comfy Cloud', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     renderSwitcher()

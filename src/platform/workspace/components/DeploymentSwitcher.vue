@@ -352,7 +352,7 @@ const buildStatus = computed(() => {
 })
 
 const triggerBuildName = computed(() =>
-  buildStatus.value ? null : pickedRow.value?.title
+  buildStatus.value ? null : pickedDeployment.value?.build_name
 )
 
 const switcher = useTemplateRef<HTMLElement>('switcher')
