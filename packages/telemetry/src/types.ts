@@ -803,6 +803,7 @@ export type CustomDeploymentEntry =
   | 'model_library'
   | 'preinstall'
   | 'errors_panel'
+  | 'issues_toast'
 
 export type CustomDeploymentStep =
   | 'new'

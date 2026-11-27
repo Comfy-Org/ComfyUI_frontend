@@ -32,6 +32,7 @@ import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/us
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const FUNDS_RECHECK_TIMEOUT_MS = 10_000
+const ACCEPTANCE_BILLING_REFRESH_WINDOW_MS = 5_000
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -110,6 +111,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     ready: boolean
   } | null>(null)
   const billingRefreshes = new Map<string, BillingRefreshEntry>()
+  const acceptanceBillingRefresh = shallowRef<{
+    billingType: string
+    identity: string
+    openEpoch: number
+    recordedAt: number
+    read: Promise<boolean>
+  } | null>(null)
   const panelOpenEpoch = ref(0)
   let latestBillingRefresh: Promise<void> | undefined
   let creditTransitionRefreshEpoch = 0
@@ -428,6 +436,41 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     return true
   }
 
+  function recordAcceptanceBillingRefresh(
+    billingType: string,
+    identity: string,
+    read: Promise<boolean>
+  ): void {
+    if (isOpen.value) return
+    acceptanceBillingRefresh.value = {
+      billingType,
+      identity,
+      openEpoch: panelOpenEpoch.value + 1,
+      recordedAt: Date.now(),
+      read
+    }
+  }
+
+  function acceptanceBillingRefreshForOpen(
+    billingType: string,
+    identity: string
+  ): Promise<boolean> | null {
+    const current = acceptanceBillingRefresh.value
+    if (current === null) return null
+    if (current.openEpoch < panelOpenEpoch.value) {
+      acceptanceBillingRefresh.value = null
+      return null
+    }
+    if (
+      current.billingType !== billingType ||
+      current.identity !== identity ||
+      current.openEpoch !== panelOpenEpoch.value ||
+      Date.now() - current.recordedAt > ACCEPTANCE_BILLING_REFRESH_WINDOW_MS
+    )
+      return null
+    return current.read
+  }
+
   function refreshBillingStatus(
     key: string,
     fetchStatus: () => Promise<boolean>,
@@ -565,6 +608,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     completeCreditTransitionRefresh,
     claimCompletedCreditTransitionRefresh,
     refreshBillingStatus,
+    recordAcceptanceBillingRefresh,
+    acceptanceBillingRefreshForOpen,
     beginFundsRecheck,
     finishFundsRecheck,
     cancelFundsRechecks,

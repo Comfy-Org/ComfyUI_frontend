@@ -95,7 +95,8 @@ function renderCard() {
       missing: [
         {
           label: '2 missing node packs',
-          names: 'ComfyUI-BiRefNet, ComfyUI-RMBG'
+          name: 'ComfyUI-BiRefNet',
+          more: '+1 more'
         }
       ],
       onDone

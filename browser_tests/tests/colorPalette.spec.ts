@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -456,14 +457,19 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
       await expect(linkedLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
       await expect(widgetLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      const textStart = (label: Locator) =>
+        label.evaluate((element) => {
+          const range = document.createRange()
+          range.selectNodeContents(element)
+          return range.getBoundingClientRect().x
+        })
       await expect
         .poll(async () => {
           const [linked, widget] = await Promise.all([
-            linkedLabel.boundingBox(),
-            widgetLabel.boundingBox()
+            textStart(linkedLabel),
+            textStart(widgetLabel)
           ])
-          if (!linked || !widget) return null
-          return Math.round(linked.x - widget.x)
+          return Math.round(linked - widget)
         })
         .toBe(0)
     })

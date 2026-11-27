@@ -5,7 +5,7 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupCheckoutResponse,
+  CreateTopupResponse,
   PaymentPortalResponse,
   PreviewSubscribeResponse,
   ResubscribeResponse,
@@ -20,7 +20,7 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
@@ -33,7 +33,6 @@ import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 const OPERATION_ID = 'op-e2e-parity'
 const PORTAL_URL = 'https://billing.example/portal'
 
-const TOPUP_CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_parity'
 const TOPUP_MICROS = 10_000
 /** What the Creator upgrade grants on the server. */
 const SUBSCRIPTION_GRANT_MICROS = 20_000
@@ -261,12 +260,17 @@ async function setupParity(
       jsonRoute({ url: PORTAL_URL } satisfies PaymentPortalResponse)
     )
   })
-  await page.route('**/api/billing/topup/checkout', (route) => {
+  await page.route('**/api/billing/topup', (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
     routes.topupRequests.push(route.request())
+    server.balanceMicros += TOPUP_MICROS
     return route.fulfill(
       jsonRoute({
-        checkout_url: TOPUP_CHECKOUT_URL
-      } satisfies CreateTopupCheckoutResponse)
+        billing_op_id: OPERATION_ID,
+        topup_id: 'topup-e2e',
+        status: 'completed',
+        amount_cents: 5_000
+      } satisfies CreateTopupResponse)
     )
   })
   await page.route('**/api/billing/ops/**', (route) =>
@@ -308,15 +312,19 @@ async function openPlanAndCredits(page: Page): Promise<Locator> {
   return dialog.getByRole('main')
 }
 
-async function buyFiftyDollars(page: Page, routes: ParityRoutes) {
-  const dialog = new TopUpCreditsDialog(page)
-  await dialog.open()
-  await dialog.continueButton.click()
-  await expect(dialog.openedHeading).toBeVisible()
-  await expect.poll(() => routes.openedUrls()).toContain(TOPUP_CHECKOUT_URL)
-  routes.server.balanceMicros += TOPUP_MICROS
-  await returnToTab(page)
-  await expect(dialog.root).toBeHidden()
+async function buyFiftyDollars(page: Page): Promise<Locator> {
+  const dialog = page.locator('[data-dialog-key="top-up-credits"]')
+  await page.evaluate(() => {
+    void (
+      window.app!.extensionManager as WorkspaceStore
+    ).dialog.showTopUpCreditsDialog()
+  })
+  await dialog.getByRole('button', { name: 'Add credits', exact: true }).click()
+  await dialog.getByRole('button', { name: 'Pay $50.00' }).click()
+  await expect(dialog).toBeHidden()
+  const settings = page.getByTestId('settings-dialog')
+  await expect(settings).toBeVisible()
+  return settings.getByRole('main')
 }
 
 /** A customer coming back to this tab from another one. */
@@ -372,14 +380,9 @@ async function expectPortalReturnRefresh(page: Page) {
   )
 }
 
-async function topUpThenUpgrade(
-  page: Page,
-  routes: ParityRoutes
-): Promise<Locator> {
+async function topUpThenUpgrade(page: Page): Promise<Locator> {
   await bootApp(page)
-  await buyFiftyDollars(page, routes)
-
-  const panel = await openPlanAndCredits(page)
+  const panel = await buyFiftyDollars(page)
   await expect(
     panel.getByRole('heading', { name: 'Standard Yearly' })
   ).toBeVisible()
@@ -435,7 +438,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       page
     }) => {
       const routes = await setupParity(page, {})
-      const panel = await topUpThenUpgrade(page, routes)
+      const panel = await topUpThenUpgrade(page)
 
       expect(routes.topupRequests.map(billingClient)).toEqual(['sdk'])
       expect(routes.subscribeRequests.map(billingClient)).toEqual(['sdk'])

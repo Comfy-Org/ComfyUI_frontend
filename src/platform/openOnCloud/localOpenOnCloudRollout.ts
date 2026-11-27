@@ -20,9 +20,21 @@ const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
 })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
+type RolloutFailureKind =
+  | 'network'
+  | 'credential'
+  | 'http'
+  | 'parse'
+  | 'unknown'
 type RolloutAttempt =
   | { ok: true; data: OpenOnCloudRollout }
-  | { ok: false; retryable: boolean; cause: unknown }
+  | {
+      ok: false
+      retryable: boolean
+      cause: unknown
+      kind: RolloutFailureKind
+      httpStatus?: number
+    }
 
 const rollout = shallowRef<OpenOnCloudRollout>()
 export const UPLOAD_ROLLOUT_REFRESH_MS = 15_000
@@ -38,12 +50,23 @@ let currentSession: RolloutSession | undefined
 
 export const localOpenOnCloudRollout = readonly(rollout)
 
-function reportRolloutReadFailure(cause: unknown): void {
+function reportRolloutReadFailure(
+  cause: unknown,
+  kind: RolloutFailureKind,
+  httpStatus?: number
+): void {
   reportError(cause, {
-    errorType: 'error_loading_open_on_cloud_rollout',
+    errorType: ['error_loading_open_on_cloud_rollout', kind, httpStatus]
+      .filter((part) => part !== undefined)
+      .join('_'),
     surface: 'platform',
     level: 'warning',
-    tags: { outcome: 'degraded' }
+    sentryMode: 'once_per_page',
+    tags: {
+      outcome: 'degraded',
+      failureKind: kind,
+      ...(httpStatus !== undefined ? { httpStatus } : {})
+    }
   })
 }
 
@@ -56,10 +79,16 @@ async function parseRolloutResponse(
     return {
       ok: false,
       retryable: false,
-      cause: served.error
+      cause: served.error,
+      kind: 'parse'
     }
   } catch (cause) {
-    return { ok: false, retryable: !(cause instanceof SyntaxError), cause }
+    return {
+      ok: false,
+      retryable: !(cause instanceof SyntaxError),
+      cause,
+      kind: 'parse'
+    }
   }
 }
 
@@ -80,24 +109,32 @@ async function requestRollout(
       return {
         ok: false,
         retryable: true,
-        cause: new Error('Cloud rollout credential unavailable')
+        cause: new Error('Cloud rollout credential unavailable'),
+        kind: 'credential'
       }
-    const response = await fetch(endpoint, {
-      cache: 'no-store',
-      credentials: 'omit',
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      redirect: 'error',
-      signal: requestSignal
-    })
+    let response: Response
+    try {
+      response = await fetch(endpoint, {
+        cache: 'no-store',
+        credentials: 'omit',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        redirect: 'error',
+        signal: requestSignal
+      })
+    } catch (cause) {
+      return { ok: false, retryable: true, cause, kind: 'network' }
+    }
     if (!response.ok)
       return {
         ok: false,
         retryable: response.status === 429 || response.status >= 500,
-        cause: new Error(`Cloud features HTTP ${response.status}`)
+        cause: new Error(`Cloud features HTTP ${response.status}`),
+        kind: 'http',
+        httpStatus: response.status
       }
     return await parseRolloutResponse(response)
   } catch (cause) {
-    return { ok: false, retryable: true, cause }
+    return { ok: false, retryable: true, cause, kind: 'unknown' }
   }
 }
 
@@ -129,7 +166,7 @@ async function fetchRollout(
       signal
     )
   } catch (cause) {
-    return { ok: false, retryable: false, cause }
+    return { ok: false, retryable: false, cause, kind: 'unknown' }
   }
 }
 
@@ -154,7 +191,7 @@ async function readRollout(
   if (!result) return false
   if (!result.retryable) rollout.value = undefined
   if (retry) session.startupRetryPending = result.retryable
-  reportRolloutReadFailure(result.cause)
+  reportRolloutReadFailure(result.cause, result.kind, result.httpStatus)
   return false
 }
 

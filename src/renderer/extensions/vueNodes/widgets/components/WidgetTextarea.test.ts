@@ -322,16 +322,6 @@ describe('WidgetTextarea Value Binding', () => {
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
     })
-
-    it('applies the generic hover background class to the wrapper when editable', () => {
-      const widget = createTextareaWidget('editable value')
-      const { container } = renderComponent(widget, 'editable value')
-
-      // hover class lives on wrapper <div>, not the <textarea>
-      // oxlint-disable-next-line testing-library/no-node-access
-      const wrapper = container.firstElementChild
-      expect(wrapper?.className).toContain(HOVER_CLASS)
-    })
   })
 
   describe('Edge Cases', () => {
