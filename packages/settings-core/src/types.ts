@@ -25,6 +25,7 @@ export type Settings = {
   'Comfy.Workflow.ShowMissingNodesWarning': boolean
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
+  'Comfy.Cloud.AskBeforeCompatibilityCheck': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean
   'Comfy.DeploymentSwitcher.Seen': boolean
   'Comfy.DisableFloatRounding': boolean

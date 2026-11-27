@@ -28,10 +28,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
+import {
+  saveAskBeforeCloudCheck,
+  skipsCloudCheckQuestion
+} from '@/platform/openOnCloud/cloudCheckConsent'
 import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
 import MissingModelsCard from '@/platform/openOnCloud/components/MissingModelsCard.vue'
@@ -55,10 +59,15 @@ const checkRequested = ref(false)
 const checkConsent = new AbortController()
 onBeforeUnmount(() => checkConsent.abort())
 
-function startCheck() {
+function startCheck(dontAskAgain = false) {
   if (checkRequested.value || !requestCheck?.(checkConsent.signal)) return
   checkRequested.value = true
+  if (dontAskAgain) void saveAskBeforeCloudCheck(false)
 }
+
+onMounted(() => {
+  if (skipsCloudCheckQuestion()) startCheck()
+})
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
 const { isLoggedIn } = useCurrentUser()
