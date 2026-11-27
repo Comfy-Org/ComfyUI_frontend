@@ -18,6 +18,11 @@ export interface DeserialisedGraphNodes {
   }
 }
 
+type ConstructionReceipt = Extract<NodeConstructionResult, { kind: 'created' }>
+type ConstructedBatch = DeserialisedGraphNodes & {
+  receipts?: ConstructionReceipt[]
+}
+
 function topLeftPosition(
   nodes: readonly { pos: Readonly<Vector2> }[],
   fallback: Readonly<Vector2>
@@ -35,11 +40,11 @@ function topLeftPosition(
 function constructBatch(
   nodes: readonly { type: string }[],
   graph: LGraph
-): DeserialisedGraphNodes {
+): ConstructedBatch {
   const preparations = nodes.map(({ type }) =>
     prepareNodeConstruction(LiteGraph, { type, graph })
   )
-  const staged: Extract<NodeConstructionResult, { kind: 'created' }>[] = []
+  const staged: ConstructionReceipt[] = []
   const fail = (
     failure: NonNullable<DeserialisedGraphNodes['failure']>
   ): DeserialisedGraphNodes => {
@@ -77,7 +82,7 @@ function constructBatch(
     })
 
   const createdNodes = staged.map(({ node }) => node)
-  return { createdNodes, nodesBySourceIndex: createdNodes }
+  return { createdNodes, nodesBySourceIndex: createdNodes, receipts: staged }
 }
 
 export function deserialiseIntoGraphWithSourceIndices(
@@ -107,8 +112,30 @@ export function deserialiseIntoGraphWithSourceIndices(
       node.pos[1] + position[1] - topLeft[1]
     ]
 
-    withNodeAddSource('paste', () => graph.add(node, true))
+    if (!batch) withNodeAddSource('paste', () => graph.add(node, true))
+
+    const staleIndex = batch?.receipts?.findIndex((built) => !built.isCurrent())
+    if (staleIndex !== undefined && staleIndex !== -1) {
+      for (const built of batch?.receipts ?? [])
+        built.cancelUnattachedSubscriptions()
+      return {
+        createdNodes: [],
+        nodesBySourceIndex: deserialised.nodes.map(() => null),
+        failure: {
+          sourceIndex: staleIndex,
+          result: {
+            kind: 'refused',
+            reason: 'stale-preparation',
+            type: deserialised.nodes[staleIndex].type
+          }
+        }
+      }
+    }
   }
+
+  if (batch)
+    for (const node of batch.createdNodes)
+      withNodeAddSource('paste', () => graph.add(node, true))
 
   for (const info of deserialised.links) {
     const relativeId = info[0]

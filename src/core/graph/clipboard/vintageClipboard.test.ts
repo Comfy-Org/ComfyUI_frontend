@@ -146,6 +146,44 @@ it('abandons a required batch when a later constructor replaces an earlier regis
   expect(graph.serialize()).toEqual(before)
 })
 
+it('abandons a required batch when configuration invalidates a later construction', () => {
+  const replacingType = 'test/vintage-configure-replacing'
+  const sourceType = 'test/vintage-configure-replaced'
+  class ReplacingOnConfigureNode extends LGraphNode {
+    override onConfigure() {
+      LiteGraph.registerNodeType(sourceType, VintageSink)
+    }
+  }
+  LiteGraph.registerNodeType(replacingType, ReplacingOnConfigureNode)
+  LiteGraph.registerNodeType(sourceType, VintageSource)
+  const graph = new LGraph()
+  graph.add(new VintageSource())
+  const before = graph.serialize()
+
+  const result = deserialiseIntoGraphWithSourceIndices(
+    JSON.stringify({
+      nodes: [
+        { type: replacingType, pos: [0, 0] },
+        { type: sourceType, pos: [120, 0] }
+      ],
+      links: []
+    }),
+    graph,
+    [0, 0],
+    { requireAll: true }
+  )
+
+  expect(result.failure).toEqual({
+    sourceIndex: 1,
+    result: {
+      kind: 'refused',
+      reason: 'stale-preparation',
+      type: sourceType
+    }
+  })
+  expect(graph.serialize()).toEqual(before)
+})
+
 it('preserves the existing graph when a later required constructor throws', () => {
   const availableType = 'test/vintage-before-throw'
   const throwingType = 'test/vintage-throwing'
