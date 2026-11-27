@@ -46,7 +46,10 @@ const zSlotIndex = z.union([
  * Legacy workflows serialised `slot_index: null`; the value is derived at
  * runtime, so normalise it away instead of rejecting the whole workflow.
  */
-const zOptionalSlotIndex = zSlotIndex.nullish().transform((v) => v ?? undefined)
+const zOptionalSlotIndex = zSlotIndex
+  .nullish()
+  .transform((v) => v ?? undefined)
+  .optional()
 
 // TODO: Investigate usage of array and number as data type usage in custom nodes.
 // Known usage:
