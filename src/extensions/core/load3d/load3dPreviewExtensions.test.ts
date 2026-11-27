@@ -8,6 +8,7 @@ import { app } from '@/scripts/app'
 import type { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import * as graphTraversal from '@/utils/graphTraversalUtil'
 import {
   previewGaussianSplatExtension,
@@ -28,7 +29,7 @@ const {
     onLoad3dReadyMock: vi.fn(),
     configureForSaveMeshMock: vi.fn(),
     getLoad3dMock: vi.fn(),
-    nodeToLoad3dMapMock: new Map<LGraphNode, FakeLoad3d>()
+    nodeToLoad3dMapMock: new Map<LGraphNode, Load3d>()
   }
 })
 
@@ -48,11 +49,14 @@ vi.mock(import('@/extensions/core/load3d/composables/useLoad3d'), () => ({
   nodeToLoad3dMap: nodeToLoad3dMapMock
 }))
 
-vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
-  default: class {
-    configureForSaveMesh = configureForSaveMeshMock
-  }
-}))
+vi.mock<unknown>(
+  import('@/extensions/core/load3d/Load3DConfiguration'),
+  () => ({
+    default: class {
+      configureForSaveMesh = configureForSaveMeshMock
+    }
+  })
+)
 
 vi.mock(import('@/scripts/app'))
 
@@ -60,22 +64,8 @@ vi.mock(import('@/utils/graphTraversalUtil'))
 
 vi.mock(import('@/i18n'))
 
-interface FakeLoad3d {
-  whenLoadIdle: () => Promise<void>
-  isSplatModel: ReturnType<typeof vi.fn>
-  forceRender: ReturnType<typeof vi.fn>
-  setCameraState: ReturnType<typeof vi.fn>
-  applyModelTransform: ReturnType<typeof vi.fn>
-  setTargetSize: ReturnType<typeof vi.fn>
-  getCurrentCameraType: ReturnType<typeof vi.fn>
-  getCameraState: ReturnType<typeof vi.fn>
-  getModelInfo: ReturnType<typeof vi.fn>
-  cameraManager: { perspectiveCamera: { fov: number } }
-  currentLoadGeneration: number
-}
-
-function makeLoad3dMock(): FakeLoad3d {
-  return {
+function makeLoad3dMock(): Load3d {
+  return fromPartial<Load3d>({
     whenLoadIdle: vi.fn().mockResolvedValue(undefined),
     isSplatModel: vi.fn(() => false),
     forceRender: vi.fn(),
@@ -87,7 +77,7 @@ function makeLoad3dMock(): FakeLoad3d {
     getModelInfo: vi.fn(() => null),
     cameraManager: { perspectiveCamera: { fov: 75 } },
     currentLoadGeneration: 0
-  }
+  })
 }
 
 interface FakeWidget {
@@ -115,10 +105,10 @@ function makePreviewNode(
 
 function setupBaseMocks() {
   vi.clearAllMocks()
-  waitForLoad3dMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
+  waitForLoad3dMock.mockImplementation((cb: (load3d: Load3d) => void) => {
     cb(makeLoad3dMock())
   })
-  onLoad3dReadyMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
+  onLoad3dReadyMock.mockImplementation((cb: (load3d: Load3d) => void) => {
     cb(makeLoad3dMock())
   })
 }
@@ -128,7 +118,7 @@ describe('load3dPreviewExtensions model folders', () => {
 
   it('save extensions load the saved file from the output folder, not temp', async () => {
     const load3d = makeLoad3dMock()
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(load3d)
     )
 
@@ -235,7 +225,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
 
   it('triggers a model load against the output folder on execute', async () => {
     const load3d = makeLoad3dMock()
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(load3d)
     )
     const node = makePreviewNode()
@@ -253,7 +243,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
 
   it('persists backend-provided camera_info into node.properties so onLoad3dReady can restore it after remount', async () => {
     const load3d = makeLoad3dMock()
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(load3d)
     )
     const node = makePreviewNode()
@@ -275,7 +265,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
 
   it('applies onExecuted results to the remounted instance, not the disposed closure', async () => {
     const original = makeLoad3dMock()
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(original)
     )
     const node = makePreviewNode()
@@ -296,7 +286,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
 
   it('re-applies the model transform from result[2] on execute', async () => {
     const load3d = makeLoad3dMock()
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(load3d)
     )
     const node = makePreviewNode({ comfyClass: 'SaveGaussianSplat' })
@@ -315,7 +305,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
 
   it('syncs width/height widgets to load3d.setTargetSize and registers callbacks', async () => {
     const load3d = makeLoad3dMock()
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(load3d)
     )
     const widthWidget: FakeWidget & { callback?: (v: number) => void } = {
@@ -347,14 +337,16 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
 
   it("installs a sceneWidget.serializeValue that returns the viewer's current camera_info + model_3d_info", async () => {
     const load3d = makeLoad3dMock()
-    const cameraState = { position: { x: 1, y: 2, z: 3 } }
+    const cameraState = fromPartial<ReturnType<Load3d['getCameraState']>>({
+      position: { x: 1, y: 2, z: 3 }
+    })
     load3d.getCameraState = vi.fn(() => cameraState)
     load3d.getModelInfo = vi.fn(() => ({
       position: { x: 0, y: 0, z: 0 },
       quaternion: { x: 0, y: 0, z: 0, w: 1 },
       scale: { x: 1, y: 1, z: 1 }
     }))
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(load3d)
     )
     const sceneWidget: FakeWidget & {
@@ -402,7 +394,7 @@ describe('Comfy.PreviewPointCloud.nodeCreated', () => {
 
   it('triggers a model load against the output folder on execute', async () => {
     const load3d = makeLoad3dMock()
-    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+    waitForLoad3dMock.mockImplementation((cb: (l: Load3d) => void) =>
       cb(load3d)
     )
     const node = makePreviewNode({ comfyClass: 'PreviewPointCloud' })
