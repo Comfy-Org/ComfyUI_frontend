@@ -185,6 +185,36 @@ async function sendAddedFile(
   return undefined
 }
 
+async function sendOrRemove(
+  file: File,
+  target: DeploymentModelTarget,
+  upload: { blobId: string; parts: readonly DeploymentModelUploadPart[] },
+  modelId: string,
+  options: DeploymentModelUploadOptions
+): Promise<DeploymentModelUploadResult> {
+  try {
+    const stopped = await sendAddedFile(
+      file,
+      target,
+      upload.blobId,
+      upload.parts,
+      options
+    )
+    if (options.signal.aborted) {
+      removeQuietly(target, modelId)
+      return { ok: false, reason: 'cancelled' }
+    }
+    if (stopped) {
+      removeQuietly(target, modelId)
+      return { ok: false, reason: 'failed', cause: stopped }
+    }
+  } catch (cause) {
+    removeQuietly(target, modelId)
+    throw cause
+  }
+  return { ok: true, modelId }
+}
+
 async function addToDeployment(
   file: File,
   target: DeploymentModelTarget,
@@ -212,21 +242,7 @@ async function addToDeployment(
   )
   if (added === 'notOn') return { ok: false, reason: 'notOn' }
   if (deduplicated || !parts) return { ok: true, modelId: added.id }
-  try {
-    const stopped = await sendAddedFile(file, target, blobId, parts, options)
-    if (signal.aborted) {
-      removeQuietly(target, added.id)
-      return { ok: false, reason: 'cancelled' }
-    }
-    if (stopped) {
-      removeQuietly(target, added.id)
-      return { ok: false, reason: 'failed', cause: stopped }
-    }
-  } catch (cause) {
-    removeQuietly(target, added.id)
-    throw cause
-  }
-  return { ok: true, modelId: added.id }
+  return sendOrRemove(file, target, { blobId, parts }, added.id, options)
 }
 
 async function uploadModelToDeployment(
