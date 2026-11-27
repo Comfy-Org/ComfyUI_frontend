@@ -230,6 +230,7 @@
 
   "rules": {
     "boundary-violation": "warn",
-    "dev-dependencies-in-production": "error"
+    "dev-dependencies-in-production": "error",
+    "css-selector-complexity": "off"
   }
 }

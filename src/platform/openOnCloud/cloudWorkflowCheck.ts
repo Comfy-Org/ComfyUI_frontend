@@ -18,9 +18,19 @@ export type CloudWorkflowVerdict =
     }
   | { kind: 'missing'; gaps: CloudWorkflowGaps }
 
+export type CloudCheckFailureReason =
+  | 'unreachable'
+  | 'busy'
+  | 'workspace'
+  | 'tooBig'
+  | 'outdated'
+  | 'unreadable'
+  | 'switchedOff'
+
 export type CloudWorkflowBlocker =
   | { kind: 'emptyWorkflow' }
   | { kind: 'unreadableModelLoader'; nodeType: string }
+  | { kind: 'checkFailed'; reason: CloudCheckFailureReason }
 
 export type CloudWorkflowCheckResult =
   | CloudWorkflowVerdict
