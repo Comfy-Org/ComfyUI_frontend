@@ -84,10 +84,11 @@ export class AgentPanel {
       .getByRole('listitem')
     this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.closeButton = this.root
-      .locator('header')
+      .locator('section > header')
+      .first()
       .getByRole('button', { name: enMessages.g.close, exact: true })
       .or(
-        this.root.locator('header').getByRole('button', {
+        this.root.locator('section > header').first().getByRole('button', {
           name: frMessages.g.close,
           exact: true
         })

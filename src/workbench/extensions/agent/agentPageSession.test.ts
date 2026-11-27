@@ -1,4 +1,5 @@
 import { effectScope, getCurrentScope, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
@@ -23,6 +24,7 @@ vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
 let resolvedIdentity: ResolvedAgentIdentity
+let identityState: Ref<AgentIdentityState>
 
 const identity = ref<SocketIdentity>([null, null, null])
 const readIdentity = () => identity.value
@@ -31,8 +33,12 @@ beforeEach(() => {
   identity.value = [null, null, null]
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  identityState = ref<AgentIdentityState>({
+    status: 'resolved',
+    userId: 'account-a'
+  })
   resolvedIdentity = {
-    state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
+    state: identityState,
     reset: vi.fn(),
     stop: vi.fn()
   }
@@ -136,6 +142,26 @@ describe('useAgentPageSession', () => {
     expect(remounted).toBe(first)
     expect(resolvedIdentity.stop).not.toHaveBeenCalled()
     expect(resolveAgentIdentity).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the current agent user reactive after the panel scope ends', () => {
+    const panelScope = effectScope()
+    const page = useAgentPageSession(readIdentity)
+    panelScope.run(() =>
+      page.retainIdentity({
+        getIdentity: vi.fn(),
+        isRetryable: vi.fn(),
+        onFailure: vi.fn()
+      })
+    )
+    expect(page.userId.value).toBe('account-a')
+
+    panelScope.stop()
+    identityState.value = { status: 'pending' }
+    expect(page.userId.value).toBeNull()
+
+    identityState.value = { status: 'resolved', userId: 'account-b' }
+    expect(page.userId.value).toBe('account-b')
   })
 
   it('resets the retained agent identity when the socket identity changes', async () => {

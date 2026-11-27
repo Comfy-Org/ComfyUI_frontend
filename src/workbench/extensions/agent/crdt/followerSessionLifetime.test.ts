@@ -7,6 +7,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import type { FrameOutcome } from './agentCrdtProjection'
 import type { GraphOperation } from './graphOperations'
+import type { AgentCrdtFollowerOptions } from './useAgentCrdtFollower'
 
 const bridgeState = vi.hoisted(() => {
   const transport = { up: true }
@@ -47,9 +48,16 @@ const bridgeState = vi.hoisted(() => {
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
   transportUp: true,
-  sent: [] as Array<{ workflowId: string; ops: readonly { op_id: string }[] }>,
+  sent: [] as Array<{
+    workflowId: string
+    ops: readonly { op_id: string; actor: string }[]
+  }>,
   sendOps: vi.fn(
-    (workflowId: string, _tab: string, ops: readonly { op_id: string }[]) => {
+    (
+      workflowId: string,
+      _tab: string,
+      ops: readonly { op_id: string; actor: string }[]
+    ) => {
       if (!clientState.transportUp) return false
       clientState.sent.push({ workflowId, ops })
       return true
@@ -113,8 +121,8 @@ vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import {
-  destroyAgentFollowerSessions,
   heldAgentFollowerDocumentIds,
+  retainedAgentFollowerSessionRef,
   retainAgentFollowerSessionsForPage,
   useAgentCrdtFollower
 } from './useAgentCrdtFollower'
@@ -136,7 +144,8 @@ function deleteNode(nodeId: string): GraphOperation {
 
 function openPage(
   initial: string | null,
-  transportOverride?: AgentDocFrameTransport
+  transportOverride?: AgentDocFrameTransport,
+  followerOptions: Omit<AgentCrdtFollowerOptions, 'transport'> = {}
 ) {
   const transport = transportOverride ?? createFakeAgentSocket().transport
   const workflowId = ref<string | null>(initial)
@@ -145,7 +154,10 @@ function openPage(
   const mountPanel = (bound: Ref<string | null> = workflowId) => {
     const host = defineComponent({
       setup() {
-        const follower = useAgentCrdtFollower(bound, { transport })
+        const follower = useAgentCrdtFollower(bound, {
+          transport,
+          ...followerOptions
+        })
         enqueue = follower.enqueueHumanOperations
         return () => null
       }
@@ -173,7 +185,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  destroyAgentFollowerSessions()
+  destroyAgentPageSession()
 })
 
 describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
@@ -232,6 +244,49 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
       op: 'delete_node',
       node_id: 'queued-before-close'
     })
+  })
+
+  it('drops a held old-account batch and mints fresh work with the current account after the panel closes', async () => {
+    const account = ref('account-a')
+    const getIdentity = vi
+      .fn()
+      .mockResolvedValueOnce({ userId: 'user-a' })
+      .mockResolvedValueOnce({ userId: 'user-b' })
+    const agentSocket = createFakeAgentSocket()
+    vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+    const pageSession = useAgentPageSession(() => [account.value, null, null])
+    pageSession.retainIdentity({
+      getIdentity,
+      isRetryable: () => false,
+      onFailure: vi.fn()
+    })
+    await vi.waitFor(() => expect(pageSession.userId.value).toBe('user-a'))
+    const page = openPage(DOC_A, pageSession.docTransport, {
+      userId: () => pageSession.userId.value,
+      identityReady: () => pageSession.userId.value !== null
+    })
+    await nextTick()
+
+    clientState.transportUp = false
+    retainedAgentFollowerSessionRef(
+      pageSession.docTransport
+    ).value?.enqueueHumanOperations([deleteNode('held-by-account-a')])
+    await vi.advanceTimersByTimeAsync(0)
+    expect(clientState.sent).toHaveLength(0)
+
+    page.panel.unmount()
+    account.value = 'account-b'
+    expect(pageSession.userId.value).toBeNull()
+    await vi.waitFor(() => expect(pageSession.userId.value).toBe('user-b'))
+
+    clientState.transportUp = true
+    retainedAgentFollowerSessionRef(
+      pageSession.docTransport
+    ).value?.enqueueHumanOperations([deleteNode('after-account-change')])
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].ops[0].actor).toMatch(/^human:user-b:/)
   })
 
   it('keeps the session alive across a workflow switch', async () => {

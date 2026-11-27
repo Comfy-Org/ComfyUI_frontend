@@ -309,17 +309,22 @@ const rest = createAgentRestClient()
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const { events, docTransport, onIdentityChange, retainIdentity } =
-  useAgentPageSession(() =>
-    toSocketIdentity(
-      authStore.userId,
-      apiKeyAuthStore.currentUser?.id,
-      teamWorkspaceStore.activeWorkspaceId,
-      desktopHostUser.value?.workspaceId
-    )
+const {
+  events,
+  docTransport,
+  onIdentityChange,
+  retainIdentity,
+  userId: agentUserId
+} = useAgentPageSession(() =>
+  toSocketIdentity(
+    authStore.userId,
+    apiKeyAuthStore.currentUser?.id,
+    teamWorkspaceStore.activeWorkspaceId,
+    desktopHostUser.value?.workspaceId
   )
+)
 
-const agentIdentity = retainIdentity({
+retainIdentity({
   getIdentity: () => rest.getIdentity(),
   isRetryable: (error) => isRetryableRequestFailure(error, false),
   onFailure: (error) =>
@@ -1415,15 +1420,6 @@ provide(agentBoundWorkflowActiveKey, isBoundWorkflowActive)
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-const agentUserId = computed(() => {
-  const identity = agentIdentity.state.value
-  return identity.status === 'resolved' ? identity.userId : null
-})
-
-const isFollowerActive = computed(
-  () => isBoundWorkflowActive.value && agentUserId.value !== null
-)
-
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
@@ -1432,7 +1428,8 @@ const {
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
   userId: () => agentUserId.value,
-  isTargetActive: isFollowerActive,
+  identityReady: () => agentUserId.value !== null,
+  isTargetActive: isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
@@ -1501,7 +1498,8 @@ function visibleWorkflowIdFor(rootGraph: LGraph): string | null {
 }
 const docOpMinter = retainDocOpMinterForPage(docTransport, {
   isEnabled: () => agentPanelStore.enabled,
-  isTargetActive: () => isFollowerActive.value,
+  isTargetActive: () =>
+    isBoundWorkflowActive.value && agentUserId.value !== null,
   visibleWorkflowIdFor,
   isBoundWorkflow: (workflow) => {
     const bound = boundWorkflowId.value

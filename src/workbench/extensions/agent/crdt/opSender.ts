@@ -168,6 +168,8 @@ export interface OpSender {
    * both collapsing into the bare `'unbound'` code.
    */
   abortIfUnbound(reason?: UnboundAbortReason): void
+  /** Settle every batch before a new signed-in identity can carry it. */
+  abortForIdentityChange(): void
   /**
    * Lineage-break seam: settle the in-flight batch ('unconfirmed' once
    * transmitted, 'undeliverable' otherwise) and every queued batch
@@ -348,6 +350,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function transmit(batch: InFlight, attempt: number): void {
     if (detached || inFlight !== batch) return
+    const currentActor = deps.actor()
+    if (batch.ops.some((op) => op.actor !== currentActor)) {
+      settleUnbound(batch, 'identity_changed')
+      return
+    }
     if (shouldPark(batch)) {
       batch.parked = true
       return
@@ -810,6 +817,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
           pendingAbortReason = previousAbortReason
         }
       }
+    },
+    abortForIdentityChange() {
+      drainOutstanding(
+        guardedSettlementNotifier(
+          'failure_settling_agent_op_sender_identity_change',
+          'identity_changed'
+        )
+      )
     },
     abortAll() {
       const resetWorkflowId = deps.workflowId()

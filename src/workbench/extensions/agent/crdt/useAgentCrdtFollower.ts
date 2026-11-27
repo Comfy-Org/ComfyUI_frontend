@@ -308,6 +308,8 @@ export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
   diagnosticsEnabled?: () => boolean
   userId?: () => string | null
+  /** Whether the current authenticated actor may mint and send operations. */
+  identityReady?: () => boolean
   isTargetActive?: Ref<boolean>
   /**
    * Live graph the document is applied to. Reactive reads inside the getter
@@ -385,8 +387,11 @@ function createOwner(
         'transport' | 'applierDeps'
       > = {
         isTargetActive: computed(
-          () => consumer.value?.isTargetActive.value ?? false
+          () =>
+            (consumer.value?.isTargetActive.value ?? false) &&
+            (consumer.value?.identityReady() ?? true)
         ),
+        identityReady: () => consumer.value?.identityReady() ?? true,
         userId: () => consumer.value?.userId() ?? null,
         getGraph: () => consumer.value?.getGraph() ?? null,
         diagnosticsEnabled: () => consumer.value?.diagnosticsEnabled() ?? false,
@@ -539,6 +544,7 @@ export function useAgentCrdtFollower(
     transport,
     diagnosticsEnabled,
     userId = () => null,
+    identityReady = () => true,
     isTargetActive = ref(true),
     getGraph = () => null,
     events = {},
@@ -581,6 +587,7 @@ export function useAgentCrdtFollower(
         workflowId,
         transport,
         userId,
+        identityReady,
         isTargetActive,
         getGraph,
         events,
@@ -916,6 +923,14 @@ function startAgentCrdtFollower(
     },
     onBatchSettled: settleHumanOps
   })
+  watch(
+    () => userId(),
+    (next, previous) => {
+      if (previous !== null && next !== previous)
+        sender.abortForIdentityChange()
+    },
+    { flush: 'sync' }
+  )
   const coalescer = createOpCoalescer((operations) => {
     sender.admit(operations)
     recordUnsynced()

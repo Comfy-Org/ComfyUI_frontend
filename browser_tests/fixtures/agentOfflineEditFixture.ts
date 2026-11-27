@@ -119,6 +119,18 @@ class AgentOfflineEditScenario {
     return this.hostSocket.subscribeCount()
   }
 
+  async appliedFrameCount(): Promise<number> {
+    const outcomes = this.page
+      .locator('[data-testid="crdt-dev-panel"] tr', { hasText: 'outcomes' })
+      .locator('td')
+      .nth(1)
+    const applied = Number.parseInt(
+      (await outcomes.innerText()).split('/')[1] ?? '',
+      10
+    )
+    return Number.isNaN(applied) ? -1 : applied
+  }
+
   refusedConnectionCount(): number {
     return this.hostSocket.refusedConnectionCount()
   }
@@ -231,7 +243,10 @@ type AgentOfflineEditFixtures = {
 }
 
 export const agentOfflineEditTest = agentTest.extend<AgentOfflineEditFixtures>({
-  offlineEdit: async ({ page, request, agentFlagEnabled }, use) => {
+  offlineEdit: async (
+    { page, request, agentFlagEnabled, crdtDebugEnabled },
+    use
+  ) => {
     const host = new HostDoc(WORKFLOW_ID, emptySeed, catalog)
     const hostSocket = new AgentFollowerHostSocket(
       page,
@@ -264,6 +279,7 @@ export const agentOfflineEditTest = agentTest.extend<AgentOfflineEditFixtures>({
     })
     await bootAgentApp(page, agentFlagEnabled, {
       objectInfo: 'server',
+      features: { 'Comfy.Agent.CrdtDebug': crdtDebugEnabled },
       settings: { 'Comfy.Graph.CanvasInfo': false }
     })
     const saved = await mockSavedWorkflowPersistence(page, WORKFLOW_ID)

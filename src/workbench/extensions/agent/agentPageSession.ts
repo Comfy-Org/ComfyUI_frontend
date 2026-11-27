@@ -1,4 +1,5 @@
-import { computed, effectScope, watch } from 'vue'
+import { computed, effectScope, shallowRef, watch } from 'vue'
+import type { Ref } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { api } from '@/scripts/api'
@@ -23,6 +24,8 @@ export interface AgentPageSession {
   readonly events: AgentEventSocket
   /** The doc-frame tap over {@link events}, for the CRDT follower seam. */
   readonly docTransport: AgentDocFrameTransport
+  /** The current account accepted by the Agent API, or null while unresolved. */
+  readonly userId: Readonly<Ref<string | null>>
   /** Observe the signed-in identity changing, after the socket reconnects. */
   onIdentityChange(listener: () => void): () => void
   /** Resolve the agent actor for the page lifetime. Only the first deps are installed. */
@@ -85,7 +88,7 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
     'minted a second agent event source while one already exists for this page — the page session owns exactly one event source and one doc-frame transport for the page lifetime, see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decision 2'
   )
   const listeners = new Set<() => void>()
-  let agentIdentity: ResolvedAgentIdentity | null = null
+  const agentIdentity = shallowRef<ResolvedAgentIdentity | null>(null)
 
   const pageScope = effectScope(true)
   const built = pageScope.run(() => {
@@ -101,48 +104,57 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
         })
     })
     const docTransport = createAgentDocFrameTransport(events)
+    const userId = computed(() => {
+      const current = agentIdentity.value?.state.value
+      return current?.status === 'resolved' ? current.userId : null
+    })
 
     const identity = computed<SocketIdentity>(() => readIdentity())
-    watch(identity, (next, previous) => {
-      if (!needsReauthentication(next, previous)) return
-      events.reconnect()
-      listeners.forEach((listener) => listener())
-    })
-    return { events, docTransport }
+    watch(
+      identity,
+      (next, previous) => {
+        if (!needsReauthentication(next, previous)) return
+        agentIdentity.value?.reset()
+        events.reconnect()
+        listeners.forEach((listener) => listener())
+      },
+      { flush: 'sync' }
+    )
+    return { events, docTransport, userId }
   })
   assert(
     built !== undefined,
     'the agent page session scope was already stopped before it built the transport — see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 1a'
   )
-  const { events, docTransport } = built
+  const { events, docTransport, userId } = built
 
   return {
     events,
     docTransport,
+    userId,
     onIdentityChange(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
     retainIdentity(deps) {
-      if (agentIdentity !== null) return agentIdentity
-      agentIdentity = resolveAgentIdentity({
+      if (agentIdentity.value !== null) return agentIdentity.value
+      agentIdentity.value = resolveAgentIdentity({
         ...deps,
         onSocketOpen: (listener) => docTransport.onSocketOpen(listener)
       })
-      listeners.add(agentIdentity.reset)
-      return agentIdentity
+      return agentIdentity.value
     },
     stop() {
       pageScope.stop()
       listeners.clear()
-      agentIdentity?.stop()
-      agentIdentity = null
+      agentIdentity.value?.stop()
+      agentIdentity.value = null
       docTransport.destroy()
     }
   }
 }
 
-/** Resolve the page's agent transport, creating it on first use. Only the first call's `readIdentity` is installed. */
+/** Resolve the page's agent resources, installing only the first call's sources. */
 export function useAgentPageSession(
   readIdentity: SocketIdentitySource
 ): AgentPageSession {

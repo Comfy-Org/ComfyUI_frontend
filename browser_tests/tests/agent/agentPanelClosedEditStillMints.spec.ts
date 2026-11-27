@@ -2,6 +2,8 @@ import { expect } from '@playwright/test'
 
 import { agentOfflineEditTest as test } from '@e2e/fixtures/agentOfflineEditFixture'
 
+test.use({ crdtDebugEnabled: true })
+
 test.describe(
   'Hand edits made while the Agent panel is closed',
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
@@ -26,6 +28,8 @@ test.describe(
             .poll(() => offlineEdit.canvasPromptValues())
             .toEqual(offlineEdit.agentPrompts)
         })
+
+        const appliedBeforeClose = await offlineEdit.appliedFrameCount()
 
         const opsBeforeClose =
           await test.step('the user closes the Agent panel, with nothing queued', async () => {
@@ -72,6 +76,9 @@ test.describe(
           await expect
             .poll(() => offlineEdit.subscribeCount(), { timeout: 60_000 })
             .toBeGreaterThan(subscribesBeforeReopen)
+          await expect
+            .poll(() => offlineEdit.appliedFrameCount(), { timeout: 60_000 })
+            .toBeGreaterThan(appliedBeforeClose)
           await expect
             .poll(() => offlineEdit.canvasPromptValues())
             .toEqual(offlineEdit.humanPrompts)
