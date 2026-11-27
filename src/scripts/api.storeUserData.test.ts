@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { UserDataExistsError } from '@/scripts/api'
-import { api } from '@/scripts/api'
+import { UserDataExistsError, api } from '@/scripts/api'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 

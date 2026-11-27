@@ -37,7 +37,7 @@ import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNod
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
-import { UserDataExistsError } from '@/scripts/api'
+import { UserDataExistsError, api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -47,7 +47,6 @@ import type { AppMode } from '@/utils/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 import { t } from '@/i18n'
-import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
