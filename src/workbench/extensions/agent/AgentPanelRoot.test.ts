@@ -21709,4 +21709,39 @@ describe('AgentPanelRoot node ask while the chat is busy', () => {
     expect(useAgentComposerStore().draft).toBe('half-written thought')
     expect(posts()).toEqual([])
   })
+
+  it('does not stage a withdrawn direct node ask into a new chat after switching chats at a gate', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    await waitForInitialHydration()
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let releaseConsent: (() => void) | undefined
+    withConsent.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseConsent = resolve
+        })
+    )
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() => expect(releaseConsent).toBeDefined())
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    releaseConsent!()
+    await settleFollow()
+
+    expect(useAgentComposerStore().draft).toBe('')
+    expect(useAgentComposerStore().nodes).toEqual([])
+    expect(useToast().toasts.map((toast) => toast.title)).not.toContain(
+      "Your question wasn't sent because you already have a draft in the chat."
+    )
+    expect(posts()).toEqual([])
+  })
 })

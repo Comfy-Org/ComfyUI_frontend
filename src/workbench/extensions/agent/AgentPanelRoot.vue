@@ -3089,12 +3089,25 @@ function needsNodeAskFollow(workflow: ComfyWorkflow | null): boolean {
   )
 }
 
-async function submitPreparedNodeAsk(ask: AgentNodeAsk): Promise<void> {
+function isNodeAskScopeCurrent(ask: AgentNodeAsk, scope: number): boolean {
+  if (scope !== nodeAskScope) return false
+  if (!matchesNodeAskWorkflow(workflowStore.activeWorkflow, ask)) return false
+  return (
+    (ask.workflowPath === undefined && ask.workflowInstanceId === undefined) ||
+    matchesNodeAskWorkflow(selectedTarget.value, ask)
+  )
+}
+
+async function submitPreparedNodeAsk(
+  ask: AgentNodeAsk,
+  scope: number
+): Promise<void> {
   const outcome = await onSendDirect({
     text: ask.text,
     nodes: ask.nodes,
     inputMethod: ask.inputMethod
   })
+  if (!isNodeAskScopeCurrent(ask, scope)) return
   if (outcome === 'rejected') holdNodeAsk(ask)
   else if (outcome === 'withdrawn_unrestored')
     holdNodeAsk(ask, 'agent.nodeAsk.notSent')
@@ -3113,7 +3126,7 @@ async function sendNodeAsk(ask: AgentNodeAsk, scope: number): Promise<void> {
     holdNodeAsk(ask)
     return
   }
-  void submitPreparedNodeAsk(ask)
+  void submitPreparedNodeAsk(ask, scope)
 }
 
 async function drainNodeAskQueue(): Promise<void> {
