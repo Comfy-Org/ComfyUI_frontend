@@ -28,5 +28,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   queryRerouteAtPoint: vi.fn(() => null),
   readNodeRect: vi.fn(() => false),
   contentSizeOf: vi.fn(() => undefined),
+  derivedSlotAnchorOf: vi.fn(() => undefined),
+  setDerivedSlotAnchors: vi.fn(),
   updateNodeSlotOffsets: vi.fn()
 })
