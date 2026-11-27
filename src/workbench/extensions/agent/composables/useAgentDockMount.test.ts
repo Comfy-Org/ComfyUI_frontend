@@ -606,11 +606,6 @@ describe('useAgentDockMount', () => {
     })
 
     describe('shared with the panel open that acceptance triggers', () => {
-      /**
-       * `hosts` is load-bearing rather than incidental: in linear mode
-       * `GraphCanvas` stays mounted behind `v-show` while `LinearView` mounts
-       * too, so two instances of this composable watch the same open.
-       */
       function mountWithFreshBilling(hosts = 1) {
         const fetchStatusFresh = vi.fn(async () => true)
         const fetchStatus = vi.fn(
@@ -622,8 +617,6 @@ describe('useAgentDockMount', () => {
           fetchStatusFresh
         })
         for (let host = 0; host < hosts; host += 1) useAgentDockMount()
-        // Counted across both entry points, so the assertion is about how many
-        // fresh reads happen rather than which call issues them.
         const freshReads = () =>
           fetchStatus.mock.calls.filter(([options]) => options?.fresh === true)
             .length + fetchStatusFresh.mock.calls.length
@@ -636,7 +629,6 @@ describe('useAgentDockMount', () => {
         }
       }
 
-      /** Drains the microtasks a chained refresh is issued on. */
       const settleRefreshes = async () => {
         await nextTick()
         await new Promise((resolve) => setTimeout(resolve, 0))
@@ -670,10 +662,6 @@ describe('useAgentDockMount', () => {
         consent.confirmedAcceptances += 1
         await settleRefreshes()
 
-        // Without `fresh: true` the read joins a status request that was
-        // already in flight before consent was accepted, so it can answer with
-        // pre-acceptance funds -- and the open that would have corrected it is
-        // now skipped.
         expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
       })
 
@@ -687,9 +675,26 @@ describe('useAgentDockMount', () => {
         expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
         store.isOpen = true
 
-        // The acceptance read never landed, so this open still owes one: before
-        // the read was shared, every open issued its own.
         await vi.waitFor(() => expect(fetchStatusFresh).toHaveBeenCalledOnce())
+      })
+
+      it('starts the open read when the acceptance read times out', async () => {
+        vi.useFakeTimers()
+        try {
+          const { consent, store, fetchStatus, fetchStatusFresh } =
+            mountWithFreshBilling()
+          fetchStatus.mockImplementationOnce(() => new Promise(() => {}))
+
+          consent.confirmedAcceptances += 1
+          await nextTick()
+          store.isOpen = true
+          await nextTick()
+          await vi.advanceTimersByTimeAsync(15_000)
+
+          expect(fetchStatusFresh).toHaveBeenCalledOnce()
+        } finally {
+          vi.useRealTimers()
+        }
       })
 
       it('leaves an unrelated later open its own read when acceptance never opened the panel', async () => {
@@ -698,15 +703,11 @@ describe('useAgentDockMount', () => {
         const { consent, store, fetchStatus, fetchStatusFresh } =
           mountWithFreshBilling()
 
-        // An acceptance whose `onAccept` bails on `canOpen()` refreshes billing
-        // and never opens the panel.
         consent.confirmedAcceptances += 1
         await settleRefreshes()
         expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
         expect(fetchStatusFresh).not.toHaveBeenCalled()
 
-        // Hours later, an open that has nothing to do with that acceptance must
-        // not inherit its read.
         now.mockReturnValue(1_000 + 3_600_000)
         store.isOpen = true
 
@@ -726,8 +727,6 @@ describe('useAgentDockMount', () => {
         await nextTick()
         store.isOpen = true
 
-        // A reopen read chains after the refresh in flight, so it is issued a
-        // microtask later rather than on this tick.
         await vi.waitFor(() => expect(freshReads()).toBe(2))
       })
 

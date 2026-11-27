@@ -30,16 +30,6 @@ import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/us
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const FUNDS_RECHECK_TIMEOUT_MS = 10_000
-/**
- * How long a consent acceptance's fresh billing read stays available to the
- * panel open that acceptance triggers. The two happen within milliseconds of
- * each other -- `withConsent` accepts and then runs the gated open -- so this
- * is generous by three orders of magnitude. It is bounded at all because an
- * acceptance does not always open the panel: the window is what keeps an
- * unrelated open much later from inheriting a read it has nothing to do with.
- * Lapsing costs one extra read, which is what `main` does today; not bounding
- * it would cost stale funds state instead.
- */
 const ACCEPTANCE_BILLING_REFRESH_WINDOW_MS = 5_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
@@ -446,15 +436,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     return true
   }
 
-  /**
-   * Record that a consent acceptance has issued a fresh billing read, so that
-   * the panel open the acceptance is about to trigger uses that read instead of
-   * issuing a second identical one. Scoped to the very next open, and only
-   * while that open can still plausibly be the one this acceptance triggers:
-   * `onAccept` can bail before opening the panel, and that acceptance's read
-   * must not then be handed to an unrelated open later on. No-op while the
-   * panel is already open, because then there is no open to share with.
-   */
   function recordAcceptanceBillingRefresh(
     billingType: string,
     identity: string,
@@ -470,17 +451,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
   }
 
-  /**
-   * The acceptance read this open inherits, or `null` when it owes its own.
-   *
-   * Deliberately not consumed on a match. In linear mode two dock hosts watch
-   * the same open -- `GraphCanvas` stays mounted behind `v-show` while
-   * `LinearView` mounts as well -- so a one-shot claim hands the read to
-   * whichever host runs first and leaves the other issuing the very duplicate
-   * this removes. The open epoch is what retires the record: a later open is a
-   * separate episode, and once it has passed the record is dropped rather than
-   * left pinning a settled read.
-   */
   function acceptanceBillingRefreshForOpen(
     billingType: string,
     identity: string
