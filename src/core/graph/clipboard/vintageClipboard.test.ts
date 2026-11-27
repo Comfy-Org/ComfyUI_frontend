@@ -146,6 +146,73 @@ it('abandons a required batch when a later constructor replaces an earlier regis
   expect(graph.serialize()).toEqual(before)
 })
 
+it('abandons a required batch when configuration invalidates a completed member', () => {
+  const sourceType = 'test/vintage-configure-replaced'
+  const replacingType = 'test/vintage-configure-replacing'
+  class ReplacingOnConfigureNode extends LGraphNode {
+    override onConfigure() {
+      LiteGraph.registerNodeType(sourceType, VintageSink)
+    }
+  }
+  LiteGraph.registerNodeType(sourceType, VintageSource)
+  LiteGraph.registerNodeType(replacingType, ReplacingOnConfigureNode)
+  const graph = new LGraph()
+  graph.add(new VintageSource())
+  const before = graph.serialize()
+
+  const result = deserialiseIntoGraphWithSourceIndices(
+    JSON.stringify({
+      nodes: [
+        { type: sourceType, pos: [0, 0] },
+        { type: replacingType, pos: [120, 0] }
+      ],
+      links: []
+    }),
+    graph,
+    [0, 0],
+    { requireAll: true }
+  )
+
+  expect(result.failure).toEqual({
+    sourceIndex: 0,
+    result: { kind: 'refused', reason: 'stale-preparation', type: sourceType }
+  })
+  expect(graph.serialize()).toEqual(before)
+})
+
+it('cleans up the attached prefix when a later configuration throws', () => {
+  const availableType = 'test/vintage-configure-prefix'
+  const throwingType = 'test/vintage-configure-throwing'
+  const cause = new Error('clipboard configuration failed')
+  class ThrowingOnConfigureNode extends LGraphNode {
+    override onConfigure() {
+      throw cause
+    }
+  }
+  LiteGraph.registerNodeType(availableType, VintageSource)
+  LiteGraph.registerNodeType(throwingType, ThrowingOnConfigureNode)
+  const graph = new LGraph()
+  const existing = new VintageSource()
+  graph.add(existing)
+  const before = graph.serialize()
+
+  expect(() =>
+    deserialiseIntoGraphWithSourceIndices(
+      JSON.stringify({
+        nodes: [
+          { type: availableType, pos: [0, 0] },
+          { type: throwingType, pos: [120, 0] }
+        ],
+        links: []
+      }),
+      graph,
+      [0, 0],
+      { requireAll: true }
+    )
+  ).toThrow(cause)
+  expect(graph.serialize()).toEqual(before)
+})
+
 it('preserves the existing graph when a later required constructor throws', () => {
   const availableType = 'test/vintage-before-throw'
   const throwingType = 'test/vintage-throwing'

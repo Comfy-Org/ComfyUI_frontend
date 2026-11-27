@@ -20,6 +20,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -174,6 +175,9 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     expect(explicitVisibleNode.constructor.nodeData?.display_name).toBe(
       'Visible subgraph'
     )
+    expect(
+      useNodeDefStore().fromLGraphNode(explicitVisibleNode)?.display_name
+    ).toBe('Visible subgraph')
 
     const backgroundClone = backgroundNode.clone()
     assert.instanceOf(backgroundClone, SubgraphNode)
