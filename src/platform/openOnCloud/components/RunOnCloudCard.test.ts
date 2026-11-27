@@ -64,6 +64,23 @@ describe('RunOnCloudCard', () => {
     ).toBeVisible()
   })
 
+  it("sends the Don't ask again choice with the check", async () => {
+    const onCheck = vi.fn()
+    render(RunOnCloudCard, {
+      props: { asksToSignIn: false, needsConsent: true, onCheck },
+      global: { plugins: [testI18n] }
+    })
+
+    await userEvent.click(
+      screen.getByRole('checkbox', { name: "Don't ask again" })
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Check compatibility' })
+    )
+
+    expect(onCheck).toHaveBeenCalledExactlyOnceWith(true)
+  })
+
   it('waits on a disabled button while Comfy Cloud checks', () => {
     render(RunOnCloudCard, {
       props: { needsConsent: true, checking: true },

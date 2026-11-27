@@ -1,8 +1,9 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import userEvent from '@testing-library/user-event'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -15,6 +16,7 @@ import type {
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -41,6 +43,7 @@ vi.mock(
 )
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -51,6 +54,8 @@ vi.mock(import('@/platform/openOnCloud/openRunOnCloudDialog'), { spy: true })
 await import('@/platform/openOnCloud/components/RunOnCloudDialog.vue')
 
 const checkLabel = 'Check compatibility'
+const openLabel = 'Open on Comfy Cloud'
+const dialogName = 'Run your workflows on Comfy Cloud'
 
 function renderCloudButton() {
   return render(
@@ -67,6 +72,10 @@ async function requestCloudCheck(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole('button', { name: checkLabel }))
 }
 
+async function openCheckedWorkflow(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: openLabel }))
+}
+
 function deferredVerdict() {
   let resolve!: (verdict: CloudWorkflowVerdict) => void
   const promise = new Promise<CloudWorkflowVerdict>((settle) => {
@@ -76,6 +85,10 @@ function deferredVerdict() {
 }
 
 describe('Cloud button compatibility checks', () => {
+  beforeEach(() => {
+    vi.mocked(api.storeSetting).mockResolvedValue(new Response())
+  })
+
   it.for([
     {
       flag: true,
@@ -206,6 +219,115 @@ describe('Cloud button compatibility checks', () => {
     ).toBeVisible()
     expect(screen.getByRole('dialog')).toBe(dialog)
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  })
+
+  it("checks directly on the next Cloud click after Don't ask again", async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    renderCloudButton()
+    const user = userEvent.setup()
+    const settings = useSettingStore()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const consent = await screen.findByRole('dialog', { name: dialogName })
+    await user.click(
+      within(consent).getByRole('checkbox', { name: "Don't ask again" })
+    )
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+    expect(settings.get('Comfy.Cloud.AskBeforeCompatibilityCheck')).not.toBe(
+      false
+    )
+    await user.click(within(consent).getByRole('button', { name: checkLabel }))
+    await openCheckedWorkflow(user)
+
+    expect(settings.get('Comfy.Cloud.AskBeforeCompatibilityCheck')).toBe(false)
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    expect(
+      await within(dialog).findByRole('button', { name: openLabel })
+    ).toBeVisible()
+    expect(
+      within(dialog).queryByRole('button', { name: checkLabel })
+    ).toBeNull()
+    expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
+  })
+
+  it("reports a failed save of Don't ask again", async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const failure = new Error('offline')
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const consent = await screen.findByRole('dialog', { name: dialogName })
+    await user.click(
+      within(consent).getByRole('checkbox', { name: "Don't ask again" })
+    )
+    await user.click(within(consent).getByRole('button', { name: checkLabel }))
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        failure,
+        expect.objectContaining({
+          errorType: 'error_saving_cloud_check_consent'
+        })
+      )
+    )
+  })
+
+  it("keeps asking when Don't ask again is left unchecked", async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await requestCloudCheck(user)
+    await openCheckedWorkflow(user)
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    expect(
+      within(dialog).getByRole('button', { name: checkLabel })
+    ).toBeVisible()
+    expect(
+      useSettingStore().get('Comfy.Cloud.AskBeforeCompatibilityCheck')
+    ).not.toBe(false)
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  })
+
+  it("stores nothing when the disclosure closes with Don't ask again ticked", async () => {
+    renderCloudButton()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    await user.click(
+      within(dialog).getByRole('checkbox', { name: "Don't ask again" })
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+
+    expect(
+      useSettingStore().get('Comfy.Cloud.AskBeforeCompatibilityCheck')
+    ).not.toBe(false)
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+  })
+
+  it('asks again once the setting is turned back on', async () => {
+    const settings = useSettingStore()
+    await settings.set('Comfy.Cloud.AskBeforeCompatibilityCheck', false)
+    await settings.set('Comfy.Cloud.AskBeforeCompatibilityCheck', true)
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    expect(
+      within(dialog).getByRole('button', { name: checkLabel })
+    ).toBeVisible()
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
   })
 
   it('dismisses the disclosure without sending a request', async () => {
