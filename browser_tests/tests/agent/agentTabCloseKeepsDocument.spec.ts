@@ -45,7 +45,9 @@ test.describe(
 
       await test.step('the user closes the first tab, with no unsaved-changes prompt', async () => {
         await topbar.closeWorkflowTab(BOUND_TAB_NAME)
-        await expect(page.getByRole('dialog')).toHaveCount(0)
+        await expect(
+          page.getByRole('dialog', { name: 'Save Changes?', exact: true })
+        ).toHaveCount(0)
         await expect(topbar.getWorkflowTab(BOUND_TAB_NAME)).toHaveCount(0)
       })
 

@@ -267,7 +267,8 @@ test.describe(
         })
 
         test('keeps prompt keystrokes when a doc frame resyncs the widget', async ({
-          agentConversation
+          agentConversation,
+          comfyPage
         }) => {
           test.setTimeout(60_000)
           const nodeId = '4181654812796082'
@@ -278,6 +279,9 @@ test.describe(
           ).rejects.toThrow(
             `Host widget ${nodeId}.missing-widget does not exist`
           )
+          await (
+            await comfyPage.nodeOps.getNodeRefById(toNodeId(nodeId))
+          ).centerOnNode()
 
           const field = agentConversation.vueNodes
             .getNodeLocator(nodeId)
