@@ -170,6 +170,22 @@ describe(checkCloudCompatibility, () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it('reports an auth step that fails for lack of a network as unreachable', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockRejectedValue(
+      Object.assign(new Error('offline'), {
+        code: 'auth/network-request-failed'
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreachable'
+    })
+  })
+
   it('sends no workflow data if the workspace changes while authorization is pending', async () => {
     workflowHas(node('KSampler'))
     cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
@@ -848,6 +864,16 @@ describe(checkCloudCompatibility, () => {
       reason: 'outdated'
     },
     {
+      name: 'a 200 whose body is cut off',
+      response: () =>
+        new Response(
+          new ReadableStream({
+            start: (controller) => controller.error(new TypeError('dropped'))
+          })
+        ),
+      reason: 'unreachable'
+    },
+    {
       name: 'a 200 that is not JSON',
       response: () => new Response('<html>Portal</html>', { status: 200 }),
       reason: 'outdated'
@@ -878,7 +904,7 @@ describe(checkCloudCompatibility, () => {
     )
   })
 
-  it('reports a 404 as switched off without an error report', async () => {
+  it('reports a 404 as switched off', async () => {
     workflowHas(node('KSampler'))
     cloudAnswers(
       Response.json(
@@ -891,7 +917,7 @@ describe(checkCloudCompatibility, () => {
       kind: 'checkFailed',
       reason: 'switchedOff'
     })
-    expect(reportError).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('reports no answer within the deadline as busy', async () => {

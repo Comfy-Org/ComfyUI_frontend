@@ -78,7 +78,7 @@ export const useCloudWorkflowCheckStore = defineStore(
         } else {
           dispatch({ type: 'failed', run, blocker: result })
           if (result?.kind === 'checkFailed' && result.reason === 'switchedOff')
-            await hideAfterFailureIsShown()
+            await hideAfterFailureIsShown(run)
         }
       } finally {
         signal?.removeEventListener('abort', cancelPendingCheck)
@@ -86,10 +86,11 @@ export const useCloudWorkflowCheckStore = defineStore(
       }
     }
 
-    async function hideAfterFailureIsShown() {
+    async function hideAfterFailureIsShown(run: number) {
       const identity = identityRevision
       await nextTick()
-      if (identity === identityRevision) isSwitchedOffOnCloud.value = true
+      if (run === lastRun && identity === identityRevision)
+        isSwitchedOffOnCloud.value = true
     }
 
     function invalidate() {

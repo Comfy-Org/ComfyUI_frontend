@@ -286,7 +286,7 @@ async function readJson(
   try {
     return await response.json()
   } catch (error) {
-    if (signal.aborted) throw error
+    if (signal.aborted || !(error instanceof SyntaxError)) throw error
     return undefined
   }
 }
@@ -295,6 +295,13 @@ function stringField(body: unknown, field: 'code' | 'message') {
   if (!body || typeof body !== 'object' || !(field in body)) return undefined
   const value: unknown = Reflect.get(body, field)
   return typeof value === 'string' ? value : undefined
+}
+
+function authFailureReason(cause: unknown): CloudCheckFailureReason {
+  return cause instanceof TypeError ||
+    stringField(cause, 'code') === 'auth/network-request-failed'
+    ? 'unreachable'
+    : 'workspace'
 }
 
 async function refusalReason(
@@ -337,12 +344,9 @@ async function requestCompatibility(
     )
     throwIfAborted(requestSignal)
     if (!auth.ok)
-      return giveUp(
-        'workspace',
-        'cause' in auth
-          ? auth.cause
-          : new Error('Workspace authorization unavailable')
-      )
+      return 'cause' in auth
+        ? giveUp(authFailureReason(auth.cause), auth.cause)
+        : giveUp('workspace', new Error('Workspace authorization unavailable'))
     const response = await fetch(new URL('/api/cloud/compatibility', origin), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth.headers },
@@ -381,11 +385,10 @@ export async function readCloudMissingModels(
 }
 
 function giveUp(reason: CloudCheckFailureReason, cause: unknown): CheckFailure {
-  if (reason !== 'switchedOff')
-    reportError(cause, {
-      errorType: 'failure_checking_cloud_compatibility',
-      surface: 'platform'
-    })
+  reportError(cause, {
+    errorType: 'failure_checking_cloud_compatibility',
+    surface: 'platform'
+  })
   return { kind: 'checkFailed', reason }
 }
 
