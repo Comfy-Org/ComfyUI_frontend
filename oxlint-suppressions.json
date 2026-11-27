@@ -388,16 +388,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/utils/arrange.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/widgets/widgetMap.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -957,11 +947,6 @@
   "src/services/nodeOrganizationService.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
-    }
-  },
-  "src/services/useNewUserService.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
     }
   },
   "src/stores/apiKeyAuthStore.ts": {

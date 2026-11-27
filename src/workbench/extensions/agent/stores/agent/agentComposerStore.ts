@@ -62,6 +62,23 @@ function resetTextWhenReferencesCleared(
   return references.length === 0 && text.trim() === '' ? '' : text
 }
 
+function reusesErrorChipSlot(
+  existing: ComposerReference,
+  references: ComposerReference[],
+  text: string,
+  insertion: ComposerInsertionPoint
+): boolean {
+  const index = references.indexOf(existing)
+  return (
+    insertion.textOffset === existing.textOffset + 1 &&
+    insertion.referenceIndex > index &&
+    references
+      .slice(index + 1, insertion.referenceIndex)
+      .every((item) => item.textOffset === existing.textOffset) &&
+    text[existing.textOffset] === ' '
+  )
+}
+
 function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
@@ -436,18 +453,40 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function setErrorContext(context: AgentErrorContext): void {
+    const existing = prompt.value.references.find(
+      (item) => item.kind === 'error'
+    )
     const references = prompt.value.references.filter(
       (item) => item.kind !== 'error'
     )
+    const text = draft.value
+    const reusedSlot =
+      existing !== undefined &&
+      reusesErrorChipSlot(
+        existing,
+        prompt.value.references,
+        text,
+        insertionPoint.value
+      )
+        ? existing
+        : undefined
+    const insertion = reusedSlot
+      ? {
+          textOffset: reusedSlot.textOffset,
+          referenceIndex: prompt.value.references
+            .slice(0, prompt.value.references.indexOf(reusedSlot))
+            .filter((item) => item.kind !== 'error').length
+        }
+      : {
+          textOffset: insertionPoint.value.textOffset,
+          referenceIndex: prompt.value.references
+            .slice(0, insertionPoint.value.referenceIndex)
+            .filter((item) => item.kind !== 'error').length
+        }
     const inserted = insertComposerReference(
-      { text: draft.value, references },
+      { text, references },
       { kind: 'error', id: uuidv4(), context, textOffset: 0 },
-      {
-        textOffset: insertionPoint.value.textOffset,
-        referenceIndex: prompt.value.references
-          .slice(0, insertionPoint.value.referenceIndex)
-          .filter((item) => item.kind !== 'error').length
-      }
+      insertion
     )
     insertionPoint.value = inserted.insertion
     promptOrigin.value = 'error_context'

@@ -829,6 +829,65 @@ describe('useLoad3dViewer', () => {
       expect(viewer.backgroundColor.value).toBe('#282828')
     })
 
+    it('falls back to the default config when the very first standalone load does not succeed', async () => {
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('failed')
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+
+      await viewer.initializeStandaloneViewer(containerRef, 'model.glb')
+
+      expect(viewer.backgroundColor.value).toBe('#282828')
+      expect(viewer.showGrid.value).toBe(true)
+      expect(viewer.cameraType.value).toBe('perspective')
+    })
+
+    it('does not restore a stale config when the first standalone load resolves cancelled after a second load has already loaded', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const model1 = 'model1.glb'
+      const model2 = 'model2.glb'
+
+      type LoadOutcome = Awaited<ReturnType<Load3d['loadModel']>>
+      let resolveFirstLoad: (outcome: LoadOutcome) => void = () => {}
+      const firstLoad = new Promise<LoadOutcome>((resolve) => {
+        resolveFirstLoad = resolve
+      })
+      vi.mocked(mockLoad3d.loadModel!)
+        .mockReturnValueOnce(firstLoad)
+        .mockResolvedValueOnce('loaded')
+
+      const firstInit = viewer.initializeStandaloneViewer(containerRef, model1)
+      await nextTick()
+
+      await viewer.initializeStandaloneViewer(containerRef, model2)
+      viewer.backgroundColor.value = '#123456'
+      await nextTick()
+
+      resolveFirstLoad('cancelled')
+      await firstInit
+
+      expect(viewer.backgroundColor.value).toBe('#123456')
+    })
+
+    it('keeps the previous model config and cache key in sync when a later standalone load fails', async () => {
+      const viewer = useLoad3dViewer()
+      const containerRef = document.createElement('div')
+      const model1 = 'model1.glb'
+      const model2 = 'model2.glb'
+
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      viewer.backgroundColor.value = '#ff0000'
+      await nextTick()
+
+      vi.mocked(mockLoad3d.loadModel!).mockResolvedValueOnce('failed')
+      await viewer.initializeStandaloneViewer(containerRef, model2)
+
+      expect(viewer.backgroundColor.value).toBe('#ff0000')
+
+      await viewer.initializeStandaloneViewer(containerRef, model1)
+      expect(viewer.backgroundColor.value).toBe('#ff0000')
+    })
+
     it('warns when loading another model into the standalone viewer fails', async () => {
       const viewer = useLoad3dViewer()
       const containerRef = document.createElement('div')

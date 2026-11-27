@@ -25,30 +25,28 @@ const controlModel = ref(props.widget.controlWidget.value)
 watch(controlModel, props.widget.controlWidget.update)
 </script>
 <template>
-  <div class="relative">
-    <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
-      <template #between>
-        <PopoverRoot>
-          <PopoverTrigger as-child>
-            <ValueControlButton
-              :mode="controlModel"
-              class="mx-1 self-center"
-              @pointerdown.stop
-              @pointermove.stop
-              @pointerup.stop
-            />
-          </PopoverTrigger>
-          <PopoverContent
-            align="start"
-            :side-offset="5"
-            dismiss-on-viewport-change
-            class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
-          >
-            <ValueControlPopover v-model="controlModel" />
-            <PopoverArrow class="fill-background stroke-border/50" />
-          </PopoverContent>
-        </PopoverRoot>
-      </template>
-    </component>
-  </div>
+  <component :is="component" v-model="modelValue" class="relative" :widget>
+    <template #between>
+      <PopoverRoot>
+        <PopoverTrigger as-child>
+          <ValueControlButton
+            :mode="controlModel"
+            class="mx-1 self-center"
+            @pointerdown.stop
+            @pointermove.stop
+            @pointerup.stop
+          />
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          :side-offset="5"
+          dismiss-on-viewport-change
+          class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
+        >
+          <ValueControlPopover v-model="controlModel" />
+          <PopoverArrow class="fill-background stroke-border/50" />
+        </PopoverContent>
+      </PopoverRoot>
+    </template>
+  </component>
 </template>

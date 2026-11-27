@@ -1,5 +1,5 @@
 /** The section of a Build brief that sends an agent to the build recipe. */
-export const BUILD_RECIPE_SECTION = `## Before you start
+const BUILD_RECIPE_SECTION = `## Before you start
 
 Read the build recipe, and follow it:
 
@@ -12,7 +12,7 @@ If \`comfy\` or that skill is missing, install the current CLI first with
 models, the targets, the cut, watching the release and reading a failure.`
 
 /** The end of a custom deployment brief: the cut, the retries and the report. */
-export const CUT_AND_REPORT_SECTION = `Then go through the recipe's "Before
+const CUT_AND_REPORT_SECTION = `Then go through the recipe's "Before
 you cut" with the user, and wait for a yes. After that, fix and re-cut on your
 own within the recipe's limits, and tell the user what each retry changed.
 

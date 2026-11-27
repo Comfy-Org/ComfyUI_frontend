@@ -17,12 +17,11 @@
           class="icon-[lucide--arrow-up-right] size-3.5 text-muted-foreground"
           aria-hidden="true"
         />
-        {{ $t('deploymentSwitcher.manageDeployments') }}
+        {{ $t('deploymentSwitcher.manageBuilds') }}
       </a>
     </MenuItem>
   </TextTooltip>
   <MenuItem
-    v-else
     :class="switcherItemClass"
     data-testid="deployment-switcher-create"
     @select="emit('createCustomDeployment')"

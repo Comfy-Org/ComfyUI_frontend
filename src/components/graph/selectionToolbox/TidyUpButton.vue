@@ -70,6 +70,7 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
+import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 
 const TOOLBOX_INSET = 4
 const BAR_GAP_BELOW_TOOLBOX = 8
@@ -106,6 +107,10 @@ function hasSameNodes<T>(nodes: T[], previous: T[]) {
 
 watch([gridNodes, canTidy], ([nodes, eligible], [previous]) => {
   if (!eligible || !hasSameNodes(nodes, previous)) isOpen.value = false
+})
+
+watch(distributeSession, (session) => {
+  if (session) isOpen.value = false
 })
 
 onBeforeUnmount(() => {

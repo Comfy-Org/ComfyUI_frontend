@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -380,6 +381,21 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await expect(field).toHaveCSS('background-color', 'rgb(34, 34, 34)')
     })
 
+    test('keeps the widget slot off the decrement button', async ({
+      comfyPage
+    }) => {
+      const { input, decrementButton } =
+        comfyPage.vueNodes.getInputNumberControls(
+          comfyPage.vueNodes.getWidgetRowByLabel('Save Animated WEBP', 'fps')
+        )
+      await expect(input).toHaveValue('6.00')
+
+      const { height } = (await decrementButton.boundingBox())!
+      await decrementButton.click({ position: { x: 1, y: height / 2 } })
+
+      await expect(input).toHaveValue('5.99')
+    })
+
     test('fits the boolean switch into the curve of its row', async ({
       comfyPage
     }) => {
@@ -441,14 +457,19 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
       await expect(linkedLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
       await expect(widgetLabel).toHaveCSS('color', 'rgb(153, 153, 153)')
+      const textStart = (label: Locator) =>
+        label.evaluate((element) => {
+          const range = document.createRange()
+          range.selectNodeContents(element)
+          return range.getBoundingClientRect().x
+        })
       await expect
         .poll(async () => {
           const [linked, widget] = await Promise.all([
-            linkedLabel.boundingBox(),
-            widgetLabel.boundingBox()
+            textStart(linkedLabel),
+            textStart(widgetLabel)
           ])
-          if (!linked || !widget) return null
-          return Math.round(linked.x - widget.x)
+          return Math.round(linked - widget)
         })
         .toBe(0)
     })
