@@ -17,12 +17,13 @@
       @pointermove.capture="forwardPointerMovePanEvent"
       @keydown.space="forwardSpaceKeyEvent"
     >
-      <LGraphNode
-        v-for="nodeData in allNodes"
-        :key="nodeData.id"
-        :node-data
-        :data-node-id="nodeData.id"
-      />
+      <KeepAlive v-for="nodeData in allNodes" :key="nodeData.id">
+        <LGraphNode
+          v-if="activeNodeIds.has(nodeData.id)"
+          :node-data
+          :data-node-id="nodeData.id"
+        />
+      </KeepAlive>
     </TransformPane>
     <LinkOverlayCanvas
       v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -123,7 +124,7 @@ let activeStartup: symbol | undefined
 </script>
 
 <script setup lang="ts">
-import { until, useEventListener } from '@vueuse/core'
+import { until, useElementSize, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -202,6 +203,8 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import { useViewportKeepAlive } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlive'
+import { useViewportKeepAlivePins } from '@/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins'
 import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -237,6 +240,7 @@ const emit = defineEmits<{
   ready: []
 }>()
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasRef)
 const transformPaneRef =
   useTemplateRef<InstanceType<typeof TransformPane>>('transformPaneRef')
 const vueNodeDropTarget = computed(() => {
@@ -368,6 +372,26 @@ const allNodes = computed((): NodeState[] => {
   const graphId = canvasStore.currentGraph?.id
   if (!rootGraphId || graphId === undefined) return []
   return nodeDataStore.getGraphNodesFor(rootGraphId, graphId)
+})
+const { pinnedNodeIds } = useViewportKeepAlivePins({
+  getRoot: () => vueNodeDropTarget.value,
+  getLinkConnector: () => canvasStore.canvas?.linkConnector
+})
+const { activeNodeIds } = useViewportKeepAlive({
+  nodes: allNodes,
+  pinnedNodeIds,
+  isEnabled: () => settingStore.get('Comfy.VueNodes.ViewportKeepAlive'),
+  getNodeBounds: (nodeId) => {
+    const { rootGraphId } = canvasStore
+    return rootGraphId
+      ? (layoutStore.getNodeLayout(rootGraphId, nodeId)?.bounds ?? null)
+      : null
+  },
+  getViewportSize: () => ({
+    width: canvasWidth.value,
+    height: canvasHeight.value
+  }),
+  getGeometryVersion: () => layoutStore.geometryVersion
 })
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return

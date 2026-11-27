@@ -81,9 +81,18 @@ async function waitForMeasuredVueNodes(
   nodeCount: number,
   timeout?: number
 ) {
-  await expect(
-    comfyPage.page.locator('[data-node-id][data-measured]')
-  ).toHaveCount(nodeCount, { timeout })
+  await expect
+    .poll(
+      async () => {
+        const mounted = await comfyPage.page.locator('[data-node-id]').count()
+        const measured = await comfyPage.page
+          .locator('[data-node-id][data-measured]')
+          .count()
+        return mounted > 0 && mounted <= nodeCount && measured === mounted
+      },
+      { timeout }
+    )
+    .toBe(true)
 }
 
 export async function loadCenteredGraph(

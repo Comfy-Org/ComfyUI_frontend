@@ -17,6 +17,7 @@ import type { IWidget } from './widgets'
 
 export interface LinkConnectorEventMap {
   reset: boolean
+  'drag-started': undefined
 
   'before-drop-links': {
     renderLinks: RenderLink[]
