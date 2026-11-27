@@ -97,8 +97,9 @@ keyed by workflow and graph id and reset whenever the activity state went
 briefly null, which both let the same turn move the camera again after the user
 deliberately panned away, and let a coalesced idle-to-new-turn transition on
 the same target keep the old key so a new off-screen batch was never framed.
-The store now exposes a `turnSequence` that advances on `startTurn` and
-`dismiss` and nowhere else. Separately, `viewNodes()` can return without moving
+The store now owns both the `turnSequence` that advances on `startTurn` and
+`dismiss` and the sequence already framed, so remounting the activity bar does
+not re-arm the same turn. Separately, `viewNodes()` can return without moving
 anything — no `.graph-canvas-panel` (it is absent under `LinearView`, which
 mounts the docked panel without the graph canvas), no measurable bounds, a
 zero-area panel — so it reports whether it started the animation and the turn is

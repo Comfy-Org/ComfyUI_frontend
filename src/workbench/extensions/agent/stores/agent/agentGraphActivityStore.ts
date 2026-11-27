@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -29,7 +29,15 @@ export const useAgentGraphActivityStore = defineStore(
     const turnOpen = ref(false)
     const currentTurnId = ref<TurnId | null>(null)
     const turnSequence = ref(0)
+    const framedTurnSequence = ref<number | null>(null)
+    const currentTurnFramed = computed(
+      () => framedTurnSequence.value === turnSequence.value
+    )
     let settleTimer: ReturnType<typeof setTimeout> | undefined
+
+    function markCurrentTurnFramed(): void {
+      framedTurnSequence.value = turnSequence.value
+    }
 
     function startTurn(turnId: TurnId | null = null): void {
       if (turnOpen.value && currentTurnId.value === turnId) return
@@ -124,6 +132,8 @@ export const useAgentGraphActivityStore = defineStore(
     return {
       state,
       turnSequence,
+      currentTurnFramed,
+      markCurrentTurnFramed,
       startTurn,
       recordMaterialized,
       finishTurn,

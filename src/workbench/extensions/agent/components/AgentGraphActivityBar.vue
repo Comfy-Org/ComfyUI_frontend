@@ -95,15 +95,13 @@ function viewNodes(): boolean {
   return true
 }
 
-const framedTurn = ref<number | null>(null)
 let settleTimer: ReturnType<typeof setTimeout> | undefined
 
 function frameBatchIfUnseen(): void {
   settleTimer = undefined
   const nodes = liveNodes.value
   if (!visibleState.value || !canvas?.graph || nodes.length === 0) return
-  const turn = activity.turnSequence
-  if (framedTurn.value === turn) return
+  if (activity.currentTurnFramed) return
   const batchIds = new Set(nodes.map((node) => node.id))
   const frame = shouldFrameAgentBatch({
     batch: nodes,
@@ -112,7 +110,7 @@ function frameBatchIfUnseen(): void {
     viewport: uncoveredViewportInGraphSpace()
   })
   if (!frame) return
-  if (viewNodes()) framedTurn.value = turn
+  if (viewNodes()) activity.markCurrentTurnFramed()
 }
 
 watch(

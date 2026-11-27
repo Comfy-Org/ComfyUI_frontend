@@ -92,9 +92,9 @@ describe('AgentGraphActivityBar', () => {
     secondNode.pos = [7400, 6500]
   })
 
-  it('frames the batch once when the whole canvas is the batch and it is off screen', async () => {
+  it('preserves a user pan across component remounts in the same turn', async () => {
     node.pos = [7000, 6500]
-    const view = mount()
+    const firstView = mount()
     const activity = useAgentGraphActivityStore()
     activity.startTurn()
     activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
@@ -102,13 +102,15 @@ describe('AgentGraphActivityBar', () => {
 
     expect(canvas.animateToBounds).toHaveBeenCalledTimes(1)
 
+    firstView.unmount()
+    const remountedView = mount()
     activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
     await settle()
     expect(
       canvas.animateToBounds,
       'a later materialization in the same turn must not drag the camera again'
     ).toHaveBeenCalledTimes(1)
-    view.unmount()
+    remountedView.unmount()
   })
 
   it('frames the combined batch when its nodes arrive in separate materializations', async () => {
