@@ -123,7 +123,7 @@ export class VueNodeFixture {
                 .and(this.root.getByLabel(nameOrLocator, { exact: true }))
             )
         : slotLocators.filter({ has: nameOrLocator })
-    return filteredLocator.getByTestId('slot-dot').locator('..')
+    return filteredLocator.getByTestId('slot-connection-dot')
   }
 
   /** Container of a widget row's input slot, which hides the slot until it is revealed. */
