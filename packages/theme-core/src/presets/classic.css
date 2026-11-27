@@ -136,10 +136,7 @@
       height: 100%;
       padding: 0;
       overflow: clip;
-      border-start-end-radius: calc(
-        var(--node-widget-height) / 2 - var(--node-widget-border-width)
-      );
-      border-end-end-radius: calc(
+      border-radius: calc(
         var(--node-widget-height) / 2 - var(--node-widget-border-width)
       );
     }
