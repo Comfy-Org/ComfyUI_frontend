@@ -33,16 +33,11 @@
         :rel="platformLinkRel()"
         class="w-full no-underline"
         data-testid="deployment-build-platform"
-        @click="addMissingModelsOnClick"
+        @click="openFrameOnClick"
       >
-        {{
-          addsMissingModels
-            ? $t('rightSidePanel.addMissingModelsToBuild')
-            : deployment.build_id
-              ? $t('rightSidePanel.editBuildOnPlatform')
-              : $t('rightSidePanel.openBuildsOnPlatform')
-        }}
+        {{ buildLabel }}
         <i
+          v-if="!frameRequest"
           class="icon-[lucide--square-arrow-out-up-right]"
           aria-hidden="true"
         />
@@ -55,6 +50,7 @@
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import Button from '@comfyorg/design-system/button/Button'
@@ -66,6 +62,7 @@ import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import type { PlatformFrameRequest } from '@/platform/workspace/platformFrame/platformFrameUrl'
 import { openPlatformFrameOnClick } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { preinstallRequest } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -80,6 +77,7 @@ const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
   missingModelGroups: readonly MissingModelGroup[]
 }>()
 
+const { t } = useI18n()
 const deploymentPick = useDeploymentPickStore()
 const { isSwitching } = storeToRefs(deploymentPick)
 const { changeSinceBootMessage } = useDeploymentLabels()
@@ -98,24 +96,41 @@ const workflows = useWorkflowStore()
 const missingNodes = useMissingNodesErrorStore()
 const workflowLacksNodes = computed(
   () =>
+    missingPackGroups.length > 0 ||
     missingNodes.missingNodesError !== null ||
     !!workflows.activeWorkflow?.pendingWarnings?.missingNodeTypes?.length
 )
-const addsMissingModels = computed(
-  () =>
-    missingPackGroups.length === 0 &&
-    !workflowLacksNodes.value &&
-    missingModelGroups.length > 0 &&
-    platformFrames.isAvailable()
+const lacksOnlyModels = computed(
+  () => !workflowLacksNodes.value && missingModelGroups.length > 0
+)
+const lacksNothing = computed(
+  () => !workflowLacksNodes.value && missingModelGroups.length === 0
 )
 
-function addMissingModelsOnClick(event: MouseEvent) {
-  if (!addsMissingModels.value) return
-  openPlatformFrameOnClick(
-    event,
-    preinstallRequest(deployment.deployment_id),
-    'errors_panel'
-  )
+const frameRequest = computed<PlatformFrameRequest | null>(() => {
+  if (lacksNothing.value || !platformFrames.isAvailable()) return null
+  return lacksOnlyModels.value
+    ? preinstallRequest(deployment.deployment_id)
+    : {
+        step: 'update',
+        deploymentId: deployment.deployment_id,
+        handsOverWorkflow: true
+      }
+})
+
+const buildLabel = computed(() => {
+  if (frameRequest.value)
+    return lacksOnlyModels.value
+      ? t('rightSidePanel.addMissingModelsToBuild')
+      : t('rightSidePanel.addMissingItems')
+  return deployment.build_id
+    ? t('rightSidePanel.editBuildOnPlatform')
+    : t('rightSidePanel.openBuildsOnPlatform')
+})
+
+function openFrameOnClick(event: MouseEvent) {
+  if (!frameRequest.value) return
+  openPlatformFrameOnClick(event, frameRequest.value, 'errors_panel')
 }
 
 const buildUrl = computed(() =>

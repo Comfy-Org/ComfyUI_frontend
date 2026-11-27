@@ -2,6 +2,7 @@ export type FrameMessage =
   | { type: 'ready'; signedIn: false }
   | { type: 'ready'; signedIn: true; userId: string | null }
   | { type: 'token-wanted'; userId: string }
+  | { type: 'step-shown'; step: 'models' }
   | { type: 'content-height'; height: number | null }
   | {
       type: 'build-started'
@@ -130,6 +131,10 @@ export function readFrameMessage(data: unknown): FrameMessage | null {
     case 'token-wanted':
       return strings(data, 'userId')
         ? { type: 'token-wanted', userId: String(data.userId) }
+        : null
+    case 'step-shown':
+      return data.step === 'models'
+        ? { type: 'step-shown', step: 'models' }
         : null
     case 'content-height':
       return readContentHeight(data)

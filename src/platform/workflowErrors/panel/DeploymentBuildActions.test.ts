@@ -134,29 +134,62 @@ describe('DeploymentBuildActions', () => {
       )
     })
 
-    it('keeps the link to the Build when the workflow lacks nodes the panel hides', () => {
-      useMissingNodesErrorStore().setMissingNodeTypes(['QwenImage21Cache'])
-      renderActions({ missingPackGroups: [] })
+    it('opens the Build with the workflow to add the missing nodes and models', async () => {
+      const user = renderActions()
 
-      expect(
-        screen.getByRole('link', { name: 'Edit build on Platform' })
-      ).toBeInTheDocument()
-      expect(usePlatformFrameStore().open).not.toHaveBeenCalled()
+      await user.click(
+        screen.getByRole('link', { name: 'Add missing items to Build' })
+      )
+
+      expect(usePlatformFrameStore().open).toHaveBeenCalledExactlyOnceWith(
+        { step: 'update', deploymentId: 'dep-1', handsOverWorkflow: true },
+        'errors_panel'
+      )
     })
 
-    it.for([
-      { missing: 'nodes are missing too', packs: missingPackGroups },
-      { missing: 'no model is missing', packs: [] }
-    ])('keeps the link to the Build when $missing', ({ packs }) => {
-      renderActions({
-        missingPackGroups: packs,
-        ...(packs.length === 0 && { missingModelGroups: [] })
-      })
+    it('opens the Build to add nodes the panel hides, not Models alone', async () => {
+      useMissingNodesErrorStore().setMissingNodeTypes(['QwenImage21Cache'])
+      const user = renderActions({ missingPackGroups: [] })
+
+      await user.click(
+        screen.getByRole('link', { name: 'Add missing items to Build' })
+      )
+
+      expect(usePlatformFrameStore().open).toHaveBeenCalledExactlyOnceWith(
+        { step: 'update', deploymentId: 'dep-1', handsOverWorkflow: true },
+        'errors_panel'
+      )
+    })
+
+    it("links to the Build's page instead of the frame when nothing is missing", () => {
+      renderActions({ missingPackGroups: [], missingModelGroups: [] })
 
       expect(
         screen.getByRole('link', { name: 'Edit build on Platform' })
-      ).toBeInTheDocument()
-      expect(usePlatformFrameStore().open).not.toHaveBeenCalled()
+      ).toHaveAttribute('target', '_blank')
+      expect(
+        screen.queryByRole('link', { name: 'Add missing items to Build' })
+      ).toBeNull()
+    })
+
+    it('shows no new-tab icon on the link that opens the frame', () => {
+      renderActions()
+
+      expect(
+        screen.getByRole('link', { name: 'Add missing items to Build' })
+      ).not.toContainHTML('square-arrow-out-up-right')
+    })
+
+    it("keeps the Build's page as the link's new-tab fallback", () => {
+      renderActions()
+
+      const link = screen.getByRole('link', {
+        name: 'Add missing items to Build'
+      })
+      expect(new URL(link.getAttribute('href') ?? '').pathname).toBe(
+        '/profile/builds/build-7'
+      )
+      expect(link).toHaveAttribute('target', '_blank')
     })
   })
 

@@ -141,7 +141,8 @@ if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
   onBeforeUnmount(
     setMissingNodesNotice(
-      (nodeTypes) => void noticeMissingNodes(nodeTypes, markFor)
+      (nodeTypes, opening) =>
+        void noticeMissingNodes(nodeTypes, markFor, opening)
     )
   )
 }

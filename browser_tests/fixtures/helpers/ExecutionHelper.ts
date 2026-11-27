@@ -4,7 +4,10 @@ import type {
   NodeError,
   PromptFailureResponse
 } from '@comfyorg/api-client/types'
-import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
+import type {
+  ExecutionErrorWsMessage,
+  NodeProgressState
+} from '@comfyorg/api-client/executionTypes'
 import type {
   PromptOutputsSkippedFrame,
   PromptOutputsSkippedNodeError
@@ -14,6 +17,12 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
+
+type CloudExecutionErrorFrame = {
+  type: 'execution_error'
+  data: Omit<ExecutionErrorWsMessage, 'executed'> &
+    Partial<Pick<ExecutionErrorWsMessage, 'executed'>>
+}
 
 type RunOptions = {
   start?: boolean
@@ -257,6 +266,29 @@ export class ExecutionHelper {
           traceback: []
         }
       })
+    )
+  }
+
+  promptRejectedAtValidation(
+    jobId: string,
+    nodeId: string,
+    summary: string,
+    nodeErrors: Record<string, PromptOutputsSkippedNodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_error',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: nodeErrors[nodeId].class_type,
+          exception_message: summary,
+          exception_type: 'ValidationError',
+          traceback: [],
+          node_errors: nodeErrors
+        }
+      } satisfies CloudExecutionErrorFrame)
     )
   }
 

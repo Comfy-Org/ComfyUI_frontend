@@ -18,40 +18,42 @@
         <TabsTrigger
           :value="workflowOption.workflow.path"
           as-child
-          class="h-full w-full px-2 py-2"
+          class="h-full w-full gap-0 px-2 py-2"
         >
           <button
             :id="resolvedTriggerId"
             type="button"
             :aria-description="popoverStatusDescription"
           >
-            <template v-if="showModeIcon">
-              <i
-                v-if="isBuilderState"
-                data-testid="workflow-mode-icon"
-                class="order-first icon-[lucide--hammer] bg-muted-foreground"
-              />
-              <i
-                v-else-if="workflowOption.workflow.initialMode === 'app'"
-                data-testid="workflow-mode-icon"
-                class="order-first icon-[lucide--panels-top-left] bg-primary"
-              />
-            </template>
-            <span
-              class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
-            >
-              {{ workflowOption.workflow.filename }}
+            <span class="flex-1" />
+            <span class="inline-flex min-w-0 items-center gap-2">
+              <template v-if="showModeIcon">
+                <i
+                  v-if="isBuilderState"
+                  data-testid="workflow-mode-icon"
+                  class="order-first icon-[lucide--hammer] bg-muted-foreground"
+                />
+                <i
+                  v-else-if="workflowOption.workflow.initialMode === 'app'"
+                  data-testid="workflow-mode-icon"
+                  class="order-first icon-[lucide--panels-top-left] bg-primary"
+                />
+              </template>
+              <span
+                class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+              >
+                {{ workflowOption.workflow.filename }}
+              </span>
+              <WorkflowTabStatus class="order-first" :status="primaryStatus" />
+              <span class="size-4 shrink-0" />
             </span>
-            <WorkflowTabStatus class="order-first" :status="primaryStatus" />
-            <span
-              class="relative size-4 shrink-0 group-focus-within/tab:invisible group-hover/tab:invisible"
-            >
+            <span class="@container/close-space relative flex-1 self-stretch">
               <span
                 v-if="shouldShowUnsavedIndicator"
                 data-testid="workflow-dirty-indicator"
                 :class="
                   cn(
-                    'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
+                    'absolute top-1/2 right-[calc(100%+0.25rem)] z-10 size-2 -translate-y-1/2 rounded-full group-focus-within/tab:right-[max(calc(100%+0.25rem),1rem)] group-hover/tab:right-[max(calc(100%+0.25rem),1rem)] @max-[0.25rem]/close-space:group-focus-within/tab:invisible @max-[0.25rem]/close-space:group-hover/tab:invisible',
                     isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
                   )
                 "

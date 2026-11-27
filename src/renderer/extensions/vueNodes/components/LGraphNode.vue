@@ -145,11 +145,8 @@
         </template>
 
         <template v-else-if="!isCollapsed">
-          <div class="relative">
-            <NodeProgressBar
-              v-if="executing && progress !== undefined"
-              :progress
-            />
+          <div v-if="executing && progress !== undefined" class="relative">
+            <NodeProgressBar :progress />
           </div>
 
           <div
@@ -196,13 +193,13 @@
                   : { gridTemplateRows: userHeightTrack(region.height) }
               "
             >
-              <div class="flex min-h-0 flex-1 flex-col">
-                <LivePreview
-                  v-if="region.media.type === 'preview'"
-                  :image-url="region.media.url"
-                />
-                <NodeContent v-else :node-data :media="region.media" />
+              <div
+                v-if="region.media.type === 'preview'"
+                class="flex min-h-0 flex-1 flex-col"
+              >
+                <LivePreview :image-url="region.media.url" />
               </div>
+              <NodeContent v-else :node-data :media="region.media" />
               <GrowableRegionHandle
                 :name="region.name"
                 :label="

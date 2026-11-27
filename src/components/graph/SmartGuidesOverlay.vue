@@ -1,98 +1,120 @@
 <template>
-  <svg
-    v-if="guides.length"
-    data-testid="smart-guides"
-    class="pointer-events-none absolute inset-0 z-1 size-full overflow-visible"
-  >
-    <template v-for="(guide, i) in guides" :key="i">
-      <line
-        v-if="guide.kind === 'line'"
-        data-testid="smart-guide-line"
-        class="stroke-primary"
-        stroke-width="1"
-        v-bind="lineEnds(guide)"
-      />
-      <line
-        v-else-if="guide.kind === 'wire'"
-        data-testid="smart-guide-wire"
-        class="stroke-primary"
-        stroke-width="3"
-        stroke-linecap="round"
-        v-bind="segment(guide.from, guide.to)"
-      />
-      <g v-else data-testid="smart-guide-gap" class="stroke-primary">
-        <line stroke-width="1" v-bind="gapEnds(guide)" />
-        <text
-          class="fill-primary stroke-none text-2xs"
-          text-anchor="middle"
-          v-bind="gapLabelAt(guide)"
-        >
-          {{ Math.round(guide.to - guide.from) }}
-        </text>
-      </g>
-    </template>
-  </svg>
+  <canvas
+    ref="guideCanvas"
+    class="pointer-events-none absolute inset-0 z-1 size-full text-2xs text-primary"
+  />
 </template>
 
 <script setup lang="ts">
-import { shallowRef, watch } from 'vue'
+import { useTemplateRef, watch } from 'vue'
 
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { activeGuides } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 import type { SmartGuide } from '@comfyorg/graph-model/arrange/snapSolver'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
-type LineGuide = Extract<SmartGuide, { kind: 'line' }>
-type GapGuide = Extract<SmartGuide, { kind: 'gap' }>
-
 const canvasStore = useCanvasStore()
 const { canvasToScreen, syncWithCanvas } = useTransformState()
-const guides = shallowRef<readonly SmartGuide[]>([])
+const guideCanvas = useTemplateRef('guideCanvas')
+let drawn: readonly SmartGuide[] = []
 
 watch(
   () => canvasStore.canvas,
   (canvas, _, onCleanup) => {
     if (!canvas) return
-    onCleanup(
-      onCanvasFrame(canvas, 'present', () => {
-        const next = activeGuides.value
-        if (next === guides.value && !next.length) return
-        guides.value = next
-        syncWithCanvas(canvas)
-      })
-    )
+    onCleanup(onCanvasFrame(canvas, 'present', () => present(canvas)))
   },
   { immediate: true }
 )
 
-function segment(from: Point2D, to: Point2D) {
-  const start = canvasToScreen(from)
-  const end = canvasToScreen(to)
-  return { x1: start.x, y1: start.y, x2: end.x, y2: end.y }
-}
+function present(canvas: LGraphCanvas) {
+  const el = guideCanvas.value
+  const ctx = el?.getContext('2d')
+  const guides = activeGuides.value
+  if (!el || !ctx || (!guides.length && !drawn.length)) return
 
-function lineEnds({ axis, at, from, to }: LineGuide) {
-  return axis === 'x'
-    ? segment({ x: at, y: from }, { x: at, y: to })
-    : segment({ x: from, y: at }, { x: to, y: at })
-}
-
-function gapEnds({ axis, from, to, cross }: GapGuide) {
-  return axis === 'x'
-    ? segment({ x: from, y: cross }, { x: to, y: cross })
-    : segment({ x: cross, y: from }, { x: cross, y: to })
-}
-
-function gapLabelAt({ axis, from, to, cross }: GapGuide) {
-  const mid = (from + to) / 2
-  if (axis === 'x') {
-    const { x, y } = canvasToScreen({ x: mid, y: cross })
-    return { x, y: y - 4 }
+  const { width, height } = canvas.canvas
+  const resized = el.width !== width || el.height !== height
+  if (resized) {
+    el.width = width
+    el.height = height
   }
-  const { x, y } = canvasToScreen({ x: cross, y: mid })
-  return { x: x + 14, y: y + 4 }
+  if (resized || !drawn.length) {
+    const style = getComputedStyle(el)
+    ctx.strokeStyle = ctx.fillStyle = style.color
+    ctx.font = style.font
+  }
+  drawn = guides
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.clearRect(0, 0, width, height)
+  if (!guides.length) return
+
+  const pixelRatio = width / (el.clientWidth || 1)
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+  syncWithCanvas(canvas)
+  for (const guide of guides) drawGuide(ctx, guide)
+}
+
+function stroke(
+  ctx: CanvasRenderingContext2D,
+  from: Point2D,
+  to: Point2D,
+  lineWidth: number
+) {
+  ctx.lineWidth = lineWidth
+  ctx.beginPath()
+  ctx.moveTo(from.x, from.y)
+  ctx.lineTo(to.x, to.y)
+  ctx.stroke()
+}
+
+function drawGuide(ctx: CanvasRenderingContext2D, guide: SmartGuide) {
+  if (guide.kind === 'wire') {
+    ctx.lineCap = 'round'
+    stroke(ctx, canvasToScreen(guide.from), canvasToScreen(guide.to), 3)
+    ctx.lineCap = 'butt'
+    return
+  }
+  if (guide.kind === 'line') {
+    const { axis, at, from, to } = guide
+    const [start, end] =
+      axis === 'x'
+        ? [
+            { x: at, y: from },
+            { x: at, y: to }
+          ]
+        : [
+            { x: from, y: at },
+            { x: to, y: at }
+          ]
+    stroke(ctx, canvasToScreen(start), canvasToScreen(end), 1)
+    return
+  }
+  const { axis, from, to, cross } = guide
+  const [start, end, middle] =
+    axis === 'x'
+      ? [
+          { x: from, y: cross },
+          { x: to, y: cross },
+          { x: (from + to) / 2, y: cross }
+        ]
+      : [
+          { x: cross, y: from },
+          { x: cross, y: to },
+          { x: cross, y: (from + to) / 2 }
+        ]
+  stroke(ctx, canvasToScreen(start), canvasToScreen(end), 1)
+  const label = canvasToScreen(middle)
+  ctx.textAlign = 'center'
+  ctx.fillText(
+    String(Math.round(to - from)),
+    axis === 'x' ? label.x : label.x + 14,
+    axis === 'x' ? label.y - 4 : label.y + 4
+  )
 }
 </script>
