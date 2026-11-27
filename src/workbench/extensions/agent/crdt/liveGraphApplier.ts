@@ -27,6 +27,7 @@ import {
   isValueControlMode
 } from '@/core/graph/widgets/valueControl'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { NODE_CREATION_TARGET_SUBGRAPH_ID } from '@/lib/litegraph/src/LiteGraphGlobal'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import {
@@ -1139,18 +1140,18 @@ function layoutOf(node: LGraphNode): {
   }
 }
 
-/**
- * Whether a placeholder can be replaced by a real node now. A subgraph node
- * class is registered process-wide by definition id but only builds a node for
- * a graph that owns that definition, so a registry hit alone would rebuild the
- * same placeholder on every frame that touches the node.
- */
 function isResolvablePlaceholder(node: LGraphNode, graph: LGraph): boolean {
   if (!missingNodePlaceholders.has(node)) return false
   if (!Object.hasOwn(LiteGraph.registered_node_types, node.type)) return false
   const registered = LiteGraph.registered_node_types[node.type]
-  if (registered.prototype instanceof SubgraphNode)
-    return graph.rootGraph.subgraphs.has(node.type)
+  if (registered.prototype instanceof SubgraphNode) {
+    const graphAwareClass = registered as typeof LGraphNode & {
+      [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
+    }
+    const targetSubgraphId =
+      graphAwareClass[NODE_CREATION_TARGET_SUBGRAPH_ID] ?? node.type
+    return graph.rootGraph.subgraphs.has(targetSubgraphId)
+  }
   return true
 }
 

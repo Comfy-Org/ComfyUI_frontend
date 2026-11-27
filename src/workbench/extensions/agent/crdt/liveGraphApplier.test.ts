@@ -23,8 +23,16 @@ import {
 import * as Y from 'yjs'
 
 import { markDynamicGroupController } from '@/core/graph/widgets/dynamicGroupDiagnostics'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/LiteGraphGlobal'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  NODE_CREATION_GRAPH_FACTORY,
+  NODE_CREATION_TARGET_SUBGRAPH_ID
+} from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -1089,6 +1097,7 @@ describe('LiveGraphApplier', () => {
   it('rebuilds a missing-node placeholder once its type becomes registered', () => {
     const type = 'TestLateRegistration'
     let positionWhenAdded: [number, number] | undefined
+    let sizeWhenAdded: number[] | undefined
     class TestLateRegistration extends LGraphNode {
       constructor() {
         super('Late registration')
@@ -1097,6 +1106,7 @@ describe('LiveGraphApplier', () => {
 
       override onAdded(): void {
         positionWhenAdded = [this.pos[0], this.pos[1]]
+        sizeWhenAdded = Array.from(this.size)
       }
     }
     const { graph, doc, applyCollected, applyEdit } = setup({
@@ -1142,6 +1152,7 @@ describe('LiveGraphApplier', () => {
     expect(resolved).toBeInstanceOf(TestLateRegistration)
     expect(resolved?.has_errors).toBeFalsy()
     expect(positionWhenAdded).toEqual([777, 888])
+    expect(sizeWhenAdded).toEqual([650, 450])
     expect(Array.from(resolved!.pos)).toEqual([777, 888])
     expect(Array.from(resolved!.size)).toEqual([650, 450])
 
@@ -1199,6 +1210,74 @@ describe('LiveGraphApplier', () => {
     })
 
     expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+  })
+
+  it('recovers an aliased subgraph placeholder when its target arrives', () => {
+    const type = 'TestAliasedSubgraph'
+    const targetId = '00000000-0000-4000-8000-00000000a11a'
+    const fallbackRoot = new LGraph()
+    const fallbackTarget = createTestSubgraph({
+      rootGraph: fallbackRoot,
+      id: targetId
+    })
+    class AliasedSubgraphNode extends SubgraphNode {
+      constructor(_title?: string) {
+        super(fallbackRoot, fallbackTarget, {
+          id: -1,
+          type: targetId,
+          pos: [0, 0],
+          size: [210, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+      }
+
+      static [NODE_CREATION_TARGET_SUBGRAPH_ID] = targetId
+
+      static [NODE_CREATION_GRAPH_FACTORY](
+        _title: string,
+        targetGraph?: GraphOrSubgraph
+      ): LGraphNode | null {
+        if (!targetGraph) return null
+        const target = targetGraph.rootGraph.subgraphs.get(targetId)
+        return target
+          ? createTestSubgraphNode(target, { parentGraph: targetGraph })
+          : null
+      }
+    }
+    LiteGraph.registerNodeType(type, AliasedSubgraphNode)
+    const docNode = (pos: [number, number]) => ({
+      id: 1,
+      type,
+      pos,
+      size: [210, 100]
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [docNode([0, 0])],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+
+    const target = createTestSubgraph({ rootGraph: graph, id: targetId })
+    graph.subgraphs.set(target.id, target)
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+      )
+    })
+
+    const resolved = graph.getNodeById(toNodeId(1))
+    assert(resolved?.isSubgraphNode())
+    expect(resolved).not.toBe(placeholder)
+    expect(resolved.type).toBe(type)
+    expect(resolved.subgraph).toBe(target)
   })
 
   it('keeps a placeholder when the replacement constructor throws', () => {

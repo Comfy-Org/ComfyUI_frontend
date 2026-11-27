@@ -2,7 +2,6 @@ import { cloneDeep } from 'es-toolkit'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@comfyorg/telemetry/reportError'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import type {

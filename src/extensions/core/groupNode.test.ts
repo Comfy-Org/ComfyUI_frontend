@@ -26,7 +26,6 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const {
   GroupNodeConfig,
