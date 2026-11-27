@@ -197,9 +197,13 @@ export function migrateWidgetsValues<TWidgetValue>(
     return widgetsValues
   }
 
+  const savedSlotIsSkipped = legacySavedSlotsSkipped(
+    Object.values(inputDefs),
+    widgets
+  )
   const compactedWidgetValues = filter(
     widgetsValues,
-    (_, index) => widgets[index]?.serialize !== false
+    (value, index) => !(value == null && savedSlotIsSkipped[index])
   )
   const alignedWidgetValues =
     compactedWidgetValues.length === widgetIndexHasForceInput.length
@@ -214,6 +218,26 @@ export function migrateWidgetsValues<TWidgetValue>(
     alignedWidgetValues,
     (_, index) => !widgetIndexHasForceInput[index]
   )
+}
+
+function legacySavedSlotsSkipped(
+  inputs: InputSpec[],
+  widgets: IBaseWidget[]
+): boolean[] {
+  const slots: boolean[] = []
+  let nextInput = 0
+  const emitForcedInputsBefore = (end: number) => {
+    for (; nextInput < end; nextInput++) {
+      if (inputs[nextInput].forceInput) slots.push(false)
+    }
+  }
+  for (const widget of widgets) {
+    const inputIndex = inputs.findIndex((input) => input.name === widget.name)
+    if (inputIndex !== -1) emitForcedInputsBefore(inputIndex + 1)
+    slots.push(widget.serialize === false)
+  }
+  emitForcedInputsBefore(inputs.length)
+  return slots
 }
 
 /**
