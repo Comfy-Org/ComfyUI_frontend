@@ -1,6 +1,7 @@
 import { isEqual } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import {
@@ -29,11 +30,9 @@ export function revealDynamicInputSlot(
 ): boolean {
   if (node.findInputByType(wantedType)) return false
 
-  const defInputs = node.constructor.nodeData?.inputs
+  const defInputs = nodeDefinition(node)?.inputs
   if (!defInputs) return false
 
-  // Each root input is attempted independently so a root that fails cannot
-  // leave a combo selected on the way to a different root that succeeds.
   for (const rootSpec of Object.values(defInputs)) {
     if (revealWithin(node, rootSpec, wantedType)) return true
   }

@@ -1,14 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 
-/**
- * Checks if a node is an output node.
- * Output nodes are nodes that have the output_node flag set in their nodeData.
- *
- * @param node - The node to check
- * @returns True if the node is an output node, false otherwise
- */
 export const isOutputNode = (node: LGraphNode) =>
-  node.constructor.nodeData?.output_node
+  nodeDefinition(node)?.output_node
 
 /**
  * Filters nodes to find only output nodes.

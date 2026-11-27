@@ -27,6 +27,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
 import { useDomClipping } from '@/composables/element/useDomClipping'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -168,7 +169,7 @@ onMounted(() => {
   )
 })
 
-const inputSpec = widget.node.constructor.nodeData
+const inputSpec = nodeDefinition(widget.node)
 const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
 // Mount DOM element when widget is or becomes visible

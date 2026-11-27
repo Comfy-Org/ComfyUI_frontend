@@ -6,6 +6,7 @@ import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -136,7 +137,7 @@ export const audioWidgetExtension: ComfyExtension = {
           })
         audioUIWidget.serialize = false
         audioUIWidget.options.serialize = false
-        const { nodeData } = node.constructor
+        const nodeData = nodeDefinition(node)
         if (nodeData == null) throw new TypeError('nodeData is null')
 
         const isOutputNode = nodeData.output_node

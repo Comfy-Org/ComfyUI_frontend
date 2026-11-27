@@ -8,12 +8,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import {
-  NODE_CREATION_GRAPH_FACTORY,
-  NODE_CREATION_TARGET_SUBGRAPH_ID
-} from '@/lib/litegraph/src/LiteGraphGlobal'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import { useLitegraphService } from '@/services/litegraphService'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type {
@@ -876,33 +871,6 @@ export type ConvertToNodesResult =
   | { readonly refused: false; readonly nodes: LGraphNode[] }
   | { readonly refused: true; readonly memberType: string }
 
-function missingSubgraphTarget(
-  type: string,
-  graph: LGraph
-): string | undefined {
-  const baseClass = Object.hasOwn(LiteGraph.registered_node_types, type)
-    ? LiteGraph.registered_node_types[type]
-    : undefined
-  if (!baseClass) return undefined
-
-  const graphAwareClass = baseClass as typeof LGraphNode & {
-    [NODE_CREATION_GRAPH_FACTORY]?: unknown
-    [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
-  }
-  if (!graphAwareClass[NODE_CREATION_GRAPH_FACTORY]) return undefined
-
-  const targetSubgraphId =
-    graphAwareClass[NODE_CREATION_TARGET_SUBGRAPH_ID] ?? type
-  return graph.rootGraph.subgraphs.has(targetSubgraphId)
-    ? undefined
-    : targetSubgraphId
-}
-
-function canCreateGroupMember(type: string, graph: LGraph): boolean {
-  if (!Object.hasOwn(LiteGraph.registered_node_types, type)) return false
-  return missingSubgraphTarget(type, graph) === undefined
-}
-
 /**
  * Migration-only adapter for deprecated group nodes.
  *
@@ -930,24 +898,10 @@ export class GroupNodeHandler {
     const { nodeData, oldToNewWidgetMap, oldToNewInputMap, newToOldOutputMap } =
       this.groupData
 
-    for (const member of nodeData.nodes) {
-      if (member.type && canCreateGroupMember(member.type, graph)) continue
-      if (member.type) {
-        const missingSubgraphId = missingSubgraphTarget(member.type, graph)
-        if (missingSubgraphId) {
-          useLitegraphService().reportMissingSubgraphTarget(
-            graph.rootGraph,
-            missingSubgraphId
-          )
-        }
-      }
-      return { refused: true, memberType: member.type ?? '<unknown>' }
-    }
-
     const addInnerNodes = () => {
       const c = { ...nodeData }
       c.nodes = c.nodes.map((n) => ({ ...n, id: undefined }))
-      const { createdNodes, nodesBySourceIndex } =
+      const { createdNodes, nodesBySourceIndex, failure } =
         deserialiseIntoGraphWithSourceIndices(
           JSON.stringify(c),
           graph,
@@ -957,10 +911,9 @@ export class GroupNodeHandler {
           }
         )
 
-      const refusedIndex = nodesBySourceIndex.findIndex((node) => node === null)
-      if (refusedIndex !== -1) {
+      if (failure) {
         return {
-          refused: nodeData.nodes.at(refusedIndex)?.type ?? '<unknown>'
+          refused: nodeData.nodes.at(failure.sourceIndex)?.type ?? '<unknown>'
         }
       }
 
@@ -1113,11 +1066,11 @@ export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
 
 function convertLoadedGroupNodes(graph: LGraph): {
   converted: number
-  retained: { node: LGraphNode; memberType: string }[]
+  retained: { node: LGraphNode; memberType: string | undefined }[]
 } {
   let converted = 0
   const failed = new Set<LGraphNode>()
-  const retained = new Map<LGraphNode, string>()
+  const retained = new Map<LGraphNode, string | undefined>()
   for (;;) {
     const node = graph.nodes.find(
       (n) => GroupNodeHandler.isGroupNode(n) && !failed.has(n)
@@ -1153,15 +1106,8 @@ function convertLoadedGroupNodes(graph: LGraph): {
       converted++
     } catch (error) {
       failed.add(node)
+      if (graph.getNodeById(node.id) === node) retained.set(node, undefined)
       console.error('Failed to convert group node to subgraph', error)
-      try {
-        graph.remove(node)
-      } catch (removeError) {
-        console.error(
-          'Failed to remove group node after conversion failure',
-          removeError
-        )
-      }
     }
   }
 }
@@ -1262,7 +1208,9 @@ export const groupNodeExtension: ComfyExtension = {
     }
     const { converted, retained } = convertLoadedGroupNodes(graph)
     for (const { node, memberType } of retained) {
-      missingNodeTypes.push({ type: memberType, nodeId: String(node.id) })
+      if (memberType !== undefined) {
+        missingNodeTypes.push({ type: memberType, nodeId: String(node.id) })
+      }
     }
     if (converted > 0) {
       const definitions = graph.extra.groupNodes as

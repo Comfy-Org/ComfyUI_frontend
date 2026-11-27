@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -50,8 +51,8 @@ function defineNodeDef(
   })
 }
 
-function node(type: string): FakeNode {
-  return { type }
+function node(type: string): LGraphNode {
+  return new LGraphNode(type, type)
 }
 
 function subgraphNode(type: string, children: FakeNode[]): FakeNode {

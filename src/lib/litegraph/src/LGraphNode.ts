@@ -18,6 +18,12 @@ import type {
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
+import {
+  NODE_CREATION_GRAPH_FACTORY,
+  NODE_CREATION_TARGET_SUBGRAPH_ID,
+  nodeDefinition
+} from './nodeConstruction'
+import type { NodeConstructionCapability } from './nodeConstruction'
 import { toValue } from 'vue'
 
 import {
@@ -442,6 +448,8 @@ export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
   // Static properties used by dynamic child classes
+  static [NODE_CREATION_GRAPH_FACTORY]?: NodeConstructionCapability
+  static [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
   static title?: string
   static MAX_CONSOLE?: number
   static type?: string
@@ -1352,7 +1360,7 @@ export class LGraphNode
 
     const restoration = createWidgetRestorationState(
       info,
-      this.constructor.nodeData?.fallbackWidgetsValuesNames
+      nodeDefinition(this)?.fallbackWidgetsValuesNames
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid

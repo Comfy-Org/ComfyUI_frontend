@@ -3,6 +3,7 @@ import { ref } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
@@ -25,7 +26,7 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
     node: LGraphNode,
     nodeId: string
   ): MissingNodeType | undefined {
-    if (!node.constructor.nodeData?.deprecated) return undefined
+    if (!nodeDefinition(node)?.deprecated) return undefined
     const replacement = useNodeReplacementStore().getReplacementFor(node.type)
     if (!replacement) return undefined
     if (!(replacement.new_node_id in LiteGraph.registered_node_types))

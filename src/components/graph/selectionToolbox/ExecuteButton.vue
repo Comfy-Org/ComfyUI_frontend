@@ -18,6 +18,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -37,7 +38,7 @@ const selectedOutputNodes = computed(() =>
 function outputNodeStokeStyle(this: LGraphNode) {
   if (
     this.selected &&
-    this.constructor.nodeData?.output_node &&
+    nodeDefinition(this)?.output_node &&
     buttonHovered.value
   ) {
     return { color: 'orange', lineWidth: 2, padding: 10 }

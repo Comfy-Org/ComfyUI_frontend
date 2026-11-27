@@ -27,7 +27,11 @@ import {
   isValueControlMode
 } from '@/core/graph/widgets/valueControl'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import { NODE_CREATION_TARGET_SUBGRAPH_ID } from '@/lib/litegraph/src/LiteGraphGlobal'
+import {
+  nodeDefinition,
+  prepareNodeConstruction
+} from '@/lib/litegraph/src/nodeConstruction'
+import type { NodeConstructionResult } from '@/lib/litegraph/src/nodeConstruction'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import {
@@ -38,7 +42,6 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { containsCentre } from '@/lib/litegraph/src/measure'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
-import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
@@ -696,7 +699,7 @@ function serializableWidgets(node: LGraphNode): IBaseWidget[] {
 }
 
 function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
-  const inputs = node.constructor.nodeData?.inputs
+  const inputs = nodeDefinition(node)?.inputs
   return (
     inputs !== undefined &&
     Object.values(inputs).some((spec) =>
@@ -917,7 +920,7 @@ function explicitControlName(input: object, name: string): boolean {
 }
 
 function undeclaredByNodeDefinition(node: LGraphNode, name: string): boolean {
-  const inputs = node.constructor.nodeData?.inputs
+  const inputs = nodeDefinition(node)?.inputs
   if (inputs === undefined) return false
   if (synthesizedWidgetName(name)) return false
   if (name.includes('.') || name.startsWith('_extra_')) return false
@@ -1140,44 +1143,17 @@ function layoutOf(node: LGraphNode): {
   }
 }
 
-function isResolvablePlaceholder(node: LGraphNode, graph: LGraph): boolean {
-  if (!missingNodePlaceholders.has(node)) return false
-  if (!Object.hasOwn(LiteGraph.registered_node_types, node.type)) return false
-  const registered = LiteGraph.registered_node_types[node.type]
-  if (registered.prototype instanceof SubgraphNode) {
-    const graphAwareClass = registered as typeof LGraphNode & {
-      [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
-    }
-    const targetSubgraphId =
-      graphAwareClass[NODE_CREATION_TARGET_SUBGRAPH_ID] ?? node.type
-    return graph.rootGraph.subgraphs.has(targetSubgraphId)
-  }
-  return true
-}
-
-function missingNode(docNode: DocNode, graph: LGraph): LGraphNode {
+function missingNode(
+  docNode: DocNode,
+  result: Exclude<NodeConstructionResult, { kind: 'created' }>
+): LGraphNode {
   const node = new LGraphNode(
     docNode.serialised.title || docNode.type || 'Missing Node',
     docNode.type
   )
   node.has_errors = true
   constructorFallbackShells.add(node)
-  const registered = Object.hasOwn(
-    LiteGraph.registered_node_types,
-    docNode.type
-  )
-    ? LiteGraph.registered_node_types[docNode.type]
-    : undefined
-  if (!registered) missingNodePlaceholders.add(node)
-  else if (registered.prototype instanceof SubgraphNode) {
-    const graphAwareClass = registered as typeof LGraphNode & {
-      [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
-    }
-    const targetSubgraphId =
-      graphAwareClass[NODE_CREATION_TARGET_SUBGRAPH_ID] ?? docNode.type
-    if (!graph.rootGraph.subgraphs.has(targetSubgraphId))
-      missingNodePlaceholders.add(node)
-  }
+  if (result.kind === 'refused') missingNodePlaceholders.add(node)
   return node
 }
 
@@ -1531,39 +1507,84 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
-    const replacement = live
-      ? this.createPlaceholderReplacement(graph, live, docNode)
-      : null
-    if (live && live.type === docNode.type && !replacement) {
+    if (!live) {
+      this.createNode(graph, docNode, mode, context)
+      return 'created'
+    }
+    const replacement = this.createPlaceholderReplacement(graph, live, docNode)
+    if (live.type === docNode.type && !replacement) {
       this.updateLiveNode(live, docNode, mode)
       return 'updated'
     }
-    const preservedLayout = live && replacement ? layoutOf(live) : undefined
-    if (live) graph.remove(live)
-    this.createNode(graph, docNode, mode, context, preservedLayout, replacement)
-    return live ? 'recreated' : 'created'
+    if (replacement) {
+      if (
+        graph.getNodeById(toNodeId(id)) !== live ||
+        !replacement.isCurrent()
+      ) {
+        replacement.cancelUnattachedSubscriptions()
+        return 'skipped'
+      }
+      const preservedLayout = layoutOf(live)
+      graph.remove(live)
+      this.createNode(
+        graph,
+        docNode,
+        mode,
+        context,
+        preservedLayout,
+        replacement.node
+      )
+    } else {
+      graph.remove(live)
+      this.createNode(graph, docNode, mode, context)
+    }
+    return 'recreated'
   }
 
   private createPlaceholderReplacement(
     graph: LGraph,
     live: LGraphNode,
     docNode: DocNode
-  ): LGraphNode | null {
-    if (live.type !== docNode.type || !isResolvablePlaceholder(live, graph)) {
+  ): Extract<NodeConstructionResult, { kind: 'created' }> | null {
+    if (live.type !== docNode.type || !missingNodePlaceholders.has(live)) {
       return null
     }
+    const result = this.constructNode(graph, docNode)
+    if (result.kind === 'created') return result
+    if (result.kind === 'failed') missingNodePlaceholders.delete(live)
+    return null
+  }
 
-    let replacement: LGraphNode | null = null
-    try {
-      replacement = LiteGraph.createNode(
-        docNode.type,
-        docNode.serialised.title,
-        { targetGraph: graph }
+  private constructNode(
+    graph: LGraph,
+    docNode: DocNode
+  ): NodeConstructionResult {
+    const prepared = prepareNodeConstruction(LiteGraph, {
+      type: docNode.type,
+      title: docNode.serialised.title,
+      graph
+    })
+    const result = prepared.kind === 'ready' ? prepared.construct() : prepared
+    if (result.kind === 'failed')
+      this.reportOnce(
+        `construction:${docNode.type}`,
+        `Cannot construct agent node ${docNode.type}`,
+        'agent_graph_apply_failed',
+        { nodeId: docNode.id, nodeType: docNode.type },
+        result.cause
       )
-      return replacement
-    } finally {
-      if (!replacement) missingNodePlaceholders.delete(live)
-    }
+    return result
+  }
+
+  private createNodeOrPlaceholder(graph: LGraph, docNode: DocNode): LGraphNode {
+    const result = this.constructNode(graph, docNode)
+    if (result.kind === 'created') return result.node
+    if (
+      result.kind === 'refused' &&
+      result.reason === 'missing-owned-definition'
+    )
+      result.report()
+    return missingNode(docNode, result)
   }
 
   private updateLiveNode(
@@ -1584,12 +1605,7 @@ export class LiveGraphApplier {
     layout?: ReturnType<typeof layoutOf>,
     built?: LGraphNode | null
   ): LGraphNode {
-    const node =
-      built ??
-      LiteGraph.createNode(docNode.type, docNode.serialised.title, {
-        targetGraph: graph
-      }) ??
-      missingNode(docNode, graph)
+    const node = built ?? this.createNodeOrPlaceholder(graph, docNode)
     node.id = toNodeId(docNode.id)
     const info: ISerialisedNode = {
       ...docNode.serialised,
