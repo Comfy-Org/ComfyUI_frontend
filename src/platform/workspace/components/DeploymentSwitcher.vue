@@ -45,7 +45,7 @@
           </span>
           <span
             v-if="triggerBuildName"
-            class="max-w-24 truncate text-sm"
+            class="ml-0.5 max-w-24 truncate text-sm"
             data-testid="deployment-switcher-build-name"
             >{{ triggerBuildName }}</span
           >
