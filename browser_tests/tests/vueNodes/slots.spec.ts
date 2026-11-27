@@ -5,7 +5,6 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 
 test('Dragging a typed output reveals compatible widget input slots @vue-nodes', async ({
   comfyPage
@@ -16,9 +15,10 @@ test('Dragging a typed output reveals compatible widget input slots @vue-nodes',
   const { page } = comfyPage
   const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
   const intNode = await comfyPage.nodeOps.getNodeRefByType('PrimitiveInt')
-  const intOutput = page
-    .locator(`[data-slot-key="${getSlotKey(intNode.id, 0, false)}"]`)
-    .locator('..')
+  const intOutput = comfyPage.vueNodes.getOutputSlotConnectionDot(
+    String(intNode.id),
+    0
+  )
 
   await expect(ksampler.getWidgetSlotContainer('seed')).toHaveCSS(
     'opacity',
@@ -60,9 +60,8 @@ test('Moving an existing link off an input reveals compatible widget input slots
   const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
   const intNode = await comfyPage.nodeOps.getNodeRefByType('PrimitiveInt')
   const seedSlot = ksampler.getSlot('seed')
-  await page
-    .locator(`[data-slot-key="${getSlotKey(intNode.id, 0, false)}"]`)
-    .locator('..')
+  await comfyPage.vueNodes
+    .getOutputSlotConnectionDot(String(intNode.id), 0)
     .dragTo(seedSlot)
   await expect
     .poll(() => comfyPage.vueNodes.isSlotConnected(seedSlot))
@@ -132,9 +131,10 @@ test('A node added mid-drag reveals its compatible widget input slots @vue-nodes
   )
   const { page } = comfyPage
   const intNode = await comfyPage.nodeOps.getNodeRefByType('PrimitiveInt')
-  const intOutput = page
-    .locator(`[data-slot-key="${getSlotKey(intNode.id, 0, false)}"]`)
-    .locator('..')
+  const intOutput = comfyPage.vueNodes.getOutputSlotConnectionDot(
+    String(intNode.id),
+    0
+  )
   await intOutput.hover()
   await page.mouse.down()
   const { x, y } = (await intOutput.boundingBox())!
@@ -180,9 +180,6 @@ function addNodeToCurrentGraph(
   )
 }
 
-const slotWrapper = (page: Page, key: string) =>
-  page.locator(`.lg-slot:has([data-slot-key="${key}"])`)
-
 test('A node added mid-drag while dragging from an input marks its compatible outputs @vue-nodes', async ({
   comfyPage
 }) => {
@@ -203,8 +200,8 @@ test('A node added mid-drag while dragging from an input marks its compatible ou
     'PrimitiveFloat',
     [700, 450]
   )
-  const intOutput = slotWrapper(page, getSlotKey(intId, 0, false))
-  const floatOutput = slotWrapper(page, getSlotKey(floatId, 0, false))
+  const intOutput = comfyPage.vueNodes.getOutputSlotRow(String(intId), 0)
+  const floatOutput = comfyPage.vueNodes.getOutputSlotRow(String(floatId), 0)
 
   await expect(intOutput).toBeVisible()
   await expect(
@@ -229,9 +226,10 @@ test('A node added mid-drag inside a subgraph marks its compatible inputs @vue-n
     () =>
       window.app!.canvas.graph!.nodes.find((n) => n.type === 'VAEEncode')!.id
   )
-  const vaeOutput = page
-    .locator(`[data-slot-key="${getSlotKey(vaeId, 0, false)}"]`)
-    .locator('..')
+  const vaeOutput = comfyPage.vueNodes.getOutputSlotConnectionDot(
+    String(vaeId),
+    0
+  )
   await vaeOutput.hover()
   await page.mouse.down()
   const { x, y } = (await vaeOutput.boundingBox())!
@@ -246,13 +244,13 @@ test('A node added mid-drag inside a subgraph marks its compatible inputs @vue-n
           .inputs.findIndex((input) => input.name === inputName),
       [addedId, name] as const
     )
-  const latentInput = slotWrapper(
-    page,
-    getSlotKey(addedId, await inputIndex('latent_image'), true)
+  const latentInput = comfyPage.vueNodes.getInputSlotRow(
+    String(addedId),
+    await inputIndex('latent_image')
   )
-  const modelInput = slotWrapper(
-    page,
-    getSlotKey(addedId, await inputIndex('model'), true)
+  const modelInput = comfyPage.vueNodes.getInputSlotRow(
+    String(addedId),
+    await inputIndex('model')
   )
 
   await expect(
@@ -312,9 +310,10 @@ test('A node pasted mid-drag marks inputs its paste config creates @vue-nodes', 
     window.app!.canvas.graph!.nodes.map((n) => n.id)
   )
 
-  const sourceOutput = page
-    .locator(`[data-slot-key="${getSlotKey(source.id, 0, false)}"]`)
-    .locator('..')
+  const sourceOutput = comfyPage.vueNodes.getOutputSlotConnectionDot(
+    String(source.id),
+    0
+  )
   await sourceOutput.hover()
   await page.mouse.down()
   const { x, y } = (await sourceOutput.boundingBox())!
@@ -335,9 +334,9 @@ test('A node pasted mid-drag marks inputs its paste config creates @vue-nodes', 
         .inputs.findIndex((input) => input.name === 'images.image4'),
     pastedId
   )
-  const lastGrownInput = slotWrapper(
-    page,
-    getSlotKey(pastedId, lastGrownIndex, true)
+  const lastGrownInput = comfyPage.vueNodes.getInputSlotRow(
+    String(pastedId),
+    lastGrownIndex
   )
 
   await expect(lastGrownInput).toBeVisible()
