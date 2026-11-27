@@ -19,7 +19,7 @@
       :style="{ '--align-row-width': alignRowWidth(alignOptionCount) }"
     >
       <div
-        class="flex flex-wrap gap-(--align-gap) [@container_style(--reka-popover-content-available-width<var(--align-row-width))]:flex-col"
+        class="flex [flex-direction:if(style(--reka-popover-content-available-width<var(--align-row-width)):column;else:row)] flex-wrap gap-(--align-gap)"
       >
         <div
           v-for="(groups, section) in alignOptionSections"
@@ -32,7 +32,7 @@
           }"
         >
           <div
-            class="flex flex-wrap gap-(--align-gap) [@container_style(--reka-popover-content-available-width<var(--align-row-width))]:flex-col"
+            class="flex [flex-direction:if(style(--reka-popover-content-available-width<var(--align-row-width)):column;else:row)] flex-wrap gap-(--align-gap)"
           >
             <div
               v-for="(options, group) in groups"
