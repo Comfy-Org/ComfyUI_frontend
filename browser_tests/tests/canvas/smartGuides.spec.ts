@@ -54,7 +54,41 @@ async function centreOf(comfyPage: ComfyPage, index: number) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
 
+async function stripBetweenNotes(comfyPage: ComfyPage) {
+  const { canvasOps, page } = comfyPage
+  const [from, to] = await Promise.all([
+    canvasOps.canvasPosToClientPos([45, 216]),
+    canvasOps.canvasPosToClientPos([65, 240])
+  ])
+  return page.screenshot({
+    clip: { x: from.x, y: from.y, width: to.x - from.x, height: to.y - from.y }
+  })
+}
+
+function testGuideVisibility() {
+  test('a guide joins a snapped node to its neighbour until the node is dropped', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
+    await comfyPage.canvasOps.setOffset([200, 100])
+    const grip = await comfyPage.canvasOps.canvasPosToClientPos([85, 285])
+    const withoutGuide = await stripBetweenNotes(comfyPage)
+    const guideShows = async () =>
+      !(await stripBetweenNotes(comfyPage)).equals(withoutGuide)
+
+    await comfyMouse.move(grip)
+    await comfyMouse.drag({ x: grip.x - 5, y: grip.y + 60 })
+    await expect.poll(guideShows).toBe(true)
+
+    await comfyMouse.drop()
+    await expect.poll(guideShows).toBe(false)
+  })
+}
+
 test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
+  testGuideVisibility()
+
   test.describe('Dragging a node 5 units left of another node’s left edge', () => {
     const cases = [
       { name: 'snaps onto the edge', settings: {}, keys: [], left: 55 },
@@ -621,6 +655,8 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
 })
 
 test.describe('Smart guides on the classic canvas', { tag: '@canvas' }, () => {
+  testGuideVisibility()
+
   test('dragging a node snaps it onto another node’s left edge', async ({
     comfyPage
   }) => {

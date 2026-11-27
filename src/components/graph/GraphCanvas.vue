@@ -42,7 +42,7 @@
       :delay-duration="settingStore.get('LiteGraph.Node.TooltipDelay')"
     />
     <SelectionRectangle v-if="comfyAppReady" />
-    <SmartGuidesOverlay v-if="comfyAppReady" />
+    <SmartGuidesOverlay v-if="comfyAppReady && shouldRenderVueNodes" />
     <DistributeGapHandles v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
