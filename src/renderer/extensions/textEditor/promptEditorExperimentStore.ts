@@ -6,7 +6,7 @@ import type {
   PromptEditorOpenedMetadata,
   PromptEditorSurfaceVariant
 } from '@comfyorg/telemetry/types'
-import { PROMPT_EDITOR_SURFACE_VARIANTS } from '@comfyorg/telemetry/types'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
@@ -14,10 +14,12 @@ import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 const PROMPT_EDITOR_SURFACE_FLAG = 'prompt-editor-surface'
 
-function isPromptEditorSurfaceVariant(
-  value: unknown
-): value is PromptEditorSurfaceVariant {
-  return PROMPT_EDITOR_SURFACE_VARIANTS.some((variant) => variant === value)
+const variantSchema =
+  zGetFeaturesResponse.shape[PROMPT_EDITOR_SURFACE_FLAG].unwrap()
+
+function parseVariant(value: unknown): PromptEditorSurfaceVariant | undefined {
+  const parsed = variantSchema.safeParse(value)
+  return parsed.success ? parsed.data : undefined
 }
 
 function readQaOverride(): unknown {
@@ -38,13 +40,12 @@ function resolveAssignment(served: unknown): PromptEditorAssignment {
   const qaOverride = readQaOverride()
   if (qaOverride !== undefined)
     return {
-      variant: isPromptEditorSurfaceVariant(qaOverride)
-        ? qaOverride
-        : 'control',
+      variant: parseVariant(qaOverride) ?? 'control',
       isAttributed: false
     }
-  return isPromptEditorSurfaceVariant(served)
-    ? { variant: served, isAttributed: true }
+  const servedVariant = parseVariant(served)
+  return servedVariant
+    ? { variant: servedVariant, isAttributed: true }
     : { variant: 'control', isAttributed: false }
 }
 

@@ -17,10 +17,10 @@ function serve(
   variant: string | undefined,
   { authenticated = true }: { authenticated?: boolean } = {}
 ) {
-  useRemoteConfigStore().acceptConfig(
-    { 'prompt-editor-surface': variant },
-    authenticated
-  )
+  const servedConfig: Record<string, unknown> = {
+    'prompt-editor-surface': variant
+  }
+  useRemoteConfigStore().acceptConfig(servedConfig, authenticated)
 }
 
 beforeEach(() => {

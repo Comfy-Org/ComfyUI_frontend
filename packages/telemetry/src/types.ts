@@ -1553,9 +1553,7 @@ export interface WidgetFavoriteToggledMetadata {
 }
 
 /** PostHog variant keys of `$feature/prompt-editor-surface`. */
-export const PROMPT_EDITOR_SURFACE_VARIANTS = ['control', 'panel'] as const
-export type PromptEditorSurfaceVariant =
-  (typeof PROMPT_EDITOR_SURFACE_VARIANTS)[number]
+export type PromptEditorSurfaceVariant = 'control' | 'panel'
 interface PromptEditorExperimentMetadata {
   '$feature/prompt-editor-surface': PromptEditorSurfaceVariant
 }
