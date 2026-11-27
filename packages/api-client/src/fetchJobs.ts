@@ -44,11 +44,11 @@ function jobIdOf(job: unknown): string | undefined {
 
 function keepContractJobs(jobs: unknown[]): RawJobListItem[] {
   const parsed = jobs.map((job) => zRawJobListItem.safeParse(job))
-  const droppedIds = jobs.flatMap((job, index) =>
-    parsed[index].success ? [] : [jobIdOf(job)]
+  const dropped = jobs.flatMap((job, index) =>
+    parsed[index].success ? [] : [{ index, id: jobIdOf(job) }]
   )
-  if (droppedIds.length > 0) {
-    console.warn('[Jobs API] Dropped jobs outside the contract:', droppedIds)
+  if (dropped.length > 0) {
+    console.warn('[Jobs API] Dropped jobs outside the contract:', dropped)
   }
   return parsed.flatMap((result) => (result.success ? [result.data] : []))
 }

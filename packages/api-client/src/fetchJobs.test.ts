@@ -327,7 +327,10 @@ describe('fetchJobs', () => {
         const result = await fetchHistory(fetchWithJobBetweenTwoGoodOnes(job))
 
         expect(result.map(({ id }) => id)).toEqual(['job1', 'job3'])
-        expect(console.warn).toHaveBeenCalledOnce()
+        expect(console.warn).toHaveBeenCalledExactlyOnceWith(
+          expect.any(String),
+          [expect.objectContaining({ index: 1 })]
+        )
       }
     )
 
