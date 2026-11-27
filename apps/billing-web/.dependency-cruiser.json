@@ -11,6 +11,9 @@
   "options": {
     "tsConfig": { "fileName": "tsconfig.json" },
     "tsPreCompilationDeps": true,
+    "includeOnly": {
+      "path": "^(src|e2e|node_modules|\\.\\.)/|^[^/]+\\.ts$"
+    },
     "doNotFollow": { "path": ["node_modules", "^\\.\\./"] },
     "enhancedResolveOptions": {
       "extensions": [".ts", ".mts", ".js", ".vue", ".json"],

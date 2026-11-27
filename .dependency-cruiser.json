@@ -68,6 +68,9 @@
     "tsConfig": { "fileName": "tsconfig.json" },
     "tsPreCompilationDeps": true,
     "doNotFollow": { "path": "node_modules" },
+    "includeOnly": {
+      "path": "^(src|__mocks__|packages|scripts|tools|browser_tests|build|\\.storybook|\\.github/scripts|node_modules)/|^[^/]+\\.m?ts$"
+    },
     "exclude": {
       "path": [
         "^src/__ecs_matrix__/",
