@@ -970,6 +970,23 @@ describe('Cloud button compatibility checks', () => {
     expect(await screen.findByTestId('cloud-button')).toBeInTheDocument()
   })
 
+  it('shows the button again once a later check gets an answer after a switch-off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+    await requestCloudCheck(userEvent.setup())
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    await useCloudWorkflowCheckStore().check()
+
+    expect(await screen.findByTestId('cloud-button')).toBeInTheDocument()
+  })
+
   it('says nodes are missing and offers a Build when Cloud lacks a node pack', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({
       kind: 'missing',

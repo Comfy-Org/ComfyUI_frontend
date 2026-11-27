@@ -346,7 +346,10 @@ async function requestCompatibility(
     if (!auth.ok)
       return 'cause' in auth
         ? giveUp(authFailureReason(auth.cause), auth.cause)
-        : giveUp('workspace', new Error('Workspace authorization unavailable'))
+        : giveUp(
+            navigator.onLine ? 'workspace' : 'unreachable',
+            new Error('Workspace authorization unavailable')
+          )
     const response = await fetch(new URL('/api/cloud/compatibility', origin), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth.headers },

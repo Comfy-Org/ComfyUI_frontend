@@ -150,6 +150,23 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
+  it('reports a missing workspace credential while offline as unreachable', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockResolvedValue({
+      headers: null
+    })
+    const offline = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreachable'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+    offline.mockRestore()
+  })
+
   it('reports a failed token refresh as a workspace problem', async () => {
     workflowHas(node('KSampler'))
     const authStore = useAuthStore()

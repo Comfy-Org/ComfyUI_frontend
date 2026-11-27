@@ -74,6 +74,7 @@ export const useCloudWorkflowCheckStore = defineStore(
         )
         if (controller.signal.aborted) return
         if (result?.kind === 'canOpen' || result?.kind === 'missing') {
+          isSwitchedOffOnCloud.value = false
           dispatch({ type: 'answered', run, verdict: result })
         } else {
           dispatch({ type: 'failed', run, blocker: result })
