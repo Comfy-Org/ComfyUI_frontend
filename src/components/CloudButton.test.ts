@@ -75,6 +75,18 @@ function renderCloudButton() {
   )
 }
 
+function renderCloudButtonHiddenWhenSwitchedOff() {
+  return render(
+    {
+      components: { CloudButton, GlobalDialog },
+      setup: () => ({ checkStore: useCloudWorkflowCheckStore() }),
+      template:
+        '<CloudButton v-if="!checkStore.isSwitchedOffOnCloud" /><GlobalDialog />'
+    },
+    { global: { plugins: [testI18n] } }
+  )
+}
+
 async function requestCloudCheck(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByTestId('cloud-button'))
   await user.click(await screen.findByRole('button', { name: checkLabel }))
@@ -921,17 +933,17 @@ describe('Cloud button compatibility checks', () => {
     )
   })
 
-  it('shows no toast and hides the check when Comfy Cloud has switched it off', async () => {
+  it('shows no toast, records the switch-off and then hides the button when Comfy Cloud has switched the check off', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({
       kind: 'checkFailed',
       reason: 'switchedOff'
     })
-    renderCloudButton()
+    renderCloudButtonHiddenWhenSwitchedOff()
 
     await requestCloudCheck(userEvent.setup())
 
     await waitFor(() =>
-      expect(useCloudWorkflowCheckStore().isSwitchedOffOnCloud).toBe(true)
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
     )
     expect(useToast().toasts).toEqual([])
     expect(
@@ -940,6 +952,22 @@ describe('Cloud button compatibility checks', () => {
       name: 'app:run_on_cloud_check_failed',
       properties: { reason: 'switched_off' }
     })
+  })
+
+  it('shows the button again once the workspace changes after a switch-off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+    await requestCloudCheck(userEvent.setup())
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team' })
+
+    expect(await screen.findByTestId('cloud-button')).toBeInTheDocument()
   })
 
   it('says nodes are missing and offers a Build when Cloud lacks a node pack', async () => {

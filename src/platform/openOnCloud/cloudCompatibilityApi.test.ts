@@ -150,6 +150,26 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
+  it('reports a failed token refresh as a workspace problem', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    const refreshFailed = new Error('token refresh failed')
+    vi.mocked(authStore.getWorkspaceAuthContext).mockRejectedValue(
+      refreshFailed
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'workspace'
+    })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      refreshFailed,
+      expect.anything()
+    )
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('sends no workflow data if the workspace changes while authorization is pending', async () => {
     workflowHas(node('KSampler'))
     cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
@@ -804,6 +824,35 @@ describe(checkCloudCompatibility, () => {
       reason: 'workspace'
     },
     {
+      name: 'a 408',
+      response: () => new Response(null, { status: 408 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 404 that is not the switch-off answer',
+      response: () => new Response('<html>Not Found</html>', { status: 404 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 400 that is not about size',
+      response: () =>
+        Response.json(
+          { code: 'INVALID_REQUEST', message: 'node_types is required' },
+          { status: 400 }
+        ),
+      reason: 'outdated'
+    },
+    {
+      name: 'a 400 with no body',
+      response: () => new Response(null, { status: 400 }),
+      reason: 'outdated'
+    },
+    {
+      name: 'a 200 that is not JSON',
+      response: () => new Response('<html>Portal</html>', { status: 200 }),
+      reason: 'outdated'
+    },
+    {
       name: 'an unexpected 4xx',
       response: () => new Response(null, { status: 422 }),
       reason: 'outdated'
@@ -831,7 +880,12 @@ describe(checkCloudCompatibility, () => {
 
   it('reports a 404 as switched off without an error report', async () => {
     workflowHas(node('KSampler'))
-    cloudAnswers(new Response(null, { status: 404 }))
+    cloudAnswers(
+      Response.json(
+        { code: 'NOT_FOUND', message: 'Not found' },
+        { status: 404 }
+      )
+    )
 
     await expect(checkCloudCompatibility()).resolves.toEqual({
       kind: 'checkFailed',
