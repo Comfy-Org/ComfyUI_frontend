@@ -22,6 +22,7 @@ import {
   widgetSpec
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import type { WidgetErrorTarget } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { withTextareaFloor } from '@/renderer/extensions/vueNodes/widgets/textareaFloor'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -217,15 +218,22 @@ function processWidget(
     )
   )
 
+  const vueComponent = resolveWidgetComponent(type, renderState)
+  const rendersTextarea = vueComponent === getComponent('textarea')
+
   return {
     handleContextMenu: widgetContextMenu(ctx, name),
-    sizing: renderState.sizing,
+    get sizing() {
+      return rendersTextarea
+        ? withTextareaFloor(renderState.sizing)
+        : renderState.sizing
+    },
     get hasError() {
       return error.value
     },
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent: resolveWidgetComponent(type, renderState),
+    vueComponent,
     name,
     type,
     get value() {

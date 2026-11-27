@@ -7,6 +7,7 @@
         borderStyle
       )
     "
+    :style="{ minHeight: `${textareaMinHeight()}px` }"
     data-part="widget-textarea"
   >
     <div class="flex h-6 shrink-0 items-center gap-2 px-3">
@@ -99,6 +100,7 @@ import {
   widgetName,
   widgetOptions
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { textareaMinHeight } from '@/renderer/extensions/vueNodes/widgets/textareaFloor'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'

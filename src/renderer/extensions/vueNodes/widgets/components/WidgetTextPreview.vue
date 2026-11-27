@@ -42,7 +42,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
+          'size-full min-h-0 resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           'overflow-y-auto'
         )
       "

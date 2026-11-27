@@ -489,7 +489,9 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    const summary = screen.getByRole('button', { name: /^worked$/i })
+    const summary = screen.getByRole('button', {
+      name: 'Worked for 3 seconds'
+    })
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
 

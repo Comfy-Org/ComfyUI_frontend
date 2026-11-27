@@ -25,6 +25,9 @@ import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/compo
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { BodyItem } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import type { VueNodeBodyContext } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
+import { vueNodeBodyKey } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
 import SharedNodeTooltip from '@/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { growableRegionsKey } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
@@ -47,10 +50,15 @@ class TestResizeObserver implements ResizeObserver {
   disconnect() {
     this.elements.clear()
   }
-  resize(element: Element) {
+  resize(element: Element, blockSize = 0) {
     if (this.elements.has(element)) {
       this.callback(
-        [fromPartial<ResizeObserverEntry>({ target: element })],
+        [
+          fromPartial<ResizeObserverEntry>({
+            target: element,
+            borderBoxSize: [{ blockSize, inlineSize: 0 }]
+          })
+        ],
         this
       )
     }
@@ -203,39 +211,33 @@ function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
   })
 }
 
-function renderLayoutGrid(syncLayout = true) {
-  const { container, rerender } = renderGrid(
-    [widget('width', 'number', 0)],
-    syncLayout
-  )
-  assert.instanceOf(container, HTMLElement)
-  container.dataset.nodeId = '1'
-  Object.defineProperty(container, 'offsetWidth', { value: 200 })
-  container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
-  const grid = screen.getByTestId('node-widgets')
-  grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
-  let socketTop = 140
-  const socket = screen.getByTestId('slot-dot')
-  socket.getBoundingClientRect = () => new DOMRect(-4, socketTop, 8, 8)
-  const moveSocket = (top: number) => {
-    socketTop = top
+function renderBodyGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
+  const widgetItems = shallowRef<(() => BodyItem[]) | undefined>()
+  const reportContentHeight = vi.fn()
+  const body: VueNodeBodyContext = {
+    slotItems: shallowRef(),
+    widgetItems,
+    rowOf: () => ({ y: 40, height: 57 }),
+    reportContentHeight
   }
-  const resizeGrid = () => {
-    for (const observer of observers) observer.resize(grid)
+  const result = render(WidgetGrid, {
+    props: {
+      nodeId: toNodeId(1),
+      nodeType: 'TestNode',
+      syncLayout,
+      processedWidgets
+    },
+    global: {
+      plugins: [testI18n],
+      provide: { [vueNodeBodyKey]: body },
+      stubs: { AppInput: AppInputStub }
+    }
+  })
+  return {
+    ...result,
+    bodyItems: () => widgetItems.value?.(),
+    reportContentHeight
   }
-  const resizeRow = () => {
-    const row = screen.getByTestId('node-widget')
-    for (const observer of observers) observer.resize(row)
-  }
-  const stored = () =>
-    layoutStore.getSlotOffset(
-      'widget-grid-graph',
-      toNodeId(1),
-      0,
-      'input',
-      'expanded'
-    )
-  return { rerender, stored, moveSocket, resizeGrid, resizeRow }
 }
 
 describe('WidgetGrid', () => {
@@ -312,12 +314,23 @@ describe('WidgetGrid', () => {
     expect(declaredRow.style.minHeight).toBe('87px')
   })
 
-  it('resyncs slot offsets when a connected row swaps its control for a label', async () => {
-    const { rerender, stored, moveSocket, resizeGrid } = renderLayoutGrid()
-    resizeGrid()
-    expect(stored()).toEqual({ x: 0, y: 114 })
+  it('hands its rows to the node body, as a socket once a connection hides the control', async () => {
+    const sizing = { kind: 'fixed' as const, height: 24 }
+    const { bodyItems, rerender } = renderBodyGrid([
+      { ...widget('width', 'number', 0), sizing }
+    ])
 
-    moveSocket(100)
+    expect(bodyItems()).toEqual([
+      {
+        kind: 'control',
+        key: 'width',
+        input: 0,
+        growable: false,
+        sizing,
+        userHeight: undefined
+      }
+    ])
+
     await rerender({
       processedWidgets: [
         {
@@ -328,25 +341,42 @@ describe('WidgetGrid', () => {
       ]
     })
 
-    expect(stored()).toEqual({ x: 0, y: 74 })
+    expect(bodyItems()).toEqual([{ kind: 'socket', key: 'width', input: 0 }])
   })
 
-  it('resyncs slot offsets when a row resizes inside a grid that keeps its size', async () => {
-    const { stored, moveSocket, resizeGrid, resizeRow } = renderLayoutGrid()
+  it('renders a declared row at the height the node body allocates', () => {
+    renderBodyGrid([
+      {
+        ...widget('text', 'unknown', 0),
+        sizing: { kind: 'growable', minHeight: 30, minWidth: 0 }
+      }
+    ])
+
+    expect(screen.getByTestId('node-widget').style.height).toBe('57px')
+  })
+
+  it('reports the content height of a control that declares no sizing, until it detaches', async () => {
+    const { reportContentHeight } = renderBodyGrid([
+      widget('width', 'number', 0)
+    ])
     await nextTick()
-    resizeGrid()
-    expect(stored()).toEqual({ x: 0, y: 114 })
+    const observer = observers.find(({ elements }) => elements.size > 0)
+    assert.isDefined(observer)
+    const [control] = observer.elements
+    assert.instanceOf(control, HTMLElement)
+    expect(control.dataset.contentKey).toBe('width')
 
-    moveSocket(100)
-    resizeRow()
+    observer.resize(control, 31)
+    expect(reportContentHeight).toHaveBeenCalledExactlyOnceWith('width', 31)
 
-    expect(stored()).toEqual({ x: 0, y: 74 })
+    control.remove()
+    observer.resize(control, 12)
+    expect(reportContentHeight).toHaveBeenCalledOnce()
   })
 
-  it('does not track layout when syncLayout is disabled', () => {
-    const { stored, resizeGrid } = renderLayoutGrid(false)
-    resizeGrid()
-    expect(stored()).toBeNull()
+  it('hands no rows to the node body when syncLayout is disabled', () => {
+    const { bodyItems } = renderBodyGrid([widget('width', 'number', 0)], false)
+    expect(bodyItems()).toBeUndefined()
   })
 
   it('restores controls when disconnected', async () => {
