@@ -451,6 +451,28 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
 
+  it('names the Build beside the icon on a deployment', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    renderSwitcher()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-build-name')
+    ).toHaveTextContent('Studio Build')
+  })
+
+  it('shows only the icon on Comfy Cloud', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+
+    await screen.findByTestId('deployment-switcher-trigger')
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
   it('marks the engine button until its first open closes, and remembers it on every device as soon as it opens', async () => {
     useSettingStore().$patch({
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }

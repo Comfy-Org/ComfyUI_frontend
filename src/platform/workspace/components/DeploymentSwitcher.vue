@@ -43,6 +43,12 @@
               data-testid="deployment-switcher-new"
             />
           </span>
+          <span
+            v-if="pickedRow"
+            class="max-w-24 truncate text-sm"
+            data-testid="deployment-switcher-build-name"
+            >{{ pickedRow.title }}</span
+          >
           <i
             class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
