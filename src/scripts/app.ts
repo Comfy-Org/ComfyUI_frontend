@@ -1612,9 +1612,7 @@ export class ComfyApp implements IComfyApp {
                 const replacement = nodeReplacementStore.getReplacementFor(
                   n.type
                 )
-                const cnrId = getCnrIdFromProperties(
-                  n.properties as Record<string, unknown> | undefined
-                )
+                const cnrId = getCnrIdFromProperties(n.properties)
                 const executionId = pathPrefix
                   ? `${pathPrefix}:${n.id}`
                   : String(n.id)

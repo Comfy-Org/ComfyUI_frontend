@@ -1138,6 +1138,33 @@ function convertLoadedGroupNodes(graph: LGraph): {
   }
 }
 
+function retainedGroupDefinitionNames(
+  retained: readonly LGraphNode[],
+  definitions: Readonly<Partial<Record<string, GroupNodeWorkflowData>>>
+): Set<string> {
+  const prefixes = [`${PREFIX}${SEPARATOR}`, `${PREFIX}/`]
+  const needed = new Set<string>()
+  const pending = retained.map((node) => node.type)
+
+  while (pending.length > 0) {
+    const type = pending.pop()
+    const prefix = prefixes.find((candidate) => type?.startsWith(candidate))
+    if (!type || !prefix) continue
+    const name = type.slice(prefix.length)
+    if (needed.has(name)) continue
+    needed.add(name)
+    const definition = definitions[name]
+    if (!definition) continue
+    pending.push(
+      ...definition.nodes
+        .map((node) => node.type)
+        .filter((type): type is string => typeof type === 'string')
+    )
+  }
+
+  return needed
+}
+
 const groupNodeReportIndices = new WeakMap<
   Exclude<MissingNodeType, string>,
   number
@@ -1207,11 +1234,11 @@ export const groupNodeExtension: ComfyExtension = {
     const { converted, retained } = convertLoadedGroupNodes(graph)
     if (converted > 0) {
       const definitions = graph.extra.groupNodes as
-        | Record<string, unknown>
+        | Record<string, GroupNodeWorkflowData>
         | undefined
-      const groupTypePrefix = `${PREFIX}${SEPARATOR}`
-      const neededGroups = new Set(
-        retained.map((node) => node.type.slice(groupTypePrefix.length))
+      const neededGroups = retainedGroupDefinitionNames(
+        retained,
+        definitions ?? {}
       )
       const kept = Object.fromEntries(
         Object.entries(definitions ?? {}).filter(([name]) =>

@@ -992,6 +992,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
     )
     const convertibleData: GroupNodeWorkflowData =
       fixture.extra.groupNodes.group_node
+    const nestedData: GroupNodeWorkflowData = structuredClone(convertibleData)
     const refusedData: GroupNodeWorkflowData = structuredClone(convertibleData)
 
     const definitionGraph = new LGraph()
@@ -1000,12 +1001,14 @@ describe('GroupNodeHandler.convertToNodes', () => {
     }).asSerialisable()
     const foreignSubgraph = definitionGraph.createSubgraph(foreign)
     useSubgraphService().registerNewSubgraph(foreignSubgraph, foreign)
+    refusedData.nodes.push({ type: 'workflow>nested_group' })
     refusedData.nodes.push({ type: foreign.id })
 
     await new GroupNodeConfig(
       'convertible_group',
       convertibleData
     ).registerType()
+    await new GroupNodeConfig('nested_group', nestedData).registerType()
     await new GroupNodeConfig('refused_group', refusedData).registerType()
 
     const graph = new LGraph()
@@ -1023,6 +1026,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
     }
     graph.extra.groupNodes = {
       convertible_group: convertibleData,
+      nested_group: nestedData,
       refused_group: refusedData
     }
 
@@ -1035,6 +1039,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
     const remaining = graph.nodes.filter((n) => !n.isSubgraphNode())
     expect(remaining.map((n) => n.type)).toEqual(['workflow>refused_group'])
     expect(graph.serialize().extra?.groupNodes).toEqual({
+      nested_group: nestedData,
       refused_group: refusedData
     })
   })

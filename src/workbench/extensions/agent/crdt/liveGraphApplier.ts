@@ -37,6 +37,7 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { containsCentre } from '@/lib/litegraph/src/measure'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   ExportedSubgraph,
   ISerialisableNodeInput,
@@ -1515,7 +1516,7 @@ export class LiveGraphApplier {
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
     const replacement =
-      live && isResolvablePlaceholder(live)
+      live && isResolvablePlaceholder(live, graph)
         ? LiteGraph.createNode(docNode.type, docNode.serialised.title, {
             targetGraph: graph
           })
