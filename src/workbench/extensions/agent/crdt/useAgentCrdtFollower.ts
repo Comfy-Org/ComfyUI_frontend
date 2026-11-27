@@ -342,6 +342,8 @@ interface AgentFollowerSessionOwner {
   pageLease: FollowerSessionLease<AgentFollowerSession> | null
   pageLeaseDocumentId: string | null
   readonly pageSession: ShallowRef<AgentFollowerSession | null>
+  /** Previous panel consumer's session, if the page claim kept it alive. */
+  detachedConsumerSession: AgentFollowerSession | null
 }
 
 const NOT_A_DOCUMENT_HOLDER = null
@@ -429,7 +431,8 @@ function createOwner(
     pageScope: null,
     pageLease: null,
     pageLeaseDocumentId: null,
-    pageSession: shallowRef<AgentFollowerSession | null>(null)
+    pageSession: shallowRef<AgentFollowerSession | null>(null),
+    detachedConsumerSession: null
   }
 }
 
@@ -514,6 +517,7 @@ export function destroyAgentFollowerSessions(): void {
     owner.pageLease = null
     owner.pageLeaseDocumentId = null
     owner.pageSession.value = null
+    owner.detachedConsumerSession = null
     owner.pageScope?.stop()
     owner.pageScope = null
     owner.registry.destroy()
@@ -600,10 +604,14 @@ export function useAgentCrdtFollower(
       const lease = owner.registry.acquire(NOT_A_DOCUMENT_HOLDER)
       if (lease === null) return
       onCleanup(() => {
+        owner.detachedConsumerSession = follower.value ?? null
         follower.value = undefined
         lease.release()
       })
       follower.value = lease.session
+      if (owner.detachedConsumerSession === lease.session)
+        lease.session.refreshSubscription()
+      owner.detachedConsumerSession = null
     },
     { immediate: true, flush: 'sync' }
   )
@@ -1635,6 +1643,7 @@ function startAgentCrdtFollower(
       connected.value = false
       terminal.value = null
     },
+    refreshSubscription: () => lifecycle.refresh(),
     enqueueHumanOperations: (operations: GraphOperation[]) => {
       const sentAdds = sentAddsToCurrentDoc()
       for (const operation of operations)

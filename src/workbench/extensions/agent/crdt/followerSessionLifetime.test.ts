@@ -211,12 +211,12 @@ describe('FRONT-3582 stage 1b: the document owns the follower session', () => {
 
     page.panel.unmount()
     await nextTick()
-    const bindingNotYetRestored = ref<string | null>(null)
-    const reopened = page.mountPanel(bindingNotYetRestored)
+    const reopened = page.mountPanel()
     await nextTick()
 
     expect(bridgeState.built).toHaveLength(1)
     expect(bridgeState.built[0].subscribedWorkflowId).toBe(DOC_A)
+    expect(bridgeState.built[0].resubscribe).toHaveBeenCalledOnce()
     reopened.unmount()
   })
 
