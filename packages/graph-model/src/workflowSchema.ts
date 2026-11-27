@@ -42,6 +42,12 @@ const zSlotIndex = z.union([
     })
 ])
 
+/**
+ * Legacy workflows serialised `slot_index: null`; the value is derived at
+ * runtime, so normalise it away instead of rejecting the whole workflow.
+ */
+const zOptionalSlotIndex = zSlotIndex.nullish().transform((v) => v ?? undefined)
+
 // TODO: Investigate usage of array and number as data type usage in custom nodes.
 // Known usage:
 // - https://github.com/rgthree/rgthree-comfy Context Big node is using array as type.
@@ -142,7 +148,7 @@ const zNodeOutput = z
     name: z.string(),
     type: zDataType,
     links: z.array(z.number()).nullable().optional(),
-    slot_index: zSlotIndex.optional()
+    slot_index: zOptionalSlotIndex
   })
   .passthrough()
 
@@ -151,7 +157,7 @@ const zNodeInput = z
     name: zNodeInputName,
     type: zDataType,
     link: z.number().nullable().optional(),
-    slot_index: zSlotIndex.optional()
+    slot_index: zOptionalSlotIndex
   })
   .passthrough()
 

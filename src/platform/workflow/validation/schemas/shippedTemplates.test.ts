@@ -17,26 +17,7 @@ interface KnownUnloadable {
   matches: RegExp
 }
 
-const SLOT_INDEX_NULL =
-  /received null at "(?:definitions\.subgraphs\[\d+\]\.)?nodes\[\d+\]\.outputs\[\d+\]\.slot_index"/
-
 const KNOWN_UNLOADABLE: Record<string, KnownUnloadable> = {
-  'image_fibo2_edit_dev_pe.json': {
-    reason: 'outputs[].slot_index is null',
-    matches: SLOT_INDEX_NULL
-  },
-  'image_fibo2_edit_turbo_pe.json': {
-    reason: 'outputs[].slot_index is null',
-    matches: SLOT_INDEX_NULL
-  },
-  'api_heygen_avatar_6_id2v.json': {
-    reason: 'outputs[].slot_index is null',
-    matches: SLOT_INDEX_NULL
-  },
-  'utility_rmbg3_remove_background.json': {
-    reason: 'outputs[].slot_index is null, including inside subgraphs',
-    matches: SLOT_INDEX_NULL
-  },
   'video_pika_h3_flex_fl2va.json': {
     reason: 'workflow id is a slug, not a GUID',
     matches: /Invalid GUID at "id"/

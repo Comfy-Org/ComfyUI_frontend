@@ -395,6 +395,44 @@ describe('parseComfyWorkflow', () => {
       await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
     })
   })
+
+  describe('slot_index null normalisation', () => {
+    it('drops null slot_index on node outputs', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].outputs = [
+        { name: 'MODEL', type: 'MODEL', links: null, slot_index: null }
+      ]
+
+      const result = await validateComfyWorkflow(workflow)
+
+      expect(result).not.toBeNull()
+      expect(result!.nodes[0].outputs![0].slot_index).toBeUndefined()
+      expect(JSON.stringify(result!.nodes[0].outputs![0])).not.toContain(
+        '"slot_index"'
+      )
+    })
+
+    it('drops null slot_index on node inputs', async () => {
+      const workflow = JSON.parse(JSON.stringify(defaultGraph))
+      workflow.nodes[0].inputs = [
+        { name: 'clip', type: 'CLIP', link: null, slot_index: null }
+      ]
+
+      const result = await validateComfyWorkflow(workflow)
+
+      expect(result).not.toBeNull()
+      expect(result!.nodes[0].inputs![0].slot_index).toBeUndefined()
+      expect(JSON.stringify(result!.nodes[0].inputs![0])).not.toContain(
+        '"slot_index"'
+      )
+    })
+
+    it('rejects null origin_slot on links', async () => {
+      const workflow = schema1WorkflowWithLink({ origin_slot: null })
+
+      await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+    })
+  })
 })
 
 describe('zClipboardItems', () => {
@@ -509,5 +547,14 @@ describe('zClipboardItems', () => {
     if (!result.success) throw result.error
     expect(result.data.groups?.[0].id).toBe(-1)
     expect(result.data.reroutes?.[0].linkIds).toEqual([])
+  })
+
+  it('accepts nodes with null slot_index', () => {
+    const node = {
+      ...structuredClone(defaultGraph.nodes[0]),
+      outputs: [{ name: 'out', type: 'IMAGE', slot_index: null }]
+    }
+
+    expect(zClipboardItems.safeParse({ nodes: [node] }).success).toBe(true)
   })
 })
