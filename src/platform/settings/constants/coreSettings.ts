@@ -307,6 +307,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Cloud.AskBeforeCompatibilityCheck',
+    category: ['Comfy', 'Comfy Cloud', 'AskBeforeCompatibilityCheck'],
+    name: 'Ask before sending node and model names to check Comfy Cloud compatibility',
+    type: isCloud ? 'hidden' : 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Desktop.CloudNotificationShown',
     name: 'Cloud notification shown',
     type: 'hidden',
@@ -874,6 +881,58 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When dragging and resizing nodes while holding shift they will be aligned to the grid, this controls the size of that grid.',
     defaultValue: LiteGraph.CANVAS_GRID_SIZE
   },
+  {
+    id: 'Comfy.Canvas.SmartGuides.Enabled',
+    category: ['LiteGraph', 'Smart Guides', 'Enabled'],
+    name: 'Snap to nearby nodes, groups, and wires while dragging and resizing',
+    tooltip:
+      'Shows guide lines and snaps to aligned edges, even spacing, and straight wires. Hold Shift to snap to the grid instead.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapToEdges',
+    category: ['LiteGraph', 'Smart Guides', 'SnapToEdges'],
+    name: 'Snap to the edges of other nodes and groups',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapToWires',
+    category: ['LiteGraph', 'Smart Guides', 'SnapToWires'],
+    name: 'Snap so that wires become straight',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapToSpacing',
+    category: ['LiteGraph', 'Smart Guides', 'SnapToSpacing'],
+    name: 'Snap to even spacing between nodes',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapDistance',
+    category: ['LiteGraph', 'Smart Guides', 'SnapDistance'],
+    name: 'Snap distance (screen pixels)',
+    type: 'slider',
+    attrs: { min: 2, max: 24, step: 1 },
+    defaultValue: 8,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.Gap',
+    category: ['LiteGraph', 'Smart Guides', 'Gap'],
+    name: 'Gap when snapping next to another node',
+    type: 'slider',
+    attrs: { min: 0, max: 100, step: 1 },
+    defaultValue: 0,
+    versionAdded: '1.62.0'
+  },
   // Keep the 'pysssss.SnapToGrid' setting id so we don't need to migrate setting values.
   // Using a new setting id can cause existing users to lose their existing settings.
   {
@@ -1215,6 +1274,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Template library - Selected runs on filters',
     type: 'hidden',
     defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.HasOpenedLibrary',
+    name: 'Template library - Opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.Templates.SortBy',

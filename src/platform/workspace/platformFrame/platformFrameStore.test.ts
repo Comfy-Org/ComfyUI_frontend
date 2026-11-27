@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { captureOpenWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
 import {
@@ -16,6 +18,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 import { useAuthStore } from '@/stores/authStore'
 
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
@@ -49,6 +52,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workspace/platformWorkflowHandoff'), () => ({
   captureOpenWorkflow: vi.fn(() => ({
     filename: 'portrait.json',
@@ -223,6 +227,55 @@ describe('usePlatformFrameStore', () => {
     expect(store.isUnanswered).toBe(true)
   })
 
+  it('keeps the height the page asks for until the frame closes', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+
+    receive({ type: 'content-height', height: 304 }, frame)
+    expect(store.contentHeight).toBe(304)
+
+    store.dismiss()
+    expect(store.contentHeight).toBeNull()
+  })
+
+  it('forgets the asked height when the frame loads a new page', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+    receive({ type: 'content-height', height: 304 }, frame)
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+
+    expect(store.contentHeight).toBeNull()
+  })
+
+  it('forgets the step Platform moved to when the frame loads a new page', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+    receive({ type: 'step-shown', step: 'models' }, frame)
+    expect(store.session?.shownStep).toBe('models')
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+
+    expect(store.session?.shownStep).toBeUndefined()
+  })
+
+  it('takes a shown step only on the pre-install screen', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'models', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+
+    receive({ type: 'step-shown', step: 'models' }, frame)
+
+    expect(store.session?.shownStep).toBeUndefined()
+  })
+
   it('keeps the frame without the fallback once the page says it is ready', async () => {
     vi.useFakeTimers()
     const store = usePlatformFrameStore()
@@ -323,6 +376,20 @@ describe('usePlatformFrameStore', () => {
       vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS * 5)
 
       expect(store.session?.id).toBe(second?.id)
+    })
+
+    it('forgets the height the first page asked for', () => {
+      vi.useFakeTimers()
+      const store = usePlatformFrameStore()
+      const { frame } = framedWindow()
+      store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+      store.attach(frame)
+      receive({ type: 'content-height', height: 304 }, frame)
+
+      receive({ type: 'ready', signedIn: false }, frame)
+      vi.advanceTimersByTime(PLATFORM_FRAME_SIGN_IN_RETRY_MS)
+
+      expect(store.contentHeight).toBeNull()
     })
 
     it('waits for the reloaded page to answer', () => {
@@ -452,6 +519,21 @@ describe('following a build after the dialog closes', () => {
     receive(started, frame)
     return { store, frame, load }
   }
+
+  it('forgets the asked height once the build page shows', () => {
+    const pickStore = useDeploymentPickStore()
+    pickStore.state = listing([RUNNING])
+    vi.spyOn(pickStore, 'load').mockResolvedValue()
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+    receive({ type: 'content-height', height: 304 }, frame)
+
+    receive(started, frame)
+
+    expect(store.contentHeight).toBeNull()
+  })
 
   function toastTitles(): string[] {
     return useToast().toasts.map((toast) => toast.title)
@@ -622,6 +704,36 @@ describe('following a build after the dialog closes', () => {
       'Reload',
       'Later'
     ])
+  })
+
+  it('asks to save unsaved work before Reload in words that name a reload', async () => {
+    const { frame } = startBuild()
+    Object.assign(useDeploymentPickStore(), { bootDeployment: RUNNING })
+    Object.assign(useWorkflowStore(), {
+      modifiedWorkflows: [
+        fromPartial<ComfyWorkflow>({
+          path: 'workflows/lora-stack.json',
+          isLoaded: true,
+          isModified: true
+        })
+      ]
+    })
+    receive(
+      { type: 'deployment-ready', deploymentId: 'dep-1', releaseId: 'r-2' },
+      frame
+    )
+
+    useToast().toasts[0].actions[0].onClick()
+
+    await vi.waitFor(() =>
+      expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Save your workflows before reloading?',
+          denyLabel: 'Reload without saving',
+          confirmLabel: 'Save and reload'
+        })
+      )
+    )
   })
 
   it('says nothing more when the version notice already told of the new version', () => {

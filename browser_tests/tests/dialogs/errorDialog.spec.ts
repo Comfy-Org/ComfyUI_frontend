@@ -486,7 +486,6 @@ test.describe('Error dialog', () => {
           const ws = await getWebSocket()
           const execution = new ExecutionHelper(comfyPage, ws)
           const jobId = await execution.run()
-          execution.executionStart(jobId)
           ws.send(
             JSON.stringify({
               type: 'execution_error',

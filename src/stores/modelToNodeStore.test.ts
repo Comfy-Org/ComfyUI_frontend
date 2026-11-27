@@ -242,6 +242,31 @@ describe('useModelToNodeStore', () => {
       }
     )
 
+    it.for([
+      ['unet', 'UNETLoader', 'unet_name'],
+      ['unet/flux', 'UNETLoader', 'unet_name'],
+      ['clip', 'CLIPLoader', 'clip_name'],
+      ['t2i_adapter', 'ControlNetLoader', 'control_net_name']
+    ])(
+      'resolves the legacy %s folder to the loader of the folder ComfyUI maps it to',
+      ([modelType, expectedNodeName, expectedKey]) => {
+        const modelToNodeStore = useModelToNodeStore()
+
+        const provider = modelToNodeStore.getNodeProvider(modelType)
+        expect(provider?.nodeDef.name).toBe(expectedNodeName)
+        expect(provider?.key).toBe(expectedKey)
+      }
+    )
+
+    it('prefers a provider registered under a legacy folder name over its mapped folder', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.quickRegister('clip', 'CLIPVisionLoader', 'clip_name')
+
+      expect(modelToNodeStore.getNodeProvider('clip')?.nodeDef.name).toBe(
+        'CLIPVisionLoader'
+      )
+    })
+
     it.for(['ultralytics', 'ultralytics/bbox', 'ultralytics/segm'])(
       'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
       (modelType) => {
@@ -509,6 +534,23 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.getAllNodeProviders('checkpoints').length
 
       expect(secondCheckpointCount).toBe(firstCheckpointCount)
+    })
+
+    it('registers defaults added after an earlier partial node definition set', () => {
+      const nodeDefStore = useNodeDefStore()
+      nodeDefStore.nodeDefsByName = {
+        CheckpointLoaderSimple: mockNodeDefsByName.CheckpointLoaderSimple
+      }
+      const modelToNodeStore = useModelToNodeStore()
+
+      modelToNodeStore.registerDefaults()
+      expect(modelToNodeStore.getNodeProvider('vae')).toBeUndefined()
+
+      nodeDefStore.nodeDefsByName = mockNodeDefsByName
+
+      expect(modelToNodeStore.getNodeProvider('vae')?.nodeDef.name).toBe(
+        'VAELoader'
+      )
     })
 
     it('should not register when nodeDefStore is empty', () => {

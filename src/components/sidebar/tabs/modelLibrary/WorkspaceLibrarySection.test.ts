@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -16,6 +16,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type { ModelFolder } from '@/stores/modelStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import WorkspaceLibrarySection from './WorkspaceLibrarySection.vue'
 
@@ -31,6 +32,8 @@ const i18n = createI18n({
 })
 
 const library = new Map<string, string[]>()
+const blockedLibrary = new Map<string, string[]>()
+const failOnce = new Set<string>()
 
 function folder(directory: string) {
   return fromPartial<ModelFolder>({ directory })
@@ -52,8 +55,16 @@ function renderSection(searchQuery = '') {
 
 beforeEach(() => {
   library.clear()
+  blockedLibrary.clear()
+  failOnce.clear()
   vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
-    async (name) => library.get(name) ?? []
+    async (name) => {
+      if (failOnce.delete(name)) throw new Error('inventory unavailable')
+      return {
+        names: library.get(name) ?? [],
+        blocked: blockedLibrary.get(name) ?? []
+      }
+    }
   )
   vi.mocked(useFeatureFlags().flags).runtimeLibraryModelsEnabled = true
   Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
@@ -64,9 +75,6 @@ beforeEach(() => {
     can_start: false,
     created_at: '2026-10-01T00:00:00Z'
   }
-  Object.assign(useModelStore(), {
-    modelFolders: [folder('loras'), folder('configs')]
-  })
 })
 
 describe('WorkspaceLibrarySection', () => {
@@ -100,9 +108,27 @@ describe('WorkspaceLibrarySection', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'loras' })).toBeInTheDocument()
     expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith('loras')
-    expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalledWith(
-      'configs'
-    )
+  })
+
+  it('lists workspace models in folders the deployment itself does not have', async () => {
+    Object.assign(useModelStore(), {
+      modelFolders: [
+        folder('diffusion_models'),
+        folder('text_encoders'),
+        folder('vae')
+      ]
+    })
+    library.set('loras', ['be26685_test_lora.safetensors'])
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'be26685_test_lora.safetensors'
+      })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'loras' })).toBeInTheDocument()
   })
 
   it('marks each model as from the workspace, not as a download a build may not need, and counts them in the header', async () => {
@@ -110,9 +136,6 @@ describe('WorkspaceLibrarySection', () => {
       'detail-tweaker.safetensors',
       'portrait-detail.safetensors'
     ])
-    Object.assign(useModelStore(), {
-      modelFolders: [folder('loras'), folder('checkpoints')]
-    })
     library.set('checkpoints', ['sd_xl_base_1.0.safetensors'])
     const { user } = renderSection()
     expect(screen.queryByTestId('workspace-library-count')).toBeNull()
@@ -131,15 +154,80 @@ describe('WorkspaceLibrarySection', () => {
     ).toBeInTheDocument()
   })
 
+  it("lists a model the Build's model rules block after the runnable ones, marked, places no loader for it, and leaves it out of the count", async () => {
+    library.set('loras', ['detail-tweaker.safetensors'])
+    blockedLibrary.set('loras', ['banned-style.safetensors'])
+    vi.mocked(useModelToNodeStore().getNodeProvider).mockReturnValue({
+      nodeDef: fromPartial<ComfyNodeDefImpl>({ name: 'LoraLoader' }),
+      key: 'lora_name'
+    })
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByRole('button', { name: 'Workspace library 1 model' })
+    ).toBeInTheDocument()
+    const [runnable, blocked] = screen.getAllByRole('listitem')
+    expect(runnable).toHaveTextContent('detail-tweaker.safetensors')
+    expect(
+      within(runnable).queryByRole('img', {
+        name: "Blocked by this Build's model rules"
+      })
+    ).toBeNull()
+    expect(blocked).toHaveTextContent('banned-style.safetensors')
+    expect(
+      within(blocked).getByRole('img', {
+        name: "Blocked by this Build's model rules"
+      })
+    ).toHaveAttribute('title', "Blocked by this Build's model rules")
+    expect(within(blocked).queryByRole('button')).toBeNull()
+
+    await user.click(within(blocked).getByText('banned-style.safetensors'))
+
+    expect(startModelLoaderDrag).not.toHaveBeenCalled()
+  })
+
+  it("shows a folder's shelf when every model in it is blocked by the Build's model rules", async () => {
+    blockedLibrary.set('checkpoints', ['banned-base.safetensors'])
+    const { user } = renderSection()
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'checkpoints' })
+    ).toBeInTheDocument()
+    expect(screen.getByText('banned-base.safetensors')).toBeInTheDocument()
+    expect(
+      screen.queryByText('No models in your workspace library.')
+    ).not.toBeInTheDocument()
+  })
+
+  it('filters the blocked models by the search too', async () => {
+    library.set('loras', ['detail-tweaker.safetensors'])
+    blockedLibrary.set('loras', [
+      'banned-style.safetensors',
+      'other-ban.safetensors'
+    ])
+    const { user } = renderSection('style')
+
+    await user.click(screen.getByRole('button', { name: 'Workspace library' }))
+
+    expect(
+      await screen.findByText('banned-style.safetensors')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('other-ban.safetensors')).toBeNull()
+    expect(
+      screen.queryByRole('button', { name: 'detail-tweaker.safetensors' })
+    ).toBeNull()
+  })
+
   it('shows no count while a folder it counts has not loaded yet', async () => {
     library.set('loras', ['detail-tweaker.safetensors'])
     library.set('checkpoints', [
       'sd_xl_base_1.0.safetensors',
       'sd_xl_refiner_1.0.safetensors'
     ])
-    Object.assign(useModelStore(), {
-      modelFolders: [folder('loras'), folder('checkpoints')]
-    })
     const libraryModels = useDeploymentLibraryModelsStore()
     libraryModels.refresh('loras')
     await libraryModels.waitForSettled('loras')
@@ -188,9 +276,7 @@ describe('WorkspaceLibrarySection', () => {
   })
 
   it('reads the library again on retry', async () => {
-    vi.mocked(assetService.getWorkspaceLibraryModels).mockRejectedValueOnce(
-      new Error('inventory unavailable')
-    )
+    failOnce.add('loras')
     library.set('loras', ['detail-tweaker.safetensors'])
     const { user } = renderSection()
 
@@ -203,7 +289,11 @@ describe('WorkspaceLibrarySection', () => {
     expect(
       screen.queryByText("Couldn't load your workspace library.")
     ).not.toBeInTheDocument()
-    expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledTimes(2)
+    expect(
+      vi
+        .mocked(assetService.getWorkspaceLibraryModels)
+        .mock.calls.filter(([name]) => name === 'loras')
+    ).toHaveLength(2)
   })
 
   it('places a loader for the model that was clicked', async () => {
@@ -226,4 +316,37 @@ describe('WorkspaceLibrarySection', () => {
       'detail-tweaker.safetensors'
     )
   })
+
+  it.for([
+    ['unet', 'UNETLoader', 'unet_name'],
+    ['clip', 'CLIPLoader', 'clip_name'],
+    ['t2i_adapter', 'ControlNetLoader', 'control_net_name']
+  ])(
+    'places the %s loader for a model in that legacy folder',
+    async ([legacyFolder, loaderName, key]) => {
+      useNodeDefStore().nodeDefsByName = {
+        [loaderName]: fromPartial<ComfyNodeDefImpl>({ name: loaderName })
+      }
+      library.set(legacyFolder, ['legacy-model.safetensors'])
+      const { user } = renderSection()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Workspace library' })
+      )
+      await user.click(
+        await screen.findByRole('button', { name: 'legacy-model.safetensors' })
+      )
+
+      expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith(
+        legacyFolder
+      )
+      expect(startModelLoaderDrag).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nodeDef: expect.objectContaining({ name: loaderName }),
+          key
+        }),
+        'legacy-model.safetensors'
+      )
+    }
+  )
 })

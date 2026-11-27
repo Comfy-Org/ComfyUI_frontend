@@ -447,7 +447,8 @@ test.describe(
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
-        execution.executed('', '1', {
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', {
           images: [{ filename, subfolder: '', type: 'output' }],
           animated: [true]
         })
@@ -476,7 +477,8 @@ test.describe(
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.searchBoxV2.addNode('Save Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Save Image')
-        execution.executed('', '1', {
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', {
           images: [{ filename: 'example.png', type: 'input' }]
         })
         await node.waitForImageLoaded('example.png')
@@ -599,7 +601,8 @@ test.describe(
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
         const file = { filename: 'example.png', type: 'input' }
-        execution.executed('', '1', {
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', {
           images: [file, { ...file, filename: missing }]
         })
         await expect(node.imageGrid.getByRole('button')).toHaveCount(2)

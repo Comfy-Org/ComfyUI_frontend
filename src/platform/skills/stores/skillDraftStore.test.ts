@@ -1,10 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import {
-  completeWorkflowLogoutTransition,
-  prepareWorkflowLogoutTransition
-} from '@/platform/workflow/persistence/base/storageIO'
+import { prepareWorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import { useSkillDraftStore } from './skillDraftStore'
@@ -164,11 +161,11 @@ describe('skillDraftStore', () => {
   it('writes no draft while a sign-out is clearing storage', () => {
     const skills = useSkillPacksStore()
     const drafts = useSkillDraftStore()
-    prepareWorkflowLogoutTransition()
+    const logoutFence = prepareWorkflowLogoutTransition()
     try {
       drafts.setDraft(skills.scope, { kind: 'new' }, PORTRAIT)
     } finally {
-      completeWorkflowLogoutTransition()
+      logoutFence.release()
     }
 
     expect(

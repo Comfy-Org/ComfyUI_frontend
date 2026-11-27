@@ -126,6 +126,14 @@ export function nodePositionView(node: LayoutNode): LegacyPoint {
   return projection.positionView
 }
 
+/** The node's current position for reading only: writes to it are not committed. */
+export function readNodePosition(node: LayoutNode): Readonly<LegacyPoint> {
+  const projection = nodeGeometryProjection(node)
+  void projection.layoutRef?.value
+  refreshNodeGeometry(node)
+  return projection.position
+}
+
 export function nodeSizeView(node: LayoutNode): LegacySize {
   const projection = nodeGeometryProjection(node)
   void projection.layoutRef?.value

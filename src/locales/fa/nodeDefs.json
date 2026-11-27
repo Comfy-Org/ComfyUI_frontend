@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "پاسخ‌های متنی را با مدل‌های GPT شرکت OpenAI تولید کنید. یک اعلان متنی و، در صورت تمایل، تصویرها یا فایل‌ها را به‌عنوان زمینه ارائه کنید.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "مدلی که برای تولید پاسخ استفاده می‌شود."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "تولید تصویر به صورت همزمان از طریق نقطه پایانی GPT Image 2 شرکت OpenAI.",
     "display_name": "OpenAI GPT Image 2",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همواره به یک style_id یا style_references نیاز دارند؛ recraftv4_1_flash سریع‌ترین و ارزان‌ترین مدل است و اصلاً از هیچ سبکی پشتیبانی نمی‌کند."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکدست ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند؛ recraftv4_1_flash مدل Recraft V4.1 Flash V2 را اجرا می‌کند که سریع‌ترین و ارزان‌ترین مدل است و هیچ سبکی را پشتیبانی نمی‌کند."
       },
       "model_size": {
         "name": "اندازه"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "تصویر"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical شکل‌ها را به‌صورت لایه‌لایه روی یکدیگر قرار می‌دهد؛ cut_out شکل‌هایی ایجاد می‌کند که هرگز هم‌پوشانی ندارند و برای پلاترها، برش‌دهنده‌های وینیل و چاپ سیلک مناسب است."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) فایل‌های SVG تمیزتری با منحنی‌های روان، خطوط مستقیم و گوشه‌های تیز ارائه می‌دهد و برای نوشته‌نگاری و شکل‌های پیچیده بهترین است."
       }
     },
     "outputs": {

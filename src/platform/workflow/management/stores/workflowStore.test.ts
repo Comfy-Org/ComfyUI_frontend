@@ -11,10 +11,15 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { nextTick, reactive, toRaw } from 'vue'
 
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createCanvas } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   bindCanvasTracker,
   isCanvasOwner,
@@ -27,9 +32,9 @@ import {
   resetReportedWorkflowStateAnomaliesForTests,
   UnreadableWorkflowError
 } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
 import {
   ComfyWorkflow,
-  useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
@@ -44,35 +49,24 @@ import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
-import { isSubgraph } from '@/utils/typeGuardUtil'
-import {
-  createMockChangeTracker,
-  createMockLGraphNode
-} from '@/utils/__tests__/litegraphTestUtils'
-import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
-// Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: {}, // Start with empty canvas object
+    canvas: undefined,
     get canvasOrUndefined() {
       return this.canvas
     }
   }
-}))
-
-// Mock isSubgraph
-vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
-  isSubgraph: vi.fn(() => false)
 }))
 
 vi.mock(import('@/utils/syncUtil'), { spy: true })
@@ -82,6 +76,95 @@ const mockAssert = vi.hoisted(() => vi.fn())
 vi.mock(import('@/base/assert'), () => ({
   assert: mockAssert
 }))
+
+const BOOKMARK_INDEX = 'workflows/.index.json'
+
+type BookmarkReadFailure = number | Error | { malformedBody: string }
+
+function serveBookmarkIndex(
+  favorites?: string[],
+  otherFields: Record<string, unknown> = {}
+) {
+  let stored = favorites && JSON.stringify({ ...otherFields, favorites })
+  let readFailure: BookmarkReadFailure | undefined
+  let writeFailure: number | Error | undefined
+  let holdingWrites = false
+  const heldWrites: Array<() => void> = []
+  let onWrite: (() => void) | undefined
+
+  vi.mocked(api.getUserData).mockImplementation(async (file) => {
+    if (file !== BOOKMARK_INDEX) return new Response(null, { status: 404 })
+    if (readFailure !== undefined) {
+      const failure = readFailure
+      readFailure = undefined
+      if (failure instanceof Error) throw failure
+      return typeof failure === 'number'
+        ? new Response(null, { status: failure })
+        : new Response(failure.malformedBody, { status: 200 })
+    }
+    return stored === undefined
+      ? new Response(null, { status: 404 })
+      : new Response(stored, { status: 200 })
+  })
+  vi.mocked(api.storeUserData).mockImplementation(async (file, data) => {
+    if (file !== BOOKMARK_INDEX) return new Response(null, { status: 200 })
+    if (writeFailure instanceof Error) throw writeFailure
+    if (writeFailure) return new Response(null, { status: writeFailure })
+    const body = JSON.stringify(data)
+    if (!holdingWrites) {
+      stored = body
+      return new Response(null, { status: 200 })
+    }
+    return new Promise<Response>((resolve) => {
+      heldWrites.push(() => {
+        stored = body
+        resolve(new Response(null, { status: 200 }))
+      })
+      onWrite?.()
+    })
+  })
+
+  const writeHeld = () =>
+    heldWrites.length > 0
+      ? Promise.resolve()
+      : new Promise<void>((resolve) => {
+          onWrite = resolve
+        })
+
+  const index = (): Record<string, unknown> | undefined =>
+    stored === undefined ? undefined : JSON.parse(stored)
+
+  return {
+    index,
+    favorites: () => index()?.favorites,
+    saveElsewhere: (next: string[]) => {
+      stored = JSON.stringify({ ...otherFields, favorites: next })
+    },
+    storeContent: (content: string) => {
+      stored = content
+    },
+    failNextRead: (failure: BookmarkReadFailure) => {
+      readFailure = failure
+    },
+    failWrites: (failure: number | Error) => {
+      writeFailure = failure
+    },
+    holdWrites: () => {
+      holdingWrites = true
+    },
+    writeHeld,
+    async deliverOldestWrite() {
+      await writeHeld()
+      heldWrites.shift()?.()
+    },
+    async deliverNewestFirst(operations: Promise<unknown>[]) {
+      const settled = Promise.all(operations).then(() => 'settled' as const)
+      while ((await Promise.race([settled, writeHeld()])) !== 'settled') {
+        heldWrites.pop()?.()
+      }
+    }
+  }
+}
 
 describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
@@ -131,11 +214,19 @@ describe('useWorkflowStore', () => {
   }
 
   beforeEach(() => {
+    const rootGraph = createTestRootGraph()
+    const canvas = createCanvas(rootGraph)
+    vi.mocked(comfyApp).rootGraph = rootGraph
+    vi.mocked(comfyApp).canvas = canvas
+    onTestFinished(() => {
+      canvas.unbindEvents()
+      canvas.canvas.remove()
+    })
+
     store = useWorkflowStore()
     store.provideChangeTracker(ChangeTracker)
     bookmarkStore = useWorkflowBookmarkStore()
 
-    // Add default mock implementations
     vi.mocked(api.getUserData).mockResolvedValue({
       status: 200,
       json: () => Promise.resolve({ favorites: [] })
@@ -947,14 +1038,13 @@ describe('useWorkflowStore', () => {
 
   describe('renameWorkflow', () => {
     it('should rename workflow and update bookmarks', async () => {
+      serveBookmarkIndex()
       const workflow = store.createTemporary('dir/test.json')
 
-      // Set up initial bookmark
       expect(workflow.path).toBe('workflows/dir/test.json')
       await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
-      // Mock super.rename
       vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
         async function (this: unknown, ...args: unknown[]) {
           const newPath = args[0] as string
@@ -963,13 +1053,43 @@ describe('useWorkflowStore', () => {
         }
       )
 
-      // Perform rename
       const newPath = 'workflows/dir/renamed.json'
       await store.renameWorkflow(workflow, newPath)
 
-      // Check that bookmark was transferred
       expect(bookmarkStore.isBookmarked(newPath)).toBe(true)
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
+    })
+
+    it('moves a bookmark this tab never loaded to the new path', async () => {
+      const server = serveBookmarkIndex(['workflows/dir/test.json'])
+      const workflow = store.createTemporary('dir/test.json')
+
+      const moved = await store.renameWorkflow(
+        workflow,
+        'workflows/dir/renamed.json'
+      )
+
+      expect(moved).toBe(true)
+      expect(server.favorites()).toEqual(['workflows/dir/renamed.json'])
+      expect(bookmarkStore.isBookmarked('workflows/dir/renamed.json')).toBe(
+        true
+      )
+    })
+
+    it('distinguishes a completed rename with a refused bookmark save from a path collision', async () => {
+      const server = serveBookmarkIndex(['workflows/original.json'])
+      server.failWrites(500)
+      const workflow = store.createTemporary('original.json')
+
+      expect(
+        await store.renameWorkflow(workflow, 'workflows/renamed.json')
+      ).toBe('bookmarks-not-updated')
+
+      expect(workflow.path).toBe('workflows/renamed.json')
+      expect(store.getWorkflowByPath('workflows/renamed.json')?.key).toBe(
+        workflow.key
+      )
+      expect(server.favorites()).toEqual(['workflows/original.json'])
     })
 
     it('refuses to rename onto a path another workflow holds', async () => {
@@ -1287,20 +1407,30 @@ describe('useWorkflowStore', () => {
     })
 
     it('should remove bookmark when deleting a bookmarked workflow', async () => {
+      serveBookmarkIndex()
       const workflow = store.createTemporary('test.json')
 
-      // Mock delete method
       vi.spyOn(workflow, 'delete').mockResolvedValue()
 
-      // Bookmark the workflow
       await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
-      // Delete the workflow
       await store.deleteWorkflow(workflow)
 
-      // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
+    })
+
+    it('removes a bookmark this tab never loaded when deleting the workflow', async () => {
+      const server = serveBookmarkIndex([
+        'workflows/test.json',
+        'workflows/x.json'
+      ])
+      const workflow = store.createTemporary('test.json')
+
+      const unbookmarked = await store.deleteWorkflow(workflow)
+
+      expect(unbookmarked).toBe(true)
+      expect(server.favorites()).toEqual(['workflows/x.json'])
     })
 
     it('should remove a deleted workflow without closing other tabs', async () => {
@@ -1639,174 +1769,78 @@ describe('useWorkflowStore', () => {
 
   describe('Subgraphs', () => {
     beforeEach(async () => {
-      // Ensure canvas exists for these tests
-      vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, unknown>(
-        createMockCanvas({
-          subgraph: undefined
-        })
-      )
-
-      // Setup an active workflow as updateActiveGraph depends on it
       const workflow = store.createTemporary('test-subgraph-workflow.json')
-      // Mock load to avoid actual file operations/parsing
-      vi.spyOn(workflow, 'load').mockImplementation(async () => {
-        workflow.changeTracker = createMockChangeTracker({
-          workflow
-        })
-        workflow.originalContent = '{}'
-        workflow.content = '{}'
-        return workflow as LoadedComfyWorkflow
-      })
       await store.openWorkflow(workflow)
-
-      // Reset mocks before each subgraph test
-      vi.mocked(comfyApp.canvas).subgraph = undefined // Use undefined for root graph
     })
 
-    it('should handle when comfyApp.canvas is not available', async () => {
-      // Arrange
+    it('should handle an unsafe null canvas', async () => {
       vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, null>(null)
 
-      // Act
-      console.debug(store.isSubgraphActive)
       store.updateActiveGraph()
       await nextTick()
 
-      // Assert
-      console.debug(store.isSubgraphActive)
-      expect(store.isSubgraphActive).toBe(false) // Should default to false
-      expect(store.activeSubgraph).toBeUndefined() // Should default to empty
+      expect(store.isSubgraphActive).toBe(false)
+      expect(store.activeSubgraph).toBeUndefined()
     })
 
     it('should correctly update state when the root graph is active', async () => {
-      // Arrange: Ensure comfyApp indicates root graph is active
-      vi.mocked(comfyApp.canvas).subgraph = undefined // Use undefined for root graph
+      vi.mocked(comfyApp.canvas).subgraph = undefined
 
-      // Act: Trigger the update
       store.updateActiveGraph()
-      await nextTick() // Wait for Vue reactivity
+      await nextTick()
 
-      // Assert: Check store state
       expect(store.isSubgraphActive).toBe(false)
       expect(store.activeSubgraph).toBeUndefined()
     })
 
     it('should correctly update state when a subgraph is active', async () => {
-      // Arrange: Setup mock subgraph structure
-      const mockSubgraph = fromAny<Subgraph, unknown>({
+      const subgraph = createTestSubgraph({
         name: 'Level 2 Subgraph',
-        isRootGraph: false,
-        pathToRootGraph: [
-          { name: 'Root' }, // Root Graph (index 0, ignored)
-          { name: 'Level 1 Subgraph' },
-          { name: 'Level 2 Subgraph' }
-        ]
+        rootGraph: comfyApp.rootGraph
       })
-      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
+      vi.mocked(comfyApp.canvas).subgraph = subgraph
 
-      // Mock isSubgraph to return true for our mockSubgraph
-      vi.mocked(isSubgraph).mockImplementation(
-        (obj): obj is Subgraph => obj === mockSubgraph
-      )
-
-      // Act: Trigger the update
-      store.updateActiveGraph()
-      await nextTick() // Wait for Vue reactivity
-
-      // Assert: Check store state
-      expect(store.isSubgraphActive).toBe(true)
-      expect(store.activeSubgraph).toEqual(mockSubgraph)
-    })
-
-    it('should update automatically when activeWorkflow changes', async () => {
-      // Arrange: Set initial canvas state (e.g., a subgraph)
-      const initialSubgraph = fromAny<Subgraph, unknown>({
-        name: 'Initial Subgraph',
-        pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
-        isRootGraph: false
-      })
-      vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
-
-      // Mock isSubgraph to return true for our initialSubgraph
-      vi.mocked(isSubgraph).mockImplementation(
-        (obj): obj is Subgraph => obj === initialSubgraph
-      )
-
-      // Trigger initial update based on the *first* workflow opened in beforeEach
       store.updateActiveGraph()
       await nextTick()
 
-      // Verify initial state
+      expect(store.isSubgraphActive).toBe(true)
+      expect(store.activeSubgraph).toEqual(subgraph)
+    })
+
+    it('should update automatically when activeWorkflow changes', async () => {
+      const initialSubgraph = createTestSubgraph({
+        name: 'Initial Subgraph',
+        rootGraph: comfyApp.rootGraph
+      })
+      vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
+
+      store.updateActiveGraph()
+      await nextTick()
+
       expect(store.isSubgraphActive).toBe(true)
       expect(store.activeSubgraph).toEqual(initialSubgraph)
 
-      // Act: Change the active workflow
       const workflow2 = store.createTemporary('workflow2.json')
-      // Mock load for the second workflow
-      vi.spyOn(workflow2, 'load').mockImplementation(async () => {
-        workflow2.changeTracker = createMockChangeTracker({
-          workflow: workflow2
-        })
-        workflow2.originalContent = '{}'
-        workflow2.content = '{}'
-        return workflow2 as LoadedComfyWorkflow
-      })
-
-      // Before changing workflow, set the canvas state to something different (e.g., root)
-      // This ensures the watcher *does* cause a state change we can assert
       vi.mocked(comfyApp.canvas).subgraph = undefined
 
-      // Mock isSubgraph to return false for undefined
-      vi.mocked(isSubgraph).mockImplementation(
-        (_obj): _obj is Subgraph => false
-      )
+      await store.openWorkflow(workflow2)
+      await nextTick()
 
-      await store.openWorkflow(workflow2) // This changes activeWorkflow and triggers the watch
-      await nextTick() // Allow watcher and potential async operations in updateActiveGraph to complete
-
-      // Assert: Check that the state was updated by the watcher based on the *new* canvas state
-      expect(store.isSubgraphActive).toBe(false) // Should reflect the change to undefined subgraph
+      expect(store.isSubgraphActive).toBe(false)
       expect(store.activeSubgraph).toBeUndefined()
     })
   })
 
   describe('NodeLocatorId conversions', () => {
     beforeEach(() => {
-      // Setup mock graph structure with subgraphs
-      const mockNodes: LGraph['nodes'] = []
-      const mockSubgraphs = new Map<string, Subgraph>()
-      const mockRootGraph = fromAny<LGraph, unknown>({
-        _nodes: mockNodes,
-        nodes: mockNodes,
-        subgraphs: mockSubgraphs,
-        getNodeById: (id: NodeId) => {
-          if (id === toNodeId(123)) return mockNode
-          return null
-        }
-      })
-
-      const mockSubgraph = fromAny<Subgraph, unknown>({
+      const rootGraph = comfyApp.rootGraph
+      const subgraph = createTestSubgraph({
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        rootGraph: mockRootGraph,
-        _nodes: [],
-        nodes: [],
-        clear() {
-          return undefined
-        }
+        rootGraph
       })
-
-      const mockNode = createMockLGraphNode({
-        id: toNodeId(123),
-        isSubgraphNode: () => true,
-        subgraph: mockSubgraph
-      })
-
-      mockNodes.push(mockNode)
-      mockSubgraphs.set(mockSubgraph.id, mockSubgraph)
-
-      vi.mocked(comfyApp).rootGraph = mockRootGraph
-      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
-      store.activeSubgraph = mockSubgraph
+      rootGraph.add(createTestSubgraphNode(subgraph, { id: 123 }))
+      comfyApp.canvas.subgraph = subgraph
+      store.activeSubgraph = subgraph
     })
 
     describe('nodeIdToNodeLocatorId', () => {
@@ -1835,17 +1869,28 @@ describe('useWorkflowStore', () => {
 
       it('should use provided subgraph instead of active one', () => {
         const customSubgraphId = '11111111-2222-4333-8444-555555555555'
-        const customSubgraph = fromPartial<Subgraph>({
-          id: customSubgraphId,
-          rootGraph: fromAny<LGraph, undefined>(undefined),
-          _nodes: [],
-          nodes: [],
-          clear: vi.fn()
+        const customSubgraph = createTestSubgraph({
+          id: customSubgraphId
         })
         const result = store.nodeIdToNodeLocatorId(
           toNodeId(789),
           customSubgraph
         )
+        expect(result).toBe(`${customSubgraphId}:789`)
+      })
+
+      it('should convert a subgraph with an unsafe missing root graph', () => {
+        const customSubgraphId = '11111111-2222-4333-8444-555555555555'
+        const customSubgraph = createTestSubgraph({ id: customSubgraphId })
+        vi.spyOn(customSubgraph, 'rootGraph', 'get').mockReturnValue(
+          fromAny<LGraph, undefined>(undefined)
+        )
+
+        const result = store.nodeIdToNodeLocatorId(
+          toNodeId(789),
+          customSubgraph
+        )
+
         expect(result).toBe(`${customSubgraphId}:789`)
       })
     })
@@ -1921,10 +1966,6 @@ describe('useWorkflowStore', () => {
 
     describe('nodeLocatorIdToNodeExecutionId', () => {
       it('should convert NodeLocatorId to execution ID', () => {
-        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
-          return obj === store.activeSubgraph
-        })
-
         const result = store.nodeLocatorIdToNodeExecutionId(
           createNodeLocatorId(
             'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -1971,9 +2012,6 @@ describe('useWorkflowStore', () => {
       })
 
       it('should append an encoded subgraph leaf to its execution path', () => {
-        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
-          return obj === store.activeSubgraph
-        })
         const locatorId = createNodeLocatorId(
           'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
           'insert:abc123:root:node:5'
@@ -1986,19 +2024,15 @@ describe('useWorkflowStore', () => {
 
       it('should preserve a colon-bearing subgraph host in the execution path', () => {
         const subgraphUuid = '11111111-2222-4333-8444-555555555555'
-        const subgraph = fromPartial<Subgraph>({ id: subgraphUuid })
-        vi.mocked(comfyApp).rootGraph = fromPartial<LGraph>({
-          _nodes: [
-            createMockLGraphNode({
-              id: toNodeId('insert:op:root:node:3'),
-              isSubgraphNode: () => true,
-              subgraph
-            })
-          ]
+        const rootGraph = createTestRootGraph()
+        const subgraph = createTestSubgraph({
+          id: subgraphUuid,
+          rootGraph
         })
-        vi.mocked(isSubgraph).mockImplementation(
-          (graph): graph is Subgraph => graph === subgraph
+        rootGraph.add(
+          createTestSubgraphNode(subgraph, { id: 'insert:op:root:node:3' })
         )
+        vi.mocked(comfyApp).rootGraph = rootGraph
 
         expect(
           store.nodeLocatorIdToNodeExecutionId(
@@ -2439,5 +2473,197 @@ describe('useWorkflowStore', () => {
         expect(opened.isLoaded).toBe(true)
       })
     })
+  })
+})
+
+describe('useWorkflowBookmarkStore', () => {
+  const x = 'workflows/x.json'
+  const y = 'workflows/y.json'
+  const p = 'workflows/photo.json'
+  const q = 'workflows/portrait.json'
+
+  it.for([
+    {
+      name: 'its copy is out of date',
+      arrange: async (
+        store: ReturnType<typeof useWorkflowBookmarkStore>,
+        server: ReturnType<typeof serveBookmarkIndex>
+      ) => {
+        server.saveElsewhere([x])
+        await store.loadBookmarks()
+        server.saveElsewhere([x, y])
+      }
+    },
+    {
+      name: 'it never loaded them',
+      arrange: async () => {}
+    },
+    {
+      name: 'loading them failed',
+      arrange: async (
+        store: ReturnType<typeof useWorkflowBookmarkStore>,
+        server: ReturnType<typeof serveBookmarkIndex>
+      ) => {
+        server.failNextRead(503)
+        await store.loadBookmarks()
+      }
+    }
+  ])(
+    'keeps bookmarks saved elsewhere when this tab adds one and $name',
+    async ({ arrange }) => {
+      const server = serveBookmarkIndex([x, y], { sortOrder: 'name' })
+      const store = useWorkflowBookmarkStore()
+      await arrange(store, server)
+
+      await store.setBookmarked(p, true)
+
+      expect(server.index()).toEqual({
+        sortOrder: 'name',
+        favorites: [x, y, p]
+      })
+    }
+  )
+
+  it.for(['[]', 'null', '42'])(
+    'reads a saved index of %s as no bookmarks and replaces it on the next change',
+    async (content) => {
+      const server = serveBookmarkIndex()
+      server.storeContent(content)
+      const store = useWorkflowBookmarkStore()
+
+      const moved = await store.moveBookmark(x, y)
+      const added = await store.setBookmarked(p, true)
+
+      expect({ moved, added }).toEqual({ moved: true, added: true })
+      expect(server.index()).toEqual({ favorites: [p] })
+    }
+  )
+
+  it.for([
+    { name: 'answers with an error status', failure: 503 },
+    {
+      name: 'answers with malformed JSON',
+      failure: { malformedBody: '{"favorites": [' }
+    },
+    { name: 'cannot be reached', failure: new TypeError('Failed to fetch') }
+  ] satisfies { name: string; failure: BookmarkReadFailure }[])(
+    'refuses a change and reports it when reading the saved bookmarks first $name',
+    async ({ failure }) => {
+      const server = serveBookmarkIndex([x, y])
+      const store = useWorkflowBookmarkStore()
+      server.failNextRead(failure)
+
+      const saved = await store.toggleBookmarked(p)
+
+      expect(saved).toBe(false)
+      expect(store.isBookmarked(p)).toBe(false)
+      expect(server.favorites()).toEqual([x, y])
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'failure_loading_workflow_bookmarks',
+        surface: 'platform'
+      })
+    }
+  )
+
+  it('keeps a bookmark another tab added when this tab removes one', async () => {
+    const server = serveBookmarkIndex([x])
+    const store = useWorkflowBookmarkStore()
+    await store.loadBookmarks()
+    server.saveElsewhere([x, p])
+
+    await store.setBookmarked(x, false)
+
+    expect(server.favorites()).toEqual([p])
+    expect(store.isBookmarked(p)).toBe(true)
+  })
+
+  it.for([
+    {
+      name: 'answers with an error status',
+      failure: 500,
+      bookmarkReports: []
+    },
+    {
+      name: 'cannot be reached',
+      failure: new TypeError('Failed to fetch'),
+      bookmarkReports: [
+        [
+          expect.any(TypeError),
+          {
+            errorType: 'failure_saving_workflow_bookmarks',
+            surface: 'platform'
+          }
+        ]
+      ]
+    }
+  ])(
+    'shows the bookmark as unset, keeps the others and resolves false when the server $name',
+    async ({ failure, bookmarkReports }) => {
+      const server = serveBookmarkIndex([x])
+      const store = useWorkflowBookmarkStore()
+      await store.loadBookmarks()
+      server.saveElsewhere([x, y])
+      server.failWrites(failure)
+
+      const saved = await store.toggleBookmarked(p)
+
+      expect(saved).toBe(false)
+      expect(store.isBookmarked(p)).toBe(false)
+      expect(store.isBookmarked(x)).toBe(true)
+      expect(store.isBookmarked(y)).toBe(true)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
+      expect(vi.mocked(reportError).mock.calls).toEqual(bookmarkReports)
+    }
+  )
+
+  it('shows a bookmark as set while its save is in flight', async () => {
+    const server = serveBookmarkIndex([x])
+    const store = useWorkflowBookmarkStore()
+    server.holdWrites()
+
+    const saving = store.setBookmarked(p, true)
+    await server.writeHeld()
+
+    expect(store.isBookmarked(p)).toBe(true)
+    await server.deliverOldestWrite()
+    expect(await saving).toBe(true)
+    expect(store.isBookmarked(p)).toBe(true)
+  })
+
+  it('shows and saves the last of two rapid toggles of one bookmark', async () => {
+    const server = serveBookmarkIndex([x])
+    const store = useWorkflowBookmarkStore()
+    await store.loadBookmarks()
+    server.holdWrites()
+
+    const add = store.toggleBookmarked(p)
+    const remove = store.toggleBookmarked(p)
+    await server.deliverOldestWrite()
+    await add
+
+    expect(store.isBookmarked(p)).toBe(false)
+    await server.deliverOldestWrite()
+    await remove
+    expect(server.favorites()).toEqual([x])
+    expect(store.isBookmarked(p)).toBe(false)
+  })
+
+  it('saves rapid bookmark clicks in order when requests can overtake each other', async () => {
+    const server = serveBookmarkIndex([x])
+    const store = useWorkflowBookmarkStore()
+    await store.loadBookmarks()
+    server.holdWrites()
+
+    const first = store.setBookmarked(p, true)
+    const second = store.setBookmarked(q, true)
+    await server.deliverNewestFirst([first, second])
+
+    expect(server.favorites()).toEqual([x, p, q])
   })
 })

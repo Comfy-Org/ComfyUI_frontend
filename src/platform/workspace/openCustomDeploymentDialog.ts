@@ -1,3 +1,4 @@
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import { nextTick } from 'vue'
 import type { Component } from 'vue'
 
@@ -118,7 +119,9 @@ export function isWorkflowNeedsDeploymentDialogOpen(): boolean {
 }
 
 /** Opens the workflow deployment dialog, replacing an earlier one. */
-export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+export async function openWorkflowNeedsDeploymentDialog(
+  entry: CustomDeploymentEntry = 'workflow_dialog'
+): Promise<boolean> {
   const dialogStore = useDialogStore()
   if (isWorkflowNeedsDeploymentDialogOpen()) {
     dialogStore.closeDialog({ key: WORKFLOW_NEEDS_DEPLOYMENT_KEY })
@@ -127,6 +130,6 @@ export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   return openCardDialog(
     WORKFLOW_NEEDS_DEPLOYMENT_KEY,
     loadWorkflowNeedsDeploymentCard,
-    {}
+    { entry }
   )
 }
