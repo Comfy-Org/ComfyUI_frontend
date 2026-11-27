@@ -72,21 +72,17 @@ const deploymentBuildName = (task: TaskItemImpl): string | undefined => {
   return deployment.data.build_name ?? deployment.data.name
 }
 
-const withBuildName = (
-  display: JobDisplay,
-  build: string | undefined,
+export const withDeploymentBuildName = (
+  secondary: string,
+  task: TaskItemImpl,
   t: BuildJobDisplayCtx['t']
-): JobDisplay => {
-  if (!build) return display
-  return {
-    ...display,
-    secondary: display.secondary
-      ? t('queue.onBuild', { detail: display.secondary, build })
-      : build
-  }
+): string => {
+  const build = deploymentBuildName(task)
+  if (!build) return secondary
+  return secondary ? t('queue.onBuild', { detail: secondary, build }) : build
 }
 
-const buildStateDisplay = (
+export const buildJobDisplay = (
   task: TaskItemImpl,
   state: JobState,
   ctx: BuildJobDisplayCtx
@@ -197,14 +193,3 @@ const buildStateDisplay = (
     showClear: true
   }
 }
-
-export const buildJobDisplay = (
-  task: TaskItemImpl,
-  state: JobState,
-  ctx: BuildJobDisplayCtx
-): JobDisplay =>
-  withBuildName(
-    buildStateDisplay(task, state, ctx),
-    deploymentBuildName(task),
-    ctx.t
-  )

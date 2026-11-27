@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import type { JobState } from '@/types/queue'
 import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
-import { buildJobDisplay, iconForJobState } from '@/utils/queueDisplay'
+import {
+  buildJobDisplay,
+  iconForJobState,
+  withDeploymentBuildName
+} from '@/utils/queueDisplay'
 
 type QueueDisplayTask = Parameters<typeof buildJobDisplay>[0]
 type PreviewOutput = NonNullable<QueueDisplayTask['previewOutput']>
@@ -269,7 +273,7 @@ describe('buildJobDisplay while a model downloads', () => {
   })
 })
 
-describe('buildJobDisplay for a job on a deployment', () => {
+describe('withDeploymentBuildName', () => {
   const onFluxStudio = {
     deployment_id: 'dep-flux',
     release_id: 'rel-flux-3',
@@ -283,9 +287,13 @@ describe('buildJobDisplay for a job on a deployment', () => {
       job: { status: 'pending', deployment: onFluxStudio }
     })
 
-    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
-      'queue.onBuild(detail=en-US:1710000000000,build=Flux Studio)'
-    )
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('queue.onBuild(detail=en-US:1710000000000,build=Flux Studio)')
   })
 
   it('shows the Build name alone when the row has no other detail', () => {
@@ -293,9 +301,13 @@ describe('buildJobDisplay for a job on a deployment', () => {
       job: { status: 'in_progress', deployment: onFluxStudio }
     })
 
-    expect(buildJobDisplay(task, 'running', createCtx()).secondary).toBe(
-      'Flux Studio'
-    )
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'running', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('Flux Studio')
   })
 
   it('falls back to the deployment name when the Build name is absent', () => {
@@ -306,17 +318,25 @@ describe('buildJobDisplay for a job on a deployment', () => {
       }
     })
 
-    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
-      'queue.onBuild(detail=en-US:1710000000000,build=production)'
-    )
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('queue.onBuild(detail=en-US:1710000000000,build=production)')
   })
 
   it('leaves a Comfy Cloud job as it was', () => {
     const task = createTask({ job: { status: 'pending' } })
 
-    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
-      'en-US:1710000000000'
-    )
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('en-US:1710000000000')
   })
 
   it('leaves the row as it was when the deployment has no name to show', () => {
@@ -327,8 +347,12 @@ describe('buildJobDisplay for a job on a deployment', () => {
       }
     })
 
-    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
-      'en-US:1710000000000'
-    )
+    expect(
+      withDeploymentBuildName(
+        buildJobDisplay(task, 'pending', createCtx()).secondary,
+        task,
+        createCtx().t
+      )
+    ).toBe('en-US:1710000000000')
   })
 })
