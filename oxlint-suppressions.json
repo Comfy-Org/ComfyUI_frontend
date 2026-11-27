@@ -1971,6 +1971,11 @@
       "count": 1
     }
   },
+  "scripts/audit-vue-wrapper-mutations.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "scripts/check-follower-document-mutations.ts": {
     "typescript/no-restricted-types": {
       "count": 4
@@ -4345,7 +4350,7 @@
   },
   "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue": {
     "typescript/no-restricted-types": {
-      "count": 10
+      "count": 11
     }
   },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
@@ -6751,7 +6756,7 @@
       "count": 3
     },
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 4
     }
   },
   "src/renderer/core/canvas/pathRenderer.ts": {
@@ -6816,11 +6821,6 @@
   },
   "src/renderer/core/layout/slots/slotIdentifier.ts": {
     "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/core/layout/slots/syncSlotOffsets.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
@@ -7200,6 +7200,11 @@
     }
   },
   "src/renderer/extensions/propertiesPanel/workflowErrors.integration.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/renderer/extensions/textEditor/promptEditorExperimentStore.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -8928,7 +8933,7 @@
   },
   "src/workbench/extensions/agent/stores/agent/agentPanelStore.ts": {
     "typescript/no-restricted-types": {
-      "count": 15
+      "count": 17
     }
   },
   "src/workbench/extensions/agent/stores/agent/agentPromptQueueStore.ts": {

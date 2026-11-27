@@ -800,6 +800,29 @@ describe('useQueueStore', () => {
       expect(updatedTask).not.toBe(initialTask)
     })
 
+    it('replaces a reused history task when its deployment is renamed', async () => {
+      const deployment = {
+        deployment_id: 'dep-flux',
+        release_id: 'rel-flux-3',
+        build_name: 'Flux Studio'
+      }
+      const job = { ...createHistoryJob(10, 'job-1'), deployment }
+
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([job])
+      await store.update()
+
+      vi.mocked(api.getHistory).mockResolvedValue([
+        { ...job, deployment: { ...deployment, build_name: 'Flux Pro' } }
+      ])
+      await store.update()
+
+      expect(store.historyTasks[0].job.deployment).toEqual({
+        ...deployment,
+        build_name: 'Flux Pro'
+      })
+    })
+
     it('should reuse TaskItemImpl when outputs_count unchanged', async () => {
       const job = {
         ...createHistoryJob(10, 'job-1'),

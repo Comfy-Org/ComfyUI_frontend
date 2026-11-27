@@ -355,14 +355,12 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
         ).toBeDisabled()
       })
 
-      test('distribute needs three movable nodes, so a pinned one disables it', async ({
+      test('a pinned node in the selection disables distribute', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
-        await comfyPage.nodeOps.selectNodes(['B'])
-        await comfyPage.command.executeCommand(
-          'Comfy.Canvas.ToggleSelectedNodes.Pin'
-        )
+        await comfyPage.workflow.loadWorkflow('smartGuides/four_notes_row', {
+          nodes: { 2: { flags: { pinned: true } } }
+        })
         await comfyPage.keyboard.selectAll()
 
         await openAlign(comfyPage)

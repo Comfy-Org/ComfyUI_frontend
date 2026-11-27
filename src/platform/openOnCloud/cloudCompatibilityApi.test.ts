@@ -10,6 +10,7 @@ import {
   checkCloudCompatibility,
   readCloudMissingModels
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import type { CloudCheckFailureReason } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -98,7 +99,10 @@ describe(checkCloudCompatibility, () => {
   })
 
   it.for([
-    { uploadsEnabled: true, expected: null },
+    {
+      uploadsEnabled: true,
+      expected: { kind: 'checkFailed', reason: 'outdated' }
+    },
     { uploadsEnabled: false, expected: { kind: 'canOpen' } }
   ])(
     'checks a workflow with models and no model verdict when uploads are $uploadsEnabled',
@@ -135,13 +139,69 @@ describe(checkCloudCompatibility, () => {
         headers
       })
 
-      await expect(checkCloudCompatibility()).resolves.toBeNull()
+      await expect(checkCloudCompatibility()).resolves.toEqual({
+        kind: 'checkFailed',
+        reason: 'workspace'
+      })
       expect(authStore.getWorkspaceAuthContext).toHaveBeenCalledWith({
         requireWorkspace: true
       })
       expect(fetch).not.toHaveBeenCalled()
     }
   )
+
+  it('reports a missing workspace credential while offline as unreachable', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockResolvedValue({
+      headers: null
+    })
+    const offline = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreachable'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+    offline.mockRestore()
+  })
+
+  it('reports a failed token refresh as a workspace problem', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    const refreshFailed = new Error('token refresh failed')
+    vi.mocked(authStore.getWorkspaceAuthContext).mockRejectedValue(
+      refreshFailed
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'workspace'
+    })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      refreshFailed,
+      expect.anything()
+    )
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('reports an auth step that fails for lack of a network as unreachable', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockRejectedValue(
+      Object.assign(new Error('offline'), {
+        code: 'auth/network-request-failed'
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreachable'
+    })
+  })
 
   it('sends no workflow data if the workspace changes while authorization is pending', async () => {
     workflowHas(node('KSampler'))
@@ -740,26 +800,183 @@ describe(checkCloudCompatibility, () => {
     ])
   })
 
-  it.for([
-    { name: 'a network failure', response: () => new TypeError('offline') },
+  it.for<{
+    name: string
+    response: () => Response | Error
+    reason: CloudCheckFailureReason
+  }>([
     {
-      name: 'a failed response',
-      response: () => new Response(null, { status: 503 })
+      name: 'a network failure',
+      response: () => new TypeError('offline'),
+      reason: 'unreachable'
+    },
+    {
+      name: 'a 503 while the node list loads',
+      response: () => new Response(null, { status: 503 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 500 reading the models',
+      response: () => new Response(null, { status: 500 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 429',
+      response: () => new Response(null, { status: 429 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 400 for too many node types',
+      response: () =>
+        Response.json(
+          {
+            code: 'INVALID_REQUEST',
+            message: 'at most 2000 distinct node types'
+          },
+          { status: 400 }
+        ),
+      reason: 'tooBig'
+    },
+    {
+      name: 'a 413 for a body over the limit',
+      response: () => new Response(null, { status: 413 }),
+      reason: 'tooBig'
+    },
+    {
+      name: 'a 400 for a workspace the credential does not match',
+      response: () =>
+        Response.json(
+          { code: 'workspace_id_invalid', message: 'conflict' },
+          { status: 400 }
+        ),
+      reason: 'workspace'
+    },
+    {
+      name: 'a 403',
+      response: () => new Response(null, { status: 403 }),
+      reason: 'workspace'
+    },
+    {
+      name: 'a 408',
+      response: () => new Response(null, { status: 408 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 404 that is not the switch-off answer',
+      response: () => new Response('<html>Not Found</html>', { status: 404 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 400 that is not about size',
+      response: () =>
+        Response.json(
+          { code: 'INVALID_REQUEST', message: 'node_types is required' },
+          { status: 400 }
+        ),
+      reason: 'outdated'
+    },
+    {
+      name: 'a 400 with no body',
+      response: () => new Response(null, { status: 400 }),
+      reason: 'outdated'
+    },
+    {
+      name: 'a 200 whose body is cut off',
+      response: () =>
+        new Response(
+          new ReadableStream({
+            start: (controller) => controller.error(new TypeError('dropped'))
+          })
+        ),
+      reason: 'unreachable'
+    },
+    {
+      name: 'a 200 that is not JSON',
+      response: () => new Response('<html>Portal</html>', { status: 200 }),
+      reason: 'outdated'
+    },
+    {
+      name: 'an unexpected 4xx',
+      response: () => new Response(null, { status: 422 }),
+      reason: 'outdated'
     },
     {
       name: 'a body outside the contract',
-      response: () => Response.json({ cloud: { missing_node_types: 'none' } })
+      response: () => Response.json({ cloud: { missing_node_types: 'none' } }),
+      reason: 'outdated'
     }
-  ])('reports $name and returns no verdict', async ({ response }) => {
+  ])('reports $name as $reason', async ({ response, reason }) => {
     workflowHas(node('KSampler'))
     cloudAnswers(response())
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason
+    })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.anything(),
       expect.objectContaining({
         errorType: 'failure_checking_cloud_compatibility'
       })
     )
+  })
+
+  it('reports a 404 as switched off', async () => {
+    workflowHas(node('KSampler'))
+    cloudAnswers(
+      Response.json(
+        { code: 'NOT_FOUND', message: 'Not found' },
+        { status: 404 }
+      )
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('reports no answer within the deadline as busy', async () => {
+    workflowHas(node('KSampler'))
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
+    vi.mocked(fetch).mockImplementation(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason)
+          )
+          deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
+        })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'busy'
+    })
+  })
+
+  it('reports a workflow it cannot read as unreadable', async () => {
+    vi.spyOn(app, 'rootGraph', 'get').mockImplementation(() => {
+      throw new Error('broken graph')
+    })
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreadable'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('returns no verdict when the caller cancels the check', async () => {
+    workflowHas(node('KSampler'))
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(
+      checkCloudCompatibility(undefined, controller.signal)
+    ).resolves.toBeNull()
+    expect(reportError).not.toHaveBeenCalled()
   })
 })

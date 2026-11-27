@@ -63,9 +63,7 @@ async function serveAppShellForDeepLink(page: Page) {
 
 async function serveNewBillingUi(page: Page) {
   await page.route('**/api/features', (route) =>
-    route.fulfill(
-      jsonRoute({ billing_new_ux_enabled: true, pricing_table_fallback: false })
-    )
+    route.fulfill(jsonRoute({ billing_new_ux_enabled: true }))
   )
   await page
     .context()

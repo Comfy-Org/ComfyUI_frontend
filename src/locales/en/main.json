@@ -1595,6 +1595,7 @@
     "downloadingModel": "Downloading {name}",
     "downloadingModelOf": "Downloading {name} ({index} of {count})",
     "downloadedOfTotal": "{downloaded} of {total}",
+    "onBuild": "{detail} · {build}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
@@ -3177,7 +3178,9 @@
       "maximumAmount": "${amount} max.",
       "minRequired": "{credits} credits minimum",
       "maxAllowed": "{credits} credits maximum.",
-      "negativeBalanceNotice": "Your balance is −{credits} credit. This top-up covers that first. | Your balance is −{credits} credits. This top-up covers that first.",
+      "negativeBalanceNotice": "Your balance is −{credits} credit. | Your balance is −{credits} credits.",
+      "balanceAfterTopup": "After this top-up: {credits} credit. | After this top-up: {credits} credits.",
+      "stillNegativeAfterTopup": "Still negative after this top-up: −{credits} credit. | Still negative after this top-up: −{credits} credits.",
       "creditsPerDollar": "credits per dollar",
       "amountToPayLabel": "Amount to pay in dollars",
       "creditsToReceiveLabel": "Credits to receive",
@@ -3840,7 +3843,7 @@
         "available": "Available",
         "availableUntil": "Available until {date}",
         "inUse": "In use now",
-        "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
+        "overdrawn": "You used {count} more credit than you had. Add credits to keep running. | You used {count} more credits than you had. Add credits to keep running.",
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
         "planUsed": "{percent}% used",
@@ -4569,7 +4572,14 @@
       "cancelled": "Upload cancelled.",
       "failed": "Upload failed. Try again."
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "checkFailure": {
+      "unreachable": "Could not reach Comfy Cloud. Check your internet connection, then try again.",
+      "busy": "Comfy Cloud is busy right now. Try again in a minute.",
+      "workspace": "Could not use your Comfy Cloud workspace. Try again in a minute, or sign out and back in.",
+      "tooBig": "This workflow is too big to check on Comfy Cloud. It can have up to 2,000 node types and 500 models.",
+      "outdated": "This version of ComfyUI can't read Comfy Cloud's answer. Update ComfyUI, then try again.",
+      "unreadable": "Could not read this workflow to check it. Reload ComfyUI, then try again."
+    },
     "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
@@ -6883,7 +6893,9 @@
       "above_max": "The largest top-up is {amount}. Add more with another top-up.",
       "whole_dollars": "Whole dollars only."
     },
-    "negativeBalance": "Your balance is −{credits} credits. This top-up covers that first.",
+    "negativeBalance": "Your balance is −{credits} credits.",
+    "balanceAfter": "After this top-up: {credits} credits.",
+    "stillNegativeAfter": "Still negative after this top-up: −{credits} credits.",
     "planLine": {
       "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",

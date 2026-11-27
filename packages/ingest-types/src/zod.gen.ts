@@ -401,6 +401,16 @@ export const zAgentPostMessageRequest = z.object({
 })
 
 /**
+ * User-by-workspace assignment for the proactive greeting experiment.
+ */
+export const zAgentProactiveGreetingAssignment = z.object({
+  group_key: z.string().min(1),
+  user_id: z.string().min(1),
+  variant: z.enum(['control', 'generic', 'canvas-prefill', 'canvas-only']),
+  workspace_id: z.string().min(1)
+})
+
+/**
  * Attachment extensions the agent can only describe from metadata. A subset of the containers
  * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
  * .aac and .wma, which the agreed attachment list rejects.
@@ -748,7 +758,8 @@ export const zAgentMessageDoneFrame = z.object({
 })
 
 export const zAgentUsageStatusResponse = z.object({
-  has_used_agent: z.boolean()
+  has_used_agent: z.boolean(),
+  scope: z.enum(['local_installation']).optional()
 })
 
 /**
@@ -2970,6 +2981,7 @@ export const zBillingBalanceResponse = z.object({
   pending_charges_micros: z.number().optional(),
   prepaid_balance_cents: z.number().optional(),
   prepaid_balance_micros: z.number().optional(),
+  scoped_balance_cents: z.record(z.string(), z.number()).optional(),
   suggested_topup_amount_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -4813,6 +4825,27 @@ export const zProviderPolicyEntry = z.object({
 export const zProviderPolicy = z.object({
   enforcement_enabled: z.boolean(),
   providers: z.array(zProviderPolicyEntry)
+})
+
+export const zPublicModel = z.object({
+  file_path: z.string().optional(),
+  id: z.uuid(),
+  name: z.string(),
+  size: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  source_url: z.string().optional(),
+  tags: z.array(z.string())
+})
+
+export const zPublicModelsResponse = z.object({
+  models: z.array(zPublicModel)
 })
 
 /**
@@ -7926,11 +7959,9 @@ export const zGetFeaturesResponse = z.object({
     ])
     .optional()
     .default('control'),
-  'agent-starter-prompt-set': z
-    .enum(['control', 'test'])
-    .optional()
-    .default('control'),
   agent_gratis_local_arm: z.enum(['control', 'treatment']).optional(),
+  agent_proactive_greeting_assignment:
+    zAgentProactiveGreetingAssignment.optional(),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
   deploy_to_cloud: z.boolean().optional(),
@@ -7954,6 +7985,7 @@ export const zGetFeaturesResponse = z.object({
   open_on_cloud_model_upload_enabled: z.boolean().optional(),
   open_on_cloud_use_local_agent_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
+  'prompt-editor-surface': z.enum(['control', 'panel']).optional(),
   server_boot_id: z.string().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
@@ -8392,6 +8424,11 @@ export const zGetLegacyPromptByIdPath = z.object({
  * The provider catalog
  */
 export const zGetProvidersResponse = zProviderCatalogResponse
+
+/**
+ * The public model catalog
+ */
+export const zListPublicModelsResponse = zPublicModelsResponse
 
 /**
  * Success

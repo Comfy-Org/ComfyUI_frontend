@@ -75,6 +75,18 @@ function renderCloudButton() {
   )
 }
 
+function renderCloudButtonHiddenWhenSwitchedOff() {
+  return render(
+    {
+      components: { CloudButton, GlobalDialog },
+      setup: () => ({ checkStore: useCloudWorkflowCheckStore() }),
+      template:
+        '<CloudButton v-if="!checkStore.isSwitchedOffOnCloud" /><GlobalDialog />'
+    },
+    { global: { plugins: [testI18n] } }
+  )
+}
+
 async function requestCloudCheck(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByTestId('cloud-button'))
   await user.click(await screen.findByRole('button', { name: checkLabel }))
@@ -861,10 +873,45 @@ describe('Cloud button compatibility checks', () => {
       }
     },
     {
-      name: 'asks to try again when Comfy Cloud gives no answer',
-      result: null,
-      message: 'Could not check this workflow on Comfy Cloud. Try again.',
-      properties: { reason: 'no_verdict' }
+      name: 'says Comfy Cloud could not be reached',
+      result: { kind: 'checkFailed', reason: 'unreachable' },
+      message:
+        'Could not reach Comfy Cloud. Check your internet connection, then try again.',
+      properties: { reason: 'unreachable' }
+    },
+    {
+      name: 'asks to wait a minute when Comfy Cloud is busy',
+      result: { kind: 'checkFailed', reason: 'busy' },
+      message: 'Comfy Cloud is busy right now. Try again in a minute.',
+      properties: { reason: 'busy' }
+    },
+    {
+      name: 'asks to sign in again when the workspace cannot be used',
+      result: { kind: 'checkFailed', reason: 'workspace' },
+      message:
+        'Could not use your Comfy Cloud workspace. Try again in a minute, or sign out and back in.',
+      properties: { reason: 'workspace' }
+    },
+    {
+      name: 'names the limits when the workflow is too big',
+      result: { kind: 'checkFailed', reason: 'tooBig' },
+      message:
+        'This workflow is too big to check on Comfy Cloud. It can have up to 2,000 node types and 500 models.',
+      properties: { reason: 'too_big' }
+    },
+    {
+      name: 'asks to update when the answer cannot be read',
+      result: { kind: 'checkFailed', reason: 'outdated' },
+      message:
+        "This version of ComfyUI can't read Comfy Cloud's answer. Update ComfyUI, then try again.",
+      properties: { reason: 'outdated' }
+    },
+    {
+      name: 'asks to reload when the workflow cannot be read',
+      result: { kind: 'checkFailed', reason: 'unreadable' },
+      message:
+        'Could not read this workflow to check it. Reload ComfyUI, then try again.',
+      properties: { reason: 'unreadable' }
     }
   ])('$name', async ({ result, message, properties }) => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
@@ -884,6 +931,60 @@ describe('Cloud button compatibility checks', () => {
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       false
     )
+  })
+
+  it('shows no toast, records the switch-off and then hides the button when Comfy Cloud has switched the check off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+
+    await requestCloudCheck(userEvent.setup())
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+    expect(useToast().toasts).toEqual([])
+    expect(
+      useTelemetry()?.trackRunOnCloudEvent
+    ).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:run_on_cloud_check_failed',
+      properties: { reason: 'switched_off' }
+    })
+  })
+
+  it('shows the button again once the workspace changes after a switch-off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+    await requestCloudCheck(userEvent.setup())
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team' })
+
+    expect(await screen.findByTestId('cloud-button')).toBeInTheDocument()
+  })
+
+  it('shows the button again once a later check gets an answer after a switch-off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+    await requestCloudCheck(userEvent.setup())
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    await useCloudWorkflowCheckStore().check()
+
+    expect(await screen.findByTestId('cloud-button')).toBeInTheDocument()
   })
 
   it('says nodes are missing and offers a Build when Cloud lacks a node pack', async () => {

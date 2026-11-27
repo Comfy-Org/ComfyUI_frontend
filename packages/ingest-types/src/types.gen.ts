@@ -804,6 +804,16 @@ export type AgentPostMessageRequest = {
 }
 
 /**
+ * User-by-workspace assignment for the proactive greeting experiment.
+ */
+export type AgentProactiveGreetingAssignment = {
+  group_key: string
+  user_id: string
+  variant: 'control' | 'generic' | 'canvas-prefill' | 'canvas-only'
+  workspace_id: string
+}
+
+/**
  * Attachment extensions the agent can only describe from metadata. A subset of the containers
  * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
  * .aac and .wma, which the agreed attachment list rejects.
@@ -1174,9 +1184,13 @@ export type AgentTurnUsage = {
 
 export type AgentUsageStatusResponse = {
   /**
-   * Whether a persisted user-role message exists in a thread owned by this user in the current workspace. Does not imply a successful Agent reply, experiment eligibility or permanent retention of historical usage after server-side deletion.
+   * Whether a retained accepted user-role message exists in the response's history scope. A later failed Agent reply still counts. Does not imply experiment assignment or permanent usage retention.
    */
   has_used_agent: boolean
+  /**
+   * local_installation means this running Local Agent installation's retained message store, across its threads and local identities. It is not canonical user-by-workspace or cross-install history. Cloud omits this field and scopes history to the authenticated user and workspace. Local/Desktop clients require this marker; an absent marker means eligibility is unknown.
+   */
+  scope?: 'local_installation'
 }
 
 /**
@@ -1925,6 +1939,12 @@ export type BillingBalanceResponse = {
    * @deprecated
    */
   prepaid_balance_micros?: number
+  /**
+   * Remaining balance of each product's own scoped pot, in cents of currency, keyed by product name. Today only "agent": the Agent-scoped pot (free Agent allowance and Agent promo credit together) that Agent turns draw before falling back to the shared balance. This is the amount behind billing status scoped_has_funds.agent, so a client can warn before it runs out. A fractional number. A key is absent when the workspace has never held that pot (0 means exhausted). The whole object is omitted when no pot is present, the workspace is unprovisioned, billing is disabled, or the server predates this field. Not included in amount_cents or any other total here.
+   */
+  scoped_balance_cents?: {
+    [key: string]: number
+  }
   /**
    * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, never below the default amount and never above max_topup_cents. Null when the balance is zero or positive, or not authoritative.
    */
@@ -9011,6 +9031,34 @@ export type ProviderPolicyEntry = {
    * Catalog provider identifier.
    */
   provider_id: string
+}
+
+export type PublicModel = {
+  /**
+   * Path under the models root, as `GET /api/assets` reports it
+   * (e.g. `models/checkpoints/x.safetensors`). Absent when it cannot
+   * be built safely.
+   *
+   */
+  file_path?: string
+  id: string
+  /**
+   * The model's file name, as loaders show it.
+   */
+  name: string
+  /**
+   * Bytes on disk. Absent when never measured, not zero.
+   */
+  size?: number
+  /**
+   * The public http(s) URL the model was downloaded from, when known.
+   */
+  source_url?: string
+  tags: Array<string>
+}
+
+export type PublicModelsResponse = {
+  models: Array<PublicModel>
 }
 
 /**
@@ -17191,7 +17239,7 @@ export type GetFeaturesResponses = {
      */
     'agent-credit-usage-summary'?: 'control' | 'treatment'
     /**
-     * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract, as agent-starter-prompt-set does, so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
+     * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
      */
     'agent-free-use-message-placement'?:
       | 'control'
@@ -17200,14 +17248,11 @@ export type GetFeaturesResponses = {
       | 'above-input'
       | 'inside-input'
     /**
-     * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
-     */
-    'agent-starter-prompt-set'?: 'control' | 'test'
-    /**
      * The signed-in caller's arm in the local agent free-credit experiment (PostHog flag agent-gratis-cents-local-experiment): control or treatment. It answers which arm the caller is in, not whether credit has been granted, and does not depend on the grant being issued.
      * Absent, never null or empty, when no arm is resolved: unauthenticated callers, a failed or unavailable flag evaluation, or no variant assigned yet. It has no default; a consumer treats absence as "no arm known" and shows no free-credit surface, without recording the caller as outside the experiment. Served on this HTTP response only, never in the WebSocket feature_flags push, and dynamic configuration cannot set it.
      */
     agent_gratis_local_arm?: 'control' | 'treatment'
+    agent_proactive_greeting_assignment?: AgentProactiveGreetingAssignment
     /**
      * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */
@@ -17284,6 +17329,10 @@ export type GetFeaturesResponses = {
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
     private_workflow_links_enabled?: boolean
+    /**
+     * Served assignment for the prompt editor surface experiment: where the text widget's Expand opens a long prompt. Control opens a centred dialog; panel opens the prompt in the right side panel. It is omitted while the flag is inactive, evaluation is unavailable, the caller is anonymous, or no valid assignment is present, so clients cannot mistake the off state for a randomized control. Reading this field is not exposure; the frontend records exposure on the first Expand.
+     */
+    'prompt-editor-surface'?: 'control' | 'panel'
     /**
      * Local ComfyUI only: a random id that is new on every server start. A client that reconnects and gets a different value knows the server restarted, so node definitions it loaded earlier may be stale. Not settable with --feature-flag.
      */
@@ -19639,6 +19688,33 @@ export type GetProvidersResponses = {
 
 export type GetProvidersResponse =
   GetProvidersResponses[keyof GetProvidersResponses]
+
+export type ListPublicModelsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/public_models'
+}
+
+export type ListPublicModelsErrors = {
+  /**
+   * The catalog could not be read in full
+   */
+  503: ErrorResponse
+}
+
+export type ListPublicModelsError =
+  ListPublicModelsErrors[keyof ListPublicModelsErrors]
+
+export type ListPublicModelsResponses = {
+  /**
+   * The public model catalog
+   */
+  200: PublicModelsResponse
+}
+
+export type ListPublicModelsResponse =
+  ListPublicModelsResponses[keyof ListPublicModelsResponses]
 
 export type GetQueueInfoData = {
   body?: never

@@ -62,6 +62,7 @@
       "body": "開啟「帳務」以確認已啟用自動儲值。",
       "title": "已新增點數"
     },
+    "balanceAfter": "本次儲值後：{credits} 點數。",
     "blocked": {
       "action": "開啟結帳頁面",
       "body": "您的瀏覽器封鎖了新分頁。請開啟結帳頁面以完成付款。",
@@ -84,7 +85,7 @@
       "title": "您的 {amount} 付款需要驗證",
       "titleNoAmount": "您的付款需要驗證"
     },
-    "negativeBalance": "您的餘額為 −{credits} 點數。此次加值會先補足該差額。",
+    "negativeBalance": "您的餘額為 −{credits} 點數。",
     "notAllowed": {
       "body": "請查看帳務設定以瞭解原因。",
       "title": "您目前無法加值點數"
@@ -127,6 +128,7 @@
       "bodyNoWait": "請稍後再試，或{support}。",
       "title": "您目前已達加值上限"
     },
+    "stillNegativeAfter": "本次儲值後餘額仍為負數：−{credits} 點數。",
     "title": "新增點數",
     "wait": {
       "day": "一天",
@@ -142,6 +144,8 @@
     "addNodesFromGraph": "提及圖表中的節點",
     "addSkill": "新增技能",
     "addToPrompt": "加入提示詞",
+    "agentCostNotice": "Comfy Agent 會使用您的工作區點數。費用會依模型和請求而有所不同。",
+    "agentCostNoticeLabel": "Agent 費用通知",
     "askUnavailable": "代理程式正在等待此面板無法顯示的步驟。",
     "askUser": {
       "answerRejected": "代理程式無法接受該回答。請變更您的選項或停止此次回合。",
@@ -285,10 +289,10 @@
       "restartHint": "ComfyUI 重新啟動後才會生效。重新啟動後請重新載入此頁面。"
     },
     "feedbackCaption": "分享意見回饋",
+    "firstChatFreeNotice": "免費試用您的首次聊天！",
     "focusNode": "在畫布上顯示",
     "focusNodeLabel": "在畫布上顯示 {node}",
     "followedChatOpenFailed": "無法開啟 {workflowName} 的聊天。",
-    "freeUseNotice": "免費體驗您的首次對話！",
     "freeUseNoticeLabel": "免費使用通知",
     "friend": "你",
     "gotIt": "知道了",
@@ -409,7 +413,6 @@
       "answerUncertain": "無法確認您的回答是否已送達代理程式。回答可能仍已套用——請重新載入頁面以查看目前狀態。",
       "cancel": "取消",
       "estimateAtLeast": "預估費用：至少 {credits} 點",
-      "estimateUnavailable": "預估費用：此工作流程無法取得",
       "lead": "Comfy Agent 想要執行此工作流程：",
       "leadBound": "Comfy Agent 想要執行此工作流程。",
       "question": "您是否核准？",
@@ -507,7 +510,6 @@
     },
     "switchWorkflowForNodes": "切換至 {workflowName} 以新增節點。",
     "takeTour": "開始導覽",
-    "targetForThisChat": "此聊天的代理目標",
     "targetNavigationUnavailable": "此工作流程目標已無法使用。",
     "targetWorkflowOpenFailed": "無法開啟目標工作流程。",
     "targetWorkflowUnavailable": "目標工作流程已無法使用。",
@@ -784,7 +786,8 @@
     "uploadModelHelpVideo": "模型匯入教學影片",
     "uploadModelHowDoIFindThis": "要如何找到這個？",
     "uploadSuccess": "模型匯入成功！",
-    "uploadingModel": "正在匯入模型..."
+    "uploadingModel": "正在匯入模型...",
+    "useDisabledNoProvider": "尚未支援此模型類型"
   },
   "auth": {
     "accountChanged": {
@@ -1543,6 +1546,7 @@
         "setUp": "設定"
       },
       "awaitingBankApprovalBody": "您的銀行需要核准這筆付款，之後才會將點數加入您的帳戶。您可以透過銀行的應用程式或此次購買的付款連結完成核准。在此筆付款完成或到期前，無法開始新的儲值。",
+      "balanceAfterTopup": "本次儲值後：{credits} 點數。|本次儲值後：{credits} 點數。",
       "buy": "購買",
       "buyCredits": "繼續付款",
       "buyNow": "立即購買",
@@ -1573,7 +1577,7 @@
       "minRequired": "最低需購買 {credits} 點",
       "minimumPurchase": "最低購買 ${amount}（${credits} 點）",
       "needMore": "需要更多？",
-      "negativeBalanceNotice": "您的餘額為 −{credits} 點。此次儲值會優先抵銷該餘額。 | 您的餘額為 −{credits} 點。此次儲值會優先抵銷該餘額。",
+      "negativeBalanceNotice": "您的餘額為 −{credits} 點數。|您的餘額為 −{credits} 點數。",
       "noPaymentMethodCheckoutHint": "此工作區未儲存可用於一鍵儲值的卡片。請改在結帳頁面付款，或設定預設卡片，讓日後儲值直接從該卡片扣款。",
       "openCheckout": "開啟結帳頁面",
       "openPaymentPage": "開啟付款頁面",
@@ -1596,6 +1600,7 @@
       "setDefaultCard": "設定預設卡片",
       "setDefaultCardError": "無法開啟卡片設定",
       "startOver": "重新開始",
+      "stillNegativeAfterTopup": "本次儲值後餘額仍為負數：−{credits} 點數。|本次儲值後餘額仍為負數：−{credits} 點數。",
       "templateNote": "*以 Wan Fun Control 範本產生",
       "topUp": "儲值",
       "unknownError": "發生未知錯誤",
@@ -1793,7 +1798,7 @@
     "linkWorkspaceRefused": "無法切換至該工作區。您仍在 {workspaceName}。",
     "lookupUnavailable": "無法檢查此編輯器執行所在的部署。",
     "lookupUnavailableDetail": "顯示的模型來自 Comfy Cloud。重新載入以再試一次。",
-    "manageDeployments": "管理部署",
+    "manageBuilds": "管理 Build",
     "manageDeploymentsTooltip": "在開發者平台上管理您的建置及其部署。",
     "membersStartOn": "未自行選擇部署的成員將從此開始",
     "missingNodes": "缺少 {count} 個節點 | 缺少 {count} 個節點",
@@ -1877,20 +1882,18 @@
     "versionChanged": "{deployment} 現在執行 v{version}。重新載入以使用其節點。",
     "versionChangedNoVersion": "{deployment} 現在執行不同版本。重新載入以使用其節點。",
     "workflowNeedsDeployment": {
-      "andMore": "{names}，以及其他 {count} 個",
-      "buildOnPlatform": "在 Platform 上建置",
+      "createBody": "自訂建置可補足 Comfy Cloud 所缺少的功能，讓此工作流程順利執行。",
       "createCustomBuild": "建立自訂建置",
-      "installBody": "建立自訂建置，以新增 Comfy Cloud 未提供的自訂節點與模型。您可在 Platform 上設定，之後它會顯示在您工作區的「執行於」下方。",
-      "installTitle": "安裝您缺少的自訂節點",
+      "createTitle": "建立自訂建置以執行此工作流程",
       "missingModels": "缺少 {count} 個模型 | 缺少 {count} 個模型",
       "missingNodes": "缺少 {count} 個節點 | 缺少 {count} 個節點",
       "missingPacks": "缺少 {count} 個節點套件 | 缺少 {count} 個節點套件",
-      "noneRunIt": "此工作區中沒有任何部署具備所有這些節點。",
+      "more": "+{count} 項",
+      "pointBilling": "僅在 GPU 執行期間付費，另加儲存空間費用",
+      "showLess": "顯示較少",
       "switch": "切換",
       "switchBody": "Comfy Cloud 缺少這些項目。切換至具備這些項目的部署，然後繼續在那裡工作。",
-      "title": "在自訂建置上執行此工作流程",
-      "titleNoneRunIt": "建立部署以在 Comfy Cloud 上執行此工作流程",
-      "titleNoneRunItCustomBuild": "建立自訂建置，以在 Comfy Cloud 上執行此工作流程"
+      "title": "在自訂建置上執行此工作流程"
     },
     "workspaceDefault": "工作區預設"
   },
@@ -2399,11 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "詢問代理",
+    "createCustomBuild": "建立自訂建置",
     "missingMedia": "有些節點缺少必要的輸入",
     "missingModels": "缺少 {count} 個必要模型",
     "missingNodes": "有些節點缺失，需要安裝",
+    "missingNodesOnCloud": "Cloud 不支援所需的自訂節點。",
     "multipleIssueCount": "找到 {count} 個問題｜找到 {count} 個問題",
     "multipleIssuesMessage": "請先解決這些問題，再執行工作流程。",
+    "switchBuild": "切換建置",
+    "switchBuildTo": "切換至 {build}",
     "viewDetails": "檢視詳情"
   },
   "errorPanelSurvey": {
@@ -2475,10 +2482,12 @@
     "agentCreated": "代理建立",
     "agentExtensionAdded": "您的代理已新增 {name}",
     "agentExtensionDisableFailed": "無法停用擴充功能。請再試一次。",
+    "agentFinishedUnseen": "Agent 已回覆",
     "agentInputNeededShort": "需要輸入",
     "agentModified": "代理程式已更新此工作流程",
     "agentNeedsApproval": "代理正在等待您的回覆",
     "agentWorking": "代理程式正在處理此工作流程",
+    "agentWorkingAndWorkflowRunning": "Agent 正在作業，工作流程正在執行",
     "align": "對齊",
     "alignBottom": "對齊下邊緣",
     "alignHorizontalCenters": "對齊水平中心",
@@ -2759,6 +2768,7 @@
     "openLayerEditor": "開啟圖層編輯器",
     "openManager": "開啟管理器",
     "openNewIssue": "開啟新問題",
+    "openWorkflows": "開啟工作流程",
     "or": "或",
     "output": "輸出",
     "overwrite": "覆蓋",
@@ -4557,8 +4567,12 @@
     "prepareFailed": "無法為 Comfy Cloud 準備此工作流程",
     "prepareFailedDetail": "請檢查工作流程是否有錯誤，儲存後再試一次。",
     "runDialog": {
+      "askAgainNotSaved": "在您重新載入前，Comfy Cloud 會在每次檢查前詢問，但之後可能不再詢問。",
       "body": "在 Comfy Cloud 上開啟此工作流程；若需要自訂節點，請將您的本機設定部署為建置版本。",
       "checkCompatibility": "檢查相容性",
+      "consentNotSaved": "無法儲存您的 Comfy Cloud 檢查選擇",
+      "dontAskAgain": "不再詢問",
+      "dontAskAgainNotSaved": "下次您開啟 ComfyUI 時，Comfy Cloud 可能會再次詢問。",
       "openOnCloud": "在 Comfy Cloud 開啟",
       "pointApi": "在 ComfyUI 中使用，或將其作為 API 呼叫",
       "ready": "Comfy Cloud 擁有此工作流程所使用的每個節點與模型。它會在新分頁中開啟，並已可執行。",
@@ -4624,7 +4638,7 @@
   },
   "platformFrame": {
     "buildFailed": "建置失敗。{deployment} 未部署。",
-    "buildStep": "步驟 {step}，共 {of} 步",
+    "buildStep": "步驟 {step}／{of}",
     "buildTakesMinutes": "這需要幾分鐘。您可以繼續工作。",
     "building": "正在建置 {deployment}",
     "deployFailed": "部署失敗。{deployment} 已建置，但未部署。",
@@ -4747,14 +4761,16 @@
   },
   "rightSidePanel": {
     "addFavorite": "收藏",
+    "addMissingItems": "將缺少的項目加入 Build",
     "addMissingModelsToBuild": "將缺少的模型新增至建置",
-    "addToDeploymentBuild": "請將這些項目新增至平台上 {deployment} 的建置，然後部署新的版本。",
+    "addToDeploymentBuild": "請將這些項目加入 Platform 上 {deployment} 的 Build，然後部署新版本。",
     "advancedInputs": "進階輸入",
     "askAgent": "詢問代理程式",
     "askAgentAbout": "向代理程式詢問 {title}",
     "askAgentAboutAll": "向代理程式詢問 {count} 個問題 | 向代理程式詢問全部 {count} 個問題",
     "blockedLastRun": "上次執行被阻擋",
     "bypass": "繞過",
+    "cloudLacksCustomNodes": "Comfy Cloud 沒有這些自訂節點",
     "collapse": "收合",
     "color": "節點顏色",
     "editBuildOnPlatform": "在平台上編輯建置",
@@ -4896,6 +4912,7 @@
     "seeError": "查看錯誤",
     "selectedNodeErrors": "{node} — {count} 個問題 | {node} — {count} 個問題",
     "selectedNodesErrors": "已選取 {nodes} 個節點 — {count} 個問題 | 已選取 {nodes} 個節點 — {count} 個問題",
+    "setUpCustomDeployment": "設定自訂 Build",
     "settings": "設定",
     "setupFilter": "{count} 項需要設定",
     "setupNodeSummary": "{nodes} 個節點 — {count} 個項目 | {nodes} 個節點 — {count} 個項目",
@@ -5144,6 +5161,7 @@
     "Canvas Navigation": "畫布導航",
     "ColorPalette": "色彩調色盤",
     "Comfy": "Comfy",
+    "Comfy Cloud": "Comfy Cloud",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "右鍵選單",
     "Credits": "點數",
@@ -5446,6 +5464,15 @@
       "dirtyCloseHint": "按住 Shift 可直接關閉不提示",
       "dirtyCloseTitle": "儲存變更？",
       "renamedButBookmarksNotUpdated": "工作流程已重新命名，但無法更新您的書籤",
+      "status": {
+        "agentReplied": "Agent 已回覆",
+        "agentWorking": "Agent 作業中",
+        "runFailed": "執行失敗",
+        "runFinished": "執行完成",
+        "unsavedChanges": "尚未儲存的變更",
+        "waitingForAnswer": "Agent 正在等待您的回答",
+        "workflowRunning": "工作流程執行中"
+      },
       "workflowTreeType": {
         "bookmarks": "書籤",
         "browse": "瀏覽",
@@ -5454,6 +5481,7 @@
     },
     "workflows": "工作流程",
     "workspaceLibrary": {
+      "blockedByModelRules": "遭此 Build 的模型規則封鎖",
       "empty": "您的工作區模型庫中沒有模型。",
       "explainer": "您工作區中的模型。不在此建置中的模型會在工作需要時下載。",
       "fromWorkspace": "來自您的工作區",
@@ -6643,7 +6671,7 @@
         "available": "可用",
         "availableUntil": "可使用至 {date}",
         "inUse": "目前使用中",
-        "overdrawn": "您的執行次數比現有點數多用了 {count} 點。|您的執行次數比現有點數多用了 {count} 點。",
+        "overdrawn": "您使用的點數比擁有的多 {count} 點。請加值點數以繼續執行。|您使用的點數比擁有的多 {count} 點。請加值點數以繼續執行。",
         "plan": "方案",
         "planOfPool": "{total} 中剩餘 {remaining}",
         "planTooltip": "方案點數會優先於儲值點數使用。",

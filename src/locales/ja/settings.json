@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "ワイヤーが直線になるようにスナップ"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "ノード名とモデル名を送信してComfy Cloudとの互換性を確認する前に確認する"
+  },
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
   },

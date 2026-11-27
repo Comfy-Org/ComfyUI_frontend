@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  acceptsCloudChecks,
   cloudEditorUrl,
   isLocalOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
@@ -41,5 +42,21 @@ describe(isLocalOrigin, () => {
     { origin: 'null', local: false }
   ])('$origin is local: $local', ({ origin, local }) => {
     expect(isLocalOrigin(origin)).toBe(local)
+  })
+})
+
+describe(acceptsCloudChecks, () => {
+  it.for([
+    { origin: 'http://localhost:8188', accepted: true },
+    { origin: 'http://127.0.0.1:8000', accepted: true },
+    { origin: 'http://localhost', accepted: false },
+    { origin: 'https://localhost:8188', accepted: false },
+    { origin: 'http://[::1]:8188', accepted: false },
+    { origin: 'http://192.168.1.20:8188', accepted: false },
+    { origin: 'http://10.0.0.5:8188', accepted: false },
+    { origin: 'http://comfy-box.local:8188', accepted: false },
+    { origin: 'not a url', accepted: false }
+  ])('answers $accepted for $origin', ({ origin, accepted }) => {
+    expect(acceptsCloudChecks(origin)).toBe(accepted)
   })
 })
