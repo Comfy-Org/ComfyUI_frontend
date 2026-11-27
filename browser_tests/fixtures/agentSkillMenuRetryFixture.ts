@@ -19,6 +19,7 @@ const SKILLS: AgentSkillListResponse = {
 }
 
 type SkillRetryFixtures = {
+  skillFailureStatus: number
   skillRequests: string[]
   skillCatalog: { healthy: boolean; failureStatus: number }
 }
@@ -27,8 +28,9 @@ export const agentSkillMenuRetryTest = agentTest.extend<SkillRetryFixtures>({
   skillRequests: async ({ browserName: _browserName }, use) => {
     await use([])
   },
-  skillCatalog: async ({ browserName: _browserName }, use) => {
-    await use({ healthy: false, failureStatus: 503 })
+  skillFailureStatus: [503, { option: true }],
+  skillCatalog: async ({ skillFailureStatus }, use) => {
+    await use({ healthy: false, failureStatus: skillFailureStatus })
   },
   page: async ({ page, skillRequests, skillCatalog }, use) => {
     await page.route('**/api/agent/skills', (route) => {

@@ -201,9 +201,11 @@ describe('AgentSkillList', () => {
     forgetCatalog()
     mount()
 
-    expect(
-      await screen.findByText("Skills aren't available right now.")
-    ).toBeVisible()
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        "Skills aren't available right now."
+      )
+    )
     expect(screen.queryByRole('alert')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Add skill' })).toBeNull()

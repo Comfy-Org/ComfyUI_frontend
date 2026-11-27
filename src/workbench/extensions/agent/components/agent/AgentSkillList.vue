@@ -167,6 +167,7 @@ onMounted(async () => {
       </ul>
       <p
         v-if="!skills.enabled || status === 'unavailable'"
+        :role="status === 'unavailable' ? 'status' : undefined"
         class="m-0 px-2 py-8 text-center text-sm text-muted-foreground"
       >
         {{ t('agent.skillsUnavailable') }}

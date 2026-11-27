@@ -31,10 +31,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Refreshes keep the last confirmation until a response replaces it.
   const catalogConfirmed = ref(false)
   const loadFailed = ref(false)
-  // The host's own words for a refusal the user can act on (loopback fence).
   const loadFailureReason = ref<string>()
-  // A list 404 before any confirmed catalog: the skills gate is off for this
-  // account. Not an error; the next open lists again (FRONT-4314).
   const catalogUnavailable = ref(false)
   const flagsEnabled = ref(false)
   // Disabled backend gates answer 404, independently of PostHog flags.
@@ -198,7 +195,6 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
       return true
     } catch (error) {
       if (isSuperseded(generation, requestScope)) return false
-      // A confirmed catalog keeps FRONT-4314's retryable failure instead.
       if (isGateOff(error) && !catalogConfirmed.value) {
         packs.value = []
         catalogUnavailable.value = true
