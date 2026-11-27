@@ -2,12 +2,19 @@ import type { Page } from '@playwright/test'
 
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-export async function pinCanvasTransform(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const canvas = window.app!.canvas
-    canvas.ds.scale = 1
-    canvas.ds.offset = [40, 40]
-    canvas.setDirty(true, true)
-  })
+export async function pinCanvasTransform(
+  page: Page,
+  scale: number = 1,
+  offset: [number, number] = [40, 40]
+): Promise<void> {
+  await page.evaluate(
+    ({ scale, offset }) => {
+      const canvas = window.app!.canvas
+      canvas.ds.scale = scale
+      canvas.ds.offset = offset
+      canvas.setDirty(true, true)
+    },
+    { scale, offset }
+  )
   await nextFrame(page)
 }

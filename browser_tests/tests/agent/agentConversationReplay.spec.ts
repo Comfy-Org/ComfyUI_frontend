@@ -8,6 +8,7 @@ import {
   expectElementScreenshot,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
+import { pinCanvasTransform } from '@e2e/fixtures/utils/pinCanvasTransform'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -95,6 +96,11 @@ test.describe(
         test.setTimeout(90_000)
         await agentConversation.runTurns()
         await page.evaluate(() => window.app!.canvas.deselectAll())
+        await pinCanvasTransform(
+          page,
+          0.8991596638655462,
+          [307.5, 680.7476635514018]
+        )
 
         await expect
           .poll(() => overlappingNodePairs(agentConversation.vueNodes.nodes))
