@@ -2,7 +2,6 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 
 test('Dragging a typed output reveals compatible widget input slots @vue-nodes', async ({
   comfyPage
@@ -13,9 +12,10 @@ test('Dragging a typed output reveals compatible widget input slots @vue-nodes',
   const { page } = comfyPage
   const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
   const intNode = await comfyPage.nodeOps.getNodeRefByType('PrimitiveInt')
-  const intOutput = page
-    .locator(`[data-slot-key="${getSlotKey(intNode.id, 0, false)}"]`)
-    .locator('..')
+  const intOutput = comfyPage.vueNodes.getOutputSlotConnectionDot(
+    String(intNode.id),
+    0
+  )
 
   await expect(ksampler.getWidgetSlotContainer('seed')).toHaveCSS(
     'opacity',
@@ -57,9 +57,8 @@ test('Moving an existing link off an input reveals compatible widget input slots
   const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
   const intNode = await comfyPage.nodeOps.getNodeRefByType('PrimitiveInt')
   const seedSlot = ksampler.getSlot('seed')
-  await page
-    .locator(`[data-slot-key="${getSlotKey(intNode.id, 0, false)}"]`)
-    .locator('..')
+  await comfyPage.vueNodes
+    .getOutputSlotConnectionDot(String(intNode.id), 0)
     .dragTo(seedSlot)
   await expect
     .poll(() => comfyPage.vueNodes.isSlotConnected(seedSlot))
