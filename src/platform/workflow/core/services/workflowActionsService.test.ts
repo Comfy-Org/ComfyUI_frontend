@@ -105,7 +105,7 @@ describe('workflowActionsService.openWorkflowAction', () => {
 
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
       expect.anything(),
-      { initiator: 'user' }
+      { initiator: 'user', opening: 'brought_in' }
     )
     expect(result).toEqual(expected)
   })
