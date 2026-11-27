@@ -616,24 +616,29 @@ checks the binding and the document rather than any such latch. That trades a
 narrow window for a page-wide outage, so the exposure stays named and
 unmitigated here.
 
-The window is also narrower than it first reads, because the host is the real
-gate: an identity change reconnects the socket through the page-lifetime
-`agentSocketIdentity` watcher, and a resubscribe the new identity does not own
-is refused, which takes `subscriptionSent()` — and so `isDocBound()` — false.
-What remains exposed is the interval between the identity change and that
-resubscribe resolving, during which ops may still mint under the previous
-actor against a document that actor did own.
+**The stale session answer predates this stage; minting or sending under that
+answer does not.** `useAgentCrdtFollower`'s cleanup clears `follower.value` and
+releases the lease but deliberately leaves `owner.consumer.value` installed,
+and the session reads `isTargetActive` and `userId` from that live record on
+every call. Since Stage 1b the page-retained session has therefore answered
+with the last mounted panel's frozen identity after a close. Before Stage 2,
+however, closing the panel detached the producer, so that answer could not mint
+an operation while the panel was closed. Stage 2 keeps the producer attached
+and thereby creates the interval in which an edit can be stamped with the
+previous account's actor and handed to the sender before the new identity's
+resubscribe takes `subscriptionSent()` — and therefore `isDocBound()` — false.
+Reverting Stage 2 would retire that mint/send consequence even though it would
+not repair the older frozen consumer answer.
 
-**This stage widens that exposure rather than creating it, which is why
-reverting Stage 2 would not retire it.** The freeze is a property of the
-_consumer record_, not of the producer: `useAgentCrdtFollower`'s cleanup clears
-`follower.value` and releases the lease but deliberately leaves
-`owner.consumer.value` installed, and the session reads `isTargetActive` and
-`userId` from that live record on every call. So since Stage 1b the
-page-retained session has already been answering with the last mounted panel's
-frozen identity after a close. Stage 2 adds minting to what that frozen answer
-gates. The fix is therefore owed by the resolver's move regardless of this
-stage, and the exposure should not be re-litigated as a Stage 2 regression.
+**Stage 2 is complete only when no operation is minted or sent under an account
+identity other than the current account.** That requirement covers fresh edits
+and previously held delivery. Moving `resolveAgentIdentity` to page lifetime is
+the intended source of a current answer; the producer and sender still have to
+gate on it through the identity-change and resubscribe interval. Host refusal
+of a resubscribe the new identity does not own is containment, not the design
+guarantee: this ADR cites no backend test proving rejection of an operation
+stamped with the previous actor, and frontend correctness must not depend on
+such rejection.
 
 **The restore queue moved with the edit path, as this stage requires.** The
 delivery trigger was a panel watcher, so a reconnect completing with the panel
