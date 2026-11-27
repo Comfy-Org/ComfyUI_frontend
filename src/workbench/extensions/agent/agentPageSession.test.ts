@@ -177,6 +177,25 @@ describe('useAgentPageSession', () => {
     expect(resolvedIdentity.reset).toHaveBeenCalledOnce()
   })
 
+  it('resets synchronously but reconnects once when sign-out also clears the workspace', async () => {
+    identity.value = ['account-a', 'ws-a', null]
+    useAgentPageSession(readIdentity).retainIdentity({
+      getIdentity: vi.fn(),
+      isRetryable: vi.fn(),
+      onFailure: vi.fn()
+    })
+
+    identity.value = [null, 'ws-a', null]
+    expect(resolvedIdentity.reset).toHaveBeenCalledOnce()
+    expect(agentSocket.reconnect).not.toHaveBeenCalled()
+
+    identity.value = [null, null, null]
+    expect(resolvedIdentity.reset).toHaveBeenCalledOnce()
+    await nextTick()
+
+    expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+  })
+
   it('stops retained identity resolution on page teardown', () => {
     useAgentPageSession(readIdentity).retainIdentity({
       getIdentity: vi.fn(),

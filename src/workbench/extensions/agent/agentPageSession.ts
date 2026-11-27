@@ -110,16 +110,23 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
     })
 
     const identity = computed<SocketIdentity>(() => readIdentity())
+    let identityResetPending = false
     watch(
       identity,
       (next, previous) => {
-        if (!needsReauthentication(next, previous)) return
+        if (identityResetPending || !needsReauthentication(next, previous))
+          return
+        identityResetPending = true
         agentIdentity.value?.reset()
-        events.reconnect()
-        listeners.forEach((listener) => listener())
       },
       { flush: 'sync' }
     )
+    watch(identity, (next, previous) => {
+      identityResetPending = false
+      if (!needsReauthentication(next, previous)) return
+      events.reconnect()
+      listeners.forEach((listener) => listener())
+    })
     return { events, docTransport, userId }
   })
   assert(
