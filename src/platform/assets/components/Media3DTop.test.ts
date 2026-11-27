@@ -89,7 +89,10 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute('src', 'http://server/preview.png')
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
+      'src',
+      'http://server/preview.png'
+    )
     expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
   })
 
@@ -103,7 +106,10 @@ describe('Media3DTop', () => {
     await flush()
 
     expect(mockFindServerPreviewUrl).toHaveBeenCalledWith('mesh.glb')
-    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute('src', 'http://server/from-name.png')
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
+      'src',
+      'http://server/from-name.png'
+    )
   })
 
   it('skips the server query when isAssetPreviewSupported is false', async () => {
@@ -146,7 +152,10 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute('src', 'http://server/patched.png')
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
+      'src',
+      'http://server/patched.png'
+    )
   })
 
   it('does not overwrite a thumbnail that is already showing', async () => {
