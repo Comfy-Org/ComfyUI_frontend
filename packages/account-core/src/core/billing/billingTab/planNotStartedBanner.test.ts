@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { RecoveryPaymentPage } from './planNotStartedBanner'
 import { planNotStartedBannerFor } from './planNotStartedBanner'
 
 const recovery = {
@@ -7,32 +8,40 @@ const recovery = {
   reason: 'payment_required'
 } as const
 
+const CHECKOUT_URL =
+  'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly'
+
 describe('planNotStartedBannerFor', () => {
-  it.for([
+  it.for<{ case: string; paymentPage: RecoveryPaymentPage }>([
+    { case: 'a hosted payment page', paymentPage: { kind: 'hostedPage' } },
     {
-      case: 'the served plan and its hosted payment page',
-      planTier: 'CREATOR',
-      paymentPage: 'hostedPage'
+      case: 'only a client secret, with its billing-web checkout',
+      paymentPage: { kind: 'clientSecretOnly', checkoutUrl: CHECKOUT_URL }
     },
     {
-      case: 'no plan while the operation has not served one',
-      planTier: null,
-      paymentPage: 'unknown'
-    },
-    {
-      case: 'an operation that serves no hosted payment page',
-      planTier: 'CREATOR',
-      paymentPage: 'noHostedPage'
+      case: 'no way to pay from a failed read',
+      paymentPage: { kind: 'unavailable' }
     }
-  ] as const)('carries $case', ({ planTier, paymentPage }) => {
+  ])('carries the served plan and $case', ({ paymentPage }) => {
     expect(
       planNotStartedBannerFor({
         isCloud: true,
         recovery,
-        planTier,
+        planTier: 'CREATOR',
         paymentPage
       })
-    ).toEqual({ planTier, paymentPage })
+    ).toEqual({ planTier: 'CREATOR', paymentPage })
+  })
+
+  it('shows nothing while the operation is loading', () => {
+    expect(
+      planNotStartedBannerFor({
+        isCloud: true,
+        recovery,
+        planTier: null,
+        paymentPage: { kind: 'loading' }
+      })
+    ).toBeNull()
   })
 
   it('shows nothing when no recovery is served', () => {
@@ -41,7 +50,7 @@ describe('planNotStartedBannerFor', () => {
         isCloud: true,
         recovery: null,
         planTier: 'CREATOR',
-        paymentPage: 'hostedPage'
+        paymentPage: { kind: 'hostedPage' }
       })
     ).toBeNull()
   })
@@ -52,7 +61,7 @@ describe('planNotStartedBannerFor', () => {
         isCloud: false,
         recovery,
         planTier: 'CREATOR',
-        paymentPage: 'hostedPage'
+        paymentPage: { kind: 'hostedPage' }
       })
     ).toBeNull()
   })

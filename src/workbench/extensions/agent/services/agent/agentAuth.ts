@@ -15,6 +15,17 @@ function credentialValue(header: AuthHeader): string {
     : header.Authorization.slice('Bearer '.length)
 }
 
+let lastAgentCredential: string | null = null
+
+/**
+ * The most recent credential a local (non-cloud) agent request actually
+ * attached, kept so an account switch can snapshot the outgoing account's
+ * value before anything else overwrites it. See `agentOwnerHandoff.ts`.
+ */
+export function peekLastAgentCredential(): string | null {
+  return lastAgentCredential
+}
+
 function isApiKeySession(): boolean {
   const authStore = useAuthStore()
   return (
@@ -53,6 +64,7 @@ export async function withAgentAuth(
   const headers = new Headers(init.headers)
   for (const [name, value] of Object.entries(header)) headers.set(name, value)
   const attached = authCredentialOf(header)
+  lastAgentCredential = credentialValue(header)
   return {
     ...init,
     headers,

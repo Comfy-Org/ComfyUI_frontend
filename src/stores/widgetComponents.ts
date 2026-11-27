@@ -43,6 +43,11 @@ export function useWidgetComponents() {
     for (const store of stores) store.set(id, undefined)
   }
 
+  function keep(id: Parameters<(typeof stores)[number]['get']>[0]) {
+    const restores = stores.map((store) => store.keep(id))
+    return () => restores.forEach((restore) => restore())
+  }
+
   function move(...args: Parameters<(typeof stores)[number]['move']>) {
     for (const store of stores) store.move(...args)
   }
@@ -65,6 +70,7 @@ export function useWidgetComponents() {
     writeNode,
     detachNode,
     remove,
+    keep,
     move,
     clearNode,
     clearGraph

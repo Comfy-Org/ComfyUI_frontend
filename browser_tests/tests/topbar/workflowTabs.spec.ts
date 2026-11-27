@@ -197,6 +197,29 @@ test.describe('Workflow tabs', () => {
     await expect(closeButton).toBeHidden()
   })
 
+  test(
+    'keeps the unsaved indicator visible on hover when Close fits beside it',
+    {
+      tag: '@ui'
+    },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler', {
+        fileName: 'W'
+      })
+      const tab = comfyPage.menu.topbar.getWorkflowTab('W')
+      const indicator = tab.getByTestId(TestIds.topbar.workflowDirtyIndicator)
+      const closeButton = tab.getByTestId(TestIds.topbar.closeWorkflowButton)
+
+      await comfyPage.canvas.hover()
+      await expect(indicator).toBeVisible()
+      await expect(closeButton).toBeHidden()
+
+      await tab.hover()
+      await expect(closeButton).toBeVisible()
+      await expect(indicator).toBeVisible()
+    }
+  )
+
   test('Can drag tab to end', async ({ comfyPage }) => {
     const topbar = comfyPage.menu.topbar
 
@@ -297,8 +320,8 @@ test.describe('Workflow tabs', () => {
             .toEqual({ fits: true, scrollLeft: 0 })
         })
 
-        await test.step('scroll after inactive tabs reach 90px', async () => {
-          await topbar.openBlankWorkflows(1)
+        await test.step('scroll after two more tabs push every inactive tab to 90px', async () => {
+          await topbar.openBlankWorkflows(2)
           await expect
             .poll(async () => {
               const widths = await topbar.tabs.evaluateAll((tabs) =>
@@ -311,7 +334,7 @@ test.describe('Workflow tabs', () => {
               )
               return widths
             })
-            .toEqual(Array(6).fill(90))
+            .toEqual(Array(7).fill(90))
           await expect
             .poll(() =>
               topbar.tabStrip.evaluate(
@@ -352,7 +375,7 @@ test.describe('Workflow tabs', () => {
     )
 
     test(
-      'Compact inactive tabs reveal their close button to keyboard only',
+      'Compact inactive tabs reveal their close button on hover and to the keyboard',
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
@@ -367,14 +390,14 @@ test.describe('Workflow tabs', () => {
 
         const inactiveTab = topbar.getTab(9)
 
-        await test.step('hide Close on inactive tab hover', async () => {
+        await test.step('replace the unsaved dot with Close on hover', async () => {
           await inactiveTab.hover()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.workflowDirtyIndicator)
-          ).toBeVisible()
+          ).toBeHidden()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
-          ).toBeHidden()
+          ).toBeVisible()
 
           const activeTab = topbar.getActiveTab()
           await activeTab.hover()

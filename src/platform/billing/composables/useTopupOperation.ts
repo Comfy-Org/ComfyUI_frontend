@@ -11,7 +11,10 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import type { HostedCheckoutSession } from '@/platform/billing/sdk/topupOperationView'
+import type {
+  HostedCheckoutSession,
+  TopupQuoteFacts
+} from '@/platform/billing/sdk/topupOperationView'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 const RETRYABLE_CHECKOUT_REFUSALS: ReadonlyArray<readonly [number, string]> = [
@@ -105,13 +108,47 @@ export function useTopupOperation() {
       : { url: checkout_url, sessionId: session_id }
   }
 
+  async function openTopupPurchase(
+    amountCents: number,
+    signal: AbortSignal,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<string | undefined> {
+    if (sdkStore)
+      return useBillingSdkStore().openTopupPurchase(
+        amountCents,
+        signal,
+        autoTopUp
+      )
+    try {
+      return (
+        await billingApi.createTopupPurchase(amountCents, signal, autoTopUp)
+      ).purchase_id
+    } catch {
+      return undefined
+    }
+  }
+
   async function quoteTopup(
     amountCents: number,
     signal: AbortSignal
-  ): Promise<number | null> {
+  ): Promise<TopupQuoteFacts | null> {
     if (sdkStore) return sdkStore.quoteTopup(amountCents, signal)
     try {
-      return (await billingApi.quoteTopup(amountCents, signal)).credits
+      const quoted = await billingApi.quoteTopup(amountCents, signal)
+      const facts = {
+        credits: quoted.credits,
+        paymentConfigured: quoted.payment_method_configuration_id !== undefined
+      }
+      return quoted.balance_after_credits === undefined ||
+        quoted.runs_paused_after === undefined
+        ? facts
+        : {
+            ...facts,
+            balanceAfter: {
+              credits: quoted.balance_after_credits,
+              runsPaused: quoted.runs_paused_after
+            }
+          }
     } catch {
       return null
     }
@@ -141,6 +178,7 @@ export function useTopupOperation() {
     createHostedCheckout,
     dismissOperation,
     adoptPendingOperation,
+    openTopupPurchase,
     quoteTopup
   }
 }

@@ -14,7 +14,12 @@ import { liveCloudBillingFixture } from '@e2e/fixtures/liveCloudBillingFixture'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 const test = liveCloudBillingFixture.extend<{
-  sandboxProxy: { server: string; requests: string[] }
+  sandboxProxy: {
+    server: string
+    requests: string[]
+    pendingPath: string
+    failingPath: string
+  }
 }>({
   sandboxProxy: async ({ liveCloudBillingConfig }, use) => {
     if (!liveCloudBillingConfig) throw new Error('Live routing config required')
@@ -45,6 +50,8 @@ const test = liveCloudBillingFixture.extend<{
       { timeout: 10_000 }
     )
     const requests: string[] = []
+    const pendingPath = '/api/pending'
+    const failingPath = '/api/failing'
     const sockets = new Set<Duplex>()
     const sandbox = createHttpsServer(
       {
@@ -54,9 +61,18 @@ const test = liveCloudBillingFixture.extend<{
       (request, response) => {
         const destination = `${request.method} https://${request.headers.host}${request.url}`
         requests.push(destination)
+        if (request.url === pendingPath) return
+        if (request.url === failingPath) {
+          request.socket.destroy()
+          return
+        }
         response.setHeader(
           'Access-Control-Allow-Origin',
           liveCloudBillingConfig.PLAYWRIGHT_TEST_URL
+        )
+        response.setHeader(
+          'X-Sandbox-Fetch-Site',
+          request.headers['sec-fetch-site'] ?? 'none'
         )
         response.end(destination)
       }
@@ -75,7 +91,12 @@ const test = liveCloudBillingFixture.extend<{
     if (!address || typeof address === 'string')
       throw new Error('TCP address required')
     try {
-      await use({ server: `http://127.0.0.1:${address.port}`, requests })
+      await use({
+        server: `http://127.0.0.1:${address.port}`,
+        requests,
+        pendingPath,
+        failingPath
+      })
     } finally {
       sockets.forEach((socket) => socket.destroy())
       await new Promise<void>((resolve) => proxy.close(() => resolve()))
@@ -111,6 +132,13 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     ).toBe('POST https://testcloud.comfy.org/api/auth/token')
     expect(
       await page.evaluate(() =>
+        fetch('/api/auth/sso/discover', { method: 'POST' }).then((response) =>
+          response.text()
+        )
+      )
+    ).toBe('POST https://testcloud.comfy.org/api/auth/sso/discover')
+    expect(
+      await page.evaluate(() =>
         fetch('https://testapi.comfy.org/customers', { method: 'POST' }).then(
           (response) => response.text()
         )
@@ -118,6 +146,7 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     ).toBe('POST https://testapi.comfy.org/customers')
     expect(sandboxProxy.requests).toEqual([
       'POST https://testcloud.comfy.org/api/auth/token',
+      'POST https://testcloud.comfy.org/api/auth/sso/discover',
       'POST https://testapi.comfy.org/customers'
     ])
   })
@@ -147,6 +176,71 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       test.fail(true, 'The recorded mutation must fail fixture teardown')
     })
   }
+
+  test.describe('from a loaded local page', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('http://localhost:5173/', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+      )
+      await page.goto('http://localhost:5173/')
+    })
+
+    for (const { url, violation } of [
+      {
+        url: '/reslyf/settings',
+        violation: 'Background POST http://localhost:5173/reslyf/settings'
+      },
+      {
+        url: 'https://mp.comfy.org/track/',
+        violation: 'Background POST https://mp.comfy.org/track/'
+      }
+    ]) {
+      test(`blocks background POST ${url} without failing the run`, async ({
+        page,
+        networkPolicy,
+        sandboxProxy
+      }) => {
+        expect(
+          await page.evaluate(
+            (url) =>
+              fetch(url, { method: 'POST' }).then(
+                () => 'sent',
+                () => 'blocked'
+              ),
+            url
+          )
+        ).toBe('blocked')
+        expect([...networkPolicy.unexpected]).toEqual([violation])
+        expect(sandboxProxy.requests).toEqual([])
+      })
+    }
+
+    test('fails when a proxied request fails during the test', async ({
+      page,
+      sandboxProxy
+    }) => {
+      test.fail(true, 'A Cloud proxy failure during the test must fail it')
+      await page.evaluate((path) => {
+        void fetch(path)
+      }, sandboxProxy.failingPath)
+      await expect
+        .poll(() => sandboxProxy.requests)
+        .toEqual([`GET https://testcloud.comfy.org${sandboxProxy.failingPath}`])
+      await page.waitForEvent('close')
+    })
+
+    test('ignores a proxied request still in flight when the test ends', async ({
+      page,
+      sandboxProxy
+    }) => {
+      await page.evaluate((path) => {
+        void fetch(path)
+      }, sandboxProxy.pendingPath)
+      await expect
+        .poll(() => sandboxProxy.requests)
+        .toEqual([`GET https://testcloud.comfy.org${sandboxProxy.pendingPath}`])
+    })
+  })
 
   for (const client of ['request', 'context.request'] as const) {
     test(`${client} retains the API origin and mutation guards`, async ({
@@ -213,3 +307,61 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     test.fail(true, 'The recorded WebSocket must fail fixture teardown')
   })
 })
+
+test.describe(
+  'Live Cloud network boundary on a deployed frontend',
+  { tag: '@smoke' },
+  () => {
+    test.use({
+      liveCloudBillingConfig: liveCloudBillingConfigSchema.parse({
+        PLAYWRIGHT_TEST_URL: 'https://testcloud.comfy.org',
+        PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
+        CLOUD_ACCOUNT_EMAIL: 'routing@example.com',
+        CLOUD_ACCOUNT_PASSWORD: 'unused'
+      })
+    })
+
+    test.beforeEach(async ({ page }) => {
+      await page.route('https://testcloud.comfy.org/', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+      )
+      await page.goto('https://testcloud.comfy.org/')
+    })
+
+    test('sends API requests from the browser itself', async ({
+      page,
+      sandboxProxy
+    }) => {
+      expect(
+        await page.evaluate(() =>
+          fetch('/api/auth/session').then((response) =>
+            response.headers.get('X-Sandbox-Fetch-Site')
+          )
+        )
+      ).toBe('same-origin')
+      expect(sandboxProxy.requests).toEqual([
+        'GET https://testcloud.comfy.org/api/auth/session'
+      ])
+    })
+
+    test('blocks POST /api/billing/subscribe and fails even when the app catches it', async ({
+      page,
+      networkPolicy,
+      sandboxProxy
+    }) => {
+      expect(
+        await page.evaluate(() =>
+          fetch('/api/billing/subscribe', { method: 'POST' }).then(
+            () => 'sent',
+            () => 'blocked'
+          )
+        )
+      ).toBe('blocked')
+      expect([...networkPolicy.unexpected]).toEqual([
+        'Mutation POST https://testcloud.comfy.org/api/billing/subscribe'
+      ])
+      expect(sandboxProxy.requests).toEqual([])
+      test.fail(true, 'The recorded mutation must fail fixture teardown')
+    })
+  }
+)

@@ -96,8 +96,8 @@ const { widget, nodeId } = defineProps<{
 }>()
 
 const node = useWidgetHostNode(
-  () => widget.nodeLocatorId,
-  () => nodeId
+  () => nodeId,
+  () => widget.nodeLocatorId
 )
 
 const { beforeImages, afterImages } = useImageCompareImages(node, nodeId)

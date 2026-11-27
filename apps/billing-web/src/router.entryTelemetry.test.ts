@@ -193,7 +193,7 @@ describe('an entry link billing web sends back to the host', () => {
       path: '/v1/checkout?product=comfyui&return_to=https://evil.test&plan=creator_monthly'
     }
   ])(
-    'reports a checkout with $name as received, then as rewritten to Plan & Credits',
+    'reports a checkout with $name as received, then as rewritten to Platform Billing',
     async ({ path }) => {
       const sent = trackedEvents()
       const { router, leave } = arrivalRouter()
@@ -215,7 +215,7 @@ describe('an entry link billing web sends back to the host', () => {
           stage: 'bounced',
           outcome: 'pending',
           reason: 'return_target_rewritten',
-          to: 'comfyui_credits'
+          to: 'platform_billing'
         }
       ])
     }

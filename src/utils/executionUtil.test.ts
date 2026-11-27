@@ -108,6 +108,35 @@ describe('graphToPrompt widget serialization', () => {
 
     expect(await promptInputs(graph, node)).not.toHaveProperty('prompt')
   })
+
+  it('omits a widget whose options.serialize is false, keeping its siblings', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    node.addWidget('number', 'seed', 42, () => undefined, {})
+    node.addWidget(
+      'combo',
+      'control_after_generate',
+      'fixed',
+      () => undefined,
+      {
+        values: ['fixed', 'increment'],
+        serialize: false
+      }
+    )
+    node.addWidget('number', 'steps', 20, () => undefined, {})
+
+    expect(await promptInputs(graph, node)).toEqual({ seed: 42, steps: 20 })
+  })
+
+  it('includes a widget excluded from the workflow file by widget.serialize', async () => {
+    const graph = new LGraph()
+    const node = addNode(graph, 'KSampler')
+    node.addWidget('number', 'seed', 42, () => undefined, {})
+    const preview = node.addWidget('number', 'preview', 7, () => undefined, {})
+    preview.serialize = false
+
+    expect(await promptInputs(graph, node)).toEqual({ seed: 42, preview: 7 })
+  })
 })
 
 describe('graphToPrompt _meta pack identity', () => {

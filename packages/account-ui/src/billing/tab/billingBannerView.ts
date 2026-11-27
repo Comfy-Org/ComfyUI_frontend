@@ -13,6 +13,7 @@ export type BillingBannerAction =
   | 'choosePlan'
   | 'contactSales'
   | 'finishPayment'
+  | 'viewPlans'
 
 export interface BillingBannerText {
   readonly title: string
@@ -36,7 +37,8 @@ export type BillingBannerView = BillingBannerText &
       }
     | {
         readonly kind: 'planNotStarted'
-        readonly action: 'finishPayment' | null
+        readonly action: 'finishPayment' | 'verifyPayment' | 'viewPlans' | null
+        readonly href: string | null
       }
     | {
         readonly kind: 'topupCheckout'
@@ -155,7 +157,10 @@ export function billingBannerLook(view: BillingBannerView): BillingBannerLook {
         windowBreakpoint: true
       }
     case 'planNotStarted':
-      return { ...look(true, false, view.action), windowBreakpoint: true }
+      return {
+        ...look(true, false, view.action, view.href),
+        windowBreakpoint: true
+      }
     case 'topupCheckout':
       return look(true, true, view.action, null, view.dismissKey)
     case 'parked':

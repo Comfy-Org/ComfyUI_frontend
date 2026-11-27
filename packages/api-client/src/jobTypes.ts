@@ -10,7 +10,7 @@ import { zJobEntry, zJobExecutionMetaEntry } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { resultItemType } from './resultItemTypeSchema'
-import { zTaskOutput } from './executionTypes'
+import { zRelayedNodeErrors, zTaskOutput } from './executionTypes'
 
 export { zJobExecutionMetaEntry }
 
@@ -48,9 +48,10 @@ const zExecutionError = z
     executed: z.array(z.string()).optional(),
     exception_message: z.string(),
     exception_type: z.string(),
-    traceback: z.array(z.string()),
+    traceback: z.array(z.string()).nullish(),
     current_inputs: z.unknown().optional(),
-    current_outputs: z.unknown().optional()
+    current_outputs: z.unknown().optional(),
+    node_errors: zRelayedNodeErrors.optional().catch(undefined)
   })
   .passthrough()
 

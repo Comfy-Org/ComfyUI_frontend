@@ -33,8 +33,8 @@ import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/compo
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
-import '@/scripts/changeTracker'
 
 import { useWorkflowLinkUrlLoader } from './useWorkflowLinkUrlLoader'
 
@@ -160,6 +160,7 @@ describe('workflow-id links', () => {
   }
 
   beforeEach(async () => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     distribution.isCloud = true
     clearPreservedQuery(NAMESPACE)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
@@ -250,6 +251,10 @@ describe('workflow-id links', () => {
     )
 
     expect(await loader.openWorkflowLinkFromUrl()).toBe('opened')
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ path: PATH }),
+      expect.objectContaining({ initiator: 'user' })
+    )
     expect(store.activeWorkflow?.path).toBe(PATH)
     expect(useToast().toasts).toEqual([])
   })

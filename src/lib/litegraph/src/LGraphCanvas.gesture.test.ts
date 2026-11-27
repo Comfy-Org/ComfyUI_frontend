@@ -504,6 +504,15 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(callbackArgs.get('canvas.onNodeMoved')).toEqual([[a]])
     })
 
+    it('shows the grabbing cursor only while dragging', () => {
+      gesture.press(A_BODY)
+      gesture.move(FAR)
+      expect(canvas.canvas.style.cursor).toBe('grabbing')
+
+      gesture.release(FAR)
+      expect(canvas.canvas.style.cursor).not.toBe('grabbing')
+    })
+
     it('drag moves every selected node', () => {
       gesture.click(B_BODY)
       gesture.click(A_BODY, { shiftKey: true })

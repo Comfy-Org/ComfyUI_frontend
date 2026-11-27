@@ -818,6 +818,18 @@ describe('CheckoutView', () => {
     }
   )
 
+  it('recovers the signup payment its link names', async () => {
+    const fake = await renderCheckout(`${CHECKOUT_PATH}&operation=op_signup`, {
+      recover: { status: 'ok', value: undefined }
+    })
+
+    await vi.waitFor(() =>
+      expect(fake.recover).toHaveBeenCalledWith({
+        operation: { id: 'op_signup', kind: 'subscription' }
+      })
+    )
+  })
+
   it('picks up a checkout parked on a payment method and offers to complete it, as the app does', async () => {
     const fake = await renderCheckout(CHECKOUT_PATH, {
       recover: {
@@ -1496,7 +1508,8 @@ describe('CheckoutView attempt telemetry', () => {
     payment_intent_source: 'subscribe_now_button',
     checkout_ui: 'embedded',
     billing_client: 'sdk',
-    billing_surface: 'billing_web'
+    billing_surface: 'billing_web',
+    product: 'comfyui'
   }
 
   beforeEach(() => {

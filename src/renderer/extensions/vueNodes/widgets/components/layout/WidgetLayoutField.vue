@@ -32,6 +32,7 @@ const hideLayoutField = useHideLayoutField()
         rootClass
       )
     "
+    data-part="widget-field"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
@@ -47,31 +48,24 @@ const hideLayoutField = useHideLayoutField()
     <WidgetLayoutFieldLabel
       :widget
       :input-id
+      :data-leading="$slots.leading ? '' : undefined"
       :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
     />
     <slot name="between" />
-    <div :class="cn('ml-auto grid min-w-0 shrink', fillWidth && 'flex-1')">
-      <span
-        v-if="valueText !== undefined"
-        aria-hidden="true"
-        :data-value="valueText"
-        :class="
-          cn(
-            'invisible col-start-1 row-start-1 truncate pl-2 after:content-[attr(data-value)]',
-            fullWidthControl ? 'pr-2' : 'pr-7'
-          )
-        "
-      />
-      <div
-        :class="
-          cn(
-            'col-start-1 row-start-1 min-w-0 cursor-[inherit] rounded-(--node-widget-radius) transition-all',
-            fullWidthControl && 'absolute inset-0'
-          )
-        "
-      >
-        <slot :border-style="widget.borderStyle" />
-      </div>
+    <div
+      :data-value="valueText"
+      :class="
+        cn(
+          'ml-auto grid min-w-0 shrink *:col-start-1 *:row-start-1 *:min-w-0',
+          fillWidth && 'flex-1',
+          valueText !== undefined &&
+            'before:invisible before:col-start-1 before:row-start-1 before:truncate before:pl-2 before:content-[attr(data-value)]',
+          valueText !== undefined &&
+            (fullWidthControl ? 'before:pr-2' : 'before:pr-7')
+        )
+      "
+    >
+      <slot :border-style="widget.borderStyle" />
     </div>
   </div>
 </template>

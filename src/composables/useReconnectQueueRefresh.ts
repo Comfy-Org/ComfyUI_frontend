@@ -222,7 +222,8 @@ export function useReconnectQueueRefresh() {
       exception_type: normalizedError.exception_type,
       traceback: normalizedError.traceback,
       current_inputs: normalizedError.current_inputs,
-      current_outputs: normalizedError.current_outputs
+      current_outputs: normalizedError.current_outputs,
+      node_errors: normalizedError.node_errors
     })
   }
 
@@ -297,7 +298,7 @@ export function useReconnectQueueRefresh() {
       }
       if (outcome.state === 'unknown') {
         if (giveUpOnUnreadable(jobId)) unreadable.push(jobId)
-        else if (historyByJobId.has(jobId)) activeJobIds.add(jobId)
+        else activeJobIds.add(jobId)
         return
       }
       unreadableRefreshes.delete(jobId)

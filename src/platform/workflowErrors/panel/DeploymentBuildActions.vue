@@ -30,61 +30,46 @@
         as="a"
         :href="buildUrl"
         target="_blank"
-        rel="noopener noreferrer"
+        :rel="platformLinkRel()"
         class="w-full no-underline"
         data-testid="deployment-build-platform"
+        @click="openFrameOnClick"
       >
-        {{
-          deployment.build_id
-            ? $t('rightSidePanel.editBuildOnPlatform')
-            : $t('rightSidePanel.openBuildsOnPlatform')
-        }}
+        {{ buildLabel }}
         <i
+          v-if="!frameRequest"
           class="icon-[lucide--square-arrow-out-up-right]"
           aria-hidden="true"
         />
-      </Button>
-      <Button
-        variant="secondary"
-        size="md"
-        :class="cn('w-full', !copied && 'gap-3')"
-        data-testid="deployment-build-agent"
-        :loading="isCopying"
-        @click="copy(brief())"
-      >
-        <template v-if="copied">
-          <i class="icon-[lucide--check]" aria-hidden="true" />
-          {{ $t('deployToComfyApi.copied') }}
-        </template>
-        <template v-else>
-          <AgentMarks class="h-6 w-auto" />
-          {{ $t('deployToComfyApi.deployWithAgent') }}
-        </template>
       </Button>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 import Button from '@comfyorg/design-system/button/Button'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
-import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { DEPLOYMENT_LISTING_FOCUS_RETRY_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
-import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
-import type { MissingBuildPack } from '@/platform/workspace/deploymentBuildBrief'
-import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
-import { missingNodeTypeName } from '@/platform/workspace/missingForDeployment'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import type { PlatformFrameRequest } from '@/platform/workspace/platformFrame/platformFrameUrl'
+import { openPlatformFrameOnClick } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
+import { preinstallRequest } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  platformSurfaceLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 
 const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
   deployment: WorkspaceDeployment
@@ -92,11 +77,11 @@ const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
   missingModelGroups: readonly MissingModelGroup[]
 }>()
 
+const { t } = useI18n()
 const deploymentPick = useDeploymentPickStore()
 const { isSwitching } = storeToRefs(deploymentPick)
 const { changeSinceBootMessage } = useDeploymentLabels()
 const { reloadOntoCurrent } = useDeploymentSwitchGuard()
-const { isCopying, copied, copy } = useBriefCopy()
 
 let lastListingRefreshAt = -Infinity
 useEventListener(window, 'focus', () => {
@@ -106,38 +91,54 @@ useEventListener(window, 'focus', () => {
   void deploymentPick.load()
 })
 
-const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
-const buildUrl = computed(() =>
-  deployment.build_id
-    ? `${buildsUrl}/${encodeURIComponent(deployment.build_id)}`
-    : buildsUrl
+const platformFrames = usePlatformFrameStore()
+const workflows = useWorkflowStore()
+const missingNodes = useMissingNodesErrorStore()
+const workflowLacksNodes = computed(
+  () =>
+    missingPackGroups.length > 0 ||
+    missingNodes.missingNodesError !== null ||
+    !!workflows.activeWorkflow?.pendingWarnings?.missingNodeTypes?.length
+)
+const lacksOnlyModels = computed(
+  () => !workflowLacksNodes.value && missingModelGroups.length > 0
+)
+const lacksNothing = computed(
+  () => !workflowLacksNodes.value && missingModelGroups.length === 0
 )
 
-function buildPack(group: MissingPackGroup): MissingBuildPack {
-  const pack = {
-    packId: group.packId,
-    nodeTypes: group.nodeTypes.map(missingNodeTypeName)
-  }
-  const unsupported =
-    group.packId !== null
-      ? deploymentPick.unsupportedPackFor(group.packId)
-      : undefined
-  return unsupported
-    ? { ...pack, loadFailure: { cause: unsupported.cause } }
-    : pack
+const frameRequest = computed<PlatformFrameRequest | null>(() => {
+  if (lacksNothing.value || !platformFrames.isAvailable()) return null
+  return lacksOnlyModels.value
+    ? preinstallRequest(deployment.deployment_id)
+    : {
+        step: 'update',
+        deploymentId: deployment.deployment_id,
+        handsOverWorkflow: true
+      }
+})
+
+const buildLabel = computed(() => {
+  if (frameRequest.value)
+    return lacksOnlyModels.value
+      ? t('rightSidePanel.addMissingModelsToBuild')
+      : t('rightSidePanel.addMissingItems')
+  return deployment.build_id
+    ? t('rightSidePanel.editBuildOnPlatform')
+    : t('rightSidePanel.openBuildsOnPlatform')
+})
+
+function openFrameOnClick(event: MouseEvent) {
+  if (!frameRequest.value) return
+  openPlatformFrameOnClick(event, frameRequest.value, 'errors_panel')
 }
 
-function brief(): string {
-  return deploymentBuildBrief(
-    deployment,
-    missingPackGroups.map(buildPack),
-    missingModelGroups.flatMap((group) =>
-      group.models.map((model) => ({
-        name: model.name,
-        directory: model.representative.directory || group.directory,
-        url: model.representative.url
-      }))
-    )
+const buildUrl = computed(() =>
+  platformSurfaceLink(
+    deployment.build_id
+      ? `/profile/builds/${encodeURIComponent(deployment.build_id)}`
+      : '/profile/builds',
+    'deployment-build-actions'
   )
-}
+)
 </script>

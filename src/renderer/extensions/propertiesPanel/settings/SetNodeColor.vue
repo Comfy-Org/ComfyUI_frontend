@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorOption } from '@/lib/litegraph/src/litegraph'
-import { useThemeStore } from '@/platform/theme/themeStore'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -27,27 +26,22 @@ const emit = defineEmits<{ (e: 'changed'): void }>()
 
 const { t } = useI18n()
 
-const themeStore = useThemeStore()
-
 type NodeColorOption = {
   name: string
   localizedName: () => string
   value: {
-    dark: string
-    light: string
-    ringDark: string
-    ringLight: string
+    swatch: string
+    ring: string
   }
 }
 
 const nodeColorEntries = Object.entries(LGraphCanvas.node_colors)
 
 function getColorValue(color: string): NodeColorOption['value'] {
+  const adjusted = (lightness: number) => adjustColor(color, { lightness })
   return {
-    dark: adjustColor(color, { lightness: 0.3 }),
-    light: adjustColor(color, { lightness: 0.4 }),
-    ringDark: adjustColor(color, { lightness: 0.5 }),
-    ringLight: adjustColor(color, { lightness: 0.1 })
+    swatch: `light-dark(${adjusted(0.4)}, ${adjusted(0.3)})`,
+    ring: `light-dark(${adjusted(0.1)}, ${adjusted(0.5)})`
   }
 }
 
@@ -65,8 +59,6 @@ const colorOptions: NodeColorOption[] = [
     value: getColorValue(color.bgcolor)
   }))
 ]
-
-const isLightTheme = computed(() => themeStore.colorScheme === 'light')
 
 const nodeColor = computed<NodeColorOption['name'] | null>({
   get() {
@@ -126,15 +118,9 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
             <div
               :class="cn('size-4 rounded-full ring-2 ring-gray-500/10')"
               :style="{
-                backgroundColor: isLightTheme
-                  ? option.value.light
-                  : option.value.dark,
+                backgroundColor: option.value.swatch,
                 '--tw-ring-color':
-                  option.name === nodeColor
-                    ? isLightTheme
-                      ? option.value.ringLight
-                      : option.value.ringDark
-                    : undefined
+                  option.name === nodeColor ? option.value.ring : undefined
               }"
               :data-testid="option.name"
             />

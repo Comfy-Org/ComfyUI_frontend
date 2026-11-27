@@ -31,6 +31,21 @@ describe('useFloatWidget', () => {
       expect(widget.value).toBe(5.7)
     })
 
+    it.for([
+      { input: null, min: undefined, max: undefined, expected: 0 },
+      { input: 7.5, min: 1, max: 5, expected: 5 },
+      { input: 0.5, min: 1, max: 5, expected: 1 },
+      { input: 1.00125, min: 1, max: 5, expected: 1.00125 }
+    ])(
+      'stores $input as $expected when no round option is set',
+      ({ input, min, max, expected }) => {
+        widget.options.min = min
+        widget.options.max = max
+        onFloatValueChange.call(widget, input)
+        expect(widget.value).toBe(expected)
+      }
+    )
+
     it('should round values based on round option', () => {
       widget.options.round = 0.5
       onFloatValueChange.call(widget, 5.7)

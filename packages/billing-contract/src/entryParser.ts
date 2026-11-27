@@ -12,6 +12,7 @@ import {
   isBillingSource
 } from './contract'
 import type {
+  EntryAutoTopUp,
   InvalidIdentifierCode,
   OptionalEntryKey,
   OptionalEntryValues
@@ -22,7 +23,8 @@ import {
   ENTRY_PARAM_RETURN_TO,
   ENTRY_PARAM_SOURCE,
   OPTIONAL_ENTRY_FIELDS,
-  readEntryAmountCents
+  readEntryAmountCents,
+  readEntryAutoTopUp
 } from './entryFields'
 import { isContractIdentifier } from './identifiers'
 import type { ReturnTarget } from './returnTargets'
@@ -43,6 +45,8 @@ export interface BillingEntry extends OptionalEntryValues {
   readonly unreadablePromotionCode?: string
   /** The credit amount a top-up asks for, in whole cents. */
   readonly amountCents?: number
+  /** The auto top-up a top-up asks to turn on with its payment. */
+  readonly autoTopUp?: EntryAutoTopUp
 }
 
 export type BillingEntryErrorCode =
@@ -51,6 +55,7 @@ export type BillingEntryErrorCode =
   | 'UNKNOWN_PRODUCT'
   | 'UNKNOWN_RETURN_TARGET'
   | 'INVALID_AMOUNT'
+  | 'INVALID_AUTO_TOP_UP'
   | InvalidIdentifierCode
 
 export type BillingEntryResult =
@@ -132,6 +137,10 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
   if (rawAmount !== null && amountCents === undefined)
     return { status: 'error', code: 'INVALID_AMOUNT' }
 
+  const autoTopUp = readEntryAutoTopUp(parsed.searchParams)
+  if (autoTopUp.status === 'invalid')
+    return { status: 'error', code: 'INVALID_AUTO_TOP_UP' }
+
   const source = parsed.searchParams.get(ENTRY_PARAM_SOURCE)
 
   return {
@@ -143,7 +152,8 @@ export function parseBillingEntry(url: string | URL): BillingEntryResult {
       returnTo,
       ...optional.values,
       ...(isBillingSource(source) ? { source } : {}),
-      ...(amountCents === undefined ? {} : { amountCents })
+      ...(amountCents === undefined ? {} : { amountCents }),
+      ...(autoTopUp.status === 'ok' ? { autoTopUp: autoTopUp.value } : {})
     }
   }
 }

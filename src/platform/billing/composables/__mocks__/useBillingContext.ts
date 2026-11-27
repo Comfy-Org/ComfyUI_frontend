@@ -10,6 +10,7 @@ function createBillingContextMock(): BillingContext {
     isInitialized: ref(false),
     isLoading: ref(false),
     error: ref(null),
+    balanceReadFailed: computed(() => false),
     subscription: computed(() => null),
     balance: computed(() => null),
     plans: computed(() => []),

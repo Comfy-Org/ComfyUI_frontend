@@ -1,0 +1,186 @@
+{
+  "id": "00000000-0000-4000-8000-000000000001",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "0bb64f3d-0d1d-4556-8c39-0dfcf72ade77",
+      "pos": [-70.35000000000001, 2],
+      "size": [213.2, 106],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "properties": {
+        "previewExposures": []
+      },
+      "inputs": [
+        {
+          "name": "mode",
+          "type": "COMFY_DYNAMICCOMBO_V3",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "normalization",
+          "name": "mode.normalization",
+          "type": "INT",
+          "widget": {
+            "name": "mode.normalization"
+          },
+          "link": null
+        },
+        {
+          "name": "value",
+          "type": "INT",
+          "widget": {
+            "name": "value"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [],
+      "title": "New Subgraph",
+      "widgets_values": ["depth", 2, 4]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "0bb64f3d-0d1d-4556-8c39-0dfcf72ade77",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 3,
+          "lastLinkId": 2,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "New Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [-188, -50, 128, 100]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [60, -24, 128, 48]
+        },
+        "inputs": [
+          {
+            "id": "8fc4c1fa-4af4-4188-8668-f77abb9c35cc",
+            "name": "mode",
+            "type": "COMFY_DYNAMICCOMBO_V3",
+            "linkIds": [1],
+            "pos": [0, 0]
+          },
+          {
+            "id": "51da6a30-e734-4f9d-b527-d7624bb3e371",
+            "name": "value",
+            "type": "INT",
+            "linkIds": [2],
+            "pos": [0, 0]
+          }
+        ],
+        "outputs": [],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "TestTalkMode",
+            "pos": [10, 10],
+            "size": [273.2, 58],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "properties": {},
+            "inputs": [
+              {
+                "localized_name": "mode",
+                "name": "mode",
+                "type": "COMFY_DYNAMICCOMBO_V3",
+                "widget": {
+                  "name": "mode"
+                },
+                "link": 1
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "MODEL",
+                "name": "MODEL",
+                "type": "MODEL",
+                "links": null
+              }
+            ],
+            "widgets_values": ["depth"],
+            "widgets_values_named": {
+              "mode": "depth"
+            }
+          },
+          {
+            "id": 2,
+            "type": "TestTalkInt",
+            "pos": [10, 10],
+            "size": [270, 58],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "properties": {},
+            "inputs": [
+              {
+                "localized_name": "value",
+                "name": "value",
+                "type": "INT",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 2
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "MODEL",
+                "name": "MODEL",
+                "type": "MODEL",
+                "links": null
+              }
+            ],
+            "widgets_values": [4],
+            "widgets_values_named": {
+              "value": 4
+            }
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "COMFY_DYNAMICCOMBO_V3"
+          },
+          {
+            "id": 2,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 2,
+            "target_slot": 0,
+            "type": "INT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

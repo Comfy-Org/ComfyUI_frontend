@@ -12,7 +12,7 @@ import {
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { PromptFailureResponse } from '@comfyorg/api-client/types'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
@@ -234,6 +234,35 @@ describe('legacy error dialog catalog', () => {
       'SAM3_Detect (#9) is missing a required input: mask'
     )
     expect(dialog).not.toHaveTextContent('return_type_mismatch details')
+  })
+
+  it('explains node input failures a cloud validation error sends as structured node_errors', () => {
+    useDialogService().showExecutionErrorDialog({
+      exception_type: 'ValidationError',
+      node_type: 'SAM3_Detect',
+      node_id: '9',
+      exception_message:
+        'Prompt outputs failed validation. node 9 (SAM3_Detect): mask — required_input_missing: Required input is missing (mask).',
+      node_errors: {
+        '9': {
+          class_type: 'SAM3_Detect',
+          dependent_outputs: ['12'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing',
+              details: 'mask',
+              extra_info: { input_name: 'mask' }
+            }
+          ]
+        }
+      }
+    })
+    renderOpenedDialog()
+
+    expect(screen.getByTestId('error-dialog')).toHaveTextContent(
+      'SAM3_Detect (#9) is missing a required input: mask'
+    )
   })
 
   it('preserves original errors in reports and issue searches', async () => {
@@ -491,10 +520,12 @@ describe('legacy error dialog for a run Cloud refused with a served reason', () 
     reason: string,
     { billingNewUxEnabled, isCloud }: Record<string, boolean>
   ) {
-    remoteConfig.value = { billing_new_ux_enabled: billingNewUxEnabled }
+    useRemoteConfigStore().acceptConfig(
+      { billing_new_ux_enabled: billingNewUxEnabled },
+      false
+    )
     distribution.isCloud = isCloud
     onTestFinished(() => {
-      remoteConfig.value = {}
       distribution.isCloud = false
     })
     useDialogService().showErrorDialog(

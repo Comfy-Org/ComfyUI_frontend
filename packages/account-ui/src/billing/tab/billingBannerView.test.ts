@@ -28,7 +28,8 @@ const views: Record<BillingBannerKind, BillingBannerView> = {
   planNotStarted: {
     kind: 'planNotStarted',
     ...text,
-    action: 'finishPayment'
+    action: 'finishPayment',
+    href: null
   },
   topupCheckout: {
     kind: 'topupCheckout',

@@ -13,8 +13,12 @@ import type {
   LinkSegment,
   Positionable
 } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  CompassCorners,
+  PointTuple as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
+import { resizeCornerAt } from '@comfyorg/graph-model/arrange/cornerResize'
 
 import {
   LinkMarkerShape,
@@ -38,7 +42,7 @@ export type PointerTarget =
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
   | { kind: 'linkCentre'; segment: LinkSegment }
-  | { kind: 'groupResize'; group: LGraphGroup }
+  | { kind: 'groupResize'; group: LGraphGroup; corner: CompassCorners }
   | { kind: 'groupTitle'; group: LGraphGroup }
   | { kind: 'group'; group: LGraphGroup }
   | { kind: 'empty' }
@@ -49,10 +53,12 @@ export function resolvePointerTarget(
   e: CanvasPointerEvent,
   node: LGraphNode | undefined
 ): PointerTarget {
+  const point: Point = [e.canvasX, e.canvasY]
+  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
+  if (ioNode) return { kind: 'subgraphIO', ioNode }
+
   if (node && (canvas.allow_interaction || node.flags.allow_interaction))
     return { kind: 'node', node }
-
-  const point: Point = [e.canvasX, e.canvasY]
 
   const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
   if (stack) return { kind: 'linkBadgeStack', ...stack }
@@ -65,9 +71,6 @@ export function resolvePointerTarget(
   )
   if (badgeLink) return { kind: 'linkBadge', link: badgeLink }
 
-  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
-  if (ioNode) return { kind: 'subgraphIO', ioNode }
-
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
     const reroute = findReroute(canvas, graph, point)
     if (reroute) return reroute
@@ -78,8 +81,10 @@ export function resolvePointerTarget(
 
   const group = graph.getGroupOnPos(point[0], point[1])
   if (!group) return { kind: 'empty' }
-  if (group.isInResize(point[0], point[1]))
-    return { kind: 'groupResize', group }
+  const corner = group.pinned
+    ? undefined
+    : resizeCornerAt(group.boundingRect, point[0], point[1])
+  if (corner) return { kind: 'groupResize', group, corner }
   const inTitle = group.isPointInTitlebar(point[0], point[1])
   return { kind: inTitle ? 'groupTitle' : 'group', group }
 }

@@ -3,7 +3,7 @@ import {
   useEventListener,
   useIntervalFn
 } from '@vueuse/core'
-import { computed, shallowReadonly, shallowRef, watch } from 'vue'
+import { computed, nextTick, shallowReadonly, shallowRef, watch } from 'vue'
 
 import {
   useBillingClient,
@@ -50,12 +50,24 @@ import {
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
+import { createNamedSignup } from '@/checkout/namedSignup'
 import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
-import { pricingTableUrl } from '@/checkout/cloudLinks'
+import { platformPlansUrl } from '@/checkout/platformLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
+import type { Promotion } from '@/checkout/promoAutoApply'
+import {
+  createAutoApplyClaim,
+  autoAppliesCode,
+  awaitPromotion
+} from '@/checkout/promoAutoApply'
+import type { PromoRemoval } from '@/checkout/promoMemory'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
-import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
+import {
+  checkoutIdentity,
+  createPromoMemory,
+  createPromoRemoval
+} from '@/checkout/promoMemory'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import {
   outcomeFor,
@@ -81,6 +93,7 @@ import {
   checkoutAttemptOf,
   createSubscriptionCheckoutTelemetry
 } from '@/telemetry/subscriptionCheckoutTelemetry'
+import { reportBillingWebError } from '@/telemetry/rum'
 
 /**
  * What Pay charges: a new method's token, a saved method, or the method on
@@ -232,6 +245,11 @@ export function useFullPageCheckout() {
   const journey = useCheckoutJourney('full_page')
   journey.enter()
   const planChangeCardChoice = awaitPlanChangeCardChoice()
+  const promotion = awaitPromotion()
+  let servedPromotion: Promotion | null = null
+  void promotion.then((served) => {
+    servedPromotion = served
+  })
 
   const page = shallowRef<CheckoutPage>(
     arrivalPage({ entry, error: unreadableLink })
@@ -277,12 +295,16 @@ export function useFullPageCheckout() {
 
   let generation = 0
   let latest: Promise<void> = Promise.resolve()
+  const namedSignup = createNamedSignup()
 
   async function reconcileOnce(): Promise<void> {
     const mine = ++generation
-    const recovered = await lifecycle.recover({ includeSettled: true })
+    const recovered = await lifecycle.recover({
+      includeSettled: true,
+      ...namedSignup.recoverOptions(entry.value)
+    })
     if (mine !== generation) return
-    dispatch(reconciledEvent(recovered))
+    dispatch(reconciledEvent(recovered, 'subscription'))
   }
 
   /** Re-reads what the workspace is waiting on; the newest run's answer wins. */
@@ -332,10 +354,16 @@ export function useFullPageCheckout() {
   const promoMemory = createPromoMemory(() =>
     checkoutIdentity(entry.value, billedWorkspace())
   )
+  const claimAutoApply = createAutoApplyClaim(() =>
+    checkoutIdentity(entry.value, billedWorkspace())
+  )
 
   const promo = useCheckoutPromo({
     prefill: entry.value,
     memory: promoMemory,
+    removal: campaignRemoval(
+      createPromoRemoval(() => checkoutIdentity(entry.value, billedWorkspace()))
+    ),
     live: () => promoLive.value,
     requote: async (promotionCode) => {
       const arrival = entry.value
@@ -475,6 +503,38 @@ export function useFullPageCheckout() {
     if (preview.value && !acceptsPromoCode(preview.value)) promo.withdraw()
     await reconciliationSettled()
     dispatch(event)
+    if (autoAppliesCode(await promotion, arrival.promotionCode))
+      await autoApplyCarriedPromo()
+  }
+
+  function claimAutoApplyAttempt(): boolean {
+    if (!claimAutoApply()) return false
+    journey.markPromoAutoApply(true)
+    return true
+  }
+
+  function campaignRemoval(removal: PromoRemoval): PromoRemoval {
+    return {
+      removed: removal.removed,
+      remember: (code) => {
+        if (autoAppliesCode(servedPromotion, code)) removal.remember(code)
+      }
+    }
+  }
+
+  async function autoApplyCarriedPromo() {
+    if (!(await promo.applyCarried(claimAutoApplyAttempt))) return
+    await nextTick()
+    journey.markPromoAutoApply(false)
+    const settled = promo.entry.value
+    if (settled.kind === 'rejected' && settled.reason === 'unchecked')
+      reportBillingWebError(
+        new Error('Checkout could not check the promo code it applied itself'),
+        {
+          errorType: 'promo_auto_apply_unchecked',
+          context: { ui_mode: 'full_page' }
+        }
+      )
   }
 
   function arrivalOf(
@@ -679,17 +739,14 @@ export function useFullPageCheckout() {
     if (!handedOff && !leftForPayment()) journey.abandoned('page_exit')
   })
 
-  /**
-   * The live catalog, on the Team tab when the link asked for a team plan:
-   * one the quote named without its stop, or a link that carries a stop.
-   */
   const viewPlansLink = computed(() => {
     const current = page.value
+    const arrival = entry.value
     const asksTeam =
-      entry.value?.teamCreditStopId !== undefined ||
+      arrival?.teamCreditStopId !== undefined ||
       (current.kind === 'plan_unavailable' &&
         current.reason === 'team_stop_missing')
-    return pricingTableUrl(asksTeam ? 'team' : 'default', billedWorkspace())
+    return platformPlansUrl(arrival, billedWorkspace(), asksTeam)
   })
 
   /** Try again re-runs the whole resolve in place: the re-read and the capture read. */
@@ -892,6 +949,8 @@ export function useFullPageCheckout() {
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
     await releasing
+    namedSignup.replaced(arrival)
+    generation++
     let result: SubscriptionCommandResult
     try {
       result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>

@@ -6,8 +6,9 @@ import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useToast } from '@/components/ui/toast/toastStore'
 
-import { useTopUpUrlLoader } from './useTopUpUrlLoader'
+import { topUpLinkAction, useTopUpUrlLoader } from './useTopUpUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),
@@ -27,6 +28,8 @@ vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 function setRouteQuery(value: LocationQueryRaw) {
   const query = useRoute().query
@@ -192,4 +195,91 @@ describe('useTopUpUrlLoader', () => {
 
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
+
+  it('opens an out-of-credits top-up carried across a workspace switch reload, without deep-link attribution', async () => {
+    setRouteQuery({})
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
+      topup: 'out_of_credits'
+    })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(
+      useBillingDialogs().showTopUpCreditsDialog
+    ).toHaveBeenCalledExactlyOnceWith({ isInsufficientCredits: true })
+    expect(
+      useTelemetry()?.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+  })
+
+  it('does not open an out-of-credits top-up when the server denies top-up', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    setRouteQuery({ topup: 'out_of_credits' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl()
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'topup'
+    )
+  })
+
+  describe('when the link named a workspace the viewer could not open', () => {
+    it('does not open the dialog, says why, and strips the param', async () => {
+      setRouteQuery({ topup: '1', other: 'param' })
+
+      const { loadTopUpFromUrl } = useTopUpUrlLoader()
+      await loadTopUpFromUrl({ workspaceLinkRefused: true })
+
+      expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+      expect(useToast().info).toHaveBeenCalledExactlyOnceWith(
+        'workspace.deepLinkTopUpRefused'
+      )
+      expect(useRouter().replace).toHaveBeenCalledWith({
+        query: { other: 'param' }
+      })
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'topup'
+      )
+    })
+
+    it('stays silent when the topup param would not have opened anyway', async () => {
+      setRouteQuery({ topup: '' })
+
+      const { loadTopUpFromUrl } = useTopUpUrlLoader()
+      await loadTopUpFromUrl({ workspaceLinkRefused: true })
+
+      expect(useToast().info).not.toHaveBeenCalled()
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    })
+  })
+
+  it('opens the dialog when the workspace link was honored', async () => {
+    setRouteQuery({ topup: '1' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl({ workspaceLinkRefused: false })
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useToast().info).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { param: undefined, workspaceLinkRefused: false, action: 'none' },
+    { param: undefined, workspaceLinkRefused: true, action: 'none' },
+    { param: '', workspaceLinkRefused: true, action: 'strip' },
+    { param: ['1'], workspaceLinkRefused: false, action: 'strip' },
+    { param: '1', workspaceLinkRefused: false, action: 'open' },
+    { param: '1', workspaceLinkRefused: true, action: 'refuse' }
+  ])(
+    'maps topup $param with workspaceLinkRefused $workspaceLinkRefused to $action',
+    ({ action, ...link }) => {
+      expect(topUpLinkAction(link)).toBe(action)
+    }
+  )
 })

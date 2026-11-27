@@ -58,6 +58,10 @@
       "summary": "低于 {threshold} 积分时，充值至 {target}。",
       "title": "自动充值已开启"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "打开“账单”以确认自动充值已启用。",
+      "title": "积分已添加"
+    },
     "blocked": {
       "action": "打开结账页面",
       "body": "您的浏览器阻止了新标签页。请打开结账页面以完成付款。",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}，结账时支付",
     "planLine": {
       "ended": "购买点数不会重新启用你的 Cloud 套餐。请重新订阅以在 Cloud 上运行工作流。",
+      "ended_sales_managed": "购买积分不会重新启用您的 Cloud 套餐。请联系销售人员续订。",
       "free_runs": "购买点数不会开通 Cloud 套餐。免费运行次数用完后，请订阅以继续运行工作流。",
       "no_plan": "购买点数不会开通 Cloud 套餐。请订阅以在 Cloud 上运行工作流。"
     },
@@ -135,6 +140,7 @@
   "agent": {
     "addFromAssets": "从资源面板拖入资源",
     "addNodesFromGraph": "提及画布中的节点",
+    "addSkill": "添加技能",
     "addToPrompt": "添加到提示词",
     "askUnavailable": "智能体正在等待此面板无法显示的步骤。",
     "askUser": {
@@ -155,10 +161,12 @@
       "unconfirmed": "我们无法确认您的回答已送达智能体。"
     },
     "assetFetchFailed": "无法获取{name}",
+    "assetLoadFailed": "无法加载 {name}",
     "assetNotAttachable": "可附加图像、视频、音频、3D 模型和文本文件",
     "attach": "附加文件",
     "attachFiles": "上传图像或文件",
     "attachmentCountExceeded": "一条消息只能附加{count}个文件",
+    "attachmentEmpty": "{name} 为空，无法作为附件添加",
     "attachmentInvalidVideo": "{name} 不是有效的视频文件。请将其移除，然后尝试其他文件。",
     "attachmentNamesOverflow": "{names}以及另外{count}个",
     "attachmentTooLarge": "{name} 大于 {limit}",
@@ -166,14 +174,14 @@
     "attachmentUnsupportedType": "{name}不是代理接受的文件类型。请将其移除后尝试其他文件。",
     "attachmentUploadFailed": "无法上传 {name}",
     "attachmentsAlreadyAdded": "{name} 已在资源托盘中 | 已跳过 {count} 个重复资源",
+    "backToChat": "返回聊天",
     "backToPreviousChat": "返回上一个聊天",
+    "backToSkills": "返回技能",
     "beta": "测试版",
     "canvasIsEmptyAfterTurn": "此画布为空——尚未向其中添加任何内容。这里还没有可运行、保存或导出的内容。",
     "canvasNotReadyForSend": "此标签页的画布尚未准备好，因此你的消息未发送。请稍后再试。",
-    "changeWorkflowForChat": "更改代理可编辑的工作流",
     "chatOptions": "聊天选项",
     "chooseWorkflow": "选择工作流",
-    "chooseWorkflowForChat": "为此聊天选择工作流",
     "close": "关闭",
     "coachBody": "描述你的想法，让它构建并运行工作流。它可以查看你的画布和文件。",
     "coachHistoryBody": "之前的聊天记录会保存在这里。打开一条记录以查看，或继续与智能体协作。",
@@ -181,7 +189,7 @@
     "coachHoldNotice": "完成或跳过引导教程后，你的消息将会发送。",
     "coachProgress": "{current} / {total}",
     "coachTitle": "认识你的 Comfy Agent",
-    "coachWorkflowBody": "该工作流的名称显示在消息框顶部。点击名称可选择其他工作流。点击工作流标签页可打开其最新聊天，除非消息框中有草稿。",
+    "coachWorkflowBody": "每个工作流标签页都有各自的聊天记录。切换标签页会切换到该标签页的聊天。",
     "coachWorkflowTitle": "智能体一次编辑一个工作流",
     "consent": {
       "accept": "开始使用 Comfy Agent",
@@ -208,7 +216,6 @@
     "copyUnavailable": "此版本只能复制当前对话",
     "creditTransitionNotice": "您已用完免费的智能体积分。后续智能体活动将使用您工作区的积分，其中可能包含付费积分。",
     "creditsUsed": "智能体已使用 {credits} 个额度 | 智能体已使用 {credits} 个额度",
-    "currentTab": "当前标签页",
     "delete": "删除",
     "deleteApproval": {
       "answered": "已回答",
@@ -223,6 +230,8 @@
       "retired": "此请求不再处于待处理状态。",
       "unconfirmed": "我们无法确认您的回答。请检查画布后再试。"
     },
+    "deleteSkillMessage": "确定要删除“{name}”吗？此操作无法撤销。",
+    "deleteSkillTitle": "删除技能",
     "diagnosticReport": {
       "clipboardFailed": "无法访问剪贴板。请选择并复制下方报告，或重试。",
       "collectionFailed": "无法收集报告。请重试，或关闭可选来源后重试。",
@@ -230,6 +239,10 @@
       "manualCopy": "待复制的报告",
       "retry": "重试复制报告"
     },
+    "discardDraft": "丢弃草稿",
+    "discardDraftChanges": "丢弃草稿更改",
+    "discardDraftMessage": "您输入的文本将从此设备中删除。",
+    "discardDraftTitle": "要丢弃草稿吗？",
     "dismiss": "关闭",
     "downloadAssets": "下载资源",
     "dragAndDropAssets": "将资源拖放到此处",
@@ -250,6 +263,7 @@
       "withReasonCode": "{notice} 原因：{code}",
       "withReasonTarget": "{notice} 已拒绝：{target}"
     },
+    "editSkill": "编辑技能",
     "editWhileWorking": "它工作时您仍可继续编辑",
     "entryButton": "智能代理",
     "entryFailed": "智能体不可用",
@@ -259,6 +273,7 @@
     "errorContext": {
       "allLabel": "所有问题",
       "draftBlocked": "请先发送或清除当前消息，然后再向智能助手询问这些错误。",
+      "noOriginWorkflow": "这些错误并非来自已打开的工作流，因此未附加任何内容。",
       "problemCount": "{count} 个问题 | {count} 个问题",
       "remove": "移除已附加的问题",
       "workflowChanged": "包含这些错误的工作流已不再打开，因此未附加任何内容。"
@@ -290,7 +305,9 @@
     "historyYesterday": "昨天",
     "latest": "最新",
     "loadFailed": "智能体面板加载失败。",
+    "loadingWorkflowChats": "正在加载 {workflowName} 的聊天记录",
     "malformedEvent": "智能体发送了此面板无法读取的事件",
+    "manageSkills": "管理技能",
     "maximize": "最大化面板",
     "mention": "提及节点",
     "minimize": "最小化面板",
@@ -300,6 +317,8 @@
     "noNodesToMention": "此工作流中没有节点",
     "noNodesToReference": "没有可引用的节点",
     "noSkillsFound": "未找到技能",
+    "noSkillsHint": "添加一个技能，以教会智能体您不断重复的偏好。",
+    "noSkillsYet": "尚无技能",
     "noWorkflowsToReference": "没有可引用的工作流",
     "nodeSelection": {
       "bannerSubtitle": "选择一个或多个节点作为参考添加",
@@ -314,7 +333,6 @@
     "openWorkflowTab": "打开 {name}",
     "openingChat": "正在打开聊天…",
     "openingWorkflowChat": "正在打开 {workflowName} 的聊天…",
-    "otherOpenWorkflows": "其他已打开的工作流",
     "paused": {
       "recheck": "它将在大约 {seconds} 秒后自行重试。 | 它将在大约 {seconds} 秒后自行重试。",
       "resume": "继续",
@@ -337,6 +355,44 @@
     "placeholder": "描述你想创建的内容",
     "placeholderWithoutSkills": "描述你想创建的内容",
     "previewAsset": "预览 {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "告诉 Comfy Agent 您想创建什么。",
+        "title": "有什么想法吗？"
+      },
+      "firstOpen": {
+        "description": "不知道从哪里开始？发送下面的问题，或自行输入。",
+        "prompt": "你能帮我做什么？",
+        "title": "助您轻松入门！"
+      },
+      "workflowOpen": {
+        "description": "在工作流发生任何更改之前，Comfy Agent 会向您展示它计划执行的操作。",
+        "prompt": "帮我改进这个工作流",
+        "title": "提出问题或描述一项更改。"
+      }
+    },
+    "queue": {
+      "cancelEdit": "取消",
+      "collapse": "隐藏排队中的消息",
+      "delete": "删除排队中的消息",
+      "edit": "编辑排队中的消息",
+      "expand": "显示排队中的消息",
+      "queued": "{count} 个已排队"
+    },
     "recoveredTurnFailed": "代理无法完成此响应。",
     "reference": "引用",
     "remove": "移除",
@@ -352,6 +408,8 @@
       "answerSuperseded": "此问题已在其他地方得到回答，因此使用了该回答而非您的回答。",
       "answerUncertain": "无法确认你的回答是否已送达代理。它可能仍已被应用——请重新加载页面以查看当前状态。",
       "cancel": "取消",
+      "estimateAtLeast": "预估费用：至少 {credits} 积分",
+      "estimateUnavailable": "预估费用：此工作流暂不可用",
       "lead": "Comfy Agent 想要运行以下工作流：",
       "leadBound": "Comfy Agent 想要运行此工作流。",
       "question": "您批准吗？",
@@ -376,8 +434,6 @@
     "runPermissions": "运行权限",
     "runPermissionsDescription": "选择代理何时需要您的同意",
     "savingWorkflow": "正在保存工作流",
-    "searchWorkflows": "搜索工作流",
-    "selectWorkflowForAgent": "选择一个供智能体处理的工作流",
     "selectWorkflowForNodes": "请先选择一个工作流",
     "selectWorkflowToGenerate": "选择要生成内容的工作流",
     "send": "发送",
@@ -386,17 +442,42 @@
     "sendBlockedByUnsupportedType": "{name}不是代理接受的文件类型。请将其移除后再发送。",
     "sendBusy": "已有消息正在发送",
     "sendFailed": "消息发送失败",
+    "sendFailedDisownedWorkflow": "此工作流已不可用。",
+    "sendFailedNetwork": "消息未送达服务器。请检查连接后重试。",
+    "sendFailedOffscreen": "无法发送你的消息",
+    "sendFailedOffscreenShow": "显示",
+    "sendFailedTurnInProgress": "此聊天中仍有回复正在生成。",
+    "sendFailedUncertain": "无法确认服务器是否收到了你的消息。再次发送前请检查聊天记录。",
     "sendTurnInProgress": "此聊天仍有回复正在生成。请等待其完成，或停止它后再发送。",
+    "sendingMessage": "正在发送…",
     "showChatHistory": "显示聊天记录",
     "showLess": "显示更少",
     "showMore": "显示更多",
     "showTarget": "显示目标",
     "showTargetWorkflow": "显示目标工作流：{workflowName}",
+    "skillDraftChanges": "草稿更改",
+    "skillDraftNote": "草稿 · 仅保存在此设备上",
+    "skillDrafts": "草稿",
+    "skillInstructions": "说明",
+    "skillInstructionsPlaceholder": "加载此技能后，智能体遵循的说明。",
+    "skillLimitHint": "删除一个技能，为此技能腾出空间。",
+    "skillLimitTitle": "您已达到上限",
+    "skillName": "名称",
+    "skillNameHint": "字母、数字、“.”、“_”和“-”。这是智能体用于加载此技能的名称。",
+    "skillNameLocked": "名称无法更改。若要重命名，请删除此技能后重新添加。",
+    "skillNamePlaceholder": "例如：my-render-defaults",
     "skillNotAvailable": "不可用",
+    "skillOptions": "{name} 的选项",
+    "skillSize": "{bytes} 字节",
+    "skillWhenToUse": "使用时机",
+    "skillWhenToUseHint": "用一行说明何时加载此技能。无论是否使用此技能，该说明都会随每个提示一同发送，因此请保持简短。",
+    "skillWhenToUsePlaceholder": "当用户询问有关放大图像时加载我",
     "skills": "技能",
     "skillsLoadError": "无法加载技能。请重试。",
     "skillsLoading": "正在加载技能…",
+    "skillsUnavailable": "技能目前不可用。",
     "skip": "跳过",
+    "startNewChat": "开始新聊天",
     "stop": "停止",
     "stopShortcut": "Esc",
     "suggestedPrompts": {
@@ -424,17 +505,19 @@
         ]
       }
     },
-    "switchWorkflow": "切换工作流",
     "switchWorkflowForNodes": "切换到 {workflowName} 以添加节点。",
     "takeTour": "开始导览",
-    "targetFollowsVisibleWorkflow": "在你选择目标、引用节点或发送消息之前，目标工作流会跟随当前可见的标签页。",
     "targetForThisChat": "本次聊天的智能体目标",
     "targetNavigationUnavailable": "此工作流目标已不可用。",
     "targetWorkflowOpenFailed": "无法打开目标工作流。",
     "targetWorkflowUnavailable": "目标工作流已不可用。",
     "thinking": "思考中...",
+    "thinkingShortened": "推理内容已缩短：其余内容过长，无法保存。",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "已下载 {file}",
+    "toolDownloadingModel": "正在下载 {file}",
     "toolFailed": "{tool} 失败",
+    "toolFailedDownload": "下载 {file} 失败",
     "toolFailedSkill": "加载 {skill} 失败",
     "toolForgettingPreference": "正在删除偏好设置",
     "toolForgotPreference": "已忘记偏好设置",
@@ -456,6 +539,7 @@
     "unavailableWorkflowReference": "{name}（不可用）",
     "unsavedWorkflow": "未保存",
     "untitledChat": "未命名",
+    "untitledSkill": "未命名技能",
     "updatingGraph": "智能体正在更新工作流",
     "uploading": "正在上传",
     "uploadingAttachments": "正在上传 {count} 个附件 | 正在上传 {count} 个附件",
@@ -465,7 +549,7 @@
     "workedForMinutes": "已用时 {minutes} 分 {seconds} 秒",
     "workedForSeconds": "已用时 {seconds} 秒",
     "workedNotConfirmedOnCanvas": "画布上的更改未确认",
-    "workflowEditNotice": "智能体现在可以编辑 {workflow}。它一次只能处理 1 个工作流，你可以在聊天过程中切换工作流。",
+    "workflowEditNotice": "智能体现在可以编辑 {workflow}。它一次只能处理 1 个工作流。",
     "workflowReferenceUnavailableReason": "此引用的工作流已不可用，或你无权访问它。",
     "workflowSyncFailedDetail": "此工作流使用不兼容的文档版本创建。你的画布未被更改。",
     "workflowSyncFailedDetailCatalogMismatch": "自代理上次查看以来，此工作流中的一个节点已发生变化。你的画布保持不变。你的下一条消息会发送你的画布，以便代理重建其工作流副本。",
@@ -567,10 +651,12 @@
     "fileName": "文件名",
     "fileSize": "文件大小",
     "fileUpload": {
+      "accessDenied": "您当前的会话无法将模型上传到此工作区。",
       "cancelled": "上传已取消。",
       "choose": "选择文件",
       "drop": "或将 .safetensors 文件拖放到此处",
       "failed": "上传失败。请重试。",
+      "featureDisabled": "当前无法上传模型。",
       "notSafetensors": "只能上传 .safetensors 文件。",
       "notStopped": "无法确认之前的上传已停止，因此未再次发送该文件。",
       "planUnavailable": "无法检查你的套餐。请重试。",
@@ -644,6 +730,7 @@
     },
     "modelName": "模型名",
     "modelNamePlaceholder": "输入该模型的名称",
+    "modelTypeNotAddable": "无法从模型库将此模型类型添加到画布。请添加一个加载该模型的节点，然后在该节点中选择模型。",
     "modelTypeSelectorLabel": "这是什么类型的模型？",
     "modelTypeSelectorPlaceholder": "选择模型类型",
     "modelUploaded": "模型导入成功！🎉",
@@ -1417,7 +1504,8 @@
       "apiNodeUsage": "合作节点使用",
       "apiUsage": "API 使用",
       "creditAdded": "已添加积分",
-      "gpuUsage": "GPU 使用"
+      "gpuUsage": "GPU 使用",
+      "routerUsage": "Router 使用量"
     },
     "faqs": "常见问题",
     "formerMember": "{name}（前成员）",
@@ -1434,6 +1522,15 @@
     "member": "成员",
     "messageSupport": "联系客服",
     "model": "模型",
+    "personalWallet": {
+      "addCredits": "添加个人积分",
+      "apiKeyDescription": "此密钥将从你的个人账户扣费。请创建团队 API 密钥或添加个人积分。",
+      "createTeamApiKey": "创建团队 API 密钥",
+      "sessionDescription": "此会话将从你的个人账户扣费。若要从团队账户扣费，请切换到其工作区。",
+      "sessionNoTeamsDescription": "此会话将从你的个人账户扣费。请添加个人积分以继续。",
+      "switchTo": "切换到 {workspaceName}",
+      "title": "你的个人账户积分已用尽"
+    },
     "purchaseCredits": "购买积分",
     "refreshes": "于 {date} 刷新",
     "time": "时间",
@@ -1485,6 +1582,7 @@
       "paymentProcessingFlyout": "付款正在处理中。您无需再次付款。",
       "paymentProcessingTitle": "一笔 {amount} 的付款仍在处理中",
       "paymentProcessingTitleNoAmount": "一笔付款仍在处理中",
+      "planRequiredContactSales": "购买积分不会重新启用您的 Cloud 套餐。请联系销售人员续订。",
       "planRequiredFreeRuns": "购买点数不会开通 Cloud 套餐。免费运行次数用完后，请订阅以继续运行工作流。",
       "planRequiredResubscribe": "购买点数不会重新启动您的 Cloud 套餐。请重新订阅以在 Cloud 上运行工作流。",
       "planRequiredSubscribe": "购买点数不会开通 Cloud 套餐。请订阅以在 Cloud 上运行工作流。",
@@ -1662,21 +1760,21 @@
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
     "compatibleEnvironments": "兼容的环境",
-    "createCustomDeployment": "创建自定义部署",
+    "createCustomDeployment": "创建自定义构建",
     "currentTooltip": "正在 {deployment} 上运行",
     "customDeployment": {
-      "body": "自定义部署可添加 Comfy Cloud 不具备的自定义节点和模型。您可在平台上进行设置，随后它会显示在工作区的“运行于”下。",
+      "body": "自定义构建可添加 Comfy Cloud 中没有的自定义节点和模型。你可以在 Platform 上进行设置，随后它将显示在工作区的“运行于”下。",
       "createOnPlatform": "在平台上创建",
       "pointApi": "将其作为自动扩缩容 API 从您的产品中调用",
       "pointGpu": "在您选择的 GPU 上使用 ComfyUI",
       "pointNodes": "使用 Comfy Cloud 上没有的自定义节点和模型",
-      "title": "创建自定义部署"
+      "title": "创建自定义构建"
     },
     "defaultDeleted": "已删除",
     "defaultGone": "工作区默认部署已被删除，因此成员将从 Comfy Cloud 开始。",
     "defaultGoneOwner": "工作区默认部署已被删除，因此成员将从 Comfy Cloud 开始。请在“工作区默认”下选择一个新的部署。",
     "deployCustomNodes": {
-      "body": "创建一个自定义部署，在 Comfy Cloud 上运行您的自定义节点和模型，并显示在工作区的“运行于”下。",
+      "body": "创建一个自定义构建，以便在 Comfy Cloud 上运行你的自定义节点和模型，并显示在工作区的“运行于”下。",
       "pointNodes": "部署工作流所需的自定义或私有节点包",
       "title": "在 Comfy Cloud 上部署自定义节点"
     },
@@ -1689,6 +1787,7 @@
     "incompatibleEnvironments": "不兼容的环境",
     "labelWithDetail": "{label} · {detail}",
     "landed": "正在 {deployment} 上运行",
+    "later": "稍后",
     "linkRefused": "无法打开此部署",
     "linkTimedOut": "此部署打开时间过长。请再次尝试该链接。",
     "linkWorkspaceRefused": "无法切换到该工作区。你仍在 {workspaceName} 中。",
@@ -1701,6 +1800,7 @@
     "missingNodesAfterReason": "它无法运行此工作流。它缺少 {nodes}。",
     "missingNodesNamed": "{deployment} 无法运行此工作流。它缺少 {nodes}。",
     "namedDeployment": "{name}",
+    "newDeploymentName": "新建部署",
     "noDeployments": "此工作区尚无部署。",
     "notChecked": "未检查",
     "notCheckedAfterReason": "无法检查它是否可以运行此工作流。",
@@ -1718,9 +1818,19 @@
       "stopped": "{deployment} 已停止。启动它以在其上运行任务。"
     },
     "releaseChanged": "此部署现运行不同的版本。重新加载以获取其节点。",
+    "releaseChangedRun": "{deployment} 现运行 v{version}。重新加载以在其上运行。",
+    "releaseChangedRunNoVersion": "{deployment} 现运行其他版本。重新加载以在其上运行。",
+    "releaseChangedRunUnknown": "运行现会转至其他版本。重新加载以在其上运行。",
+    "releaseChangedRunUnknownTarget": "新版本",
     "reload": "重新加载",
     "retry": "重试",
     "retryLabel": "重试启动 {deployment}",
+    "runBlocked": {
+      "failed": "此部署失败。点击切换。",
+      "notReady": "此部署尚未就绪。点击切换。",
+      "starting": "此部署正在启动。点击切换。",
+      "stopped": "此部署已停止。点击切换。"
+    },
     "runOn": "运行于",
     "runningOn": "运行于",
     "runsThisWorkflow": "运行此工作流",
@@ -1735,6 +1845,7 @@
     "startLabel": "启动 {deployment}",
     "startOnPlatformLabel": "在开发者平台上启动 {deployment}",
     "status": {
+      "building": "正在构建",
       "failed": "失败",
       "notReady": "未就绪",
       "provisioning": "正在启动",
@@ -1753,32 +1864,50 @@
     "unnamedDeployment": "部署 {id}",
     "unsaved": {
       "message": "切换到 {deployment} 会重新加载此标签页。这些工作流有尚未保存的更改。",
+      "reloadMessage": "重新加载此标签页将在 {deployment} 上运行它。这些工作流的更改尚未保存。",
+      "reloadTitle": "重新加载前要保存工作流吗？",
+      "reloadWithoutSaving": "不保存并重新加载",
+      "saveAndReload": "保存并重新加载",
       "saveAndSwitch": "保存并切换",
       "switchWithoutSaving": "不保存并切换",
       "tabsReturn": "无论如何，重新加载后您打开的标签页都会恢复。",
       "title": "切换前保存您的工作流？"
     },
     "version": "v{version}",
+    "versionChanged": "{deployment} 现运行 v{version}。重新加载以使用其节点。",
+    "versionChangedNoVersion": "{deployment} 现运行其他版本。重新加载以使用其节点。",
     "workflowNeedsDeployment": {
       "andMore": "{names}，以及另外 {count} 个",
+      "buildOnPlatform": "在 Platform 上构建",
+      "createCustomBuild": "创建自定义构建",
+      "installBody": "创建自定义构建，以添加 Comfy Cloud 没有的自定义节点和模型。你可在 Platform 上进行设置，随后它会显示在你工作区的“运行于”下。",
+      "installTitle": "安装缺失的自定义节点",
       "missingModels": "缺少 {count} 个模型 | 缺少 {count} 个模型",
       "missingNodes": "缺少 {count} 个节点 | 缺少 {count} 个节点",
       "missingPacks": "缺少 {count} 个节点包 | 缺少 {count} 个节点包",
       "noneRunIt": "此工作区中没有任何部署包含所有这些节点。",
       "switch": "切换",
       "switchBody": "Comfy Cloud 缺少这些内容。切换到包含它们的部署，然后继续在那里工作。",
-      "title": "在自定义部署上运行此工作流",
-      "titleNoneRunIt": "创建部署以在 Comfy Cloud 上运行此工作流"
+      "title": "在自定义构建上运行此工作流",
+      "titleNoneRunIt": "创建部署以在 Comfy Cloud 上运行此工作流",
+      "titleNoneRunItCustomBuild": "创建自定义构建以在 Comfy Cloud 上运行此工作流"
     },
     "workspaceDefault": "工作区默认"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "系统将显示确认对话框，询问是否将 ComfyUI 桌面应用连接到你的账户。仅当你刚刚从 ComfyUI 桌面应用发起登录时才批准；否则请取消。",
+    "approvalPendingSummary": "桌面端登录请求",
     "confirmMessage": "ComfyUI 桌面应用正在等待使用您的账户登录。仅当您刚刚在 ComfyUI 桌面应用中开始登录时才继续。",
     "confirmSummary": "批准桌面端登录？",
+    "continueToCloud": "改为继续前往 Comfy Cloud",
+    "declinedDetail": "ComfyUI 桌面应用未连接到你的账户。如果你原本想批准此操作，请从桌面应用重新发起登录。",
+    "declinedSummary": "已取消桌面端登录",
     "expiredDetail": "登录请求已过期或已被使用。请在 ComfyUI 桌面应用中重新开始登录。",
     "expiredSummary": "桌面端登录失败",
     "failedDetail": "完成桌面端登录时出现问题。请在 ComfyUI 桌面应用中重新开始登录。",
     "failedSummary": "桌面端登录失败",
+    "redeemingDetail": "正在将 ComfyUI 桌面应用连接到你的账户。",
+    "redeemingSummary": "正在完成桌面端登录",
     "ssoUnavailableDetail": "您的账户通过组织的 SSO 登录，而 ComfyUI 桌面应用暂不支持此方式。请向您的管理员询问其他登录桌面应用的方式。",
     "ssoUnavailableSummary": "桌面端登录暂不支持 SSO 账户",
     "successDetail": "您可以返回 ComfyUI 桌面应用。",
@@ -2010,6 +2139,13 @@
         "title": "生成失败",
         "toastMessage": "GPU 显存不足。请尝试降低图像分辨率或批量大小后重新运行。",
         "toastTitle": "生成失败"
+      },
+      "personal_wallet_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "此次运行向你的个人账户计费，但该账户积分不足。",
+        "title": "积分不足",
+        "toastMessage": "此次运行向你的个人账户计费，但该账户积分不足。",
+        "toastTitle": "积分不足"
       },
       "preprocessing_failed": {
         "itemLabel": "{nodeName}",
@@ -2266,13 +2402,8 @@
     "missingMedia": "部分节点缺少所需输入",
     "missingModels": "缺少 {count} 个所需模型",
     "missingNodes": "部分节点缺失，需要安装",
-    "moreDeployments": "另外 {count} 个",
     "multipleIssueCount": "发现 {count} 个问题 | 发现 {count} 个问题",
     "multipleIssuesMessage": "请在运行工作流前解决这些问题。",
-    "runOnCustomDeployment": "在自定义部署上运行",
-    "runsOn": "运行于 {deployment}",
-    "setUpCustomDeployment": "设置",
-    "switchDeployment": "切换",
     "viewDetails": "查看详情"
   },
   "errorPanelSurvey": {
@@ -2348,16 +2479,18 @@
     "agentModified": "智能体已更新此工作流",
     "agentNeedsApproval": "智能体正在等待你的回复",
     "agentWorking": "智能体正在处理此工作流",
+    "align": "对齐",
+    "alignBottom": "对齐底部边缘",
+    "alignHorizontalCenters": "对齐水平中心",
+    "alignLeft": "对齐左边缘",
+    "alignRight": "对齐右边缘",
+    "alignTop": "对齐顶部边缘",
+    "alignVerticalCenters": "对齐垂直中心",
     "all": "全部",
     "allKeybindingsReset": "所有快捷键已重置为默认值",
     "amount": "数量",
     "apply": "应用",
     "architecture": "架构",
-    "arrange": "排列",
-    "arrangeAsGrid": "网格排列",
-    "arrangeHorizontally": "水平排列",
-    "arrangeSpacing": "排列间距",
-    "arrangeVertically": "垂直排列",
     "asset": "{count} 个资源",
     "audioFailedToLoad": "音频加载失败",
     "audioPlaybackFailed": "无法播放此音频。请重试，或下载后使用其他应用播放。",
@@ -2436,6 +2569,9 @@
     "disabling": "正在禁用 {id}",
     "disconnectedFromBackend": "已与后端断开连接。请检查服务器是否正在运行。",
     "dismiss": "关闭",
+    "distributeGap": "分布节点之间的间距",
+    "distributeHorizontally": "水平分布",
+    "distributeVertically": "垂直分布",
     "download": "下载",
     "downloadAudio": "下载音频",
     "downloadImage": "下载图片",
@@ -2497,6 +2633,8 @@
     "galleryImagePosition": "图库图像 {index}（共 {total} 张）",
     "galleryThumbnail": "图库缩略图",
     "galleryThumbnailPosition": "图库缩略图 {index}（共 {total} 张）",
+    "gapHandle": "节点间距",
+    "gapValue": "{value} 个画布单位 | {value} 个画布单位",
     "getHelpAction": "获取帮助",
     "goToNode": "转到节点",
     "graphNavigation": "图形导航",
@@ -2570,12 +2708,15 @@
     "logs": "日志",
     "manageExtensions": "管理扩展",
     "markdown": "markdown",
+    "matchHeight": "匹配高度",
+    "matchWidth": "匹配宽度",
     "maximizeDialog": "最大化对话框",
     "megapixelsValue": "{count} MP",
     "micPermissionDenied": "麦克风权限被拒绝",
     "migrate": "迁移",
     "missing": "缺失",
     "missingNodeTypesInGroup": "缺少：{types}",
+    "mixedGaps": "不一致",
     "modifyKeybinding": "修改快捷键",
     "more": "更多",
     "moreOptions": "更多选项",
@@ -2679,12 +2820,20 @@
     "resizeFromBottomRight": "从右下角调整大小",
     "resizeFromTopLeft": "从左上角调整大小",
     "resizeFromTopRight": "从右上角调整大小",
+    "resizeNumberedPreviewHeight": "调整预览 {index} 的高度",
+    "resizePreviewHeight": "调整预览高度",
+    "resizeWidgetHeight": "调整 {name} 的高度",
     "restart": "重新启动",
     "restore": "恢复",
     "restoreDialog": "还原对话框",
     "resultsCount": "找到 {count} 个结果",
     "retry": "重试",
     "running": "正在运行",
+    "safeExtensionBoot": {
+      "description": "仅此次加载会跳过它们。重新加载以重新启用它们。",
+      "reload": "重新加载并启用扩展",
+      "title": "安全模式：已禁用自定义扩展"
+    },
     "save": "保存",
     "saveAnyway": "仍然保存",
     "saving": "正在保存",
@@ -2708,6 +2857,7 @@
     "selectItemsToRename": "选择重命名",
     "selected": "已选择",
     "selectedFile": "已选文件",
+    "sessionRevoked": "你对此工作区的访问权限已结束。请重新登录以重新连接。",
     "setAKeybindingForTheFollowing": "为以下操作设置快捷键：",
     "setAsBackground": "设为背景",
     "settings": "设置",
@@ -2743,6 +2893,8 @@
     "systemStatsTemplatesVersion": "模板版本",
     "terminal": "终端",
     "textFailedToLoad": "文本加载失败",
+    "tidyUp": "整理",
+    "tidyUpTooltip": "将节点对齐为行和列，并使间距均匀",
     "title": "标题",
     "triggerPhrase": "触发短语",
     "unknownError": "未知错误",
@@ -3349,6 +3501,27 @@
     "newerVersionRequiredGeneric": "部分节点需要更新版本的 ComfyUI。请更新以使用所有节点。",
     "unknownVersion": "未知"
   },
+  "localMcp": {
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "connected": "已连接：智能体已通过 Comfy MCP 在此处运行过工作流。",
+    "copyConfig": "复制",
+    "description": "让 Claude 或 Cursor 等 AI 智能体通过 Comfy MCP 在此 ComfyUI 上运行工作流。它在你的计算机上运行。",
+    "label": "智能体",
+    "locations": {
+      "claudeDesktop": "将其添加到 claude_desktop_config.json（设置 > 开发者 > 编辑配置），然后重启 Claude Desktop。",
+      "cursor": "将其添加到 ~/.cursor/mcp.json，或项目中的 .cursor/mcp.json。"
+    },
+    "openDocs": "完整设置指南",
+    "step1": "1. 安装 Comfy MCP",
+    "step2": "2. 将其添加到你的客户端",
+    "step3": "3. 请你的智能体运行工作流",
+    "step3Hint": "重启你的客户端，然后请它确认本地 ComfyUI 正在运行并运行一个工作流。首次运行后，此面板会显示“已连接”。",
+    "title": "连接你的 AI 智能体"
+  },
   "logsTerminal": {
     "loadError": "无法加载日志，请确保已更新您的ComfyUI后端。",
     "resyncError": "后端重新连接后无法重新同步日志。请重新打开控制台以重试。"
@@ -3746,6 +3919,7 @@
     "Experimental: Enable Nodes 2_0": "实验性：启用 Nodes 2.0",
     "Export": "导出",
     "Export (API)": "导出 (API)",
+    "Export (Workflow Image)": "导出（工作流图像）",
     "File": "文件",
     "Fit Group To Contents": "适应组内容",
     "Focus Mode": "专注模式",
@@ -3904,6 +4078,7 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3936,6 +4111,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "类型安全",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4095,6 +4271,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "兼容替代项",
+    "deprecatedNodesLabel": "可替换已弃用节点",
+    "deprecatedNodesMessage": "这些节点仍可运行，但已有较新的替代节点。替换它们会更新工作流。",
+    "deprecatedNodesTitle": "已弃用节点",
     "installMissingNodes": "安装缺失节点",
     "installationRequired": "需要安装",
     "instructionMessage": "您必须安装这些节点或用已安装的替代项替换它们，才能运行工作流。缺失的节点会在画布上以{red}高亮显示。有些节点无法替换，必须通过节点管理器安装。",
@@ -4170,6 +4349,18 @@
       "workspaceLabel": "工作区"
     },
     "scopes": {
+      "comfy-mcp:tools:call": {
+        "label": "使用你的积分代表你运行工作流和合作伙伴模型"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "查看你可用的工作流工具"
+      },
+      "comfy-router:models:invoke": {
+        "label": "通过 Comfy Router 使用你的积分运行合作伙伴模型"
+      },
+      "comfy-router:models:read": {
+        "label": "查看 Comfy Router 模型目录"
+      },
       "mcp:tools:call": {
         "label": "代表您运行工作流"
       },
@@ -4294,17 +4485,22 @@
       "copyPrompt": "复制提示词",
       "openInClaude": "在 Claude 桌面版中打开",
       "openInCodex": "在 Codex 中打开",
+      "promptCopiedForSignIn": "提示词已复制。如果应用要求你先登录，请在登录后粘贴。",
       "saveFirst": "在将此工作流发送给代理之前，请先保存。",
       "useLocalAgent": "使用本地代理"
     },
     "checkFailed": "无法在 Comfy Cloud 上检查此工作流。请重试。",
     "cloudButton": {
       "checking": "正在检查 Comfy Cloud…",
-      "tooltip": "在 Comfy Cloud 上运行"
+      "resumeUpload": "继续上传模型",
+      "tooltip": "在 Comfy Cloud 上运行此工作流",
+      "uploading": "正在将模型上传到 Comfy Cloud，{percent}%"
     },
     "deploySetup": "将您的配置部署到 Comfy Cloud",
     "deploySetupDialog": {
       "body": "将你的本地设置作为构建部署到 Comfy Cloud，然后在 ComfyUI 中使用，或将其作为自动扩缩 API 调用。",
+      "missingNodesBody": "Comfy Cloud 没有此工作流使用的部分节点。将您的本地配置作为构建部署到 Comfy Cloud，然后在 ComfyUI 中使用它，或将其作为自动扩缩 API 调用。",
+      "platformTabBlocked": "工作流已保存。再次点击“在平台上部署”以继续。",
       "pointGpu": "在强大的云端 GPU 上运行",
       "pointNodes": "带上您的自定义节点和模型",
       "pointPricing": "仅在 GPU 工作器运行期间付费，另加存储费用",
@@ -4312,14 +4508,48 @@
     },
     "deployWithAgent": "使用您的代理部署",
     "desktopTransferFailed": "无法传输您的工作流。请再次在桌面版中点击“在 Comfy Cloud 上打开”。",
+    "desktopTransferRetry": "无法验证此次传输。请重新加载此标签页后重试。",
+    "desktopTransferUnavailable": "此编辑器当前无法使用“在 Comfy Cloud 中打开”。",
     "downloaded": "工作流已下载",
     "downloadedDetail": "将其拖放到浏览器中的 Comfy Cloud 上，即可在那里打开。",
+    "emptyWorkflow": "此工作流没有可运行的节点。请添加节点并保存，然后重试。",
     "handoffFailed": "无法从您电脑上的 ComfyUI 打开工作流",
     "handoffMissing": "您的工作流未送达",
     "handoffMissingDetail": "ComfyUI 会在 10 分钟后停止等待。请再次在 ComfyUI 中点击“在 Comfy Cloud 上打开”。",
+    "missingLocalModelLoader": "无法读取 {nodeType} 的模型设置。请安装提供该节点的节点包，然后重试。",
     "missingModels": {
+      "accountChanged": "由于账户或工作区已更改，上传已停止。请重试。",
+      "cancelUpload": "取消上传",
+      "cancelled": "上传已取消。",
+      "checkAgain": "再次检查",
+      "chooseAgain": "重新选择",
+      "chooseFile": "选择文件",
+      "chooseFileFor": "为 {name} 选择文件",
+      "chooseFiles": "Comfy Cloud 需要这些模型才能运行此工作流。请从您的模型文件夹中选择每个文件，将其上传到您的工作区。",
+      "chooseMissingFilesAgain": "重新选择缺失的文件",
+      "chosen": "已选择文件",
+      "confirmUploads": "确认上传",
+      "confirmationDescription": "检查 Comfy Cloud 是否可以在您的工作区中使用这些文件。",
+      "confirmationPending": "Comfy Cloud 尚未确认这些模型。",
+      "confirmationTitle": "确认已上传的模型",
+      "confirming": "正在检查已上传的模型…",
+      "failed": "上传失败。请重试。",
+      "folderUnsupported": "Comfy Cloud 尚不支持上传到此文件夹。",
+      "hide": "隐藏",
+      "preparing": "正在检查哪些模型可以上传…",
+      "progress": "{sent} / {total}",
+      "signInToUpload": "登录以上传",
+      "signedOut": "Comfy Cloud 需要这些模型才能运行此工作流。请登录以将其上传到您的工作区。",
+      "sizeUnavailable": "无法验证文件大小。请从云端编辑器添加此模型。",
+      "storagePending": "Comfy Cloud 仍在确认此模型。请重试以检查现有上传。",
+      "subfolderUnsupported": "从此处上传时尚无法保留此模型的子文件夹。请从云端编辑器将其添加到 Comfy Cloud。",
       "title": "缺少 {count} 个模型 | 缺少 {count} 个模型",
-      "unavailable": "将这些模型添加到 Comfy Cloud 以运行此工作流。目前无法从此 ComfyUI 上传。"
+      "total": "总计 {size}",
+      "unavailable": "将这些模型添加到 Comfy Cloud 以运行此工作流。目前无法从此 ComfyUI 上传。",
+      "upload": "上传",
+      "uploadTitle": "上传 {count} 个模型 | 上传 {count} 个模型",
+      "uploaded": "已上传",
+      "wrongFile": "请从您的模型文件夹中选择 {name}。"
     },
     "openedFromLocal": "从您电脑上的 ComfyUI 打开",
     "openedFromLocalDetail": "Comfy Cloud 拥有此工作流使用的所有节点和模型。准备就绪后，点击“运行”。",
@@ -4327,11 +4557,17 @@
     "prepareFailed": "无法为 Comfy Cloud 准备此工作流",
     "prepareFailedDetail": "请检查工作流是否有错误，保存后重试。",
     "runDialog": {
-      "asksToSignIn": "Comfy Cloud 会要求您登录。",
+      "body": "在 Comfy Cloud 上打开此工作流；如果需要自定义节点，请将您的本地配置部署为构建。",
+      "checkCompatibility": "检查兼容性",
       "openOnCloud": "在 Comfy Cloud 上打开",
+      "pointApi": "在 ComfyUI 中使用它，或将其作为 API 调用",
       "ready": "Comfy Cloud 拥有此工作流使用的所有节点和模型。它会在新标签页中打开，可立即运行。",
-      "title": "在 Comfy Cloud 上运行"
-    }
+      "readyWithUncheckedInputs": "Comfy Cloud 拥有它能够检查的所有节点和模型。无法检查这些输入的模型：{inputs}。它将在新标签页中打开。",
+      "sends": "检查将把此工作流的节点和模型名称发送到 Comfy Cloud。",
+      "uncheckedInput": "{nodeType} 上的 {input}"
+    },
+    "verifyAccessFailed": "无法验证对 Comfy Cloud 的访问权限",
+    "verifyAccessFailedDetail": "如果“云端”按钮仍然可用，请再次选择“在 Comfy Cloud 中打开”。"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -4385,6 +4621,33 @@
     "tooltip": "合作伙伴节点通过 Comfy 在提供商的硬件上运行 Kling 或 Veo 等闭源模型。它们使用积分；Comfy 的其余部分仍然免费。",
     "unmuteOpen": "取消开放权重 clip 静音",
     "unmutePartner": "取消合作伙伴节点 clip 静音"
+  },
+  "platformFrame": {
+    "buildFailed": "构建失败。{deployment} 未部署。",
+    "buildStep": "第 {step} 步，共 {of} 步",
+    "buildTakesMinutes": "这需要几分钟。您可以继续工作。",
+    "building": "正在构建 {deployment}",
+    "deployFailed": "部署失败。{deployment} 已构建，但未部署。",
+    "deploying": "正在部署 {deployment}",
+    "finishingOnPrevious": "正在 v{version} 上完成您的任务。|正在 v{version} 上完成您的 {count} 个任务。",
+    "getStarted": "开始使用",
+    "later": "稍后",
+    "nothingChanged": "没有变化：{deployment} 仍运行 v{version}。",
+    "nothingChangedNoVersion": "没有变化：{deployment} 仍按原样运行。",
+    "openOnPlatform": "在平台中打开",
+    "preinstallTitle": "预安装模型以运行此工作流",
+    "readyNew": "{deployment} 已就绪",
+    "readyUpdate": "{deployment} 现在运行 v{version}。",
+    "readyUpdateReload": "{deployment} 现在运行 v{version}。重新加载以使用其节点。",
+    "reload": "重新加载",
+    "switch": "切换",
+    "switchListingUnavailable": "您的部署未能加载。请从“运行于”再次尝试。",
+    "title": "自定义构建",
+    "unanswered": "平台未在此处打开。",
+    "updateDeployment": "更新 {deployment}",
+    "updateShortcut": "按 E 键更新它。",
+    "updateUnfinished": "{deployment} 未能完成更新至 v{version}。",
+    "viewDetails": "查看详情"
   },
   "profileMenu": {
     "balanceUnavailable": "无法加载您的余额。",
@@ -4484,6 +4747,7 @@
   },
   "rightSidePanel": {
     "addFavorite": "收藏",
+    "addMissingModelsToBuild": "将缺失的模型添加到构建中",
     "addToDeploymentBuild": "将这些添加到 Platform 上 {deployment} 的构建中，然后部署新版本。",
     "advancedInputs": "高级输入",
     "askAgent": "询问智能体",
@@ -4698,6 +4962,12 @@
     "executeButton": {
       "disabledTooltip": "未选择输出节点",
       "tooltip": "执行到选定的输出节点（用橙色边框高亮显示）"
+    },
+    "linkDestinations": {
+      "goTo": "转到 {node}",
+      "goToLinkedNode": "转到已连接的节点",
+      "subgraphInputs": "子图输入",
+      "subgraphOutputs": "子图输出"
     }
   },
   "serverConfig": {
@@ -4919,7 +5189,7 @@
     "Server-Config": "服务器配置",
     "Settings": "设置",
     "Sidebar": "侧边栏",
-    "SkillPacks": "技能包",
+    "Smart Guides": "智能参考线",
     "Tree Explorer": "树形浏览器",
     "UV": "UV",
     "User": "用户",
@@ -4995,6 +5265,7 @@
     "viewControls": "视图控制"
   },
   "sideToolbar": {
+    "addModelsToDeployment": "将模型添加到此部署",
     "assets": "资产",
     "backToAssets": "返回所有资产",
     "browseTemplates": "浏览示例模板",
@@ -5161,6 +5432,7 @@
     "templates": "模板",
     "themeToggle": "切换主题",
     "workflowTab": {
+      "bookmarkSaveFailed": "你的书签更改未保存。请检查连接后重试。",
       "confirmDelete": "您确定要删除此工作流吗？",
       "confirmDeleteTitle": "删除工作流？",
       "confirmOverwrite": "下面的文件已经存在。您想要覆盖它吗？",
@@ -5168,51 +5440,52 @@
       "deleteFailed": "尝试删除工作流失败。",
       "deleteFailedTitle": "删除失败",
       "deleted": "工作流已删除",
+      "deletedButBookmarksNotUpdated": "工作流已删除，但无法更新你的书签",
       "dirtyClose": "以下文件已被更改。您想在关闭之前保存它们吗？",
       "dirtyCloseAnyway": "仍然关闭",
       "dirtyCloseHint": "按住 Shift 关闭而不提示",
       "dirtyCloseTitle": "保存更改？",
+      "renamedButBookmarksNotUpdated": "工作流已重命名，但无法更新你的书签",
       "workflowTreeType": {
         "bookmarks": "书签",
         "browse": "浏览",
         "open": "打开"
       }
     },
-    "workflows": "工作流"
+    "workflows": "工作流",
+    "workspaceLibrary": {
+      "empty": "你的工作区库中没有模型。",
+      "explainer": "你工作区中的模型。此构建中没有的模型会在作业需要时下载。",
+      "fromWorkspace": "来自你的工作区",
+      "loadFailed": "无法加载你的工作区库。",
+      "modelCount": "{count} 个模型 | {count} 个模型",
+      "title": "工作区库"
+    }
   },
   "skillPacks": {
-    "addPack": "添加技能包",
-    "atLimitHint": "删除一个技能包，为此技能包腾出空间。",
-    "atLimitTitle": "你已达到上限",
-    "body": "说明",
-    "bodyPlaceholder": "加载此技能包后，智能体会遵循的说明。",
-    "bodySize": "{bytes} 字节",
-    "deleteConfirmMessage": "确定要删除“{name}”吗？此操作无法撤销。",
-    "deleteConfirmTitle": "删除技能包",
-    "editPack": "编辑技能包",
     "errors": {
       "bodyRequired": "说明为必填项",
-      "descriptionRequired": "触发条件行为必填项",
-      "descriptionSingleLine": "触发条件行必须为单行，且不含控制字符",
-      "descriptionTooLong": "触发条件行不得超过 {max} 个字符",
-      "nameAlreadyExists": "名为“{name}”的技能包已存在。请改为编辑该技能包。",
+      "descriptionRequired": "“使用时机”为必填项",
+      "descriptionSingleLine": "“使用时机”必须为不含控制字符的单行文本",
+      "descriptionTooLong": "“使用时机”不得超过 {max} 个字符",
+      "nameAlreadyExists": "名为“{name}”的技能已存在。请改为编辑该技能。",
       "nameCharset": "名称只能使用字母、数字、“.”、“_”和“-”，且必须至少包含一个不是句点的字符",
       "nameRequired": "名称为必填项",
-      "nameReserved": "“{name}”是内置技能包名称，无法使用",
+      "nameReserved": "“{name}”是内置技能名称，无法使用",
       "nameTooLong": "名称不得超过 {max} 个字符"
-    },
-    "name": "名称",
-    "nameHint": "可使用字母、数字、“.”、“_”和“-”。这是智能体用于加载该技能包的名称。",
-    "namePlaceholder": "例如：my-render-defaults",
-    "noPacks": "尚无技能包。添加一个，以教会智能体你不断重复的偏好。",
-    "packSize": "{bytes} 字节",
-    "panelDescription": "只需记录一次偏好，触发条件行匹配时智能体便会加载它。技能包仅自己可见。",
-    "publish": "发布",
-    "title": "智能体技能包",
-    "triggerLine": "触发条件行",
-    "triggerLineHint": "用一行说明何时加载此技能包。无论是否使用该技能包，它都会随每个提示词发送，因此请保持简短。",
-    "triggerLinePlaceholder": "当用户询问放大时加载我",
-    "yourPacks": "你的技能包"
+    }
+  },
+  "subgraphInputValues": {
+    "enterInstanceHint": "请通过子图节点进入此子图以编辑其数值。",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "已连接的数值 · 只读",
+    "locateSource": "定位源节点",
+    "reorderHint": "拖动或按 Alt + 方向键以重新排序",
+    "reorderPort": "重新排序 {name}",
+    "sharedSource": "共享源",
+    "sourceHint": "编辑此源也会更改与其连接的其他输入。",
+    "unavailable": "数值不可用"
   },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
@@ -5463,18 +5736,28 @@
       "subscriptionChangeInProgress": "你已经安排了套餐变更。待其生效后，你可以选择其他套餐。",
       "subscriptionChangeScheduled": "你计划的套餐变更将于 {date} 生效。此后你可以选择其他套餐。"
     },
+    "planWithPeriod": {
+      "annual": "{plan} 年度套餐",
+      "monthly": "{plan} 月度套餐"
+    },
     "plansAndCredits": "套餐和积分",
     "plansAndPricing": "订阅和定价",
     "plansForWorkspace": "{workspace} 的套餐",
     "plansLink": {
       "blockedBody": "你的浏览器阻止了新标签页。请打开套餐页面以选择套餐。",
       "blockedTitle": "套餐页面未打开",
+      "checkoutUnfinishedBody": "打开“套餐”页面重试。您的浏览器阻止了自动打开该页面。",
+      "checkoutUnfinishedTitle": "您的结账未完成",
       "choosePlan": "选择套餐",
       "openPlansPage": "打开套餐页面",
       "runRefusedEnded": "你的套餐已结束。重新订阅以继续在云端运行工作流。",
       "runRefusedFreeRunsUsed": "你已用完全部 {total} 次免费运行次数。订阅以继续在云端运行工作流。",
+      "runRefusedManualBlock": "此工作区已被封禁。请联系支持团队。",
       "runRefusedNoPlan": "在云端运行工作流需要套餐。",
-      "runRefusedTitle": "你的工作流未运行"
+      "runRefusedProjectCap": "此项目已达到支出限额。",
+      "runRefusedTitle": "你的工作流未运行",
+      "runRefusedUserCap": "您已达到此工作区中的支出限额。",
+      "runRefusedWorkspaceCap": "此工作区已达到支出限额。"
     },
     "plansLoadFailed": "加载套餐失败",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
@@ -5871,7 +6154,6 @@
     "searchPlaceholder": "搜索模板...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "默认",
       "modelSizeLowToHigh": "模型大小（从低到高）",
       "newest": "最新",
       "popular": "热门",
@@ -5896,6 +6178,7 @@
     "a1111CoreNodesUnavailable": "无法加载工作流，因为此 ComfyUI 安装缺少核心节点。请检查后端是否已正确启动。",
     "a1111EmbeddingsUnavailable": "无法从服务器加载嵌入。工作流已导入，但嵌入名称保留为纯文本。",
     "assetDropFailed": "无法加载拖放的资源",
+    "batchStoppedOnWorkflowChange": "已将请求的 {requested} 个任务中的 {queued} 个加入队列。由于你切换了工作流，剩余任务会运行错误的工作流，因此已停止。",
     "cannotCreateSubgraph": "无法创建子工作流",
     "couldNotDetermineFileType": "无法确定文件类型",
     "dropFileError": "无法处理掉落的项目：{error}",
@@ -5912,6 +6195,7 @@
     "failedToConvertToSubgraph": "无法将项目转换为子工作流",
     "failedToCreateCustomer": "创建客户失败：{error}",
     "failedToExportModel": "无法将模型导出为 {format}",
+    "failedToExportWorkflowImage": "导出工作流图像失败",
     "failedToFetchLogs": "无法获取服务器日志",
     "failedToFetchSubscription": "获取订阅状态失败：{error}",
     "failedToInitializeCameraAngleViewer": "无法初始化相机角度查看器。请尝试重新加载页面。",
@@ -5951,6 +6235,7 @@
     "missingMediaVerificationFailed": "无法验证缺失的媒体。部分输入可能不会显示在“问题”选项卡中。",
     "missingModelVerificationFailed": "无法验证缺失的模型。部分模型可能不会显示在“问题”选项卡中。",
     "modelLoadedSuccessfully": "3D模型加载成功",
+    "modelTooLargeToPreview": "模型过大，无法预览（最大 {maxSize} MB）",
     "modelsAndCacheCleared": "模型和执行缓存已清除。",
     "modelsUnloaded": "模型已卸载。",
     "no3dScene": "没有3D场景可以应用纹理",
@@ -5966,6 +6251,8 @@
     "nothingToQueue": "没有可加入队列的内容",
     "notificationsLabel": "通知",
     "notificationsViewportLabel": "通知 ({hotkey})",
+    "outdatedVideoHelperSuite": "更新 ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "当另一个已打开工作流中的 Unbatch 节点更改类型时，此版本的 Video Helper Suite 可能会断开屏幕上工作流中的连线。请通过管理器更新它。",
     "pendingTasksDeleted": "待处理任务已删除",
     "pleaseSelectNodesToGroup": "请选取节点（或其他组）以创建分组",
     "pleaseSelectOutputNodes": "请选择输出节点",
@@ -6103,12 +6390,14 @@
     "undo": "撤销"
   },
   "widgets": {
+    "backFromFolder": "返回：{name}",
     "boolean": {
       "false": "否",
       "true": "是"
     },
     "node2only": "仅限 Node 2.0",
     "precisionLimit": "已禁用增减操作：值超出 JavaScript 精度限制 (±2^53)",
+    "selectFolder": "文件夹：{name}",
     "selectModel": "选择模型",
     "uploadSelect": {
       "maxSelectionReached": "已达到最大选择数量",
@@ -6119,6 +6408,12 @@
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
       "placeholderVideo": "请选择视频...",
+      "thumbnailSize": "缩略图大小",
+      "thumbnailSizes": {
+        "compact": "紧凑",
+        "large": "大",
+        "standard": "标准"
+      },
       "topResult": "最佳结果：{result}"
     },
     "valueControl": {
@@ -6156,6 +6451,7 @@
     "enterFilename": "输入文件名",
     "enterFilenamePrompt": "输入文件名：",
     "exportWorkflow": "导出工作流",
+    "pathInUse": "“{path}”已被占用。请选择其他名称。",
     "saveWorkflow": "保存工作流",
     "savedAsApp": "已转换为应用工作流",
     "savedAsWorkflow": "已转换为节点图工作流",
@@ -6166,7 +6462,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被添加到 {workspaceName}",
+    "deepLinkPricingRefused": "此链接指向您无权访问的工作区，因此未打开方案页面。",
     "deepLinkStayed": "无法打开该工作区。您仍在 {workspaceName} 中。",
+    "deepLinkTopUpRefused": "此链接指向您无权访问的工作区，因此未打开充值页面。",
     "inviteAccepted": "邀请已接受",
     "inviteDirectoryManaged": "您的组织管理员管理成员资格",
     "inviteDirectoryManagedDetail": "此工作区的成员通过您组织的目录进行管理，因此无法通过邀请链接加入。请让您组织的管理员将您添加进来。",
@@ -6281,7 +6579,15 @@
         "salesMemberBody": "请让您的工作区所有者联系销售。",
         "teamBody": "重新订阅以运行工作流并再次获得共享额度。",
         "teamMemberBody": "请让您的工作区所有者重新订阅。",
+        "teamNotCreatorBody": "此工作区的套餐已结束。请让工作区创建者重新订阅。",
         "teamTitle": "您的团队套餐已于 {date} 结束"
+      },
+      "planNotStarted": {
+        "body": "完成付款以启动套餐。",
+        "bodyUnavailable": "付款完成后，您的套餐将开始生效。",
+        "title": "您的 {plan} 套餐尚未开始",
+        "titleNoPlan": "您的套餐尚未开始",
+        "viewPlans": "在“套餐”中查看"
       },
       "updatePayment": "更新付款方式"
     },

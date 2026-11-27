@@ -699,6 +699,32 @@ describe('useBillingPlans', () => {
           tags: expect.objectContaining({ outcome: 'failed' })
         })
       )
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ sentryMode: 'never' })
+      )
+    })
+
+    it('keeps a read cut off by an ended session in Datadog only', async () => {
+      railState.rail = {
+        readPlans: vi.fn(async () => ({
+          status: 'error' as const,
+          code: 'NOT_AUTHENTICATED' as const
+        }))
+      }
+
+      const { useBillingPlans, reportError } = await importUseBillingPlans()
+      const { fetchPlans, plans } = useBillingPlans()
+      await fetchPlans()
+
+      expect(plans.value).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'cloud_billing_plan_catalog_fallback',
+          sentryMode: 'never'
+        })
+      )
     })
   })
 

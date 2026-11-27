@@ -5,12 +5,13 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
-  LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -79,7 +80,7 @@ describe('WidgetLegacy canvas sizing', () => {
   it.for(heightCases)(
     'renders the canvas for $name',
     async ({ widget: overrides, expectedCanvasHeight }) => {
-      const graph = new LGraph()
+      const graph = app.rootGraph
       const node = new LGraphNode('Legacy')
       const widget = node.addWidget('text', 'stack_data', '[]', () => {})
       graph.add(node)
@@ -108,7 +109,7 @@ describe('WidgetLegacy canvas sizing', () => {
   )
 
   it('draws a growable widget at its row height instead of the canvas layout height', async () => {
-    const graph = new LGraph()
+    const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     const widget = node.addWidget('text', 'comparer', '', () => {})
     graph.add(node)
@@ -137,7 +138,7 @@ describe('WidgetLegacy canvas sizing', () => {
   })
 
   it('draws a fixed widget stretched by its row where classic layout would place it at the bottom of the node', async () => {
-    const graph = new LGraph()
+    const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     node.size = [400, 420]
     const widget = node.addWidget('text', 'comparer', '', () => {})
@@ -168,7 +169,7 @@ describe('WidgetLegacy canvas sizing', () => {
 
 describe('WidgetLegacy canvas width', () => {
   it('uses the untransformed layout width when the canvas is zoomed', async () => {
-    const graph = new LGraph()
+    const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
     graph.add(node)
@@ -224,7 +225,7 @@ describe('WidgetLegacy repaint', () => {
       onTestFinished(() => {
         LiteGraph.vueNodesMode = false
       })
-      const graph = new LGraph()
+      const graph = app.rootGraph
       const node = new LGraphNode('Legacy')
       const widget = node.addWidget('text', 'stack_data', '[]', () => {})
       graph.add(node)
@@ -277,7 +278,7 @@ describe('WidgetLegacy pointer events', () => {
   ]
 
   it.for(buttonCases)('$name', async ({ button, expectedPositions }) => {
-    const graph = new LGraph()
+    const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     node.pos = [100, 200]
     const mouse = vi.fn<NonNullable<IBaseWidget['mouse']>>(() => true)
@@ -321,9 +322,63 @@ describe('WidgetLegacy pointer events', () => {
   })
 })
 
+describe('WidgetLegacy ownership', () => {
+  it('sends pointer edits to the root graph owner while the canvas shows a subgraph', async () => {
+    const root = app.rootGraph
+    const interior = createTestSubgraph({ rootGraph: root })
+    const nodes = [new LGraphNode('Owner'), new LGraphNode('Interior')]
+    root.add(nodes[0])
+    interior.add(nodes[1])
+    const widgets = nodes.map((node, index) => {
+      const widget = node.addCustomWidget<IBaseWidget>({
+        name: 'value',
+        type: 'owner-test-legacy',
+        value: 1,
+        y: 0,
+        options: {},
+        draw() {},
+        mouse() {
+          widget.value = [17, 29][index]
+          return true
+        }
+      })
+      return widget
+    })
+    stubCanvasGetContext()
+    const canvas = new LGraphCanvas(
+      document.createElement('canvas'),
+      interior,
+      {
+        skip_render: true,
+        skip_events: true
+      }
+    )
+    useCanvasStore().canvas = canvas
+    useCanvasStore().currentGraph = interior
+    render(WidgetLegacy, {
+      props: {
+        nodeId: nodes[0].id,
+        widget: {
+          name: 'value',
+          type: 'owner-test-legacy',
+          value: undefined
+        }
+      }
+    })
+
+    await userEvent.pointer({
+      keys: '[MouseLeft]',
+      target: screen.getByTestId('legacy-widget-canvas'),
+      coords: { offsetX: 28, offsetY: 11 }
+    })
+
+    expect(widgets.map((widget) => widget.value)).toEqual([17, 1])
+  })
+})
+
 describe('WidgetLegacy growable pointer events', () => {
   it('passes presses below the minimum height of a growable widget to mouse', async () => {
-    const graph = new LGraph()
+    const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     node.pos = [100, 200]
     const mouse = vi.fn<NonNullable<IBaseWidget['mouse']>>(() => true)

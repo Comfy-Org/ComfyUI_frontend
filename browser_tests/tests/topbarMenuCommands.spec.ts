@@ -86,13 +86,12 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
 })
 
 test.describe('Topbar Help menu', { tag: '@ui' }, () => {
-  test('Help > Support opens the external zendesk link with the OSS tag', async ({
+  test('Help > Contact Support opens the General Questions form', async ({
     comfyPage
   }) => {
-    // Prevent loading the external page
     await comfyPage.page
       .context()
-      .route('https://support.comfy.org/**', (route) =>
+      .route('https://comfysupport.portal.usepylon.com/**', (route) =>
         route.fulfill({ body: '<html></html>', contentType: 'text/html' })
       )
 
@@ -102,11 +101,12 @@ test.describe('Topbar Help menu', { tag: '@ui' }, () => {
       'Contact Support'
     ])
     const popup = await popupPromise
-    await popup.waitForURL('https://support.comfy.org/**')
+    await popup.waitForURL('https://comfysupport.portal.usepylon.com/**')
 
     const url = new URL(popup.url())
-    expect(url.hostname).toBe('support.comfy.org')
-    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+    expect(url.origin + url.pathname).toBe(
+      'https://comfysupport.portal.usepylon.com/forms/question'
+    )
 
     await popup.close()
   })

@@ -1,3 +1,11 @@
+import { insertItems } from '@/core/graph/clipboard/graphTransfer'
+import { workflowToClipboardItems } from '@/core/graph/clipboard/workflowToClipboardItems'
+import type {
+  ExportedSubgraphInstance,
+  ISerialisableNodeInput,
+  ISerialisableNodeOutput,
+  ISerialisedNode
+} from '@comfyorg/graph-model/serialisation'
 import { pick, zip } from 'es-toolkit/compat'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
@@ -11,7 +19,11 @@ import {
   addWidgetPromotionOptions,
   isPreviewPseudoWidget
 } from '@/core/graph/subgraph/promotionUtils'
-import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
+import {
+  applyDynamicInputs,
+  bindPromotedDynamicInput,
+  unbindPromotedDynamicInput
+} from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -33,16 +45,9 @@ import type {
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
-import type {
-  ExportedSubgraphInstance,
-  ISerialisableNodeInput,
-  ISerialisableNodeOutput,
-  ISerialisedNode
-} from '@comfyorg/graph-model/serialisation'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -70,7 +75,6 @@ import {
   copyToClipspace,
   pasteFromClipspace
 } from '@/scripts/clipspace'
-import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
@@ -85,9 +89,9 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
+import { copyImageToClipboard } from '@/renderer/core/clipboard/mediaClipboard'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
-import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
@@ -99,44 +103,6 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
-
-async function reencodeAsPngBlob(blob: Blob): Promise<Blob> {
-  let image: ImageBitmap | HTMLImageElement
-  if (typeof window.createImageBitmap === 'undefined') {
-    const img = new Image()
-    const loaded = new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve()
-      img.onerror = () => reject(new Error('Image load failed'))
-    })
-    img.src = URL.createObjectURL(blob)
-    try {
-      await loaded
-    } finally {
-      URL.revokeObjectURL(img.src)
-    }
-    image = img
-  } else {
-    image = await createImageBitmap(blob)
-  }
-
-  const canvas = $el('canvas', { width: image.width, height: image.height })
-  try {
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Could not get canvas context')
-    ctx.drawImage(image, 0, 0)
-  } finally {
-    if ('close' in image && typeof image.close === 'function') {
-      image.close()
-    }
-  }
-
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((result) => {
-      if (result) resolve(result)
-      else reject(new Error('PNG conversion failed'))
-    }, 'image/png')
-  })
-}
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -191,7 +157,6 @@ function getMinSize(node: LGraphNode) {
  */
 export const useLitegraphService = () => {
   const extensionService = useExtensionService()
-  const toast = useToast()
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
@@ -468,6 +433,23 @@ export const useLitegraphService = () => {
         })
       }
 
+      protected override bindDynamicInput(
+        input: INodeInputSlot,
+        interiorNode: LGraphNode,
+        interiorInput: INodeInputSlot
+      ): boolean {
+        return bindPromotedDynamicInput(
+          this,
+          input,
+          interiorNode,
+          interiorInput
+        )
+      }
+
+      protected override unbindDynamicInput(input: INodeInputSlot): boolean {
+        return unbindPromotedDynamicInput(this, input)
+      }
+
       /**
        * Configure the node from a serialised node. Keep 'name', 'type', 'shape',
        * and 'localized_name' information from the original node definition.
@@ -475,12 +457,9 @@ export const useLitegraphService = () => {
       override configure(data: ISerialisedNode): void {
         const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
 
-        // Note: input name is unique in a node definition, so we can lookup
-        // input by name.
         const inputByName = new Map<string, ISerialisableNodeInput>(
           data.inputs?.map((input) => [input.name, input]) ?? []
         )
-        // Inputs defined by the node definition.
         const definedInputNames = new Set(
           this.inputs.map((input) => input.name)
         )
@@ -489,25 +468,17 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
                 ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
-        // Extra inputs that potentially dynamically added by custom js logic.
         const extraInputs = data.inputs?.filter(
           (input) => !definedInputNames.has(input.name)
         )
         data.inputs = [...definedInputs, ...(extraInputs ?? [])]
 
-        // Note: output name is not unique, so we cannot lookup output by name.
-        // Use index instead.
         data.outputs = zip(this.outputs, data.outputs ?? []).map(
           ([output, outputData], index) => {
-            // If there are extra outputs in the serialised node, use them directly.
-            // There are currently custom nodes that dynamically add outputs via
-            // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
@@ -578,12 +549,9 @@ export const useLitegraphService = () => {
       override configure(data: ISerialisedNode): void {
         const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
 
-        // Note: input name is unique in a node definition, so we can lookup
-        // input by name.
         const inputByName = new Map<string, ISerialisableNodeInput>(
           data.inputs?.map((input) => [input.name, input]) ?? []
         )
-        // Inputs defined by the node definition.
         const definedInputNames = new Set(
           this.inputs.map((input) => input.name)
         )
@@ -592,25 +560,17 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
                 ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
-        // Extra inputs that potentially dynamically added by custom js logic.
         const extraInputs = data.inputs?.filter(
           (input) => !definedInputNames.has(input.name)
         )
         data.inputs = [...definedInputs, ...(extraInputs ?? [])]
 
-        // Note: output name is not unique, so we cannot lookup output by name.
-        // Use index instead.
         data.outputs = zip(this.outputs, data.outputs ?? []).map(
           ([output, outputData], index) => {
-            // If there are extra outputs in the serialised node, use them directly.
-            // There are currently custom nodes that dynamically add outputs via
-            // js logic.
             if (!output) return outputData as ISerialisableNodeOutput
 
             return outputData
@@ -668,35 +628,10 @@ export const useLitegraphService = () => {
         {
           content: 'Copy Image',
           callback: markNodeMenuCallback(
-            markCoreMediaMenuCallback(async () => {
-              const url = new URL(fullResolutionSrc(img), img.baseURI)
-              url.searchParams.delete('preview')
-
-              try {
-                const data = await fetch(url)
-                const blob = await data.blob()
-                try {
-                  await navigator.clipboard.write([
-                    new ClipboardItem({ [blob.type]: blob })
-                  ])
-                } catch (error) {
-                  if (blob.type !== 'image/png') {
-                    const pngBlob = await reencodeAsPngBlob(blob)
-                    await navigator.clipboard.write([
-                      new ClipboardItem({ 'image/png': pngBlob })
-                    ])
-                    return
-                  }
-                  throw error
-                }
-              } catch (error) {
-                toast.warning(
-                  t('toastMessages.errorCopyImage', {
-                    error: getErrorMessage(error) ?? t('g.unknownError')
-                  })
-                )
-              }
-            }, 'preview'),
+            markCoreMediaMenuCallback(
+              () => copyImageToClipboard(img),
+              'preview'
+            ),
             null
           )
         }
@@ -732,7 +667,11 @@ export const useLitegraphService = () => {
                   const filename = new URLSearchParams(url.search).get(
                     'filename'
                   )
-                  downloadFile(url.toString(), filename ?? undefined)
+                  downloadFile(
+                    url.toString(),
+                    filename ?? undefined,
+                    'canvas_menu'
+                  )
                 }, 'preview'),
                 null
               )
@@ -841,15 +780,8 @@ export const useLitegraphService = () => {
     }
   }
 
-  /**
-   * Adds Custom drawing logic for nodes
-   * e.g. Draws images and handles thumbnail navigation on nodes that output images
-   * @param {*} node The node to add the draw handler
-   */
   function addDrawBackgroundHandler(node: typeof LGraphNode) {
-    /**
-     * @deprecated No longer needed as we use {@link useImagePreviewWidget}
-     */
+    node.prototype.hideOutputImages = false
     node.prototype.setSizeForImage = function (this: LGraphNode) {
       console.warn(
         'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
@@ -921,13 +853,14 @@ export const useLitegraphService = () => {
     if (isBlueprintType(nodeDef.name)) {
       const canvas = canvasStore.getCanvas()
       const bp = useSubgraphStore().getBlueprint(nodeDef.name)
-      const items: object = {
-        nodes: bp.nodes,
-        subgraphs: bp.definitions?.subgraphs
-      }
-      const results = canvas._deserializeItems(items, {
-        position: options.pos
-      })
+      const { nodes, subgraphs } = workflowToClipboardItems(bp)
+      const results = insertItems(
+        canvas,
+        { nodes, subgraphs },
+        {
+          position: options.pos
+        }
+      )
       if (!results) throw new Error('Failed to add subgraph blueprint')
       const node = results.nodes.values().next().value
       if (!node)

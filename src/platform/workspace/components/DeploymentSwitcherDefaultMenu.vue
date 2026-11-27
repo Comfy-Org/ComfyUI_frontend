@@ -77,8 +77,9 @@ import {
 } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
-const { disabled } = defineProps<{
+const { disabled, clearOnly = false } = defineProps<{
   disabled: boolean
+  clearOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -90,9 +91,18 @@ const { deployments, defaultDeploymentId, goneDefaultDeploymentId } =
   storeToRefs(useDeploymentPickStore())
 const { deploymentRowLabels, defaultTitle } = useDeploymentLabels()
 
+const offeredDeployments = computed(() =>
+  clearOnly
+    ? deployments.value.filter(
+        ({ deployment_id }) => deployment_id === defaultDeploymentId.value
+      )
+    : deployments.value
+)
 const rows = computed(() => [
   deploymentRowLabels(null),
-  ...deployments.value.map((deployment) => deploymentRowLabels(deployment))
+  ...offeredDeployments.value.map((deployment) =>
+    deploymentRowLabels(deployment)
+  )
 ])
 
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
