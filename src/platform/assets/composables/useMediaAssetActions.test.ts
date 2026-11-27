@@ -550,7 +550,9 @@ describe('useMediaAssetActions', () => {
 
       await actions.openWorkflow(createMockAsset())
 
-      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json')
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json', {
+        initiator: 'user'
+      })
       expect(mockOpenWorkflowAction).not.toHaveBeenCalled()
       expect(useToast().success).toHaveBeenCalled()
     })
@@ -688,7 +690,9 @@ describe('useMediaAssetActions', () => {
 
       await actions.openMultipleWorkflows([createMockAsset()])
 
-      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'bulk.json')
+      expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'bulk.json', {
+        initiator: 'user'
+      })
       expect(useToast().success).toHaveBeenCalled()
     })
   })
@@ -867,12 +871,18 @@ describe('useMediaAssetActions', () => {
       const contentUrl = 'http://localhost:8188/api/assets/team-owned/content'
       expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
         contentUrl,
-        expect.objectContaining({ fetch: expect.any(Function) })
+        expect.objectContaining({
+          fetch: expect.any(Function),
+          surface: 'gallery'
+        })
       )
 
       const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
-      await authedFetch(contentUrl)
-      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
+      const onAuthCredential = vi.fn()
+      await authedFetch(contentUrl, onAuthCredential)
+      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl, {
+        onAuthCredential
+      })
     })
 
     it('preserves successful OSS downloads when another file fails', async () => {

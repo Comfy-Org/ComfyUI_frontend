@@ -229,10 +229,9 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
       { id: toNodeId(SOURCE_NODE_ID), widget: MARKER_WIDGET }
     )
 
-  await test.step('open the agent panel and target the workflow', async () => {
+  await test.step('open the agent panel', async () => {
     await loadSeedIntoActiveTab(page, seed)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
   })
 
   await test.step('send a turn so the session binds the workflow', async () => {

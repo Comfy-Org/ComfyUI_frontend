@@ -57,6 +57,9 @@ import type {
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentPanelRenderStalledMetadata,
+  AgentRunApprovalAnswerFailedMetadata,
+  AgentRunApprovalRecoveryAttemptedMetadata,
+  AgentRunApprovalRecoveryOutcomeMetadata,
   AgentRunApprovalResolvedMetadata,
   AgentRunApprovalShownMetadata,
   AgentRunModeChangedMetadata,
@@ -68,12 +71,14 @@ import type {
   AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
+  AssetDownloadMetadata,
   AuthMetadata,
   ImageLoadFailureMetadata,
   UnifiedAuthRefreshMetadata,
   UnifiedAuthRetryMetadata,
   BeginCheckoutMetadata,
   BootstrapCompleteMetadata,
+  CustomDeploymentTelemetryEvent,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
@@ -516,6 +521,15 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
+  trackAssetDownload(metadata: AssetDownloadMetadata): void {
+    this.trackEvent(
+      metadata.outcome === 'completed'
+        ? TelemetryEvents.ASSET_DOWNLOAD_COMPLETED
+        : TelemetryEvents.ASSET_DOWNLOAD_FAILED,
+      metadata
+    )
+  }
+
   trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
     this.trackEvent(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
   }
@@ -828,6 +842,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(event.name, event.properties)
   }
 
+  trackCustomDeploymentEvent(event: CustomDeploymentTelemetryEvent): void {
+    this.trackEvent(event.name, event.properties)
+  }
+
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
   }
@@ -977,6 +995,30 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     metadata: AgentRunApprovalResolvedMetadata
   ): void {
     this.trackEvent(TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED, metadata)
+  }
+
+  trackAgentRunApprovalAnswerFailed(
+    metadata: AgentRunApprovalAnswerFailedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED, metadata)
+  }
+
+  trackAgentRunApprovalRecoveryAttempted(
+    metadata: AgentRunApprovalRecoveryAttemptedMetadata
+  ): void {
+    this.trackEvent(
+      TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+      metadata
+    )
+  }
+
+  trackAgentRunApprovalRecoveryOutcome(
+    metadata: AgentRunApprovalRecoveryOutcomeMetadata
+  ): void {
+    this.trackEvent(
+      TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME,
+      metadata
+    )
   }
 
   trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {

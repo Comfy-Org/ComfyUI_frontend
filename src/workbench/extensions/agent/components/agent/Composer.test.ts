@@ -195,14 +195,14 @@ describe('Composer', () => {
     )
   })
 
-  it('preserves new input on Enter while a previous send is submitting', async () => {
+  it('submits a follow-up draft on Enter while a previous send is submitting, so it can be queued', async () => {
     useAgentComposerStore().setText('Next draft')
     const { emitted } = mount({ submitting: true })
     const textbox = screen.getByRole('textbox')
     await userEvent.click(textbox)
     await userEvent.keyboard('{Enter}')
-    expect(useAgentComposerStore().draft).toBe('Next draft')
-    expect(emitted().send).toBeUndefined()
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toEqual([['Next draft', []]])
   })
 
   it('sends a Send click while a previous send is still submitting, so it can be queued', async () => {
@@ -281,14 +281,65 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
-  it('preserves new input on Enter without stopping an active run', async () => {
+  it('submits a non-empty queued prompt edit on Enter while running without stopping the active run', async () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    composer.setText('first')
+    queue.enqueueFromComposer('first', [], [])
+    queue.begin(queue.items[0].id)
+    composer.setText('second')
+    queue.enqueueFromComposer('second', [], [])
+    composer.clearDraft()
+    expect(queue.startEdit(queue.items[1].id)).toBe(true)
+    composer.setText('revised second')
+    const { emitted } = mount({ streaming: true })
+
+    await userEvent.type(screen.getByRole('textbox'), '{Enter}')
+
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toEqual([['revised second', []]])
+  })
+
+  it('submits a follow-up draft on Enter while running without stopping the active run', async () => {
     const { emitted } = mount({ streaming: true })
     const textbox = screen.getByRole('textbox')
     await userEvent.type(textbox, 'Next draft{Enter}')
-    expect(textbox).toHaveTextContent('Next draft')
     expect(emitted().stop).toBeUndefined()
-    expect(emitted().send).toBeUndefined()
+    expect(emitted().send).toEqual([['Next draft', []]])
   })
+
+  it.for([
+    { label: 'empty draft', props: { streaming: true }, text: '' },
+    {
+      label: 'derivingWorkflow',
+      props: { streaming: true, derivingWorkflow: true },
+      text: 'Next draft'
+    },
+    {
+      label: 'workflowSelecting',
+      props: { streaming: true, workflowSelecting: true },
+      text: 'Next draft'
+    },
+    {
+      label: 'missing workflow target',
+      props: { streaming: true, hasWorkflowTarget: false },
+      text: 'Next draft'
+    },
+    {
+      label: 'openingChat',
+      props: { streaming: true, openingChat: true },
+      text: 'Next draft'
+    }
+  ])(
+    'ignores Enter while running when blocked by $label without stopping the active run',
+    async ({ props, text }) => {
+      const { emitted } = mount(props)
+      const textbox = screen.getByRole('textbox')
+      await userEvent.type(textbox, `${text}{Enter}`)
+      expect(emitted().stop).toBeUndefined()
+      expect(emitted().send).toBeUndefined()
+    }
+  )
 
   it('attaches the error context as an inline reference and serializes it into the sent message', async () => {
     useAgentComposerStore().setErrorContext({
@@ -666,6 +717,34 @@ describe('Composer', () => {
     )
   })
 
+  it('disables send while allowing typing when there is no workflow target', async () => {
+    const { emitted } = mount({ hasWorkflowTarget: false })
+    const box = screen.getByRole('textbox')
+    const send = screen.getByRole('button', { name: 'Send' })
+
+    await userEvent.click(box)
+    await userEvent.type(box, 'keep draft{Enter}')
+
+    expect(box).toHaveTextContent('keep draft')
+    expect(send).toBeDisabled()
+    expect(emitted().send).toBeUndefined()
+  })
+
+  it('keeps Stop enabled while running even without a workflow target', async () => {
+    const { emitted } = mount({ hasWorkflowTarget: false, streaming: true })
+    const box = screen.getByRole('textbox')
+    const stop = screen.getByRole('button', { name: 'Stop' })
+
+    expect(stop).toBeEnabled()
+    await userEvent.click(box)
+    await userEvent.type(box, 'draft while running')
+
+    const stopAfterTyping = screen.getByRole('button', { name: 'Stop' })
+    expect(stopAfterTyping).toBeEnabled()
+    await userEvent.click(stopAfterTyping)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
   it('renders without vue-i18n message compilation errors', async () => {
     mount({ canAttach: true, canOpenAssets: true })
 
@@ -739,16 +818,13 @@ describe('Composer', () => {
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
   })
 
-  it('emits stop on Escape while running and ignores Enter', async () => {
+  it('emits stop on Escape while running and ignores empty Enter', async () => {
     const { emitted } = mount({ submitting: true })
     const box = screen.getByRole('textbox')
-    await userEvent.type(box, 'hello{Enter}')
+    await userEvent.type(box, '{Enter}')
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
 
-    // An auto-repeated Escape is still contained by the registered override
-    // (which keybindHandler would otherwise let dispatch ExitSubgraph), but
-    // it doesn't itself trigger a stop.
     const repeatedEscapeEvent = new KeyboardEvent('keydown', {
       key: 'Escape',
       repeat: true,
@@ -895,7 +971,7 @@ describe('Composer', () => {
 
     const { emitted } = mount({ streaming: true })
     const box = screen.getByRole('textbox')
-    await userEvent.type(box, 'hello{Enter}')
+    await userEvent.type(box, '{Enter}')
     expect(emitted().send).toBeUndefined()
     expect(emitted().stop).toBeUndefined()
     await userEvent.type(box, '{Escape}')

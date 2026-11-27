@@ -23,7 +23,7 @@ test.use({ connectWebSocketToServer: false })
 test(
   'shows the dragged non-first batch output in the sent message, not a type=input lookup',
   { tag: ['@cloud', '@agent', '@ui'] },
-  async ({ page, workflowSelection, promptHistory }) => {
+  async ({ page, promptHistory }) => {
     const droppedFilename = 'ComfyUI_00002_.png'
     const correctPreviewPath = '/assets/asset-e2e-batch-output-2/content'
 
@@ -47,14 +47,6 @@ test(
         exact: true
       })
       .click()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     const correctPreviewUrl = new URL(correctPreviewPath, page.url()).toString()
 

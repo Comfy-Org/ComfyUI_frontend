@@ -82,6 +82,59 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
           .filter({ visible: true })
       ).toHaveText('Popular')
     })
+
+    test('only the first open lands on Popular, later opens and sessions land on All Templates sorted by Newest', async ({
+      comfyPage
+    }) => {
+      const dialog = comfyPage.templatesDialog
+
+      await test.step('first open lands on Popular', async () => {
+        await expect(dialog.filterByHeading('Popular')).toBeVisible()
+        await expect
+          .poll(() =>
+            comfyPage.settings.getSetting('Comfy.Templates.HasOpenedLibrary')
+          )
+          .toBe(true)
+      })
+
+      await test.step('reopening in the same session lands on All Templates + Newest', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.templates.content).toBeHidden()
+        await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+        await expect(dialog.filterByHeading('All Templates')).toBeVisible()
+        await dialog.openFilters()
+        await expect(dialog.sortSelect).toHaveText('Newest')
+      })
+
+      await test.step('a later session where the user still counts as new lands on All Templates + Newest', async () => {
+        await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+        await comfyPage.page.evaluate(() => {
+          for (const key of Object.keys(localStorage)) {
+            if (key.startsWith('Comfy.Workflow.')) localStorage.removeItem(key)
+          }
+        })
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await expect(comfyPage.templates.content).toBeVisible()
+        await expect(dialog.filterByHeading('All Templates')).toBeVisible()
+        await dialog.openFilters()
+        await expect(dialog.sortSelect).toHaveText('Newest')
+      })
+
+      await test.step('that session still counts the user as new, so only the opened-library flag keeps Popular away', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.templates.content).toBeHidden()
+        await comfyPage.settings.setSetting(
+          'Comfy.Templates.HasOpenedLibrary',
+          false
+        )
+        await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+        await expect(dialog.filterByHeading('Popular')).toBeVisible()
+      })
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.Templates.SortBy'))
+        .toBe('newest')
+    })
   })
 
   test("dialog should preserve a returning user's Popular sort", async ({

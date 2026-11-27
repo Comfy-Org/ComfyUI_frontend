@@ -15,6 +15,10 @@ export function deploymentModelsRequest(
   }
 }
 
+export function preinstallRequest(deploymentId: string): PlatformFrameRequest {
+  return { step: 'preinstall', deploymentId, handsOverWorkflow: true }
+}
+
 export function useDeploymentModelsFrame() {
   const pickStore = useDeploymentPickStore()
   const frames = usePlatformFrameStore()
@@ -26,7 +30,7 @@ export function useDeploymentModelsFrame() {
   function addModels(): boolean {
     const deploymentId = bootDeploymentId.value
     return deploymentId !== undefined
-      ? frames.open(deploymentModelsRequest(deploymentId))
+      ? frames.open(deploymentModelsRequest(deploymentId), 'model_library')
       : false
   }
 

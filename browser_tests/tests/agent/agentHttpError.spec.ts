@@ -23,7 +23,6 @@ test(
   { tag: '@cloud' },
   async ({ agentPanel }) => {
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
 
     await agentPanel.sendMessage('Build a product photo workflow')
 

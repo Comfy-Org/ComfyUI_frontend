@@ -42,3 +42,6 @@ export type MissingNodeType =
       isReplaceable?: boolean
       replacement?: NodeReplacement
     }
+
+/** How the workflow with missing nodes came to be open: brought in by a drop, import or paste, or reopened as Comfy starts or a tab opens. */
+export type WorkflowOpening = 'brought_in' | 'reopened'

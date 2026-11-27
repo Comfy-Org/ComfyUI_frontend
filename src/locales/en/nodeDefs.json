@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "display_name": "OpenAI ChatGPT",
+    "description": "Generate text responses with OpenAI's GPT models. Provide a text prompt and, optionally, images or files as context.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The model used to generate the response."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "display_name": "OpenAI GPT Image 2",
     "description": "Generates images synchronously via OpenAI's GPT Image endpoint.",
@@ -23070,7 +23103,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash is the fastest and cheapest model and supports no styles at all."
+        "tooltip": "The model to use for generation. The recraftv4_styles models are built for style-consistent generation and always require a style_id or style_references; recraftv4_1_flash runs Recraft V4.1 Flash V2, the fastest and cheapest model, and supports no styles at all."
       },
       "n": {
         "name": "n",
@@ -23176,6 +23209,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) gives cleaner SVGs with smooth curves, straight lines and sharp corners, best for lettering and intricate shapes."
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical layers shapes on top of each other; cut_out makes shapes that never overlap, for plotters, vinyl cutters and screen printing."
       }
     },
     "outputs": {

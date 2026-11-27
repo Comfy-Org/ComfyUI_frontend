@@ -21,7 +21,6 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       const jobId = await execution.run()
-      execution.executionStart(jobId)
       execution.nodeRunning(jobId, '3', 13, 20)
 
       await expect(comfyPage.actionbar.inlineProgressNodeFill).toBeVisible()
@@ -36,7 +35,6 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       const jobId = await execution.run()
-      execution.executionStart(jobId)
       execution.nodeRunning(jobId, '3', 5, 20)
 
       await comfyPage.actionbar.expectInlineProgressFilledFraction(0.25)
@@ -56,10 +54,10 @@ wstest.describe('Docked actionbar run progress bar', { tag: ['@ui'] }, () => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
       const topbar = comfyPage.menu.topbar
 
-      const visibleJobId = await execution.run()
+      const visibleJobId = await execution.run({ start: false })
       await topbar.newWorkflowButton.click()
       await comfyPage.workflow.waitForWorkflowIdle()
-      const backgroundJobId = await execution.run()
+      const backgroundJobId = await execution.run({ start: false })
       await topbar.getTab(0).click()
       await comfyPage.workflow.waitForWorkflowIdle()
 
@@ -91,7 +89,6 @@ wstest.describe('Queue progress overlay', { tag: ['@ui'] }, () => {
     async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
       const jobId = await execution.run()
-      execution.executionStart(jobId)
       execution.nodeRunning(jobId, '3', 5, 20)
 
       const { progressNodeFill } = comfyPage.queuePanel

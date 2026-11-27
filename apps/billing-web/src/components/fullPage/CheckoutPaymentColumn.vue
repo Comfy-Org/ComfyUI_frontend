@@ -39,7 +39,8 @@ const {
   keepSubscription,
   savedMethods = [],
   purchase = 'subscribe',
-  savesCardOffSession = false
+  savesCardOffSession = false,
+  optionBelow = false
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -53,6 +54,8 @@ const {
   purchase?: PlanPurchase | 'credits'
   /** A new card is saved for off-session charges, as auto top-up with no default card requires. */
   savesCardOffSession?: boolean
+  /** Another way to pay sits under Pay, so the terms note moves below it. */
+  optionBelow?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -108,7 +111,8 @@ const payContext = computed<PayContext>(() => {
       : { outcome }),
     ...(reactivation === 'not_required' || keepSubscription === undefined
       ? {}
-      : { consent: { state: reactivation, copy: keepSubscription } })
+      : { consent: { state: reactivation, copy: keepSubscription } }),
+    termsBelow: optionBelow
   }
 })
 
@@ -132,6 +136,12 @@ const formMounted = computed(() => elementLive.value && charge !== undefined)
 watch(formMounted, (mounted) => {
   if (!mounted) tokenizing.value = false
 })
+
+const outcomeBesideColumn = computed(() =>
+  tabbed.value?.tab === 'saved' || elementLive.value
+    ? undefined
+    : payContext.value.outcome
+)
 
 const tabsLocked = computed(() => locked.value || tokenizing.value)
 
@@ -275,6 +285,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           </template>
         </StripePaymentForm>
       </div>
+      <slot name="after" :busy="tabsLocked" :outcome="outcomeBesideColumn" />
     </div>
   </section>
 </template>

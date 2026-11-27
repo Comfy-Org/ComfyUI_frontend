@@ -6,7 +6,11 @@ import type { PromptQueueItem } from '@/workbench/extensions/agent/stores/agent/
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 
-type QueueSendResult = void | boolean | Promise<void | boolean>
+type QueueSendResult =
+  | void
+  | boolean
+  | 'deferred'
+  | Promise<void | boolean | 'deferred'>
 
 export function useAgentPromptQueue(options: {
   isBusy: () => boolean
@@ -20,27 +24,38 @@ export function useAgentPromptQueue(options: {
 }) {
   const queue = useAgentPromptQueueStore()
   let pumping = false
+  let pumpingId: string | null = null
   let pumpRequested = false
 
   async function settleStartedSend(
     id: string,
     submitted: QueueSendResult
-  ): Promise<void> {
-    let sent: void | boolean
+  ): Promise<string | null> {
+    let sent: void | boolean | 'deferred'
     try {
       sent = await submitted
     } catch (error) {
-      if (queue.runningId === id) queue.finish(id)
+      queue.finish(id)
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_send_message_failed'
       })
-      return
+      return null
     }
-    if (sent === false && queue.runningId === id) {
+    if (sent === 'deferred') {
+      queue.release(id)
+      return id
+    }
+    if (sent === false) {
+      const wasActive = queue.runningId === id
       queue.finish(id)
-      if (options.isBusy()) queue.clearComposerDraft()
+      if (wasActive && options.isBusy()) queue.clearComposerDraft()
     }
+    return null
+  }
+
+  function currentNextItem(): PromptQueueItem | undefined {
+    return queue.nextItem
   }
 
   async function pump(): Promise<void> {
@@ -49,24 +64,29 @@ export function useAgentPromptQueue(options: {
       return
     }
     if (options.isBusy() || queue.runningId) return
-    const next = queue.nextItem
+    const next = currentNextItem()
     if (!next) return
     pumping = true
+    pumpingId = next.id
     queue.begin(next.id)
+    let deferredId: string | null = null
     try {
-      await settleStartedSend(next.id, options.sendItem(next))
+      deferredId = await settleStartedSend(next.id, options.sendItem(next))
     } finally {
+      pumpingId = null
       pumping = false
     }
     if (pumpRequested) {
       pumpRequested = false
-      await pump()
+      if (deferredId === null) await settleActiveAndPump()
+      else if (currentNextItem()?.id !== deferredId) await pump()
     }
   }
 
   async function settleActiveAndPump(): Promise<void> {
     if (options.isBusy()) return
-    if (queue.runningId) queue.finish(queue.runningId)
+    if (queue.runningId && queue.runningId !== pumpingId)
+      queue.finish(queue.runningId)
     await pump()
   }
 

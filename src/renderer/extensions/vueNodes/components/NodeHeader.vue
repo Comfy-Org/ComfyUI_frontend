@@ -13,39 +13,44 @@
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex min-w-0 items-center justify-between gap-1">
-      <div class="relative mr-auto flex min-w-0 items-center gap-1">
-        <div class="flex shrink-0 items-center px-0.5">
-          <Button
-            size="icon-sm"
-            variant="textonly"
-            class="text-inherit hover:bg-transparent"
-            data-testid="node-collapse-button"
-            :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
-            :aria-expanded="!collapsed"
-            @click.stop="handleCollapse"
-            @dblclick.stop
-          >
-            <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-down] transition-transform',
-                  collapsed && '-rotate-90'
-                )
-              "
-              data-part="node-collapse-chevron"
-            />
-            <span
-              :class="
-                cn(
-                  'hidden size-2.5 rounded-full bg-node-border transition-colors',
-                  collapsed && 'bg-node-foreground'
-                )
-              "
-              data-part="node-collapse-dot"
-            />
-          </Button>
-        </div>
+    <div
+      class="flex min-w-0 items-center justify-between gap-1"
+      data-part="node-header-row"
+    >
+      <div
+        class="relative mr-auto flex min-w-0 items-center gap-1"
+        data-part="node-header-lead"
+      >
+        <Button
+          size="icon-sm"
+          variant="textonly"
+          class="mx-0.5 shrink-0 text-inherit hover:bg-transparent"
+          data-testid="node-collapse-button"
+          data-part="node-collapse-button"
+          :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
+          :aria-expanded="!collapsed"
+          @click.stop="handleCollapse"
+          @dblclick.stop
+        >
+          <i
+            :class="
+              cn(
+                'icon-[lucide--chevron-down] transition-transform',
+                collapsed && '-rotate-90'
+              )
+            "
+            data-part="node-collapse-chevron"
+          />
+          <span
+            :class="
+              cn(
+                'hidden size-2.5 rounded-full bg-node-border transition-colors',
+                collapsed && 'bg-node-foreground'
+              )
+            "
+            data-part="node-collapse-dot"
+          />
+        </Button>
         <div
           :data-node-tooltip="nodeDescription || undefined"
           :data-node-tooltip-title="titleTooltipHeading"
@@ -66,7 +71,11 @@
         </div>
       </div>
 
-      <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
+      <NodeBadge
+        v-if="statusBadge"
+        v-bind="statusBadge"
+        data-part="node-status-badge"
+      />
       <i
         v-if="isPinned"
         class="icon-[comfy--pin]"

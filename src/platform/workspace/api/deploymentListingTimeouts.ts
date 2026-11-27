@@ -43,3 +43,7 @@ export const DEPLOYMENT_START_TIMEOUT_MS = 30_000
 
 /** How often the open menu refreshes the listing while a deployment starts. */
 export const DEPLOYMENT_START_POLL_MS = 5_000
+
+export const DEPLOYMENT_VERSION_WATCH_MS = 30_000
+
+export const DEPLOYMENT_VERSION_FOCUS_GAP_MS = 10_000

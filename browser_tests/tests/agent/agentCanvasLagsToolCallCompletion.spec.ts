@@ -182,7 +182,6 @@ async function driveThroughToolCallDone(
   })
 
   await sendUnsavedWorkflowPromptAndWaitForSubscribe(
-    page,
     panel,
     hostSocket,
     'Add a note to the canvas.'

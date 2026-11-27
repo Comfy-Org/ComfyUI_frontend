@@ -3,6 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { createToastId } from '@/types/toastId'
@@ -44,7 +45,7 @@ const FAILURES = [
   ]
 ] as const
 
-const NO_RELOAD = { openRunOn: () => {}, reload: null }
+const NO_RELOAD = { switchTo: async () => {}, reload: null }
 
 function onlyToast() {
   const { toasts } = useToast()
@@ -97,22 +98,26 @@ describe('build notices', () => {
     expect(onlyToast().title).toBe('portrait-upscale now runs v2.')
   })
 
-  it('points a new deployment to Run on', () => {
-    const openRunOn = vi.fn()
+  it('offers to switch to a new deployment, saying the editor reloads', () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.Workflow.Persist': true }
+    })
+    const switchTo = vi.fn()
     noticeBuildReady(
       followed({ kind: 'new', previousReleaseId: null, previousVersion: null }),
       createToastId(),
-      { openRunOn, reload: null }
+      { switchTo, reload: null }
     )
 
     const toast = onlyToast()
     expect(toast).toMatchObject({
       kind: 'success',
-      title: 'portrait-upscale is ready. Choose it under Run on.'
+      title: 'portrait-upscale is ready',
+      description: 'Switching reloads the editor. Your tabs stay open.'
     })
-    expect(toast.actions.map((action) => action.label)).toEqual(['Open Run on'])
+    expect(toast.actions.map((action) => action.label)).toEqual(['Switch'])
     toast.actions[0].onClick()
-    expect(openRunOn).toHaveBeenCalledOnce()
+    expect(switchTo).toHaveBeenCalledOnce()
   })
 
   it('counts the jobs still finishing on the previous version', () => {
@@ -150,7 +155,7 @@ describe('build notices', () => {
   it('offers Reload and Later when the editor runs the updated deployment', () => {
     const reload = vi.fn()
     noticeBuildReady(followed(), createToastId(), {
-      openRunOn: vi.fn(),
+      switchTo: vi.fn(),
       reload
     })
 

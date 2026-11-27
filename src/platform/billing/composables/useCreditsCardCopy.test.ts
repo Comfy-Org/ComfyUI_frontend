@@ -47,7 +47,7 @@ const SUBSCRIBE_NOTE =
   "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
 
 const CARD_NOTES = [
-  'Your runs used 211 more credits than you had.',
+  'You used 211 more credits than you had. Add credits to keep running.',
   SUBSCRIBE_NOTE,
   "Couldn't load your balance."
 ]
@@ -149,7 +149,9 @@ describe('BillingCreditsCard with the app copy', () => {
       topUp: '0',
       inUse: false,
       addCredits: true,
-      notes: ['Your runs used 211 more credits than you had.']
+      notes: [
+        'You used 211 more credits than you had. Add credits to keep running.'
+      ]
     },
     {
       case: 'no plan with the served plan-required note',

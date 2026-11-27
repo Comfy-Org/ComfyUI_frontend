@@ -33,7 +33,9 @@
               :class="
                 cn(
                   'size-full shrink-0 cursor-default text-foreground transition-colors hover:bg-accent',
-                  row.job.state === 'running' && 'bg-secondary'
+                  row.job.state === 'running' && 'bg-secondary',
+                  row.job.isFocused && 'ring-1 ring-primary ring-inset',
+                  row.job.canFocus && 'cursor-pointer'
                 )
               "
               :preview-url="getJobPreviewUrl(row.job)"
@@ -48,7 +50,7 @@
               @contextmenu.prevent.stop="$emit('menu', row.job, $event)"
               @dblclick.stop="emitViewItem(row.job)"
               @preview-click="emitViewItem(row.job)"
-              @click.stop
+              @click.stop="focusJob(row.job)"
             >
               <template v-if="hoveredJobId === row.job.id" #actions>
                 <Button
@@ -120,6 +122,8 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 import { buildVirtualJobRows } from './buildVirtualJobRows'
 import type { VirtualJobRow } from './buildVirtualJobRows'
@@ -357,6 +361,18 @@ function isVideoPreviewJob(job: JobListItem) {
 
 function isPreviewableCompletedJob(job: JobListItem) {
   return job.state === 'completed' && !!getPreviewOutput(job)
+}
+
+const executionStore = useExecutionStore()
+
+async function focusJob(job: JobListItem) {
+  if (!job.canFocus || executionStore.focusJob(job.id)) return
+  const workflow = executionStore.openWorkflowForJob(job.id)
+  if (!workflow) return
+  const opened = await useWorkflowService().openWorkflow(workflow, {
+    initiator: 'user'
+  })
+  if (opened) executionStore.focusJob(job.id)
 }
 
 function emitViewItem(job: JobListItem) {

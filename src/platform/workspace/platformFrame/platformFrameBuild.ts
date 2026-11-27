@@ -1,6 +1,7 @@
 import type { zWorkspaceDeployment } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import type { FrameMessage } from '@/platform/workspace/platformFrame/platformFrameMessages'
 
 type BuildStarted = Extract<FrameMessage, { type: 'build-started' }>
@@ -91,6 +92,13 @@ function isFailure(message: FrameMessage): boolean {
   return message.type === 'build-failed' || message.type === 'deploy-failed'
 }
 
+function withDeploymentId(
+  build: FollowedBuild,
+  deploymentId: string
+): FollowedBuild {
+  return deploymentId ? { ...build, deploymentId } : build
+}
+
 export function advanceBuild(
   build: FollowedBuild,
   message: FrameMessage
@@ -101,7 +109,12 @@ export function advanceBuild(
     case 'build-progress':
       return { ...build, progress: { step: message.step, of: message.of } }
     case 'deploy-sent':
-      return { ...build, stage: 'deploying' }
+      return {
+        ...withDeploymentId(build, message.deploymentId),
+        stage: 'deploying'
+      }
+    case 'deployment-ready':
+      return withDeploymentId(build, message.deploymentId)
     case 'build-failed':
     case 'deploy-failed':
       return { ...build, stage: 'failed' }
@@ -128,7 +141,7 @@ const zKeptBuild = z.object({
 
 export function keepBuild(build: FollowedBuild): void {
   try {
-    sessionStorage.setItem(
+    safeSessionStorage.setItem(
       KEPT_BUILD_KEY,
       JSON.stringify({ ...build, progress: null })
     )
@@ -138,17 +151,15 @@ export function keepBuild(build: FollowedBuild): void {
 }
 
 export function forgetBuild(): void {
-  try {
-    sessionStorage.removeItem(KEPT_BUILD_KEY)
-  } catch {
-    return
-  }
+  safeSessionStorage.removeItem(KEPT_BUILD_KEY)
 }
 
 export function readKeptBuild(): FollowedBuild | null {
+  const outcome = safeSessionStorage.read(KEPT_BUILD_KEY)
+  if (!outcome.ok) return null
   let kept: unknown
   try {
-    const raw = sessionStorage.getItem(KEPT_BUILD_KEY)
+    const raw = outcome.value
     kept = raw === null ? null : JSON.parse(raw)
   } catch {
     return null

@@ -39,9 +39,10 @@ export async function resolveReplyAssetDownload(
       : asset.url,
     filename: await displayFilename(asset),
     fetch: trusted
-      ? (url: string) => api.fetchApi(url)
-      : (url: string) => fetch(url, { credentials: 'omit' }),
+      ? (url, onAuthCredential) => api.fetchApi(url, { onAuthCredential })
+      : (url) => fetch(url, { credentials: 'omit' }),
     mode: 'fetch',
-    preferResponseFilename: false
+    preferResponseFilename: false,
+    surface: 'agent_reply'
   }
 }

@@ -28,6 +28,7 @@ test.describe(
         await startStoryTurn(harness, 'run it')
         harness.hostSocket.send(runToolCallFrame('running'))
         await execution.enqueueServerRun(jobId)
+        harness.hostSocket.send(runToolCallFrame('success', jobId))
         await execution.stallJob(jobId, { nodeId: TARGET_ID })
         await expect(executingOutline).toBeVisible()
       })

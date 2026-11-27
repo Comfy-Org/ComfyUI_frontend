@@ -561,7 +561,21 @@ describe('GraphView - missing nodes notice', () => {
 
     expect(noticeMissingNodes).toHaveBeenCalledWith(
       nodeTypes,
-      expect.any(Function)
+      expect.any(Function),
+      'brought_in'
+    )
+  })
+
+  it('tells the deployment offer when a workflow was reopened', () => {
+    distribution.isCloud = true
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes, 'reopened')
+
+    expect(noticeMissingNodes).toHaveBeenCalledWith(
+      nodeTypes,
+      expect.any(Function),
+      'reopened'
     )
   })
 

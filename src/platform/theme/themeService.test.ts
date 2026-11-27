@@ -190,10 +190,12 @@ describe('useThemeService theme variables', () => {
     expect({
       '--primary': readRootProperty('--primary'),
       '--warning': readRootProperty('--warning'),
+      '--success': readRootProperty('--success'),
       colorScheme: document.documentElement.style.colorScheme
     }).toEqual({
       '--primary': '#31b9f4',
       '--warning': '#c77700',
+      '--success': '#00854a',
       colorScheme: 'light'
     })
   })
@@ -354,6 +356,25 @@ describe('useThemeService theme variables', () => {
     expect(useThemeStore().presets.map(({ id }) => id)).toEqual(
       expect.arrayContaining(shipped)
     )
+  })
+
+  it('imports the stylesheet of every built-in palette that names one', () => {
+    const appCss = readFileSync(
+      join(process.cwd(), 'src/assets/css/style.css'),
+      'utf8'
+    )
+    const stylesheets = Object.values(BUILT_IN_THEME_PRESETS).flatMap(
+      ({ stylesheet }) => (stylesheet ? [stylesheet] : [])
+    )
+
+    expect(stylesheets).toEqual(
+      expect.arrayContaining(['classic', 'morning-class'])
+    )
+    expect(
+      stylesheets.filter(
+        (name) => !appCss.includes(`@comfyorg/theme-core/presets/${name}.css`)
+      )
+    ).toEqual([])
   })
 })
 

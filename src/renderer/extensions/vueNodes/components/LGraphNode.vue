@@ -22,7 +22,7 @@
         isRerouteNode
           ? 'h-(--node-height)'
           : compactHeader
-            ? 'w-max max-w-(--min-node-width)'
+            ? 'w-max max-w-(--collapsed-node-max-width)'
             : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         shouldHandleNodePointerEvents &&
@@ -34,7 +34,8 @@
     "
     :style="{
       ...nodeSizeStyle,
-      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      '--min-node-width': `${minNodeWidth}px`,
+      '--collapsed-node-max-width': `${MIN_NODE_WIDTH}px`,
       transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
@@ -84,6 +85,7 @@
     >
       <div
         data-testid="node-inner-wrapper"
+        data-part="node-frame"
         :class="
           cn(
             'flex flex-1 flex-col bg-node-header',
@@ -143,11 +145,8 @@
         </template>
 
         <template v-else-if="!isCollapsed">
-          <div class="relative">
-            <NodeProgressBar
-              v-if="executing && progress !== undefined"
-              :progress
-            />
+          <div v-if="executing && progress !== undefined" class="relative">
+            <NodeProgressBar :progress />
           </div>
 
           <div
@@ -156,6 +155,7 @@
             "
             :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
             :data-testid="`node-body-${nodeData.id}`"
+            data-part="node-body"
           >
             <NodeSlots :node-data />
 
@@ -193,13 +193,13 @@
                   : { gridTemplateRows: userHeightTrack(region.height) }
               "
             >
-              <div class="flex min-h-0 flex-1 flex-col">
-                <LivePreview
-                  v-if="region.media.type === 'preview'"
-                  :image-url="region.media.url"
-                />
-                <NodeContent v-else :node-data :media="region.media" />
+              <div
+                v-if="region.media.type === 'preview'"
+                class="flex min-h-0 flex-1 flex-col"
+              >
+                <LivePreview :image-url="region.media.url" />
               </div>
+              <NodeContent v-else :node-data :media="region.media" />
               <GrowableRegionHandle
                 :name="region.name"
                 :label="
@@ -558,7 +558,7 @@ const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   resizeNodeTo(
     result.size.height,
-    Math.max(result.size.width, MIN_NODE_WIDTH),
+    Math.max(result.size.width, minNodeWidth.value),
     result.position
   )
 })
@@ -569,7 +569,12 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
   const element = nodeRef.value
-  if (element) startResize(event, corner, { element, position: position.value })
+  if (element)
+    startResize(event, corner, {
+      element,
+      position: position.value,
+      snapItem: resolveLGraphNode() ?? undefined
+    })
 }
 
 const mediaRegions = computed(() => [
@@ -761,6 +766,34 @@ const { canSelectInputs, gridRows, nodeType, processedWidgets } =
     () => nodeData,
     () => renderedWidgetIds.value
   )
+const measuredLabelsKey = computed(() =>
+  [
+    nodeData.title,
+    ...nodeData.inputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
+    ...nodeData.outputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
+    ...processedWidgets.value
+      .filter(({ visible }) => visible)
+      .map(
+        ({ widgetId, simplified }) =>
+          `${widgetId}:${simplified.displayLabel ?? simplified.name}`
+      )
+  ].join('\n')
+)
+
+const minNodeWidth = ref(LiteGraph.NODE_WIDTH)
+watch(
+  [lgraphNode, measuredLabelsKey, isCollapsed],
+  ([node, , collapsed]) => {
+    if (node && !collapsed)
+      minNodeWidth.value = Math.ceil(node.computeSize()[0])
+  },
+  { immediate: true }
+)
+
 const hasRenderableWidgets = computed(() => gridRows.value.length > 0)
 const processedWidgetModel = computed(() => ({
   processedWidgets: gridRows.value,

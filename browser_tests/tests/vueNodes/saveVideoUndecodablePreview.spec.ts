@@ -58,11 +58,12 @@ test.describe('Save Video preview', () => {
     const nodeId = await addSaveVideo(comfyPage)
     const landscape = { decoded: true, portrait: false }
 
-    execution.executed('', nodeId, output(SLOW))
+    const jobId = await execution.run()
+    execution.executed(jobId, nodeId, output(SLOW))
     await expect
       .poll(() => canvasVideo(page).then(() => slowRequested))
       .toBe(true)
-    execution.executed('', nodeId, output(WIDE))
+    execution.executed(jobId, nodeId, output(WIDE))
     await expect.poll(() => canvasVideo(page)).toEqual(landscape)
     const slowFailed = page.waitForRequest(
       (request) =>
@@ -74,7 +75,7 @@ test.describe('Save Video preview', () => {
     expect(await canvasVideo(page)).toEqual(landscape)
     const wide = await videoPreviewSize(page, nodeId)
 
-    execution.executed('', nodeId, output(PORTRAIT))
+    execution.executed(jobId, nodeId, output(PORTRAIT))
     await expect
       .poll(() => canvasVideo(page))
       .toEqual({ decoded: true, portrait: true })
@@ -83,7 +84,7 @@ test.describe('Save Video preview', () => {
     expect(portrait.nodeWidth).toBe(wide.nodeWidth)
     expect(portrait.minHeight).toBeGreaterThan(wide.minHeight)
 
-    execution.executed('', nodeId, output(PRORES))
+    execution.executed(jobId, nodeId, output(PRORES))
     await expect.poll(() => canvasVideo(page)).toBeNull()
     await expect(
       page.locator('.comfy-img-preview').getByText(CANT_PLAY)
@@ -98,7 +99,8 @@ test.describe('Save Video preview', () => {
       const nodeId = await addSaveVideo(comfyPage)
       const node = comfyPage.vueNodes.getNodeLocator(nodeId)
 
-      execution.executed('', nodeId, output(PRORES))
+      const jobId = await execution.run()
+      execution.executed(jobId, nodeId, output(PRORES))
       await expect(node.getByText(CANT_PLAY)).toBeVisible()
       await expect(node.getByText(PRORES)).toBeVisible()
     }

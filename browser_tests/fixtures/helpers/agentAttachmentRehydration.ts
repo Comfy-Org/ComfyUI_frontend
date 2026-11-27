@@ -22,11 +22,6 @@ interface DroppedLibraryAsset {
   kind: MediaKind
 }
 
-interface WorkflowSelectionControls {
-  savedPaths: string[]
-  finishSave: (success: boolean) => void
-}
-
 export async function dropLibraryAsset(
   page: Page,
   panel: Locator,
@@ -105,10 +100,7 @@ export async function serveHistory(
   })
 }
 
-export async function openAgentPanel(
-  page: Page,
-  workflowSelection: WorkflowSelectionControls
-): Promise<Locator> {
+export async function openAgentPanel(page: Page): Promise<Locator> {
   await page
     .getByRole('button', {
       name: enMessages.sideToolbar.newBlankWorkflow,
@@ -117,12 +109,6 @@ export async function openAgentPanel(
     .click()
   const agentPanel = new AgentPanel(page)
   const panel = await agentPanel.open()
-  await agentPanel.workflowPicker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-  workflowSelection.finishSave(true)
   return panel
 }
 

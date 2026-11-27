@@ -419,6 +419,39 @@ describe('useReconnectQueueRefresh', () => {
       expect(executionStore.queuedJobs).toEqual({})
     })
 
+    it('replays a stored validation failure with its node errors', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-1'] = { nodes: {} }
+      const nodeErrors = {
+        '72': {
+          class_type: 'CheckpointLoaderSimple',
+          dependent_outputs: ['75'],
+          errors: [{ type: 'value_not_in_list', message: 'Value not in list' }]
+        }
+      }
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...finishedJob,
+        status: 'failed',
+        execution_error: {
+          node_id: '72',
+          node_type: 'CheckpointLoaderSimple',
+          exception_message: 'Prompt outputs failed validation.',
+          exception_type: 'ValidationError',
+          traceback: [],
+          node_errors: nodeErrors
+        }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutionFrames()).toEqual([
+        [
+          'execution_error',
+          expect.objectContaining({ node_errors: nodeErrors })
+        ]
+      ])
+    })
+
     it('dispatches a fallback error when a failed run has no stored error', async () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-1'] = { nodes: {} }
@@ -757,6 +790,11 @@ describe('useReconnectQueueRefresh', () => {
           expectedActiveJobId: null
         },
         {
+          name: 'the active run the server lists nowhere',
+          follow: followRun,
+          expectedActiveJobId: 'job-0'
+        },
+        {
           name: 'the active run history still lists',
           follow: (jobId: string) => {
             followRun(jobId)
@@ -789,18 +827,6 @@ describe('useReconnectQueueRefresh', () => {
           expect(executionStore.activeJobId).toBeNull()
         }
       )
-
-      it('clears an active run the server lists nowhere on the first reconnect', async () => {
-        const executionStore = useExecutionStore()
-        followRun('job-0')
-
-        const refreshed = useReconnectQueueRefresh()()
-        await vi.runAllTimersAsync()
-        await refreshed
-
-        expect(executionStore.activeJobId).toBeNull()
-        expect(executionStore.queuedJobs).toEqual({})
-      })
     })
   })
 })
