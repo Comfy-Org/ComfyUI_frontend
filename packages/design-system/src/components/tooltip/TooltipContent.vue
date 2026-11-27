@@ -61,7 +61,7 @@ const forwarded = useForwardPropsEmits(
         data-testid="tooltip-content"
         :class="
           cn(
-            'z-overlay max-w-[min(24rem,var(--reka-tooltip-content-available-width))] rounded-md border bg-background px-3 py-2 text-xs/tight whitespace-pre-line text-foreground shadow-md',
+            'z-overlay max-w-[min(24rem,var(--reka-tooltip-content-available-width))] rounded-md border bg-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-foreground shadow-md',
             className
           )
         "

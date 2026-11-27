@@ -40,6 +40,7 @@ import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import FreeUseNotice from './FreeUseNotice.vue'
+import AgentCostNotice from './AgentCostNotice.vue'
 import NewChatScreen from './NewChatScreen.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
@@ -82,6 +83,7 @@ const {
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
+  showAgentCostNotice = false,
   syncRetryAvailable = false,
   retryBlocked = false,
   greeting,
@@ -130,6 +132,7 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  showAgentCostNotice?: boolean
   syncRetryAvailable?: boolean
   retryBlocked?: boolean
   greeting?: AgentGreeting
@@ -498,6 +501,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             v-if="freeUsePlacement === 'near-composer'"
             @notice="emit('freeUseNotice', $event)"
           />
+          <AgentCostNotice v-else-if="showAgentCostNotice" />
           <Composer
             ref="composerRef"
             :streaming

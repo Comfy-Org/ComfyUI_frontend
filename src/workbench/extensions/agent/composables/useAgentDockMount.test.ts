@@ -113,7 +113,8 @@ describe('useAgentDockMount', () => {
     const subscription = ref({
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: true
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
     })
     vi.mocked(useBillingContext).mockReturnValue({
       ...billingContext,
@@ -127,7 +128,8 @@ describe('useAgentDockMount', () => {
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: false
+      agentScopedHasFunds: false,
+      agentScopedHasFundsAuthoritative: true
     }
     await nextTick()
 
@@ -138,13 +140,66 @@ describe('useAgentDockMount', () => {
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: true
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
     }
     await nextTick()
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: false
+      agentScopedHasFunds: false,
+      agentScopedHasFundsAuthoritative: true
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
+  })
+
+  it('ignores a non-authoritative scoped read as the credit-transition baseline', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: false
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    await nextTick()
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false,
+      agentScopedHasFundsAuthoritative: true
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      false
+    )
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
+    }
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false,
+      agentScopedHasFundsAuthoritative: true
     }
     await nextTick()
 
@@ -162,7 +217,8 @@ describe('useAgentDockMount', () => {
     const subscription = ref({
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: true
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
     })
     let finishRefresh: ((adopted: boolean) => void) | undefined
     const fetchStatusFresh = vi.fn(
@@ -187,7 +243,8 @@ describe('useAgentDockMount', () => {
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: false
+      agentScopedHasFunds: false,
+      agentScopedHasFundsAuthoritative: true
     }
     await nextTick()
 
@@ -208,13 +265,15 @@ describe('useAgentDockMount', () => {
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: true
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
     }
     await nextTick()
     subscription.value = {
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: false
+      agentScopedHasFunds: false,
+      agentScopedHasFundsAuthoritative: true
     }
     await nextTick()
 
@@ -298,7 +357,8 @@ describe('useAgentDockMount', () => {
     const subscription = ref({
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: true
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
     })
     let finishRefresh: ((adopted: boolean) => void) | undefined
     let completedRefreshes = 0
@@ -361,7 +421,8 @@ describe('useAgentDockMount', () => {
     const subscription = ref({
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: true
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
     })
     let finishRefresh: ((adopted: boolean) => void) | undefined
     const fetchStatusFresh = vi.fn(
@@ -404,7 +465,8 @@ describe('useAgentDockMount', () => {
     const subscription = ref({
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: true
+      agentScopedHasFunds: true,
+      agentScopedHasFundsAuthoritative: true
     })
     let finishRefresh: ((adopted: boolean) => void) | undefined
     const fetchStatusFresh = vi.fn(
@@ -449,7 +511,8 @@ describe('useAgentDockMount', () => {
     const subscription = ref({
       hasFunds: true,
       agentHasFunds: true,
-      agentScopedHasFunds: false
+      agentScopedHasFunds: false,
+      agentScopedHasFundsAuthoritative: true
     })
     let completedRefreshes = 0
     const fetchStatusFresh = vi.fn(async () => {
