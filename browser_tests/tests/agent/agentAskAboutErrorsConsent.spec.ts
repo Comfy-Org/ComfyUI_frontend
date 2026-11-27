@@ -1,7 +1,11 @@
+import assert from 'node:assert/strict'
+
+import type { ElementHandle } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { sentTurn } from '@e2e/tests/agent/agentPanelMocks'
@@ -58,6 +62,37 @@ test.describe('Ask agent about errors', { tag: ['@cloud', '@ui'] }, () => {
       await expect(chip).toBeVisible()
       await expect(agentPanel.composer).toBeFocused()
       await expectElementScreenshot(chip, 'ask-agent-error-reference-chip.png')
+    })
+
+    await test.step('Repeat clicks on the persistent errors-footer control reuse the chip slot', async () => {
+      const composerText = () => agentPanel.composer.innerText()
+      const attachedChip = async () => {
+        const handle = await chip.elementHandle()
+        assert(handle)
+        return handle
+      }
+      const reattached = async (previous: ElementHandle) => {
+        await expect
+          .poll(() => previous.evaluate((element) => !element.isConnected))
+          .toBe(true)
+        await previous.dispose()
+      }
+
+      await page.keyboard.type(' more context')
+      await openErrorsTab(comfyPage)
+      const footerAskAgent = page.getByTestId('errors-footer-ask-agent')
+
+      const beforeFirstClick = await attachedChip()
+      await footerAskAgent.click()
+      await reattached(beforeFirstClick)
+      await expect(chip).toHaveCount(1)
+      const textAfterFirstClick = await composerText()
+
+      const beforeSecondClick = await attachedChip()
+      await footerAskAgent.click()
+      await reattached(beforeSecondClick)
+      await expect(chip).toHaveCount(1)
+      expect(await composerText()).toBe(textAfterFirstClick)
     })
 
     await test.step('Sending carries the error identity in a Ref line', async () => {

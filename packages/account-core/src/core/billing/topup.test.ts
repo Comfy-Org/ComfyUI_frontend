@@ -102,6 +102,7 @@ const CAPABILITIES = {
   can_manage_partner_node_access: false,
   can_view_pending_invites: false,
   can_view_team_usage: false,
+  can_view_workspace_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
   can_edit_workspace: false,
@@ -1035,6 +1036,35 @@ describe('quoteTopup', () => {
       }
     })
   })
+
+  it.for([
+    {
+      name: 'a balance that runs reopen at',
+      fields: { balance_after_credits: 2325, runs_paused_after: false },
+      balanceAfter: { credits: 2325, runsPaused: false }
+    },
+    {
+      name: 'a balance that keeps runs paused',
+      fields: { balance_after_credits: -840, runs_paused_after: true },
+      balanceAfter: { credits: -840, runsPaused: true }
+    }
+  ])(
+    'carries $name after the top-up as the server quotes it',
+    async ({ fields, balanceAfter }) => {
+      const { command, answer } = harness()
+      answer('POST', TOPUP_QUOTE_ROUTE, httpOk({ ...QUOTE, ...fields }))
+
+      await expect(command.quoteTopup({ amountCents: 2500 })).resolves.toEqual({
+        status: 'ok',
+        value: {
+          amountCents: 2500,
+          credits: 5275,
+          expiresAt: EXPIRES_AT,
+          balanceAfter
+        }
+      })
+    }
+  )
 
   it('reports a quote outside the generated contract as MALFORMED_RESPONSE', async () => {
     const { command, answer } = harness()

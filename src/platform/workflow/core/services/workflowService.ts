@@ -3,6 +3,7 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
+import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -69,6 +70,7 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import type { WorkflowOpening } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   appendJsonExt,
@@ -274,6 +276,24 @@ function queueWorkflowLoad<T>(
 
 const unreadableWorkflowToastIds = new Map<string, ToastId>()
 const unreadableWorkflows = new WeakSet<ComfyWorkflow>()
+const workflowOpenings = new WeakMap<ComfyWorkflow, WorkflowOpening>()
+
+function rememberOpening(
+  workflow: ComfyWorkflow,
+  {
+    opening,
+    defaultOpening
+  }: {
+    opening?: WorkflowOpening
+    defaultOpening?: WorkflowOpening
+  } = {}
+): WorkflowOpening {
+  const raw = toRaw(workflow)
+  const resolved = opening ?? workflowOpenings.get(raw) ?? defaultOpening
+  if (!resolved) return 'brought_in'
+  workflowOpenings.set(raw, resolved)
+  return resolved
+}
 
 /** Whether opening this workflow failed because its stored file is unreadable. */
 export function isUnreadableWorkflow(workflow: ComfyWorkflow): boolean {
@@ -296,12 +316,6 @@ export const useWorkflowService = () => {
   const workflowThumbnail = useWorkflowThumbnail()
   const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStoreV2()
-
-  const showFailedToSaveDraftToast = () => {
-    toast.error(t('g.error'), {
-      description: t('toastMessages.failedToSaveDraft')
-    })
-  }
 
   const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
     if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
@@ -334,11 +348,11 @@ export const useWorkflowService = () => {
       )
 
       if (!saved) {
-        showFailedToSaveDraftToast()
+        showDraftSaveFailedToast()
       }
     } catch (err) {
       console.error('Failed to persist active workflow draft', err)
-      showFailedToSaveDraftToast()
+      showDraftSaveFailedToast()
     }
   }
 
@@ -610,8 +624,11 @@ export const useWorkflowService = () => {
   /**
    * Load the default workflow
    */
-  const loadDefaultWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(getDefaultWorkflow()))
+  const loadDefaultWorkflow = async (options: { initiator?: 'user' } = {}) => {
+    return queueWorkflowLoad(() =>
+      useApp().loadGraphData(getDefaultWorkflow(), true, true, null, options)
+    )
+  }
 
   /**
    * Load a blank workflow
@@ -806,9 +823,14 @@ export const useWorkflowService = () => {
   const completeActivation = (
     workflow: ComfyWorkflow,
     initiator: 'user' | undefined,
-    silent: boolean
+    silent: boolean,
+    opening: WorkflowOpening | undefined
   ) => {
-    showPendingWarnings(undefined, { silent })
+    showPendingWarnings(undefined, {
+      silent,
+      opening,
+      defaultOpening: 'reopened'
+    })
     if (initiator === 'user') workflowStore.reportUserActivation(workflow)
   }
 
@@ -824,6 +846,7 @@ export const useWorkflowService = () => {
       isCurrent?: () => boolean
       initiator?: 'user'
       keepSavedBaseline?: boolean
+      opening?: WorkflowOpening
       /** Receives the reason when the open resolves false. */
       failure?: { reason?: OpenWorkflowFailure }
     } = {}
@@ -870,7 +893,7 @@ export const useWorkflowService = () => {
             navigationIntentId
           ))
         ) {
-          completeActivation(workflow, options.initiator, true)
+          completeActivation(workflow, options.initiator, true, options.opening)
           return true
         }
 
@@ -908,7 +931,12 @@ export const useWorkflowService = () => {
           return fail('load_failed')
         }
         dismissUnreadableWorkflowToast(workflow)
-        completeActivation(workflow, options.initiator, reusesScans)
+        completeActivation(
+          workflow,
+          options.initiator,
+          reusesScans,
+          options.opening
+        )
         return true
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
@@ -1462,7 +1490,10 @@ export const useWorkflowService = () => {
   /**
    * Takes an existing workflow and duplicates it with a new name
    */
-  const duplicateWorkflow = async (workflow: ComfyWorkflow) => {
+  const duplicateWorkflow = async (
+    workflow: ComfyWorkflow,
+    options: { initiator?: 'user' } = {}
+  ) => {
     if (!workflow.isLoaded) await workflow.load()
     const state = JSON.parse(JSON.stringify(workflow.activeState))
     // Ensure duplicates are always treated as distinct workflows.
@@ -1476,7 +1507,7 @@ export const useWorkflowService = () => {
     )
 
     await queueWorkflowLoad(() =>
-      useApp().loadGraphData(state, true, true, duplicate)
+      useApp().loadGraphData(state, true, true, duplicate, options)
     )
   }
 
@@ -1486,10 +1517,15 @@ export const useWorkflowService = () => {
    */
   function showPendingWarnings(
     workflow?: ComfyWorkflow | null,
-    options?: { silent?: boolean }
+    options?: {
+      silent?: boolean
+      opening?: WorkflowOpening
+      defaultOpening?: WorkflowOpening
+    }
   ) {
     const wf = workflow ?? workflowStore.activeWorkflow
     if (!wf) return
+    const opening = rememberOpening(wf, options)
 
     const { missingNodeTypes, missingModelCandidates, missingMediaCandidates } =
       wf.pendingWarnings ?? {}
@@ -1502,7 +1538,7 @@ export const useWorkflowService = () => {
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {
-      showMissingNodesNotice(missingNodeTypes ?? [])
+      showMissingNodesNotice(missingNodeTypes ?? [], opening)
     }
     if (missingModelCandidates?.length) {
       useMissingModelStore().setMissingModels(missingModelCandidates)

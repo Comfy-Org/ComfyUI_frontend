@@ -17,6 +17,7 @@ import type {
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { WorkflowsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   agentThreadSummary,
@@ -65,7 +66,11 @@ class TabChatTransitions {
   readonly workflows = WORKFLOWS
   readonly threads = THREADS
   readonly skillName = SKILL_NAME
-  readonly posted: { threadId: string; body: AgentPostMessageRequest }[] = []
+  readonly posted: {
+    requestedThreadId: string
+    threadId: string
+    body: AgentPostMessageRequest
+  }[] = []
   readonly unexpectedMutations: string[] = []
   private agentSocket: WebSocketRoute | undefined
   private held:
@@ -78,17 +83,34 @@ class TabChatTransitions {
         settled: ReturnType<typeof deferred>
       }
     | undefined
-  private readonly transcripts: Record<string, AgentMessage[]> =
-    Object.fromEntries(
-      WORKFLOWS.map(({ name, id }, index) => [
-        THREADS[index],
-        agentUserTranscript(THREADS[index], id, `${name} existing request`)
-      ])
-    )
+  private readonly transcripts: Record<string, AgentMessage[]>
+  private readonly threadsList: ReturnType<typeof agentThreadSummary>[]
+  private readonly workflowsList: typeof WORKFLOWS
+  private createdThreads = 0
 
-  constructor(private readonly page: Page) {
+  constructor(
+    private readonly page: Page,
+    private readonly blankMode = false
+  ) {
     this.panel = new AgentPanel(page)
     this.topbar = new Topbar(page)
+    this.workflowsList = WORKFLOWS
+    this.threadsList = blankMode
+      ? []
+      : WORKFLOWS.map(({ name, id }, index) =>
+          agentThreadSummary(THREADS[index], `${name} chat`, {
+            workflow_id: id,
+            preview: `${name} existing request`
+          })
+        )
+    this.transcripts = blankMode
+      ? {}
+      : Object.fromEntries(
+          WORKFLOWS.map(({ name, id }, index) => [
+            THREADS[index],
+            agentUserTranscript(THREADS[index], id, `${name} existing request`)
+          ])
+        )
   }
 
   async install(): Promise<void> {
@@ -120,7 +142,7 @@ class TabChatTransitions {
 
   async routeChats(): Promise<void> {
     const chats = new AgentWorkflowChatsMock({
-      workflows: WORKFLOWS.map((workflow) => ({
+      workflows: this.workflowsList.map((workflow) => ({
         ...workflow,
         content: {
           last_node_id: 0,
@@ -133,12 +155,7 @@ class TabChatTransitions {
           version: 0.4
         }
       })),
-      threads: WORKFLOWS.map(({ name, id }, index) =>
-        agentThreadSummary(THREADS[index], `${name} chat`, {
-          workflow_id: id,
-          preview: `${name} existing request`
-        })
-      ),
+      threads: this.threadsList,
       transcripts: this.transcripts
     })
     await chats.route(this.page)
@@ -168,19 +185,58 @@ class TabChatTransitions {
     await this.readMessages(route, threadId)
   }
 
-  private async acceptMessage(route: Route, threadId: string): Promise<void> {
+  private allocateNewThreadId(): string {
+    if (this.blankMode) {
+      const seeded = THREADS[this.createdThreads++]
+      if (seeded) return seeded
+    }
+    return `00000000-0000-4000-8000-${String(++this.createdThreads).padStart(12, '0')}`
+  }
+
+  private async acceptMessage(
+    route: Route,
+    requestedThreadId: string
+  ): Promise<void> {
     const body = zAgentPostMessageRequest.parse(route.request().postDataJSON())
-    this.posted.push({ threadId, body })
+    const threadId =
+      requestedThreadId === 'new'
+        ? this.allocateNewThreadId()
+        : requestedThreadId
+    this.posted.push({ requestedThreadId, threadId, body })
     const messageId = `${threadId}-accepted-${this.posted.length}`
+    const turnId = `server-turn-${this.posted.length}`
+    const existing = this.transcripts[threadId] ?? []
+    if (requestedThreadId === 'new')
+      this.threadsList.push(
+        agentThreadSummary(threadId, body.content, {
+          workflow_id: body.workflow_id ?? '',
+          preview: body.content
+        })
+      )
     this.transcripts[threadId] = [
-      ...this.transcripts[threadId],
+      ...existing,
+      {
+        id: `user-${messageId}`,
+        thread_id: threadId,
+        turn_id: turnId,
+        role: 'user',
+        status: 'complete',
+        seq: existing.length + 1,
+        workflow_id: body.workflow_id,
+        content: {
+          text: body.content,
+          ...(body.client_message_id
+            ? { client_message_id: body.client_message_id }
+            : {})
+        }
+      },
       {
         id: messageId,
         thread_id: threadId,
-        turn_id: messageId,
+        turn_id: turnId,
         role: 'assistant',
         status: 'streaming',
-        seq: this.transcripts[threadId].length + 1,
+        seq: existing.length + 2,
         workflow_id: body.workflow_id,
         content: { text: '' }
       }
@@ -242,7 +298,7 @@ class TabChatTransitions {
 
   updated(index: number) {
     return this.tab(index).getByRole('img', {
-      name: enMessages.g.agentModified,
+      name: enMessages.g.agentFinishedUnseen,
       exact: true
     })
   }
@@ -268,6 +324,32 @@ class TabChatTransitions {
     }
   }
 
+  sendDelta(index: number, delta: string): void {
+    const threadId = THREADS[index]
+    const assistant = this.transcripts[threadId].findLast(
+      (message) => message.role === 'assistant'
+    )
+    if (!assistant || !this.agentSocket)
+      throw new Error('No accepted turn and connected fixture agent socket')
+    const currentText =
+      typeof assistant.content?.text === 'string' ? assistant.content.text : ''
+    assistant.content = { ...assistant.content, text: `${currentText}${delta}` }
+    const event: AgentWsEvent = {
+      type: 'agent_message_delta',
+      data: { message_id: assistant.id, thread_id: threadId, delta }
+    }
+    this.agentSocket.send(JSON.stringify(event))
+  }
+
+  setAssistantReply(index: number, text: string): void {
+    const threadId = THREADS[index]
+    const assistant = this.transcripts[threadId].findLast(
+      (message) => message.role === 'assistant'
+    )
+    if (!assistant) throw new Error('No assistant row in fixture transcript')
+    assistant.content = { ...assistant.content, text }
+  }
+
   complete(index: number): void {
     const threadId = THREADS[index]
     const assistant = this.transcripts[threadId].findLast(
@@ -290,35 +372,75 @@ class TabChatTransitions {
   }
 }
 
-export const tabChatTransitionsTest = agentTest.extend<{
-  tabChats: TabChatTransitions
-}>({
-  tabChats: async ({ page, agentFlagEnabled }, use) => {
-    const fixture = new TabChatTransitions(page)
-    await fixture.install()
-    try {
-      await bootAgentApp(page, agentFlagEnabled, {
-        features: {
-          posthog_config: {
-            advanced_disable_flags: true,
-            bootstrap: {
-              featureFlags: {
-                'agent-in-app-experience': true,
-                'agent-skill-packs': true
-              }
+async function withTabChatTransitions(
+  page: Page,
+  agentFlagEnabled: boolean,
+  blankMode: boolean,
+  setup: (fixture: TabChatTransitions) => Promise<void>,
+  use: (fixture: TabChatTransitions) => Promise<void>
+): Promise<void> {
+  const fixture = new TabChatTransitions(page, blankMode)
+  await fixture.install()
+  try {
+    await bootAgentApp(page, agentFlagEnabled, {
+      features: {
+        posthog_config: {
+          advanced_disable_flags: true,
+          bootstrap: {
+            featureFlags: {
+              'agent-in-app-experience': true,
+              'agent-skill-packs': true
             }
           }
-        },
-        beforeNavigate: () => fixture.routeChats()
-      })
-      await fixture.panel.open()
-      await fixture.openChat(1)
-      await fixture.openChat(2)
-      await fixture.openChat(0)
-      await use(fixture)
-      expect(fixture.unexpectedMutations).toEqual([])
-    } finally {
-      await fixture.dispose()
-    }
+        }
+      },
+      beforeNavigate: () => fixture.routeChats()
+    })
+    await fixture.panel.open()
+    await setup(fixture)
+    await use(fixture)
+    expect(fixture.unexpectedMutations).toEqual([])
+  } finally {
+    await fixture.dispose()
+  }
+}
+
+export const tabChatTransitionsTest = agentTest.extend<{
+  tabChats: TabChatTransitions
+  blankTabChats: TabChatTransitions
+}>({
+  tabChats: async ({ page, agentFlagEnabled }, use) => {
+    await withTabChatTransitions(
+      page,
+      agentFlagEnabled,
+      false,
+      async (fixture) => {
+        await fixture.openChat(1)
+        await fixture.openChat(2)
+        await fixture.openChat(0)
+      },
+      use
+    )
+  },
+  blankTabChats: async ({ page, agentFlagEnabled }, use) => {
+    await withTabChatTransitions(
+      page,
+      agentFlagEnabled,
+      true,
+      async (fixture) => {
+        const workflowsTab = new WorkflowsSidebarTab(page)
+        await workflowsTab.open()
+        await workflowsTab.getPersistedItem(WORKFLOWS[0].name).click()
+        await expect(fixture.tab(0)).toBeVisible()
+        await workflowsTab.getPersistedItem(WORKFLOWS[1].name).click()
+        await expect(fixture.tab(1)).toBeVisible()
+        await workflowsTab.close()
+        await fixture.tab(0).click()
+        await expect(
+          fixture.tab(0).and(fixture.topbar.getActiveTab())
+        ).toBeVisible()
+      },
+      use
+    )
   }
 })

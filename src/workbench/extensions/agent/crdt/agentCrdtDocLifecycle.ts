@@ -1,6 +1,7 @@
 import { once } from 'es-toolkit'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './crdtLog'
@@ -71,14 +72,6 @@ interface PersistedDocIdRecord {
   expiresAt: number
 }
 
-function safeSessionStorage(): Storage | null {
-  try {
-    return window.sessionStorage
-  } catch {
-    return null
-  }
-}
-
 function persistDocId(docId: string): void {
   try {
     const record: PersistedDocIdRecord = {
@@ -86,7 +79,7 @@ function persistDocId(docId: string): void {
       nonce: pageSessionNonce(),
       expiresAt: Date.now() + DOC_ID_TTL_MS
     }
-    safeSessionStorage()?.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
+    safeSessionStorage.setItem(DOC_ID_SESSION_KEY, JSON.stringify(record))
   } catch {
     return
   }
@@ -94,7 +87,7 @@ function persistDocId(docId: string): void {
 
 function readPersistedDocId(): string | null {
   try {
-    const raw = safeSessionStorage()?.getItem(DOC_ID_SESSION_KEY)
+    const raw = safeSessionStorage.getItem(DOC_ID_SESSION_KEY)
     if (!raw) return null
     const record = JSON.parse(raw) as Partial<PersistedDocIdRecord>
     if (
@@ -114,11 +107,7 @@ function readPersistedDocId(): string | null {
 }
 
 function clearPersistedDocId(): void {
-  try {
-    safeSessionStorage()?.removeItem(DOC_ID_SESSION_KEY)
-  } catch {
-    // Best-effort.
-  }
+  safeSessionStorage.removeItem(DOC_ID_SESSION_KEY)
 }
 
 export class AgentCrdtDocLifecycle {

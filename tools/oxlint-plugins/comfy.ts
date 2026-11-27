@@ -13,6 +13,7 @@ import {
   noUselessPathSegments
 } from './importPaths.ts'
 import { noAppSingletonImport } from './noAppSingletonImport.ts'
+import { noDirectWebStorage } from './noDirectWebStorage.ts'
 import { noNewErrorThrow } from './noNewErrorThrow.ts'
 import { noReexports } from './noReexports.ts'
 import { noThrowInExpectPoll } from './playwrightPoll.ts'
@@ -54,6 +55,7 @@ export default {
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,
+    'no-direct-web-storage': noDirectWebStorage,
     'no-direct-transform-write': noDirectTransformWrite,
     'no-dom-in-computed': noDomInComputed,
     'no-js-extension-imports': noJsExtensionImports,

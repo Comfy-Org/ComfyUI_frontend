@@ -2,8 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { z } from 'zod'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { isLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
+import { isIdentityTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 const zSkillDraftFields = z.object({
@@ -40,9 +41,9 @@ function emptyDrafts(): SkillDrafts {
 }
 
 function readDrafts(scope: string): SkillDrafts {
+  const stored = safeLocalStorage.getItem(StorageKeys.agentSkillDrafts(scope))
+  if (!stored) return emptyDrafts()
   try {
-    const stored = localStorage.getItem(StorageKeys.agentSkillDrafts(scope))
-    if (!stored) return emptyDrafts()
     const parsed = zSkillDrafts.safeParse(JSON.parse(stored))
     return parsed.success ? parsed.data : emptyDrafts()
   } catch {
@@ -52,13 +53,11 @@ function readDrafts(scope: string): SkillDrafts {
 
 function writeDrafts(scope: string, drafts: SkillDrafts): void {
   const key = StorageKeys.agentSkillDrafts(scope)
-  try {
-    if (!drafts.newSkill && Object.keys(drafts.edits).length === 0)
-      localStorage.removeItem(key)
-    else localStorage.setItem(key, JSON.stringify(drafts))
-  } catch {
-    console.warn('Failed to persist the skill draft')
-  }
+  const saved =
+    !drafts.newSkill && Object.keys(drafts.edits).length === 0
+      ? safeLocalStorage.remove(key).ok
+      : safeLocalStorage.setItem(key, JSON.stringify(drafts)) === 'ok'
+  if (!saved) console.warn('Failed to persist the skill draft')
 }
 
 export const useSkillDraftStore = defineStore('skillDrafts', () => {
@@ -84,7 +83,7 @@ export const useSkillDraftStore = defineStore('skillDrafts', () => {
     target: SkillDraftTarget,
     fields: SkillDraftFields | null
   ): void {
-    if (fields && isLogoutTransition()) return
+    if (fields && isIdentityTransition()) return
     const next = readDrafts(scope)
     if (target.kind === 'new') next.newSkill = fields
     else if (fields) next.edits[editKey(target.name)] = fields

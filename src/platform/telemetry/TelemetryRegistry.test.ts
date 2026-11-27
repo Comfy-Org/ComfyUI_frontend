@@ -387,7 +387,8 @@ describe('TelemetryRegistry', () => {
       action: 'next'
     } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
-      source: 'mention_picker'
+      source: 'mention_picker',
+      node_count: 1
     } satisfies AgentNodeTaggedMetadata
     const skillSelectedMetadata = {
       source: 'slash_picker'

@@ -112,9 +112,10 @@ function sliderRules() {
     sliderRootClass,
     'min-h-6 cursor-pointer appearance-none bg-transparent focus-visible:outline-none'
   ).replaceAll('data-disabled:', 'disabled:')
-  const track = cn(sliderTrackClass, sliderHorizontalTrackClass).replaceAll(
-    'data-[orientation=horizontal]:',
-    ''
+  const track = cn(
+    sliderTrackClass,
+    sliderHorizontalTrackClass.replace('data-[orientation=horizontal]:', ''),
+    'w-full'
   )
   const thumb = sliderThumbClass.replace(
     /(?:^| )(?:focus-visible|disabled):\S+/g,

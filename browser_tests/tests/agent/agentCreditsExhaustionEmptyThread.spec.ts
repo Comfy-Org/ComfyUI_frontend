@@ -109,7 +109,7 @@ test.describe(
         expect(agentBilling.statusRequestCount).toBe(settledStatusRequests)
         await expect(
           agentPanel.root.getByRole('note', { name: 'Free use notice' })
-        ).toBeHidden()
+        ).toBeVisible()
         await expect(paywall).toHaveCount(0)
       })
     })

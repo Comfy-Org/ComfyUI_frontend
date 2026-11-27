@@ -21,6 +21,7 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 import type { ComfyExtension } from '@/types/comfy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
   CONSENT_DIALOG_KEY,
@@ -2249,9 +2250,7 @@ describe('AgentPanel extension flag gate', () => {
   it('treats unreadable storage as past the automatic launches', async () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })
-    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
-      throw new Error('Storage unavailable')
-    })
+    vi.spyOn(safeLocalStorage, 'backend', 'get').mockReturnValue('memory')
 
     await loadEntryAndSetup()
     await flush()
@@ -2262,6 +2261,30 @@ describe('AgentPanel extension flag gate', () => {
       stage: 'startup',
       retry_armed: false
     })
+  })
+
+  it('keeps a saved visit count that later cannot be read past the automatic launches', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+    const nativeGetItem = Storage.prototype.getItem
+    vi.spyOn(localStorage, 'getItem').mockImplementation((key) => {
+      if (key === ACTIVATION_VISITS_STORAGE_KEY)
+        throw new DOMException('blocked', 'SecurityError')
+      return nativeGetItem.call(localStorage, key)
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+    vi.mocked(localStorage.getItem).mockRestore()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+    expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
   })
 
   it('stays silent when the saved consent cannot be read', async () => {

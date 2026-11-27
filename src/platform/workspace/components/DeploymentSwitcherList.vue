@@ -82,8 +82,9 @@
   </p>
   <MenuSeparator v-else />
   <DeploymentSwitcherDefaultMenu
-    v-if="canSetDefault && (deployments.length > 0 || defaultGone)"
+    v-if="workspaceDefaultOffered && (deployments.length > 0 || defaultGone)"
     :disabled="isSwitching"
+    :clear-only="!onTeamPlan"
     @set-default="emit('setDefault', $event)"
   />
   <DeploymentSwitcherBuildAction
@@ -119,6 +120,7 @@ import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymen
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
 import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
@@ -133,8 +135,9 @@ const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
   'open'
 ])
 
-const { switchingTo } = defineProps<{
+const { switchingTo, onTeamPlan } = defineProps<{
   switchingTo: string | null
+  onTeamPlan: boolean
 }>()
 
 const emit = defineEmits<{
@@ -198,6 +201,13 @@ function updateLabel(row: DeploymentRow): string | null {
   )
 }
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
+const workspaceDefaultOffered = computed(() =>
+  pendingServerFact(
+    'BE-20674',
+    canSetDefault.value &&
+      (onTeamPlan || defaultDeploymentId.value !== null || defaultGone.value)
+  )
+)
 
 const notice = computed(() => {
   if (goneDeployment.value === 'pick') return t('deploymentSwitcher.pickGone')
@@ -212,7 +222,7 @@ const notice = computed(() => {
     )
   }
   if (goneDeployment.value !== 'default') return null
-  return canSetDefault.value
+  return workspaceDefaultOffered.value && onTeamPlan
     ? t('deploymentSwitcher.defaultGoneOwner')
     : t('deploymentSwitcher.defaultGone')
 })
