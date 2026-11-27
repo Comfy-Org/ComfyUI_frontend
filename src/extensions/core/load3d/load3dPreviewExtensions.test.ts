@@ -1,4 +1,4 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -45,15 +45,13 @@ vi.mock(import('@/extensions/core/load3d/composables/useLoad3d'), () => ({
       waitForLoad3d: waitForLoad3dMock,
       onLoad3dReady: onLoad3dReadyMock
     }),
-  nodeToLoad3dMap: fromAny(nodeToLoad3dMapMock)
+  nodeToLoad3dMap: nodeToLoad3dMapMock
 }))
 
 vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
-  default: fromAny(
-    class {
-      configureForSaveMesh = configureForSaveMeshMock
-    }
-  )
+  default: class {
+    configureForSaveMesh = configureForSaveMeshMock
+  }
 }))
 
 vi.mock(import('@/scripts/app'))
