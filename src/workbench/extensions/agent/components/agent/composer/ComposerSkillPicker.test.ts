@@ -10,7 +10,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '@/i18n'
 import {
   listBuiltinSkills,
-  listSkillPacks
+  listSkillPacks,
+  SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
 import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -281,5 +282,64 @@ describe('Composer slash skill picker groups', () => {
     expect(within(menu).queryByRole('group')).toBeNull()
     expect(within(menu).queryByRole('separator')).toBeNull()
     expect(within(menu).getAllByRole('menuitem')).toHaveLength(2)
+  })
+
+  it('shows Comfy skills failure and retry alongside matching user skills and recovers on retry', async () => {
+    vi.mocked(listBuiltinSkills)
+      .mockResolvedValueOnce({
+        status: 'error',
+        error: new SkillPacksApiError('Server error', 500)
+      })
+      .mockResolvedValueOnce({
+        status: 'ok',
+        skills: [builtin('batch-generation', COMFY_BATCH_DESC)]
+      })
+    const { builtinStore } = mountComposer({ comfySkills: [] })
+    builtinStore.hasLoaded = false
+    builtinStore.catalogConfirmed = false
+    builtinStore.catalogRequested = false
+
+    await typeInComposer('/')
+
+    const menu = screen.getByRole('menu', { name: 'Skills' })
+    expect(
+      within(menu).getByRole('menuitem', { name: 'portrait' })
+    ).toBeVisible()
+    expect(await within(menu).findByRole('status')).toHaveTextContent(
+      /Comfy skills/i
+    )
+
+    await userEvent.click(within(menu).getByRole('button', { name: 'Retry' }))
+
+    expect(
+      await within(menu).findByRole('menuitem', { name: 'batch-generation' })
+    ).toBeVisible()
+    expect(within(menu).queryByRole('button', { name: 'Retry' })).toBeNull()
+  })
+
+  it('shows user skills failure and retry alongside matching Comfy skills and recovers on retry', async () => {
+    vi.mocked(listSkillPacks)
+      .mockRejectedValueOnce(new SkillPacksApiError('Server error', 500))
+      .mockResolvedValueOnce([pack('portrait', 'Compose a portrait')])
+    const { skills } = mountComposer({ userPacks: [] })
+    skills.hasLoaded = false
+    skills.catalogConfirmed = false
+
+    await typeInComposer('/')
+
+    const menu = screen.getByRole('menu', { name: 'Skills' })
+    expect(
+      within(menu).getByRole('menuitem', { name: 'batch-generation' })
+    ).toBeVisible()
+    expect(await within(menu).findByRole('status')).toHaveTextContent(
+      /Could not load skills/i
+    )
+
+    await userEvent.click(within(menu).getByRole('button', { name: 'Retry' }))
+
+    expect(
+      await within(menu).findByRole('menuitem', { name: 'portrait' })
+    ).toBeVisible()
+    expect(within(menu).queryByRole('button', { name: 'Retry' })).toBeNull()
   })
 })

@@ -430,12 +430,21 @@ const mentionMenuHeading = computed(() => {
   }
   return mentionSection.value === 'root' ? t('agent.reference') : undefined
 })
-const skillsRetryVisible = computed(
+const skillsMenuStatus = useSkillCatalogStatus()
+const userSkillFailureInMention = computed(
+  () => mentionSection.value === 'skills' && skillsMenuStatus.value === 'failed'
+)
+const comfySkillFailureInMention = computed(
   () =>
     mentionSection.value === 'skills' &&
-    (skills.loadFailed || builtinSkills.loadFailed)
+    comfySkillsMenuStatus.value === 'failed'
 )
-const skillsMenuStatus = useSkillCatalogStatus()
+const showEmptyMentionStatus = computed(
+  () =>
+    !mentionHasResults.value &&
+    !userSkillFailureInMention.value &&
+    !comfySkillFailureInMention.value
+)
 const emptyMentionLabel = computed(() => {
   if (mentionSection.value !== 'skills') {
     return t(
@@ -445,16 +454,9 @@ const emptyMentionLabel = computed(() => {
     )
   }
   if (skills.loading) return t('agent.skillsLoading')
-  if (skills.loadFailed) return t('agent.skillsLoadError')
   if (builtinSkills.loading) return t('agent.comfySkillsLoading')
-  if (builtinSkills.loadFailed) return t('agent.comfySkillsLoadError')
   return t('agent.noSkillsFound')
 })
-
-function retryMentionSkills(): void {
-  if (skills.loadFailed) void skills.ensurePacks()
-  if (builtinSkills.loadFailed) void builtinSkills.refreshSkills()
-}
 
 function openReferenceMenu(): void {
   const editor = editorRef.value
@@ -698,10 +700,20 @@ defineExpose({
           @description-dismiss="onDescriptionDismiss"
         />
         <MentionMenuStatus
-          v-if="!mentionHasResults"
+          v-if="showEmptyMentionStatus"
           :label="emptyMentionLabel"
-          :retryable="skillsRetryVisible"
-          @retry="retryMentionSkills"
+        />
+        <MentionMenuStatus
+          v-if="userSkillFailureInMention"
+          :label="t('agent.skillsLoadError')"
+          retryable
+          @retry="skills.ensurePacks()"
+        />
+        <MentionMenuStatus
+          v-if="comfySkillFailureInMention"
+          :label="t('agent.comfySkillsLoadError')"
+          retryable
+          @retry="builtinSkills.refreshSkills()"
         />
       </div>
 

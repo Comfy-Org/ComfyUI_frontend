@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import MenuGroup from '@comfyorg/design-system/menu/MenuGroup'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuLabel from '@comfyorg/design-system/menu/MenuLabel'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
@@ -64,8 +63,8 @@ watch(open, (isOpen) => {
         <i aria-hidden="true" class="icon-[lucide--chevron-left]" />
         <span>{{ t('g.back') }}</span>
       </MenuItem>
-      <component
-        :is="showComfyGroup ? MenuGroup : 'div'"
+      <div
+        :role="showComfyGroup ? 'group' : undefined"
         :aria-labelledby="showComfyGroup ? userSkillsLabelId : undefined"
         :class="showComfyGroup ? undefined : 'contents'"
       >
@@ -100,7 +99,7 @@ watch(open, (isOpen) => {
           <i aria-hidden="true" class="icon-[lucide--rotate-cw]" />
           <span>{{ t('g.retry') }}</span>
         </MenuItem>
-      </component>
+      </div>
       <template v-if="showComfyGroup">
         <MenuSeparator />
         <ComposerBuiltinSkillsGroup

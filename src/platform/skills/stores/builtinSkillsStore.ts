@@ -170,11 +170,15 @@ export const useBuiltinSkillsStore = defineStore('builtinSkills', () => {
     if (
       !skillPacks.enabled ||
       !routesAvailable.value ||
-      loading.value ||
       hasLoaded.value ||
       loadFailed.value
     )
       return
+    if (inFlight) {
+      await inFlight
+      return
+    }
+    if (loading.value) return
     await fetchSkills()
   }
 

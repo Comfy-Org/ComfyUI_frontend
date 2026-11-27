@@ -81,6 +81,31 @@ describe('builtinSkillsStore', () => {
     expect(store.loadFailed).toBe(false)
   })
 
+  it('waits for an active in-flight request when a second caller awaits ensureSkills', async () => {
+    const skillPacks = useSkillPacksStore()
+    skillPacks.flagsEnabled = true
+    const store = useBuiltinSkillsStore()
+    const pending = deferredCatalog()
+    vi.mocked(listBuiltinSkills).mockReturnValueOnce(pending.promise)
+
+    const first = store.ensureSkills()
+    let secondSettled = false
+    const second = store.ensureSkills().then(() => {
+      secondSettled = true
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(secondSettled).toBe(false)
+
+    pending.resolve({ status: 'ok', skills: [makeSkill()] })
+    await Promise.all([first, second])
+
+    expect(listBuiltinSkills).toHaveBeenCalledTimes(1)
+    expect(secondSettled).toBe(true)
+    expect(store.skills).toEqual([makeSkill()])
+    expect(store.catalogConfirmed).toBe(true)
+  })
+
   it('treats unavailable as absent without failing, reporting, or retrying on ensureSkills', async () => {
     const skillPacks = useSkillPacksStore()
     skillPacks.flagsEnabled = true

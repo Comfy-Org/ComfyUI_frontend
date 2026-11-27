@@ -418,4 +418,36 @@ describe('Composer skills submenu groups', () => {
     expect(screen.queryByRole('group')).toBeNull()
     expect(screen.getAllByRole('separator')).toHaveLength(1)
   })
+
+  it('keeps user skill menu item nodes and focus intact when the built-in catalog settles empty', async () => {
+    let resolveBuiltin: (result: {
+      status: 'ok'
+      skills: BuiltinSkill[]
+    }) => void = () => {}
+    vi.mocked(listBuiltinSkills).mockReturnValueOnce(
+      new Promise((settle) => {
+        resolveBuiltin = settle
+      })
+    )
+    const { builtinStore } = mountComposer({ comfySkills: [] })
+    builtinStore.hasLoaded = false
+    builtinStore.catalogConfirmed = false
+    builtinStore.catalogRequested = false
+
+    await openSkillsSubmenu()
+
+    const userGroup = await screen.findByRole('group', { name: 'Your skills' })
+    const userRowBefore = within(userGroup).getByRole('menuitem', {
+      name: 'portrait'
+    })
+    userRowBefore.focus()
+    expect(userRowBefore).toHaveFocus()
+
+    resolveBuiltin({ status: 'ok', skills: [] })
+
+    await waitFor(() => expect(screen.queryByRole('group')).toBeNull())
+    const userRowAfter = screen.getByRole('menuitem', { name: 'portrait' })
+    expect(userRowAfter).toBe(userRowBefore)
+    expect(userRowAfter).toHaveFocus()
+  })
 })
