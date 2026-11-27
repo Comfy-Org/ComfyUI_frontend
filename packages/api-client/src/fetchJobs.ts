@@ -8,7 +8,7 @@
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { reportError } from '@comfyorg/telemetry/reportError'
+import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
 import type { JobId } from './executionTypes'
 
 import type {
@@ -50,9 +50,15 @@ interface OffContractJob {
   issues: ContractIssue[]
 }
 
+interface OffContractJobSample {
+  jobId: string | undefined
+  issues: ContractIssue[]
+}
+
 class JobsApiError extends Error {}
 
 const REPORT_SAMPLE_SIZE = 5
+const MAX_REPORTED_JOB_KEYS = 1000
 const reportedOffContractJobKeys = new Set<string>()
 
 function jobIdOf(job: unknown): string | undefined {
@@ -60,24 +66,50 @@ function jobIdOf(job: unknown): string | undefined {
   return typeof job.id === 'string' ? job.id : undefined
 }
 
+function offContractJobKey({ job, issues }: OffContractJob): string {
+  const id = jobIdOf(job)
+  if (id !== undefined) return `id:${id}`
+  const signature = issues.map(
+    ({ code, path }) => `${code}@${path.map(String).join('.')}`
+  )
+  return `issues:${signature.join(',')}`
+}
+
+function toSample({ job, issues }: OffContractJob): OffContractJobSample {
+  return { jobId: jobIdOf(job), issues: issues.slice(0, REPORT_SAMPLE_SIZE) }
+}
+
 function reportOffContractJobs(offContract: OffContractJob[]): void {
-  const keys = offContract.map(({ job }) => jobIdOf(job) ?? JSON.stringify(job))
-  if (keys.every((key) => reportedOffContractJobKeys.has(key))) return
-  keys.forEach((key) => reportedOffContractJobKeys.add(key))
+  const unreported = offContract.filter(
+    (job) => !reportedOffContractJobKeys.has(offContractJobKey(job))
+  )
+  if (unreported.length === 0) return
+  const sampled = unreported.slice(0, REPORT_SAMPLE_SIZE)
+  if (reportedOffContractJobKeys.size >= MAX_REPORTED_JOB_KEYS) {
+    reportedOffContractJobKeys.clear()
+  }
+  sampled.forEach((job) =>
+    reportedOffContractJobKeys.add(offContractJobKey(job))
+  )
   reportError(new Error('[Jobs API] Jobs outside the contract'), {
     errorType: 'jobs_list_job_outside_contract',
     surface: 'platform',
     level: 'warning',
     context: {
       count: offContract.length,
-      samples: offContract
-        .slice(0, REPORT_SAMPLE_SIZE)
-        .map(({ job, issues }) => ({
-          jobId: jobIdOf(job),
-          issues: issues.slice(0, REPORT_SAMPLE_SIZE)
-        }))
+      unreportedCount: unreported.length,
+      samples: sampled.map(toSample)
     }
   })
+}
+
+function offContractRejection(offContract: OffContractJob[]): JobsApiError {
+  const error = new JobsApiError(
+    `${offContract.length} jobs outside the contract`,
+    { cause: offContract.slice(0, REPORT_SAMPLE_SIZE).map(toSample) }
+  )
+  markErrorReported(error)
+  return error
 }
 
 function parseJobsList(jobs: unknown[], strict: boolean): ListedJob[] {
@@ -101,9 +133,7 @@ function parseJobsList(jobs: unknown[], strict: boolean): ListedJob[] {
   )
   if (offContract.length > 0) {
     reportOffContractJobs(offContract)
-    if (strict) {
-      throw new JobsApiError(`${offContract.length} jobs outside the contract`)
-    }
+    if (strict) throw offContractRejection(offContract)
   }
   return parsed.flatMap(({ position, result }) =>
     result.success ? [{ job: result.data, position }] : []

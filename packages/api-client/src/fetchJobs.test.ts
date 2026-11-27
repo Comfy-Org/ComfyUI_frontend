@@ -1,5 +1,4 @@
-import { reportError } from '@comfyorg/telemetry/reportError'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   extractApiPrompt,
@@ -12,8 +11,11 @@ import {
 } from './fetchJobs'
 import type { RawJobListItem, zJobsListResponse } from './jobTypes'
 import type { z } from 'zod'
+import type * as ReportErrorModule from '@comfyorg/telemetry/reportError'
+import type * as FetchJobsModule from './fetchJobs'
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  markErrorReported: vi.fn(),
   reportError: vi.fn()
 }))
 
@@ -47,6 +49,21 @@ function createMockResponse(
       has_more: pagination.has_more ?? false
     }
   }
+}
+
+function fetchJobsList(jobs: unknown[]) {
+  return vi.fn().mockResolvedValue({
+    ok: true,
+    json: () =>
+      Promise.resolve({
+        ...createMockResponse([], jobs.length),
+        jobs
+      })
+  })
+}
+
+function offContractJob(id: string) {
+  return { ...createMockJob(id), status: 'archived' }
 }
 
 describe('fetchJobs', () => {
@@ -315,23 +332,8 @@ describe('fetchJobs', () => {
       { name: 'a null entry', job: null }
     ]
 
-    function fetchJobsList(jobs: unknown[]) {
-      return vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            ...createMockResponse([], jobs.length),
-            jobs
-          })
-      })
-    }
-
     function fetchWithJobBetweenTwoGoodOnes(job: unknown) {
       return fetchJobsList([createMockJob('job1'), job, createMockJob('job3')])
-    }
-
-    function offContractJob(id: string) {
-      return { ...createMockJob(id), status: 'archived' }
     }
 
     it.for(offContractJobs)(
@@ -363,67 +365,6 @@ describe('fetchJobs', () => {
         ['job1', 3],
         ['job3', 1]
       ])
-    })
-
-    it('reports the same off-contract jobs once across refreshes', async () => {
-      const jobs = [offContractJob('repeat-a'), offContractJob('repeat-b')]
-
-      await fetchHistory(fetchJobsList(jobs))
-      await fetchHistory(fetchJobsList(jobs))
-
-      expect(reportError).toHaveBeenCalledOnce()
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          errorType: 'jobs_list_job_outside_contract',
-          context: expect.objectContaining({
-            count: 2,
-            samples: [
-              expect.objectContaining({ jobId: 'repeat-a' }),
-              expect.objectContaining({ jobId: 'repeat-b' })
-            ]
-          })
-        })
-      )
-    })
-
-    it('reports again when a new job falls outside the contract', async () => {
-      await fetchHistory(fetchJobsList([offContractJob('known')]))
-      await fetchHistory(
-        fetchJobsList([offContractJob('known'), offContractJob('new')])
-      )
-
-      expect(reportError).toHaveBeenCalledTimes(2)
-    })
-
-    it('reports off-contract jobs before rejecting with throwOnError', async () => {
-      await expect(
-        fetchQueue(fetchJobsList([offContractJob('strict-queue')]), {
-          throwOnError: true
-        })
-      ).rejects.toThrow()
-
-      expect(reportError).toHaveBeenCalledOnce()
-    })
-
-    it('caps the reported samples and keeps the full count', async () => {
-      const jobs = Array.from({ length: 7 }, (_, index) =>
-        offContractJob(`capped-${index}`)
-      )
-
-      await fetchHistory(fetchJobsList(jobs))
-
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          context: expect.objectContaining({
-            count: 7,
-            samples: expect.toSatisfy(
-              (samples: unknown[]) => samples.length === 5
-            )
-          })
-        })
-      )
     })
 
     it('returns server pagination metadata for history pages', async () => {
@@ -1146,5 +1087,137 @@ describe('fetchJobs', () => {
         expect.stringContaining('has_more with an empty page')
       )
     })
+  })
+})
+
+describe('off-contract job reporting', () => {
+  let fetchHistory: typeof FetchJobsModule.fetchHistory
+  let fetchQueue: typeof FetchJobsModule.fetchQueue
+  let reportError: typeof ReportErrorModule.reportError
+  let markErrorReported: typeof ReportErrorModule.markErrorReported
+
+  beforeEach(async () => {
+    vi.resetModules()
+    ;({ fetchHistory, fetchQueue } = await import('./fetchJobs'))
+    ;({ reportError, markErrorReported } =
+      await import('@comfyorg/telemetry/reportError'))
+  })
+
+  it('reports the same off-contract jobs once across refreshes', async () => {
+    const jobs = [offContractJob('repeat-a'), offContractJob('repeat-b')]
+
+    await fetchHistory(fetchJobsList(jobs))
+    await fetchHistory(fetchJobsList(jobs))
+
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'jobs_list_job_outside_contract',
+        context: expect.objectContaining({
+          count: 2,
+          samples: [
+            expect.objectContaining({ jobId: 'repeat-a' }),
+            expect.objectContaining({ jobId: 'repeat-b' })
+          ]
+        })
+      })
+    )
+  })
+
+  it('reports again when a new job falls outside the contract', async () => {
+    await fetchHistory(fetchJobsList([offContractJob('known')]))
+    await fetchHistory(
+      fetchJobsList([offContractJob('known'), offContractJob('new')])
+    )
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('reports off-contract jobs before rejecting with throwOnError', async () => {
+    await expect(
+      fetchQueue(fetchJobsList([offContractJob('strict-queue')]), {
+        throwOnError: true
+      })
+    ).rejects.toThrow()
+
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('rejects with the off-contract jobs as the cause, already reported', async () => {
+    const rejection = fetchQueue(
+      fetchJobsList([offContractJob('strict-cause')]),
+      { throwOnError: true }
+    )
+
+    await expect(rejection).rejects.toMatchObject({
+      cause: [expect.objectContaining({ jobId: 'strict-cause' })]
+    })
+    expect(markErrorReported).toHaveBeenCalledWith(
+      await rejection.catch((error: unknown) => error)
+    )
+  })
+
+  it('reports a job without an id once while its other fields change', async () => {
+    const pendingWithoutId = (executionStart: number) => ({
+      status: 'pending',
+      create_time: 1,
+      execution_start_time: executionStart
+    })
+
+    await fetchQueue(fetchJobsList([pendingWithoutId(1)]))
+    await fetchQueue(fetchJobsList([pendingWithoutId(2)]))
+
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('does not mistake a null entry for a job whose id is "null"', async () => {
+    await fetchHistory(fetchJobsList([null]))
+    await fetchHistory(fetchJobsList([offContractJob('null')]))
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('samples only the jobs not reported before', async () => {
+    const known = [offContractJob('sampled-known')]
+
+    await fetchHistory(fetchJobsList(known))
+    await fetchHistory(fetchJobsList([...known, offContractJob('sampled-new')]))
+
+    expect(reportError).toHaveBeenLastCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({
+          count: 2,
+          unreportedCount: 1,
+          samples: [expect.objectContaining({ jobId: 'sampled-new' })]
+        })
+      })
+    )
+  })
+
+  it('caps the reported samples and reports the rest on the next refresh', async () => {
+    const jobs = Array.from({ length: 7 }, (_, index) =>
+      offContractJob(`capped-${index}`)
+    )
+
+    await fetchHistory(fetchJobsList(jobs))
+    await fetchHistory(fetchJobsList(jobs))
+
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, options]) => options.context)
+    ).toEqual([
+      expect.objectContaining({
+        count: 7,
+        samples: expect.toSatisfy((samples: unknown[]) => samples.length === 5)
+      }),
+      expect.objectContaining({
+        count: 7,
+        samples: [
+          expect.objectContaining({ jobId: 'capped-5' }),
+          expect.objectContaining({ jobId: 'capped-6' })
+        ]
+      })
+    ])
   })
 })
