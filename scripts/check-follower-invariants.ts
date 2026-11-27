@@ -507,14 +507,17 @@ function namesReachedByAPanelCloseRoute(
   return reached
 }
 
-function enclosingBoundName(node: ts.Node): string | undefined {
+function enclosingBoundNames(node: ts.Node): string[] {
+  const names: string[] = []
   let parent = node.parent as ts.Node | undefined
   while (parent !== undefined) {
-    if (ts.isFunctionDeclaration(parent) && parent.name) return parent.name.text
+    if (ts.isFunctionDeclaration(parent) && parent.name)
+      names.push(parent.name.text)
     if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name))
-      return parent.name.text
+      names.push(parent.name.text)
     parent = parent.parent
   }
+  return names
 }
 
 function insideAPanelCloseRoute(
@@ -526,8 +529,7 @@ function insideAPanelCloseRoute(
     if (isPanelCloseRouteCall(parent)) return true
     parent = parent.parent
   }
-  const enclosing = enclosingBoundName(node)
-  return enclosing !== undefined && reachedNames.has(enclosing)
+  return enclosingBoundNames(node).some((name) => reachedNames.has(name))
 }
 
 const SESSION_DISPOSAL_OWNERS = new Set([

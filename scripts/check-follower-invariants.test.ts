@@ -425,6 +425,21 @@ onBeforeUnmount(() =>
     ).toEqual([{ rule: 'op-producers-outlive-the-panel', line: 3 }])
   })
 
+  test('catches a producer detach stored inside a named cleanup callback', () => {
+    const fixture = `
+      function releaseProducer() {
+        const result = opSender.detach()
+        return result
+      }
+      onBeforeUnmount(releaseProducer)
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule, line }) => ({ rule, line })
+      )
+    ).toEqual([{ rule: 'op-producers-outlive-the-panel', line: 3 }])
+  })
+
   test('catches a producer detached by a named arrow handed to a teardown list', () => {
     const fixture = `
       const releaseProducer = () => docOpMinter.detach()
