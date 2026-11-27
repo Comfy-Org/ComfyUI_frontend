@@ -44,10 +44,10 @@
             />
           </span>
           <span
-            v-if="pickedRow && !buildStatus"
+            v-if="triggerBuildName"
             class="max-w-24 truncate text-sm"
             data-testid="deployment-switcher-build-name"
-            >{{ pickedRow.title }}</span
+            >{{ triggerBuildName }}</span
           >
           <i
             class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
@@ -350,6 +350,10 @@ const buildStatus = computed(() => {
   const step = progress ? t('platformFrame.buildStep', progress) : null
   return { stage, step, text: step ? `${stage} ${step}` : stage }
 })
+
+const triggerBuildName = computed(() =>
+  buildStatus.value ? null : pickedRow.value?.title
+)
 
 const switcher = useTemplateRef<HTMLElement>('switcher')
 
