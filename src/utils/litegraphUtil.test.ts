@@ -383,4 +383,45 @@ describe('migrateWidgetsValues', () => {
 
     expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
+
+  describe('with a non-trailing skipped widget', () => {
+    const widgets = [makeWidget('a'), makeWidget('ui', false), makeWidget('c')]
+
+    it.for([
+      {
+        shape: 'a compact array with one appended trailing value',
+        saved: ['av', 'cv', 'appended']
+      },
+      {
+        shape: 'a compact array saved before a trailing widget was removed',
+        saved: ['av', 'cv', 'removed-d']
+      }
+    ])('keeps every value of $shape', ({ saved }) => {
+      const compactInputDefs = {
+        a: fromPartial<InputSpec>({ name: 'a' }),
+        c: fromPartial<InputSpec>({ name: 'c' })
+      }
+
+      expect(migrateWidgetsValues(compactInputDefs, widgets, saved)).toEqual(
+        saved
+      )
+    })
+
+    it('drops the hole and the dummy of a legacy array whose force input is not adjacent', () => {
+      const legacyInputDefs = {
+        forced: fromPartial<InputSpec>({ name: 'forced', forceInput: true }),
+        a: fromPartial<InputSpec>({ name: 'a' }),
+        c: fromPartial<InputSpec>({ name: 'c' })
+      }
+
+      expect(
+        migrateWidgetsValues(legacyInputDefs, widgets, [
+          'dummy',
+          'av',
+          null,
+          'cv'
+        ])
+      ).toEqual(['av', 'cv'])
+    })
+  })
 })
