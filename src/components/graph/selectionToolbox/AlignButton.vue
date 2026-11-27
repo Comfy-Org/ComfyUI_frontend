@@ -13,36 +13,22 @@
       </Button>
     </PopoverTrigger>
     <PopoverContent
+      side="top"
       :side-offset="5"
       class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
-      <div class="flex flex-col gap-1">
-        <div class="flex gap-1">
-          <Button
-            v-for="option in alignOptions"
-            :key="option.action"
-            :tooltip="t(option.label)"
-            variant="muted-textonly"
-            :aria-label="t(option.label)"
-            :disabled="!canAlign(option.action)"
-            @click="align(option.action)"
-          >
-            <i :class="option.icon" />
-          </Button>
-        </div>
-        <div class="flex gap-1">
-          <Button
-            v-for="option in spacingAndSizeOptions"
-            :key="option.action"
-            :tooltip="t(option.label)"
-            variant="muted-textonly"
-            :aria-label="t(option.label)"
-            :disabled="!canAlign(option.action)"
-            @click="align(option.action)"
-          >
-            <i :class="option.icon" />
-          </Button>
-        </div>
+      <div class="flex gap-1">
+        <Button
+          v-for="option in alignOptions"
+          :key="option.action"
+          :tooltip="t(option.label)"
+          variant="muted-textonly"
+          :aria-label="t(option.label)"
+          :disabled="!canAlign(option.action)"
+          @click="align(option.action)"
+        >
+          <i :class="option.icon" />
+        </Button>
       </div>
       <PopoverArrow class="fill-background stroke-border/50" />
     </PopoverContent>
@@ -98,10 +84,7 @@ const alignOptions: AlignOption[] = [
     action: 'bottom',
     label: 'g.alignBottom',
     icon: 'icon-[lucide--align-end-horizontal]'
-  }
-]
-
-const spacingAndSizeOptions: AlignOption[] = [
+  },
   {
     action: 'distributeX',
     label: 'g.distributeHorizontally',
