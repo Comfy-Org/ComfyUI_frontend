@@ -792,14 +792,20 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!outputs || !rememberStampAndCheckActiveWorkflow(jobId ?? undefined))
       return
     const nodeOutputStore = useNodeOutputStore()
+    const replayedNodes = new Set<NodeLocatorId>()
     for (const [id, output] of Object.entries(outputs)) {
       const executionId = tryNormalizeNodeExecutionId(id)
-      if (executionId)
-        nodeOutputStore.setNodeOutputsByExecutionId(executionId, output)
+      if (!executionId) continue
+      const locatorId = nodeOutputStore.setNodeOutputsByExecutionId(
+        executionId,
+        output
+      )
+      if (locatorId) replayedNodes.add(locatorId)
     }
     useExtensionServiceAccess().invokeExtensions(
       'onNodeOutputsUpdated',
-      useApp().nodeOutputs
+      useApp().nodeOutputs,
+      replayedNodes
     )
   }
 

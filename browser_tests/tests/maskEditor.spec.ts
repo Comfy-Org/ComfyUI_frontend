@@ -1,13 +1,12 @@
 import type { Locator } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
+import { queuedExecutionFixture } from '@e2e/fixtures/queuedExecutionFixture'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
-const wstest = mergeTests(test, webSocketFixture)
+const wstest = mergeTests(test, queuedExecutionFixture)
 
 function getMinimumToolIconContrast(dialog: Locator): Promise<number> {
   return dialog
@@ -483,8 +482,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 wstest(
   'Will not use stale litegraph previews',
   { tag: '@vue-nodes' },
-  async ({ comfyPage, getWebSocket, maskEditor }) => {
-    const executionHelper = new ExecutionHelper(comfyPage, await getWebSocket())
+  async ({ comfyPage, maskEditor, queuedExecution }) => {
     await comfyPage.menu.topbar.setVueNodesEnabled(false)
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.searchBoxV2.addNode('Preview Image')
@@ -496,8 +494,9 @@ wstest(
       )
     }
 
-    const jobId = await executionHelper.run()
-    executionHelper.executed(jobId, '1', {
+    const job = await queuedExecution.capture(() => comfyPage.runButton.click())
+    job.start()
+    job.output('1', {
       images: [{ filename: 'test1.png' }]
     })
     await comfyPage.page.evaluate(() => app!.canvas.setDirty(true))
@@ -506,7 +505,7 @@ wstest(
     await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
     const resolvableFile = { filename: 'example.png', type: 'input' }
-    executionHelper.executed(jobId, '1', { images: [resolvableFile] })
+    job.output('1', { images: [resolvableFile] })
     await expect.poll(getNodeOutput).toBe('example.png')
 
     const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')

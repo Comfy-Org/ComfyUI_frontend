@@ -1,0 +1,43 @@
+{
+  "last_node_id": 2,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "ImageCompositor",
+      "pos": [380, 60],
+      "size": [320, 420],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [{ "name": "layers", "type": "LAYERS", "link": null }],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": [] },
+        { "name": "MASK", "type": "MASK", "links": [] }
+      ],
+      "properties": {},
+      "widgets_values": [{}]
+    },
+    {
+      "id": 2,
+      "type": "CLIPTextEncode",
+      "title": "Animal prompt",
+      "pos": [60, 60],
+      "size": [280, 180],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [{ "name": "clip", "type": "CLIP", "link": null }],
+      "outputs": [
+        { "name": "CONDITIONING", "type": "CONDITIONING", "links": [] }
+      ],
+      "properties": {},
+      "widgets_values": ["dog"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

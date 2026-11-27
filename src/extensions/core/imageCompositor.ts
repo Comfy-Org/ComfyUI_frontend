@@ -8,11 +8,7 @@ import {
   setCompositorLayers
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  NodeExecutionOutput,
-  NodeOutputWith
-} from '@comfyorg/api-client/executionTypes'
-import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeOutputWith } from '@comfyorg/api-client/executionTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
@@ -55,12 +51,17 @@ function applyCompositorLayers(
 export const imageCompositorExtension: ComfyExtension = {
   name: 'Comfy.ImageCompositor',
 
-  onNodeOutputsUpdated(
-    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
-  ) {
+  onNodeOutputsUpdated(nodeOutputs, replayedNodes) {
     const { nodeToNodeLocatorId } = useWorkflowStore()
     for (const node of collectAllNodes(useApp().rootGraph, isImageCompositor)) {
-      applyCompositorLayers(node, nodeOutputs[nodeToNodeLocatorId(node)])
+      const locatorId = nodeToNodeLocatorId(node)
+      const output = nodeOutputs[locatorId]
+      applyCompositorLayers(node, output)
+      if (
+        replayedNodes?.has(locatorId) &&
+        output?.images?.some((image) => image.filename)
+      )
+        clearCompositorPreviewOverride(node)
     }
   },
 

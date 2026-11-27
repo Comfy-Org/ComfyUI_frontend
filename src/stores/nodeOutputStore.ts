@@ -386,6 +386,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       emptyTextOutput ? {} : outputs,
       emptyTextOutput ? {} : options
     )
+    return nodeLocatorId
   }
 
   function reportUnresolvedExecutionId(

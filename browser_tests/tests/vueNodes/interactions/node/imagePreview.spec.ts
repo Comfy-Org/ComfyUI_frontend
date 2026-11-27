@@ -1,9 +1,9 @@
-import { expect, mergeTests } from '@playwright/test'
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { queuedExecutionFixture as wstest } from '@e2e/fixtures/queuedExecutionFixture'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
@@ -11,8 +11,6 @@ import {
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
-import { webSocketFixture } from '@e2e/fixtures/ws'
-const wstest = mergeTests(test, webSocketFixture)
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
@@ -156,8 +154,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
 
   wstest(
     'Displays previews inside subgraphs received while workflow inactive',
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+    async ({ comfyPage, queuedExecution }) => {
       const previewLocator = comfyPage.vueNodes.getNodeByTitle('Preview Image')
       const previewImage = new VueNodeFixture(previewLocator)
       const subgraphLocator = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
@@ -177,12 +174,15 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
       })
 
       await test.step('Inject Previews from different tab', async () => {
-        const jobId = await execution.run()
+        const job = await queuedExecution.capture(() =>
+          comfyPage.runButton.click()
+        )
+        job.start()
         await comfyPage.menu.topbar.getTab(0).click()
         await expect(comfyPage.vueNodes.nodes).toHaveCount(7)
 
         const images = [{ filename: 'example.png', type: 'input' }]
-        execution.executed(jobId, '2:1', { images })
+        job.output('2:1', { images })
         await comfyPage.nextFrame()
 
         await comfyPage.menu.topbar.getTab(1).click()
@@ -203,9 +203,7 @@ async function countColumns(locator: Locator) {
 test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   wstest(
     'Image previews tile to fit node',
-    async ({ comfyMouse, comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-
+    async ({ comfyMouse, comfyPage, queuedExecution }) => {
       await test.step('Add node', async () => {
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
@@ -219,8 +217,11 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       await test.step('Inject multiple previews', async () => {
         const file = { filename: 'example.png', type: 'input' }
         const images = Array.from({ length: 100 }, () => file)
-        const jobId = await execution.run()
-        execution.executed(jobId, '1', { images })
+        const job = await queuedExecution.capture(() =>
+          comfyPage.runButton.click()
+        )
+        job.start()
+        job.output('1', { images })
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
@@ -240,9 +241,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
   wstest(
     'requests lightweight thumbnail URLs for grid cells',
-    async ({ comfyPage, getWebSocket }) => {
-      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-
+    async ({ comfyPage, queuedExecution }) => {
       await test.step('Add node', async () => {
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
@@ -260,8 +259,11 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
           subfolder: '',
           type: 'output'
         }))
-        const jobId = await execution.run()
-        execution.executed(jobId, '1', { images })
+        const job = await queuedExecution.capture(() =>
+          comfyPage.runButton.click()
+        )
+        job.start()
+        job.output('1', { images })
         await expect(gridImages).toHaveCount(4)
       })
 

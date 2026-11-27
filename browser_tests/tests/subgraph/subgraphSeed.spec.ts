@@ -1,22 +1,12 @@
-import { mergeTests } from '@playwright/test'
+import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
+import { queuedExecutionFixture as test } from '@e2e/fixtures/queuedExecutionFixture'
 
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
-import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
-import { webSocketFixture } from '@e2e/fixtures/ws'
+test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
 
-const wstest = mergeTests(test, webSocketFixture)
-
-wstest.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
-
-wstest(
+test(
   'Seed handling',
   { tag: '@vue-nodes' },
-  async ({ comfyPage, getWebSocket }) => {
-    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-
+  async ({ comfyPage, queuedExecution }) => {
     async function verifySeedControl(initializeState = true) {
       const seedWidget = comfyPage.vueNodes.getWidgetRowByLabel('', 'seed')
       const { input, valueControl } =
@@ -30,7 +20,11 @@ wstest(
         await comfyPage.keyboard.press('Escape')
       }
 
-      execution.executionSuccess(await execution.run())
+      const job = await queuedExecution.capture(() =>
+        comfyPage.runButton.click()
+      )
+      job.start()
+      job.finish()
       await expect.soft(input).toHaveValue('2')
     }
 
