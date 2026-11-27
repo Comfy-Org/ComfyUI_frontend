@@ -8,6 +8,8 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { emitGraphRestored } from '@/scripts/graphRestore'
 
 import type { AgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import type { GraphOperation } from './crdt/graphOperations'
@@ -160,6 +162,50 @@ describe('retainDocOpMinterForPage', () => {
 
     expect(minted).toEqual([])
     expect(noted).not.toEqual([])
+  })
+
+  it('delivers a held restore when the page session reconnects without a panel', async () => {
+    const status = shallowRef({ connected: false })
+    let subscribed = false
+    held.value = fromPartial<AgentFollowerSession>({
+      status,
+      subscriptionSent: () => subscribed,
+      enqueueHumanOperations: (operations: GraphOperation[]) =>
+        minted.push(...operations),
+      noteUnboundLocalIntent: () => {},
+      docInputNames: () => null,
+      docWidgetValue: () => undefined,
+      docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      isPreMintBinding: () => false,
+      docHasSubgraphDefinition: () => false,
+      notifyWidgetWriteRefused: () => {}
+    })
+    retainDocOpMinterForPage(transport, panelInputs())
+    const removed = new TestSource()
+    graph.add(removed)
+    await afterFlush()
+    minted = []
+    const previous = structuredClone(graph.serialize()) as ComfyWorkflowJSON
+
+    graph.remove(removed)
+    emitGraphRestored({
+      workflow: boundWorkflow,
+      graph,
+      previous,
+      next: structuredClone(graph.serialize()) as ComfyWorkflowJSON
+    })
+    await afterFlush()
+    expect(minted).toEqual([])
+
+    subscribed = true
+    status.value = { connected: true }
+    await afterFlush()
+    await afterFlush()
+
+    expect(minted).toEqual([
+      { op: 'delete_node', node_id: removed.id, removed_links: [] }
+    ])
   })
 
   it('survives the page holding no session at all', async () => {

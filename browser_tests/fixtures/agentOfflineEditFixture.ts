@@ -180,13 +180,6 @@ class AgentOfflineEditScenario {
     await this.panel.open()
   }
 
-  sentOps(): string[] {
-    return this.hostSocket
-      .clientDocFrames()
-      .filter((frame) => frame.type === 'doc_ops')
-      .flatMap((frame) => frame.ops)
-  }
-
   sentOpIds(): string[] {
     return this.hostSocket
       .clientDocFrames()

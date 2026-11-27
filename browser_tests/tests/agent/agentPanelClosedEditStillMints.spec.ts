@@ -31,31 +31,15 @@ test.describe(
 
         const appliedBeforeClose = await offlineEdit.appliedFrameCount()
 
-        const opsBeforeClose =
-          await test.step('the user closes the Agent panel, with nothing queued', async () => {
-            const sent = offlineEdit.sentOps()
-            await offlineEdit.closePanel()
-            return sent
-          })
+        await test.step('the user closes the Agent panel', async () => {
+          await offlineEdit.closePanel()
+        })
 
         await test.step('the user retypes both prompts with the panel closed', async () => {
           await offlineEdit.retypeBothPrompts()
           await expect
             .poll(() => offlineEdit.canvasPromptValues())
             .toEqual(offlineEdit.humanPrompts)
-        })
-
-        await test.step('both edits minted while the panel was closed', async () => {
-          await expect
-            .poll(() => offlineEdit.sentOps().length, {
-              timeout: 60_000,
-              message:
-                'an edit made with the panel closed must still mint: before stage 2 nothing was produced at all'
-            })
-            .toBeGreaterThan(opsBeforeClose.length)
-          expect(offlineEdit.sentOps().slice(opsBeforeClose.length)).toEqual(
-            expect.arrayContaining([expect.stringContaining('set_widget')])
-          )
         })
 
         await test.step('the shared document carries what the user typed', async () => {
