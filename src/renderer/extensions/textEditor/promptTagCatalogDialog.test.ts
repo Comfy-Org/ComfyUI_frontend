@@ -26,7 +26,7 @@ describe('prompt tag catalog editor', () => {
       expected: []
     }
   ])(
-    'uses catalog suggestions for $target without import controls',
+    'uses catalog suggestions for $target.nodeType $target.widgetName without import controls',
     async ({ target, expected }) => {
       const user = userEvent.setup()
       const source = ref('')
