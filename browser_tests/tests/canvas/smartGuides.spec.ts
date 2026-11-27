@@ -315,6 +315,28 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           ])
           expect(distributeBox?.y).toBe(matchHeightBox?.y)
         }).toPass({ timeout: 5000 })
+        const popover = comfyPage.page.getByRole('dialog')
+        await expect
+          .poll(async () => {
+            const bounds = await popover.evaluate((element) => {
+              const { left, right } = element.getBoundingClientRect()
+              return { left, right }
+            })
+            const buttons = await popover
+              .getByRole('button')
+              .evaluateAll((elements) =>
+                elements.map((element) => {
+                  const { left, right } = element.getBoundingClientRect()
+                  return { left, right }
+                })
+              )
+            const leftPadding =
+              Math.min(...buttons.map(({ left }) => left)) - bounds.left
+            const rightPadding =
+              bounds.right - Math.max(...buttons.map(({ right }) => right))
+            return Math.round(rightPadding - leftPadding)
+          })
+          .toBe(0)
         await matchHeight.click()
 
         await expect

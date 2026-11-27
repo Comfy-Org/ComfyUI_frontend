@@ -17,11 +17,18 @@
       :side-offset="5"
       class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
-      <div class="flex flex-wrap gap-1">
+      <div class="flex flex-wrap gap-1 max-[390px]:flex-col">
         <div
           v-for="(groups, section) in alignOptionSections"
           :key="section"
-          class="flex flex-wrap gap-1"
+          :class="
+            cn(
+              'flex flex-wrap gap-1',
+              section === 'alignment'
+                ? 'max-[246px]:flex-col'
+                : 'max-[174px]:flex-col'
+            )
+          "
         >
           <div
             v-for="(options, group) in groups"
@@ -53,6 +60,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useAlignSelection } from '@/renderer/core/canvas/smartGuides/useAlignSelection'
 import type { AlignAction } from '@comfyorg/graph-model/arrange/arrange'
 
