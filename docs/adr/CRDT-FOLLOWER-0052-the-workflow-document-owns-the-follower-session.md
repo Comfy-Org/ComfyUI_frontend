@@ -601,8 +601,9 @@ for every edit made with the panel closed; the fact is recorded below.
 retains `resolveAgentIdentity`, resets it on an authenticated socket identity
 change, and stops it only during page teardown. Account and workspace changes
 therefore make the identity pending before reconnect delivery can resume, even
-when the panel is closed. Fresh admission and held delivery remain gated until
-the current identity resolves and the follower acknowledges its subscription.
+when the panel is closed. Fresh admission requires a resolved page-owned
+identity and a sent subscription for the active target; transport replay and
+catch-up retain their existing acknowledgement ordering.
 
 **A latch in the producer was tried for this and reverted, which is worth
 recording so it is not tried again.** Observing the page session's
@@ -612,15 +613,15 @@ only in `AgentPanelRoot.setup()`, so an identity change with the panel **open**
 latched the gate with nothing to clear it and stopped every hand edit minting
 for the rest of the page session. It also bypassed `deliverHeldRestores`, which
 checks the binding and the document rather than any such latch. That trades a
-narrow window for a page-wide outage, so the exposure stays named and
-unmitigated here.
+narrow window for a page-wide outage. The latch was abandoned; the page-owned
+resolver described above supersedes it.
 
 **Stage 2 requires that no operation be minted or sent under an account identity
 other than the current account.** That covers fresh edits and previously held
 delivery. The page-owned resolver supplies the current answer, while the
-active-target and acknowledged-subscription gates close the identity-change
-and resubscribe interval. Host refusal remains containment rather than a
-frontend correctness dependency.
+active-target gate closes admission while the page-owned identity is
+unresolved. Host refusal remains containment rather than a frontend correctness
+dependency.
 
 **The restore queue moved with the edit path, as this stage requires.** The
 delivery trigger was a panel watcher, so a reconnect completing with the panel

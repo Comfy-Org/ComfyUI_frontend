@@ -12,6 +12,7 @@ import {
 } from './agentPageSession'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type {
   AgentIdentityState,
   ResolvedAgentIdentity
@@ -21,6 +22,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('./services/agent/agentAuth'))
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 vi.mock(import('./services/agent/agentIdentity'), { spy: true })
+vi.mock(import('./services/agent/agentOwnerHandoff'), { spy: true })
 
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
 let resolvedIdentity: ResolvedAgentIdentity
@@ -124,7 +126,7 @@ describe('useAgentPageSession', () => {
 
   it('retains identity resolution across a panel scope ending', () => {
     const panelScope = effectScope()
-    const first = panelScope.run(() =>
+    panelScope.run(() =>
       useAgentPageSession(readIdentity).retainIdentity({
         getIdentity: vi.fn(),
         isRetryable: vi.fn(),
@@ -133,13 +135,12 @@ describe('useAgentPageSession', () => {
     )
 
     panelScope.stop()
-    const remounted = useAgentPageSession(readIdentity).retainIdentity({
+    useAgentPageSession(readIdentity).retainIdentity({
       getIdentity: vi.fn(),
       isRetryable: vi.fn(),
       onFailure: vi.fn()
     })
 
-    expect(remounted).toBe(first)
     expect(resolvedIdentity.stop).not.toHaveBeenCalled()
     expect(resolveAgentIdentity).toHaveBeenCalledTimes(1)
   })
@@ -172,6 +173,12 @@ describe('useAgentPageSession', () => {
     })
 
     identity.value = ['account-b', null, null]
+    expect(captureOutgoingCredentialForHandoff).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(captureOutgoingCredentialForHandoff).mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      vi.mocked(resolvedIdentity.reset).mock.invocationCallOrder[0]
+    )
     await nextTick()
 
     expect(resolvedIdentity.reset).toHaveBeenCalledOnce()

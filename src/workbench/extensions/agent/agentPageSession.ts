@@ -12,6 +12,7 @@ import { destroyAgentFollowerSessions } from './crdt/useAgentCrdtFollower'
 import { agentSocketAuthParams } from './services/agent/agentAuth'
 import type { AgentEventSocket } from './services/agent/agentEventSource'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type {
   AgentIdentityDeps,
   ResolvedAgentIdentity
@@ -29,9 +30,7 @@ export interface AgentPageSession {
   /** Observe the signed-in identity changing, after the socket reconnects. */
   onIdentityChange(listener: () => void): () => void
   /** Resolve the agent actor for the page lifetime. Only the first deps are installed. */
-  retainIdentity(
-    deps: Omit<AgentIdentityDeps, 'onSocketOpen'>
-  ): ResolvedAgentIdentity
+  retainIdentity(deps: Omit<AgentIdentityDeps, 'onSocketOpen'>): void
 }
 
 export type SocketIdentity = readonly [
@@ -117,6 +116,7 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
         if (identityResetPending || !needsReauthentication(next, previous))
           return
         identityResetPending = true
+        captureOutgoingCredentialForHandoff()
         agentIdentity.value?.reset()
       },
       { flush: 'sync' }
@@ -144,12 +144,11 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
       return () => listeners.delete(listener)
     },
     retainIdentity(deps) {
-      if (agentIdentity.value !== null) return agentIdentity.value
+      if (agentIdentity.value !== null) return
       agentIdentity.value = resolveAgentIdentity({
         ...deps,
         onSocketOpen: (listener) => docTransport.onSocketOpen(listener)
       })
-      return agentIdentity.value
     },
     stop() {
       pageScope.stop()

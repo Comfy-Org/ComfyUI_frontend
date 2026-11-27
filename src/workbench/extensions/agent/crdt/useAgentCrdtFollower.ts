@@ -342,7 +342,6 @@ interface AgentFollowerSessionOwner {
   pageLease: FollowerSessionLease<AgentFollowerSession> | null
   pageLeaseDocumentId: string | null
   readonly pageSession: ShallowRef<AgentFollowerSession | null>
-  /** Previous panel consumer's session, if the page claim kept it alive. */
   detachedConsumerSession: AgentFollowerSession | null
 }
 

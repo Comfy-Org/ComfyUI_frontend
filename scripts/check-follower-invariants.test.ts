@@ -596,6 +596,42 @@ watch(connected, () => docOpMinter.deliverHeldRestores())
     expect(checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture)).toEqual([])
   })
 
+  test('resolves same-named helpers in the disposal route lexical scope', () => {
+    const fixture = `
+      function first() {
+        const releaseProducer = () => opSender.detach()
+        onBeforeUnmount(releaseProducer)
+      }
+      function second() {
+        const releaseProducer = () => notifyReleased()
+      }
+    `
+    expect(
+      checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture).map(
+        ({ rule }) => rule
+      )
+    ).toEqual(['op-producers-outlive-the-panel'])
+  })
+
+  test('does not confuse a method call with a same-named cleanup helper', () => {
+    const fixture = `
+      const releaseProducer = () => opSender.detach()
+      onBeforeUnmount(() => logger.releaseProducer())
+    `
+    expect(checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
+  test('ignores an uncalled nested function declared in a disposal callback', () => {
+    const fixture = `
+      onBeforeUnmount(() => {
+        function later() {
+          opSender.detach()
+        }
+      })
+    `
+    expect(checkOpProducersOutliveThePanel(FOLLOWER_FILE, fixture)).toEqual([])
+  })
+
   test('passes a non-producer detach on a panel-close route', () => {
     const fixture = `<script setup lang="ts">
 onBeforeUnmount(() =>

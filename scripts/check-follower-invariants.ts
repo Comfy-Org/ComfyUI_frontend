@@ -531,13 +531,27 @@ function isPanelCloseRouteCall(
 }
 
 interface CallableBinding {
-  body: ts.ConciseBody
-  name: string
+  body: ts.Node
+  key: string
+  name?: string
+  scope: ts.Node
+}
+
+function lexicalScope(node: ts.Node): ts.Node {
+  let current: ts.Node = node.parent
+  while (!ts.isBlock(current) && !ts.isSourceFile(current))
+    current = current.parent
+  return current
 }
 
 function callableBinding(node: ts.Node): CallableBinding | undefined {
-  if (ts.isFunctionDeclaration(node) && node.name && node.body)
-    return { name: node.name.text, body: node.body }
+  if (ts.isFunctionDeclaration(node) && node.body)
+    return {
+      key: `callable:${node.pos}`,
+      name: node.name?.text,
+      body: node.body,
+      scope: lexicalScope(node)
+    }
   if (
     ts.isVariableDeclaration(node) &&
     ts.isIdentifier(node.name) &&
@@ -545,71 +559,135 @@ function callableBinding(node: ts.Node): CallableBinding | undefined {
     (ts.isArrowFunction(node.initializer) ||
       ts.isFunctionExpression(node.initializer))
   )
-    return { name: node.name.text, body: node.initializer.body }
+    return {
+      key: `callable:${node.initializer.pos}`,
+      name: node.name.text,
+      body: node.initializer.body,
+      scope: lexicalScope(node)
+    }
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer
+  )
+    return {
+      key: `callable:${node.pos}`,
+      name: node.name.text,
+      body: node.initializer,
+      scope: lexicalScope(node)
+    }
+  if (
+    (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
+    !ts.isVariableDeclaration(node.parent)
+  )
+    return {
+      key: `callable:${node.pos}`,
+      body: node.body,
+      scope: lexicalScope(node)
+    }
 }
 
-function calledNames(root: ts.Node): Set<string> {
-  const calls = new Set<string>()
-  visit(root, (node) => {
-    if (!ts.isCallExpression(node)) return
-    const name = calledName(node)
-    if (name !== undefined) calls.add(name)
-  })
-  return calls
+function scopeChain(node: ts.Node): ts.Node[] {
+  const scopes: ts.Node[] = []
+  let current = node
+  while (!ts.isSourceFile(current)) {
+    if (ts.isBlock(current)) scopes.push(current)
+    current = current.parent
+  }
+  scopes.push(current)
+  return scopes
 }
 
-function identifierNames(root: ts.Node): Set<string> {
-  const names = new Set<string>()
-  visit(root, (node) => {
-    if (ts.isIdentifier(node)) names.add(node.text)
-  })
-  return names
+function resolveCallable(
+  identifier: ts.Identifier,
+  bindings: readonly CallableBinding[]
+): CallableBinding | undefined {
+  for (const scope of scopeChain(identifier)) {
+    const match = bindings.find(
+      (binding) => binding.name === identifier.text && binding.scope === scope
+    )
+    if (match) return match
+  }
 }
 
-function callableBindings(sourceFile: ts.SourceFile): {
-  callsByBinding: Map<string, Set<string>>
-  declarationCounts: Map<string, number>
-} {
-  const callsByBinding = new Map<string, Set<string>>()
-  const declarationCounts = new Map<string, number>()
+function callableBindings(sourceFile: ts.SourceFile): CallableBinding[] {
+  const bindings: CallableBinding[] = []
   visit(sourceFile, (node) => {
     const declaration = callableBinding(node)
-    if (declaration === undefined) return
-    declarationCounts.set(
-      declaration.name,
-      (declarationCounts.get(declaration.name) ?? 0) + 1
-    )
-    const calls = callsByBinding.get(declaration.name) ?? new Set<string>()
-    for (const called of calledNames(declaration.body)) calls.add(called)
-    callsByBinding.set(declaration.name, calls)
+    if (declaration !== undefined) bindings.push(declaration)
   })
-  return { callsByBinding, declarationCounts }
+  return bindings
 }
 
-function directlyReachedNames(
+function directlyReachedBindings(
   sourceFile: ts.SourceFile,
-  routeNames: Set<string>
+  routeNames: Set<string>,
+  bindings: readonly CallableBinding[]
 ): Set<string> {
   const reached = new Set<string>()
   visit(sourceFile, (node) => {
     if (!isPanelCloseRouteCall(node, routeNames)) return
-    for (const argument of node.arguments)
-      for (const name of identifierNames(argument)) reached.add(name)
+    for (const argument of node.arguments) {
+      const walk = (candidate: ts.Node): void => {
+        if (ts.isFunctionDeclaration(candidate)) return
+        if (
+          ts.isArrowFunction(candidate) ||
+          ts.isFunctionExpression(candidate)
+        ) {
+          const inline = bindings.find(
+            (binding) => binding.key === `callable:${candidate.pos}`
+          )
+          if (inline) reached.add(inline.key)
+        }
+        if (ts.isIdentifier(candidate)) {
+          const isDeclarationName =
+            (ts.isVariableDeclaration(candidate.parent) ||
+              ts.isFunctionDeclaration(candidate.parent)) &&
+            candidate.parent.name === candidate
+          const isPropertyName =
+            ts.isPropertyAccessExpression(candidate.parent) &&
+            candidate.parent.name === candidate
+          if (!isDeclarationName && !isPropertyName) {
+            const binding = resolveCallable(candidate, bindings)
+            if (binding) reached.add(binding.key)
+          }
+        }
+        candidate.forEachChild(walk)
+      }
+      walk(argument)
+    }
   })
   return reached
 }
 
-function expandReachedNames(
+function directCalledBindings(
+  binding: CallableBinding,
+  bindings: readonly CallableBinding[]
+): Set<string> {
+  const called = new Set<string>()
+  const walk = (node: ts.Node): void => {
+    if (node !== binding.body && callableBinding(node)) return
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const target = resolveCallable(node.expression, bindings)
+      if (target) called.add(target.key)
+    }
+    node.forEachChild(walk)
+  }
+  walk(binding.body)
+  return called
+}
+
+function expandReachedBindings(
   reached: Set<string>,
-  callsByBinding: Map<string, Set<string>>,
-  declarationCounts: Map<string, number>
+  bindings: readonly CallableBinding[]
 ): void {
   let changed = true
   while (changed) {
     changed = false
-    for (const name of reached) {
-      if ((declarationCounts.get(name) ?? 0) !== 1) continue
-      for (const called of callsByBinding.get(name) ?? []) {
+    for (const key of reached) {
+      const binding = bindings.find((candidate) => candidate.key === key)
+      if (!binding) continue
+      for (const called of directCalledBindings(binding, bindings)) {
         if (reached.has(called)) continue
         reached.add(called)
         changed = true
@@ -618,37 +696,38 @@ function expandReachedNames(
   }
 }
 
-function removeAmbiguousNames(
-  reached: Set<string>,
-  declarationCounts: Map<string, number>
-): void {
-  for (const [name, count] of declarationCounts) {
-    if (count > 1) reached.delete(name)
-  }
-}
-
 function namesReachedByAPanelCloseRoute(
   sourceFile: ts.SourceFile,
   routeNames: Set<string>
 ): Set<string> {
-  const reached = directlyReachedNames(sourceFile, routeNames)
-  const { callsByBinding, declarationCounts } = callableBindings(sourceFile)
-  expandReachedNames(reached, callsByBinding, declarationCounts)
-  removeAmbiguousNames(reached, declarationCounts)
+  const bindings = callableBindings(sourceFile)
+  const reached = directlyReachedBindings(sourceFile, routeNames, bindings)
+  expandReachedBindings(reached, bindings)
   return reached
 }
 
-function enclosingBoundNames(node: ts.Node): string[] {
-  const names: string[] = []
+function enclosingCallableKeys(node: ts.Node): string[] {
+  const keys: string[] = []
   let parent = node.parent as ts.Node | undefined
   while (parent !== undefined) {
-    if (ts.isFunctionDeclaration(parent) && parent.name)
-      names.push(parent.name.text)
-    if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name))
-      names.push(parent.name.text)
+    if (ts.isFunctionDeclaration(parent)) {
+      keys.push(`callable:${parent.pos}`)
+      break
+    }
+    if (ts.isArrowFunction(parent) || ts.isFunctionExpression(parent)) {
+      keys.push(`callable:${parent.pos}`)
+      break
+    }
+    if (
+      ts.isVariableDeclaration(parent) &&
+      parent.initializer &&
+      !ts.isArrowFunction(parent.initializer) &&
+      !ts.isFunctionExpression(parent.initializer)
+    )
+      keys.push(`callable:${parent.pos}`)
     parent = parent.parent
   }
-  return names
+  return keys
 }
 
 function insideAPanelCloseRoute(
@@ -656,12 +735,15 @@ function insideAPanelCloseRoute(
   reachedNames: Set<string>,
   routeNames: Set<string>
 ): boolean {
+  const callables = enclosingCallableKeys(node)
+  if (callables.length > 0)
+    return callables.some((callable) => reachedNames.has(callable))
   let parent = node.parent as ts.Node | undefined
   while (parent !== undefined) {
     if (isPanelCloseRouteCall(parent, routeNames)) return true
     parent = parent.parent
   }
-  return enclosingBoundNames(node).some((name) => reachedNames.has(name))
+  return false
 }
 
 const SESSION_DISPOSAL_OWNERS = new Set([
