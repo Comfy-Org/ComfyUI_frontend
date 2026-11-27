@@ -20,6 +20,16 @@
         {{ option.label }}
       </label>
     </RadioGroup>
+    <Button
+      v-if="buildOffered"
+      variant="link"
+      size="link"
+      class="self-start"
+      data-attr="upload-model-add-to-build"
+      @click="emit('build')"
+    >
+      {{ $t('assetBrowser.fileUpload.addToBuild') }}
+    </Button>
   </div>
 </template>
 
@@ -27,12 +37,18 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@comfyorg/design-system/button/Button'
 import RadioGroup from '@comfyorg/design-system/radio-group/RadioGroup'
 import RadioGroupItem from '@comfyorg/design-system/radio-group/RadioGroupItem'
 import type { UploadDestination } from '@/platform/assets/composables/useUploadModelFile'
 
-const { disabled = false } = defineProps<{
+const { disabled = false, buildOffered = false } = defineProps<{
   disabled?: boolean
+  buildOffered?: boolean
+}>()
+
+const emit = defineEmits<{
+  build: []
 }>()
 
 const destination = defineModel<UploadDestination>({ required: true })

@@ -5,7 +5,10 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { usePlatformFrameStore } from './platformFrameStore'
-import { useDeploymentModelsFrame } from './useDeploymentModelsFrame'
+import {
+  deploymentModelsRequest,
+  useDeploymentModelsFrame
+} from './useDeploymentModelsFrame'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
@@ -34,6 +37,13 @@ function bootOn(deploymentId: string | null) {
   })
 }
 
+function framedAt(): Record<string, string> | null {
+  const url = usePlatformFrameStore().session?.url
+  if (!url) return null
+  const { step, deployment } = Object.fromEntries(new URL(url).searchParams)
+  return { step, deployment }
+}
+
 beforeEach(() => {
   Object.assign(useFeatureFlags().flags, {
     customDeploymentsEditorEnabled: true
@@ -46,11 +56,17 @@ afterEach(() => {
 })
 
 describe('useDeploymentModelsFrame', () => {
-  it('names the deployment this page runs on', () => {
+  it('opens Models alone for the deployment this page runs on', () => {
     bootOn(DEPLOYMENT)
-    const { bootDeploymentId } = useDeploymentModelsFrame()
+    const { bootDeploymentId, addModels } = useDeploymentModelsFrame()
 
     expect(bootDeploymentId.value).toBe(DEPLOYMENT)
+    expect(addModels()).toBe(true)
+
+    expect(framedAt()).toEqual({ step: 'models', deployment: DEPLOYMENT })
+    expect(usePlatformFrameStore().session?.request.handsOverWorkflow).toBe(
+      undefined
+    )
   })
 
   it.for([
@@ -62,8 +78,27 @@ describe('useDeploymentModelsFrame', () => {
     Object.assign(useFeatureFlags().flags, {
       customDeploymentsEditorEnabled: flag
     })
-    const { bootDeploymentId } = useDeploymentModelsFrame()
+    const { bootDeploymentId, addModels } = useDeploymentModelsFrame()
 
     expect(bootDeploymentId.value).toBeUndefined()
+    expect(addModels()).toBe(false)
+    expect(framedAt()).toBeNull()
+  })
+})
+
+describe('deploymentModelsRequest', () => {
+  it('hands the open workflow over only when asked', () => {
+    expect(deploymentModelsRequest(DEPLOYMENT)).toEqual({
+      step: 'models',
+      deploymentId: DEPLOYMENT
+    })
+    const handedOver = deploymentModelsRequest(DEPLOYMENT, {
+      handsOverWorkflow: true
+    })
+    expect(handedOver).toEqual({
+      step: 'models',
+      deploymentId: DEPLOYMENT,
+      handsOverWorkflow: true
+    })
   })
 })

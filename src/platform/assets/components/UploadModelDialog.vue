@@ -15,6 +15,8 @@
     <UploadModelDestination
       v-if="showStartDestination"
       v-model="fileDestination"
+      :build-offered="buildModels.bootDeploymentId.value !== undefined"
+      @build="openBuildModels"
     />
     <!-- Scrollable content area -->
     <div v-else class="min-h-0 flex-auto basis-0 overflow-y-auto">
@@ -92,6 +94,7 @@ import type {
   UploadModelSuccess
 } from '@/platform/assets/types/modelImport'
 import { useUploadModelWizard } from '@/platform/assets/composables/useUploadModelWizard'
+import { useDeploymentModelsFrame } from '@/platform/workspace/platformFrame/useDeploymentModelsFrame'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { uploadContext, initialDestination } = defineProps<{
@@ -100,6 +103,7 @@ const { uploadContext, initialDestination } = defineProps<{
 }>()
 
 const dialogStore = useDialogStore()
+const buildModels = useDeploymentModelsFrame()
 const fileUpload = useUploadModelFile(initialDestination)
 const {
   state: fileState,
@@ -176,6 +180,10 @@ async function handleUploadModel() {
 
 function handleClose() {
   dialogStore.closeDialog({ key: 'upload-model' })
+}
+
+function openBuildModels() {
+  if (buildModels.addModels()) handleClose()
 }
 
 onMounted(() => {

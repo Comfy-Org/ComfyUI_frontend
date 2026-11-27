@@ -4930,6 +4930,7 @@
     "filterBy": "Filter by",
     "fileUpload": {
       "accessDenied": "Your current session cannot upload models to this workspace.",
+      "addToBuild": "Add to the build instead",
       "addingToDeployment": "Adding to the deployment...",
       "cancelled": "Upload canceled.",
       "checking": "Checking the file...",

@@ -92,7 +92,8 @@ vi.mock(
     const { computed } = await import('vue')
     return {
       useDeploymentModelsFrame: () => ({
-        bootDeploymentId: computed(() => modelsFrame.deploymentId)
+        bootDeploymentId: computed(() => modelsFrame.deploymentId),
+        addModels: vi.fn(() => true)
       })
     }
   }

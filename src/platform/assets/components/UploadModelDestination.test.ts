@@ -11,9 +11,11 @@ import type {
   DeploymentModelOutcome,
   DeploymentModelUploadResult
 } from '@/platform/workspace/api/deploymentModelUploadApi'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
 
@@ -147,5 +149,31 @@ describe('UploadModelDialog destination', () => {
     expect(screen.getByText(copy.findInLoader)).toBeInTheDocument()
     expect(send).toHaveBeenCalledOnce()
     expect(library).not.toHaveBeenCalled()
+  })
+
+  it('offers no build link with no deployment picked', () => {
+    renderDialog()
+
+    expect(
+      screen.queryByRole('button', { name: copy.addToBuild })
+    ).not.toBeInTheDocument()
+  })
+
+  it("opens the deployment's build step from the build link", async () => {
+    pickDeployment()
+    const frames = usePlatformFrameStore()
+    vi.spyOn(frames, 'isAvailable').mockReturnValue(true)
+    const open = vi.spyOn(frames, 'open').mockReturnValue(true)
+    const close = vi.spyOn(useDialogStore(), 'closeDialog')
+    const user = userEvent.setup()
+    renderDialog({ initialDestination: 'deployment' })
+
+    await user.click(screen.getByRole('button', { name: copy.addToBuild }))
+
+    expect(open).toHaveBeenCalledWith(
+      { step: 'models', deploymentId: 'dep-1' },
+      'model_library'
+    )
+    expect(close).toHaveBeenCalledWith({ key: 'upload-model' })
   })
 })
