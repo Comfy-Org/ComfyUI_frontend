@@ -14,21 +14,9 @@ import type {
   JobState,
   BuildJobDisplayCtx
 } from '@/platform/queue/presentation/queueDisplay'
-import {
-  buildJobDisplay,
-  jobStateFromTask
-} from '@/platform/queue/presentation/queueDisplay'
-import type { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
-
-type TestTask = {
-  jobId: string
-  job: { priority: number }
-  mockState: JobState
-  executionTime?: number
-  executionEndTimestamp?: number
-  createTime?: number
-  workflowId?: string
-}
+import { buildJobDisplay } from '@/platform/queue/presentation/queueDisplay'
+import type { JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
+import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
 
 const createTestI18n = () =>
   createI18n({
@@ -79,18 +67,15 @@ let isJobInitializingMock: ReturnType<
   typeof useExecutionStore
 >['isJobInitializing']
 
-const createTask = (
-  overrides: Partial<TestTask> & { mockState?: JobState } = {}
-): TaskItemImpl & TestTask =>
-  fromPartial<TaskItemImpl & TestTask>({
-    jobId: overrides.jobId ?? `task-${Math.random().toString(36).slice(2, 7)}`,
-    job: overrides.job ?? { priority: 0 },
-    mockState: overrides.mockState ?? 'pending',
-    executionTime: overrides.executionTime,
-    executionEndTimestamp: overrides.executionEndTimestamp,
-    createTime: overrides.createTime,
-    workflowId: overrides.workflowId
-  })
+const createTask = (job: Partial<JobListItem> = {}) =>
+  new TaskItemImpl(
+    fromPartial<JobListItem>({
+      id: `task-${Math.random().toString(36).slice(2, 7)}`,
+      status: 'pending',
+      priority: 0,
+      ...job
+    })
+  )
 
 const mountUseJobList = () => {
   let composable: ReturnType<typeof useJobList>
@@ -112,19 +97,6 @@ const mountUseJobList = () => {
 }
 
 const resetStores = () => {
-  vi.mocked(jobStateFromTask).mockImplementation((task) => {
-    const state = 'mockState' in task ? task.mockState : undefined
-    switch (state) {
-      case 'pending':
-      case 'initialization':
-      case 'running':
-      case 'completed':
-      case 'failed':
-        return state
-      default:
-        throw new Error('Test task requires mockState')
-    }
-  })
   vi.mocked(buildJobDisplay).mockImplementation(placeholderJobDisplay)
   isJobInitializingMock = useExecutionStore().isJobInitializing
   const queueStore = useQueueStore()
@@ -176,7 +148,7 @@ describe('useJobList', () => {
 
   it('tracks recently added pending jobs and clears the hint after expiry', async () => {
     useQueueStore().pendingTasks = [
-      createTask({ jobId: '1', job: { priority: 1 }, mockState: 'pending' })
+      createTask({ id: '1', priority: 1, status: 'pending' })
     ]
 
     const { jobItems } = initComposable()
@@ -204,7 +176,7 @@ describe('useJobList', () => {
   it('removes pending hint immediately when the task leaves the queue', async () => {
     const taskId = '2'
     useQueueStore().pendingTasks = [
-      createTask({ jobId: taskId, job: { priority: 1 }, mockState: 'pending' })
+      createTask({ id: taskId, priority: 1, status: 'pending' })
     ]
 
     const { jobItems } = initComposable()
@@ -217,7 +189,7 @@ describe('useJobList', () => {
 
     vi.mocked(buildJobDisplay).mockClear()
     useQueueStore().pendingTasks = [
-      createTask({ jobId: taskId, job: { priority: 2 }, mockState: 'pending' })
+      createTask({ id: taskId, priority: 2, status: 'pending' })
     ]
     await flush()
     void jobItems.value
@@ -230,7 +202,7 @@ describe('useJobList', () => {
 
   it('cleans up timeouts on unmount', async () => {
     useQueueStore().pendingTasks = [
-      createTask({ jobId: '3', job: { priority: 1 }, mockState: 'pending' })
+      createTask({ id: '3', priority: 1, status: 'pending' })
     ]
 
     initComposable()
@@ -246,27 +218,27 @@ describe('useJobList', () => {
   it('sorts all tasks by create time', async () => {
     useQueueStore().pendingTasks = [
       createTask({
-        jobId: 'p',
-        job: { priority: 1 },
-        mockState: 'pending',
-        createTime: 3000
+        id: 'p',
+        priority: 1,
+        status: 'pending',
+        create_time: 3000
       })
     ]
     useQueueStore().runningTasks = [
       createTask({
-        jobId: 'r',
-        job: { priority: 5 },
-        mockState: 'running',
-        createTime: 2000
+        id: 'r',
+        priority: 5,
+        status: 'in_progress',
+        create_time: 2000
       })
     ]
     useQueueStore().historyTasks = [
       createTask({
-        jobId: 'h',
-        job: { priority: 3 },
-        mockState: 'completed',
-        createTime: 1000,
-        executionEndTimestamp: 5000
+        id: 'h',
+        priority: 3,
+        status: 'completed',
+        create_time: 1000,
+        execution_end_time: 5000
       })
     ]
 
@@ -282,9 +254,9 @@ describe('useJobList', () => {
 
   it('filters by job tab and resets failed tab when failures disappear', async () => {
     useQueueStore().historyTasks = [
-      createTask({ jobId: 'c', job: { priority: 3 }, mockState: 'completed' }),
-      createTask({ jobId: 'f', job: { priority: 2 }, mockState: 'failed' }),
-      createTask({ jobId: 'p', job: { priority: 1 }, mockState: 'pending' })
+      createTask({ id: 'c', priority: 3, status: 'completed' }),
+      createTask({ id: 'f', priority: 2, status: 'failed' }),
+      createTask({ id: 'p', priority: 1, status: 'pending' })
     ]
 
     const instance = initComposable()
@@ -300,7 +272,7 @@ describe('useJobList', () => {
     expect(instance.hasFailedJobs.value).toBe(true)
 
     useQueueStore().historyTasks = [
-      createTask({ jobId: 'c', job: { priority: 3 }, mockState: 'completed' })
+      createTask({ id: 'c', priority: 3, status: 'completed' })
     ]
     await flush()
 
@@ -311,16 +283,16 @@ describe('useJobList', () => {
   it('filters by active workflow when requested', async () => {
     useQueueStore().pendingTasks = [
       createTask({
-        jobId: 'wf-1',
-        job: { priority: 2 },
-        mockState: 'pending',
-        workflowId: 'workflow-1'
+        id: 'wf-1',
+        priority: 2,
+        status: 'pending',
+        workflow_id: 'workflow-1'
       }),
       createTask({
-        jobId: 'wf-2',
-        job: { priority: 1 },
-        mockState: 'pending',
-        workflowId: 'workflow-2'
+        id: 'wf-2',
+        priority: 1,
+        status: 'pending',
+        workflow_id: 'workflow-2'
       })
     ]
 
@@ -342,18 +314,18 @@ describe('useJobList', () => {
   it('filters jobs by search query', async () => {
     useQueueStore().historyTasks = [
       createTask({
-        jobId: 'alpha',
-        job: { priority: 2 },
-        mockState: 'completed',
-        createTime: 2000,
-        executionEndTimestamp: 2000
+        id: 'alpha',
+        priority: 2,
+        status: 'completed',
+        create_time: 2000,
+        execution_end_time: 2000
       }),
       createTask({
-        jobId: 'beta',
-        job: { priority: 1 },
-        mockState: 'failed',
-        createTime: 1000,
-        executionEndTimestamp: 1000
+        id: 'beta',
+        priority: 1,
+        status: 'failed',
+        create_time: 1000,
+        execution_end_time: 1000
       })
     ]
 
@@ -387,16 +359,18 @@ describe('useJobList', () => {
   it('hydrates job items with active progress and compute hours', async () => {
     useQueueStore().runningTasks = [
       createTask({
-        jobId: 'active',
-        job: { priority: 3 },
-        mockState: 'running',
-        executionTime: 7_200_000
+        id: 'active',
+        priority: 3,
+        status: 'in_progress',
+        execution_start_time: 1_000,
+        execution_end_time: 7_201_000
       }),
       createTask({
-        jobId: 'other',
-        job: { priority: 2 },
-        mockState: 'running',
-        executionTime: 3_600_000
+        id: 'other',
+        priority: 2,
+        status: 'in_progress',
+        execution_start_time: 1_000,
+        execution_end_time: 3_601_000
       })
     ]
 
@@ -442,13 +416,18 @@ describe('useJobList', () => {
     )
   }
 
-  it.for(['pending', 'initialization', 'running'] as const)(
-    'shows the model download and its progress on a job in state %s',
-    async (state) => {
+  it.for([
+    { state: 'pending', status: 'pending', initializing: false },
+    { state: 'initialization', status: 'pending', initializing: true },
+    { state: 'running', status: 'in_progress', initializing: false }
+  ] as const)(
+    'shows the model download and its progress on a job in state $state',
+    async ({ status, initializing }) => {
       vi.mocked(buildJobDisplay).mockReset()
+      vi.mocked(isJobInitializingMock).mockReturnValue(initializing)
       useQueueStore().pendingTasks = [
-        createTask({ jobId: 'downloading', mockState: state, createTime: 1 }),
-        createTask({ jobId: 'other', mockState: state, createTime: 1 })
+        createTask({ id: 'downloading', status, create_time: 1 }),
+        createTask({ id: 'other', status, create_time: 1 })
       ]
 
       downloadingStyleLora('downloading')
@@ -472,7 +451,7 @@ describe('useJobList', () => {
   it('shows the download, not node progress, on the active job', async () => {
     vi.mocked(buildJobDisplay).mockReset()
     useQueueStore().runningTasks = [
-      createTask({ jobId: 'downloading', mockState: 'running' })
+      createTask({ id: 'downloading', status: 'in_progress' })
     ]
     useExecutionStore().activeJobId = 'downloading'
     Object.assign(useExecutionStore(), {
@@ -495,7 +474,7 @@ describe('useJobList', () => {
   it('shows no download for a job that already finished', async () => {
     vi.mocked(buildJobDisplay).mockReset()
     useQueueStore().historyTasks = [
-      createTask({ jobId: 'finished', mockState: 'completed' })
+      createTask({ id: 'finished', status: 'completed' })
     ]
 
     downloadingStyleLora('finished')
@@ -509,9 +488,9 @@ describe('useJobList', () => {
   it('assigns preview urls for running jobs when previews enabled', async () => {
     useQueueStore().runningTasks = [
       createTask({
-        jobId: 'live-preview',
-        job: { priority: 1 },
-        mockState: 'running'
+        id: 'live-preview',
+        priority: 1,
+        status: 'in_progress'
       })
     ]
     Object.assign(useJobPreviewStore(), {
@@ -530,9 +509,9 @@ describe('useJobList', () => {
   it('omits preview urls when previews are disabled', async () => {
     useQueueStore().runningTasks = [
       createTask({
-        jobId: 'disabled-preview',
-        job: { priority: 1 },
-        mockState: 'running'
+        id: 'disabled-preview',
+        priority: 1,
+        status: 'in_progress'
       })
     ]
     Object.assign(useJobPreviewStore(), {
@@ -576,16 +555,16 @@ describe('useJobList', () => {
   it('groups terminal jobs without an execution end timestamp by create time', async () => {
     useQueueStore().historyTasks = [
       createTask({
-        jobId: 'failed-before-execution',
-        job: { priority: 1 },
-        mockState: 'failed',
-        createTime: Date.now()
+        id: 'failed-before-execution',
+        priority: 1,
+        status: 'failed',
+        create_time: Date.now()
       }),
       createTask({
-        jobId: 'completed-without-end-time',
-        job: { priority: 1 },
-        mockState: 'completed',
-        createTime: Date.now() - 1_000
+        id: 'completed-without-end-time',
+        priority: 1,
+        status: 'completed',
+        create_time: Date.now() - 1_000
       })
     ]
 
@@ -603,30 +582,30 @@ describe('useJobList', () => {
   it('groups job items by date label and sorts by total generation time when requested', async () => {
     useQueueStore().historyTasks = [
       createTask({
-        jobId: 'today-small',
-        job: { priority: 4 },
-        mockState: 'completed',
-        executionEndTimestamp: Date.now(),
-        executionTime: 2_000
+        id: 'today-small',
+        priority: 4,
+        status: 'completed',
+        execution_start_time: Date.now() - 2_000,
+        execution_end_time: Date.now()
       }),
       createTask({
-        jobId: 'today-large',
-        job: { priority: 3 },
-        mockState: 'completed',
-        executionEndTimestamp: Date.now(),
-        executionTime: 5_000
+        id: 'today-large',
+        priority: 3,
+        status: 'completed',
+        execution_start_time: Date.now() - 5_000,
+        execution_end_time: Date.now()
       }),
       createTask({
-        jobId: 'yesterday',
-        job: { priority: 2 },
-        mockState: 'failed',
-        executionEndTimestamp: Date.now() - 86_400_000,
-        executionTime: 1_000
+        id: 'yesterday',
+        priority: 2,
+        status: 'failed',
+        execution_start_time: Date.now() - 86_400_000 - 1_000,
+        execution_end_time: Date.now() - 86_400_000
       }),
       createTask({
-        jobId: 'undated',
-        job: { priority: 1 },
-        mockState: 'pending'
+        id: 'undated',
+        priority: 1,
+        status: 'pending'
       })
     ]
 
