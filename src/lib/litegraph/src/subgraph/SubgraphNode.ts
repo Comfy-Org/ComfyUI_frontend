@@ -8,6 +8,7 @@ import type {
   Subgraph,
   SubgraphInput
 } from '@comfyorg/graph-model/entityRegistry'
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { once, uniqBy } from 'es-toolkit'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
@@ -358,7 +359,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       input._listenerController.abort()
     }
     input._listenerController = new AbortController()
-    const { signal } = input._listenerController
+    const signal = combineAbortSignals([
+      input._listenerController.signal,
+      this._eventAbortController.signal
+    ])
 
     subgraphInput.events.addEventListener(
       'input-connected',
