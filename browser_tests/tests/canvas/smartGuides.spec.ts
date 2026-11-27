@@ -19,6 +19,11 @@ async function boundsOf(comfyPage: ComfyPage, titles: string[]) {
   )
 }
 
+async function cornerOf(comfyPage: ComfyPage, title: string) {
+  const [{ x, y }] = await boundsOf(comfyPage, [title])
+  return { x: Math.round(x), y: Math.round(y) }
+}
+
 async function leftsOf(comfyPage: ComfyPage, titles: string[]) {
   return (await boundsOf(comfyPage, titles)).map(({ x }) => Math.round(x))
 }
@@ -124,8 +129,8 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           await comfyMouse.dragElementBy(dragged.header, { x: -5, y: 60 })
 
           await expect
-            .poll(() => leftsOf(comfyPage, ['Dragged']))
-            .toEqual([left])
+            .poll(() => cornerOf(comfyPage, 'Dragged'))
+            .toEqual({ x: left, y: 330 })
         })
       })
     }
