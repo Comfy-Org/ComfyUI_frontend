@@ -268,3 +268,67 @@ describe('buildJobDisplay while a model downloads', () => {
     expect(display.secondary).toBe('50 MB')
   })
 })
+
+describe('buildJobDisplay for a job on a deployment', () => {
+  const onFluxStudio = {
+    deployment_id: 'dep-flux',
+    release_id: 'rel-flux-3',
+    name: 'production',
+    build_name: 'Flux Studio',
+    release_version: 3
+  }
+
+  it('ends the queued time with the Build name', () => {
+    const task = createTask({
+      job: { status: 'pending', deployment: onFluxStudio }
+    })
+
+    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
+      'queue.onBuild(detail=en-US:1710000000000,build=Flux Studio)'
+    )
+  })
+
+  it('shows the Build name alone when the row has no other detail', () => {
+    const task = createTask({
+      job: { status: 'in_progress', deployment: onFluxStudio }
+    })
+
+    expect(buildJobDisplay(task, 'running', createCtx()).secondary).toBe(
+      'Flux Studio'
+    )
+  })
+
+  it('falls back to the deployment name when the Build name is absent', () => {
+    const task = createTask({
+      job: {
+        status: 'pending',
+        deployment: { ...onFluxStudio, build_name: undefined }
+      }
+    })
+
+    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
+      'queue.onBuild(detail=en-US:1710000000000,build=production)'
+    )
+  })
+
+  it('leaves a Comfy Cloud job as it was', () => {
+    const task = createTask({ job: { status: 'pending' } })
+
+    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
+      'en-US:1710000000000'
+    )
+  })
+
+  it('leaves the row as it was when the deployment has no name to show', () => {
+    const task = createTask({
+      job: {
+        status: 'pending',
+        deployment: { deployment_id: 'dep-flux', release_id: 'rel-flux-3' }
+      }
+    })
+
+    expect(buildJobDisplay(task, 'pending', createCtx()).secondary).toBe(
+      'en-US:1710000000000'
+    )
+  })
+})

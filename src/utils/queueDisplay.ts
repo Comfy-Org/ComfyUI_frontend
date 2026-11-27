@@ -1,3 +1,5 @@
+import { zJobDeployment } from '@comfyorg/ingest-types/zod'
+
 import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { resultItemUrl } from '@/utils/resultItemUrl'
@@ -64,7 +66,27 @@ const buildQueuedTime = (
   return formatClockTimeFn(ts, locale)
 }
 
-export const buildJobDisplay = (
+const deploymentBuildName = (task: TaskItemImpl): string | undefined => {
+  const deployment = zJobDeployment.safeParse(task.job.deployment)
+  if (!deployment.success) return undefined
+  return deployment.data.build_name ?? deployment.data.name
+}
+
+const withBuildName = (
+  display: JobDisplay,
+  build: string | undefined,
+  t: BuildJobDisplayCtx['t']
+): JobDisplay => {
+  if (!build) return display
+  return {
+    ...display,
+    secondary: display.secondary
+      ? t('queue.onBuild', { detail: display.secondary, build })
+      : build
+  }
+}
+
+const buildStateDisplay = (
   task: TaskItemImpl,
   state: JobState,
   ctx: BuildJobDisplayCtx
@@ -175,3 +197,14 @@ export const buildJobDisplay = (
     showClear: true
   }
 }
+
+export const buildJobDisplay = (
+  task: TaskItemImpl,
+  state: JobState,
+  ctx: BuildJobDisplayCtx
+): JobDisplay =>
+  withBuildName(
+    buildStateDisplay(task, state, ctx),
+    deploymentBuildName(task),
+    ctx.t
+  )
