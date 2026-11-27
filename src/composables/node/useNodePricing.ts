@@ -30,6 +30,7 @@ import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
@@ -39,8 +40,6 @@ import type { PriceBadge } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { isSubgraphNode } from '@/utils/graphTraversalUtil'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-
-const getNodeConstructorData = (node: LGraphNode) => node.constructor.nodeData
 
 const buildJsonataContext = (
   node: LGraphNode,
@@ -187,13 +186,10 @@ const scheduleEvaluation = (
   inflight.set(node, { sig, promise })
 }
 
-/**
- * Get the pricing rule for a node from its nodeData.price_badge field.
- */
 const getRuleForNode = (
   node: LGraphNode
 ): CompiledJsonataPricingRule | undefined => {
-  const nodeData = getNodeConstructorData(node)
+  const nodeData = nodeDefinition(node)
   if (!nodeData?.api_node) return undefined
 
   const nodeName = nodeData.name
@@ -226,7 +222,7 @@ const UNRESOLVED_PRICE: NodeRunPrice = {
 
 type CostBearingNode = {
   node: LGraphNode
-  nodeData: NonNullable<ReturnType<typeof getNodeConstructorData>>
+  nodeData: NonNullable<ReturnType<typeof nodeDefinition>>
   wrapper?: SubgraphNode
 }
 
@@ -240,7 +236,7 @@ const collectApiNodes = (
   graph.nodes.flatMap((node) => {
     if (isRunExcluded(node)) return []
     if (isSubgraphNode(node)) return collectApiNodes(node.subgraph, node)
-    const nodeData = getNodeConstructorData(node)
+    const nodeData = nodeDefinition(node)
     return nodeData?.api_node ? [{ node, nodeData, wrapper }] : []
   })
 
@@ -316,21 +312,13 @@ const estimateGraphRunCost = async (
 // Public composable API
 // -----------------------------
 export const useNodePricing = () => {
-  /**
-   * Sync getter:
-   * - returns cached label for the current node signature when available
-   * - schedules async evaluation when needed
-   * - remains non-fatal on errors (returns safe fallback '')
-   */
   const getNodeDisplayPrice = (
     node: LGraphNode,
     widgetOverrides?: ReadonlyMap<string, unknown>
   ): string => {
-    // Make this function reactive: when async evaluation completes, we bump pricingTick,
-    // which causes this getter to recompute in Vue render/computed contexts.
     void pricingTick.value
 
-    const nodeData = getNodeConstructorData(node)
+    const nodeData = nodeDefinition(node)
     if (!nodeData?.api_node) return ''
 
     const rule = getRuleForNode(node)
@@ -344,8 +332,6 @@ export const useNodePricing = () => {
     const hit = sigCache?.get(sig)
     if (hit !== undefined) return hit
 
-    // Cache miss: start async evaluation.
-    // Return the last-known label (if any) to avoid flicker.
     scheduleEvaluation(node, rule, ctx, sig)
     const labels = [...(sigCache?.values() ?? [])]
     return labels.at(-1) ?? ''

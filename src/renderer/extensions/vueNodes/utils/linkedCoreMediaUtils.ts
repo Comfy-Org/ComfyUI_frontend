@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
 
@@ -21,7 +22,7 @@ function isLinkedCoreMediaLoaderClass(
 function getCoreMediaLoaderClass(
   node: LGraphNode
 ): LinkedCoreMediaLoaderClass | undefined {
-  const nodeData = node.constructor.nodeData
+  const nodeData = nodeDefinition(node)
   const nodeClass = node.constructor.comfyClass
   if (
     !nodeData ||

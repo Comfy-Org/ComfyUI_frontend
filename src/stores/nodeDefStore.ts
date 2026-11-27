@@ -8,6 +8,7 @@ import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConc
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
@@ -243,7 +244,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     return nodeDefsByName.value[nodeName]
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-    const nodeTypeName = node.constructor.nodeData?.name ?? node.type
+    const definition = nodeDefinition(node)
+    if (node.isSubgraphNode()) {
+      if (!definition) return null
+      return definition instanceof ComfyNodeDefImpl
+        ? definition
+        : new ComfyNodeDefImpl(definition)
+    }
+    const nodeTypeName = definition?.name ?? node.type
     if (!nodeTypeName) return null
     const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
     return nodeDef

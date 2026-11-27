@@ -40,11 +40,7 @@ import {
 import { createUuidv4 } from '@/utils/uuid'
 import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 
-export const NODE_CREATION_GRAPH_FACTORY = Symbol('nodeCreationGraphFactory')
-/** The subgraph id a {@link NODE_CREATION_GRAPH_FACTORY} targets, independent of the type's registration key. */
-export const NODE_CREATION_TARGET_SUBGRAPH_ID = Symbol(
-  'nodeCreationTargetSubgraphId'
-)
+import { createLegacyNode } from './nodeConstruction'
 
 /** Options for {@link LiteGraphGlobal.createNode}. Node fields are shallow-copied onto the new node. */
 export interface CreateNodeOptions {
@@ -637,53 +633,7 @@ export class LiteGraphGlobal {
     title?: string,
     options?: CreateNodeOptions
   ): LGraphNode | null {
-    const base_class = Object.hasOwn(this.registered_node_types, type)
-      ? this.registered_node_types[type]
-      : undefined
-    if (!base_class) {
-      if (this.debug) console.warn(`GraphNode type "${type}" not registered.`)
-      return null
-    }
-
-    title = title || base_class.title || type
-
-    let node: LGraphNode
-
-    try {
-      const graphAwareClass = base_class as typeof LGraphNode & {
-        [NODE_CREATION_GRAPH_FACTORY]?: (
-          title: string,
-          graph?: GraphOrSubgraph
-        ) => LGraphNode | null
-      }
-      const createdNode = graphAwareClass[NODE_CREATION_GRAPH_FACTORY]
-        ? graphAwareClass[NODE_CREATION_GRAPH_FACTORY](
-            title,
-            options?.targetGraph
-          )
-        : new base_class(title)
-      if (!createdNode) return null
-      node = createdNode
-      node._state.type = type
-    } catch (error) {
-      if (!this.catch_exceptions) throw error
-      console.error(error)
-      return null
-    }
-
-    if (!node.title && title) node.title = title
-    // call onresize?
-    node.mode ||= LGraphEventMode.ALWAYS
-
-    // extra options
-    if (options) {
-      const { targetGraph: _, ...nodeOptions } = options
-      Object.assign(node, nodeOptions)
-    }
-
-    // callback
-    node.onNodeCreated?.()
-    return node
+    return createLegacyNode(this, type, title, options)
   }
 
   /**

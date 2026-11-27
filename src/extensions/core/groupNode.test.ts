@@ -890,7 +890,13 @@ describe('GroupNodeHandler.convertToNodes', () => {
     useSubgraphService().registerNewSubgraph(ownedSubgraph, definition)
 
     const validType = `Valid${crypto.randomUUID()}`
-    class ValidMember extends LGraphNode {}
+    const constructed = vi.fn()
+    class ValidMember extends LGraphNode {
+      constructor() {
+        super('Valid member')
+        constructed()
+      }
+    }
     LiteGraph.registerNodeType(validType, ValidMember)
 
     const receivingGraph = new LGraph()
@@ -918,6 +924,7 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
     const result = handler.convertToNodes()
     expect(result).toEqual({ refused: true, memberType: definition.id })
+    expect(constructed).not.toHaveBeenCalled()
     expect(receivingGraph.nodes).toEqual([
       outerNode,
       upstreamNode,
@@ -1112,7 +1119,7 @@ describe('convertLoadedGroupNodes via groupNodeExtension.afterConfigureGraph', (
     ])
   })
 
-  it('removes a group node when conversion fails for a reason other than refusal', async () => {
+  it('keeps a group node when conversion throws before replacing it', async () => {
     const convertToNodes = vi.fn(() => {
       throw new Error('unrelated failure')
     })
@@ -1130,6 +1137,6 @@ describe('convertLoadedGroupNodes via groupNodeExtension.afterConfigureGraph', (
       workflow: null
     })
 
-    expect(graph.nodes).toEqual([])
+    expect(graph.nodes).toEqual([groupNode])
   })
 })

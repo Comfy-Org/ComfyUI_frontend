@@ -5,11 +5,17 @@ import type {
   Vector2
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { prepareNodeConstruction } from '@/lib/litegraph/src/nodeConstruction'
+import type { NodeConstructionResult } from '@/lib/litegraph/src/nodeConstruction'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
 export interface DeserialisedGraphNodes {
   createdNodes: LGraphNode[]
   nodesBySourceIndex: (LGraphNode | null)[]
+  failure?: {
+    sourceIndex: number
+    result: Exclude<NodeConstructionResult, { kind: 'created' }>
+  }
 }
 
 function topLeftPosition(
@@ -26,16 +32,54 @@ function topLeftPosition(
     : [fallback[0], fallback[1]]
 }
 
-function createUnconfiguredNodes(
+function constructBatch(
   nodes: readonly { type: string }[],
   graph: LGraph
-): (LGraphNode | null)[] {
-  return nodes.map(({ type }) =>
-    LiteGraph.createNode(type, undefined, { targetGraph: graph })
+): DeserialisedGraphNodes {
+  const preparations = nodes.map(({ type }) =>
+    prepareNodeConstruction(LiteGraph, { type, graph })
   )
+  const staged: Extract<NodeConstructionResult, { kind: 'created' }>[] = []
+  const fail = (
+    failure: NonNullable<DeserialisedGraphNodes['failure']>
+  ): DeserialisedGraphNodes => {
+    for (const built of staged) built.cancelUnattachedSubscriptions()
+    const { result } = failure
+    if (result.kind === 'failed') console.error(result.cause)
+    else if (result.reason === 'missing-owned-definition') result.report()
+    return {
+      createdNodes: [],
+      nodesBySourceIndex: preparations.map(() => null),
+      failure
+    }
+  }
+  const refusedIndex = preparations.findIndex(
+    (prepared) => prepared.kind === 'refused'
+  )
+  const refusal = preparations.at(refusedIndex)
+  if (refusal?.kind === 'refused')
+    return fail({ sourceIndex: refusedIndex, result: refusal })
+
+  for (const [sourceIndex, prepared] of preparations.entries()) {
+    const result = prepared.kind === 'ready' ? prepared.construct() : prepared
+    if (result.kind !== 'created') return fail({ sourceIndex, result })
+    staged.push(result)
+  }
+  const staleIndex = staged.findIndex((built) => !built.isCurrent())
+  if (staleIndex !== -1)
+    return fail({
+      sourceIndex: staleIndex,
+      result: {
+        kind: 'refused',
+        reason: 'stale-preparation',
+        type: nodes[staleIndex].type
+      }
+    })
+
+  const createdNodes = staged.map(({ node }) => node)
+  return { createdNodes, nodesBySourceIndex: createdNodes }
 }
 
-/** Creates serialised nodes and links while retaining the source index of refused nodes. */
 export function deserialiseIntoGraphWithSourceIndices(
   data: string,
   graph: LGraph,
@@ -43,20 +87,17 @@ export function deserialiseIntoGraphWithSourceIndices(
   options: { requireAll?: boolean } = {}
 ): DeserialisedGraphNodes {
   const deserialised = JSON.parse(data)
-  const topLeft = topLeftPosition(deserialised.nodes, position)
-  const precreated = options.requireAll
-    ? createUnconfiguredNodes(deserialised.nodes, graph)
+  const batch = options.requireAll
+    ? constructBatch(deserialised.nodes, graph)
     : undefined
-  if (precreated?.some((node) => node === null)) {
-    return { createdNodes: [], nodesBySourceIndex: precreated }
-  }
-  const nodesBySourceIndex: (LGraphNode | null)[] = precreated ?? []
-
+  if (batch?.failure) return batch
+  const nodesBySourceIndex = batch?.nodesBySourceIndex ?? []
+  const topLeft = topLeftPosition(deserialised.nodes, position)
   for (const [index, info] of deserialised.nodes.entries()) {
-    const node = precreated
+    const node = options.requireAll
       ? nodesBySourceIndex[index]
       : LiteGraph.createNode(info.type, undefined, { targetGraph: graph })
-    if (!precreated) nodesBySourceIndex.push(node)
+    if (!options.requireAll) nodesBySourceIndex.push(node)
     if (!node) continue
 
     node.configure(info)

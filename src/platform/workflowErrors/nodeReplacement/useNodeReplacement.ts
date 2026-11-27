@@ -5,6 +5,7 @@ import {
 import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import {
   inputLink,
   inputLinkId,
@@ -529,7 +530,7 @@ export function useNodeReplacement() {
 
     try {
       const placeholders = collectAllNodes(graph, (n) => {
-        if (!n.last_serialization && !n.constructor.nodeData?.deprecated)
+        if (!n.last_serialization && !nodeDefinition(n)?.deprecated)
           return false
         const originalType = n.last_serialization?.type || n.type
         return !!originalType && targetTypes.has(originalType)

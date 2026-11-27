@@ -9,6 +9,7 @@ import type {
   IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { prepareNodeConstruction } from '@/lib/litegraph/src/nodeConstruction'
 import {
   createTestRootGraph,
   createTestSubgraphData
@@ -16,6 +17,7 @@ import {
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -317,6 +319,109 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     assert.instanceOf(direct, SubgraphNode)
     expect(direct.subgraph).toBe(subgraphB)
     expect(direct.graph).toBe(graphB)
+  })
+
+  it('stops updating an abandoned extension node without cancelling its successful sibling', () => {
+    const subgraphId = '00000000-0000-4000-8000-000000000127'
+    const graph = createTestRootGraph()
+    const definition = graph.createSubgraph(
+      createTestSubgraphData({ id: subgraphId })
+    )
+    useLitegraphService().registerSubgraphNodeDef(
+      createNodeDefV1({ name: subgraphId, output: [] }),
+      definition,
+      subgraphInstanceData(subgraphId)
+    )
+    const Registered = LiteGraph.registered_node_types[subgraphId]
+    assert.exists(Registered)
+    const abandonedNodes: SubgraphNode[] = []
+    const cause = new Error('Extension constructor failed after super')
+    class ThrowingExtension extends Registered {
+      constructor(title: string) {
+        super(title)
+        assert.instanceOf(this, SubgraphNode)
+        abandonedNodes.push(this)
+        throw cause
+      }
+    }
+    LiteGraph.registerNodeType(subgraphId, ThrowingExtension)
+    const prepared = prepareNodeConstruction(LiteGraph, {
+      type: subgraphId,
+      graph
+    })
+    assert(prepared.kind === 'ready')
+
+    expect(prepared.construct()).toEqual({
+      kind: 'failed',
+      phase: 'constructor',
+      cause
+    })
+    const [abandoned] = abandonedNodes
+    assert.exists(abandoned)
+    LiteGraph.registerNodeType(subgraphId, Registered)
+    const sibling = LiteGraph.createNode(subgraphId, undefined, {
+      targetGraph: graph
+    })
+    assert.instanceOf(sibling, SubgraphNode)
+    graph.add(sibling)
+
+    definition.addOutput('liveResult', 'MASK')
+
+    expect(abandoned.outputs).toEqual([])
+    expect(sibling.outputs.map(({ name, type }) => ({ name, type }))).toEqual([
+      { name: 'liveResult', type: 'MASK' }
+    ])
+  })
+
+  it('refuses a prepared generated node when its owner schema is replaced under the same registered constructor', () => {
+    const subgraphId = '00000000-0000-4000-8000-000000000128'
+    const nodeCreated = vi.fn()
+    useExtensionStore().registerExtension({
+      name: 'TestStalePreparedSubgraph',
+      nodeCreated
+    })
+    const graph = createTestRootGraph()
+    const definition = graph.createSubgraph(
+      createTestSubgraphData({ id: subgraphId })
+    )
+    useLitegraphService().registerSubgraphNodeDef(
+      createNodeDefV1({ name: subgraphId }),
+      definition,
+      subgraphInstanceData(subgraphId)
+    )
+    const Registered = LiteGraph.registered_node_types[subgraphId]
+    assert.exists(Registered)
+    const prepared = prepareNodeConstruction(LiteGraph, {
+      type: subgraphId,
+      graph
+    })
+    assert(prepared.kind === 'ready')
+    useLitegraphService().registerSubgraphNodeDef(
+      createNodeDefV1({
+        name: subgraphId,
+        output: ['MASK'],
+        output_name: ['replacementResult']
+      }),
+      definition,
+      subgraphInstanceData(subgraphId)
+    )
+    LiteGraph.registerNodeType(subgraphId, Registered)
+
+    expect(prepared.construct()).toEqual({
+      kind: 'refused',
+      reason: 'stale-preparation',
+      type: subgraphId
+    })
+    expect(nodeCreated).not.toHaveBeenCalled()
+    const replacement = LiteGraph.createNode(subgraphId, undefined, {
+      targetGraph: graph
+    })
+    assert.instanceOf(replacement, SubgraphNode)
+    expect(nodeCreated).toHaveBeenCalledOnce()
+    expect(nodeCreated).toHaveBeenCalledWith(replacement, app)
+    expect(
+      replacement.outputs.map(({ name, type }) => ({ name, type }))
+    ).toEqual([{ name: 'replacementResult', type: 'MASK' }])
   })
 
   it('reports and refuses a subgraph type missing from the target graph', () => {

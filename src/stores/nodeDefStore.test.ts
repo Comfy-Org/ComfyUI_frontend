@@ -1,9 +1,10 @@
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -36,6 +37,71 @@ describe('useNodeDefStore', () => {
     deprecated: false,
     experimental: false,
     ...overrides
+  })
+
+  describe('runtime node definitions', () => {
+    it.for([
+      {
+        representation: 'plain',
+        definition: (definition: ComfyNodeDef) => definition
+      },
+      {
+        representation: 'implementation',
+        definition: (definition: ComfyNodeDef) =>
+          new ComfyNodeDefImpl(definition)
+      }
+    ])(
+      'uses the subgraph definition instead of a colliding catalog entry ($representation)',
+      ({ definition }) => {
+        const subgraph = createTestSubgraph()
+        const ownedDefinition = createMockNodeDef({
+          name: subgraph.id,
+          display_name: 'Owned definition',
+          input: { required: { owned: ['STRING', {}] } }
+        })
+        class OwnedSubgraphNode extends SubgraphNode {
+          static override nodeData = definition(ownedDefinition)
+        }
+        const node = new OwnedSubgraphNode(subgraph.rootGraph, subgraph, {
+          id: -1,
+          type: subgraph.id,
+          pos: [0, 0],
+          size: [100, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+        store.updateNodeDefs([
+          createMockNodeDef({
+            name: subgraph.id,
+            display_name: 'Other workflow definition',
+            input: { required: { other: ['INT', {}] } }
+          })
+        ])
+
+        expect(store.fromLGraphNode(node)).toMatchObject({
+          display_name: 'Owned definition',
+          inputs: { owned: { name: 'owned', type: 'STRING' } }
+        })
+      }
+    )
+
+    it('resolves ordinary nodes through their catalog definition name', () => {
+      class OrdinaryNode extends LGraphNode {
+        static override nodeData = { name: 'CanonicalNode' }
+      }
+      store.updateNodeDefs([
+        createMockNodeDef({ name: 'CanonicalNode', display_name: 'Catalog' }),
+        createMockNodeDef({ name: 'AliasNode', display_name: 'Alias' })
+      ])
+      const node = new OrdinaryNode('Instance title', 'AliasNode')
+
+      expect(store.fromLGraphNode(node)).toBe(
+        store.getNodeDefByName('CanonicalNode')
+      )
+    })
   })
 
   describe('filter registry', () => {

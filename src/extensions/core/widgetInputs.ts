@@ -12,6 +12,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import type { IBaseWidget, IWidgetLocator } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/integration/createAssetWidget'
@@ -510,7 +511,7 @@ export function getWidgetConfig(
 }
 
 function getConfig(this: LGraphNode, widgetName: string) {
-  const { nodeData } = this.constructor
+  const nodeData = nodeDefinition(this)
   return (
     nodeData?.input?.required?.[widgetName] ??
     nodeData?.input?.optional?.[widgetName]

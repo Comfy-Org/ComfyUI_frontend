@@ -131,14 +131,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    */
   invalidatePromotedViews(): void {}
 
-  private _eventAbortController = new AbortController()
+  private _eventAbortController: AbortController
 
   constructor(
     graph: GraphOrSubgraph,
     readonly subgraph: Subgraph,
-    instanceData: ExportedSubgraphInstance
+    instanceData: ExportedSubgraphInstance,
+    eventAbortController = new AbortController()
   ) {
     super(subgraph.name, subgraph.id)
+    this._eventAbortController = eventAbortController
     this.graph = graph
 
     Object.defineProperty(this, 'widgets', {
@@ -275,10 +277,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
         const previousLabel = input.label ?? input.name
         if (previousLabel === oldName) input.label = newName
-        // Do NOT change input.widget.name — it is the stable internal
-        // identifier used by onGraphConfigured (widgetInputs.ts) to match
-        // inputs to widgets. Changing it to the display label would cause
-        // collisions when two promoted inputs share the same label.
         if (input.widgetId) {
           const store = useWidgetValueStore()
           const widgetLabel =
@@ -317,8 +315,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     this.addTitleButton({
       name: 'enter_subgraph',
-      text: '\uE93B', // Unicode for pi-window-maximize
-      yOffset: 0, // No vertical offset needed, button is centered
+      text: '\uE93B',
+      yOffset: 0,
       xOffset: -10,
       fontSize: 16
     })

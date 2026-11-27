@@ -7,6 +7,7 @@ import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { commonType } from '@/lib/litegraph/src/utils/type'
@@ -408,7 +409,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
   node.comfyDynamic ??= {}
   node.comfyDynamic.matchType = {}
 
-  const outputGroups = node.constructor.nodeData?.output_matchtypes
+  const outputGroups = nodeDefinition(node)?.output_matchtypes
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
     function (
@@ -431,7 +432,6 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         const connectingType = (output ?? subgraphInput)?.type
         if (connectingType) linf.type = connectingType
       }
-      //NOTE: inputs contains input
       const groupInputs: INodeInputSlot[] = node.inputs.filter(
         (inp) => inp.name in matchGroup
       )
@@ -441,11 +441,6 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         const { output, subgraphInput } = link.resolve(graph)
         return (output ?? subgraphInput)?.type ?? '*'
       })
-      //An input slot can accept a connection that is
-      // - Compatible with original type
-      // - Compatible with all other input types
-      //An output slot can output
-      // - Only what every input can output
       groupInputs.forEach((input, idx) => {
         const otherConnected = [
           ...connectedTypes.slice(0, idx),

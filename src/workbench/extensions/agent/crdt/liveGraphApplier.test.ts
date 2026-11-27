@@ -32,7 +32,8 @@ import {
 import {
   NODE_CREATION_GRAPH_FACTORY,
   NODE_CREATION_TARGET_SUBGRAPH_ID
-} from '@/lib/litegraph/src/LiteGraphGlobal'
+} from '@/lib/litegraph/src/nodeConstruction'
+import type { NodeConstructionCapability } from '@/lib/litegraph/src/nodeConstruction'
 import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
@@ -1177,13 +1178,20 @@ describe('LiveGraphApplier', () => {
     const type = '00000000-0000-4000-8000-00000000f00d'
     const refusals: (GraphOrSubgraph | undefined)[] = []
     class ForeignSubgraphNode extends LGraphNode {
-      static [NODE_CREATION_GRAPH_FACTORY](
-        _title: string,
-        targetGraph?: GraphOrSubgraph
-      ): LGraphNode | null {
-        refusals.push(targetGraph)
-        return null
-      }
+      static override [NODE_CREATION_GRAPH_FACTORY]: NodeConstructionCapability =
+        {
+          prepare: ({ graph, type }) => {
+            refusals.push(graph)
+            return {
+              kind: 'refused',
+              reason: 'missing-owned-definition',
+              type,
+              targetSubgraphId: type,
+              report: () => {}
+            }
+          },
+          definitionFor: (node) => node.constructor.nodeData
+        }
     }
     const docNode = (pos: [number, number]) => ({
       id: 1,
@@ -1275,18 +1283,33 @@ describe('LiveGraphApplier', () => {
         })
       }
 
-      static [NODE_CREATION_TARGET_SUBGRAPH_ID] = targetId
+      static override [NODE_CREATION_TARGET_SUBGRAPH_ID] = targetId
 
-      static [NODE_CREATION_GRAPH_FACTORY](
-        _title: string,
-        targetGraph?: GraphOrSubgraph
-      ): LGraphNode | null {
-        if (!targetGraph) return null
-        const target = targetGraph.rootGraph.subgraphs.get(targetId)
-        return target
-          ? createTestSubgraphNode(target, { parentGraph: targetGraph })
-          : null
-      }
+      static override [NODE_CREATION_GRAPH_FACTORY]: NodeConstructionCapability =
+        {
+          prepare: ({ registered, graph, type }) => {
+            const target = graph?.rootGraph.subgraphs.get(targetId)
+            if (!graph || !target) {
+              return {
+                kind: 'refused',
+                reason: 'missing-owned-definition',
+                type,
+                targetSubgraphId: targetId,
+                report: () => {}
+              }
+            }
+            return {
+              kind: 'ready',
+              construct: () =>
+                createTestSubgraphNode(target, { parentGraph: graph }),
+              isCurrent: () =>
+                registered[NODE_CREATION_TARGET_SUBGRAPH_ID] === targetId &&
+                graph.rootGraph.subgraphs.get(targetId) === target,
+              cancel: () => {}
+            }
+          },
+          definitionFor: (node) => node.constructor.nodeData
+        }
     }
     LiteGraph.registerNodeType(type, AliasedSubgraphNode)
     const docNode = (pos: [number, number]) => ({

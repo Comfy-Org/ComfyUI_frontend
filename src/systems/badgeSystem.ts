@@ -9,6 +9,7 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { registerBadgeRowsProvider } from '@/lib/litegraph/src/nodeBadgeDraw'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -171,16 +172,10 @@ function collectPromotedOverrides(
   return overrides
 }
 
-/**
- * Aggregates the inner api nodes' credits for a wrapper, tracking their
- * pricing revisions so inner price changes recompute the wrapper.
- */
 function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
   const pricing = useNodePricing()
   const apiLeaves = mapUniqueNodes(wrapper.subgraph, (node) =>
-    !node.isSubgraphNode() && node.constructor.nodeData?.api_node
-      ? node
-      : undefined
+    !node.isSubgraphNode() && nodeDefinition(node)?.api_node ? node : undefined
   )
   for (const leaf of apiLeaves) {
     const graphId = leaf.graph?.rootGraph.id
@@ -200,7 +195,7 @@ function gatherSubgraphCredits(wrapper: SubgraphNode): PricingBadgeSources {
 
 function gatherPricing(node: LGraphNode): PricingBadgeSources {
   if (node.isSubgraphNode()) return gatherSubgraphCredits(node)
-  if (!node.constructor.nodeData?.api_node) return { kind: 'none' }
+  if (!nodeDefinition(node)?.api_node) return { kind: 'none' }
   const graphId = node.graph?.rootGraph.id
   if (graphId !== undefined) touchPricingSources(graphId, node)
   return { kind: 'api-node', label: useNodePricing().getNodeDisplayPrice(node) }
