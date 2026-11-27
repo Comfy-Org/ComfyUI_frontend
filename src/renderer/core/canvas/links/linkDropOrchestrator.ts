@@ -3,7 +3,7 @@ import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConn
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { getVueSlotAnchor } from '@/renderer/core/layout/slots/derivedSlotAnchors'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
@@ -121,7 +121,7 @@ export const resolveNodeSurfaceSlotCandidate = (
   const rendered =
     node.flags.collapsed ||
     node.type === 'Reroute' ||
-    getVueSlotAnchor(
+    layoutStore.derivedSlotAnchorOf(
       graph.rootGraph.id,
       nodeId,
       index,

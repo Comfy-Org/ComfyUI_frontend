@@ -911,6 +911,10 @@ describe('root-scoped node layouts', () => {
           bounds: { x: -5, y: 5, width: 10, height: 10 }
         }
       ])
+      layoutStore.setDerivedSlotAnchors(graphId, nodeId, {
+        input: new Map([[0, { x: -6, y: 14 }]]),
+        output: new Map()
+      })
     }
 
     for (const graphId of [FIRST_GRAPH, SECOND_GRAPH]) {
@@ -945,6 +949,9 @@ describe('root-scoped node layouts', () => {
     expect(
       layoutStore.getSlotBounds(FIRST_GRAPH, nodeId, 0, 'input')
     ).toBeNull()
+    expect(
+      layoutStore.derivedSlotAnchorOf(FIRST_GRAPH, nodeId, 0, 'input')
+    ).toBeUndefined()
     expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
     expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
 
@@ -955,6 +962,9 @@ describe('root-scoped node layouts', () => {
     expect(layoutStore.getSlotBounds(SECOND_GRAPH, nodeId, 0, 'input')).toEqual(
       { x: -5, y: 5, width: 10, height: 10 }
     )
+    expect(
+      layoutStore.derivedSlotAnchorOf(SECOND_GRAPH, nodeId, 0, 'input')
+    ).toEqual({ x: -6, y: 14 })
     expect(layoutStore.getGroupLayout(SECOND_GRAPH, GROUP_ID)).not.toBeNull()
     expect(
       layoutStore.getRerouteLayout(SECOND_GRAPH, REROUTE_ID)

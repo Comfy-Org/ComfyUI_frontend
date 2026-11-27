@@ -47,6 +47,7 @@ import type {
   RectTuple as StoredRect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
+import type { DerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import {
   isBoundsEqual,
   isPointEqual
@@ -213,6 +214,7 @@ class LayoutStoreImpl {
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
+  private derivedSlotAnchors = new Map<ScopedLayoutKey, DerivedSlotAnchors>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
@@ -514,6 +516,29 @@ class LayoutStoreImpl {
         .get(makeScopedLayoutKey(graphId, nodeId))
         ?.[type].get(index) ?? null
     )
+  }
+
+  /** Publishes a node's derived slot anchors for link endpoints, or forgets them when `anchors` is undefined. */
+  setDerivedSlotAnchors(
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    anchors: DerivedSlotAnchors | undefined
+  ): void {
+    const key = makeScopedLayoutKey(rootGraphId, nodeId)
+    if (anchors) this.derivedSlotAnchors.set(key, anchors)
+    else this.derivedSlotAnchors.delete(key)
+  }
+
+  /** An expanded slot's anchor relative to `node.pos`, from the node's derived body layout. */
+  derivedSlotAnchorOf(
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    index: SlotIndex,
+    direction: SlotDirection
+  ): Point | undefined {
+    return this.derivedSlotAnchors
+      .get(makeScopedLayoutKey(rootGraphId, nodeId))
+      ?.[direction].get(index)
   }
 
   /** Forgets everything the DOM measured for an entity. */
@@ -849,6 +874,10 @@ class LayoutStoreImpl {
       if (!key.startsWith(prefix)) continue
       this.slotOffsets.delete(key)
     }
+    for (const key of this.derivedSlotAnchors.keys()) {
+      if (!key.startsWith(prefix)) continue
+      this.derivedSlotAnchors.delete(key)
+    }
     for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
@@ -948,6 +977,7 @@ class LayoutStoreImpl {
       this.rerouteLayouts.clear()
       this.rerouteSpatialIndex.clear()
       this.slotOffsets.clear()
+      this.derivedSlotAnchors.clear()
     }, 'initialization')
     this.clearViewGeometry()
   }
