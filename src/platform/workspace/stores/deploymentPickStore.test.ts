@@ -24,6 +24,12 @@ import {
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+
 import { useDeploymentPickStore } from './deploymentPickStore'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -939,6 +945,71 @@ describe('useDeploymentPickStore', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
+  describe("the Build's workflows after a switch", () => {
+    const linkedFolder = () =>
+      getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows')
+
+    beforeEach(() => {
+      sessionStorage.clear()
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.WORKFLOWS)
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+    })
+
+    it("has the boot after the reload open the picked deployment's Build folder", async () => {
+      const store = useDeploymentPickStore()
+      await store.load()
+
+      await store.pick('dep-1')
+
+      expect(reload).toHaveBeenCalledOnce()
+      expect(linkedFolder()).toBe('Studio Build (b-1)')
+    })
+
+    it('links no workflows for a switch to Comfy Cloud', async () => {
+      const store = useDeploymentPickStore()
+      await store.load()
+
+      await store.pick(null)
+
+      expect(linkedFolder()).toBeUndefined()
+    })
+
+    it('links no workflows for a deployment with no known Build', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: listing.items.map((item) => ({ ...item, build_id: undefined }))
+      })
+      const store = useDeploymentPickStore()
+      await store.load()
+
+      await store.pick('dep-1')
+
+      expect(linkedFolder()).toBeUndefined()
+    })
+
+    it("keeps a link's own workflow in front of the Build's", async () => {
+      Object.assign(window.location, { search: '?workflowId=wf-1' })
+      const store = useDeploymentPickStore()
+      await store.load()
+
+      await store.pick('dep-1')
+
+      expect(linkedFolder()).toBeUndefined()
+    })
+
+    it('forgets the folder when the page is still in use after the reload', async () => {
+      const store = useDeploymentPickStore()
+      await store.load()
+      await store.pick('dep-1')
+
+      window.dispatchEvent(new Event('pointerdown'))
+
+      expect(linkedFolder()).toBeUndefined()
+    })
+  })
+
   it('goes back to the listing, refreshed, when the page is still in use after a switch reload', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
@@ -1451,7 +1522,10 @@ describe('useDeploymentPickStore', () => {
       listed.resolve({ ...listing, default_deployment_id: 'dep-1' })
       await reloading
       expect(store.isSwitching).toBe(true)
-      expect(store.state).toMatchObject({ phase: 'switching', target: 'dep-1' })
+      expect(store.state).toMatchObject({
+        phase: 'switching',
+        target: 'dep-1'
+      })
       expect(store.defaultDeploymentId).toBe('dep-1')
 
       // A second pick cannot go out while the first is in flight.

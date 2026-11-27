@@ -12,6 +12,8 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
+import { deploymentWorkflowFolder } from '@/platform/workspace/buildWorkflows'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -84,6 +86,17 @@ export function useDeploymentUrlLoader() {
     useTeamWorkspaceStore()
   )
   const pickStore = useDeploymentPickStore()
+  const folderWorkflows = useFolderWorkflowsUrlLoader()
+
+  /**
+   * A link to the deployment this page already runs on reloads nothing, so
+   * open its Build's workflows here, unless the link names a workflow itself.
+   */
+  async function openBuildWorkflows(query: LocationQueryRaw) {
+    if ('workflows' in query || 'workflowId' in query) return
+    const folder = deploymentWorkflowFolder(pickStore.pickedDeployment)
+    if (folder) await folderWorkflows.openFolderWorkflows(folder)
+  }
 
   /** Strips the given params, keeping the rest, and clears their stashes.
    * Must complete before a pick reloads the page, or the reload would run
@@ -144,6 +157,12 @@ export function useDeploymentUrlLoader() {
     const outcome = await pickStore.pickFromLink(
       linkValue === COMFY_CLOUD_LINK_VALUE ? null : linkValue
     )
+    if (
+      outcome.kind === 'unchanged' &&
+      pickStore.pickedDeploymentId === linkValue
+    ) {
+      await openBuildWorkflows(query)
+    }
     if (outcome.kind === 'timedOut') {
       toast.error(t('deploymentSwitcher.linkTimedOut'), { duration: 8000 })
     }

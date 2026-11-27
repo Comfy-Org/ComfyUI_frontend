@@ -27,6 +27,7 @@ import {
   loadedEvent,
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
+import { carryBuildWorkflowsIntoReload } from '@/platform/workspace/buildWorkflows'
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -303,7 +304,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
 
   function reloadOnto(workspaceId: string, deploymentId: string | null) {
     setDeploymentHint(workspaceId, deploymentId)
+    const forgetBuildWorkflows = carryBuildWorkflowsIntoReload(
+      deployments.value.find((d) => d.deployment_id === deploymentId)
+    )
     reloadForDeploymentSwitch(() => {
+      forgetBuildWorkflows()
       dispatch({ type: 'switchFailed' })
       void load()
     })

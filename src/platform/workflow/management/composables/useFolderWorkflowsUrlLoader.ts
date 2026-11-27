@@ -120,5 +120,13 @@ export function useFolderWorkflowsUrlLoader() {
     return opened
   }
 
-  return { openFolderWorkflowsFromUrl }
+  /**
+   * Opens a folder's workflows the way its link would, for a page already
+   * booted. Resolves true when one of them is now the active workflow.
+   */
+  async function openFolderWorkflows(folder: string): Promise<boolean> {
+    return isFolderName(folder) && (await openInFront(folder))
+  }
+
+  return { openFolderWorkflowsFromUrl, openFolderWorkflows }
 }

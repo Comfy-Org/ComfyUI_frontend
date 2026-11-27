@@ -26,6 +26,18 @@ vi.mock(
   () => preservedQueryMocks
 )
 
+const mockOpenFolderWorkflows = vi.hoisted(() => vi.fn(async () => true))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'),
+  () => ({
+    useFolderWorkflowsUrlLoader: () => ({
+      openFolderWorkflowsFromUrl: vi.fn(),
+      openFolderWorkflows: mockOpenFolderWorkflows
+    })
+  })
+)
+
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, unknown>
 }))
@@ -102,6 +114,7 @@ const STAYED = "Couldn't switch to that workspace. You're still in Home Base."
 describe('useDeploymentUrlLoader', () => {
   beforeEach(() => {
     sessionStorage.clear()
+    mockOpenFolderWorkflows.mockClear()
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(undefined)
     mockRouterReplace.mockResolvedValue(undefined)
@@ -380,6 +393,64 @@ describe('useDeploymentUrlLoader', () => {
 
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(useToast().error).not.toHaveBeenCalled()
+  })
+
+  describe('when the browser already runs on the linked deployment', () => {
+    const onBuild = {
+      deployment_id: 'dep-2',
+      build_id: '0f3c9a7e-5b21-4c8d-9e2a-1b2c3d4e5f60',
+      build_name: 'Portrait studio',
+      release_id: 'rel-1',
+      can_start: true,
+      created_at: '2026-11-20T00:00:00Z',
+      status: 'ready' as const
+    }
+
+    beforeEach(() => {
+      vi.mocked(useDeploymentPickStore().pickFromLink).mockResolvedValue({
+        kind: 'unchanged'
+      })
+      Object.assign(useDeploymentPickStore(), {
+        pickedDeploymentId: 'dep-2',
+        pickedDeployment: onBuild
+      })
+    })
+
+    it("opens its Build's workflows, as the reload after a pick would", async () => {
+      mockRouteQuery.value = { workspace: 'ws-1', deployment: 'dep-2' }
+
+      await useDeploymentUrlLoader().loadDeploymentFromUrl()
+
+      expect(mockOpenFolderWorkflows).toHaveBeenCalledWith(
+        'Portrait studio (0f3c9a7e)'
+      )
+    })
+
+    it.for([{ workflows: 'build' }, { workflowId: 'wf-1' }])(
+      'leaves a link that names its own workflow to that workflow: %o',
+      async (named) => {
+        mockRouteQuery.value = {
+          workspace: 'ws-1',
+          deployment: 'dep-2',
+          ...named
+        }
+
+        await useDeploymentUrlLoader().loadDeploymentFromUrl()
+
+        expect(mockOpenFolderWorkflows).not.toHaveBeenCalled()
+      }
+    )
+
+    it('opens nothing when the deployment has no known Build', async () => {
+      mockRouteQuery.value = { workspace: 'ws-1', deployment: 'dep-2' }
+      Object.assign(useDeploymentPickStore(), {
+        pickedDeployment: { ...onBuild, build_id: undefined }
+      })
+
+      await useDeploymentUrlLoader().loadDeploymentFromUrl()
+
+      expect(mockOpenFolderWorkflows).not.toHaveBeenCalled()
+    })
   })
 
   it('acts on a link the sign-in redirect carried in the preserved-query stash', async () => {
