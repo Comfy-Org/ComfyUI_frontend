@@ -375,6 +375,13 @@ class TestDefinedSource extends LGraphNode {
   }
 }
 
+class TestConstructorThrows extends LGraphNode {
+  constructor() {
+    super('Test Constructor Throws')
+    throw new Error('constructor boom')
+  }
+}
+
 const TEST_OVERFLOW_LONG_TYPE =
   'TestOverflowWidgetsWithAVeryLongButValidClassNameForDynamicInputsUsedInDiagnostics'
 
@@ -382,6 +389,7 @@ const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
     TestDefinedSource: { widget_order: [] },
+    TestConstructorThrows: { widget_order: ['control_after_generate'] },
     TestOverflowWidgets: { widget_order: ['known'] },
     [TEST_OVERFLOW_LONG_TYPE]: { widget_order: ['known'] },
     TestPlainWidgets: { widget_order: ['known'] },
@@ -455,6 +463,7 @@ function setup(
 
 beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
+  LiteGraph.registerNodeType('TestConstructorThrows', TestConstructorThrows)
   LiteGraph.registerNodeType('TestDefinedSource', TestDefinedSource)
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType(TEST_OVERFLOW_LONG_TYPE, TestOverflowWidgets)
@@ -769,6 +778,47 @@ describe('LiveGraphApplier', () => {
     expect(result.failureCount).toBe(1)
   })
 
+  it('still reports a missing value control on a node whose definition has no inputs', () => {
+    TestPlainWidgets.nodeData = fromPartial<
+      NonNullable<LGraphNode['constructor']['nodeData']>
+    >({ name: 'TestPlainWidgets' })
+    onTestFinished(() => {
+      TestPlainWidgets.nodeData = undefined
+    })
+    const { doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [11, 20]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('control_after_generate', 'increment')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.anything()
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message:
+          "Node 1 (TestPlainWidgets) has no widget 'control_after_generate'"
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
   it('still reports a missing widget the node definition declares', () => {
     TestPlainWidgets.nodeData = fromPartial<
       NonNullable<LGraphNode['constructor']['nodeData']>
@@ -857,18 +907,23 @@ describe('LiveGraphApplier', () => {
   })
 
   it.for([
-    { option: 'control_filter_list', missing: 'selection_pattern' },
-    { option: 'control_after_generate', missing: 'seed_mode' }
+    { option: 'control_filter_list', missing: 'selection_pattern', spec: {} },
+    {
+      option: 'control_after_generate',
+      missing: 'seed_mode',
+      spec: { forceInput: true }
+    }
   ])(
     'still reports a value control named by $option: $missing',
-    ({ option, missing }) => {
+    ({ option, missing, spec }) => {
       TestPlainWidgets.nodeData = fromPartial<
         NonNullable<LGraphNode['constructor']['nodeData']>
       >({
         inputs: {
-          known: transformInputSpecV1ToV2(['INT', { [option]: missing }], {
-            name: 'known'
-          })
+          known: transformInputSpecV1ToV2(
+            ['INT', { ...spec, [option]: missing }],
+            { name: 'known' }
+          )
         }
       })
       onTestFinished(() => {
@@ -962,6 +1017,64 @@ describe('LiveGraphApplier', () => {
       const widgets = nodesMap(doc).get('1')?.get('widgets')
       assert(widgets instanceof Y.Map)
       widgets.set('cfg', 8)
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('still counts a control_after_generate edit to a placeholder as failed', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestNotInstalledNamed',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [20, 7]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('control_after_generate', 'randomize')
+    })
+
+    expect(result.failureCount).toBe(1)
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+    )
+  })
+
+  it('still counts a control_after_generate edit to a constructor-failure shell as failed', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestConstructorThrows',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: []
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    expect(graph.getNodeById(toNodeId(1))?.has_errors).toBe(true)
+    const result = applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set('control_after_generate', 'randomize')
     })
 
     expect(result.failureCount).toBe(1)
@@ -2539,13 +2652,53 @@ describe('LiveGraphApplier', () => {
       expect.objectContaining({
         errorType: 'agent_graph_apply_failed',
         context: {
-          actor: 'agent:test',
+          actor: 'agent',
           opIds: ['op-1'],
           omittedOpIdCount: 0
         }
       })
     )
   })
+
+  it.for([
+    ['human:private-user:private-tab', 'human'],
+    ['human:private:user:private-tab', 'human'],
+    ['human:private-user', 'human'],
+    ['agent:private-thread:private-turn:extra', 'agent'],
+    ['private-user@example.com', 'unknown'],
+    ['system:private-user', 'unknown'],
+    ['agent-remote', 'agent-remote'],
+    ['agent-collected', 'agent-collected'],
+    ['system:client-seed', 'system:client-seed'],
+    ['system:mint', 'system:mint']
+  ] as const)(
+    'reports only the actor kind of %s when an operation throws',
+    ([actor, kind]) => {
+      const { graph, doc, applyCollected } = setup({
+        nodes: [sourceNode(1)],
+        links: []
+      })
+      applyCollected()
+      const doomed = graph.getNodeById(toNodeId(1))
+      assert.exists(doomed)
+      doomed.onRemoved = () => {
+        throw new Error('extension hook exploded')
+      }
+      doc.transact(() => nodesMap(doc).delete('1'))
+      applyCollected({ actor, opIds: ['op-1'] })
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'extension hook exploded' }),
+        expect.objectContaining({
+          errorType: 'agent_graph_apply_failed',
+          context: { actor: kind, opIds: ['op-1'], omittedOpIdCount: 0 }
+        })
+      )
+      expect(JSON.stringify(vi.mocked(reportError).mock.calls)).not.toContain(
+        'private'
+      )
+    }
+  )
 
   it('counts each frame against its own depth when an extension hook re-enters the applier', () => {
     const { graph, doc, applier, applyCollected, applyEdit } = setup({

@@ -63,7 +63,11 @@ runs:
 
           const sectionStart = `<!-- section:${sectionName}:start -->`
           const sectionEnd = `<!-- section:${sectionName}:end -->`
-          const sectionBlock = `${sectionStart}\n${sectionContent}\n${sectionEnd}`
+          let sectionBlock = `${sectionStart}\n${sectionContent}\n${sectionEnd}`
+          const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+          const oversizedBlock = `${sectionStart}\n> The ${sectionName} report did not fit in GitHub's comment size limit. See the [workflow run](${runUrl}) for the full report.\n${sectionEnd}`
+          const isTooLong = (err) =>
+            err?.status === 422 && /too long/i.test(String(err?.message))
 
           // Sections render in this order whichever workflow finished first.
           // Names not listed follow the listed ones, alphabetically.
@@ -194,6 +198,10 @@ runs:
                 }
                 return
               } catch (err) {
+                if (isTooLong(err) && sectionBlock !== oversizedBlock) {
+                  sectionBlock = oversizedBlock
+                  continue
+                }
                 if (attempt === maxAttempts) throw err
                 continue // another writer likely created it first; retry updates
               }
@@ -210,6 +218,13 @@ runs:
                 body: updated
               })
             } catch (err) {
+              if (isTooLong(err) && sectionBlock !== oversizedBlock) {
+                core.warning(
+                  `upsert-comment-section: comment too long with section "${sectionName}"; posting a pointer to the run instead`
+                )
+                sectionBlock = oversizedBlock
+                continue
+              }
               if (attempt === maxAttempts) throw err
               continue // transient failure; retry
             }

@@ -135,10 +135,20 @@ export function useTopupOperation() {
     if (sdkStore) return sdkStore.quoteTopup(amountCents, signal)
     try {
       const quoted = await billingApi.quoteTopup(amountCents, signal)
-      return {
+      const facts = {
         credits: quoted.credits,
         paymentConfigured: quoted.payment_method_configuration_id !== undefined
       }
+      return quoted.balance_after_credits === undefined ||
+        quoted.runs_paused_after === undefined
+        ? facts
+        : {
+            ...facts,
+            balanceAfter: {
+              credits: quoted.balance_after_credits,
+              runsPaused: quoted.runs_paused_after
+            }
+          }
     } catch {
       return null
     }

@@ -345,6 +345,7 @@ export type {
   HostedTopupCheckoutResult,
   InteractiveTopupPayment,
   QuoteTopupInput,
+  TopupBalanceAfter,
   TopupCommand,
   TopupCommandOptions,
   TopupDeclined,

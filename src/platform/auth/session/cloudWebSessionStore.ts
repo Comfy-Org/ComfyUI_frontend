@@ -67,6 +67,11 @@ import {
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  abortWorkflowStorageAuthFence,
+  fenceWorkflowStorageForAuthState
+} from '@/platform/workflow/persistence/base/storageIO'
+import type { WorkflowStorageAuthFence } from '@/platform/workflow/persistence/base/storageIO'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -176,6 +181,9 @@ function createCloudIdentity(
 ): WebSessionIdentity {
   const visibility = createWebVisibilityPort()
   const crossTab = createWebCrossTabRefreshPort<WebSessionSharedMessage>()
+  let currentAuthFence:
+    | { epoch: number; owner: WorkflowStorageAuthFence }
+    | undefined
   return createWebSessionIdentity({
     session: sessionOptions(),
     principal: {
@@ -190,7 +198,27 @@ function createCloudIdentity(
       }
     },
     origin: window.location.origin,
-    onAccountChanged,
+    onAccountChanged: (change) => {
+      if (change.reason === 'user_changed' || change.outcome === 'revoked') {
+        currentAuthFence = {
+          epoch: change.epoch,
+          owner: fenceWorkflowStorageForAuthState()
+        }
+      }
+      onAccountChanged(change)
+    },
+    onLocalSignOutFailed: (error, { epoch }) => {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'failure_signing_out_revoked_web_session_locally',
+        level: 'error',
+        tags: { outcome: 'degraded' }
+      })
+      if (currentAuthFence?.epoch === epoch) {
+        abortWorkflowStorageAuthFence(currentAuthFence.owner)
+        currentAuthFence = undefined
+      }
+    },
     ...webSessionTelemetryHooks((event) =>
       useTelemetry()?.trackWebSessionEvent(event)
     ),
@@ -299,7 +327,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (!isCloud) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
-      if (change.reason === 'signed_out' && !signingOut) {
+      if (signingOut) return
+      if (change.reason === 'signed_out') {
         void signedOutElsewhere.trigger()
       }
     })
@@ -415,10 +444,12 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signingOut = false
     })
     if (result === undefined || result.status === 'ok') return
-    reportError(new Error('Session cookie deletion failed'), {
+    const error = new Error(`Session cookie deletion failed: ${result.code}`)
+    reportError(error, {
       surface: 'auth',
       errorType: 'auth_session_cookie_delete_failed',
-      level: 'error'
+      level: 'error',
+      tags: { failure_code: result.code, outcome: 'degraded' }
     })
   }
 

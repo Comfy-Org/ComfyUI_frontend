@@ -96,7 +96,7 @@ const useGrouping = computed(() => {
   return options.value.useGrouping === true
 })
 
-const sliderWidth = computed(() => {
+const sliderClip = computed(() => {
   const { max, min, step } = filteredProps.value
   if (
     min === undefined ||
@@ -104,9 +104,9 @@ const sliderWidth = computed(() => {
     step === undefined ||
     (max - min) / step >= 100
   )
-    return 0
+    return undefined
   const ratio = (modelValue.value - min) / (max - min)
-  return (ratio * 100).toFixed(0)
+  return `inset(0 ${100 - Math.round(ratio * 100)}% 0 0)`
 })
 
 const inputAttrs = computed(() => ({
@@ -148,13 +148,10 @@ const inputAttrs = computed(() => ({
     <template #between><slot name="between" /></template>
     <template #background>
       <div
-        class="pointer-events-none absolute inset-0 -z-10 overflow-clip rounded-md"
-      >
-        <div
-          class="size-full bg-foreground/10"
-          :style="{ width: `${sliderWidth}%` }"
-        />
-      </div>
+        v-if="sliderClip !== undefined"
+        class="pointer-events-none absolute inset-0 -z-10 rounded-md bg-foreground/10"
+        :style="{ clipPath: sliderClip }"
+      />
     </template>
     <slot />
   </ScrubableNumberInput>

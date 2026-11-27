@@ -148,6 +148,20 @@
           </span>
         </Button>
       </div>
+      <div v-else-if="showAskAgentAction" class="ml-auto shrink-0">
+        <Button
+          variant="secondary"
+          size="sm"
+          class="shrink-0 focus-visible:ring-inset"
+          data-testid="missing-pack-ask-agent"
+          :aria-label="askAgentLabel"
+          @click="handleAskAgent"
+        >
+          <span class="min-w-0 truncate text-foreground">
+            {{ t('rightSidePanel.askAgent') }}
+          </span>
+        </Button>
+      </div>
       <LocateNodeButton
         v-if="primaryLocatableNodeType"
         :label="
@@ -249,7 +263,9 @@ import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import LocateNodeButton from '@/platform/workflowErrors/panel/LocateNodeButton.vue'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
+import { buildMissingPackErrorContext } from '@/platform/workflowErrors/panel/buildAgentErrorContext'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { MissingPackGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 
@@ -270,6 +286,8 @@ const expandedOverride = ref<boolean | null>(null)
 
 const packTextButtonClass =
   'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset focus-visible:outline-none'
+
+const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const manager = useWorkflowErrorManager()
 const { missingNodePacks, isLoading } = manager.useMissingNodes()
@@ -323,6 +341,26 @@ const showSearchAction = computed(
     !showInstallAction.value &&
     !showLoadingAction.value
 )
+
+const showAskAgentAction = computed(
+  () =>
+    canAskAgent.value &&
+    !showInstallAction.value &&
+    !showLoadingAction.value &&
+    !showSearchAction.value
+)
+
+const packLabel = computed(
+  () => group.packId ?? t('rightSidePanel.missingNodePacks.unknownPack')
+)
+
+const askAgentLabel = computed(() =>
+  t('rightSidePanel.askAgentAbout', { title: packLabel.value })
+)
+
+function handleAskAgent() {
+  void askAgentAboutIssues(buildMissingPackErrorContext(group, packLabel.value))
+}
 
 const unsupportedPack = computed(() => {
   for (const nodeType of group.nodeTypes) {

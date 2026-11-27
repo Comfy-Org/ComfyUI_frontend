@@ -5,7 +5,8 @@
     class="lg-node-widgets contents text-xs text-node-foreground"
     :data-expands="expands"
   >
-    <div
+    <component
+      :is="section.element"
       v-for="(section, sectionIndex) in sections"
       :key="section.key"
       :role="section.role"
@@ -103,7 +104,7 @@
           />
         </div>
       </template>
-    </div>
+    </component>
   </div>
 </template>
 
@@ -118,6 +119,7 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
+import type { FunctionalComponent } from 'vue'
 
 import { useResizeObserver } from '@vueuse/core'
 
@@ -144,6 +146,9 @@ import { AdvancedWidgetRingKey } from '@/types/widgetTypes'
 
 import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import InputSlot from './InputSlot.vue'
+
+const SectionContents: FunctionalComponent = (_, { slots }) => slots.default?.()
+SectionContents.inheritAttrs = false
 
 const grid = useTemplateRef<HTMLElement>('grid')
 
@@ -249,7 +254,7 @@ const rowKinds = {
     standalone: false,
     testId: 'node-widget',
     slotClass:
-      'h-(--node-widget-height) min-h-full w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+      'h-(--node-widget-height) min-h-full w-3 **:data-[part=slot-dot]:after:inset-[0_-6px_0_-9px] **:data-[part=slot-dot]:after:w-auto opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
   },
   socket: { ...socketRow, standalone: true },
   convertedSocket: { ...socketRow, standalone: false }
@@ -327,6 +332,7 @@ function shortFieldLabel(
 const sections = computed(() => {
   const result: {
     key: string
+    element: 'div' | FunctionalComponent
     name?: string
     label?: string
     role?: 'group'
@@ -337,6 +343,7 @@ const sections = computed(() => {
     if (type === 'dynamic_group_row') {
       result.push({
         key: row.widget.renderKey,
+        element: label ? 'div' : SectionContents,
         name,
         label,
         role: label ? 'group' : undefined,
@@ -346,7 +353,11 @@ const sections = computed(() => {
     }
     const section = result.at(-1)
     if (!section?.name || !name.startsWith(`${section.name}.`)) {
-      result.push({ key: row.widget.renderKey, rows: [row] })
+      result.push({
+        key: row.widget.renderKey,
+        element: SectionContents,
+        rows: [row]
+      })
       continue
     }
     section.rows.push({

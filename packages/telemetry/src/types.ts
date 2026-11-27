@@ -803,6 +803,7 @@ export type CustomDeploymentEntry =
   | 'model_library'
   | 'preinstall'
   | 'errors_panel'
+  | 'issues_toast'
 
 export type CustomDeploymentStep =
   | 'new'
@@ -1305,8 +1306,12 @@ export interface AgentMessageSentMetadata extends Record<string, unknown> {
   /** `click_id` of the `app:agent_starter_prompt_clicked` this send came from, `null` when typed. */
   starter_prompt_click_id: string | null
 }
+/** Where a node reference was added from: the `@` picker or the + menu's Nodes picking mode. */
+export type AgentNodeTagSource = 'mention_picker' | 'plus_menu'
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
-  source: 'mention_picker'
+  source: AgentNodeTagSource
+  /** Nodes this one action referenced: always 1 from the `@` picker, can be more from a box select. */
+  node_count: number
 }
 export type AgentSkillSelectionSource = 'slash_picker' | 'add_menu'
 export interface AgentSkillSelectedMetadata extends Record<string, unknown> {
