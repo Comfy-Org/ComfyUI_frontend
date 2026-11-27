@@ -17,7 +17,7 @@
       :side-offset="5"
       class="w-auto overflow-visible rounded-lg border-border/50 p-2 shadow-sm"
     >
-      <div class="flex gap-1">
+      <div class="flex gap-1 overflow-x-auto">
         <Button
           v-for="option in alignOptions"
           :key="option.action"

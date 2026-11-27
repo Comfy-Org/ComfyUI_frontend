@@ -281,6 +281,41 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
       initialSettings: { 'Comfy.Canvas.SelectionToolbox': true }
     })
 
+    test.describe('Narrow viewport', () => {
+      test.use({ viewport: { width: 320, height: 720 } })
+
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row', {
+          workflow: {
+            extra: { ds: { scale: 0.25, offset: [-150, 1200] } }
+          }
+        })
+      })
+
+      test('can reach and activate the last alignment action', async ({
+        comfyPage
+      }) => {
+        await comfyPage.keyboard.selectAll()
+        await openAlign(comfyPage)
+        const matchHeight = comfyPage.page.getByRole('button', {
+          name: 'Match height',
+          exact: true
+        })
+
+        await matchHeight.scrollIntoViewIfNeeded()
+        await expect(matchHeight).toBeInViewport({ ratio: 1 })
+        await matchHeight.click()
+
+        await expect
+          .poll(async () =>
+            (await boundsOf(comfyPage, ROW_TITLES)).map((b) =>
+              Math.round(b.height)
+            )
+          )
+          .toEqual([190, 190, 190])
+      })
+    })
+
     test.describe('Aligning and matching sizes', () => {
       const cases: {
         action: string
