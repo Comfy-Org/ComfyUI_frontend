@@ -19,8 +19,13 @@ export function useSelectionMenuOptions() {
     renameSelection
   } = useSelectionOperations()
 
-  const { alignOptions, distributeOptions, applyAlign, applyDistribute } =
-    useNodeArrangement()
+  const {
+    alignOptions,
+    distributeOptions,
+    applyAlign,
+    applyDistribute,
+    canDistribute
+  } = useNodeArrangement()
 
   const { convertToSubgraph, unpackSubgraph, addSubgraphToLibrary } =
     useSubgraphOperations()
@@ -117,6 +122,7 @@ export function useSelectionMenuOptions() {
       id: 'distribute',
       label: t('contextMenu.Distribute Nodes'),
       icon: 'icon-[lucide--align-center-horizontal]',
+      disabled: !canDistribute.value,
       hasSubmenu: true,
       submenu: distributeOptions.map((distribute) => ({
         label: distribute.localizedName,
