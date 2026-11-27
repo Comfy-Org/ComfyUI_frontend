@@ -1,6 +1,5 @@
 import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import { zRelayedNodeErrors } from '@comfyorg/api-client/executionTypes'
 import type { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
 import { isPlainObject } from 'es-toolkit'
@@ -155,13 +154,11 @@ function usableNodeErrors(
   )
 }
 
-type CloudValidationDetail = Pick<
-  ExecutionErrorWsMessage,
-  'exception_message'
-> &
-  Partial<Pick<ExecutionErrorWsMessage, 'exception_type'>> & {
-    node_errors?: unknown
-  }
+interface CloudValidationDetail {
+  exception_type: string
+  exception_message: string
+  node_errors?: unknown
+}
 
 function relayedRejection(exceptionMessage: string): CloudValidationError {
   return {
