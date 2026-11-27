@@ -695,4 +695,36 @@ test.describe('Smart guides on the classic canvas', { tag: '@canvas' }, () => {
 
     await expect.poll(rightEdge).toBe(375)
   })
+
+  test('dragging a subgraph input bar near level snaps its wire straight', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+    await comfyPage.subgraph.enterSubgraphWithFallback('2')
+    function wireRise() {
+      return comfyPage.page.evaluate(() => {
+        const graph = window.app!.canvas.subgraph!
+        const slot = graph.inputNode.slots[0]
+        const wire = graph.links.get(slot.linkIds[0])!
+        return 2 * (wire._pos[1] - slot.pos[1])
+      })
+    }
+    const grip = await comfyPage.page.evaluate(() => {
+      const [x, y, width, height] =
+        window.app!.canvas.subgraph!.inputNode.boundingRect
+      return [x + width / 2, y + height - 3] satisfies [number, number]
+    })
+    const from = await comfyPage.canvasOps.canvasPosToClientPos(grip)
+    const to = await comfyPage.canvasOps.canvasPosToClientPos([
+      grip[0] + 80,
+      grip[1] + (await wireRise()) - 4
+    ])
+
+    await comfyMouse.move(from)
+    await comfyMouse.drag(to)
+    await comfyMouse.drop()
+
+    await expect.poll(wireRise).toBeCloseTo(0, 3)
+  })
 })
