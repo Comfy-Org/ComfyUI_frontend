@@ -5,7 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import type {
+  BillingStatusReadOptions,
+  SubscriptionInfo
+} from '@/platform/billing/composables/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -600,6 +603,186 @@ describe('useAgentDockMount', () => {
       consent.confirmedAcceptances += 1
       await nextTick()
       expect(fetchStatus).toHaveBeenCalledTimes(2)
+    })
+
+    describe('shared with the panel open that acceptance triggers', () => {
+      function mountWithFreshBilling(hosts = 1) {
+        const fetchStatusFresh = vi.fn(async () => true)
+        const fetchStatus = vi.fn(
+          async (_options?: BillingStatusReadOptions) => {}
+        )
+        vi.mocked(useBillingContext).mockReturnValue({
+          ...billingContext,
+          fetchStatus,
+          fetchStatusFresh
+        })
+        for (let host = 0; host < hosts; host += 1) useAgentDockMount()
+        const freshReads = () =>
+          fetchStatus.mock.calls.filter(([options]) => options?.fresh === true)
+            .length + fetchStatusFresh.mock.calls.length
+        return {
+          consent: useAgentConsentStore(),
+          store: useAgentPanelStore(),
+          fetchStatus,
+          fetchStatusFresh,
+          freshReads
+        }
+      }
+
+      const settleRefreshes = async () => {
+        await nextTick()
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      }
+
+      it('reads billing once when acceptance opens the panel', async () => {
+        const { consent, store, freshReads } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+        await settleRefreshes()
+
+        expect(freshReads()).toBe(1)
+      })
+
+      it('reads billing once when acceptance opens the panel in linear mode', async () => {
+        const { consent, store, freshReads } = mountWithFreshBilling(2)
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+        await settleRefreshes()
+
+        expect(freshReads()).toBe(1)
+      })
+
+      it('passes the acceptance read the option that detaches an in-flight read', async () => {
+        const { consent, fetchStatusFresh } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await settleRefreshes()
+
+        expect(fetchStatusFresh).toHaveBeenCalledWith({ fresh: true })
+      })
+
+      it('leaves the open its own read when the acceptance read fails', async () => {
+        const { consent, store, fetchStatus, fetchStatusFresh } =
+          mountWithFreshBilling()
+        fetchStatusFresh.mockRejectedValueOnce(new Error('status read failed'))
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        expect(fetchStatusFresh).toHaveBeenCalledWith({ fresh: true })
+        store.isOpen = true
+
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        )
+        expect(fetchStatus).not.toHaveBeenCalled()
+      })
+
+      it('leaves the open its own read when the acceptance read is not adopted', async () => {
+        const { consent, store, fetchStatus, fetchStatusFresh } =
+          mountWithFreshBilling()
+        fetchStatusFresh.mockResolvedValueOnce(false)
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        )
+        expect(fetchStatusFresh).toHaveBeenNthCalledWith(1, { fresh: true })
+        expect(fetchStatus).not.toHaveBeenCalled()
+      })
+
+      it('starts the open read when the acceptance read times out', async () => {
+        vi.useFakeTimers()
+        try {
+          const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
+          fetchStatusFresh.mockImplementationOnce(() => new Promise(() => {}))
+
+          consent.confirmedAcceptances += 1
+          await nextTick()
+          store.isOpen = true
+          await nextTick()
+          await vi.advanceTimersByTimeAsync(15_000)
+
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+          expect(fetchStatusFresh).toHaveBeenNthCalledWith(2, { fresh: true })
+        } finally {
+          vi.useRealTimers()
+        }
+      })
+
+      it('leaves an unrelated later open its own read when acceptance never opened the panel', async () => {
+        const now = vi.spyOn(Date, 'now')
+        now.mockReturnValue(1_000)
+        const { consent, store, fetchStatusFresh } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await settleRefreshes()
+        expect(fetchStatusFresh).toHaveBeenCalledWith({ fresh: true })
+
+        now.mockReturnValue(1_000 + 3_600_000)
+        store.isOpen = true
+
+        await vi.waitFor(() =>
+          expect(fetchStatusFresh).toHaveBeenCalledTimes(2)
+        )
+      })
+
+      it('still reads billing on an open that no acceptance triggered', async () => {
+        const { consent, store, freshReads } = mountWithFreshBilling()
+
+        consent.confirmedAcceptances += 1
+        await nextTick()
+        store.isOpen = true
+        await settleRefreshes()
+        expect(freshReads()).toBe(1)
+
+        store.close('close_button')
+        await nextTick()
+        store.isOpen = true
+
+        await vi.waitFor(() => expect(freshReads()).toBe(2))
+      })
+
+      it('leaves a later open its own read when acceptance did not open the panel', async () => {
+        const { consent, store, freshReads } = mountWithFreshBilling()
+        store.isOpen = true
+        await settleRefreshes()
+        expect(freshReads()).toBe(1)
+
+        consent.confirmedAcceptances += 1
+        await settleRefreshes()
+        expect(freshReads()).toBe(2)
+
+        store.close('close_button')
+        await nextTick()
+        store.isOpen = true
+
+        await vi.waitFor(() => expect(freshReads()).toBe(3))
+      })
+
+      it('keeps the deferred read when billing routing is not known yet', async () => {
+        const fetchStatusFresh = vi.fn(async () => true)
+        const fetchStatus = vi.fn(async () => {})
+        vi.mocked(useBillingContext).mockReturnValue({
+          ...billingContext,
+          type: computed(() => 'unknown'),
+          fetchStatus,
+          fetchStatusFresh
+        })
+        useAgentDockMount()
+
+        useAgentConsentStore().confirmedAcceptances += 1
+        await nextTick()
+
+        expect(fetchStatus).toHaveBeenCalledWith({ fresh: true })
+        expect(fetchStatusFresh).not.toHaveBeenCalled()
+      })
     })
 
     it('reports a failed refresh without rejecting', async () => {
