@@ -177,6 +177,7 @@ export function useAgentWorkflowResolver({
       (entry) => entry.name === name
     ).length
     return (
+      ambiguousCloudNames.value.has(name) ||
       cloudMatches > 1 ||
       (cloudMatches > 0 &&
         savedMatches(name, workflows.openWorkflows).length > 1)

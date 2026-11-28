@@ -6806,7 +6806,7 @@
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
-    "ambiguousWorkflowTarget": "This tab matches more than one cloud workflow. Rename the duplicates, then try again.",
+    "ambiguousWorkflowTarget": "This tab cannot be matched to a unique cloud workflow. Rename same-named workflows or tabs, then try again.",
     "canvasNotReadyForSend": "This tab's canvas isn't ready yet, so your message wasn't sent. Try again in a moment.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",

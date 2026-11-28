@@ -745,6 +745,7 @@ describe('Server copy of a workflow', () => {
     resolver.forgetCloudWorkflowId('wf-portrait-1')
     expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
     expect(resolver.cloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.cloudIdAmbiguous(portrait)).toBe(true)
 
     bindings.bind('wf-portrait-2', portrait.path)
     expect(resolver.authoritativeCloudIdFor(portrait)).toBe('wf-portrait-2')

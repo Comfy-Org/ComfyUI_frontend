@@ -16089,6 +16089,53 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
+  it('refuses an origin-identified ambiguous send after the selected target is cleared', async () => {
+    makeTab()
+    const bodies: unknown[] = []
+    let workflowRequests = 0
+    let resolveListing!: (response: Response) => void
+    const pendingListing = new Promise<Response>((resolve) => {
+      resolveListing = resolve
+    })
+    const duplicateListing = {
+      data: [
+        { id: 'wf-a', name: 'current' },
+        { id: 'wf-b', name: 'current' }
+      ],
+      pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+    }
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-fresh'))
+        }
+        if (url.includes('/workflows')) {
+          workflowRequests++
+          return workflowRequests === 1
+            ? json(200, duplicateListing)
+            : pendingListing
+        }
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return json(200, [])
+      }
+    )
+
+    renderWithSelectedTarget()
+    await vi.waitFor(() => expect(workflowRequests).toBe(1))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(workflowRequests).toBe(2))
+    useAgentPanelStore().setWorkflowTarget(null)
+    resolveListing(json(200, duplicateListing))
+
+    await screen.findByText(i18n.global.t('agent.ambiguousWorkflowTarget'))
+    expect(bodies).toEqual([])
+  })
+
   it('falls back to bindings when the cloud index request fails', async () => {
     makeTab('wf-42')
     const bodies: unknown[] = []

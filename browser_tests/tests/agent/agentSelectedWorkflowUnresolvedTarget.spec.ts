@@ -23,7 +23,7 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 const PORTRAIT_PATH = 'workflows/Portrait.json'
 const PROMPT = 'Optimise my workflow for speed'
 const AMBIGUITY_MESSAGE =
-  'This tab matches more than one cloud workflow. Rename the duplicates, then try again.'
+  'This tab cannot be matched to a unique cloud workflow. Rename same-named workflows or tabs, then try again.'
 
 const AMBIGUOUS_CLOUD_LISTING: WorkflowListResponse = {
   data: [

@@ -1028,7 +1028,7 @@ function serializedCanvas(target: ComfyWorkflow) {
 }
 
 function targetWorkflowAmbiguous(origin?: TurnOrigin): boolean {
-  if (workflowDetached.value) return false
+  if (origin === undefined && workflowDetached.value) return false
   const target = originWorkflow(origin)
   return target !== undefined && cloudIdAmbiguous(target)
 }
