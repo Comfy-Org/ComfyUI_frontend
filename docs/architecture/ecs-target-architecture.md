@@ -1,6 +1,6 @@
 # ECS Target Architecture
 
-This document describes the target ECS architecture for the litegraph entity system. It shows how the entities and interactions from the [current system](entity-interactions.md) transform under ECS, and how the [structural problems](entity-problems.md) are resolved. For the full design rationale, see [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md).
+This document describes the target ECS architecture for the litegraph entity system. It shows how the entities and interactions from the [current system](entity-interactions.md) transform under ECS, and how its structural problems are resolved. For the full design rationale, see [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md).
 
 ## 1. Store Overview
 
@@ -465,7 +465,7 @@ Key differences:
 
 ## 5. Problem Resolution Map
 
-How each problem from [entity-problems.md](entity-problems.md) is resolved:
+How each structural problem of the current system is resolved:
 
 ```mermaid
 graph LR
@@ -613,3 +613,14 @@ behavior layer"]
 This diagram is intentionally high level. The operational Phase 4 -> 5 entry
 criteria (compatibility matrix, bridge fallback usage, rollback requirements)
 are defined in [ecs-migration-plan.md](ecs/ecs-migration-plan.md).
+
+## 7. Revisit Criteria
+
+- Revisit storage layout only after representative large-workflow profiling
+  identifies store iteration or lookup as a material frame-time cost.
+- Revisit a system scheduler only when multiple implemented system phases need
+  explicit ordering or a profiled data-disjoint pass justifies worker transfer.
+- Revisit identity shapes only when current root/owner/locator contracts fail a
+  concrete feature; do not normalize keys for aesthetic uniformity.
+- Revisit compatibility proxy identity only with measured extension usage and a
+  migration path for live object consumers.

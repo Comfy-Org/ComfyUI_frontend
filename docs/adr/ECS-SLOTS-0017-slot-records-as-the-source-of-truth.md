@@ -84,8 +84,6 @@ behavior in ADR-ECS-0008 and test it in
 ## References
 
 - ADR-ECS-0008, "Entity Component System"
-- `docs/architecture/output-slot-connectivity.md`
-- `docs/architecture/node-data-store.md`
 - `docs/exceptions-log.md`
 - PR #14246, ECS migration
 - PR #15544, descriptor and Proxy boundary proposal

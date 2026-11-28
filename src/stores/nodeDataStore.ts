@@ -14,10 +14,7 @@ import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-/**
- * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
- * See docs/architecture/node-data-store.md.
- */
+/** One {@link NodeState} per node in a root-flat, owner-indexed bucket. */
 export const useNodeDataStore = defineStore('nodeData', () => {
   interface RootNodeBucket {
     byId: Map<NodeId, NodeState>
