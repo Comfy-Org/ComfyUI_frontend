@@ -13,6 +13,7 @@ import type {
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
+import { pureRead } from '@/utils/pureRead'
 
 /**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
@@ -138,7 +139,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     clearGraph,
     deleteNode,
     getGraphNodesFor,
-    getNode,
+    getNode: pureRead(getNode),
     ownsNode,
     registerNode
   }

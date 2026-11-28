@@ -34,6 +34,7 @@ import type {
 } from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { pureRead } from '@/utils/pureRead'
 
 interface ConvertedRestoredValue {
   nodeId: NodeId
@@ -642,10 +643,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
-    getWidget,
-    getWidgetRenderState,
+    getWidget: pureRead(getWidget),
+    getWidgetRenderState: pureRead(getWidgetRenderState),
     setWidgetRenderFacts,
-    getWidgetVisibility,
+    getWidgetVisibility: pureRead(getWidgetVisibility),
     setValue,
     restoreValue,
     announceValue,
