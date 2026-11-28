@@ -2417,7 +2417,9 @@ export const zCccSiteTagUsage = z.object({
  */
 export const zCccStaffApp = z.object({
   description: z.string().max(1000),
+  draft_page: z.string().max(2048).optional(),
   enabled: z.boolean(),
+  hub_page: z.string().max(300).optional(),
   on_desktop: z.boolean(),
   on_hub: z.boolean(),
   picture: z.string().max(200).optional(),
@@ -4633,6 +4635,7 @@ export const zPromptOutputsSkippedNodeError = z.object({
  * Detailed execution error information from ComfyUI
  */
 export const zExecutionError = z.object({
+  catalog_id: z.string().optional(),
   current_inputs: z.record(z.string(), z.unknown()),
   current_outputs: z.record(z.string(), z.unknown()),
   exception_message: z.string(),
@@ -6021,7 +6024,9 @@ export const zBillingHandoffCreateRequest = z.object({
   amount_cents: z.coerce
     .bigint()
     .gte(BigInt(500))
-    .lte(BigInt(250000))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
     .optional(),
   auto_top_up: zTopupAutoTopUpSettings.optional(),
   client_version: z.string().max(64),
@@ -6035,7 +6040,12 @@ export const zBillingHandoffCreateRequest = z.object({
  * Request body for creating a hosted credit top-up checkout session.
  */
 export const zCreateTopupCheckoutRequest = z.object({
-  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(250000)),
+  amount_cents: z.coerce
+    .bigint()
+    .gte(BigInt(500))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   auto_top_up: zTopupAutoTopUpSettings.optional(),
   idempotency_key: z.string().optional(),
   return_url: z.url()

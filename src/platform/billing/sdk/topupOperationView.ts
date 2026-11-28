@@ -112,10 +112,13 @@ function topupFailureError(
   return new WorkspaceApiError(
     serverMessage ?? t('credits.topUp.unknownError'),
     'httpStatus' in failure ? failure.httpStatus : undefined,
-    serverCode === undefined ? failure.code : unwrapServerCode(serverCode),
+    failure.code === 'INVALID_AMOUNT' || serverCode === undefined
+      ? failure.code
+      : unwrapServerCode(serverCode),
     topupFailureCategory(failure),
     undefined,
-    'retryAfterSeconds' in failure ? failure.retryAfterSeconds : undefined
+    'retryAfterSeconds' in failure ? failure.retryAfterSeconds : undefined,
+    'details' in failure ? failure.details : undefined
   )
 }
 

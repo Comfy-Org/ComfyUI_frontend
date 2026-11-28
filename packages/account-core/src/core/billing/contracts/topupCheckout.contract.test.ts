@@ -1,4 +1,5 @@
 import {
+  zBillingHandoffCreateRequest,
   zCreateTopupCheckoutRequest,
   zCreateTopupCheckoutResponse,
   zHostedTopupCheckout,
@@ -13,15 +14,7 @@ type CheckoutResponseBody = z.input<typeof zCreateTopupCheckoutResponse>
 type CheckoutResponse = z.infer<typeof zCreateTopupCheckoutResponse>
 
 const MINIMUM_AMOUNT_CENTS = 500
-const MAXIMUM_AMOUNT_CENTS = 250_000
 const RETURN_URL = 'https://app.comfy.org/billing/return'
-
-function checkoutRequest(): CheckoutRequestBody {
-  return {
-    amount_cents: BigInt(MINIMUM_AMOUNT_CENTS),
-    return_url: RETURN_URL
-  }
-}
 
 function checkoutResponse(
   overrides: Partial<CheckoutResponseBody> = {}
@@ -32,20 +25,11 @@ function checkoutResponse(
   }
 }
 
-/**
- * The command tells an invalid amount from an invalid return url by the
- * issue's own path, so the field names are part of the contract.
- */
 const INVALID_REQUESTS = [
   {
     rejected: 'an amount below the minimum',
     field: 'amount_cents',
     body: { amount_cents: MINIMUM_AMOUNT_CENTS - 1, return_url: RETURN_URL }
-  },
-  {
-    rejected: 'an amount above the maximum',
-    field: 'amount_cents',
-    body: { amount_cents: MAXIMUM_AMOUNT_CENTS + 1, return_url: RETURN_URL }
   },
   {
     rejected: 'a return url that is not a url',
@@ -68,14 +52,27 @@ expectTypeOf<CheckoutResponse['session_id']>().toEqualTypeOf<
 >()
 
 describe('hosted topup checkout contract', () => {
-  it('accepts a request carrying an in-range amount and a return url', () => {
+  it.for([500, 501, 500_000, 1_000_100])(
+    'accepts %s cents, leaving the maximum and whole dollars to the server',
+    (amountCents) => {
+      expect(
+        zCreateTopupCheckoutRequest.safeParse({
+          amount_cents: amountCents,
+          return_url: RETURN_URL
+        })
+      ).toMatchObject({ success: true })
+    }
+  )
+
+  it('accepts a handoff prefill above the default without authorizing a purchase', () => {
     expect(
-      zCreateTopupCheckoutRequest.safeParse(checkoutRequest())
-    ).toMatchObject({ success: true })
-    expect(
-      zCreateTopupCheckoutRequest.safeParse({
-        amount_cents: MAXIMUM_AMOUNT_CENTS,
-        return_url: RETURN_URL
+      zBillingHandoffCreateRequest.safeParse({
+        amount_cents: 500_000,
+        client_version: '1.60.0',
+        intent: 'top-up',
+        receiver: 'billing_web',
+        surface: 'local_web',
+        workspace_id: 'ws-1'
       })
     ).toMatchObject({ success: true })
   })

@@ -7,6 +7,7 @@ export type AddCreditsRefusal =
   | { readonly kind: 'rate_limited'; readonly retryAfterSeconds?: number }
   | { readonly kind: 'purchases_paused' }
   | { readonly kind: 'not_allowed' }
+  | { readonly kind: 'amount_above_max' }
   | { readonly kind: 'checkout_failed'; readonly serverMessage?: string }
 
 export type AddCreditsWait =
@@ -16,11 +17,21 @@ export type AddCreditsWait =
 const RATE_LIMITED = 'TOPUP_RATE_LIMITED'
 const PURCHASES_PAUSED = 'TOPUP_PURCHASES_PAUSED'
 const PURCHASES_PAUSED_DENIAL: CapabilityDenialReason = 'topup_purchases_paused'
+const ABOVE_MAX_REASON = 'above_max'
 
 /** Maps a failed checkout to its notice; codes the dialog does not know read as "couldn't open checkout". */
 export function addCreditsRefusalFor(
   failure: HostedTopupCheckoutFailure
 ): AddCreditsRefusal {
+  if (
+    (failure.code === 'INVALID_AMOUNT' ||
+      ('serverCode' in failure &&
+        matchesServerCode(failure, 'INVALID_AMOUNT'))) &&
+    'details' in failure &&
+    failure.details?.reason === ABOVE_MAX_REASON
+  ) {
+    return { kind: 'amount_above_max' }
+  }
   if ('serverCode' in failure && matchesServerCode(failure, RATE_LIMITED)) {
     return failure.retryAfterSeconds === undefined
       ? { kind: 'rate_limited' }

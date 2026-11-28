@@ -394,6 +394,7 @@ import type {
   TopupBalanceAfter
 } from '@comfyorg/account-core/billing'
 import {
+  addCreditsRefusalFor,
   getTopupAmountPreset,
   PURCHASE_REFUSAL_SERVER_CODES
 } from '@comfyorg/account-core/billing'
@@ -411,6 +412,7 @@ import {
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { topupCheckoutFailure } from '@/platform/billing/addCredits/addCreditsFacts'
 import TopUpAmountFields from '@/platform/billing/components/TopUpAmountFields.vue'
 import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
@@ -578,21 +580,49 @@ function wholeDollarsOrNull(cents: number | null | undefined): number | null {
   return Number.isInteger(dollars) ? dollars : null
 }
 
-// State
-const suggestedAmount = computed(() =>
-  wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
+function servedBoundOr(
+  fallbackUsd: number,
+  cents: number | undefined,
+  credits: number | undefined
+) {
+  return cents === undefined || credits === undefined
+    ? { usd: fallbackUsd, credits: usdToCredits(fallbackUsd) }
+    : { usd: cents / 100, credits }
+}
+
+const minTopup = computed(() =>
+  servedBoundOr(
+    MIN_AMOUNT,
+    balance.value?.minTopupCents,
+    balance.value?.minTopupCredits
+  )
 )
-const selectedPreset = ref<number | null>(
-  suggestedAmount.value === null ? DEFAULT_AMOUNT : null
+const maxTopup = computed(() =>
+  servedBoundOr(
+    MAX_AMOUNT,
+    balance.value?.maxTopupCents,
+    balance.value?.maxTopupCredits
+  )
 )
-const payAmount = ref(suggestedAmount.value ?? DEFAULT_AMOUNT)
+
+const openingAmount = computed(() =>
+  Math.min(
+    wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents) ??
+      DEFAULT_AMOUNT,
+    maxTopup.value.usd
+  )
+)
+function openingPreset(amount: number): number | null {
+  return amount === DEFAULT_AMOUNT ? DEFAULT_AMOUNT : null
+}
+const selectedPreset = ref(openingPreset(openingAmount.value))
+const payAmount = ref(openingAmount.value)
 const amountEditedByUser = ref(false)
 
-watch(suggestedAmount, (amount) => {
-  if (amount === null || amountEditedByUser.value || step.value !== 'amount')
-    return
+watch(openingAmount, (amount) => {
+  if (amountEditedByUser.value || step.value !== 'amount') return
   payAmount.value = amount
-  selectedPreset.value = null
+  selectedPreset.value = openingPreset(amount)
 })
 const loading = ref(false)
 const paymentSubmitted = ref(false)
@@ -623,31 +653,6 @@ const creditsModel = computed({
     amountEditedByUser.value = true
   }
 })
-
-function servedBoundOr(
-  fallbackUsd: number,
-  cents: number | undefined,
-  credits: number | undefined
-) {
-  return cents === undefined || credits === undefined
-    ? { usd: fallbackUsd, credits: usdToCredits(fallbackUsd) }
-    : { usd: cents / 100, credits }
-}
-
-const minTopup = computed(() =>
-  servedBoundOr(
-    MIN_AMOUNT,
-    balance.value?.minTopupCents,
-    balance.value?.minTopupCredits
-  )
-)
-const maxTopup = computed(() =>
-  servedBoundOr(
-    MAX_AMOUNT,
-    balance.value?.maxTopupCents,
-    balance.value?.maxTopupCredits
-  )
-)
 
 const isValidAmount = computed(
   () =>
@@ -1170,6 +1175,11 @@ function reportTerminal(
 }
 
 function purchaseRefusalMessage(error: unknown): string | null {
+  if (
+    addCreditsRefusalFor(topupCheckoutFailure(error)).kind ===
+    'amount_above_max'
+  )
+    return t('credits.topUp.amountAboveMax')
   return error instanceof WorkspaceApiError &&
     error.code !== undefined &&
     PURCHASE_REFUSAL_SERVER_CODES.includes(error.code)

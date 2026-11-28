@@ -58,16 +58,13 @@ export function checkAddCreditsAmount(
     : { status: 'invalid', error: 'whole_dollars' }
 }
 
-/**
- * The amount the dialog opens with: the served `suggested_topup_amount_cents`
- * as a typed amount when it is above the $50 default, else the $50 preset.
- */
 export function initialAddCreditsAmount(
   suggestedTopupCents: number | null | undefined
 ): AddCreditsAmount {
   if (
     suggestedTopupCents != null &&
-    suggestedTopupCents > ADD_CREDITS_DEFAULT_CENTS &&
+    suggestedTopupCents > 0 &&
+    suggestedTopupCents !== ADD_CREDITS_DEFAULT_CENTS &&
     suggestedTopupCents % 100 === 0
   ) {
     return { kind: 'custom', input: String(suggestedTopupCents / 100) }

@@ -3,6 +3,7 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 
+import { usdToCredits } from '@/base/credits/comfyCredits'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -112,6 +113,9 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
+
+const ABOVE_LIMIT_COPY =
+  "This amount is above your workspace's top-up limit. Nothing has been charged. Choose a smaller amount, or contact support to raise your limit."
 
 function topupResponse(
   status: CreateTopupResponse['status']
@@ -676,13 +680,51 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       name: 'the default for a suggestion that is not whole dollars',
       suggested: 11_450,
       pay: 'Pay $50.00'
+    },
+    {
+      name: 'a served max below the default',
+      suggested: null,
+      maxCents: 2000,
+      pay: 'Pay $20.00'
+    },
+    {
+      name: 'a served max at the minimum',
+      suggested: null,
+      maxCents: 500,
+      pay: 'Pay $5.00'
+    },
+    {
+      name: 'a served suggestion below the default',
+      suggested: 3000,
+      maxCents: 3000,
+      pay: 'Pay $30.00'
     }
-  ])('opens at $name', async ({ suggested, pay }) => {
-    renderWithBalance({ suggestedTopupAmountCents: suggested })
+  ])('opens at $name', async ({ suggested, maxCents, pay }) => {
+    renderWithBalance({
+      suggestedTopupAmountCents: suggested,
+      ...(maxCents === undefined
+        ? {}
+        : {
+            maxTopupCents: maxCents,
+            maxTopupCredits: usdToCredits(maxCents / 100)
+          })
+    })
 
     await clickAddCredits()
 
     expect(screen.getByRole('button', { name: pay })).toBeEnabled()
+  })
+
+  it('disables the presets above a lowered served max', () => {
+    renderWithBalance({
+      maxTopupCents: 2000,
+      maxTopupCredits: usdToCredits(20)
+    })
+
+    expect(screen.getByRole('button', { name: '$10' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: '$25' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '$50' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '$100' })).toBeDisabled()
   })
 
   function renderBeforeBalanceArrives() {
@@ -938,12 +980,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       balance: SERVED_MINIMUM,
       preset: '$10',
       message: /5,275 credits minimum/
-    },
-    {
-      name: 'above the served maximum',
-      balance: SERVED_MAXIMUM,
-      preset: '$100',
-      message: /10,550 credits maximum/
     }
   ])(
     'blocks an amount $name and names the bound',
@@ -1642,6 +1678,28 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       )
     })
 
+    it('explains a checkout refused above the workspace top-up limit', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
+        new WorkspaceApiError(
+          "Amount is above this workspace's top-up limit.",
+          400,
+          'INVALID_AMOUNT',
+          'api_rejected',
+          undefined,
+          undefined,
+          { reason: 'above_max' }
+        )
+      )
+      stubCheckoutTab()
+
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        ABOVE_LIMIT_COPY
+      )
+    })
+
     it('keeps the dialog open and explains a checkout that could not start', async () => {
       refuseForNoPaymentMethod()
       vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
@@ -2130,6 +2188,68 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
         description: expect.stringContaining('credit purchase is still open')
+      })
+    )
+  })
+
+  it.for([
+    {
+      name: 'the server',
+      error: new WorkspaceApiError(
+        "Amount is above this workspace's top-up limit.",
+        400,
+        'INVALID_AMOUNT',
+        'api_rejected',
+        undefined,
+        undefined,
+        { reason: 'above_max' }
+      )
+    },
+    {
+      name: 'the served-max check',
+      error: new WorkspaceApiError(
+        'Unknown error',
+        undefined,
+        'INVALID_AMOUNT',
+        'validation',
+        undefined,
+        undefined,
+        { reason: 'above_max' }
+      )
+    }
+  ])(
+    'explains a purchase $name refuses above the workspace top-up limit',
+    async ({ error }) => {
+      vi.mocked(mockBillingContext().topup).mockRejectedValue(error)
+
+      renderDialog()
+      await clickAddCredits()
+      await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+      await waitFor(() =>
+        expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+          description: ABOVE_LIMIT_COPY
+        })
+      )
+    }
+  )
+
+  it('keeps the server sentence for an amount refused below the minimum', async () => {
+    vi.mocked(mockBillingContext().topup).mockRejectedValue(
+      new WorkspaceApiError(
+        'Amount is below the minimum.',
+        400,
+        'INVALID_AMOUNT'
+      )
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+        description: 'Failed to purchase credits: Amount is below the minimum.'
       })
     )
   })

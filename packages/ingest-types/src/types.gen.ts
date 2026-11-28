@@ -1904,7 +1904,7 @@ export type BillingBalanceResponse = {
    */
   low_balance?: boolean
   /**
-   * The most one top-up from this API may charge, in cents. First-purchase responses use the same bounds as purchase validation.
+   * The most one manual top-up may request for this workspace, in cents before tax or discounts: the $2,500 default, or a staff override (which may raise or lower it) up to the $10,000 hard maximum. Read it per workspace; request schemas carry no maximum. First-purchase responses use the same bounds as purchase validation.
    */
   max_topup_cents?: number
   /**
@@ -3342,7 +3342,7 @@ export type BillingHandoffCheckoutRequest = {
  */
 export type BillingHandoffCreateRequest = {
   /**
-   * Credit amount the top-up checkout opens with, in cents. Whole dollars within the manual top-up limits (`min_topup_cents` to `max_topup_cents` on GET /api/billing/balance). Allowed only with intent top-up, else 400 INVALID_REQUEST; omitted, billing-web uses its default. Sent in the entry URL's query after intent. Not a credential; the checkout validates the amount again.
+   * Optional whole-dollar prefill between the minimum and the $10,000 hard maximum. The receiver quotes and enforces the workspace's current `max_topup_cents`; issuing a handoff does not authorize a purchase. Allowed only with intent top-up, else 400 INVALID_REQUEST; omitted, billing-web uses its default. Sent in the entry URL's query after intent. Not a credential.
    */
   amount_cents?: number
   /**
@@ -4768,9 +4768,17 @@ export type CccSiteTagUsageItem = {
 export type CccStaffApp = {
   description: string
   /**
+   * The Draft head's compatibility.desktop.draft_page: an https address on a comfy-website-preview-pr-<n>.vercel.app preview deploy whose path starts with /apps/<slug>/, with no query or fragment, kept only when GitHub says Comfy-Org/comfy-website pull request <n> is open with its head in Comfy-Org/comfy-website, not a fork, and the report comment comfy-website's CI keeps on it (by github-actions[bot], user type Bot) names exactly https://comfy-website-preview-pr-<n>.vercel.app on its Website Preview line. Absent when unset, anything else, when catalog-api has no comfy-website GitHub token, or when the GitHub lookup fails or does not finish within the page's 3 second lookup budget.
+   */
+  draft_page?: string
+  /**
    * Show on the Hub in the Draft head; false when unset.
    */
   enabled: boolean
+  /**
+   * The Draft head's compatibility.website.href when it is a path under /hub/ on comfy.org, for example /hub/apps/reshoot/. Absent when unset or anything else.
+   */
+  hub_page?: string
   /**
    * The Draft head lists desktop_starters in available_surfaces.
    */
@@ -5303,9 +5311,12 @@ export type CreateSessionResponse = {
  */
 export type CreateTopupCheckoutRequest = {
   /**
-   * Amount to charge in cents, before any discount. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
-   * credits granted are derived server-side from this amount and
-   * cannot be set by the caller.
+   * Amount to charge in cents, before any discount: whole dollars from
+   * the minimum up to this workspace's `max_topup_cents` on GET
+   * /api/billing/balance. The server enforces the maximum (400
+   * `INVALID_AMOUNT` with `details.reason` `above_max`); there is no
+   * schema maximum. The credits granted are derived server-side from
+   * this amount and cannot be set by the caller.
    *
    */
   amount_cents: number
@@ -5366,7 +5377,7 @@ export type CreateTopupQuoteRequest = {
  */
 export type CreateTopupRequest = {
   /**
-   * Amount to charge and grant as credits (in cents). Minimum $5.00; maximum `max_topup_cents` on GET /api/billing/balance (400 INVALID_AMOUNT above it).
+   * Amount to charge and grant as credits (in cents). Minimum $5.00; maximum this workspace's `max_topup_cents` on GET /api/billing/balance (400 INVALID_AMOUNT with `details.reason` `above_max` above it).
    */
   amount_cents: number
   /**
@@ -5991,7 +6002,7 @@ export type ErrorResponse = {
    */
   denied_reasons?: WorkspaceCreationDenials
   /**
-   * Optional open object carrying structured, machine-readable context about the error (e.g. offending field names, validation specifics). Absent for most errors; consumers must not assume any particular shape.
+   * Optional open object carrying structured, machine-readable context about the error (e.g. offending field names, validation specifics). Absent for most errors; consumers must not assume any particular shape. One documented key: a manual top-up refused because the amount is above the workspace's `max_topup_cents` answers 400 `INVALID_AMOUNT` with `details.reason` `above_max`; below-minimum and part-dollar refusals carry no reason.
    */
   details?: {
     [key: string]: unknown
@@ -6064,6 +6075,10 @@ export type ExchangeTokenResponse = {
  * Detailed execution error information from ComfyUI
  */
 export type ExecutionError = {
+  /**
+   * Stable frontend error-catalog identity supplied by the Cloud error producer. Absent while a producer has not migrated; clients must retain their message matcher for an absent or unknown id.
+   */
+  catalog_id?: string
   /**
    * Input values at time of failure (empty object if not available)
    */
@@ -16316,6 +16331,10 @@ export type CreateTopupErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * `BILLING_SERVICE_ERROR`: billing could not decide the top-up right now (for example, the workspace's top-up limit could not be read); no billing operation was created. Retry after `Retry-After`.
+   */
+  503: ErrorResponse
 }
 
 export type CreateTopupError = CreateTopupErrors[keyof CreateTopupErrors]
@@ -16684,6 +16703,10 @@ export type CreateTopupQuoteErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * `BILLING_SERVICE_ERROR`: billing could not quote right now (for example, the workspace's top-up limit could not be read). Retry after `Retry-After`.
+   */
+  503: ErrorResponse
 }
 
 export type CreateTopupQuoteError =

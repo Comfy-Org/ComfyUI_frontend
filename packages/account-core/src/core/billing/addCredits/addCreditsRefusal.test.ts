@@ -11,7 +11,10 @@ import {
 function serverFailure(
   httpStatus: number,
   code: string,
-  extra: { retryAfterSeconds?: number } = {}
+  extra: {
+    retryAfterSeconds?: number
+    details?: Readonly<Record<string, unknown>>
+  } = {}
 ): HostedTopupCheckoutFailure {
   const serverCode = readBillingErrorCode({ code, message: code })
   return {
@@ -59,6 +62,43 @@ describe('addCreditsRefusalFor', () => {
       name: 'capability refusal without a reason',
       failure: { status: 'error', code: 'ACCESS_DENIED' },
       expected: { kind: 'not_allowed' }
+    },
+    {
+      name: 'server INVALID_AMOUNT above the max',
+      failure: serverFailure(400, 'INVALID_AMOUNT', {
+        details: { reason: 'above_max' }
+      }),
+      expected: { kind: 'amount_above_max' }
+    },
+    {
+      name: 'local served-max refusal',
+      failure: {
+        status: 'error',
+        code: 'INVALID_AMOUNT',
+        details: { reason: 'above_max' }
+      },
+      expected: { kind: 'amount_above_max' }
+    },
+    {
+      name: 'mapped above-max result before the raw server code',
+      failure: {
+        ...serverFailure(400, 'TOPUP_RATE_LIMITED'),
+        code: 'INVALID_AMOUNT',
+        details: { reason: 'above_max' }
+      },
+      expected: { kind: 'amount_above_max' }
+    },
+    {
+      name: 'a different server code with the same detail',
+      failure: serverFailure(429, 'TOPUP_RATE_LIMITED', {
+        details: { reason: 'above_max' }
+      }),
+      expected: { kind: 'rate_limited' }
+    },
+    {
+      name: 'server INVALID_AMOUNT below the minimum',
+      failure: serverFailure(400, 'INVALID_AMOUNT'),
+      expected: { kind: 'checkout_failed' }
     },
     {
       name: 'unknown server code',

@@ -387,6 +387,11 @@
           "body": "The amount in your link isn't valid. Nothing has been charged. Choose an amount in your billing settings.",
           "codeLabel": "If you think this is a mistake, contact support with this code:"
         },
+        "amount_above_limit": {
+          "title": "Amount above limit",
+          "body": "This amount is above your workspace's top-up limit. Nothing has been charged. Choose a smaller amount, or contact support to raise your limit.",
+          "codeLabel": "If you think this is a mistake, contact support with this code:"
+        },
         "load_failed": {
           "title": "Couldn't load your checkout",
           "body": {

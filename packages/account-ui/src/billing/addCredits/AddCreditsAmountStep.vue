@@ -13,6 +13,7 @@
         v-for="cents in ADD_CREDITS_PRESETS_CENTS"
         :key="cents"
         :value="String(cents)"
+        :disabled="cents > bounds.maxCents"
         :class="
           cn(
             buttonVariants({ variant: 'secondary', size: 'lg' }),

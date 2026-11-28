@@ -1,3 +1,4 @@
+import type { ErrorResponse } from '@comfyorg/ingest-types'
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
 import type { BillingServerCode } from './billingContracts'
@@ -23,4 +24,11 @@ export function readBillingErrorMessage(body: unknown): string | undefined {
   if (!parsed.success) return undefined
   const message = parsed.data.message.trim()
   return message === '' ? undefined : message
+}
+
+export function readBillingErrorDetails(
+  body: unknown
+): ErrorResponse['details'] {
+  const parsed = zErrorResponse.safeParse(body)
+  return parsed.success ? parsed.data.details : undefined
 }

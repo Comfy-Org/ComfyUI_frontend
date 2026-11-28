@@ -11,6 +11,7 @@
         variant="secondary"
         size="lg"
         :aria-pressed="selectedPreset === amount"
+        :disabled="amount > maxAmount"
         :class="
           cn(
             'h-10 w-full text-base focus-visible:ring-ring',

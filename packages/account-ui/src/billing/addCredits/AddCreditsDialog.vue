@@ -58,8 +58,8 @@
       :translate
       :format
       :ui
-      @preset="dialog.pickPreset"
-      @type="dialog.typeAmount"
+      @preset="pickPreset"
+      @type="typeAmount"
       @continue="dialog.continueToCheckout"
     >
       <template #description><slot name="description" /></template>
@@ -147,6 +147,7 @@ import type {
   CapabilityDenialReason
 } from '@comfyorg/account-core/billing'
 import {
+  ADD_CREDITS_DEFAULT_CENTS,
   ADD_CREDITS_FALLBACK_BOUNDS,
   addCreditsRefusalBlocks,
   addCreditsRefusalForDenial,
@@ -265,9 +266,17 @@ const autoTopUpFields = useAddCreditsAutoTopUp(
   () => dialog.pickedCents.value
 )
 
+const openingAmountCents = computed(() =>
+  Math.min(
+    suggestedTopupCents ?? ADD_CREDITS_DEFAULT_CENTS,
+    bounds.value.maxCents
+  )
+)
+let amountEditedByUser = false
+
 const dialog = useAddCreditsDialog({
   ports,
-  initialAmount: initialAddCreditsAmount(suggestedTopupCents),
+  initialAmount: initialAddCreditsAmount(openingAmountCents.value),
   autoTopUp: autoTopUpFields.request,
   balanceCredits: () => negativeBalanceCredits,
   quoteScope: () => quoteScope,
@@ -280,6 +289,23 @@ const dialog = useAddCreditsDialog({
   onLanded: () => emit('close')
 })
 const state = dialog.state
+
+function pickPreset(cents: number) {
+  amountEditedByUser = true
+  dialog.pickPreset(cents)
+}
+
+function typeAmount(input: string) {
+  amountEditedByUser = true
+  dialog.typeAmount(input)
+}
+
+watch(openingAmountCents, (cents) => {
+  if (amountEditedByUser) return
+  const amount = initialAddCreditsAmount(cents)
+  if (amount.kind === 'preset') dialog.pickPreset(amount.cents)
+  else dialog.typeAmount(amount.input)
+})
 
 const autoTopUpResult = computed(() => {
   const current = state.value

@@ -699,6 +699,7 @@ export function useFullPageCheckout() {
   watch(
     () => {
       const kind = endingOf(page.value)?.kind
+      if (kind === 'amount_above_limit') return 'refused'
       return kind === 'scheduled' ? 'success' : kind
     },
     (kind) => {

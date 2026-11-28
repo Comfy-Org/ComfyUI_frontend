@@ -65,6 +65,11 @@ const ENDINGS: Readonly<
   refused: { tone: 'refused', support: true },
   plan_unavailable: { tone: 'refused', primary: 'view_plans', support: true },
   link_invalid: { tone: 'refused', primary: 'add_credits', support: true },
+  amount_above_limit: {
+    tone: 'refused',
+    primary: 'add_credits',
+    support: true
+  },
   load_failed: { tone: 'refused', primary: 'retry', support: true }
 }
 
