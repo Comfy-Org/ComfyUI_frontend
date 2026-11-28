@@ -159,11 +159,11 @@
 
 <script setup lang="ts">
 import { unrefElement, useAsyncState } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   computed,
   defineAsyncComponent,
-  onMounted,
   onUnmounted,
   ref,
   toValue,
@@ -200,7 +200,8 @@ import type {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import { getAssetType } from '@/platform/assets/adapters/outputAssetMappers'
 import { useAssetGridSelection } from '@/platform/assets/composables/useAssetGridSelection'
-import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useAssetSelectionStore } from '@/platform/assets/stores/useAssetSelectionStore'
+import type { AssetSource } from '@/platform/assets/stores/useAssetSelectionStore'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
@@ -217,6 +218,10 @@ import {
   getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/adapters/outputAssetResolver'
+import {
+  getAssetOutputCount as getOutputCount,
+  getTotalAssetOutputCount as getTotalOutputCount
+} from '@/platform/assets/utils/outputAssetCountUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -244,7 +249,12 @@ const { closable = true } = defineProps<{ closable?: boolean }>()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
-const activeTab = ref<'input' | 'output'>('output')
+const selectionStore = useAssetSelectionStore()
+
+const activeTab = computed<AssetSource>({
+  get: () => selectionStore.activeSource,
+  set: (value) => selectionStore.setSource(value)
+})
 const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
@@ -311,22 +321,17 @@ const toast = useToast()
 const assetsStore = useAssetsStore()
 
 // Asset selection
+const { hasSelection, selectedIdsArray } = storeToRefs(selectionStore)
 const {
   isSelected,
-  selectedIds,
   handleAssetClick,
   toggleAssetSelection,
   selectAll,
   setSelectedIds,
-  hasSelection,
   clearSelection,
   getSelectedAssets,
-  reconcileSelection,
-  getOutputCount,
-  getTotalOutputCount,
-  activate: activateSelection,
-  deactivate: deactivateSelection
-} = useAssetSelection()
+  reconcileSelection
+} = selectionStore
 
 const panelRef = useTemplateRef('panelRef')
 const marqueePanelRef = computed(() => {
@@ -412,7 +417,7 @@ const { marqueeStyle } = useAssetGridSelection({
   marqueeContainerRef: marqueePanelRef,
   hoverTargetRef: marqueePanelRef,
   getAssets: () => visibleAssets.value,
-  getSelectedIds: () => [...selectedIds.value],
+  getSelectedIds: () => [...selectedIdsArray.value],
   setSelectedIds,
   selectAll,
   isEnabled: () => !isListView.value
@@ -488,8 +493,6 @@ const refreshAssets = async () => {
 watch(
   activeTab,
   () => {
-    clearSelection()
-    // Clear search when switching tabs
     searchQuery.value = ''
     // Reset pagination state when tab changes
     void refreshAssets()
@@ -497,17 +500,21 @@ watch(
   { immediate: true }
 )
 
-function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
+function handleAssetSelect(
+  asset: AssetItem,
+  event: MouseEvent,
+  assets?: AssetItem[]
+) {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
-  handleAssetClick(asset, index, assetList)
+  handleAssetClick(asset, index, assetList, event)
 }
 
 function handleAssetSelectionToggle(asset: AssetItem) {
   const index = visibleAssets.value.findIndex((item) => item.id === asset.id)
   emit('assetSelected', asset)
-  toggleAssetSelection(asset, index, visibleAssets.value)
+  toggleAssetSelection(asset, index)
 }
 
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
@@ -706,12 +713,8 @@ const exitFolderView = () => {
   searchQuery.value = ''
 }
 
-onMounted(() => {
-  activateSelection()
-})
-
 onUnmounted(() => {
-  deactivateSelection()
+  clearSelection()
 })
 
 const handleDeselectAll = () => {

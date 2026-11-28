@@ -100,7 +100,7 @@
         "src/platform/assets/adapters/outputAssetResolver.test.ts",
         "src/platform/assets/composables/useOutputStacks.test.ts",
         "src/platform/assets/composables/useMediaAssetFiltering.test.ts",
-        "src/platform/assets/composables/useAssetSelection.test.ts",
+        "src/platform/assets/stores/useAssetSelectionStore.test.ts",
         "src/platform/assets/composables/useAssetGridSelection.test.ts",
         "src/platform/assets/utils/assetDragUtil.test.ts",
         "src/platform/assets/stores/assetsSidebarBadgeStore.test.ts",

@@ -197,20 +197,26 @@ export const useAssetsStore = defineStore('assets', () => {
     { immediate: true }
   )
 
-  async function loadOutputAsset(assetId: string): Promise<boolean> {
+  async function loadOutputAssetByJobId(
+    jobId: string
+  ): Promise<AssetItem | undefined> {
     const assets = outputAssets.value
-    const hasAsset = () =>
-      toValue(assets.items).some(({ id }) => id === assetId)
+    const findAsset = () =>
+      toValue(assets.items).find(
+        (asset) => getOutputAssetMetadata(asset.user_metadata)?.jobId === jobId
+      )
 
+    let match = findAsset()
     let pagesLoaded = 0
     while (
-      !hasAsset() &&
+      !match &&
       toValue(assets.hasMore) &&
       pagesLoaded++ < MAX_OUTPUT_LOOKUP_PAGES
     ) {
       if (!(await assets.loadMore())) break
+      match = findAsset()
     }
-    return hasAsset()
+    return match
   }
   useEventListener(
     api,
@@ -953,7 +959,7 @@ export const useAssetsStore = defineStore('assets', () => {
     inputAssets,
     outputAssets,
     invalidateAll,
-    loadOutputAsset,
+    loadOutputAssetByJobId,
 
     // Deletion tracking
     deletingAssetIds,
