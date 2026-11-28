@@ -460,6 +460,10 @@
     "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
     "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": " .safetensors ve .sft uzantılarını gizle",
+    "tooltip": "Yalnızca Düğümler 2.0 için. Bu uzantıları kapalı model parçacıklarında gizleyin. Diğer uzantılar görünür kalır; açılır menü seçenekleri ve kaydedilen değerler tam dosya adlarını korur."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget kontrol modu",
     "options": {

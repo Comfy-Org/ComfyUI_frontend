@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "بيانات وصفية",
@@ -4499,7 +4500,14 @@
       "saveFirst": "احفظ مسار العمل هذا قبل إرساله إلى وكيل.",
       "useLocalAgent": "استخدام وكيل محلي"
     },
-    "checkFailed": "تعذر التحقق من سير العمل هذا على Comfy Cloud. حاول مرة أخرى.",
+    "checkFailure": {
+      "busy": "Comfy Cloud مشغول الآن. حاول مرة أخرى بعد دقيقة.",
+      "outdated": "لا يمكن لهذا الإصدار من ComfyUI قراءة استجابة Comfy Cloud. حدّث ComfyUI، ثم حاول مرة أخرى.",
+      "tooBig": "سير العمل هذا كبير جدًا للتحقق منه على Comfy Cloud. يمكن أن يحتوي على ما يصل إلى 2,000 نوع من العقد و500 نموذج.",
+      "unreachable": "تعذّر الوصول إلى Comfy Cloud. تحقّق من اتصالك بالإنترنت، ثم حاول مرة أخرى.",
+      "unreadable": "تعذّرت قراءة سير العمل هذا للتحقق منه. أعد تحميل ComfyUI، ثم حاول مرة أخرى.",
+      "workspace": "تعذّر استخدام مساحة العمل الخاصة بك في Comfy Cloud. حاول مرة أخرى بعد دقيقة، أو سجّل الخروج ثم سجّل الدخول مجددًا."
+    },
     "cloudButton": {
       "checking": "جارٍ التحقق من Comfy Cloud…",
       "resumeUpload": "استئناف رفع النموذج",
@@ -4750,6 +4758,7 @@
       "reportError": "الإبلاغ عن خطأ"
     },
     "jobQueueing": "جارٍ إضافة العمل إلى قائمة الانتظار",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "تبديل سجل المهام"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} حرف | {count} أحرف",
     "expand": "توسيع",
+    "focusView": "توسيع إلى عرض التركيز",
+    "noPrompt": "لا تحتوي {node} على موجّه.",
+    "noPromptHint": "حدّد عقدة تحتوي على إدخال نصي لتحرير موجّهها هنا.",
+    "nodeSettings": "إعدادات العقدة",
+    "prompt": "الموجّه",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
@@ -6418,15 +6432,20 @@
     "undo": "تراجع"
   },
   "widgets": {
+    "allFolders": "كل المجلدات",
     "backFromFolder": "رجوع: {name}",
     "boolean": {
       "false": "خطأ",
       "true": "صحيح"
     },
+    "browseToLockFolder": "افتح مجلدًا لقفله",
+    "folderLocked": "مقفل على المجلد: {name}",
+    "lockFolder": "قفل المجلد: {name}",
     "node2only": "فقط Node 2.0",
     "precisionLimit": "الزيادة/الإنقاص معطّلان: تتجاوز القيمة حد دقة JavaScript (±2^53)",
     "selectFolder": "المجلد: {name}",
     "selectModel": "اختر نموذج",
+    "unlockFolder": "إلغاء قفل المجلد: {name}",
     "uploadSelect": {
       "maxSelectionReached": "تم الوصول إلى الحد الأقصى للاختيار",
       "placeholder": "اختر...",
@@ -6436,6 +6455,9 @@
       "placeholderModel": "اختر نموذج...",
       "placeholderUnknown": "اختر وسائط...",
       "placeholderVideo": "اختر فيديو...",
+      "resizeHint": "اسحب لتغيير الحجم، وانقر نقرًا مزدوجًا لإعادة التعيين",
+      "resizeLeftCorner": "تغيير الحجم من الزاوية اليسرى",
+      "resizeRightCorner": "تغيير الحجم من الزاوية اليمنى",
       "thumbnailSize": "حجم الصورة المصغرة",
       "thumbnailSizes": {
         "compact": "مضغوط",

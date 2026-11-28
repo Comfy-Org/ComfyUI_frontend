@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "Erstellen Sie aus einem ersten Bild oder aus einem ersten und einem letzten Bild ein 1080p-Video mit nativem Audio von 4 bis 30 Sekunden.",
+    "display_name": "MAGI-2 Bild zu Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "Seitenverhältnis",
+        "tooltip": "auto wählt das Seitenverhältnis, das dem ersten Bild am nächsten kommt. MAGI-2 streckt die Frames auf das gewählte Seitenverhältnis."
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "duration": {
+        "name": "Dauer"
+      },
+      "first_frame": {
+        "name": "erstes Bild"
+      },
+      "generate_audio": {
+        "name": "Audio generieren"
+      },
+      "last_frame": {
+        "name": "letztes Bild"
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "resolution": {
+        "name": "Auflösung"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Das Ändern des Seed führt den Node erneut aus; die Ergebnisse von MAGI-2 variieren selbst bei gleichem Seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "Erstellen Sie ein 1080p-Video mit nativem Audio von 4 bis 30 Sekunden, das von Referenzbildern, -videos und -audio angeleitet wird, um Charaktere, Orte, Kamerabewegungen oder Stimmen konsistent zu halten.",
+    "display_name": "MAGI-2 Referenz zu Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "duration": {
+        "name": "Dauer"
+      },
+      "generate_audio": {
+        "name": "Audio generieren"
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Verweisen Sie auf Referenzen als @Image1, @Video1, @Audio1 (nach Typ nummeriert, in Eingabereihenfolge; jedes Bild eines Batch zählt)."
+      },
+      "reference_audios": {
+        "name": "Referenzaudio",
+        "tooltip": "Clips, die länger als 30 s sind, werden auf ihre ersten 30 s gekürzt; jeder Typ wird insgesamt auf 30 s gekürzt. Audio, das kürzer als 2 s ist, wird mit Stille aufgefüllt; Video muss mindestens 2 s lang sein."
+      },
+      "reference_images": {
+        "name": "Referenzbilder",
+        "tooltip": "Insgesamt bis zu 10 Bilder."
+      },
+      "reference_videos": {
+        "name": "Referenzvideos",
+        "tooltip": "Clips, die länger als 30 s sind, werden auf ihre ersten 30 s gekürzt; jeder Typ wird insgesamt auf 30 s gekürzt. Audio, das kürzer als 2 s ist, wird mit Stille aufgefüllt; Video muss mindestens 2 s lang sein."
+      },
+      "resolution": {
+        "name": "Auflösung"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Das Ändern des Seed führt den Node erneut aus; die Ergebnisse von MAGI-2 variieren selbst bei gleichem Seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "Erstellen Sie aus einem Text-Prompt ein 1080p-Video mit nativem Audio von 4 bis 30 Sekunden.",
+    "display_name": "MAGI-2 Text zu Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "duration": {
+        "name": "Dauer"
+      },
+      "generate_audio": {
+        "name": "Audio generieren"
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "resolution": {
+        "name": "Auflösung"
+      },
+      "seed": {
+        "name": "Seed",
+        "tooltip": "Das Ändern des Seed führt den Node erneut aus; die Ergebnisse von MAGI-2 variieren selbst bei gleichem Seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "Beleuchtet ein Bild mit Lichtanpassungen und optionaler referenzbasierter Lichtübertragung neu.",
     "display_name": "Magnific Bild-Neubeleuchtung",

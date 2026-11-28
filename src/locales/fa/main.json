@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "متا",
@@ -4499,7 +4500,14 @@
       "saveFirst": "پیش از ارسال این workflow به یک agent، آن را ذخیره کنید.",
       "useLocalAgent": "استفاده از agent محلی"
     },
-    "checkFailed": "بررسی این workflow در Comfy Cloud ممکن نشد. دوباره تلاش کنید.",
+    "checkFailure": {
+      "busy": "Comfy Cloud در حال حاضر مشغول است. یک دقیقه دیگر دوباره تلاش کنید.",
+      "outdated": "این نسخه از ComfyUI نمی‌تواند پاسخ Comfy Cloud را بخواند. ComfyUI را به‌روزرسانی کنید، سپس دوباره تلاش کنید.",
+      "tooBig": "این workflow برای بررسی در Comfy Cloud بیش‌ازحد بزرگ است. می‌تواند حداکثر ۲٬۰۰۰ نوع node و ۵۰۰ مدل داشته باشد.",
+      "unreachable": "امکان اتصال به Comfy Cloud وجود نداشت. اتصال اینترنت خود را بررسی کنید، سپس دوباره تلاش کنید.",
+      "unreadable": "امکان خواندن این workflow برای بررسی آن وجود نداشت. ComfyUI را دوباره بارگذاری کنید، سپس دوباره تلاش کنید.",
+      "workspace": "امکان استفاده از فضای کاری Comfy Cloud شما وجود نداشت. یک دقیقه دیگر دوباره تلاش کنید یا خارج شوید و دوباره وارد شوید."
+    },
     "cloudButton": {
       "checking": "در حال بررسی Comfy Cloud…",
       "resumeUpload": "ادامهٔ بارگذاری مدل",
@@ -4750,6 +4758,7 @@
       "reportError": "گزارش خطا"
     },
     "jobQueueing": "در حال صف‌بندی کار",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "نمایش/مخفی‌سازی تاریخچه کارها"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} نویسه | {count} نویسه",
     "expand": "بسط دادن",
+    "focusView": "برای حالت تمرکز گسترش دهید",
+    "noPrompt": "{node} هیچ promptی ندارد.",
+    "noPromptHint": "یک node با ورودی متنی انتخاب کنید تا prompt آن را اینجا ویرایش کنید.",
+    "nodeSettings": "تنظیمات node",
+    "prompt": "پرامپت",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
@@ -6418,15 +6432,20 @@
     "undo": "واگرد"
   },
   "widgets": {
+    "allFolders": "همهٔ پوشه‌ها",
     "backFromFolder": "بازگشت: {name}",
     "boolean": {
       "false": "نادرست",
       "true": "درست"
     },
+    "browseToLockFolder": "پوشه‌ای را برای قفل کردن باز کنید",
+    "folderLocked": "قفل‌شده روی پوشه: {name}",
+    "lockFolder": "قفل کردن پوشه: {name}",
     "node2only": "فقط Node 2.0",
     "precisionLimit": "افزایش/کاهش غیرفعال است: مقدار از حد دقت JavaScript (±2^53) فراتر می‌رود",
     "selectFolder": "پوشه: {name}",
     "selectModel": "انتخاب مدل",
+    "unlockFolder": "باز کردن قفل پوشه: {name}",
     "uploadSelect": {
       "maxSelectionReached": "حداکثر تعداد انتخاب مجاز رسید",
       "placeholder": "انتخاب...",
@@ -6436,6 +6455,9 @@
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
       "placeholderVideo": "انتخاب ویدیو...",
+      "resizeHint": "برای تغییر اندازه بکشید، برای بازنشانی دوبار کلیک کنید",
+      "resizeLeftCorner": "تغییر اندازه از گوشهٔ چپ",
+      "resizeRightCorner": "تغییر اندازه از گوشهٔ راست",
       "thumbnailSize": "اندازهٔ تصویر بندانگشتی",
       "thumbnailSizes": {
         "compact": "فشرده",

@@ -460,6 +460,10 @@
     "name": "Diseño moderno de nodos (Nodos 2.0)",
     "tooltip": "Moderno: Renderizado basado en DOM con interactividad mejorada, funciones nativas del navegador y diseño visual actualizado. Clásico: Renderizado tradicional en lienzo."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "Ocultar las extensiones .safetensors y .sft",
+    "tooltip": "Solo para Nodes 2.0. Oculta estas extensiones en los widgets de modelo cerrados. Las demás extensiones permanecen visibles; las opciones de los menús desplegables y los valores guardados conservan los nombres de archivo completos."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Modo de control del widget",
     "options": {

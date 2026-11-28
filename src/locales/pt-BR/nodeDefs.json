@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "Anime um primeiro quadro ou faça a transição de um primeiro quadro para um último quadro em um vídeo 1080p de 4 a 30 segundos com áudio nativo.",
+    "display_name": "MAGI-2 Imagem para Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto seleciona a proporção mais próxima do primeiro quadro. O MAGI-2 estica os quadros para a proporção escolhida."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Alterar a seed executa o nó novamente; os resultados do MAGI-2 variam mesmo com a mesma seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "Gere um vídeo 1080p de 4 a 30 segundos com áudio nativo, orientado por imagens, vídeos e áudios de referência para manter personagens, locais, movimentos de câmera ou vozes consistentes.",
+    "display_name": "MAGI-2 Referência para Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Faça referência às referências como @Image1, @Video1, @Audio1 (numeradas por tipo, na ordem de entrada; cada imagem de um lote é contabilizada)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Clipes com mais de 30 s são cortados para os primeiros 30 s, e cada tipo é limitado a 30 s no total. Áudios com menos de 2 s são preenchidos com silêncio; o vídeo deve ter pelo menos 2 s."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Até 10 imagens no total."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Clipes com mais de 30 s são cortados para os primeiros 30 s, e cada tipo é limitado a 30 s no total. Áudios com menos de 2 s são preenchidos com silêncio; o vídeo deve ter pelo menos 2 s."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Alterar a seed executa o nó novamente; os resultados do MAGI-2 variam mesmo com a mesma seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "Gere um vídeo 1080p de 4 a 30 segundos com áudio nativo a partir de um prompt de texto.",
+    "display_name": "MAGI-2 Texto para Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Alterar a seed executa o nó novamente; os resultados do MAGI-2 variam mesmo com a mesma seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "Reilumine uma imagem com ajustes de iluminação e transferência de luz baseada em referência opcional.",
     "display_name": "Magnific Reiluminar Imagem",

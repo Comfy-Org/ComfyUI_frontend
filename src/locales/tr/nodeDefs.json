@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "İlk kareyi canlandırın veya ilk kareden son kareye geçerek yerleşik sesli, 4 ila 30 saniye uzunluğunda 1080p bir video oluşturun.",
+    "display_name": "MAGI-2 Görüntüden Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto, ilk kareye en yakın oranı seçer. MAGI-2, kareleri seçilen orana göre esnetir."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed değerini değiştirmek düğümü yeniden çalıştırır; MAGI-2 sonuçları aynı seed değeriyle bile farklılık gösterir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "Karakterleri, konumları, kamera hareketlerini veya sesleri tutarlı tutmak için referans görüntüler, videolar ve sesler tarafından yönlendirilen; yerleşik sesli, 4 ila 30 saniye uzunluğunda 1080p bir video oluşturun.",
+    "display_name": "MAGI-2 Referanstan Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Referanslara @Image1, @Video1, @Audio1 olarak başvurun (türe göre numaralandırılır, giriş sırasındadır; bir toplu işteki her görüntü sayılır)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "30 s'den uzun klipler ilk 30 s'lerine kırpılır ve her tür toplamda 30 s'ye kırpılır. 2 s'den kısa seslere sessizlik eklenir; video en az 2 s olmalıdır."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Toplamda en fazla 10 görüntü."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "30 s'den uzun klipler ilk 30 s'lerine kırpılır ve her tür toplamda 30 s'ye kırpılır. 2 s'den kısa seslere sessizlik eklenir; video en az 2 s olmalıdır."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed değerini değiştirmek düğümü yeniden çalıştırır; MAGI-2 sonuçları aynı seed değeriyle bile farklılık gösterir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "Metin isteminden yerleşik sesli, 4 ila 30 saniye uzunluğunda 1080p bir video oluşturun.",
+    "display_name": "MAGI-2 Metinden Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed değerini değiştirmek düğümü yeniden çalıştırır; MAGI-2 sonuçları aynı seed değeriyle bile farklılık gösterir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "Bir görseli ışık ayarlarıyla ve isteğe bağlı referans tabanlı ışık transferiyle yeniden ışıklandır.",
     "display_name": "Magnific Görsel Yeniden Işıklandırma",

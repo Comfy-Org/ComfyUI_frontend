@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "メタ",
@@ -4499,7 +4500,14 @@
       "saveFirst": "エージェントに送信する前に、このワークフローを保存してください。",
       "useLocalAgent": "ローカルエージェントを使用"
     },
-    "checkFailed": "Comfy Cloud でこのワークフローを確認できませんでした。もう一度お試しください。",
+    "checkFailure": {
+      "busy": "Comfy Cloud は現在混み合っています。1分後にもう一度お試しください。",
+      "outdated": "このバージョンのComfyUIでは、Comfy Cloudの応答を読み取れません。ComfyUIを更新してから、もう一度お試しください。",
+      "tooBig": "このワークフローは大きすぎるため、Comfy Cloud で確認できません。ノードタイプは最大2,000件、モデルは最大500件まで含められます。",
+      "unreachable": "Comfy Cloud に接続できませんでした。インターネット接続を確認してから、もう一度お試しください。",
+      "unreadable": "このワークフローを読み取って確認できませんでした。ComfyUIを再読み込みしてから、もう一度お試しください。",
+      "workspace": "Comfy Cloud ワークスペースを使用できませんでした。1分後にもう一度お試しいただくか、サインアウトしてから再度サインインしてください。"
+    },
     "cloudButton": {
       "checking": "Comfy Cloud を確認中…",
       "resumeUpload": "モデルのアップロードを再開",
@@ -4750,6 +4758,7 @@
       "reportError": "エラーを報告"
     },
     "jobQueueing": "ジョブをキューに追加中",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "ジョブ履歴を切り替え"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} 文字 | {count} 文字",
     "expand": "展開",
+    "focusView": "フォーカスビューに拡大",
+    "noPrompt": "{node} にはプロンプトがありません。",
+    "noPromptHint": "テキスト入力のあるノードを選択すると、ここでそのプロンプトを編集できます。",
+    "nodeSettings": "ノード設定",
+    "prompt": "プロンプト",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
@@ -6418,15 +6432,20 @@
     "undo": "元に戻す"
   },
   "widgets": {
+    "allFolders": "すべてのフォルダー",
     "backFromFolder": "戻る: {name}",
     "boolean": {
       "false": "false",
       "true": "true"
     },
+    "browseToLockFolder": "ロックするフォルダーを開く",
+    "folderLocked": "フォルダーにロック済み: {name}",
+    "lockFolder": "フォルダーをロック: {name}",
     "node2only": "Node 2.0専用",
     "precisionLimit": "増減は無効です: 値が JavaScript の精度上限（±2^53）を超えています",
     "selectFolder": "フォルダー: {name}",
     "selectModel": "モデルを選択",
+    "unlockFolder": "フォルダーのロックを解除: {name}",
     "uploadSelect": {
       "maxSelectionReached": "選択の上限に達しました",
       "placeholder": "選択...",
@@ -6436,6 +6455,9 @@
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
       "placeholderVideo": "動画を選択...",
+      "resizeHint": "ドラッグしてサイズ変更、ダブルクリックでリセット",
+      "resizeLeftCorner": "左の角からサイズ変更",
+      "resizeRightCorner": "右の角からサイズ変更",
       "thumbnailSize": "サムネイルサイズ",
       "thumbnailSizes": {
         "compact": "コンパクト",

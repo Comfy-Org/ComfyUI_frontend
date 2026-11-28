@@ -460,6 +460,10 @@
     "name": "Design moderne des nœuds (nœuds Vue)",
     "tooltip": "Moderne : rendu basé sur DOM avec interactivité améliorée, fonctionnalités natives du navigateur et design visuel actualisé. Classique : rendu traditionnel sur toile."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "Masquer les extensions .safetensors et .sft",
+    "tooltip": "Nœuds 2.0 uniquement. Masquer ces extensions dans les widgets de modèle fermés. Les autres extensions restent visibles ; les options des listes déroulantes et les valeurs enregistrées conservent les noms de fichiers complets."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Mode de contrôle du widget",
     "options": {

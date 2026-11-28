@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "最初のフレームをアニメーション化するか、最初のフレームから最後のフレームへ移行して、ネイティブ音声付きの4～30秒の1080p動画を作成します。",
+    "display_name": "MAGI-2 画像から動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto は最初のフレームに最も近い比率を選択します。MAGI-2 はフレームを選択した比率に引き伸ばします。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed を変更するとノードが再実行されます。MAGI-2 の結果は同じ seed でも異なります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "参照画像、動画、音声をガイドとして使用し、キャラクター、場所、カメラ移動、声の一貫性を保ちながら、ネイティブ音声付きの4～30秒の1080p動画を生成します。",
+    "display_name": "MAGI-2 参照画像から動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "参照は @Image1、@Video1、@Audio1 として指定します（種類ごとに入力順で番号付け。バッチ内の各画像が1つとして数えられます）。"
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "30秒を超えるクリップは先頭の30秒に切り詰められ、各種類は合計30秒に切り詰められます。2秒未満の音声には無音が追加されます。動画は2秒以上必要です。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "合計で最大10枚の画像。"
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "30秒を超えるクリップは先頭の30秒に切り詰められ、各種類は合計30秒に切り詰められます。2秒未満の音声には無音が追加されます。動画は2秒以上必要です。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed を変更するとノードが再実行されます。MAGI-2 の結果は同じ seed でも異なります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "テキストプロンプトから、ネイティブ音声付きの4～30秒の1080p動画を生成します。",
+    "display_name": "MAGI-2 テキストから動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed を変更するとノードが再実行されます。MAGI-2 の結果は同じ seed でも異なります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "画像のライティングを調整し、オプションで参照画像からの光の転送も可能です。",
     "display_name": "Magnific 画像リライティング",

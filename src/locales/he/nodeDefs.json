@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "הנפשת פריים ראשון, או יצירת מעבר מפריים ראשון לפריים אחרון, לכדי וידאו 1080p באורך 4 עד 30 שניות עם שמע מובנה.",
+    "display_name": "MAGI-2 תמונה לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "האפשרות auto בוחרת את היחס הקרוב ביותר לפריים הראשון. MAGI-2 מותח את הפריימים ליחס שנבחר."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "שינוי ה-seed מפעיל מחדש את הצומת; תוצאות MAGI-2 עשויות להשתנות גם עם אותו seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "יצירת וידאו 1080p באורך 4 עד 30 שניות עם שמע מובנה, בהנחיית תמונות, סרטונים ושמע להפניה, כדי לשמור על עקביות של דמויות, מיקומים, תנועות מצלמה או קולות.",
+    "display_name": "MAGI-2 הפניה לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "יש להפנות למקורות באמצעות @Image1, @Video1, @Audio1 (ממוספרים לפי סוג, בסדר הקלט; כל תמונה באצווה נספרת)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "קטעים שאורכם עולה על 30 s נחתכים ל-30 s הראשונות שלהם, וכל סוג נחתך ל-30 s בסך הכול. לשמע שאורכו קצר מ-2 s מתווסף שקט; אורך הווידאו חייב להיות לפחות 2 s."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "עד 10 תמונות בסך הכול."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "קטעים שאורכם עולה על 30 s נחתכים ל-30 s הראשונות שלהם, וכל סוג נחתך ל-30 s בסך הכול. לשמע שאורכו קצר מ-2 s מתווסף שקט; אורך הווידאו חייב להיות לפחות 2 s."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "שינוי ה-seed מפעיל מחדש את הצומת; תוצאות MAGI-2 עשויות להשתנות גם עם אותו seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "יצירת וידאו 1080p באורך 4 עד 30 שניות עם שמע מובנה מתוך פרומפט טקסט.",
+    "display_name": "MAGI-2 טקסט לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "שינוי ה-seed מפעיל מחדש את הצומת; תוצאות MAGI-2 עשויות להשתנות גם עם אותו seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "הארת תמונה מחדש עם התאמות תאורה ואפשרות להעברת תאורה מתמונה נוספת.",
     "display_name": "Magnific Image Relight",

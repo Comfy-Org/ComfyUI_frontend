@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "첫 프레임에 애니메이션을 적용하거나 첫 프레임에서 마지막 프레임으로 전환하여, 네이티브 오디오가 포함된 4~30초 길이의 1080p 비디오를 만듭니다.",
+    "display_name": "MAGI-2 이미지-비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto는 첫 프레임에 가장 가까운 비율을 선택합니다. MAGI-2는 선택한 비율에 맞게 프레임을 늘입니다."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed를 변경하면 노드가 다시 실행됩니다. MAGI-2의 결과는 동일한 seed로도 달라질 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "참조 이미지, 비디오 및 오디오를 기반으로 캐릭터, 장소, 카메라 움직임 또는 목소리의 일관성을 유지하면서 네이티브 오디오가 포함된 4~30초 길이의 1080p 비디오를 생성합니다.",
+    "display_name": "MAGI-2 참조 이미지-비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "참조는 @Image1, @Video1, @Audio1로 지정하세요(유형별로 입력 순서에 따라 번호가 매겨지며, 배치의 모든 이미지가 계산됩니다)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "30초보다 긴 클립은 처음 30초로 잘리며, 각 유형의 총길이도 30초로 잘립니다. 2초보다 짧은 오디오는 무음으로 채워지며, 비디오는 최소 2초 이상이어야 합니다."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "총 최대 10장의 이미지."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "30초보다 긴 클립은 처음 30초로 잘리며, 각 유형의 총길이도 30초로 잘립니다. 2초보다 짧은 오디오는 무음으로 채워지며, 비디오는 최소 2초 이상이어야 합니다."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed를 변경하면 노드가 다시 실행됩니다. MAGI-2의 결과는 동일한 seed로도 달라질 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "텍스트 프롬프트로 네이티브 오디오가 포함된 4~30초 길이의 1080p 비디오를 생성합니다.",
+    "display_name": "MAGI-2 텍스트-비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed를 변경하면 노드가 다시 실행됩니다. MAGI-2의 결과는 동일한 seed로도 달라질 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "이미지의 조명을 조정하고, 선택적으로 참조 기반의 조명 전송을 적용합니다.",
     "display_name": "Magnific 이미지 리라이트",

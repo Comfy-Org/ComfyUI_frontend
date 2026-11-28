@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "מטא",
@@ -4499,7 +4500,14 @@
       "saveFirst": "שמרו את תהליך העבודה הזה לפני שליחתו לסוכן.",
       "useLocalAgent": "השתמשו בסוכן מקומי"
     },
-    "checkFailed": "לא ניתן היה לבדוק את תהליך העבודה הזה ב-Comfy Cloud. נסו שוב.",
+    "checkFailure": {
+      "busy": "Comfy Cloud עמוס כרגע. נסו שוב בעוד דקה.",
+      "outdated": "גרסה זו של ComfyUI אינה יכולה לקרוא את התשובה של Comfy Cloud. עדכנו את ComfyUI ולאחר מכן נסו שוב.",
+      "tooBig": "תהליך עבודה זה גדול מדי לבדיקה ב-Comfy Cloud. הוא יכול לכלול עד 2,000 סוגי צמתים ו-500 מודלים.",
+      "unreachable": "לא ניתן היה להתחבר אל Comfy Cloud. בדקו את חיבור האינטרנט שלכם ולאחר מכן נסו שוב.",
+      "unreadable": "לא ניתן היה לקרוא תהליך עבודה זה לצורך בדיקתו. טענו מחדש את ComfyUI ולאחר מכן נסו שוב.",
+      "workspace": "לא ניתן היה להשתמש בסביבת העבודה שלכם ב-Comfy Cloud. נסו שוב בעוד דקה, או התנתקו והתחברו מחדש."
+    },
     "cloudButton": {
       "checking": "מתבצעת בדיקה של Comfy Cloud…",
       "resumeUpload": "המשך העלאת מודל",
@@ -4750,6 +4758,7 @@
       "reportError": "דיווח על השגיאה"
     },
     "jobQueueing": "מוסיף את המשימה לתור",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "הצגה/הסתרה של היסטוריית המשימות"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} תו | {count} תווים",
     "expand": "הרחבה",
+    "focusView": "הרחב לתצוגת מיקוד",
+    "noPrompt": "ל-{node} אין פרומפט.",
+    "noPromptHint": "בחרו צומת עם קלט טקסט כדי לערוך כאן את הפרומפט שלו.",
+    "nodeSettings": "הגדרות צומת",
+    "prompt": "פרומפט",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
@@ -6418,15 +6432,20 @@
     "undo": "בטל"
   },
   "widgets": {
+    "allFolders": "כל התיקיות",
     "backFromFolder": "חזרה: {name}",
     "boolean": {
       "false": "שקר",
       "true": "אמת"
     },
+    "browseToLockFolder": "פתח תיקייה כדי לנעול אותה",
+    "folderLocked": "נעול לתיקייה: {name}",
+    "lockFolder": "נעל תיקייה: {name}",
     "node2only": "Nodes 2.0 בלבד",
     "precisionLimit": "ההגדלה/ההקטנה מושבתת: הערך חורג ממגבלת הדיוק של JavaScript ‏(±2^53)",
     "selectFolder": "תיקייה: {name}",
     "selectModel": "בחירת מודל",
+    "unlockFolder": "בטל את נעילת התיקייה: {name}",
     "uploadSelect": {
       "maxSelectionReached": "הגעת למגבלת הבחירה המרבית",
       "placeholder": "בחר...",
@@ -6436,6 +6455,9 @@
       "placeholderModel": "בחר מודל...",
       "placeholderUnknown": "בחר מדיה...",
       "placeholderVideo": "בחר סרטון...",
+      "resizeHint": "גרור כדי לשנות גודל, לחץ לחיצה כפולה כדי לאפס",
+      "resizeLeftCorner": "שינוי גודל מהפינה השמאלית",
+      "resizeRightCorner": "שינוי גודל מהפינה הימנית",
       "thumbnailSize": "גודל תמונה ממוזערת",
       "thumbnailSizes": {
         "compact": "קומפקטי",

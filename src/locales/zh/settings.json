@@ -460,6 +460,10 @@
     "name": "现代节点设计（Nodes 2.0）",
     "tooltip": "现代：基于DOM的渲染，具有增强的交互性、原生浏览器功能和更新的视觉设计。经典：传统的画布渲染。"
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "隐藏 .safetensors 和 .sft 扩展名",
+    "tooltip": "仅适用于节点 2.0。在封闭式模型控件中隐藏这些扩展名。其他扩展名仍会显示；下拉选项和已保存的值将保留完整文件名。"
+  },
   "Comfy_WidgetControlMode": {
     "name": "组件控制模式",
     "options": {

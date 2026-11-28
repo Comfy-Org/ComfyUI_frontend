@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "Мета",
@@ -4499,7 +4500,14 @@
       "saveFirst": "Сохраните этот рабочий процесс, прежде чем отправлять его агенту.",
       "useLocalAgent": "Использовать локальный агент"
     },
-    "checkFailed": "Не удалось проверить этот workflow в Comfy Cloud. Повторите попытку.",
+    "checkFailure": {
+      "busy": "Comfy Cloud сейчас занят. Повторите попытку через минуту.",
+      "outdated": "Эта версия ComfyUI не может прочитать ответ Comfy Cloud. Обновите ComfyUI и повторите попытку.",
+      "tooBig": "Этот workflow слишком велик для проверки в Comfy Cloud. Он может содержать до 2 000 типов узлов и 500 моделей.",
+      "unreachable": "Не удалось подключиться к Comfy Cloud. Проверьте подключение к интернету и повторите попытку.",
+      "unreadable": "Не удалось прочитать этот workflow для проверки. Перезагрузите ComfyUI и повторите попытку.",
+      "workspace": "Не удалось использовать ваше рабочее пространство Comfy Cloud. Повторите попытку через минуту или выйдите из аккаунта и войдите снова."
+    },
     "cloudButton": {
       "checking": "Проверка Comfy Cloud…",
       "resumeUpload": "Возобновить загрузку модели",
@@ -4750,6 +4758,7 @@
       "reportError": "Сообщить об ошибке"
     },
     "jobQueueing": "Задача ставится в очередь",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "Показать/скрыть историю задач"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} символ | {count} символов",
     "expand": "Развернуть",
+    "focusView": "Развернуть в режим фокуса",
+    "noPrompt": "У {node} нет промпта.",
+    "noPromptHint": "Выберите узел с текстовым полем, чтобы редактировать его промпт здесь.",
+    "nodeSettings": "Настройки узла",
+    "prompt": "Промпт",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
@@ -6418,15 +6432,20 @@
     "undo": "Отменить"
   },
   "widgets": {
+    "allFolders": "Все папки",
     "backFromFolder": "Назад: {name}",
     "boolean": {
       "false": "ложь",
       "true": "истина"
     },
+    "browseToLockFolder": "Откройте папку, чтобы закрепить её",
+    "folderLocked": "Закреплено за папкой: {name}",
+    "lockFolder": "Закрепить папку: {name}",
     "node2only": "Только Node 2.0",
     "precisionLimit": "Увеличение/уменьшение отключено: значение превышает предел точности JavaScript (±2^53)",
     "selectFolder": "Папка: {name}",
     "selectModel": "Выбрать модель",
+    "unlockFolder": "Открепить папку: {name}",
     "uploadSelect": {
       "maxSelectionReached": "Достигнут максимальный лимит выбора",
       "placeholder": "Выбрать...",
@@ -6436,6 +6455,9 @@
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
       "placeholderVideo": "Выбрать видео...",
+      "resizeHint": "Перетащите, чтобы изменить размер, дважды щёлкните для сброса",
+      "resizeLeftCorner": "Изменить размер с левого угла",
+      "resizeRightCorner": "Изменить размер с правого угла",
       "thumbnailSize": "Размер миниатюры",
       "thumbnailSizes": {
         "compact": "Компактный",

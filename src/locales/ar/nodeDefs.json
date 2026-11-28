@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "حرّك إطارًا أولًا، أو انتقل من إطار أول إلى إطار أخير، لتحويله إلى فيديو بدقة 1080p لمدة من 4 إلى 30 ثانية مع صوت أصلي.",
+    "display_name": "MAGI-2 تحويل صورة إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يختار auto النسبة الأقرب إلى الإطار الأول. يمدّد MAGI-2 الإطارات إلى النسبة المختارة."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يؤدي تغيير seed إلى إعادة تشغيل العقدة؛ تختلف نتائج MAGI-2 حتى عند استخدام seed نفسه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "أنشئ فيديو بدقة 1080p لمدة من 4 إلى 30 ثانية مع صوت أصلي، مسترشدًا بالصور ومقاطع الفيديو والصوت المرجعية للحفاظ على اتساق الشخصيات أو المواقع أو حركات الكاميرا أو الأصوات.",
+    "display_name": "MAGI-2 تحويل مراجع إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "أشر إلى المراجع بصيغة @Image1 و@Video1 و@Audio1 (مرقمة حسب النوع، وبترتيب الإدخال؛ وتُحتسب كل صورة في الدفعة)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "تُقصّ المقاطع الأطول من 30 ثانية إلى أول 30 ثانية منها، ويُقصّ كل نوع إلى 30 ثانية إجمالًا. يُملأ الصوت الأقصر من ثانيتين بالصمت؛ ويجب ألا تقل مدة الفيديو عن ثانيتين."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حتى 10 صور إجمالًا."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "تُقصّ المقاطع الأطول من 30 ثانية إلى أول 30 ثانية منها، ويُقصّ كل نوع إلى 30 ثانية إجمالًا. يُملأ الصوت الأقصر من ثانيتين بالصمت؛ ويجب ألا تقل مدة الفيديو عن ثانيتين."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يؤدي تغيير seed إلى إعادة تشغيل العقدة؛ تختلف نتائج MAGI-2 حتى عند استخدام seed نفسه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "أنشئ فيديو بدقة 1080p لمدة من 4 إلى 30 ثانية مع صوت أصلي من prompt نصي.",
+    "display_name": "MAGI-2 تحويل نص إلى فيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "يؤدي تغيير seed إلى إعادة تشغيل العقدة؛ تختلف نتائج MAGI-2 حتى عند استخدام seed نفسه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "إعادة إضاءة صورة مع تعديلات الإضاءة وخيار نقل الإضاءة من مرجع.",
     "display_name": "إعادة إضاءة الصورة Magnific",

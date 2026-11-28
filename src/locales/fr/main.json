@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "Méta",
@@ -4499,7 +4500,14 @@
       "saveFirst": "Enregistrez ce workflow avant de l’envoyer à un agent.",
       "useLocalAgent": "Utiliser l’agent local"
     },
-    "checkFailed": "Impossible de vérifier ce workflow sur Comfy Cloud. Réessayez.",
+    "checkFailure": {
+      "busy": "Comfy Cloud est actuellement occupé. Réessayez dans une minute.",
+      "outdated": "Cette version de ComfyUI ne peut pas lire la réponse de Comfy Cloud. Mettez ComfyUI à jour, puis réessayez.",
+      "tooBig": "Ce workflow est trop volumineux pour être vérifié sur Comfy Cloud. Il peut contenir jusqu’à 2 000 types de nœuds et 500 modèles.",
+      "unreachable": "Impossible de joindre Comfy Cloud. Vérifiez votre connexion Internet, puis réessayez.",
+      "unreadable": "Impossible de lire ce workflow pour le vérifier. Rechargez ComfyUI, puis réessayez.",
+      "workspace": "Impossible d’utiliser votre espace de travail Comfy Cloud. Réessayez dans une minute, ou déconnectez-vous puis reconnectez-vous."
+    },
     "cloudButton": {
       "checking": "Vérification de Comfy Cloud…",
       "resumeUpload": "Reprendre l’importation du modèle",
@@ -4750,6 +4758,7 @@
       "reportError": "Signaler une erreur"
     },
     "jobQueueing": "Mise en file d’attente de la tâche",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "Afficher/Masquer l'historique des tâches"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} caractère | {count} caractères",
     "expand": "Développer",
+    "focusView": "Développer pour passer en mode focus",
+    "noPrompt": "{node} n’a pas de prompt.",
+    "noPromptHint": "Sélectionnez un nœud avec une entrée de texte pour modifier son prompt ici.",
+    "nodeSettings": "Paramètres du nœud",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
@@ -6418,15 +6432,20 @@
     "undo": "Annuler"
   },
   "widgets": {
+    "allFolders": "Tous les dossiers",
     "backFromFolder": "Retour : {name}",
     "boolean": {
       "false": "faux",
       "true": "vrai"
     },
+    "browseToLockFolder": "Ouvrir un dossier pour le verrouiller",
+    "folderLocked": "Verrouillé sur le dossier : {name}",
+    "lockFolder": "Verrouiller le dossier : {name}",
     "node2only": "Node 2.0 uniquement",
     "precisionLimit": "Incrémentation/décrémentation désactivée : la valeur dépasse la limite de précision de JavaScript (±2^53)",
     "selectFolder": "Dossier : {name}",
     "selectModel": "Sélectionner un modèle",
+    "unlockFolder": "Déverrouiller le dossier : {name}",
     "uploadSelect": {
       "maxSelectionReached": "Limite maximale de sélection atteinte",
       "placeholder": "Sélectionner...",
@@ -6436,6 +6455,9 @@
       "placeholderModel": "Sélectionner un modèle...",
       "placeholderUnknown": "Sélectionner un média...",
       "placeholderVideo": "Sélectionner une vidéo...",
+      "resizeHint": "Faites glisser pour redimensionner, double-cliquez pour réinitialiser",
+      "resizeLeftCorner": "Redimensionner depuis le coin gauche",
+      "resizeRightCorner": "Redimensionner depuis le coin droit",
       "thumbnailSize": "Taille des miniatures",
       "thumbnailSizes": {
         "compact": "Compact",

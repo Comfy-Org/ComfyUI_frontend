@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "將首幀製作成動畫，或從首幀轉場至尾幀，生成長度為 4 至 30 秒、具原生音訊的 1080p 影片。",
+    "display_name": "MAGI-2 圖像轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "畫面比例",
+        "tooltip": "自動會選擇最接近首幀的比例。MAGI-2 會將影格拉伸至所選比例。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "first_frame": {
+        "name": "首幀"
+      },
+      "generate_audio": {
+        "name": "生成音訊"
+      },
+      "last_frame": {
+        "name": "尾幀"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "變更種子會重新執行節點；即使使用相同種子，MAGI-2 的結果仍可能不同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "根據參考圖像、影片和音訊生成長度為 4 至 30 秒、具原生音訊的 1080p 影片，以保持角色、地點、鏡頭運動或聲音的一致性。",
+    "display_name": "MAGI-2 參考資料轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "畫面比例"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "generate_audio": {
+        "name": "生成音訊"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "請以 @Image1、@Video1、@Audio1 指涉參考資料（各類型分別編號，依輸入順序；批次中的每張圖像均會計入）。"
+      },
+      "reference_audios": {
+        "name": "參考音訊",
+        "tooltip": "超過 30 秒的片段會裁切為前 30 秒，且每種類型合計會裁切至 30 秒。短於 2 秒的音訊會以靜音補足；影片至少須為 2 秒。"
+      },
+      "reference_images": {
+        "name": "參考圖像",
+        "tooltip": "總計最多 10 張圖像。"
+      },
+      "reference_videos": {
+        "name": "參考影片",
+        "tooltip": "超過 30 秒的片段會裁切為前 30 秒，且每種類型合計會裁切至 30 秒。短於 2 秒的音訊會以靜音補足；影片至少須為 2 秒。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "變更種子會重新執行節點；即使使用相同種子，MAGI-2 的結果仍可能不同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "根據文字提示詞生成長度為 4 至 30 秒、具原生音訊的 1080p 影片。",
+    "display_name": "MAGI-2 文字轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "畫面比例"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "generate_audio": {
+        "name": "生成音訊"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "變更種子會重新執行節點；即使使用相同種子，MAGI-2 的結果仍可能不同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "透過光線調整與可選的參考光線轉移，重新打光圖像。",
     "display_name": "Magnific 圖像重光",
