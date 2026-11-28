@@ -1177,6 +1177,32 @@ describe('useWorkflowPersistenceV2', () => {
     expect(toastError).toHaveBeenCalledOnce()
   })
 
+  it('saves the active tab viewport on reload when the graph is otherwise unchanged', async () => {
+    vi.mocked(api.getUserData).mockResolvedValue(Response.json(blankGraph))
+    const workflow = await new ComfyWorkflow({
+      path: 'workflows/Zoomed.json',
+      modified: 1,
+      size: 1
+    }).load()
+    expect(workflow.isModified).toBe(false)
+    useWorkflowStore().activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      ...structuredClone(blankGraph),
+      extra: { ds: { scale: 1.55, offset: [8, -9] } }
+    }
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+
+    const draft = useWorkflowDraftStoreV2().getDraft(workflow.path)
+    if (!draft) throw new Error('viewport draft was not saved')
+    expect(JSON.parse(draft.data).extra.ds).toEqual({
+      scale: 1.55,
+      offset: [8, -9]
+    })
+  })
+
   it('keeps a pending edit recoverable when the server clock is ahead', async () => {
     const path = 'workflows/Saved.json'
     const modified = Date.now() + 60_000
