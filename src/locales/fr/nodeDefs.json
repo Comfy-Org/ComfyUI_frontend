@@ -22151,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "ips",
-        "tooltip": "Fréquence d’images de sortie. « source » conserve la fréquence de la vidéo, jusqu’à 60. Une fréquence plus élevée est interpolée. Une sortie au-delà de 30 ips coûte deux fois plus cher."
+        "tooltip": "Fréquence d’images de sortie. « source » conserve la fréquence de la vidéo, jusqu’à 60. Une fréquence plus élevée est interpolée. Une sortie au-dessus de 30 fps coûte deux fois plus cher, sauf avec turbo."
       },
       "target": {
         "name": "cible",
@@ -22159,7 +22159,7 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Agrandissement plus rapide avec des détails plus doux, au même prix."
+        "tooltip": "Mise à l’échelle plus rapide avec des détails plus doux, à un prix inférieur."
       },
       "video": {
         "name": "vidéo",
@@ -29297,7 +29297,7 @@
       },
       "face_limit": {
         "name": "limite_faces",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces avec v3.x standard, 2 M avec detailed). Tripo limite silencieusement : v2.5 à 500 000, maillages en quads à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29374,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M sur detailed). Tripo applique silencieusement une limite : v2.5 à 500 000, les maillages quad à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29517,7 +29517,7 @@
       },
       "face_limit": {
         "name": "limite_visage",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces avec v3.x standard, 2 M avec detailed). Tripo limite silencieusement : v2.5 à 500 000, maillages en quads à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30289,7 +30289,7 @@
       },
       "face_limit": {
         "name": "limite_visage",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1.4M de faces avec v3.x standard, 2M avec detailed). Tripo limite silencieusement : v2.5 à 500,000, les maillages quad à 150,000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30366,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Nombre maximal de faces. -1 permet à Tripo de choisir de manière adaptative (environ 1,4 M de faces pour la version standard v3.x, 2 M pour detailed). Tripo applique silencieusement des limites : v2.5 à 500 000, les maillages quad à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30433,8 +30433,7 @@
         "name": "modèle_id_tâche"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modèle de texture : v3.0 pour les maillages générés avec v3.x, v2.5 pour les maillages générés avec v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30497,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modèle de texture : v3.0 pour les maillages générés avec v3.x, v2.5 pour les maillages générés avec v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

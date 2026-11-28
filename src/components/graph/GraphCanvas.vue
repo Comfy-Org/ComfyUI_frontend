@@ -89,6 +89,7 @@
     </template>
     <template v-if="betaMenuEnabled" #right-side-panel>
       <AppBuilder v-if="isBuilderMode" />
+      <PromptPanel v-else-if="promptPanelStore.isPromptViewShown" />
       <PropertiesPanel v-else />
     </template>
     <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
@@ -160,6 +161,8 @@ import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import PropertiesPanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
+import PromptPanel from '@/renderer/extensions/textEditor/promptPanel/PromptPanel.vue'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
@@ -256,6 +259,7 @@ const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
+const promptPanelStore = usePromptPanelStore()
 const workflowStore = useWorkflowStore()
 const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId

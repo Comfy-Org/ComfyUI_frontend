@@ -563,7 +563,9 @@ export function useBoundingBoxes(
       H,
       activeIndex.value
     )
-    const target = cands.find((c) => c.index === activeIndex.value) || cands[0]
+    const target =
+      cands.find((c) => c.index === activeIndex.value) ?? cands.at(0)
+    if (!target) return
     openInlineEditor(target.index)
   }
 

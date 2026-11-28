@@ -79,7 +79,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
-import type { CloudWorkflowBlocker } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudCheckFailureReason,
+  CloudWorkflowBlocker
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
   closeRunOnCloudDialog,
   openRunOnCloudDialog
@@ -141,8 +144,21 @@ type CheckFailureProperties = Extract<
   { name: 'app:run_on_cloud_check_failed' }
 >['properties']
 
+const failureReasons = {
+  unreachable: 'unreachable',
+  busy: 'busy',
+  workspace: 'workspace',
+  tooBig: 'too_big',
+  outdated: 'outdated',
+  unreadable: 'unreadable',
+  switchedOff: 'switched_off'
+} as const satisfies Record<
+  CloudCheckFailureReason,
+  CheckFailureProperties['reason']
+>
+
 function checkFailure(blocker: CloudWorkflowBlocker | null): {
-  message: string
+  message?: string
   properties: CheckFailureProperties
 } {
   switch (blocker?.kind) {
@@ -161,9 +177,17 @@ function checkFailure(blocker: CloudWorkflowBlocker | null): {
           node_type: blocker.nodeType
         }
       }
+    case 'checkFailed':
+      return {
+        message:
+          blocker.reason === 'switchedOff'
+            ? undefined
+            : t(`openOnCloud.checkFailure.${blocker.reason}`),
+        properties: { reason: failureReasons[blocker.reason] }
+      }
     case undefined:
       return {
-        message: t('openOnCloud.checkFailed'),
+        message: t('openOnCloud.checkFailure.unreachable'),
         properties: { reason: 'no_verdict' }
       }
   }
@@ -226,7 +250,7 @@ watch([check, isUploading], ([current, uploading]) => {
       name: 'app:run_on_cloud_check_failed',
       properties
     })
-    toast.error(message)
+    if (message) toast.error(message)
   }
 })
 </script>

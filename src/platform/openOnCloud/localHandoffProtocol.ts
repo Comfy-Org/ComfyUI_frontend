@@ -5,7 +5,6 @@ import {
   getBuildTimeComfyCloudBaseUrl,
   getComfyCloudBaseUrl
 } from '@/config/comfyApi'
-import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 
 export const LOCAL_HANDOFF_PARAM = 'from_local'
 
@@ -74,10 +73,24 @@ export function isLocalOrigin(origin: string): boolean {
   }
 }
 
+const CLOUD_CHECK_HOSTNAMES = new Set(['localhost', '127.0.0.1'])
+
+export function acceptsCloudChecks(origin: string): boolean {
+  try {
+    const url = new URL(origin)
+    return (
+      url.protocol === 'http:' &&
+      url.port !== '' &&
+      CLOUD_CHECK_HOSTNAMES.has(url.hostname)
+    )
+  } catch {
+    return false
+  }
+}
+
 /** The Cloud receiver accepts a browser handoff only from a local origin. */
 export function canHandOffToCloud(): boolean {
   return (
-    !!trustedCloudHandoffOrigin() &&
-    (handsPopupsToSystemBrowser() || isLocalOrigin(window.location.origin))
+    !!trustedCloudHandoffOrigin() && acceptsCloudChecks(window.location.origin)
   )
 }

@@ -92,6 +92,9 @@ import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useAppMode } from '@/composables/useAppMode'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
 import {
   useWidgetBorderStyle,
@@ -101,6 +104,9 @@ import {
   widgetOptions
 } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { textareaMinHeight } from '@/renderer/extensions/vueNodes/widgets/textareaFloor'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -114,10 +120,12 @@ const actionButtonClass =
 
 const {
   widgetId,
+  nodeId,
   nodeTitle,
   placeholder = ''
 } = defineProps<{
   widgetId: WidgetId
+  nodeId?: NodeId
   nodeTitle?: string
   placeholder?: string
 }>()
@@ -174,14 +182,48 @@ async function handleCopy() {
   })
 }
 
+const canvasStore = useCanvasStore()
+const promptEditorExperiment = usePromptEditorExperimentStore()
+const promptPanelStore = usePromptPanelStore()
+const { isBuilderMode } = useAppMode()
+const propertiesPanelStore = usePropertiesPanelStore()
+const canOpenPromptPanel = computed(
+  () =>
+    !hideLayoutField &&
+    !canvasStore.linearMode &&
+    !isBuilderMode.value &&
+    !promptPanelStore.isPanelHidden &&
+    propertiesPanelStore.isAvailable
+)
 let closeTextEditor: (() => void) | undefined
 
+function openPromptPanel(): boolean {
+  const node =
+    nodeId === undefined
+      ? undefined
+      : canvasStore.currentGraph?.getNodeById(nodeId)
+  const target = node?.widgets?.find(
+    ({ name }) => name === widgetName(widgetId)
+  )
+  if (!node || !target) return false
+  const next = { node, widget: target }
+  if (!promptPanelStore.canOpen(next)) return false
+  promptEditorExperiment.expose('panel')
+  promptPanelStore.open(next)
+  canvasStore.canvas?.selectItems([node])
+  return true
+}
+
 function openTextEditor() {
+  const isPromptPanelArm = promptEditorExperiment.assignment === 'panel'
+  if (canOpenPromptPanel.value && isPromptPanelArm && openPromptPanel()) return
+  if (canOpenPromptPanel.value) promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,
     widgetLabel: displayName.value,
     nodeTitle,
     readOnly: () => isReadOnly.value,
+    isInExperiment: canOpenPromptPanel.value,
     onEdit: (text) => (modelValue.value = text),
     textareaAttributes: () => ({
       ...omit(filteredProps.value, ['disabled']),

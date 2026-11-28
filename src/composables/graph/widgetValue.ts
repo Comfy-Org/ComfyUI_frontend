@@ -1,11 +1,70 @@
+import { omit } from 'es-toolkit'
+
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useLinkStore } from '@/stores/linkStore'
+import {
+  stripGraphPrefix,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import {
+  INPUT_EXCLUDED_PROPS,
+  filterWidgetProps
+} from '@/utils/widgetPropFilter'
 import type { WidgetValue } from '@/utils/widgetUtil'
+
+/** The store state behind a widget shown in the properties panel. */
+export function getWidgetState(
+  node: LGraphNode,
+  widget: IBaseWidget
+): WidgetState | undefined {
+  const widgetValueStore = useWidgetValueStore()
+  if (widget.widgetId) return widgetValueStore.getWidget(widget.widgetId)
+  const graphId = node.graph?.rootGraph.id
+  const bareNodeId = stripGraphPrefix(node.id)
+  return graphId && bareNodeId
+    ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
+    : undefined
+}
+
+/** Whether the node still holds the widget, so a write to it reaches the graph. */
+export function isWidgetAttached(node: LGraphNode, widget: IBaseWidget) {
+  return node.widgets?.includes(widget) ?? false
+}
+
+function isWidgetLinked(node: LGraphNode, widget: IBaseWidget) {
+  const graph = node.graph
+  const slot = node.inputs.findIndex(
+    (input) => input.widget?.name === widget.name
+  )
+  if (!graph || slot < 0) return false
+  return useLinkStore().isInputSlotConnected(graphScopeOf(graph), node.id, slot)
+}
+
+/** Whether a widget shown in the properties panel can only be read. */
+export function isWidgetReadOnly(
+  node: LGraphNode,
+  widget: IBaseWidget
+): boolean {
+  const state = getWidgetState(node, widget)
+  const options = state?.options ?? widget.options
+  const isLinked = isWidgetLinked(node, widget)
+  const isMarkedReadOnly = Boolean(
+    options.read_only ||
+    options.disabled ||
+    state?.disabled ||
+    widget.disabled ||
+    widget.computedDisabled
+  )
+  return isLinked || isMarkedReadOnly
+}
 
 /** Writes a widget value and clears the execution errors it resolves. */
 export function useSetWidgetValue() {
@@ -59,4 +118,17 @@ export function useSetWidgetValue() {
     clearWidgetErrors(widgetNode, widget, value)
     canvasStore.canvas?.setDirty(true, true)
   }
+}
+
+export function getWidgetTextareaAttributes(
+  node: LGraphNode,
+  widget: IBaseWidget
+) {
+  return omit(
+    filterWidgetProps(
+      getWidgetState(node, widget)?.options ?? widget.options,
+      INPUT_EXCLUDED_PROPS
+    ),
+    ['disabled']
+  )
 }

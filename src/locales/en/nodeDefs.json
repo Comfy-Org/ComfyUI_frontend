@@ -22159,11 +22159,11 @@
       },
       "fps": {
         "name": "fps",
-        "tooltip": "Output frame rate. 'source' keeps the rate of the video, up to 60. A higher rate is interpolated. Output above 30 fps costs twice as much."
+        "tooltip": "Output frame rate. 'source' keeps the rate of the video, up to 60. A higher rate is interpolated. Output above 30 fps costs twice as much, except with turbo."
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Faster upscale with softer detail, at the same price."
+        "tooltip": "Faster upscale with softer detail, at a lower price."
       }
     },
     "outputs": {
@@ -29328,7 +29328,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps silently: v2.5 at 500,000, quad meshes at 150,000."
+        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps quad meshes silently at 150,000."
       },
       "quad": {
         "name": "quad",
@@ -29401,7 +29401,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps silently: v2.5 at 500,000, quad meshes at 150,000."
+        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps quad meshes silently at 150,000."
       },
       "quad": {
         "name": "quad",
@@ -29553,7 +29553,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps silently: v2.5 at 500,000, quad meshes at 150,000."
+        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps quad meshes silently at 150,000."
       },
       "quad": {
         "name": "quad",
@@ -30320,7 +30320,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps silently: v2.5 at 500,000, quad meshes at 150,000."
+        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps quad meshes silently at 150,000."
       },
       "quad": {
         "name": "quad",
@@ -30393,7 +30393,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps silently: v2.5 at 500,000, quad meshes at 150,000."
+        "tooltip": "Maximum face count. -1 lets Tripo pick adaptively (about 1.4M faces on v3.x standard, 2M on detailed). Tripo clamps quad meshes silently at 150,000."
       },
       "quad": {
         "name": "quad",
@@ -30455,8 +30455,7 @@
         "tooltip": "Optional text guidance for texturing. Required in practice for imported models (Tripo: Import Model), which carry no source image to infer colors from. Cannot be combined with reference images."
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Texture model: v3.0 for meshes generated with v3.x, v2.5 for meshes generated with v2.5."
+        "name": "model_version"
       },
       "style_image": {
         "name": "style_image",
@@ -30515,8 +30514,7 @@
         "tooltip": "Optional text guidance for texturing. Required in practice for imported models (Tripo: Import Model), which carry no source image to infer colors from. Cannot be combined with reference images."
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Texture model: v3.0 for meshes generated with v3.x, v2.5 for meshes generated with v2.5."
+        "name": "model_version"
       },
       "style_image": {
         "name": "style_image",
