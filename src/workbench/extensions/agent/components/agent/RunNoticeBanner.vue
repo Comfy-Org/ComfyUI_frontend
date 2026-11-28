@@ -9,14 +9,12 @@ import RunNoticeAction from './RunNoticeAction.vue'
 const {
   expanded = false,
   workflowName,
-  followsVisibleWorkflow = false,
   genericNoticeReady = false,
   hideIntro = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  followsVisibleWorkflow?: boolean
   genericNoticeReady?: boolean
   hideIntro?: boolean
   context?: 'mismatch' | 'unavailable' | 'emptyCanvas'
@@ -25,7 +23,8 @@ const {
 const emit = defineEmits<{ showTarget: []; newChat: [] }>()
 const dismissed = useSafeLocalStorage(
   'Comfy.AgentPanel.runNoticeDismissed',
-  false
+  false,
+  { writeDefaults: false }
 )
 const contextMessages = {
   mismatch: 'agent.viewingDifferentWorkflow',
@@ -35,16 +34,12 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
-const followsNamedWorkflow = computed(
-  () => followsVisibleWorkflow && Boolean(workflowName)
+const canShowGenericNotice = computed(
+  () => !context && !hideIntro && genericNoticeReady
 )
+
 const visible = computed(
-  () =>
-    Boolean(context) ||
-    (!hideIntro &&
-      !dismissed.value &&
-      !followsNamedWorkflow.value &&
-      Boolean(workflowName || genericNoticeReady))
+  () => Boolean(context) || (canShowGenericNotice.value && !dismissed.value)
 )
 const liveness = computed(() => (context ? 'polite' : undefined))
 const contextAction = computed(() => {
@@ -53,6 +48,7 @@ const contextAction = computed(() => {
       return {
         label: 'agent.showTarget',
         name: 'agent.showTargetWorkflow',
+        workflowName,
         icon: 'icon-[lucide--arrow-up-right]',
         run: () => emit('showTarget')
       }
@@ -82,23 +78,13 @@ const contextAction = computed(() => {
     />
     <p class="my-0 min-w-0 flex-1 text-sm">
       <template v-if="context">
-        {{ $t(contextMessages[context], { workflowName }) }}
+        {{ $t(contextMessages[context]) }}
         <RunNoticeAction
           v-if="contextAction"
           v-bind="contextAction"
-          :workflow-name="workflowName"
           @run="contextAction.run"
         />
       </template>
-      <i18n-t
-        v-else-if="workflowName"
-        keypath="agent.workflowEditNotice"
-        tag="span"
-      >
-        <template #workflow>
-          <span class="underline decoration-solid">{{ workflowName }}</span>
-        </template>
-      </i18n-t>
       <template v-else>
         {{ $t(defaultNotice) }}
       </template>

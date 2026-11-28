@@ -1095,6 +1095,47 @@ describe('AgentPanelRoot onboarding', () => {
     expect(useTelemetry()!.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
   })
 
+  it('P7-03: tour steps through intro, per-tab workflow, and chat history cards alongside the composer and history button', async () => {
+    localStorage.setItem(SCOPED_KEY, 'true')
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.takeTour') })
+    )
+
+    const intro = await screen.findByRole('dialog', {
+      name: i18n.global.t('agent.coachTitle')
+    })
+    await userEvent.click(
+      within(intro).getByRole('button', { name: i18n.global.t('g.next') })
+    )
+
+    const workflowStep = await screen.findByRole('dialog', {
+      name: i18n.global.t('agent.coachWorkflowTitle')
+    })
+    expect(workflowStep).toHaveTextContent(
+      i18n.global.t('agent.coachWorkflowBody')
+    )
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+    await userEvent.click(
+      within(workflowStep).getByRole('button', {
+        name: i18n.global.t('g.next')
+      })
+    )
+
+    const historyStep = await screen.findByRole('dialog', {
+      name: i18n.global.t('agent.coachHistoryTitle')
+    })
+    expect(historyStep).toHaveTextContent(
+      i18n.global.t('agent.coachHistoryBody')
+    )
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    ).toBeInTheDocument()
+  })
+
   it('holds a replay requested while App Mode has the coach deferred', async () => {
     localStorage.setItem(SCOPED_KEY, 'true')
     canvasStore.linearMode = true
@@ -14586,14 +14627,21 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('hides the active workflow in history and restores it on return', async () => {
-    makeTab('wf-42')
+  it('hides the mismatch notice in history and restores it on return', async () => {
+    const {
+      references: [other]
+    } = setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
     mockMessagesEndpoint('wf-42')
 
     renderWithSelectedTarget()
     await sendFromComposer('edit current')
+    workflowStore.activeWorkflow = other
+    await nextTick()
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit current. It works on 1 workflow at a time.'
+      i18n.global.t('agent.viewingDifferentWorkflow')
     )
 
     await userEvent.click(
@@ -14612,7 +14660,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
     expect(await screen.findByRole('note')).toHaveTextContent(
-      'The agent can now edit current. It works on 1 workflow at a time.'
+      i18n.global.t('agent.viewingDifferentWorkflow')
     )
   })
 
@@ -14648,7 +14696,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('T1-20: shows no edit card while following the visible tab, then shows the updated edit card after sending', async () => {
+  it('T1-20 P7-01: shows no edit card naming the bound workflow before or after sending and never writes dismissal storage', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 
@@ -14658,9 +14706,11 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('start editing')
 
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit current. It works on 1 workflow at a time.'
-    )
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(screen.queryByText(/The agent can now edit/i)).toBeNull()
+    expect(
+      localStorage.getItem('Comfy.AgentPanel.runNoticeDismissed')
+    ).toBeNull()
   })
 
   it('TS-05 transitions the bound tab from editing to unseen when the turn completes in the background', async () => {
