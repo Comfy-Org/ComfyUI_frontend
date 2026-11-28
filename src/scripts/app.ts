@@ -523,11 +523,7 @@ export class ComfyApp implements IComfyApp {
   }
 
   /**
-   * The root graph. Non-null asserted over a slot that is genuinely
-   * `undefined` before {@link setup} assigns it, so the compiler cannot find
-   * unguarded callers. Making it honest is tracked in #20059; it is not a
-   * drop-in change because `browser_tests/` reads `window.app.graph` in over a
-   * hundred files and is typechecked by a separate project.
+   * The root graph.
    * @deprecated Use {@link rootGraph}, or {@link rootGraphOrUndefined} when the
    * call can run before setup
    */

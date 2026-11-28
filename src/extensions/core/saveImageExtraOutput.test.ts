@@ -32,8 +32,6 @@ async function createNodeWithFilenamePrefix(
   sampler.addWidget('number', 'seed', 12345, () => undefined, {})
   graph.add(sampler)
 
-  // The production path reads `rootGraphOrUndefined`, so the mock has to be
-  // able to hold the pre-`setup()` state where it is genuinely undefined.
   vi.mocked(useApp).mockReturnValue(
     fromPartial<ComfyApp>({
       rootGraphOrUndefined: withRootGraph ? graph : undefined

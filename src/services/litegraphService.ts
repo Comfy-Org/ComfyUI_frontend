@@ -880,9 +880,6 @@ export const useLitegraphService = () => {
       return node
     }
 
-    // Resolve the destination before constructing anything: the registered
-    // node constructor invokes the `nodeCreated` extension hook, so creating a
-    // node we are about to discard is observable to every extension.
     const graph =
       useWorkflowStore().activeSubgraph ?? useApp().rootGraphOrUndefined
     if (!graph) return null

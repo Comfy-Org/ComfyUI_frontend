@@ -46,8 +46,6 @@ export const saveImageExtraOutputExtension: ComfyExtension = {
         if (!widget) return r
         widget.serializeValue = () => {
           if (typeof widget.value !== 'string') return widget.value
-          // Serialization can be driven before setup() assigns the root graph;
-          // without a graph there is nothing to search and replace against.
           const graph = useApp().rootGraphOrUndefined
           if (!graph) return widget.value
           return applyTextReplacements(graph, widget.value)

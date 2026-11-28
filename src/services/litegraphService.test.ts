@@ -103,12 +103,6 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     output_node: false
   }
 
-  /**
-   * Titles of the nodes announced to an installed extension via `nodeCreated`.
-   * Recorded as titles rather than nodes so a failure prints the announcement
-   * rather than a serialised node graph. `node.type` is not usable here:
-   * `nodeCreated` fires from the constructor, before litegraph assigns it.
-   */
   let announced: string[]
 
   beforeEach(async () => {
@@ -135,9 +129,6 @@ describe('useLitegraphService().addNodeOnGraph', () => {
     expect(useLitegraphService().addNodeOnGraph(nodeDef)).toBeNull()
   })
 
-  // The registered node constructor fires `nodeCreated`, so a node that is
-  // created and then discarded is still announced to every installed
-  // extension. The graph has to be resolved before construction, not after.
   it('announces nodeCreated for the node it adds', () => {
     expect(useLitegraphService().addNodeOnGraph(nodeDef)).not.toBeNull()
 
