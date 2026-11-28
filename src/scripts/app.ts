@@ -14,6 +14,14 @@ import {
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
+import {
+  createMissingNode,
+  loadSerialisedNode
+} from '@/core/graph/loadSerialisedNode'
+import {
+  isGraphConfiguring,
+  withGraphConfiguring
+} from '@/core/graph/withGraphConfiguring'
 import { resolveDynamicInputSpec } from '@/core/graph/widgets/dynamicInputSpec'
 import { setBackendNodeText, st, t } from '@/i18n'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -37,11 +45,13 @@ import {
   inputAsSerialisable,
   LGraph,
   LGraphCanvas,
-  LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
+import type {
+  ISerialisedGraph,
+  Vector2,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
@@ -194,7 +204,6 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
-import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   MissingModelCandidate,
@@ -569,7 +578,6 @@ export class ComfyApp implements IComfyApp {
     return unref(this.canvasElRef)!
   }
 
-  private configuringGraphLevel: number = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
   private fileLoadDiscoveryQueue: Promise<void> = Promise.resolve()
   private readonly pendingCameras = new WeakMap<
@@ -577,7 +585,7 @@ export class ComfyApp implements IComfyApp {
     { workflow: string | null | ComfyWorkflow; fit: () => void }
   >()
   get configuringGraph() {
-    return this.configuringGraphLevel > 0
+    return isGraphConfiguring()
   }
   ctx!: CanvasRenderingContext2D
   bodyTop!: HTMLElement
@@ -990,19 +998,10 @@ export class ComfyApp implements IComfyApp {
     void api.init()
   }
 
-  /** Flag that the graph is configuring to prevent nodes from running checks while its still loading */
   private addConfigureHandler() {
     const configure = LGraph.prototype.configure
-    const trackConfiguring = <T>(run: () => T): T => {
-      this.configuringGraphLevel++
-      try {
-        return run()
-      } finally {
-        this.configuringGraphLevel--
-      }
-    }
     LGraph.prototype.configure = function (...args) {
-      return trackConfiguring(() => configure.apply(this, args))
+      return withGraphConfiguring(() => configure.apply(this, args))
     }
   }
 
@@ -1766,63 +1765,14 @@ export class ComfyApp implements IComfyApp {
           : 0
         withGraphIntentSource('load', () =>
           forEachNode(graph, (node) => {
-            const size = node.computeSize()
-            size[0] = Math.max(node.size[0], size[0])
-            size[1] = Math.max(node.size[1], size[1])
-            snapPoint(size, snapTo, 'ceil')
-            node.setSize(size)
-            if (node.widgets) {
-              for (const widget of node.widgets) {
-                if (
-                  node.type == 'KSampler' ||
-                  node.type == 'KSamplerAdvanced'
-                ) {
-                  if (widget.name == 'sampler_name') {
-                    if (
-                      typeof widget.value === 'string' &&
-                      widget.value.startsWith('sample_')
-                    ) {
-                      widget.value = widget.value.slice(7)
-                    }
-                  }
-                }
-                if (
-                  node.type == 'KSampler' ||
-                  node.type == 'KSamplerAdvanced' ||
-                  node.type == 'PrimitiveNode'
-                ) {
-                  if (widget.name == 'control_after_generate') {
-                    if (widget.value === true) {
-                      widget.value = 'randomize'
-                    } else if (widget.value === false) {
-                      widget.value = 'fixed'
-                    }
-                  }
-                }
-                if (widget.type == 'combo') {
-                  const values = widget.options.values as
-                    | (string | number | boolean)[]
-                    | undefined
-                  if (
-                    values &&
-                    values.length > 0 &&
-                    (widget.value == null ||
-                      (reset_invalid_values &&
-                        !values.includes(
-                          widget.value as string | number | boolean
-                        ) &&
-                        !(
-                          typeof widget.value === 'string' &&
-                          isModelFileName(widget.value)
-                        )))
-                  ) {
-                    widget.value = values[0]
-                  }
-                }
+            loadSerialisedNode(
+              graph,
+              { configuredNode: node },
+              {
+                resetInvalidValues: reset_invalid_values,
+                snapTo
               }
-            }
-
-            useExtensionService().invokeExtensions('loadedGraphNode', node)
+            )
           })
         )
 
@@ -2858,12 +2808,11 @@ export class ComfyApp implements IComfyApp {
             const packVersion = zNodePackMetadata.shape.ver.safeParse(
               data._meta?.ver
             ).data
-            const missingNode = new LGraphNode(
-              data._meta?.title ?? data.class_type,
-              sanitizeNodeName(data.class_type)
+            const missingNode = createMissingNode(
+              sanitizeNodeName(data.class_type),
+              data._meta?.title ?? data.class_type
             )
             node = missingNode
-            node.has_errors = true
             const widgetValues: TWidgetValue[] = []
             const widgetValuesNamed: Record<string, TWidgetValue> =
               Object.create(null)
