@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, within } from 'storybook/test'
 import { computed, provide, ref, watch } from 'vue'
 
+import { assetThumbnail } from '@/platform/assets/utils/assetThumbnailUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 
 import FormDropdown from './FormDropdown.vue'
@@ -10,25 +11,38 @@ import type { FormDropdownItem } from './types'
 
 const images: FormDropdownItem[] = Array.from({ length: 24 }, (_, index) => {
   const name = `fennec-daisies-${String(index + 1).padStart(2, '0')}.png`
-  return { id: name, name, preview_url: '/assets/images/fennec-daisies.png' }
+  return {
+    id: name,
+    name,
+    thumbnail: assetThumbnail({
+      name,
+      preview_url: '/assets/images/fennec-daisies.png'
+    })
+  }
 })
 
 const videos: FormDropdownItem[] = [
   {
     id: 'wide',
     name: 'wide.webm',
-    preview_url: new URL(
-      '../../../../../../../../browser_tests/assets/video/video-preview-wide.webm',
-      import.meta.url
-    ).href
+    thumbnail: assetThumbnail({
+      name: 'wide.webm',
+      preview_url: new URL(
+        '../../../../../../../../browser_tests/assets/video/video-preview-wide.webm',
+        import.meta.url
+      ).href
+    })
   },
   {
     id: 'portrait',
     name: 'portrait.webm',
-    preview_url: new URL(
-      '../../../../../../../../browser_tests/assets/video/video-preview-portrait.webm',
-      import.meta.url
-    ).href
+    thumbnail: assetThumbnail({
+      name: 'portrait.webm',
+      preview_url: new URL(
+        '../../../../../../../../browser_tests/assets/video/video-preview-portrait.webm',
+        import.meta.url
+      ).href
+    })
   }
 ]
 

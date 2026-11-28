@@ -8,9 +8,14 @@ import FormDropdownInput from './FormDropdownInput.vue'
 import type { FormDropdownInputProps, FormDropdownItem } from './types'
 
 const selectedItems: FormDropdownItem[] = [
-  { id: 'a', name: 'alpha' },
-  { id: 'b', name: 'beta', label: 'Beta Label' },
-  { id: 'c', name: 'gamma' }
+  { id: 'a', name: 'alpha', thumbnail: { icon: '', isVideo: false } },
+  {
+    id: 'b',
+    name: 'beta',
+    label: 'Beta Label',
+    thumbnail: { icon: '', isVideo: false }
+  },
+  { id: 'c', name: 'gamma', thumbnail: { icon: '', isVideo: false } }
 ]
 
 const uploadLabel = 'Upload'

@@ -37,7 +37,12 @@
           @load="updateAspectRatio($event, index)"
           @error="handleThumbnailError($event, index)"
         />
-        <i v-else class="icon-[lucide--sun] size-6 text-foreground" />
+        <i
+          v-else
+          :class="
+            cn('size-6 text-foreground', iconForFilename(items[index].filename))
+          "
+        />
       </Button>
       <Button
         v-if="canExportOutputs"
@@ -281,6 +286,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
+import { iconForFilename } from '@/platform/assets/utils/mediaIconUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'

@@ -1,5 +1,6 @@
 import type { ComputedRef, InjectionKey } from 'vue'
 
+import type { Thumbnail } from '@/platform/assets/utils/assetThumbnailUtil'
 import type { AssetKind } from '@/types/widgetTypes'
 
 /**
@@ -12,8 +13,7 @@ export interface FormDropdownItem {
   name: string
   /** Original/alternate label (e.g., original filename) */
   label?: string
-  /** Preview image/video URL */
-  preview_url?: string
+  thumbnail: Thumbnail
   /** Whether the item is immutable (public model) - used for ownership filtering */
   is_immutable?: boolean
   /** Base models this item is compatible with - used for base model filtering */
@@ -46,7 +46,7 @@ export interface FormDropdownMenuItemProps {
   index: number
   selected: boolean
   candidate?: boolean
-  previewUrl: string
+  thumbnail: Thumbnail
   name: string
   label?: string
   layout?: LayoutMode
