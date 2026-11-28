@@ -807,7 +807,7 @@ describe('PartnerNodeAccessPanel', () => {
     await options.footerProps.onConfirm()
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://comfy.org/cloud/enterprise/',
+      'https://comfy.org/cloud/enterprise/?utm_source=comfyui_local&utm_medium=product&utm_campaign=partner_node_access',
       '_blank'
     )
     expect(useDialogStore().closeDialog).toHaveBeenCalled()

@@ -1,3 +1,5 @@
+import { productLink } from '@/platform/links/productLink'
+
 /** The templates the Getting Started grid offers, in order. */
 export const CURATED_TEMPLATE_IDS = [
   'image_krea2_turbo_t2i',
@@ -31,25 +33,37 @@ export const tutorialCards: readonly TutorialCard[] = [
   {
     id: 'interface-overview',
     titleKey: 'gettingStarted.tutorials.interfaceOverview',
-    url: 'https://docs.comfy.org/interface/overview',
+    url: productLink(
+      'https://docs.comfy.org/interface/overview',
+      'getting_started_tutorials'
+    ),
     thumbnailTemplate: 'image_z_image_turbo'
   },
   {
     id: 'text-to-image',
     titleKey: 'gettingStarted.tutorials.textToImage',
-    url: 'https://docs.comfy.org/tutorials/basic/text-to-image',
+    url: productLink(
+      'https://docs.comfy.org/tutorials/basic/text-to-image',
+      'getting_started_tutorials'
+    ),
     thumbnailTemplate: 'video_ltx2_3_i2v'
   },
   {
     id: 'image-to-image',
     titleKey: 'gettingStarted.tutorials.imageToImage',
-    url: 'https://docs.comfy.org/tutorials/basic/image-to-image',
+    url: productLink(
+      'https://docs.comfy.org/tutorials/basic/image-to-image',
+      'getting_started_tutorials'
+    ),
     thumbnailTemplate: 'video_wan2_2_14B_i2v'
   },
   {
     id: 'inpaint',
     titleKey: 'gettingStarted.tutorials.inpaint',
-    url: 'https://docs.comfy.org/tutorials/basic/inpaint',
+    url: productLink(
+      'https://docs.comfy.org/tutorials/basic/inpaint',
+      'getting_started_tutorials'
+    ),
     thumbnailTemplate: 'image_krea2_turbo_t2i'
   }
 ]

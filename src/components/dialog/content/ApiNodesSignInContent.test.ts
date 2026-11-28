@@ -66,11 +66,11 @@ describe('ApiNodesSignInContent', () => {
   it.for([
     {
       locale: 'en',
-      href: 'https://docs.comfy.org/tutorials/api-nodes/faq'
+      href: 'https://docs.comfy.org/tutorials/api-nodes/faq?utm_source=comfyui_local&utm_medium=product&utm_campaign=api_nodes_sign_in'
     },
     {
       locale: 'zh',
-      href: 'https://docs.comfy.org/zh/tutorials/api-nodes/faq'
+      href: 'https://docs.comfy.org/zh/tutorials/api-nodes/faq?utm_source=comfyui_local&utm_medium=product&utm_campaign=api_nodes_sign_in'
     }
   ] as const)(
     'links to the partner nodes docs for $locale',

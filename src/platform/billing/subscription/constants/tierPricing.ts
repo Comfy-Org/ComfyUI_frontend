@@ -1,3 +1,4 @@
+import { productLink } from '@/platform/links/productLink'
 import type { BillingTierKey } from '@comfyorg/account-core/billing'
 import { TIER_CATALOG } from '@comfyorg/account-ui/billing/catalog'
 import type { SubscriptionTier as IngestSubscriptionTier } from '@comfyorg/ingest-types'
@@ -118,7 +119,10 @@ export function isUnknownTier(
 // (billing-api hideLifecycleCapabilities); this helper only drives rendering.
 // Where a sales conversation starts. Shared by the pricing table's footnote
 // and the ended-plan Contact sales actions so the destination cannot drift.
-export const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
+export const ENTERPRISE_URL = productLink(
+  'https://comfy.org/cloud/enterprise/',
+  'contact_sales'
+)
 
 export function isSalesManagedTier(
   tier: IngestSubscriptionTier | null | undefined

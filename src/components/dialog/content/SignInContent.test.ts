@@ -180,10 +180,16 @@ describe('SignInContent', () => {
 
     expect(
       screen.getByRole('link', { name: 'Terms of Service' })
-    ).toHaveAttribute('href', 'https://comfy.org/terms-of-service/')
+    ).toHaveAttribute(
+      'href',
+      'https://comfy.org/terms-of-service/?utm_source=comfyui_local&utm_medium=product&utm_campaign=sign_in_dialog'
+    )
     expect(
       screen.getByRole('link', { name: 'Privacy Policy' })
-    ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
+    ).toHaveAttribute(
+      'href',
+      'https://comfy.org/privacy-policy/?utm_source=comfyui_local&utm_medium=product&utm_campaign=sign_in_dialog'
+    )
   })
 
   it('sends a person who needs an API key to the Platform API keys page, naming this dialog', () => {

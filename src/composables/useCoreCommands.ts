@@ -901,7 +901,10 @@ export function useCoreCommands(): ComfyCommand[] {
           is_external: true,
           source: 'menu'
         })
-        window.open(buildDocsUrl('/', { includeLocale: true }), '_blank')
+        window.open(
+          buildDocsUrl('/', { campaign: 'help_menu', includeLocale: true }),
+          '_blank'
+        )
       }
     },
     {

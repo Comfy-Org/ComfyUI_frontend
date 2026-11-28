@@ -1,3 +1,4 @@
+import { productLink } from '@/platform/links/productLink'
 import type {
   BillingCapabilitiesResponse,
   SubscriptionState
@@ -67,7 +68,10 @@ export type PlanRowAction =
 
 export type PlanKind = NonNullable<BillingCapabilitiesResponse['plan_kind']>
 
-export const CONTACT_SALES_URL = 'https://comfy.org/contact/'
+export const CONTACT_SALES_URL = productLink(
+  'https://comfy.org/contact/',
+  'billing_plan_row'
+)
 
 type BillingTabLoad = 'loading' | 'error' | 'ready'
 

@@ -9,10 +9,14 @@ import { useI18n } from 'vue-i18n'
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
+import { productLink } from '@/platform/links/productLink'
 
 const bs = 'workspacePanel.billingStatus'
 const tc = 'workspacePanel.billingTab.topupCheckout'
-const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
+const CONTACT_SUPPORT_URL = productLink(
+  'https://comfy.org/contact/',
+  'billing_banner'
+)
 
 /** The Billing tab banner strings in the app locale, with the paused, parked and plan-not-started views. */
 export function useBillingBannerCopy() {

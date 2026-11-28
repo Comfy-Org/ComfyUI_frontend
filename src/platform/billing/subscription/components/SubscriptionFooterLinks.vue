@@ -81,7 +81,10 @@ function handleFullUsageActivity() {
 
 function handleOpenPartnerNodesInfo() {
   window.open(
-    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
+    buildDocsUrl(docsPaths.partnerNodesPricing, {
+      campaign: 'subscription_footer',
+      includeLocale: true
+    }),
     '_blank'
   )
 }

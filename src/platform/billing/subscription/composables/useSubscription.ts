@@ -1,3 +1,4 @@
+import { productLink } from '@/platform/links/productLink'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 import {
   createSharedComposable,
@@ -448,7 +449,10 @@ function useSubscriptionInternal() {
   }
 
   const handleLearnMore = () => {
-    window.open('https://docs.comfy.org', '_blank')
+    window.open(
+      productLink('https://docs.comfy.org', 'subscription_learn_more'),
+      '_blank'
+    )
   }
 
   type PendingCheckoutRecoverySource =

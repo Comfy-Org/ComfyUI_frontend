@@ -8,12 +8,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-// Mock the environment utilities
 vi.mock(import('@/utils/envUtil'), () => ({
   electronAPI: vi.fn()
 }))
 
-// Provide a minimal i18n instance for the composable
 const i18n = vi.hoisted(() => ({
   global: {
     locale: {
@@ -25,13 +23,11 @@ vi.mock<unknown>(import('@/i18n'), () => ({
   i18n
 }))
 
-// Import after mocking to get the mocked versions
 import { useExternalLink } from '@/composables/useExternalLink'
 import { electronAPI } from '@/utils/envUtil'
 
 describe('useExternalLink', () => {
   beforeEach(() => {
-    // Reset to default state
     i18n.global.locale.value = 'en'
     mockData.isDesktop = false
   })
@@ -40,7 +36,6 @@ describe('useExternalLink', () => {
     it('should provide common external URLs', () => {
       const { staticUrls } = useExternalLink()
 
-      // Static URLs
       expect(staticUrls.discord).toBe('https://discord.com/invite/comfyorg')
       expect(staticUrls.github).toBe('https://github.com/Comfy-Org/ComfyUI')
       expect(staticUrls.githubIssues).toBe(
@@ -53,48 +48,73 @@ describe('useExternalLink', () => {
         'https://github.com/Comfy-Org/electron'
       )
       expect(staticUrls.forum).toBe('https://forum.comfy.org/')
-      expect(staticUrls.comfyOrg).toBe('https://comfy.org/')
     })
   })
 
   describe('buildDocsUrl', () => {
+    it('tags the docs URL with the campaign', () => {
+      const { buildDocsUrl } = useExternalLink()
+
+      const { searchParams } = new URL(
+        buildDocsUrl('/changelog', { campaign: 'release_notes' })
+      )
+      expect(Object.fromEntries(searchParams)).toEqual({
+        utm_source: 'comfyui_local',
+        utm_medium: 'product',
+        utm_campaign: 'release_notes'
+      })
+    })
+
     it('should build basic docs URL without locale', () => {
       i18n.global.locale.value = 'en'
       const { buildDocsUrl } = useExternalLink()
 
-      const url = buildDocsUrl('/changelog')
-      expect(url).toBe('https://docs.comfy.org/changelog')
+      const url = buildDocsUrl('/changelog', {
+        campaign: 'help_center'
+      })
+      expect(url.split('?')[0]).toBe('https://docs.comfy.org/changelog')
     })
 
     it('should build docs URL with Chinese (zh) locale when requested', () => {
       i18n.global.locale.value = 'zh'
       const { buildDocsUrl } = useExternalLink()
 
-      const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh/changelog')
+      const url = buildDocsUrl('/changelog', {
+        campaign: 'help_center',
+        includeLocale: true
+      })
+      expect(url.split('?')[0]).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should build docs URL with Chinese (zh-TW) locale when requested', () => {
       i18n.global.locale.value = 'zh-TW'
       const { buildDocsUrl } = useExternalLink()
 
-      const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/zh/changelog')
+      const url = buildDocsUrl('/changelog', {
+        campaign: 'help_center',
+        includeLocale: true
+      })
+      expect(url.split('?')[0]).toBe('https://docs.comfy.org/zh/changelog')
     })
 
     it('should not include locale for English when requested', () => {
       i18n.global.locale.value = 'en'
       const { buildDocsUrl } = useExternalLink()
 
-      const url = buildDocsUrl('/changelog', { includeLocale: true })
-      expect(url).toBe('https://docs.comfy.org/changelog')
+      const url = buildDocsUrl('/changelog', {
+        campaign: 'help_center',
+        includeLocale: true
+      })
+      expect(url.split('?')[0]).toBe('https://docs.comfy.org/changelog')
     })
 
     it('should handle path without leading slash', () => {
       const { buildDocsUrl } = useExternalLink()
 
-      const url = buildDocsUrl('changelog')
-      expect(url).toBe('https://docs.comfy.org/changelog')
+      const url = buildDocsUrl('changelog', {
+        campaign: 'help_center'
+      })
+      expect(url.split('?')[0]).toBe('https://docs.comfy.org/changelog')
     })
 
     it('should add platform suffix when requested', () => {
@@ -105,8 +125,13 @@ describe('useExternalLink', () => {
       } as ReturnType<typeof electronAPI>)
 
       const { buildDocsUrl } = useExternalLink()
-      const url = buildDocsUrl('/installation/desktop', { platform: true })
-      expect(url).toBe('https://docs.comfy.org/installation/desktop/macos')
+      const url = buildDocsUrl('/installation/desktop', {
+        campaign: 'help_center',
+        platform: true
+      })
+      expect(url.split('?')[0]).toBe(
+        'https://docs.comfy.org/installation/desktop/macos'
+      )
     })
 
     it('should add platform suffix with trailing slash', () => {
@@ -117,8 +142,13 @@ describe('useExternalLink', () => {
       } as ReturnType<typeof electronAPI>)
 
       const { buildDocsUrl } = useExternalLink()
-      const url = buildDocsUrl('/installation/desktop/', { platform: true })
-      expect(url).toBe('https://docs.comfy.org/installation/desktop/windows')
+      const url = buildDocsUrl('/installation/desktop/', {
+        campaign: 'help_center',
+        platform: true
+      })
+      expect(url.split('?')[0]).toBe(
+        'https://docs.comfy.org/installation/desktop/windows'
+      )
     })
 
     it('should combine locale and platform', () => {
@@ -130,10 +160,13 @@ describe('useExternalLink', () => {
 
       const { buildDocsUrl } = useExternalLink()
       const url = buildDocsUrl('/installation/desktop', {
+        campaign: 'help_center',
         includeLocale: true,
         platform: true
       })
-      expect(url).toBe('https://docs.comfy.org/zh/installation/desktop/macos')
+      expect(url.split('?')[0]).toBe(
+        'https://docs.comfy.org/zh/installation/desktop/macos'
+      )
     })
 
     it('should not add platform when not desktop', () => {
@@ -141,8 +174,13 @@ describe('useExternalLink', () => {
       mockData.isDesktop = false
 
       const { buildDocsUrl } = useExternalLink()
-      const url = buildDocsUrl('/installation/desktop', { platform: true })
-      expect(url).toBe('https://docs.comfy.org/installation/desktop')
+      const url = buildDocsUrl('/installation/desktop', {
+        campaign: 'help_center',
+        platform: true
+      })
+      expect(url.split('?')[0]).toBe(
+        'https://docs.comfy.org/installation/desktop'
+      )
     })
   })
 })

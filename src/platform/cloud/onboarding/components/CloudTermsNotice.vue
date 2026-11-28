@@ -6,7 +6,7 @@
       {{ t('auth.login.termsText') }}
       <br />
       <a
-        href="https://comfy.org/terms-of-service/"
+        :href="termsUrl"
         target="_blank"
         rel="noopener noreferrer"
         class="text-primary-comfy-canvas underline"
@@ -15,7 +15,7 @@
       </a>
       {{ t('auth.login.andText') }}
       <a
-        href="https://comfy.org/privacy-policy/"
+        :href="privacyUrl"
         target="_blank"
         rel="noopener noreferrer"
         class="text-primary-comfy-canvas underline"
@@ -39,6 +39,16 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { productLink } from '@/platform/links/productLink'
+
+const termsUrl = productLink(
+  'https://comfy.org/terms-of-service/',
+  'cloud_onboarding_terms'
+)
+const privacyUrl = productLink(
+  'https://comfy.org/privacy-policy/',
+  'cloud_onboarding_terms'
+)
 
 const { t } = useI18n()
 </script>

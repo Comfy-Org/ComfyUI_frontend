@@ -1335,7 +1335,7 @@ describe('BillingStatusBanner', () => {
       expect(contactSales).toHaveAttribute('data-variant', 'inverted')
       await userEvent.click(contactSales)
       expect(open).toHaveBeenCalledWith(
-        'https://comfy.org/cloud/enterprise/',
+        'https://comfy.org/cloud/enterprise/?utm_source=comfyui_local&utm_medium=product&utm_campaign=contact_sales',
         '_blank',
         'noopener,noreferrer'
       )
@@ -1435,7 +1435,7 @@ describe('BillingStatusBanner', () => {
       await userEvent.click(contactSales)
 
       expect(open).toHaveBeenCalledWith(
-        'https://comfy.org/cloud/enterprise/',
+        'https://comfy.org/cloud/enterprise/?utm_source=comfyui_local&utm_medium=product&utm_campaign=contact_sales',
         '_blank',
         'noopener,noreferrer'
       )

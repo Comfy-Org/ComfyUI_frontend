@@ -107,7 +107,10 @@ const handleMessageSupport = () => {
 
 const handleFaqClick = () => {
   window.open(
-    buildDocsUrl('/tutorials/api-nodes/faq', { includeLocale: true }),
+    buildDocsUrl('/tutorials/api-nodes/faq', {
+      campaign: 'credits_settings',
+      includeLocale: true
+    }),
     '_blank',
     'noopener,noreferrer'
   )
@@ -115,7 +118,10 @@ const handleFaqClick = () => {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
+    buildDocsUrl(docsPaths.partnerNodesPricing, {
+      campaign: 'credits_settings',
+      includeLocale: true
+    }),
     '_blank',
     'noopener,noreferrer'
   )

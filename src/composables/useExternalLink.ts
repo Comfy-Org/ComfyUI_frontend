@@ -1,26 +1,17 @@
 import { computed } from 'vue'
 
 import { isDesktop } from '@/platform/distribution/types'
+import { productLink } from '@/platform/links/productLink'
 import { electronAPI } from '@/utils/envUtil'
 import { i18n } from '@/i18n'
 
 /**
- * Composable for building docs.comfy.org URLs with automatic locale and platform detection
+ * Builds docs.comfy.org URLs with locale, platform and the product's UTM parameters.
  *
  * @example
  * ```ts
  * const { buildDocsUrl } = useExternalLink()
- *
- * // Simple usage
- * const changelogUrl = buildDocsUrl('/changelog', { includeLocale: true })
- * // => 'https://docs.comfy.org/zh/changelog' (if Chinese)
- *
- * // With platform detection
- * const desktopUrl = buildDocsUrl('/installation/desktop', {
- *   includeLocale: true,
- *   platform: true
- * })
- * // => 'https://docs.comfy.org/zh/installation/desktop/macos' (if Chinese + macOS)
+ * buildDocsUrl('/changelog', { campaign: 'help_center', includeLocale: true })
  * ```
  */
 export function useExternalLink() {
@@ -39,62 +30,41 @@ export function useExternalLink() {
     return electronPlatform === 'darwin' ? 'macos' : 'windows'
   })
 
-  /**
-   * Build a docs.comfy.org URL with optional locale and platform
-   *
-   * @param path - The path after the domain (e.g., '/installation/desktop')
-   * @param options - Options for building the URL
-   * @param options.includeLocale - Whether to include locale prefix (default: false)
-   * @param options.platform - Whether to include platform suffix (default: false)
-   * @returns The complete docs URL
-   *
-   * @example
-   * ```ts
-   * buildDocsUrl('/changelog') // => 'https://docs.comfy.org/changelog'
-   * buildDocsUrl('/changelog', { includeLocale: true }) // => 'https://docs.comfy.org/zh/changelog' (if Chinese)
-   * buildDocsUrl('/installation/desktop', { includeLocale: true, platform: true })
-   * // => 'https://docs.comfy.org/zh/installation/desktop/macos' (if Chinese + macOS)
-   * ```
-   */
   const buildDocsUrl = (
     path: string,
     options: {
+      campaign: string
       includeLocale?: boolean
       platform?: boolean
-    } = {}
-  ): string => {
-    const { includeLocale = false, platform: includePlatform = false } = options
-
-    let url = 'https://docs.comfy.org'
-
-    if (includeLocale && isChinese.value) {
-      url += '/zh'
     }
+  ): string => {
+    const {
+      campaign,
+      includeLocale = false,
+      platform: includePlatform = false
+    } = options
 
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`
-    url += normalizedPath
+    let docsPath = includeLocale && isChinese.value ? '/zh' : ''
+    docsPath += path.startsWith('/') ? path : `/${path}`
 
     if (includePlatform && platform.value) {
-      url = url.endsWith('/') ? url : `${url}/`
-      url += platform.value
+      docsPath = docsPath.endsWith('/') ? docsPath : `${docsPath}/`
+      docsPath += platform.value
     }
 
-    return url
+    return productLink(`https://docs.comfy.org${docsPath}`, campaign)
   }
 
   const staticUrls = {
-    // Static external URLs
     discord: 'https://discord.com/invite/comfyorg',
     github: 'https://github.com/Comfy-Org/ComfyUI',
     githubIssues: 'https://github.com/Comfy-Org/ComfyUI/issues',
     githubFrontend: 'https://github.com/Comfy-Org/ComfyUI_frontend',
     githubElectron: 'https://github.com/Comfy-Org/electron',
     forum: 'https://forum.comfy.org/',
-    comfyOrg: 'https://comfy.org/',
     status: 'https://status.comfy.org/'
   }
 
-  /** Common doc paths for use with buildDocsUrl */
   const docsPaths = {
     partnerNodesPricing: '/tutorials/partner-nodes/pricing'
   }

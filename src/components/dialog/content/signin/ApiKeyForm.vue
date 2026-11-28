@@ -7,7 +7,7 @@
       <p class="my-0 text-base text-muted-foreground">
         {{ t('auth.apiKey.description') }}
         <a
-          href="https://docs.comfy.org/interface/user#logging-in-with-an-api-key"
+          :href="apiKeyDocsUrl"
           target="_blank"
           class="underline underline-offset-4 hover:text-foreground"
         >
@@ -36,10 +36,7 @@
               {{ t('auth.apiKey.generateKey') }}
             </a>
             <span class="mx-1">•</span>
-            <a
-              href="https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites"
-              target="_blank"
-            >
+            <a :href="whitelistDocsUrl" target="_blank">
               {{ t('auth.apiKey.whitelistInfo') }}
             </a>
           </FieldDescription>
@@ -82,6 +79,16 @@ import {
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { productLink } from '@/platform/links/productLink'
+
+const apiKeyDocsUrl = productLink(
+  'https://docs.comfy.org/interface/user#logging-in-with-an-api-key',
+  'api_key_sign_in'
+)
+const whitelistDocsUrl = productLink(
+  'https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites',
+  'api_key_sign_in'
+)
 
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()

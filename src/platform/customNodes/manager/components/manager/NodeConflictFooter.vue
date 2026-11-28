@@ -37,6 +37,7 @@ const dialogStore = useDialogStore()
 const handleConflictInfoClick = () => {
   window.open(
     buildDocsUrl('/troubleshooting/custom-node-issues', {
+      campaign: 'node_conflict_footer',
       includeLocale: true
     }),
     '_blank'

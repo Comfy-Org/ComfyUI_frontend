@@ -33,7 +33,12 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 
-const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
+import { productLink } from '@/platform/links/productLink'
+
+const CONTACT_SUPPORT_URL = productLink(
+  'https://comfy.org/contact/',
+  'billing_banner'
+)
 
 const { parked } = defineProps<{
   parked: boolean

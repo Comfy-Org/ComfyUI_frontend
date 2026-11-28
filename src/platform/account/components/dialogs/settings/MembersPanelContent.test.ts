@@ -713,7 +713,7 @@ describe('MembersPanelContent', () => {
         footerButton(/workspacePanel\.members\.contactSales/)
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://comfy.org/cloud/enterprise/',
+        'https://comfy.org/cloud/enterprise/?utm_source=comfyui_local&utm_medium=product&utm_campaign=contact_sales',
         '_blank',
         'noopener,noreferrer'
       )

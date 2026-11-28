@@ -142,7 +142,7 @@ describe('ReleaseNotificationToast', () => {
     await user.click(screen.getByRole('button', { name: /update/i }))
 
     expect(mockWindowOpen).toHaveBeenCalledWith(
-      'https://docs.comfy.org/installation/update_comfyui',
+      'https://docs.comfy.org/installation/update_comfyui?utm_source=comfyui_local&utm_medium=product&utm_campaign=release_notification',
       '_blank'
     )
   })

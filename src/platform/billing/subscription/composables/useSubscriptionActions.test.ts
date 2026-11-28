@@ -171,7 +171,7 @@ describe('useSubscriptionActions', () => {
       handleLearnMoreClick()
 
       expect(mockOpen).toHaveBeenCalledWith(
-        'https://docs.comfy.org/get_started/cloud',
+        'https://docs.comfy.org/get_started/cloud?utm_source=comfyui_local&utm_medium=product&utm_campaign=subscription_learn_more',
         '_blank'
       )
     })

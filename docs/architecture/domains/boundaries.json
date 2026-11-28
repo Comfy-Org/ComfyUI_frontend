@@ -440,6 +440,7 @@
           "src/components/graph/GraphCanvas.test.ts",
           "src/composables/useExternalLink.ts",
           "src/composables/useExternalLink.test.ts",
+          "src/platform/links/**",
           "src/composables/useUrlActionLoaders.ts",
           "src/composables/useUrlActionLoaders.test.ts",
           "src/config.ts",

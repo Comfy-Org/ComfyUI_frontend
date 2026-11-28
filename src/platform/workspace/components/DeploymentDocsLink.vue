@@ -18,5 +18,8 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useExternalLink } from '@/composables/useExternalLink'
 
 const { buildDocsUrl } = useExternalLink()
-const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
+const docsUrl = buildDocsUrl('/development/overview', {
+  campaign: 'deployment_docs_link',
+  includeLocale: true
+})
 </script>

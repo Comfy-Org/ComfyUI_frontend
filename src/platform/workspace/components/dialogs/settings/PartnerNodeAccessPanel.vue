@@ -352,6 +352,7 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
+import { productLink } from '@/platform/links/productLink'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
@@ -607,7 +608,10 @@ function requestAccessModeToggle() {
 }
 
 function openEnterprisePage() {
-  window.open('https://comfy.org/cloud/enterprise/', '_blank')
+  window.open(
+    productLink('https://comfy.org/cloud/enterprise/', 'partner_node_access'),
+    '_blank'
+  )
 }
 
 function confirmEnterpriseUpsell() {

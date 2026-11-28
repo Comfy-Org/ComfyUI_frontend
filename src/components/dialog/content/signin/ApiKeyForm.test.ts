@@ -89,7 +89,7 @@ describe('ApiKeyForm', () => {
       screen.getByRole('link', { name: 'About non-whitelisted sites' })
     ).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites'
+      'https://docs.comfy.org/tutorials/partner-nodes/overview?utm_source=comfyui_local&utm_medium=product&utm_campaign=api_key_sign_in#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites'
     )
   })
 })

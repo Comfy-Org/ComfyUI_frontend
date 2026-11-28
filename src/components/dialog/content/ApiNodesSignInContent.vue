@@ -115,6 +115,7 @@ const { apiNodeNames, onLogin, onCancel } = defineProps<{
 }>()
 
 const partnerNodesDocsUrl = buildDocsUrl('/tutorials/api-nodes/faq', {
+  campaign: 'api_nodes_sign_in',
   includeLocale: true
 })
 

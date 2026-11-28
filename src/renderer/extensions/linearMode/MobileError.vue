@@ -24,6 +24,7 @@ const { allErrorGroups } = useErrorGroups('')
 const { copyToClipboard } = useCopyToClipboard()
 
 const guideUrl = buildDocsUrl('troubleshooting/overview', {
+  campaign: 'mobile_error',
   includeLocale: true
 })
 const supportUrl = buildSupportUrl('bug')

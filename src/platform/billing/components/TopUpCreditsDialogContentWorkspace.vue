@@ -208,12 +208,9 @@
         })
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
-      <a
-        href="https://comfy.org/cloud/enterprise/"
-        target="_blank"
-        class="ml-1 text-inherit"
-        >{{ $t('credits.topUp.contactUs') }}</a
-      >
+      <a :href="ENTERPRISE_URL" target="_blank" class="ml-1 text-inherit">{{
+        $t('credits.topUp.contactUs')
+      }}</a>
     </p>
 
     <div class="mt-auto flex flex-col gap-8 p-8">
@@ -387,6 +384,7 @@
 </template>
 
 <script setup lang="ts">
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type {
@@ -612,7 +610,10 @@ const step = ref<
 
 // Computed
 const pricingUrl = computed(() =>
-  buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
+  buildDocsUrl(docsPaths.partnerNodesPricing, {
+    campaign: 'top_up_dialog',
+    includeLocale: true
+  })
 )
 
 const creditsModel = computed({
