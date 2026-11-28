@@ -73,6 +73,7 @@ export type ModelFileUpload =
       taskId?: string
       libraryOffered?: true
       listedModelId?: string
+      freshUpload?: true
     }
 
 type ReadyToSend = Extract<ModelFileUpload, { status: 'chosen' | 'failed' }>
@@ -408,7 +409,8 @@ export function useUploadModelFile(
       error: t('assetBrowser.fileUpload.notAddedToDeployment', {
         name: file.name
       }),
-      listedModelId: modelId
+      listedModelId: modelId,
+      freshUpload: true
     }
   }
 
@@ -454,13 +456,13 @@ export function useUploadModelFile(
   }
 
   async function clearListedModel(
-    file: File,
+    failed: FailedUpload,
     target: DeploymentModelTarget,
     listedModelId: string,
     run: number,
     signal: AbortSignal
   ): Promise<boolean> {
-    state.value = { status: 'removing', file }
+    state.value = { status: 'removing', file: failed.file }
     const cleared = await deploymentModelUploadApi.clearDeploymentModel(
       target,
       listedModelId,
@@ -469,8 +471,7 @@ export function useUploadModelFile(
     if (run !== generation) return false
     if (cleared) return true
     state.value = {
-      status: 'failed',
-      file,
+      ...failed,
       listedModelId,
       error: t(
         signal.aborted
@@ -489,11 +490,16 @@ export function useUploadModelFile(
     signal: AbortSignal
   ): Promise<UploadModelSuccess | null> {
     const { file } = current
-    const listedModelId =
-      current.status === 'failed' ? current.listedModelId : undefined
+    const failed = current.status === 'failed' ? current : undefined
     if (
-      listedModelId &&
-      !(await clearListedModel(file, target, listedModelId, run, signal))
+      failed?.listedModelId &&
+      !(await clearListedModel(
+        failed,
+        target,
+        failed.listedModelId,
+        run,
+        signal
+      ))
     ) {
       return null
     }
@@ -505,6 +511,7 @@ export function useUploadModelFile(
       {
         type,
         signal,
+        freshUpload: failed?.freshUpload,
         onSending: progress.startSending,
         onProgress: progress.onProgress
       }

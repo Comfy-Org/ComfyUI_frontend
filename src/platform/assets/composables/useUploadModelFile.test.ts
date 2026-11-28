@@ -971,7 +971,8 @@ describe('useUploadModelFile', () => {
             file: lora,
             error:
               'my_style_v2.safetensors was not added to this deployment. Try again to replace it.',
-            listedModelId: 'model-1'
+            listedModelId: 'model-1',
+            freshUpload: true
           })
         )
         expect(comfyApp.refreshComboInNodes).not.toHaveBeenCalled()
@@ -1032,9 +1033,26 @@ describe('useUploadModelFile', () => {
         status: 'failed',
         file: lora,
         error: "Couldn't remove the file. It's still listed on the deployment.",
-        listedModelId: 'model-1'
+        listedModelId: 'model-1',
+        freshUpload: true
       })
       expect(server.spy).toHaveBeenCalledOnce()
+    })
+
+    it('sends the file fresh on Try again after its entry ended failed, instead of reusing the stored bytes', async () => {
+      const { upload, server } = await failedOnDeployment()
+      vi.spyOn(
+        deploymentModelUploadApi,
+        'clearDeploymentModel'
+      ).mockResolvedValue(true)
+      expect(server.options().freshUpload).toBeUndefined()
+
+      const retry = upload.upload()
+      await vi.waitFor(() => expect(server.spy).toHaveBeenCalledTimes(2))
+      server.finish({ ok: true, modelId: 'model-2' })
+
+      await expect(retry).resolves.toMatchObject({ status: 'processing' })
+      expect(server.options().freshUpload).toBe(true)
     })
 
     it('says the file is still listed when a canceled upload could not remove its entry', async () => {

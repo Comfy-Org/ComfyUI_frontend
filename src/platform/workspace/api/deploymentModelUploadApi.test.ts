@@ -123,16 +123,23 @@ function ingestAnswers(parts: DeploymentModelUploadPart[]) {
   const remove = vi
     .spyOn(workspaceApi, 'removeDeploymentModel')
     .mockResolvedValue(undefined)
-  return { calls, create, add, renew, complete, remove }
+  const list = vi
+    .spyOn(workspaceApi, 'listDeploymentModels')
+    .mockResolvedValue([])
+  return { calls, create, add, renew, complete, remove, list }
 }
 
-function upload(file: File, signal = new AbortController().signal) {
+function upload(
+  file: File,
+  signal = new AbortController().signal,
+  freshUpload?: boolean
+) {
   const onProgress = vi.fn()
   const onSending = vi.fn()
   const result = deploymentModelUploadApi.uploadModelToDeployment(
     file,
     target,
-    { type: 'loras', signal, onSending, onProgress }
+    { type: 'loras', signal, freshUpload, onSending, onProgress }
   )
   return { result, onProgress, onSending }
 }
@@ -286,6 +293,72 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
     expect(StorageRequest.sent).toHaveLength(0)
     expect(ingest.complete).not.toHaveBeenCalled()
   })
+
+  it('sends the bytes again instead of reusing stored ones when asked for a fresh upload', async () => {
+    const file = modelFile(1)
+    const ingest = ingestAnswers([piece(1)])
+    ingest.create.mockImplementation(async (_workspace, _deployment, request) =>
+      request.reuse === false
+        ? { blobId: BLOB_ID, deduplicated: false, parts: [piece(1)] }
+        : { blobId: BLOB_ID, deduplicated: true }
+    )
+
+    const { result } = upload(file, new AbortController().signal, true)
+    await finishNext()
+
+    await expect(result).resolves.toEqual({ ok: true, modelId: MODEL_ID })
+    expect(ingest.create).toHaveBeenCalledWith(
+      'ws-1',
+      'dep-1',
+      expect.objectContaining({ reuse: false }),
+      expect.any(AbortSignal)
+    )
+    expect(StorageRequest.sent).toHaveLength(1)
+    expect(ingest.complete).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    {
+      outcome: 'leaves the entry another upload already listed',
+      listed: true,
+      removed: false
+    },
+    { outcome: 'removes the entry it made', listed: false, removed: true }
+  ])(
+    'on a cancel while stored bytes are added, $outcome',
+    async ({ listed, removed }) => {
+      const ingest = ingestAnswers([])
+      ingest.create.mockResolvedValue({ blobId: BLOB_ID, deduplicated: true })
+      const entry = {
+        id: MODEL_ID,
+        filename: 'my_style_v2.safetensors',
+        status: 'adding'
+      }
+      ingest.list.mockResolvedValue(listed ? [entry] : [])
+      const controller = new AbortController()
+      let answerAdd!: () => void
+      ingest.add.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            answerAdd = () => resolve(entry)
+          })
+      )
+
+      const { result } = upload(modelFile(1), controller.signal)
+      await vi.waitFor(() => expect(ingest.add).toHaveBeenCalledOnce())
+      controller.abort()
+      answerAdd()
+
+      await expect(result).resolves.toEqual(
+        removed
+          ? { ok: false, reason: 'cancelled', modelId: MODEL_ID }
+          : { ok: false, reason: 'cancelled' }
+      )
+      expect(ingest.list).toHaveBeenCalledBefore(ingest.add)
+      expect(ingest.remove).toHaveBeenCalledTimes(removed ? 1 : 0)
+      expect(StorageRequest.sent).toHaveLength(0)
+    }
+  )
 
   it('adds nothing and sends no piece when the upload comes back without pieces', async () => {
     const ingest = ingestAnswers([])
