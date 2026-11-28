@@ -7,4 +7,9 @@
 export type RegistryOS = 'Windows' | 'macOS' | 'Linux'
 
 // Registry Accelerator
-export type RegistryAccelerator = 'CUDA' | 'ROCm' | 'Metal' | 'CPU'
+export type RegistryAccelerator =
+  | 'CUDA'
+  | 'ROCm'
+  | 'Metal'
+  | 'CPU'
+  | 'GPU :: Intel Arc'

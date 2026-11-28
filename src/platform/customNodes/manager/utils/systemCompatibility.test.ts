@@ -93,6 +93,32 @@ describe('systemCompatibility', () => {
   })
 
   describe('checkAcceleratorCompatibility', () => {
+    it.for(['xpu', 'XPU'])('accepts Intel Arc packages on %s', (device) => {
+      expect(
+        checkAcceleratorCompatibility(['GPU :: Intel Arc'], device)
+      ).toBeNull()
+    })
+
+    it.for(['cpu', 'cuda', 'mps', 'rocm'])(
+      'rejects Intel Arc-only packages on %s',
+      (device) => {
+        expect(
+          checkAcceleratorCompatibility(['GPU :: Intel Arc'], device)
+        ).toMatchObject({
+          type: 'accelerator',
+          required_value: 'GPU :: Intel Arc'
+        })
+      }
+    )
+
+    it('reports Intel Arc rather than CPU when XPU cannot satisfy a package', () => {
+      expect(checkAcceleratorCompatibility(['CUDA'], 'xpu')).toEqual({
+        type: 'accelerator',
+        current_value: 'GPU :: Intel Arc',
+        required_value: 'CUDA'
+      })
+    })
+
     it('should return null when supported accelerator list is null', () => {
       const result = checkAcceleratorCompatibility(null, 'cuda')
       expect(result).toBeNull()
