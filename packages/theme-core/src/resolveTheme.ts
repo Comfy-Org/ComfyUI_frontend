@@ -53,7 +53,11 @@ const DERIVED_THEME_DEFAULTS: ThemeTokens = {
   node: 'var(--card)',
   'node-foreground': 'var(--muted-foreground)',
   'node-header': 'var(--secondary)',
-  'node-border': 'var(--border)'
+  'node-border': 'var(--border)',
+  'node-header-height': '28px',
+  'node-slot-inset': '0px',
+  'node-slot-block-margin-bottom': '0px',
+  'node-socket-row-overlap': '2px'
 }
 
 const legacyTriangleIconsSchema = z.object({
@@ -99,20 +103,20 @@ export function resolveTheme(preset: ThemePreset) {
     ? {}
     : deriveLegacyTheme(completedPreset.colors)
   const canvas = completedPreset.colors.litegraph_base
-  const stylesheet = resolveStylesheet(preset)
+  const cssTokens = {
+    ...DERIVED_THEME_DEFAULTS,
+    ...defaults.colors.theme,
+    ...legacy,
+    ...preset.colors.theme
+  }
   return {
     id: preset.id,
     name: preset.name,
     colorScheme: preset.light_theme ? ('light' as const) : ('dark' as const),
-    stylesheet,
-    nodeGeometry: nodeGeometryOf(stylesheet),
+    stylesheet: resolveStylesheet(preset),
     preset: completedPreset,
-    cssTokens: {
-      ...DERIVED_THEME_DEFAULTS,
-      ...defaults.colors.theme,
-      ...legacy,
-      ...preset.colors.theme
-    },
+    cssTokens,
+    nodeGeometry: nodeGeometryOf(cssTokens),
     legacyCss: completedPreset.colors.comfy_base,
     controls: {
       inputTextColor: completedPreset.colors.comfy_base['input-text']

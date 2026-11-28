@@ -13,22 +13,6 @@
       display: block;
     }
 
-    &:not([data-collapsed]) [data-part='node-slots'] {
-      margin-bottom: var(--node-slot-block-margin-bottom);
-    }
-
-    .lg-slot--input {
-      padding-left: var(--node-slot-inset);
-    }
-
-    .lg-slot--output {
-      padding-right: var(--node-slot-inset);
-    }
-
-    &[data-collapsed] :is(.lg-slot--input, .lg-slot--output) {
-      padding-inline: 0;
-    }
-
     [data-part='slot-dot'] {
       --slot-fallback-color: #778;
     }
@@ -40,10 +24,6 @@
     [data-part='widget-row'],
     [data-part='socket-row'] {
       margin-right: calc(var(--spacing) * 3.75);
-    }
-
-    [data-part='socket-row'] {
-      margin-block: calc(-1 * var(--node-socket-row-overlap));
     }
 
     [data-part='socket-row'][data-linked] [data-part='slot-label'] {

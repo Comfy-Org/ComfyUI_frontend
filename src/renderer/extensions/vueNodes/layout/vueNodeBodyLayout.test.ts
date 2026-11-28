@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { nodeGeometryOf } from '@comfyorg/theme-core/nodeGeometry'
+import type { NodeGeometry } from '@comfyorg/theme-core/nodeGeometry'
 
 import { layoutVueNodeBody } from './vueNodeBodyLayout'
 import type { BodyItem } from './vueNodeBodyLayout'
 
-const DEFAULT_GEOMETRY = nodeGeometryOf(undefined)
+const DEFAULT_GEOMETRY: NodeGeometry = {
+  headerHeight: 28,
+  slotInset: 0,
+  slotBlockMarginBottom: 0,
+  socketRowOverlap: 2
+}
 
 const GROWABLE_40 = {
   kind: 'growable',
@@ -49,7 +54,7 @@ describe('layoutVueNodeBody', () => {
     expect(layout.slack).toBe(0)
   })
 
-  it('places rows and anchors with the Classic stylesheet geometry', () => {
+  it('places rows and anchors with a themed slot inset, slot block margin and socket overlap', () => {
     const layout = layoutVueNodeBody(
       200,
       200,
@@ -58,7 +63,12 @@ describe('layoutVueNodeBody', () => {
         { kind: 'socket', key: 's', input: 1 },
         { kind: 'control', key: 'c', growable: false }
       ],
-      nodeGeometryOf('classic')
+      {
+        headerHeight: 30,
+        slotInset: 10,
+        slotBlockMarginBottom: -2,
+        socketRowOverlap: 0
+      }
     )
 
     expect(layout.rows.get('s')).toEqual({ y: 26, height: 20 })

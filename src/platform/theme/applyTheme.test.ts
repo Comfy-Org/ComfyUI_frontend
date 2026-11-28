@@ -51,23 +51,6 @@ describe('applyTheme', () => {
     )
   })
 
-  it('writes the node geometry of the theme stylesheet and restores it for core dark', () => {
-    const style = document.createElement('div').style
-    const nodeGeometry = () =>
-      ['--node-header-height', '--node-slot-inset'].map((key) =>
-        style.getPropertyValue(key)
-      )
-
-    applyTheme(
-      resolveTheme({ ...DEFAULT_DARK_THEME_PRESET, stylesheet: 'classic' }),
-      { style }
-    )
-    expect(nodeGeometry()).toEqual(['30px', '10px'])
-
-    applyTheme(resolveTheme(DEFAULT_DARK_THEME_PRESET), { style })
-    expect(nodeGeometry()).toEqual(['28px', '0px'])
-  })
-
   it('writes legacy variables and clears aliases when returning to core dark', () => {
     const style = document.createElement('div').style
     applyTheme(fixtureTheme(), { style })

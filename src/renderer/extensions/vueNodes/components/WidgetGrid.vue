@@ -161,7 +161,7 @@ const growableRegions = inject(growableRegionsKey, undefined)
 function rowSpacingClass(showsControl: boolean) {
   return showsControl
     ? 'lg-node-widget my-[calc((var(--node-widget-gap)-var(--spacing))/2)]'
-    : '-my-0.5'
+    : '-my-(--node-socket-row-overlap)'
 }
 
 function rowEdgeClass(sectionIndex: number, rowIndex: number) {

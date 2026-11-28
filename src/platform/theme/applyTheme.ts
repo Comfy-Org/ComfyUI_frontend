@@ -1,6 +1,5 @@
 import type { Theme } from '@comfyorg/theme-core/resolveTheme'
 import { usesThemeAliases } from '@comfyorg/theme-core/resolveTheme'
-import { nodeGeometryStyle } from '@comfyorg/theme-core/nodeGeometry'
 import {
   comfyBaseSchema,
   themeSchema
@@ -41,10 +40,6 @@ function applyCssTokens(theme: Theme, style: CSSStyleDeclaration) {
     '--node-widget-gap',
     `${theme.preset.colors.litegraph_base.NODE_WIDGET_GAP}px`
   )
-  for (const [key, value] of Object.entries(
-    nodeGeometryStyle(theme.nodeGeometry)
-  ))
-    style.setProperty(key, value)
   style.colorScheme = theme.colorScheme
 }
 
