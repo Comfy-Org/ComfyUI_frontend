@@ -122,6 +122,9 @@ export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   if (facts.subscriptionState === 'activating' && planName !== null) {
     return { kind: 'activating', planName }
   }
+  if (facts.subscriptionState === 'never_subscribed') {
+    return { kind: 'noPlan', freeRuns: facts.freeRuns }
+  }
   if (facts.subscriptionState === 'ended') {
     return endedRow(facts)
   }

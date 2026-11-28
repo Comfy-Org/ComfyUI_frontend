@@ -1825,6 +1825,15 @@ describe('useExecutionStore - RAF batching', () => {
   beforeEach(() => {
     store = useExecutionStore()
     store.bindExecutionEvents()
+    const workflow = createQueuedWorkflow()
+    useWorkflowStore().activeWorkflow = workflow
+    store.storeJob({
+      nodes: [],
+      id: 'job-1',
+      promptOutput: {},
+      workflow,
+      mode: 'graph'
+    })
   })
 
   describe('handleProgress', () => {
@@ -2121,28 +2130,6 @@ describe('useExecutionStore - RAF batching', () => {
         expect.objectContaining({ state: 'running' })
       )
     })
-
-    it('discards a pending node progress state when execution stops', () => {
-      expect.assertions(1)
-      api.dispatchCustomEvent('progress_state', {
-        prompt_id: 'job-1',
-        nodes: {
-          '1': {
-            value: 0,
-            max: 10,
-            state: 'running',
-            node_id: '1',
-            prompt_id: 'job-1',
-            display_node_id: '1'
-          }
-        }
-      })
-
-      api.dispatchCustomEvent('executing', null)
-      vi.advanceTimersToNextFrame()
-
-      expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
-    })
   })
 
   describe('concurrent progress and progress_state in the same frame', () => {
@@ -2269,6 +2256,125 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store.initializingJobIds.has('job-1')).toBe(false)
       expect(store.initializingJobIds.has('job-2')).toBe(true)
+    })
+
+    describe('a run queued from another connection', () => {
+      const runningQueue = {
+        queue_running: [
+          [
+            0,
+            'job-1',
+            {
+              '1': {
+                inputs: {},
+                class_type: 'EmptyImage',
+                _meta: { title: 'Empty Image' }
+              },
+              '2': {
+                inputs: { image: ['1', 0] },
+                class_type: 'ImageBlur',
+                _meta: { title: 'Blur Image' }
+              },
+              '3': {
+                inputs: { images: ['2', 0] },
+                class_type: 'SaveImage',
+                _meta: { title: 'Save Image' }
+              }
+            },
+            {},
+            ['3']
+          ]
+        ],
+        queue_pending: []
+      }
+
+      it('counts its nodes and names the running one', async () => {
+        vi.mocked(api.fetchApi).mockResolvedValue(Response.json(runningQueue))
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+        await vi.waitFor(() =>
+          expect(Object.keys(store.activeJob?.nodes ?? {})).toHaveLength(3)
+        )
+        fire('executed', {
+          node: '1',
+          display_node: '1',
+          prompt_id: 'job-1',
+          output: {}
+        })
+
+        expect(api.fetchApi).toHaveBeenCalledWith('/queue')
+        expect(store.executionProgress).toBeCloseTo(1 / 3)
+        expect(store.activeJob?.nodeLookup?.['2']).toEqual({
+          title: 'Blur Image',
+          type: 'ImageBlur'
+        })
+      })
+
+      it('keeps nodes already reported done before the queue answered', async () => {
+        let answer: (res: Response) => void = () => {}
+        vi.mocked(api.fetchApi).mockReturnValue(
+          new Promise<Response>((resolve) => {
+            answer = resolve
+          })
+        )
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+        fire('execution_cached', {
+          prompt_id: 'job-1',
+          nodes: ['1'],
+          timestamp: 0
+        })
+        answer(Response.json(runningQueue))
+
+        await vi.waitFor(() =>
+          expect(Object.keys(store.activeJob?.nodes ?? {})).toHaveLength(3)
+        )
+        expect(store.activeJob?.nodes).toEqual({
+          '1': true,
+          '2': false,
+          '3': false
+        })
+      })
+
+      it.for([
+        {
+          label: 'the request fails',
+          answer: () => Promise.reject(new Error('offline'))
+        },
+        {
+          label: 'the server answers with an error',
+          answer: () => Promise.resolve(new Response('busy', { status: 503 }))
+        },
+        {
+          label: 'the body is not JSON',
+          answer: () => Promise.resolve(new Response('<html>', { status: 200 }))
+        }
+      ])(
+        'reports once to Sentry and leaves the job as it was when $label',
+        async ({ answer }) => {
+          vi.mocked(api.fetchApi).mockImplementation(answer)
+
+          fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+          await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
+
+          const [, options] = vi.mocked(reportError).mock.calls[0]
+          expect(options).toMatchObject({
+            errorType: 'warning_queue_read_failed_for_adopted_run',
+            context: { jobId: 'job-1' }
+          })
+          expect(options.sentryMode).not.toBe('never')
+          expect(store.activeJob?.nodes).toEqual({})
+          expect(store.activeJob?.nodeLookup).toBeUndefined()
+        }
+      )
+
+      it('does not read the queue for a run this tab queued', () => {
+        storeVisibleJob('job-1')
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+        expect(api.fetchApi).not.toHaveBeenCalled()
+      })
     })
   })
 
@@ -2513,41 +2619,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     })
   })
 
-  describe('executing', () => {
-    it('clears _executingNodeProgress and activeJobId when detail is null', () => {
-      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-      store._executingNodeProgress = {
-        value: 1,
-        max: 2,
-        prompt_id: 'job-1',
-        node: '1'
-      }
-
-      fire('executing', null)
-
-      expect(store._executingNodeProgress).toBeNull()
-      expect(store.activeJobId).toBeNull()
-    })
-
-    it('keeps the active job when a numeric node id is executing', () => {
-      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-
-      fire('executing', 123)
-
-      expect(store.activeJobId).toBe('job-1')
-      expect(store.queuedJobs['job-1']).toBeDefined()
-    })
-
-    it('discards a progress update still queued when the next node starts', () => {
-      fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
-
-      fire('executing', 'n2')
-      vi.advanceTimersToNextFrame()
-
-      expect(store._executingNodeProgress).toBeNull()
-    })
-  })
-
   describe('progress', () => {
     it('sets _executingNodeProgress from the event payload (RAF-batched)', () => {
       const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
@@ -2720,7 +2791,6 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'execution_interrupted',
         'execution_success',
         'executed',
-        'executing',
         'progress',
         'progress_state',
         'execution_error',
@@ -2796,10 +2866,12 @@ describe('useExecutionStore - frames from a background workflow', () => {
     queueJob('job-background', backgroundWorkflow)
   })
 
-  it('tracks a background job as running without making it the active job', () => {
+  it('focuses a background job started while idle without painting the canvas', () => {
     fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fireProgressState('job-background', '1')
 
-    expect(store.activeJobId).toBeNull()
+    expect(store.activeJobId).toBe('job-background')
+    expect(store.nodeProgressStates).toEqual({})
     expect(store.getWorkflowStatus(backgroundWorkflow)).toBe('running')
     expect(store.getWorkflowStatus(visibleWorkflow)).toBeUndefined()
   })
@@ -2873,13 +2945,12 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.executingNodeProgress).toBe(0.5)
   })
 
-  it('admits frames whose workflow is unknown while no job is active', () => {
+  it('focuses a job whose workflow is unknown without painting the canvas', () => {
     fire('execution_start', { prompt_id: 'job-elsewhere', timestamp: 0 })
     fireProgressState('job-elsewhere', '1')
 
     expect(store.activeJobId).toBe('job-elsewhere')
-    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-elsewhere')
-    expect(reportError).not.toHaveBeenCalled()
+    expect(store.nodeProgressStates).toEqual({})
   })
 
   it('does not report a background job whose owner is known', () => {
@@ -2888,23 +2959,6 @@ describe('useExecutionStore - frames from a background workflow', () => {
 
     expect(store.activeJobId).toBe('job-visible')
     expect(reportError).not.toHaveBeenCalled()
-  })
-
-  it('reports a job with no known owner that is rejected while another job is active', () => {
-    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
-
-    fire('execution_start', { prompt_id: 'job-unowned', timestamp: 0 })
-
-    expect(store.activeJobId).toBe('job-visible')
-    expect(reportError).toHaveBeenCalledOnce()
-    const [, options] = vi.mocked(reportError).mock.calls[0]
-    expect(options.errorType).toBe('warning_rejecting_unowned_execution_start')
-    expect(options.context).toMatchObject({
-      jobId: 'job-unowned',
-      activeJobId: 'job-visible',
-      hasOwnWorkflowRecord: false,
-      activeWorkflowInstanceId: visibleWorkflow.instanceId
-    })
   })
 
   it.for([
@@ -3054,18 +3108,59 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.executingNodeProgress).toBe(0.6)
   })
 
-  it('re-adopts the visible job once a late-owned job proves to belong elsewhere', async () => {
-    useWorkflowStore().activeWorkflow = backgroundWorkflow
-    await nextTick()
+  it('keeps the focused job when a later job starts', () => {
     fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
     fire('execution_start', { prompt_id: 'job-late', timestamp: 0 })
-    useWorkflowStore().activeWorkflow = visibleWorkflow
-    await nextTick()
-    expect(store.activeJobId).toBe('job-late')
-
-    queueJob('job-late', backgroundWorkflow)
 
     expect(store.activeJobId).toBe('job-visible')
+  })
+
+  it("hands focus to the active tab's newest job over a newer job elsewhere", () => {
+    queueJob('job-visible-2', visibleWorkflow)
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-visible-2', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+    fire('execution_success', { prompt_id: 'job-visible', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-visible-2')
+  })
+
+  it('hands focus to the newest job overall when the active tab has none', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+    fire('execution_success', { prompt_id: 'job-visible', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-background')
+
+    fire('execution_success', { prompt_id: 'job-background', timestamp: 0 })
+
+    expect(store.activeJobId).toBeNull()
+  })
+
+  it('derives progress from finished frames for a job not queued here', () => {
+    const node = (id: string, state: string) => ({
+      value: 0,
+      max: 1,
+      state,
+      node_id: id,
+      prompt_id: 'job-elsewhere',
+      display_node_id: id
+    })
+    fire('progress_state', {
+      prompt_id: 'job-elsewhere',
+      nodes: {
+        '1': node('1', 'finished'),
+        '2': node('2', 'running'),
+        '3': node('3', 'pending'),
+        '4': node('4', 'finished')
+      }
+    })
+    vi.advanceTimersToNextFrame()
+    store.queuedJobs['job-elsewhere'] = { nodes: { '1': true } }
+
+    expect(store.executionProgressForJob('job-elsewhere')).toBe(0.5)
   })
 })
 

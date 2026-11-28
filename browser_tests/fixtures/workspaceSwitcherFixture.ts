@@ -12,6 +12,7 @@ import {
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { WORKSPACE_SWITCHER_WORKSPACES } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -69,9 +70,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
       await route.fulfill(jsonRoute(response))
     })
 
-    await page.route('**/api/auth/session', (route) =>
-      route.fulfill({ status: 204 })
-    )
+    await mockWebSessionServer(page)
     await page.route('**/api/billing/status', (route) =>
       route.fulfill(jsonRoute(ENDED_STANDARD_BILLING_STATUS))
     )

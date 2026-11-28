@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-60 flex-col gap-1" :class="{ 'pt-1': showSearch }">
+  <div class="flex flex-col gap-1" :class="{ 'pt-1': showSearch }">
     <div v-if="showSearch" class="flex flex-col gap-2">
       <input
         v-model="searchQuery"
@@ -13,7 +13,7 @@
     </div>
 
     <div
-      class="flex scrollbar-custom max-h-[294px] min-h-0 flex-col gap-2 overflow-y-auto py-1"
+      class="flex scrollbar-custom max-h-72 min-h-0 flex-col gap-2 overflow-y-auto py-1"
       data-testid="workspace-switcher-list"
     >
       <template v-if="isFetchingWorkspaces">

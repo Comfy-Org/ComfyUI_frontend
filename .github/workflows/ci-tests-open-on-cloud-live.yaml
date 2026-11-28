@@ -1,0 +1,116 @@
+name: 'CI: Tests Open on Cloud live'
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ci-tests-open-on-cloud-live.yaml'
+      - 'browser_tests/tests/liveCloud/openOnCloud*.spec.ts'
+      - 'browser_tests/fixtures/components/Actionbar.ts'
+      - 'browser_tests/fixtures/components/OpenOnCloudDialog.ts'
+      - 'browser_tests/fixtures/liveOpenOnCloudFixture.ts'
+      - 'browser_tests/fixtures/selectors.ts'
+      - 'src/components/CloudButton.vue'
+      - 'src/platform/openOnCloud/**'
+  workflow_dispatch:
+    inputs:
+      rollout_preview:
+        description: Use the temporary Cloud preview and pinned frontend rollout
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  open-on-cloud-live:
+    if: >-
+      inputs.rollout_preview ||
+      (vars.OPEN_ON_CLOUD_LIVE_URL != '' &&
+        (github.event_name == 'workflow_dispatch' ||
+          github.event.pull_request.head.repo.full_name == github.repository))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPEN_ON_CLOUD_URL: ${{ inputs.rollout_preview && 'https://pr-19562.testenvs.comfy.org' || vars.OPEN_ON_CLOUD_LIVE_URL }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Merge the frontend rollout under test
+        if: inputs.rollout_preview
+        env:
+          FRONTEND_MERGE_SHA: dbd0fe9f0bfc1e90100a18596a26e12d6c2bdc07
+        run: |
+          git fetch --no-tags origin "$FRONTEND_MERGE_SHA"
+          git -c user.name=ci -c user.email=ci@localhost merge --no-edit "$FRONTEND_MERGE_SHA"
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+        env:
+          VITE_STAGING_CLOUD_BASE_URL: ${{ env.OPEN_ON_CLOUD_URL }}
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+
+      - name: Start single-user ComfyUI server
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run signed-out Open on Cloud tests
+        run: >-
+          pnpm exec playwright test
+          browser_tests/tests/liveCloud/openOnCloud.spec.ts
+          browser_tests/tests/liveCloud/openOnCloudLogin.spec.ts
+          --grep-invert @cloud-authenticated
+          --project=cloud-live --workers=1 --reporter=line,json
+          --output=${{ runner.temp }}/open-on-cloud-live/test-results
+        env:
+          PLAYWRIGHT_CLOUD_LIVE: '1'
+          PLAYWRIGHT_TEST_URL: http://127.0.0.1:8188
+          PLAYWRIGHT_SETUP_API_URL: http://127.0.0.1:8188
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/open-on-cloud-live/results.json
+
+      - name: Extract screenshots of passing tests
+        if: ${{ !cancelled() }}
+        env:
+          RESULTS: ${{ runner.temp }}/open-on-cloud-live/results.json
+          SCREENSHOTS: open-on-cloud-live-screenshots
+        run: |
+          node --input-type=module <<'JS'
+            import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+            const out = process.env.SCREENSHOTS
+            mkdirSync(out, { recursive: true })
+            const visit = (suite) => {
+              for (const spec of suite.specs ?? [])
+                for (const test of spec.tests)
+                  for (const result of test.results)
+                    for (const attachment of result.attachments)
+                      if (result.status === "passed" && attachment.contentType === "image/png" && attachment.body)
+                        writeFileSync(`${out}/${attachment.name}`, Buffer.from(attachment.body, "base64"))
+              for (const child of suite.suites ?? []) visit(child)
+            }
+            for (const suite of JSON.parse(readFileSync(process.env.RESULTS, "utf8")).suites) visit(suite)
+          JS
+          ls -1 open-on-cloud-live-screenshots
+
+      - name: Upload screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: open-on-cloud-live-screenshots
+          path: open-on-cloud-live-screenshots/
+          if-no-files-found: ignore
+          retention-days: 14

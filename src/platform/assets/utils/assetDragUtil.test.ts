@@ -1,11 +1,13 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import {
+  parseAssetInfo,
+  getDroppedAsset
+} from '@/platform/assets/integration/assetDrop'
 import { api } from '@/scripts/api'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { getDroppedAsset } from '@/utils/eventUtils'
 
 import { startAssetDrag } from './assetDragUtil'
 

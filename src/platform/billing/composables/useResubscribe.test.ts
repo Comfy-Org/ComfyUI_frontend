@@ -101,8 +101,10 @@ describe('useResubscribe', () => {
     state.canReactivatePlan = false
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
-    await handleResubscribe()
-
+    expect(await handleResubscribe()).toEqual({
+      ok: false,
+      serverMessage: null
+    })
     expect(mockBillingContext().resubscribe).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
@@ -134,7 +136,7 @@ describe('useResubscribe', () => {
   it('fires a started event before resubscribe resolves', async () => {
     const { handleResubscribe } = useResubscribe()
 
-    await handleResubscribe()
+    expect(await handleResubscribe()).toEqual({ ok: true })
 
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'resubscribe',
@@ -189,8 +191,10 @@ describe('useResubscribe', () => {
     )
     const { handleResubscribe, isResubscribing } = useResubscribe()
 
-    await handleResubscribe()
-
+    expect(await handleResubscribe()).toEqual({
+      ok: false,
+      serverMessage: 'Resubscribe failed for person@example.com'
+    })
     expect(mockBillingContext().resubscribe).toHaveBeenCalledOnce()
     expect(useToast().error).toHaveBeenCalledWith('g.error', {
       description: 'Resubscribe failed for person@example.com'

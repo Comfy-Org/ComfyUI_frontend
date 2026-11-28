@@ -7,6 +7,7 @@ const open: LocalCreditBannerInput = {
   unifiedBillingSettingsEnabled: true,
   isCloud: false,
   isActive: false,
+  subscriptionState: null,
   hasFunds: true,
   lowBalance: undefined,
   outOfCreditsDismissed: false,
@@ -47,6 +48,40 @@ describe('deriveLocalCreditBanner', () => {
       expect(derive(input)).toBe(expected)
     }
   )
+
+  it.for([
+    { subscriptionState: 'never_subscribed', isActive: true, open: false },
+    { subscriptionState: 'paused', isActive: true, open: false },
+    { subscriptionState: 'past_due', isActive: true, open: false },
+    { subscriptionState: 'ended', isActive: true, open: false },
+    { subscriptionState: 'activating', isActive: true, open: false },
+    { subscriptionState: 'active', isActive: false, open: true },
+    { subscriptionState: 'cancel_scheduled', isActive: false, open: true },
+    { subscriptionState: null, isActive: true, open: true },
+    { subscriptionState: null, isActive: false, open: false }
+  ] as const)(
+    'opens cloud credit banners for served state $subscriptionState with is_active $isActive: $open',
+    ({ subscriptionState, isActive, open }) => {
+      const cloud = { isCloud: true, isActive, subscriptionState }
+      expect(derive({ ...cloud, hasFunds: false })).toBe(
+        open ? 'outOfCredits' : null
+      )
+      expect(derive({ ...cloud, lowBalance: true })).toBe(
+        open ? 'lowCredits' : null
+      )
+    }
+  )
+
+  it('keeps local credit banners on a never-subscribed workspace', () => {
+    expect(
+      derive({
+        isCloud: false,
+        isActive: true,
+        subscriptionState: 'never_subscribed',
+        hasFunds: false
+      })
+    ).toBe('outOfCredits')
+  })
 
   it('stays hidden when unified billing settings is off', () => {
     expect(

@@ -620,7 +620,11 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('Failed to fetch workflow template'),
-      { surface: 'graph', errorType: 'error_fetching_workflow_template' }
+      {
+        surface: 'graph',
+        errorType: 'error_fetching_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
     )
     expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
@@ -654,7 +658,8 @@ describe('useTemplateWorkflows', () => {
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'graph',
       errorType: 'error_validating_workflow_template_schema',
-      level: 'warning'
+      level: 'warning',
+      tags: { template_id: 'template1', source_module: 'default' }
     })
   })
 
@@ -729,7 +734,11 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { surface: 'graph', errorType: 'error_validating_workflow_template' }
+      {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
     )
   })
 
@@ -747,7 +756,11 @@ describe('useTemplateWorkflows', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(
       expect.stringContaining('not a loadable workflow'),
-      { surface: 'graph', errorType: 'error_validating_workflow_template' }
+      {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
     )
   })
 

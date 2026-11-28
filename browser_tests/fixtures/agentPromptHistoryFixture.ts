@@ -10,6 +10,7 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type {
   AgentWsEvent,
+  PersistedThinkingEntry,
   PersistedToolCallSummary
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -26,8 +27,9 @@ const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 // the stricter wire `ToolCallSummary` generated type.
 type MockAgentMessageContent = Omit<
   NonNullable<AgentMessage['content']>,
-  'tool_calls'
+  'thinking' | 'tool_calls'
 > & {
+  thinking?: PersistedThinkingEntry[]
   tool_calls?: PersistedToolCallSummary[]
 }
 type MockAgentMessage = Omit<AgentMessage, 'content'> & {

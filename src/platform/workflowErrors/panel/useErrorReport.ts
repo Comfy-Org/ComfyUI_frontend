@@ -5,7 +5,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { until } from '@vueuse/core'
 
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { createCancelToken } from '@/utils/createCancelToken'
 import { generateErrorReport } from '@/utils/errorReportUtil'
@@ -66,7 +66,7 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
 
       const workflow = (() => {
         try {
-          return app.rootGraph.serialize()
+          return useApp().rootGraph.serialize()
         } catch (e) {
           console.warn('Failed to serialize workflow for error report:', e)
           return null

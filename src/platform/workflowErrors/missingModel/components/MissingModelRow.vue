@@ -381,7 +381,7 @@ import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
-import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
+import type { UploadModelDialogContext } from '@/platform/assets/types/modelImport'
 
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import {

@@ -115,6 +115,15 @@ describe('useImageUploadWidget', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn())
   })
 
+  it('creates the upload button without an input socket', () => {
+    const { node } = createUploadNode()
+
+    construct(node)
+
+    const uploadWidget = node.widgets?.find((w) => w.name === 'upload')
+    expect(uploadWidget?.options.socketless).toBe(true)
+  })
+
   it('emits onWidgetChanged after upload changes the combo widget value', () => {
     const { fileComboWidget, node, onWidgetChanged } = createUploadNode()
 
@@ -176,6 +185,18 @@ describe('useImageUploadWidget', () => {
       ])
     ).toBe(false)
     expect(useToast().warning).not.toHaveBeenCalled()
+  })
+
+  it('claims an extensionless video the browser gave no MIME type', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([new File([], 'extensionless')])
+    ).toBe(true)
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'g.videoFilenameExtensionRequired'
+    )
   })
 
   it('previews the combo value once the initial frame runs', () => {

@@ -7,6 +7,8 @@ const INBOUND_DOC_FRAMES = new Set<string>(SERVER_DOC_FRAME_TYPES)
 export interface AgentDocFrameTransport extends DocFrameTransport {
   onSocketOpen(listener: () => void): () => void
   onSocketStatus(listener: (live: boolean) => void): () => void
+  /** Reopen the shared socket, which reads a fresh credential on connect. */
+  reconnect(): void
   destroy(): void
 }
 
@@ -45,6 +47,9 @@ export function createAgentDocFrameTransport(
     },
     onSocketStatus(listener) {
       return source.onStatus(listener)
+    },
+    reconnect() {
+      source.reconnect()
     },
     destroy() {
       unsubscribe?.()

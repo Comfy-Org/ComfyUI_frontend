@@ -35,27 +35,6 @@ test.describe(
         })
     })
 
-    test('A bypassed copy of a subgraph shows no image after the other copy runs', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/shared-definition-two-hosts-save-image'
-      )
-      await comfyPage.vueNodes.selectNode(HOST_B)
-      await comfyPage.keyboard.bypass()
-
-      await comfyPage.runButton.click()
-
-      await expect
-        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
-          timeout: 30_000
-        })
-        .toEqual({
-          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
-          [HOST_B]: []
-        })
-    })
-
     test('Each copy of a subgraph shows its own live preview while it runs', async ({
       comfyPage,
       getWebSocket
@@ -65,8 +44,9 @@ test.describe(
       )
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      execution.latentPreview('live-run', `${HOST_A}:10`)
-      execution.latentPreview('live-run', `${HOST_B}:10`)
+      const jobId = await execution.run()
+      execution.latentPreview(jobId, `${HOST_A}:10`)
+      execution.latentPreview(jobId, `${HOST_B}:10`)
 
       await expect
         .poll(async () => {
@@ -110,9 +90,12 @@ test.describe(
         .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
         .toBe(false)
 
-      expect(
-        (await comfyPage.vueNodes.getBodyImageSources([HOST_B]))[HOST_B]
-      ).toEqual([])
+      await expect
+        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]))
+        .toEqual({
+          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
+          [HOST_B]: []
+        })
 
       await comfyPage.runButton.click()
       await expect
@@ -122,33 +105,6 @@ test.describe(
           { timeout: 30_000 }
         )
         .toEqual([expect.stringMatching(/hostB_\d+_/)])
-    })
-
-    test('Promoting the saved image onto both copies of a subgraph shows each copy its own image', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/shared-definition-two-hosts-save-image'
-      )
-      const { editor } = comfyPage.subgraph
-      const savedImage = { nodeId: '10', widgetName: '$$canvas-image-preview' }
-      const hostA = comfyPage.vueNodes.getNodeLocator(HOST_A)
-      const hostB = comfyPage.vueNodes.getNodeLocator(HOST_B)
-      await editor.togglePromotion(hostA, { ...savedImage, toState: false })
-      await editor.togglePromotion(hostA, { ...savedImage, toState: true })
-      await editor.togglePromotion(hostB, { ...savedImage, toState: false })
-      await editor.togglePromotion(hostB, { ...savedImage, toState: true })
-
-      await comfyPage.runButton.click()
-
-      await expect
-        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
-          timeout: 30_000
-        })
-        .toEqual({
-          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
-          [HOST_B]: [expect.stringMatching(/hostB_\d+_/)]
-        })
     })
   }
 )

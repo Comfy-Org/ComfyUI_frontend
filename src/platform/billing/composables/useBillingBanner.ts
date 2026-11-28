@@ -70,7 +70,8 @@ function useBillingBannerInternal() {
     canAccessSubscriptionFeatures,
     subscription,
     billingStatus,
-    isTeamPlan
+    isTeamPlan,
+    subscriptionState
   } = useBillingContext()
   const { permissions } = useBillingUI()
   const { flags } = useFeatureFlags()
@@ -124,6 +125,7 @@ function useBillingBannerInternal() {
     runDeniedPastDue: runDeniedPaymentPastDue.value,
     unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
     isActive: subscription.value?.isActive === true,
+    subscriptionState: subscriptionState.value,
     ...readSubscriptionInputs(subscription.value)
   }))
 

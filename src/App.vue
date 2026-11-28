@@ -14,10 +14,12 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, provide, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { createAskAgentPort } from '@/workbench/extensions/agent/composables/agent/createAskAgentPort'
 import config from '@/config'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
@@ -27,17 +29,22 @@ import {
   reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
-import { app } from '@/scripts/app'
+import '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
-import { parsePreloadError } from '@/utils/preloadErrorUtil'
+import {
+  isAppChunkLoadFailure,
+  parsePreloadError
+} from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
+provide(AskAgentPortKey, createAskAgentPort())
 const workspaceStore = useWorkspaceStore()
-app.extensionManager = useWorkspaceStore()
+useApp().extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 useAgentExtensionNotices()
@@ -74,11 +81,12 @@ onMounted(() => {
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
   useEventListener(window, 'vite:preloadError', (event) => {
-    if (parsePreloadError(event.payload).url === null) {
+    const preloadError = parsePreloadError(event.payload)
+    if (preloadError.url === null) {
       reportPreloadErrorUnlessExtensionImport(event.payload)
       return
     }
-    event.preventDefault()
+    if (!isAppChunkLoadFailure(preloadError)) event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this
     // (e.g., bare "vue" imports, wrong relative paths to scripts/app.js, missing

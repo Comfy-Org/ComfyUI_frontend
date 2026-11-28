@@ -1,9 +1,9 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -24,16 +24,16 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-const createMockNode = (
-  overrides: Record<string, unknown> = {}
-): LGraphNode => {
-  const { id = 1, ...rest } = overrides
-  return fromAny<LGraphNode, unknown>({
-    id: toNodeId(id as string | number),
-    type: 'TestNode',
-    ...rest
+const createMockNode = ({
+  id = 1,
+  ...fields
+}: { id?: number } & Partial<
+  Pick<LGraphNode, 'comfyClass' | 'images'>
+> = {}): LGraphNode =>
+  Object.assign(new LGraphNode('TestNode', 'TestNode'), {
+    id: toNodeId(id),
+    ...fields
   })
-}
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -229,6 +229,58 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
   })
 })
 
+describe('nodeOutputStore preview stash replacement', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [{ path: 'workflows/preview.json' }]
+    })
+  })
+
+  it('preserves previews and their URLs across repeated empty stashes', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:repeated-empty-stash'])
+
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.resetAllOutputsAndPreviews()
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:repeated-empty-stash'])
+    expect(app.nodePreviewImages['5']).toEqual(['blob:repeated-empty-stash'])
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:repeated-empty-stash'
+    )
+  })
+
+  it('releases the previous URLs when replacing a nonempty stash', () => {
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL')
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.setNodePreviewsByNodeId(node.id, ['blob:replaced-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+
+    store.setNodePreviewsByNodeId(node.id, ['blob:replacement-stash'])
+    store.stashPreviewsForWorkflow('workflows/preview.json')
+    store.restorePreviewsForWorkflow('workflows/preview.json')
+
+    expect(store.getNodePreviews(node)).toEqual(['blob:replacement-stash'])
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith(
+      'blob:replaced-stash'
+    )
+
+    store.resetAllOutputsAndPreviews()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:replacement-stash')
+  })
+})
+
 describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
   it('reports the execution id and output filenames instead of dropping the output silently', () => {
     vi.mocked(
@@ -250,6 +302,7 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
         surface: 'graph',
         errorType: 'failure_resolving_node_output_execution_id',
         level: 'warning',
+        sentryMode: 'never',
         tags: { executionId },
         context: { filenames: ['contact_sheet_00001_.png'] }
       })
@@ -363,14 +416,11 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
   it('drops the previous output metadata when replacing the images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })
-    store.setOutputFromLegacy(
-      '7',
-      fromAny({
-        images: [{ filename: 'previous.webp' }],
-        animated: [true],
-        video: [{ filename: 'previous.mp4' }]
-      })
-    )
+    store.setOutputFromLegacy('7', {
+      images: [{ filename: 'previous.webp' }],
+      animated: [true],
+      video: [{ filename: 'previous.mp4' }]
+    })
 
     const images = [
       {
@@ -422,13 +472,7 @@ describe('nodeOutputStore restoreOutputs', () => {
     const executionOutput = createMockOutputs([
       { filename: 'ComfyUI_00001.png', subfolder: '', type: 'temp' }
     ])
-    const savedOutputs: Record<string, ExecutedWsMessage['output']> = {
-      '4': executionOutput
-    }
-
-    // Simulate undo: restoreOutputs makes app.nodeOutputs and the ref
-    // share the same underlying object if not handled correctly.
-    store.restoreOutputs(savedOutputs)
+    store.restoreOutputs({ shared: { '4': executionOutput }, instances: {} })
 
     expect(store.nodeOutputs['4']).toStrictEqual(executionOutput)
     expect(store.nodeOutputs['3']).toBeUndefined()
@@ -691,7 +735,7 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     // Tab B: fresh empty workflow (no outputs)
     const tabBSnapshot = store.snapshotOutputs()
-    expect(Object.keys(tabBSnapshot)).toHaveLength(0)
+    expect(tabBSnapshot).toEqual({ shared: {}, instances: {} })
 
     // --- Switch back to Tab A: store Tab B then restore Tab A ---
     store.resetAllOutputsAndPreviews()
@@ -763,11 +807,9 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 
     const snapshot = store.snapshotOutputs()
 
-    // Mutate the snapshot
-    snapshot['1'].images![0].filename = 'mutated.png'
-    snapshot['99'] = createMockOutputs([{ filename: 'new.png' }])
+    snapshot.shared['1']!.images![0].filename = 'mutated.png'
+    snapshot.shared['99'] = createMockOutputs([{ filename: 'new.png' }])
 
-    // Store should be unchanged
     expect(store.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
     expect(app.nodeOutputs['1']?.images?.[0]?.filename).toBe('a.png')
     expect(store.nodeOutputs['99']).toBeUndefined()
@@ -810,10 +852,7 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
-    const savedOutputs: Record<string, ExecutedWsMessage['output']> = {
-      '3': inputOutput
-    }
-    store.restoreOutputs(savedOutputs)
+    store.restoreOutputs({ shared: { '3': inputOutput }, instances: {} })
 
     expect(store.nodeOutputs['3']).toStrictEqual(inputOutput)
 
@@ -833,16 +872,14 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
     expect(app.nodeOutputs['4']).toStrictEqual(execOutput)
   })
 
-  it('should overwrite existing output when execution sends new data for same node', () => {
+  it('should replace a restored input preview when execution sends images for the same node', () => {
     const store = useNodeOutputStore()
 
-    // Restore with input preview
     const inputOutput = createMockOutputs([
       { filename: 'uploaded.png', subfolder: '', type: 'input' }
     ])
-    store.restoreOutputs({ '3': inputOutput })
+    store.restoreOutputs({ shared: { '3': inputOutput }, instances: {} })
 
-    // Execution sends new output for the same node (non-merge)
     const execOutput = createMockOutputs([
       { filename: 'result.png', subfolder: '', type: 'temp' }
     ])
@@ -851,7 +888,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
       execOutput
     )
 
-    // On current main (without PR #9123 guard), execution overwrites
     expect(store.nodeOutputs['3']).toStrictEqual(execOutput)
     expect(app.nodeOutputs['3']).toStrictEqual(execOutput)
   })

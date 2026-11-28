@@ -2,7 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 
 const saveNodeTypes = new Set([
@@ -46,7 +46,7 @@ export const saveImageExtraOutputExtension: ComfyExtension = {
         if (!widget) return r
         widget.serializeValue = () =>
           typeof widget.value === 'string'
-            ? applyTextReplacements(app.graph, widget.value)
+            ? applyTextReplacements(useApp().rootGraph, widget.value)
             : widget.value
 
         return r

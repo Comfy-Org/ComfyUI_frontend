@@ -9,7 +9,9 @@ import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilitie
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -65,8 +67,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
       })
     )
   )
-  // TutorialCompleted suppresses the new-user template browser, whose modal
-  // overlay would otherwise intercept clicks on the dialog.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -75,14 +75,10 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
   await page.route('**/api/billing/status', (r) =>
     r.fulfill(jsonRoute(SUBSCRIPTION_STATUS))
@@ -110,7 +106,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
       jsonRoute({ billing_op_id: 'op-cancel-1', status: 'pending' })
     )
   })
-  // Both rails poll the same operation route; it settles on the first read.
   await page.route('**/api/billing/ops/**', (r) =>
     r.fulfill(
       jsonRoute({

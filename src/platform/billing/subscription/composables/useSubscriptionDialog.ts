@@ -173,11 +173,19 @@ export const useSubscriptionDialog = () => {
       trackPaywallShown(paymentIntentSourceOf(options))
       return
     }
-    await showPlansLinkDialog({
-      title: t('subscription.plansLink.blockedTitle'),
-      body: t('subscription.plansLink.blockedBody'),
-      linkLabel: t('subscription.plansLink.openPlansPage')
-    })
+    await showPlansLinkDialog(
+      options?.resumingCheckout
+        ? {
+            title: t('subscription.plansLink.checkoutUnfinishedTitle'),
+            body: t('subscription.plansLink.checkoutUnfinishedBody'),
+            linkLabel: t('subscription.plansLink.openPlansPage')
+          }
+        : {
+            title: t('subscription.plansLink.blockedTitle'),
+            body: t('subscription.plansLink.blockedBody'),
+            linkLabel: t('subscription.plansLink.openPlansPage')
+          }
+    )
     trackEntry()
   }
 

@@ -18,7 +18,7 @@ const boots = new WeakMap<object, Promise<void>>()
 async function storedApiKeyIsTheLogin(): Promise<boolean> {
   if (useApiKeyAuthStore().getApiKey() === null) return false
   const { flags } = useFeatureFlags()
-  if (!flags.ssoEnabled || !flags.unifiedWebSessionEnabled) return true
+  if (!flags.ssoEnabled) return true
   return !(await readsSignedInWebSession())
 }
 

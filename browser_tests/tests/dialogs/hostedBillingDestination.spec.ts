@@ -18,7 +18,9 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -108,8 +110,6 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
       })
     )
   )
-  // TutorialCompleted suppresses the new-user template browser, whose modal
-  // overlay would otherwise intercept the Settings click.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -118,14 +118,10 @@ async function mockCloudBoot(page: Page): Promise<CloudBootRequests> {
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
   await page.route('**/api/billing/status', (r) => {
     statusRequests.push(r.request())

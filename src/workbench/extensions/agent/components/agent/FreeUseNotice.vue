@@ -1,30 +1,19 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type {
-  AgentFreeUseNoticeMetadata,
-  AgentFreeUsePlacement
-} from '@comfyorg/telemetry/types'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
+import type { AgentFreeUseNoticeMetadata } from '@comfyorg/telemetry/types'
 import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
-const PLACEMENT_CLASSES = {
-  'top-banner': 'px-4 py-3',
-  'near-composer': 'rounded-lg px-4 py-3',
-  'above-input': 'px-4 py-3',
-  'inside-input': 'm-3 rounded-lg px-4 py-3'
-} as const satisfies Record<AgentFreeUsePlacement, string>
-
-const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
+const placement = 'near-composer' as const
 
 const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
-const dismissed = useLocalStorage(
+const dismissed = useSafeLocalStorage(
   () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
   false,
   { writeDefaults: false }
@@ -52,12 +41,7 @@ function onDismiss(): void {
     role="note"
     :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
-    :class="
-      cn(
-        'flex items-start gap-3 bg-primary/30 text-foreground',
-        PLACEMENT_CLASSES[placement]
-      )
-    "
+    class="flex items-start gap-3 rounded-lg bg-primary/30 px-4 py-3 text-foreground"
   >
     <p class="my-0 min-w-0 flex-1 text-sm/5">
       {{ $t('agent.freeUseNotice') }}

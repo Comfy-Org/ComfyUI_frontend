@@ -2,7 +2,6 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 
 test.describe(
   'Template load undo isolation',
@@ -14,14 +13,6 @@ test.describe(
       comfyPage
     }) => {
       test.slow()
-      await comfyPage.page.route(
-        /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/[a-f0-9]{40}\/input\/transparent_rgb_gaming_mouse\.png$/,
-        (route) =>
-          route.fulfill({
-            path: assetPath('test_upload_image.png'),
-            contentType: 'image/png'
-          })
-      )
       for (const vueNodesEnabled of [false, true]) {
         await comfyPage.settings.setSetting(
           'Comfy.VueNodes.Enabled',
@@ -39,6 +30,9 @@ test.describe(
         const selectedTemplateName = (await selectedTemplate.innerText()).trim()
         expect(selectedTemplateName.length).toBeGreaterThan(0)
         await selectedTemplate.click()
+        await comfyPage.page
+          .getByRole('button', { name: 'Just open', exact: true })
+          .click()
         await expect(comfyPage.templates.content).toBeHidden()
 
         await comfyPage.expectNodeCountMinimum(2)

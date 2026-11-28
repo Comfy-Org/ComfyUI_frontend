@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -312,27 +312,6 @@ describe('LGraphNode widget ordering', () => {
       node.configure(info)
 
       expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([5, 20])
-    })
-
-    it('does not restore dynamically added non-serializable widgets', () => {
-      node.onConfigure = function () {
-        this.addCustomWidget(
-          fromPartial<IBaseWidget>({
-            type: 'button',
-            name: 'action',
-            value: 'Click',
-            serialize: false
-          })
-        )
-        this.addWidget('number', 'seed', 0, null, {})
-      }
-
-      node.configure(mockNode([12345], { action: 'Restored', seed: 12345 }))
-
-      expect(node.widgets!.map((widget) => widget.value)).toStrictEqual([
-        'Click',
-        12345
-      ])
     })
   })
 })

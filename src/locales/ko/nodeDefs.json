@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Bria RMBG 2.0을 사용하여 이미지에서 배경을 제거합니다.",
+    "description": "Bria RMBG 2.0 또는 RMBG 3.0을 사용하여 이미지에서 배경을 제거합니다.",
     "display_name": "Bria 이미지 배경 제거",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "image"
       },
+      "model": {
+        "name": "모델"
+      },
       "moderation": {
         "name": "moderation",
         "tooltip": "모더레이션 설정"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 동일한 이미지는 항상 동일한 결과를 제공합니다."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상 주위에서 yaw/pitch/distance로 조준하며, 'look_at' 모드는 월드 위치에 카메라를 배치합니다. 좌표는 뷰어의 월드 공간입니다(right-handed,Y-up).",
+    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상 주위에서 yaw/pitch/distance로 조준하며, 'look_at'은 카메라를 월드 위치에 배치합니다. 좌표는 뷰어의 월드 공간(오른손 좌표계, Y-up)을 기준으로 하며, mesh가 연결된 경우 해당 mesh의 프레임을 기준으로 하므로 동일한 설정으로 모든 mesh를 프레이밍할 수 있습니다.",
     "display_name": "카메라 정보 생성",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "수직 시야각(도 단위)."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "이 mesh를 프레이밍합니다. 위치, 대상 및 거리는 경계 구의 지름을 단위로 하여 경계 상자의 중심에서 계산되므로, 동일한 설정으로 모든 mesh를 프레이밍할 수 있습니다."
       },
       "mode": {
         "name": "mode",
@@ -4837,6 +4844,131 @@
       "images": {
         "name": "이미지",
         "tooltip": "비디오를 생성할 이미지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: 사진 한 장과 음성 또는 노래 클립을 말하거나 노래하는 동영상으로 변환합니다. 동영상 길이는 오디오와 같으며 오디오는 변경되지 않습니다.",
+    "display_name": "Creatify Aurora 2.0 아바타",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "음성 또는 노래, 최대 60초(2k에서는 14초). 시작된 초 단위로 과금됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "각 변이 최소 256픽셀이고 종횡비는 1:4~4:1이어야 합니다. 동영상은 사진의 종횡비를 유지합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "선택 사항: 장면, 카메라, 조명, 표정 또는 움직임."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "동영상 광고용으로 구축된 Creatify의 사후 학습 H3 모델인 Creatify Boreal-H3입니다. 참조 이미지, 동영상 및 오디오를 바탕으로 사운드가 포함된 동영상을 생성합니다.",
+    "display_name": "Creatify Boreal-H3 참조 이미지/영상에서 동영상으로",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto는 첫 번째 참조 이미지를 따르며, 그렇지 않은 경우 첫 번째 참조 동영상을 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이",
+        "tooltip": "2k에서는 최대 14초입니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "참조 자료는 @Image1, @Video1, @Audio1로 지정하세요."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto와 ads는 동영상 광고용으로 프롬프트를 다시 작성하며 음성 대사를 추가할 수 있습니다. general은 그 밖의 모든 동영상용으로 다시 작성합니다. none은 작성된 그대로 프롬프트를 렌더링합니다."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "클립 최대 3개이며, @Audio1..@Audio3로 지정됩니다. 음성은 단어가 아닌 목소리를 안내하며, 기악 음악은 사운드트랙이 될 수 있습니다."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "최대 9개의 이미지이며, 연결 순서대로 프롬프트에서 @Image1..@Image9로 지정됩니다. 이미지 또는 동영상이 하나 이상 필요하며, 전체 참조 자료는 최대 12개입니다."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "최소 1초 길이의 동영상 최대 3개이며, @Video1..@Video3로 지정됩니다. 전체 동영상 길이는 최대 15초까지만 과금됩니다. 프롬프트에서 계속 이어가도록 요청하면 해당 사운드가 재사용되며, 프롬프트의 새 줄은 이를 대체합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. Creatify는 자체 무작위성을 선택합니다. prompt_enhancement가 none이면 동일한 입력은 동일한 동영상을 생성합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "동영상 광고용으로 구축된 Creatify의 사후 학습 H3 모델인 Creatify Boreal-H3입니다. 텍스트에서 사운드가 포함된 동영상을 생성하며, 선택적으로 첫 프레임으로 시작하고 마지막 프레임으로 끝낼 수 있습니다.",
+    "display_name": "Creatify Boreal-H3 동영상",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "첫 프레임이 없을 때 사용됩니다. 첫 프레임이 있는 경우 auto를 유지하세요. 동영상은 프레임의 종횡비를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이",
+        "tooltip": "2k에서는 최대 14초입니다."
+      },
+      "first_frame": {
+        "name": "첫 프레임"
+      },
+      "last_frame": {
+        "name": "마지막 프레임",
+        "tooltip": "첫 프레임이 필요합니다."
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "prompt_enhancement": {
+        "name": "프롬프트 향상",
+        "tooltip": "auto 및 ads는 동영상 광고용으로 프롬프트를 다시 작성하며 음성 대사를 추가할 수 있습니다. general은 그 외 모든 동영상용으로 다시 작성합니다. none은 작성된 그대로 프롬프트를 렌더링합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. Creatify가 자체 무작위성을 선택합니다. prompt_enhancement가 none이면 동일한 입력은 동일한 동영상을 생성합니다."
       }
     },
     "outputs": {
@@ -5437,7 +5569,7 @@
       },
       "text": {
         "name": "text",
-        "tooltip": "생성할 효과음에 대한 텍스트 설명."
+        "tooltip": "소리를 영어로 설명하세요(최대 450자). 다른 언어로 된 프롬프트는 소리로 변환되는 대신 소리 내어 읽히는 경우가 많습니다."
       }
     },
     "outputs": {
@@ -7343,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "텍스트, 이미지, 오디오 또는 비디오에 대한 옵션 중 하나를 선택합니다. 옵션 이름을 입력으로 받는 Branch 노드에 `choice`를 연결하거나, `option_index`를 사용하세요.",
+    "display_name": "Google Gemini 결정 (선택)",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 오디오 클립입니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 이미지입니다. 최대 16개 이미지."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "options": {
+        "name": "옵션",
+        "tooltip": "한 줄에 하나의 옵션을 입력하며, 입력한 그대로 사용됩니다. 어느 옵션에도 해당하지 않는 입력을 위해 `other`와 같은 옵션을 추가하세요."
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "옵션이 답하는 질문입니다. 입력이 여러 개인 경우 소켓 이름을 사용하세요. 예: 'image_1에 표시된 계절은 무엇인가요?'"
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "프롬프트나 LLM 응답처럼 질문의 대상이 되는 텍스트입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 비디오 클립입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "선택",
+        "tooltip": null
+      },
+      "1": {
+        "name": "옵션_인덱스",
+        "tooltip": "옵션 목록에서 선택한 옵션의 위치이며, 0부터 시작합니다."
+      },
+      "2": {
+        "name": "신뢰도",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "배치에서 이미지 하나를 선택합니다. 선택한 이미지를 유지하려면 `index`를 Get Image from Batch에 연결하세요.",
+    "display_name": "Google Gemini 결정 (이미지 선택)",
+    "inputs": {
+      "images": {
+        "name": "이미지",
+        "tooltip": "선택할 이미지로, 2개에서 64개까지입니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "선택할 이미지입니다. 가장 잘 일치하는 이미지를 선택하려면 프롬프트를 `text`에 연결하세요."
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "이미지가 생성된 프롬프트처럼 질문의 대상이 되는 텍스트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "인덱스",
+        "tooltip": null
+      },
+      "1": {
+        "name": "신뢰도",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "텍스트, 이미지, 오디오 또는 비디오를 1에서 10까지 평가합니다. 점수에 따라 동작하려면 `result`를 If/Else Switch 노드에 연결하세요.",
+    "display_name": "Google Gemini 결정 (점수)",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "모델의 컨텍스트로 사용할 선택 사항인 오디오 클립입니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "모델의 컨텍스트로 사용할 선택적 이미지입니다. 최대 16개 이미지."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "1에서 10까지의 척도로 평가할 대상입니다. 예시처럼 1과 10이 무엇을 의미하는지 명시하세요."
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "프롬프트나 LLM 응답 등 질문의 대상이 되는 텍스트입니다."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "점수가 이 값 이상이면 `result`는 true입니다. 깨끗하고 선명한 이미지는 약 7~8점, 심하게 손상된 이미지는 약 3~5점입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "모델의 컨텍스트로 사용할 선택 사항인 비디오 클립입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "결과",
+        "tooltip": null
+      },
+      "1": {
+        "name": "점수",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "텍스트, 이미지, 오디오 또는 비디오에 관한 예/아니요 질문을 합니다. 두 경로 중 하나를 선택하려면 `result`를 If/Else Switch 노드에 연결하세요.",
+    "display_name": "Google Gemini 결정 (예/아니요)",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "모델의 컨텍스트로 사용할 선택 사항인 오디오 클립입니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "모델의 컨텍스트로 사용할 선택 사항인 이미지입니다. 최대 16개의 이미지까지 사용할 수 있습니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "연결된 항목에 관한 예 또는 아니요로 답할 수 있는 질문입니다. 예일 때 실행할 작업이 수행되도록 질문하세요. 입력이 여러 개인 경우 소켓 이름을 사용하세요. 예: 'image_2에 image_1과 같은 사람이 있나요?'"
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "프롬프트나 LLM 응답 등 질문의 대상이 되는 텍스트입니다."
+      },
+      "threshold": {
+        "name": "임곗값",
+        "tooltip": "예일 확률이 이 값 이상이면 답은 예입니다. 명확한 예 답변의 점수는 약 0.85~0.92이므로, 0.9 이상으로 설정하면 그중 많은 답변이 거부됩니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "모델의 컨텍스트로 사용할 선택 사항인 비디오 클립입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "결과",
+        "tooltip": null
+      },
+      "1": {
+        "name": "답변",
+        "tooltip": null
+      },
+      "2": {
+        "name": "확률",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API를 통해 동기적으로 이미지를 생성하거나 편집합니다.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8458,6 +8758,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "HeyGen Avatar 6를 사용하여 텍스트 스크립트 또는 직접 제공한 오디오로 구동되는 HeyGen 아바타의 말하는 비디오를 생성합니다.",
+    "display_name": "HeyGen Avatar 6 아이덴티티-비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "'auto'는 아바타의 원본 영상 비율을 따릅니다."
+      },
+      "avatar": {
+        "name": "아바타"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "motion_expressiveness": {
+        "name": "모션 표현력",
+        "tooltip": "'less'는 더 적고 작은 제스처를 적용합니다. 겹치는 부분에서는 모션 프롬프트가 우선합니다."
+      },
+      "motion_prompt": {
+        "name": "모션 프롬프트",
+        "tooltip": "제스처, 표정, 자세 및 카메라 움직임입니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "speech": {
+        "name": "음성",
+        "tooltip": "텍스트 스크립트(HeyGen 텍스트 음성 변환) 또는 직접 제공한 오디오로 아바타를 구동합니다."
+      },
+      "speech_custom_voice_id": {
+        "name": "사용자 지정 음성 ID"
+      },
+      "speech_text": {
+        "name": "텍스트"
+      },
+      "speech_voice": {
+        "name": "음성"
+      },
+      "speech_voice_speed": {
+        "name": "음성 속도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "HeyGen Avatar 6를 사용하여 사진 또는 비디오 속 인물이나 캐릭터가 연결된 오디오를 말하도록 만듭니다. 이미지, 비디오 또는 둘 다를 연결하세요.",
+    "display_name": "HeyGen Avatar 6 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_motion_expressiveness": {
+        "name": "모션 표현력"
+      },
+      "model_motion_prompt": {
+        "name": "모션 프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "HeyGen 아바타로부터 발표자 영상을 생성합니다. HeyGen의 가장 인기 있는 공개 아바타가 포함되어 있으며, look ID를 입력하여 원하는 아바타로 대체할 수 있습니다.",
     "display_name": "HeyGen 아바타 비디오",
@@ -8534,6 +8921,143 @@
       },
       "1": {
         "name": "미리보기",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionChoice": {
+    "description": "텍스트, 이미지, 오디오 또는 비디오에 대해 옵션 중 하나를 선택합니다. `choice`를 옵션 이름을 입력으로 사용하는 Branch 노드에 연결하거나 `option_index`를 사용하세요.",
+    "display_name": "HeyGen 결정 (선택)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "최대 30분 길이의 오디오입니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "배치의 모든 프레임을 포함하여 총 4개의 이미지까지 사용할 수 있습니다. 소켓 전체에 걸쳐 순서대로 image_1부터 image_4까지 번호가 매겨지므로, 첫 번째 소켓에 2개로 된 배치가 있으면 image_1 및 image_2입니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "options": {
+        "name": "옵션",
+        "tooltip": "한 줄에 하나의 옵션을 입력하며, 입력한 그대로 사용됩니다. 어느 옵션에도 해당하지 않는 입력을 위해 `other`와 같은 옵션을 추가하세요."
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "옵션이 답하는 질문입니다. 입력이 여러 개인 경우 image_1, image_2, audio_1 또는 video_1으로 참조하세요. 예: 'image_1에는 어느 계절이 나타나나요?'"
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "프롬프트나 LLM 응답 등 질문의 대상이 되는 텍스트입니다."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "최대 60초 길이의 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "선택",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "옵션 목록에서 선택된 옵션의 위치입니다. 0부터 시작합니다."
+      },
+      "2": {
+        "name": "신뢰도",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "텍스트, 이미지, 오디오 또는 비디오를 1~10점으로 평가합니다. 점수에 따라 동작하려면 `result`를 If/Else Switch 노드에 연결하세요.",
+    "display_name": "HeyGen 결정(점수)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "최대 30분 길이의 오디오입니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "배치의 모든 프레임을 포함하여 총 4개까지의 이미지입니다. 소켓 전체에 걸쳐 순서대로 image_1부터 image_4까지 번호가 매겨지므로, 첫 번째 소켓의 배치가 2개이면 image_1 및 image_2입니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "1~10점 척도로 평가할 대상입니다. 예시처럼 1과 10이 무엇을 의미하는지 설명하세요."
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "프롬프트나 LLM 응답처럼 질문의 대상이 되는 텍스트입니다."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "점수가 이 값 이상이면 `result`는 true입니다. 깨끗하고 선명한 이미지는 약 7점, 심하게 손상된 이미지는 약 3~5점입니다."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "최대 60초 길이의 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "점수",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "텍스트, 이미지, 오디오 또는 비디오에 대해 예/아니요 질문을 합니다. 두 경로 중 하나를 선택하려면 `result`를 If/Else Switch 노드에 연결하세요.",
+    "display_name": "HeyGen 결정(예/아니요)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "최대 30분 길이의 오디오입니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "배치의 모든 프레임을 포함하여 총 4개까지의 이미지입니다. 소켓 전체에 걸쳐 순서대로 image_1부터 image_4까지 번호가 매겨지므로, 첫 번째 소켓의 배치가 2개이면 image_1 및 image_2입니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "연결된 항목에 관한 예 또는 아니요로 답할 수 있는 질문입니다. 예가 동작을 수행할 경우가 되도록 질문하세요. 여러 입력이 있는 경우에는 예를 들어 'image_2에 image_1과 동일한 사람이 표시되나요?'처럼 image_1, image_2, audio_1 또는 video_1로 참조하세요."
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "프롬프트나 LLM 응답처럼 질문의 대상이 되는 텍스트입니다."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "예의 확률이 이 값 이상이면 답은 예입니다. 명확한 답변은 0 또는 1에 가깝습니다."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "최대 60초 길이의 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "답변",
+        "tooltip": null
+      },
+      "2": {
+        "name": "확률",
         "tooltip": null
       }
     }
@@ -8765,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "한 명의 화자가 녹음된 음성에서 목소리를 복제하고, HeyGen Voice 1.0으로 해당 목소리로 텍스트를 말합니다.",
+    "display_name": "HeyGen Voice 1.0 인스턴트 클론 텍스트 음성 변환",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_expressiveness_boost": {
+        "name": "표현력_향상"
+      },
+      "model_language": {
+        "name": "언어"
+      },
+      "model_recording_language": {
+        "name": "녹음_언어"
+      },
+      "model_remove_background_noise": {
+        "name": "배경_소음_제거"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_similarity": {
+        "name": "유사도"
+      },
+      "model_text": {
+        "name": "텍스트"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "HeyGen Voice 1.0 Instant Clone으로 복제한 음성으로 텍스트를 말합니다.",
+    "description": "HeyGen Voice 1.0으로 HeyGen 음성으로 텍스트를 말합니다. 녹음에서 복제한 음성으로 말하려면 HeyGen Voice 1.0 Instant Clone Text to Speech를 사용하세요.",
     "display_name": "HeyGen Voice 1.0 텍스트 음성 변환",
     "inputs": {
       "model": {
@@ -9306,8 +9868,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하며 크기나 가로세로비를 변경할 수 있습니다. 수정하지 않은 픽셀을 그대로 유지하려면 Ideogram 4.5 Precise Edit을 사용하세요.",
-    "display_name": "Ideogram 4.5 편집",
+    "description": "Ideogram 4.6 또는 4.5를 사용하여 텍스트 프롬프트의 안내에 따라 최대 5개의 이미지를 편집하거나 결합합니다. 전체 이미지를 다시 렌더링하므로 크기 또는 가로세로 비율이 바뀔 수 있습니다. 수정하지 않은 픽셀을 변경 없이 유지하려면 Ideogram Precise Edit를 사용하세요.",
+    "display_name": "Ideogram 편집",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -9315,6 +9877,9 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_background": {
+        "name": "배경"
       },
       "model_height": {
         "name": "높이"
@@ -9384,8 +9949,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트가 요청한 부분만 변경되고, 건드리지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(약 4 MP를 초과하는 이미지는 먼저 축소됨). mask 또는 바운딩 박스로 지정한 단일 영역을 편집하고 이미지를 전체 크기로 반환할 수도 있습니다. 최대 4개의 참조 이미지를 허용합니다(context_window_mask 사용 시 3개).",
-    "display_name": "Ideogram 4.5 정밀 편집",
+    "description": "Ideogram 4.6 또는 4.5 정밀 편집을 사용하여 텍스트 프롬프트의 안내에 따라 이미지를 편집합니다. 프롬프트가 요청한 부분만 변경되고 수정하지 않은 픽셀은 동일하게 유지되며, 출력은 이미지 1의 크기를 유지합니다(큰 이미지는 먼저 축소됨). mask 또는 경계 상자로 설정한 단일 영역만 편집하고 이미지를 전체 크기로 반환할 수도 있습니다. 참조 이미지( mask 사용 시 3개)는 최대 4개까지 허용합니다.",
+    "display_name": "Ideogram 정밀 편집",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -9414,8 +9979,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Ideogram 4.5를 사용하여 텍스트 프롬프트로 이미지를 생성합니다.",
-    "display_name": "Ideogram 4.5 텍스트-이미지",
+    "description": "Ideogram 4.6 또는 4.5를 사용하여 텍스트 프롬프트로 이미지를 생성합니다.",
+    "display_name": "Ideogram 텍스트-이미지",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -9423,6 +9988,12 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_background": {
+        "name": "배경"
+      },
+      "model_height": {
+        "name": "높이"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9438,6 +10009,9 @@
       },
       "model_size": {
         "name": "크기"
+      },
+      "model_width": {
+        "name": "너비"
       }
     },
     "outputs": {
@@ -10638,6 +11212,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "텍스트 프롬프트와 최대 10장의 참조 이미지를 바탕으로 단일 이미지 또는 서로 관련된 이미지 시리즈를 생성하거나 편집합니다.",
+    "display_name": "Kling 4.0 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "auto는 참조 이미지를 따르며, 그렇지 않은 경우 프롬프트를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "참조 이미지는 @Image1, @Image2, ...로 지정하세요."
+      },
+      "reference_images": {
+        "name": "참조 이미지"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "series_amount": {
+        "name": "시리즈 수",
+        "tooltip": "동일한 캐릭터와 스타일을 유지하는 관련 이미지 시리즈를 생성합니다. auto를 선택하면 모델이 2~10장의 이미지를 선택합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "kling-4.0에서는 최대 10개의 키프레임을 통해 오디오가 포함된 비디오를 생성하거나, kling-4.0-flash에서는 첫 프레임으로부터 생성합니다. 중간 프레임은 균등한 간격으로 배치되며, 비디오는 첫 번째 키프레임의 종횡비를 따릅니다.",
     "display_name": "Kling 4.0 이미지를 비디오로",
@@ -10658,6 +11268,32 @@
         "name": "해상도"
       },
       "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "웹페이지 디자인 또는 전자상거래 상품 상세 페이지용 세로로 긴 이미지 하나를 생성합니다.",
+    "display_name": "Kling 4.0 긴 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "skill": {
+        "name": "기술"
+      },
+      "skill_prompt": {
+        "name": "프롬프트"
+      },
+      "skill_resolution": {
+        "name": "해상도"
+      },
+      "skill_seed": {
         "name": "시드"
       }
     },
@@ -14834,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "사진을 3D 프린팅, 레이저 각인 및 CNC 조각용 부조 모델과 16비트 깊이 맵으로 변환합니다. 연결된 출력만 생성 및 다운로드되며, 모델 출력이 연결되지 않은 경우 작업은 깊이 맵만 반환합니다.",
+    "display_name": "Meshy: 이미지를 릴리프로",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none은 배경을 제거하고 판을 만들지 않습니다."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex는 앞면을 바깥쪽으로 볼록하게 하고, concave는 안쪽으로 오목하게 굽힙니다."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss는 사진에서 가까운 부분을 융기시키고, engrave는 그 부분을 음각으로 만듭니다."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "사진으로 GLB, OBJ, FBX 및 USDZ 파일에 색상을 입힙니다. STL과 3MF는 흰색으로 유지됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "밝은 배경 위의 어두운 아트워크가 융기됩니다. 업로드 전에 투명도가 제거되므로, 투명한 로고는 먼저 흰색 배경 위에 병합하세요."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "사진의 긴 변을 따라 배치되는 메시 점 수입니다. 1024에서는 GLB가 약 50 MB, STL이 약 105 MB이고, 2048에서는 약 200 MB와 420 MB입니다. 굽힘을 적용하면 크기가 두 배가 됩니다."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: 레이저 각인, CNC 및 명판용 얕은 조각입니다. high: 3D 프린팅 작품용 더 깊은 조각입니다."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다. 마지막 실행 후 연결된 출력을 요청하려면 시드를 변경하세요."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "굽힘을 적용하기 전 평평한 상태에서 측정한 모델 위 사진의 긴 변 길이입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "전체 16비트 범위를 사용하는 깊이 맵입니다. Save Image (Advanced)는 이를 16비트 PNG로 저장합니다."
+      },
+      "7": {
+        "name": "미리보기",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: 다중 이미지 → 모델",
     "inputs": {
@@ -15129,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "동일한 객체의 참조 뷰 1~4개를 사용하여 Meshy N1로 이전에 생성한 모델에 텍스처를 적용합니다.",
+    "display_name": "Meshy: 모델 텍스처링 (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "새 UV를 생성하는 대신 모델의 원본 UV를 사용합니다. 활성화하면 Meshy는 업로드된 모델의 기존 텍스처를 보존합니다. 모델에 원본 UV가 없으면 출력 품질이 좋지 않을 수 있습니다."
+      },
+      "extra_views": {
+        "name": "추가 뷰",
+        "tooltip": "동일한 객체의 추가 뷰이며, 순서는 상관없습니다. front_view와 함께 최대 4장의 이미지까지 사용할 수 있습니다."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "Meshy가 앞면으로 처리하는 뷰입니다. 이미지 하나만 사용하면 앞면에 텍스처가 적용되고 뒷면은 그대로 남습니다. 충실한 뒷면을 위해 extra_views에 후면 및 측면 뷰를 추가하세요."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "모델"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -16162,6 +16921,9 @@
       "model": {
         "name": "모델",
         "tooltip": "사용할 모델입니다."
+      },
+      "model_auto_downscale": {
+        "name": "자동_다운스케일"
       },
       "model_negative_prompt": {
         "name": "네거티브 프롬프트"
@@ -17634,6 +18396,206 @@
       },
       "video_head_modulation_": {
         "name": "video_head_modulation."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "호환되는 두 MiniMax H3 모델을 구성 요소별로 병합합니다. 각 비율은 model1의 비중입니다. 버퍼는 model1의 것을 유지합니다.",
+    "display_name": "모델 병합 MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "블록.11."
+      },
+      "blocks_12_": {
+        "name": "블록.12."
+      },
+      "blocks_13_": {
+        "name": "블록.13."
+      },
+      "blocks_14_": {
+        "name": "블록.14."
+      },
+      "blocks_15_": {
+        "name": "블록.15."
+      },
+      "blocks_16_": {
+        "name": "블록.16."
+      },
+      "blocks_17_": {
+        "name": "블록.17."
+      },
+      "blocks_18_": {
+        "name": "블록.18."
+      },
+      "blocks_19_": {
+        "name": "블록.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "블록.20."
+      },
+      "blocks_21_": {
+        "name": "블록.21."
+      },
+      "blocks_22_": {
+        "name": "블록.22."
+      },
+      "blocks_23_": {
+        "name": "블록.23."
+      },
+      "blocks_24_": {
+        "name": "블록.24."
+      },
+      "blocks_25_": {
+        "name": "블록.25."
+      },
+      "blocks_26_": {
+        "name": "블록.26."
+      },
+      "blocks_27_": {
+        "name": "블록.27."
+      },
+      "blocks_28_": {
+        "name": "블록.28."
+      },
+      "blocks_29_": {
+        "name": "블록.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "블록.30."
+      },
+      "blocks_31_": {
+        "name": "블록.31."
+      },
+      "blocks_32_": {
+        "name": "블록.32."
+      },
+      "blocks_33_": {
+        "name": "블록.33."
+      },
+      "blocks_34_": {
+        "name": "블록.34."
+      },
+      "blocks_35_": {
+        "name": "블록.35."
+      },
+      "blocks_36_": {
+        "name": "블록.36."
+      },
+      "blocks_37_": {
+        "name": "블록.37."
+      },
+      "blocks_38_": {
+        "name": "블록.38."
+      },
+      "blocks_39_": {
+        "name": "블록.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "블록.40."
+      },
+      "blocks_41_": {
+        "name": "블록.41."
+      },
+      "blocks_42_": {
+        "name": "블록.42."
+      },
+      "blocks_43_": {
+        "name": "블록.43."
+      },
+      "blocks_44_": {
+        "name": "블록.44."
+      },
+      "blocks_45_": {
+        "name": "블록.45."
+      },
+      "blocks_46_": {
+        "name": "블록.46."
+      },
+      "blocks_47_": {
+        "name": "블록.47."
+      },
+      "blocks_48_": {
+        "name": "블록.48."
+      },
+      "blocks_49_": {
+        "name": "블록.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "최종_레이어.정규화."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "모델1"
+      },
+      "model2": {
+        "name": "모델2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -19341,7 +20303,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. xAI, DeepSeek, Qwen, Mistral, Z.AI(GLM), Moonshot(Kimi), Perplexity Sonar 등에서 엄선된 인기 모델로 라우팅됩니다.",
+    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), Perplexity Sonar의 엄선된 인기 모델 모음으로 라우팅합니다.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -21058,6 +22020,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Pruna P-Video-2 Pro 아바타를 사용하여 인물 사진과 음성으로 말하는 동영상을 생성합니다. 직접 녹음한 오디오 또는 텍스트 음성 변환으로 읽을 스크립트를 사용할 수 있습니다.",
+    "display_name": "Pruna P-Video-2 Pro 아바타",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "배경, 조명, 신체 움직임 등 인물 사진에서 보이는 움직임을 프롬프트에 추가합니다. 작성한 그대로의 프롬프트를 사용하고 동일한 시드로 결과를 정확히 재현하려면 끄세요."
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "동영상이 시작될 인물 사진입니다. 동영상은 1:2~4:1의 화면 비율을 유지하며, 1:5처럼 더 극단적인 비율의 이미지는 9:16 또는 16:9로 잘립니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "동영상에 표시되는 내용을 설명합니다. 최대 5000자입니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "1080p, 2k 및 4k는 768p 동영상을 업스케일합니다. 2k는 최대 150초, 4k는 최대 60초로 제한됩니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "생성에 사용할 시드입니다. enhance_prompt가 꺼져 있을 때에만 동일한 시드로 결과를 정확히 재현할 수 있습니다."
+      },
+      "speech": {
+        "name": "음성",
+        "tooltip": "텍스트 음성 변환 스크립트 또는 직접 녹음한 오디오로 동영상을 구동합니다."
+      },
+      "speech_language": {
+        "name": "언어"
+      },
+      "speech_script": {
+        "name": "스크립트"
+      },
+      "speech_voice": {
+        "name": "음성"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "선택적으로 마지막 프레임, 생성된 사운드 또는 오디오 트랙을 사용하여 Pruna 비디오 모델로 이미지를 비디오로 애니메이션화합니다.",
     "display_name": "Pruna P-Video-2 이미지를 비디오로",
@@ -21119,6 +22131,48 @@
       "video": {
         "name": "비디오",
         "tooltip": "업스케일할 비디오입니다. 최대 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Pruna 동영상 모델을 사용하여 참조 이미지, 동영상 및 오디오의 안내를 바탕으로 프롬프트에서 동영상을 생성합니다.",
+    "display_name": "Pruna P-Video-2 Pro 참조 이미지-동영상",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "모드"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
       }
     },
     "outputs": {
@@ -22996,15 +24050,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "바운딩 박스 높이(Z축)."
+        "tooltip": "바운딩 박스 높이(수직)."
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "바운딩 박스 길이(X축)."
+        "tooltip": "바운딩 박스 길이(앞뒤)."
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "바운딩 박스 너비(Y축). 다른 값들과 함께 0으로 설정하면 바운딩 박스를 생략합니다."
+        "tooltip": "바운딩 박스 너비(좌우). 다른 항목과 함께 0으로 설정하면 bbox를 건너뜁니다."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -23077,15 +24131,15 @@
       },
       "bbox_height": {
         "name": "바운딩 박스 높이",
-        "tooltip": "바운딩 박스 높이(Z축)."
+        "tooltip": "바운딩 박스 높이(수직)."
       },
       "bbox_length": {
         "name": "바운딩 박스 길이",
-        "tooltip": "바운딩 박스 길이(X축)."
+        "tooltip": "바운딩 박스 길이(앞뒤)."
       },
       "bbox_width": {
         "name": "바운딩 박스 너비",
-        "tooltip": "바운딩 박스 너비(Y축). 다른 값들과 함께 0으로 설정하면 바운딩 박스를 생략합니다."
+        "tooltip": "바운딩 박스 너비(좌우). 다른 항목과 함께 0으로 설정하면 bbox를 건너뜁니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -25284,6 +26338,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "CLIP으로 참조 이미지, 이미지 사고, 인터리브된 텍스트 또는 자기 수정을 인코딩합니다. 이 노드 앞에 HiDream-O1 참조 이미지를 연결하고 이미지에는 표준 샘플러를 사용하세요. 사고 없이 텍스트를 이미지로 생성하려면 CLIP 텍스트 인코드만 필요하며, 텍스트 전용 출력에는 텍스트 생성을 사용할 수 있습니다.",
+    "display_name": "SenseNova 컨디셔닝",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "이 호출 중 생성할 최대 토큰 수입니다."
+      },
+      "negative": {
+        "name": "네거티브"
+      },
+      "task": {
+        "name": "작업",
+        "tooltip": "작업을 선택합니다. 프롬프트 템플릿과 중지 동작은 자동으로 설정됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "컨디셔닝",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "이 호출에서 생성된 텍스트입니다. 전체 결과에는 SenseNova 인터리브 디코드를 사용하세요."
+      },
+      "2": {
+        "name": "네거티브",
+        "tooltip": "인터리브 및 자기 수정을 위해 업데이트된 네거티브 컨디셔닝입니다."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "U1.6 자기 수정을 포함하여 SenseNova 컨디셔닝에서 생성된 인터리브 기록으로부터 생성된 텍스트, 이미지 및 사고를 추출합니다. 루프에서는 누적을 비활성화한 상태로 루프 종료를 사용하세요. 입력 참조 이미지는 제외됩니다. 이미지가 생성되지 않은 경우 이미지를 사용하는 노드는 건너뜁니다.",
+    "display_name": "SenseNova 인터리브 디코드",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "samples": {
+        "name": "샘플",
+        "tooltip": "루프가 이미지 요청에서 끝난 경우의 마지막 KSampler 픽셀 latent입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "이미지",
+        "tooltip": null
+      },
+      "2": {
+        "name": "사고",
         "tooltip": null
       }
     }
@@ -28988,6 +30113,37 @@
       }
     }
   },
+  "TripoSmartUVNode": {
+    "description": "모델의 UV를 다시 언랩하고 텍스처, 리그 및 애니메이션을 새 레이아웃에 다시 매핑합니다. 입력은 삼각형 80,000개를 초과할 수 없으며(쿼드 1개는 삼각형 2개로 계산됨), 더 큰 모델은 먼저 Tripo: 리토폴로지 또는 face_limit로 줄이세요.",
+    "display_name": "Tripo: 스마트 UV",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "기존 텍스처를 새 UV 레이아웃에 베이크합니다. 끄면 베이크를 건너뛰고 색상 텍스처 없이 모델을 반환합니다."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "원본 모델이 FBX인 경우 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "원본 모델이 쿼드 메시 등의 FBX인 경우에만 값이 채워집니다."
+      },
+      "3": {
+        "name": "UV 아틀라스",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "이미지를 DINOv3와 Flux2 VAE로 인코딩하여 TripoSplat의 positive/negative 컨디셔닝을 생성하고, KSampler를 위한 고정 크기 노이즈 타겟(latent + 카메라)을 만듭니다.",
     "display_name": "TripoSplat 컨디셔닝",
@@ -29366,6 +30522,150 @@
       "0": {
         "name": "texts",
         "tooltip": "처리된 텍스트"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "텍스트 또는 이미지 옵션 중 하나를 선택합니다. `choice`를 옵션 이름이 입력으로 연결된 Branch 노드에 연결하거나 `option_index`를 사용하세요.",
+    "display_name": "TypeSafe Jev (선택)",
+    "inputs": {
+      "images": {
+        "name": "이미지",
+        "tooltip": "질문의 대상인 이미지입니다. 총 최대 32개까지 가능하며, 4개를 초과하면 더 작은 크기로 전송됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "옵션",
+        "tooltip": "한 줄에 하나의 옵션을 입력하세요. 어느 옵션에도 해당하지 않는 입력을 위해 `other`와 같은 옵션을 추가하세요."
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "옵션이 답하는 질문입니다. 여러 입력이 있는 경우 소켓 이름을 사용하세요. 예: 'image_1에 표시된 계절은 무엇인가요?'"
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "프롬프트나 LLM 응답처럼 질문의 대상이 되는 텍스트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "옵션 목록에서 선택한 옵션의 위치이며, 0부터 시작합니다."
+      },
+      "2": {
+        "name": "신뢰도",
+        "tooltip": "Jev의 확신 정도입니다. 0(명확한 우승자 없음)부터 1(확실함)까지입니다."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "배치에서 이미지 하나를 선택합니다. 선택한 이미지를 유지하려면 `index`를 Get Image from Batch에 연결하세요.",
+    "display_name": "TypeSafe Jev (이미지 선택)",
+    "inputs": {
+      "images": {
+        "name": "이미지",
+        "tooltip": "선택할 이미지입니다. 2개에서 32개까지 가능합니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "선택할 이미지입니다. 프롬프트와 가장 잘 일치하는 이미지를 선택하려면 프롬프트를 `text`에 연결하세요."
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "이미지가 만들어진 프롬프트처럼 질문의 대상이 되는 텍스트입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "배치에서 선택한 이미지의 위치이며, 0부터 시작합니다."
+      },
+      "1": {
+        "name": "신뢰도",
+        "tooltip": "Jev의 확신 정도입니다. 0(명확한 우승자 없음)부터 1(확실함)까지입니다."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "텍스트 또는 이미지를 1점에서 10점으로 평가합니다. 점수에 따라 동작하려면 `result`를 If/Else Switch 노드에 연결하세요.",
+    "display_name": "TypeSafe Jev (점수)",
+    "inputs": {
+      "images": {
+        "name": "이미지",
+        "tooltip": "질문의 대상인 이미지입니다. 총 최대 32개까지 가능하며, 4개를 초과하면 더 작은 크기로 전송됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "1에서 10까지의 척도로 평가할 대상입니다. 예시처럼 1과 10이 무엇을 의미하는지 명시하세요."
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "질문의 대상이 되는 텍스트입니다. 예: 프롬프트 또는 LLM 응답."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "점수가 이 값 이상이면 `result`는 true입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "결과",
+        "tooltip": null
+      },
+      "1": {
+        "name": "점수",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "텍스트나 이미지에 대해 예/아니요 질문을 합니다. 두 경로 중 하나를 선택하려면 `result`를 If/Else Switch 노드에 연결하세요.",
+    "display_name": "TypeSafe Jev (예/아니요)",
+    "inputs": {
+      "images": {
+        "name": "이미지",
+        "tooltip": "질문의 대상이 되는 이미지입니다. 총 최대 32개의 이미지까지 가능하며, 4개를 초과하면 더 작은 크기로 전송됩니다."
+      },
+      "model": {
+        "name": "모델"
+      },
+      "question": {
+        "name": "질문",
+        "tooltip": "연결된 항목에 관한 예 또는 아니요로 답할 수 있는 질문입니다. 예가 실행할 경우가 되도록 질문하세요. 입력이 여러 개인 경우 소켓 이름을 사용하세요. 예: 'image_2에 image_1과 동일한 사람이 있나요?'"
+      },
+      "text": {
+        "name": "텍스트",
+        "tooltip": "질문의 대상이 되는 텍스트입니다. 예: 프롬프트 또는 LLM 응답."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "예의 확률이 이 값 이상이면 답은 예입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "결과",
+        "tooltip": null
+      },
+      "1": {
+        "name": "답변",
+        "tooltip": null
+      },
+      "2": {
+        "name": "확률",
+        "tooltip": null
       }
     }
   },
@@ -30305,6 +31605,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Bonneel et al. 2015에 따른 시간적 일관성 처리로, 드리프트에 대한 충실도 항을 포함합니다. 각 프레임은 가이드 동영상의 optical flow를 따라 인접 프레임을 따르면서도 자체 세부 사항을 유지합니다.",
+    "display_name": "동영상 깜빡임 제거",
+    "inputs": {
+      "direction": {
+        "name": "방향",
+        "tooltip": "bidirectional은 정방향 및 역방향 패스를 평균내므로, 두 배의 시간으로 움직임을 뒤따르는 현상을 방지합니다."
+      },
+      "guide": {
+        "name": "가이드",
+        "tooltip": "움직임을 따를 안정적인 소스 프레임이며, 해상도는 관계없습니다. 기본값은 images이며, 이 경우 깜빡임 제거 효과가 더 적습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "프레임별로 업스케일하거나 처리한 동영상처럼 깜빡임이 있는 프레임입니다."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "각 프레임이 인접 프레임을 따르는 정도입니다. 값이 높을수록 깜빡임이 더 많이 제거되고 미세한 세부 사항은 더 부드러워집니다."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "프레임과 모션 보정된 인접 프레임 간의 변화가 이 값보다 크면 실제 변화로 간주되어 덜 부드럽게 처리됩니다. 0이면 모든 변화가 동일하게 부드럽게 처리됩니다."
       }
     },
     "outputs": {

@@ -12,6 +12,7 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { cancelPendingLinkBadgeStackExpansion } from './linkBadges'
 import {
   cancelLinkHideTransition,
   startLinkHideTransitions
@@ -100,9 +101,10 @@ export function deleteLinks(
 }
 
 export function getLinkStackMenuOptions(): IContextMenuValue<string>[] {
-  return [
-    { content: st('contextMenu.Show Links', 'Show Links'), value: 'Show Links' }
-  ]
+  return ['Rename', 'Show Links'].map((value) => ({
+    content: st(`contextMenu.${value}`, value),
+    value
+  }))
 }
 
 export function getVisibleRerouteLink(
@@ -129,29 +131,35 @@ export function showLink(
   })
 }
 
-export function renameLink(
+export function renameLinks(
   host: LinkMutationHost,
   scope: GraphScope,
-  linkId: LinkId,
+  linkIds: Iterable<LinkId>,
   value: string
 ): void {
-  mutateLink(host, () =>
-    useLinkPresentationStore().patch(scope, linkId, {
-      label: value.trim() || undefined
-    })
-  )
+  const label = value.trim() || undefined
+  mutateLink(host, () => {
+    const store = useLinkPresentationStore()
+    for (const linkId of linkIds) store.patch(scope, linkId, { label })
+  })
 }
 
+/** Prompts for one name and gives it to every listed link, seeded with the first link's name. */
 export function promptRenameLinkBadge(
   host: LinkRenameHost,
   scope: GraphScope,
-  linkId: LinkId,
-  event: CanvasPointerEvent
+  linkIds: readonly LinkId[],
+  event: CanvasPointerEvent,
+  onRename?: (value: string) => void
 ): void {
+  cancelPendingLinkBadgeStackExpansion(host)
   host.prompt(
     t('contextMenu.Rename'),
-    useLinkPresentationStore().getPresentation(scope, linkId)?.label ?? '',
-    (value) => renameLink(host, scope, linkId, value),
+    useLinkPresentationStore().getPresentation(scope, linkIds[0])?.label ?? '',
+    (value) => {
+      renameLinks(host, scope, linkIds, value)
+      onRename?.(value)
+    },
     event
   )
 }

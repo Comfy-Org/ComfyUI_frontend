@@ -54,7 +54,8 @@ async function signIn() {
   provideCurrentUser(() => ({
     userEmail: computed(() => null),
     isApiKeyLogin: computed(() => true),
-    isLoggedIn: computed(() => true)
+    isLoggedIn: computed(() => true),
+    resolvedUserInfo: computed(() => null)
   }))
   await useTeamWorkspaceStore().initialize()
 }

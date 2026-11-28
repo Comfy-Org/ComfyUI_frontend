@@ -14,9 +14,9 @@
           :class="
             cn(
               'flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-2xs/none font-semibold tabular-nums',
-              severity === 'error'
-                ? 'bg-destructive/90 text-white'
-                : 'bg-warning text-warning-foreground'
+              severity === 'error' && 'bg-destructive/90 text-white',
+              severity === 'missing' && 'bg-warning text-warning-foreground',
+              severity === 'notice' && 'bg-secondary text-foreground'
             )
           "
         >
@@ -73,7 +73,7 @@ const {
 } = defineProps<{
   title: string
   count: number
-  severity: ErrorGroupSeverity
+  severity: ErrorGroupSeverity | 'notice'
   class?: string
 }>()
 

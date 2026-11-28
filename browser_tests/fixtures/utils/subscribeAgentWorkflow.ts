@@ -18,7 +18,6 @@ export async function subscribeAgentWorkflow({
 }: SubscribeAgentWorkflowInput): Promise<string[]> {
   const outboundFrames: string[] = []
   socket.onMessage((message) => outboundFrames.push(String(message)))
-  await agentPanel.selectWorkflow()
   await agentPanel.sendMessage(prompt)
   await expect
     .poll(() => outboundFrames, { timeout: 15_000 })

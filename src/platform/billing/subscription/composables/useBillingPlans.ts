@@ -10,6 +10,7 @@ import { zSubscriptionPaymentRecovery } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -67,7 +68,8 @@ function reportCatalogFallback(err: unknown, hasCachedPlans: boolean): void {
       operation: 'load',
       outcome: hasCachedPlans ? 'recovered' : 'failed'
     },
-    level: 'warning'
+    level: 'warning',
+    ...sessionEndedReporting(err)
   })
 }
 

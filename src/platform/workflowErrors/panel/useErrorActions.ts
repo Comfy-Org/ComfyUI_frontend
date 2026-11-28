@@ -1,10 +1,9 @@
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 export function useErrorActions() {
   const telemetry = useTelemetry()
-  const commandStore = useCommandStore()
   const { staticUrls } = useExternalLink()
 
   function openGitHubIssues() {
@@ -21,7 +20,7 @@ export function useErrorActions() {
       is_external: true,
       source: 'error_dialog'
     })
-    return commandStore.execute('Comfy.ContactSupport')
+    openSupportForm('bug')
   }
 
   function findOnGitHub(errorMessage: string) {

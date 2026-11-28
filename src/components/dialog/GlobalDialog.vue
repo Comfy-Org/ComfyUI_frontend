@@ -16,6 +16,7 @@
           "
           :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
+          :grows-down="!!item.dialogComponentProps.growsDown"
           :data-dialog-key="item.key"
           @escape-key-down="
             (e) => onRekaEscapeKeyDown(item.dialogComponentProps, e)

@@ -20,6 +20,9 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   ),
   canSubscribeSelfServe: computed(() => false),
   canOpenPlans: computed(() => receiveServerFact('can_open_plans', false)),
+  openPlansDenial: computed(() =>
+    receiveServerFact('denied_reasons.can_open_plans', undefined)
+  ),
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
   canRevertScheduledChange: computed(() =>

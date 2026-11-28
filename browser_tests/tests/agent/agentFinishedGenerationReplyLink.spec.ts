@@ -19,17 +19,12 @@ test.describe(
       })
       await expect(resultLink).toBeVisible()
 
-      // The recording hands the panel an absolute
-      // https://cloud.comfy.org/api/view href. Matching only the tail of it
-      // would keep passing if that origin were rendered verbatim, which is the
-      // regression a "usable link" case has to catch, so resolve the href and
-      // pin that it was rebased onto the origin actually serving the page.
       const href = await resultLink.getAttribute('href')
       expect(href).not.toBeNull()
       const resolved = new URL(href!, page.url())
       expect(resolved.origin).toBe(new URL(page.url()).origin)
       expect(`${resolved.pathname}${resolved.search}`).toBe(
-        '/api/view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output'
+        '/api/view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output&workspace_id=ws-personal'
       )
     })
   }

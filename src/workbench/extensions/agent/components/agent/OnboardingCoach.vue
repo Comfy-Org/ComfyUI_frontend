@@ -286,7 +286,8 @@ useEventListener(
     if (!active.value || !target.value || event.key !== 'Escape') return
     event.preventDefault()
     event.stopPropagation()
-    onSkip()
+    if (isLast.value) onNext()
+    else onSkip()
   },
   { capture: true }
 )

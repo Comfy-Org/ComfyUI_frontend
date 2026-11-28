@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { normalizePackKeys } from '@/platform/customNodes/manager/utils/packUtils'
 import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 
@@ -61,7 +61,7 @@ export const useManagerQueue = (
    * @returns True if the task belongs to this client
    */
   const isTaskFromThisClient = (task: Task): boolean =>
-    task.client_id === app.api.clientId
+    task.client_id === useApp().api.clientId
 
   /**
    * Check if a history task is associated with this client.
@@ -69,7 +69,7 @@ export const useManagerQueue = (
    * @returns True if the task belongs to this client
    */
   const isHistoryTaskFromThisClient = (task: HistoryTaskItem): boolean =>
-    task.client_id === app.api.clientId
+    task.client_id === useApp().api.clientId
 
   /**
    * Filter queue tasks by client id.
@@ -106,7 +106,7 @@ export const useManagerQueue = (
 
   // WebSocket event listener for task done
   const cleanupTaskDoneListener = useEventListener(
-    app.api,
+    useApp().api,
     MANAGER_WS_TASK_DONE_NAME,
     (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
       if (event.type === MANAGER_WS_TASK_DONE_NAME) {
@@ -128,7 +128,7 @@ export const useManagerQueue = (
 
   // WebSocket event listener for task started
   const cleanupTaskStartedListener = useEventListener(
-    app.api,
+    useApp().api,
     MANAGER_WS_TASK_STARTED_NAME,
     (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
       if (event.type === MANAGER_WS_TASK_STARTED_NAME) {

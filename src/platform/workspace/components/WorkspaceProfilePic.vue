@@ -2,9 +2,8 @@
   <div
     :class="
       cn(
-        'flex aspect-square',
-        large ? 'size-12' : 'size-8',
-        'items-center justify-center rounded-md bg-secondary text-base font-semibold text-foreground'
+        'flex aspect-square items-center justify-center rounded-md bg-secondary text-base font-semibold text-foreground',
+        sizeClass
       )
     "
     :style="workspaceAvatarStyle(workspaceName, subscriptionTier)"
@@ -22,12 +21,19 @@ import { computed } from 'vue'
 const {
   workspaceName,
   subscriptionTier,
-  large = false
+  large = false,
+  small = false
 } = defineProps<{
   workspaceName: string
   subscriptionTier?: SubscriptionTier | null
   large?: boolean
+  small?: boolean
 }>()
+
+const sizeClass = computed(() => {
+  if (large) return 'size-12'
+  return small ? 'size-6 text-xs' : 'size-8'
+})
 
 const letter = computed(() => [...workspaceName][0]?.toUpperCase() ?? '?')
 </script>

@@ -26,6 +26,34 @@ export function createMultilineInputElement(
   return element
 }
 
+function mirrorElementValueWrites(
+  widget: BaseDOMWidget<string>,
+  element: HTMLTextAreaElement
+) {
+  const native = Object.getOwnPropertyDescriptor(
+    HTMLTextAreaElement.prototype,
+    'value'
+  )
+  const nativeGet = native?.get
+  const nativeSet = native?.set
+  if (!nativeGet || !nativeSet) return
+  let mirroring = false
+  Object.defineProperty(element, 'value', {
+    configurable: true,
+    get: () => nativeGet.call(element),
+    set: (value: string) => {
+      nativeSet.call(element, value)
+      if (mirroring) return
+      mirroring = true
+      try {
+        widget.options.setValue?.(nativeGet.call(element))
+      } finally {
+        mirroring = false
+      }
+    }
+  })
+}
+
 /**
  * Wires textarea value propagation, trackpad gestures, and middle-button canvas
  * panning onto a `customtext` DOM widget, torn down via the widget's `onRemove`.
@@ -36,6 +64,8 @@ export function bindMultilineTextareaWidget(
 ): void {
   const controller = new AbortController()
   const { signal } = controller
+
+  mirrorElementValueWrites(widget, element)
 
   element.addEventListener(
     'input',
@@ -125,8 +155,6 @@ export function createPromotedMultilineWidget(
 ): IBaseWidget | undefined {
   const { subgraphNode, input, widgetId, sourceWidget } = context
 
-  // Only materialize once the host node is settled in its graph; clone/configure
-  // run with a transient id and would leak duplicate DOM widgets.
   const graph = subgraphNode.graph
   if (!graph || graph.getNodeById(subgraphNode.id) !== subgraphNode)
     return undefined
@@ -151,6 +179,7 @@ export function createPromotedMultilineWidget(
     type: 'customtext',
     element,
     options: {
+      vueNodeRenderer: 'native',
       hideOnZoom: true,
       minNodeSize: [400, 200],
       getValue: readValue,

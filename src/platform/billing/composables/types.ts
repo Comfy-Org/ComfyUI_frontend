@@ -152,7 +152,7 @@ export interface BillingStatusReadOptions {
 export interface BillingActions {
   initialize: () => Promise<void>
   fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
-  fetchBalance: () => Promise<void>
+  fetchBalance: (options?: BillingStatusReadOptions) => Promise<void>
   subscribe: (
     planSlug: string,
     options?: SubscribeOptions
@@ -193,6 +193,8 @@ export interface BillingState {
   teamCreditStops: ComputedRef<TeamCreditStops | null>
   /** The served unpaid initial-signup invoice holding plan changes; null when none is served. */
   subscriptionPaymentRecovery: ComputedRef<SubscriptionPaymentRecovery | null>
+  /** The same served fact on billing status; null when status serves none. */
+  statusPaymentRecovery: ComputedRef<SubscriptionPaymentRecovery | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<TeamCreditStopSummary | null>
   /** Effective member limit for the current workspace; zero is unlimited. */
@@ -201,6 +203,8 @@ export interface BillingState {
   occupiedSeats: ComputedRef<number | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
+  /** True once a balance read failed and no later read has succeeded. */
+  balanceReadFailed: ComputedRef<boolean>
   canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>

@@ -116,7 +116,6 @@ test.describe(
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('Inspect the workflow')
       await hostSocket.waitForSubscribe()
 

@@ -19,6 +19,11 @@ describe('starter prompt identity', () => {
     expect(STARTER_PROMPT_IDS).toHaveLength(
       enMain.agent.suggestedPrompts.treatment.cloud.length
     )
+    expect(
+      enMain.agent.proactiveGreeting.controlPrompts.map((_, index) =>
+        starterPromptIdAt(index)
+      )
+    ).toEqual(['slot_1', 'slot_2', 'slot_3'])
   })
 
   it('names a slot beyond the table rather than borrowing a neighbour', () => {

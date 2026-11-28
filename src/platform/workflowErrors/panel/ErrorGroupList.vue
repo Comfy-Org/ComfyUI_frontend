@@ -18,7 +18,7 @@
 
     <div class="min-w-0 flex-1 overflow-y-auto bg-background p-3">
       <div
-        v-if="filteredGroups.length === 0"
+        v-if="hasNoResults"
         role="status"
         class="px-1 pt-5 pb-15 text-center text-sm text-muted-foreground"
       >
@@ -29,7 +29,10 @@
         }}
       </div>
 
-      <div v-else class="overflow-hidden rounded-lg border border-secondary">
+      <div
+        v-else-if="filteredGroups.length > 0"
+        class="overflow-hidden rounded-lg border border-secondary"
+      >
         <!-- Errors summary hero -->
         <div data-testid="errors-summary-hero" class="bg-foreground/5">
           <div role="status" class="flex items-center gap-2 p-2">
@@ -404,6 +407,14 @@
           </ErrorCardSection>
         </TransitionGroup>
       </div>
+
+      <DeprecatedNodesSection
+        :groups="deprecatedNodeGroups"
+        :highlighted-node-ids="selectionMatchedAssetNodeIds"
+        :collapse="isSectionCollapsed(DEPRECATED_NODES_KEY)"
+        @update:collapse="setSectionCollapsed(DEPRECATED_NODES_KEY, $event)"
+        @locate-node="handleLocateAssetNode"
+      />
     </div>
   </div>
 </template>
@@ -434,6 +445,7 @@ import ErrorNodeCard from './ErrorNodeCard.vue'
 import LocateNodeButton from './LocateNodeButton.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/workflowErrors/nodeReplacement/components/SwapNodesCard.vue'
+import DeprecatedNodesSection from '@/platform/workflowErrors/nodeReplacement/components/DeprecatedNodesSection.vue'
 import MissingModelCard from '@/platform/workflowErrors/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/workflowErrors/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
@@ -518,6 +530,7 @@ const { missingNodePacks } = manager.useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   manager.usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
+const DEPRECATED_NODES_KEY = 'deprecated_nodes'
 const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const searchQuery = ref('')
@@ -590,6 +603,7 @@ const {
   missingModelGroups,
   missingMediaGroups,
   swapNodeGroups,
+  deprecatedNodeGroups,
   hasSelection,
   selectedNodeCount,
   selectedNodeTitle,
@@ -599,6 +613,11 @@ const {
   selectionErrorCount,
   errorNodeCount
 } = useErrorGroups(searchQuery, () => selectedItems)
+
+const hasNoResults = computed(
+  () =>
+    filteredGroups.value.length === 0 && deprecatedNodeGroups.value.length === 0
+)
 
 const errorCount = computed(() =>
   filteredGroups.value

@@ -8,6 +8,7 @@ import type { Ref } from 'vue'
 import { CANVAS_NAVIGATION_PRESETS } from './canvasNavigation'
 import type { SettingParams, Settings } from './types'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { SettingChangedMetadata } from '@comfyorg/telemetry/types'
 
 export const getSettingInfo = (setting: SettingParams) => {
@@ -31,10 +32,11 @@ interface AppliedSetting<TValue> {
 }
 
 type RevertibleSettingId =
+  | 'Comfy.Extension.Disabled'
   | 'Comfy.Extension.DisabledPacks'
   | 'Comfy.AgentPanel.OnboardedScopes'
 
-type SettingWriteOutcome =
+export type SettingWriteOutcome =
   | { status: 'saved' | 'unchanged' }
   | { status: 'refused'; statusCode: number; statusText: string }
   | { status: 'indeterminate'; statusCode: number; statusText: string }
@@ -144,6 +146,12 @@ export interface SettingPersistence {
   storeSettings(settings: Partial<Settings>): Promise<unknown>
 }
 
+function isSessionEnded(error: unknown): boolean {
+  return (
+    error instanceof Error && (error as { status?: unknown }).status === 401
+  )
+}
+
 /** The setting store's state and actions, persisting through the given port. */
 export function settingStoreSetup(persistence: SettingPersistence) {
   const settingValues: Ref<Partial<Settings>> = ref({})
@@ -167,14 +175,24 @@ export function settingStoreSetup(persistence: SettingPersistence) {
         () => persistence.getSettings({ skipStatusRetry: true }),
         {
           retries: 3,
-          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
+          delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000),
+          shouldRetry: (error) => !isSessionEnded(error)
         }
       )
       await migrateZoomThresholdToFontSize()
       await migrateCanvasNavigationOverrides()
     },
     undefined,
-    { immediate: false }
+    {
+      immediate: false,
+      onError: (error) => {
+        if (isSessionEnded(error)) return
+        reportError(error, {
+          surface: 'platform',
+          errorType: 'error_loading_settings'
+        })
+      }
+    }
   )
 
   async function load(): Promise<void> {
@@ -265,17 +283,17 @@ export function settingStoreSetup(persistence: SettingPersistence) {
     }
 
     if (!response.ok) {
-      const outcome = {
-        status: PRE_STORAGE_REFUSAL_STATUSES.has(response.status)
-          ? ('refused' as const)
-          : ('indeterminate' as const),
+      const status = PRE_STORAGE_REFUSAL_STATUSES.has(response.status)
+        ? 'refused'
+        : 'indeterminate'
+      if (status === 'refused') {
+        await revertSettingLocally(key, hadValue, applied)
+      }
+      return {
+        status,
         statusCode: response.status,
         statusText: response.statusText
       }
-      if (outcome.status === 'refused') {
-        await revertSettingLocally(key, hadValue, applied)
-      }
-      return outcome
     }
 
     const event = settingChangedEvent(settingsById.value[key], key, applied)

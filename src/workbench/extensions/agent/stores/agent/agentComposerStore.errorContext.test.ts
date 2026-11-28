@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useAgentComposerStore } from './agentComposerStore'
 
@@ -123,12 +122,7 @@ describe('agentComposerStore error context', () => {
     const store = useAgentComposerStore()
     store.setErrorContext(errorContext())
 
-    store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    store.startGateHold('cm-1')
 
     expect(store.errorContext).toBeNull()
   })

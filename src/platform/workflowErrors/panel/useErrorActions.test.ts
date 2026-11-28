@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 
 import { useErrorActions } from './useErrorActions'
 
-beforeEach(() => {
-  vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
-})
+const REPORT_A_BUG_URL =
+  'https://comfysupport.portal.usepylon.com/forms/report-a-bug'
 
 const mocks = vi.hoisted(() => ({
   trackUiButtonClicked: vi.fn(),
@@ -16,6 +16,12 @@ const mocks = vi.hoisted(() => ({
     trackHelpResourceClicked: ReturnType<typeof vi.fn>
   } | null
 }))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+beforeEach(() => {
+  provideCurrentUser(useCurrentUser)
+})
 
 vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () => mocks.telemetry
@@ -65,48 +71,34 @@ describe('useErrorActions', () => {
   })
 
   describe('contactSupport', () => {
-    it('tracks the help resource click and executes the contact support command', async () => {
-      vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+    it('tracks the help resource click and opens the Report a Bug form', () => {
       const { contactSupport } = useErrorActions()
 
-      const result = await contactSupport()
+      contactSupport()
 
       expect(mocks.trackHelpResourceClicked).toHaveBeenCalledWith({
         resource_type: 'help_feedback',
         is_external: true,
         source: 'error_dialog'
       })
-      expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Comfy.ContactSupport'
+      expect(windowOpenSpy).toHaveBeenCalledExactlyOnceWith(
+        REPORT_A_BUG_URL,
+        '_blank',
+        'noopener,noreferrer'
       )
-      expect(result).toBeUndefined()
     })
 
-    it('returns the execute promise when the command is async', async () => {
-      let resolve!: () => void
-      const promise = new Promise<void>((resolvePromise) => {
-        resolve = resolvePromise
-      })
-      vi.mocked(useCommandStore().execute).mockReturnValue(promise)
-      const { contactSupport } = useErrorActions()
-      const settled = vi.fn()
-      const result = contactSupport().then(settled)
-      await Promise.resolve()
-      expect(settled).not.toHaveBeenCalled()
-      resolve()
-      await result
-      expect(settled).toHaveBeenCalledExactlyOnceWith(undefined)
-    })
-
-    it('still executes the command when telemetry is unavailable', () => {
+    it('still opens the form when telemetry is unavailable', () => {
       mocks.telemetry = null
       const { contactSupport } = useErrorActions()
 
-      void contactSupport()
+      contactSupport()
 
       expect(mocks.trackHelpResourceClicked).not.toHaveBeenCalled()
-      expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Comfy.ContactSupport'
+      expect(windowOpenSpy).toHaveBeenCalledExactlyOnceWith(
+        REPORT_A_BUG_URL,
+        '_blank',
+        'noopener,noreferrer'
       )
     })
   })
