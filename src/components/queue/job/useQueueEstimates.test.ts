@@ -1,11 +1,13 @@
 import { computed, ref } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
 
 import { formatElapsedTime, useQueueEstimates } from './useQueueEstimates'
 import type { UseQueueEstimatesOptions } from './useQueueEstimates'
+
+vi.mock(import('@/scripts/api'))
 
 type QueueStore = UseQueueEstimatesOptions['queueStore']
 type ExecutionStore = UseQueueEstimatesOptions['executionStore']
@@ -34,6 +36,25 @@ const createExecutionStore = (data?: Partial<ExecutionStore>): ExecutionStore =>
     runningWorkflowCount: 1,
     ...data
   }) as ExecutionStore
+
+function createWorkflowTask(
+  workflowId: string | undefined,
+  durationSeconds?: number,
+  start = 1000
+): TaskItemImpl {
+  return new TaskItemImpl({
+    id: workflowId ?? 'legacy-job',
+    workflow_id: workflowId,
+    status: durationSeconds === undefined ? 'in_progress' : 'completed',
+    create_time: start,
+    update_time: start,
+    last_state_update: start,
+    priority: 0,
+    execution_start_time: start,
+    execution_end_time:
+      durationSeconds === undefined ? undefined : start + durationSeconds * 1000
+  })
+}
 
 type HarnessOptions = {
   queueStore?: QueueStore
@@ -86,6 +107,115 @@ describe('formatElapsedTime', () => {
 })
 
 describe('useQueueEstimates', () => {
+  it('estimates a running job from its own workflow history and reacts to a different job', () => {
+    const queueStore = createQueueStore({
+      historyTasks: [
+        createWorkflowTask('video', 100),
+        createWorkflowTask('video', 120),
+        createWorkflowTask('image', 10),
+        createWorkflowTask('image', 20)
+      ]
+    })
+    const harness = createHarness({
+      queueStore,
+      task: createWorkflowTask('video'),
+      jobState: 'running',
+      now: 31000
+    })
+
+    expect(harness.estimateRemainingRangeSeconds.value).toEqual([80, 90])
+
+    harness.taskRef.value = createWorkflowTask('image', undefined, 27000)
+
+    expect(harness.estimateRemainingRangeSeconds.value).toEqual([11, 16])
+  })
+
+  it.for([
+    { name: 'no workflow ID', workflowId: undefined },
+    { name: 'no matching history', workflowId: 'new-workflow' },
+    { name: 'no usable matching durations', workflowId: 'incomplete-workflow' }
+  ])('uses global history with $name', ({ workflowId }) => {
+    const { estimateRemainingRangeSeconds } = createHarness({
+      queueStore: createQueueStore({
+        historyTasks: [
+          createWorkflowTask('video', 100),
+          createWorkflowTask('video', 120),
+          createWorkflowTask('image', 10),
+          createWorkflowTask('image', 20),
+          new TaskItemImpl({
+            ...createWorkflowTask('incomplete-workflow').job,
+            status: 'failed'
+          })
+        ]
+      }),
+      task: createWorkflowTask(workflowId),
+      jobState: 'running',
+      now: 31000
+    })
+
+    expect(estimateRemainingRangeSeconds.value).toEqual([33, 90])
+  })
+
+  it('uses the last 20 matching durations even when other workflows fill recent history', () => {
+    const { estimateRemainingRangeSeconds } = createHarness({
+      queueStore: createQueueStore({
+        historyTasks: [
+          ...Array.from({ length: 25 }, (_, index) =>
+            createWorkflowTask('video', index + 101)
+          ),
+          ...Array.from({ length: 21 }, () => createWorkflowTask('image', 10))
+        ]
+      }),
+      task: createWorkflowTask('video'),
+      jobState: 'running',
+      now: 31000
+    })
+
+    expect(estimateRemainingRangeSeconds.value).toEqual([86, 91])
+  })
+
+  it('estimates when a runner becomes free using each running workflow history', () => {
+    const { estimateRangeSeconds } = createHarness({
+      queueStore: createQueueStore({
+        historyTasks: [
+          createWorkflowTask('video', 100),
+          createWorkflowTask('video', 120),
+          createWorkflowTask('image', 10),
+          createWorkflowTask('image', 20)
+        ],
+        runningTasks: [
+          createWorkflowTask('video'),
+          createWorkflowTask('image', undefined, 27000)
+        ]
+      }),
+      task: createWorkflowTask('video'),
+      jobState: 'pending',
+      jobsAhead: 0,
+      now: 31000
+    })
+
+    expect(estimateRangeSeconds.value).toEqual([11, 16])
+  })
+
+  it('keeps global history for queued batches containing unknown workflows', () => {
+    const { estimateRangeSeconds } = createHarness({
+      queueStore: createQueueStore({
+        historyTasks: [
+          createWorkflowTask('video', 100),
+          createWorkflowTask('video', 120),
+          createWorkflowTask('image', 10),
+          createWorkflowTask('image', 20)
+        ]
+      }),
+      executionStore: createExecutionStore({ runningWorkflowCount: 2 }),
+      task: createWorkflowTask('video'),
+      jobState: 'pending',
+      jobsAhead: 5
+    })
+
+    expect(estimateRangeSeconds.value).toEqual([188, 360])
+  })
+
   it('only shows parallel queued stats for pending jobs seen with multiple runners', () => {
     const ready = createHarness({
       executionStore: createExecutionStore({ runningWorkflowCount: 2 }),
