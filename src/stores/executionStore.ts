@@ -51,6 +51,7 @@ import {
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { mergeNodeOutput } from '@/utils/nodeOutputUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { findLast } from '@/utils/arrayUtil'
 import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { zQueueInfo } from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
@@ -634,7 +635,7 @@ export const useExecutionStore = defineStore('execution', () => {
   function focusedJobFor(workflow: ComfyWorkflow): JobId | undefined {
     const activeId = activeJobId.value
     if (activeId && isJobOwnedBy(activeId, workflow)) return activeId
-    return startedJobIdsByStart(queuedJobs.value).findLast((jobId) =>
+    return findLast(startedJobIdsByStart(queuedJobs.value), (jobId) =>
       isJobOwnedBy(jobId, workflow)
     )
   }
@@ -682,7 +683,9 @@ export const useExecutionStore = defineStore('execution', () => {
   function handOffActiveJob() {
     const started = startedJobIdsByStart(queuedJobs.value)
     setActiveJob(
-      started.findLast((jobId) => rememberStampAndCheckActiveWorkflow(jobId)) ??
+      findLast(started, (jobId) =>
+        rememberStampAndCheckActiveWorkflow(jobId)
+      ) ??
         started.at(-1) ??
         null
     )

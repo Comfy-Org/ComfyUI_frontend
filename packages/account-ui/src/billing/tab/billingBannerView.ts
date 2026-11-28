@@ -227,7 +227,5 @@ export function selectBillingBanners(
   return views
     .filter(({ kind }) => !(suppressCredit && CREDIT_KINDS.has(kind)))
     .filter(({ kind }) => !(hidePlanNotStarted && kind === 'planNotStarted'))
-    .toSorted(
-      (a, b) => STACK_ORDER.indexOf(a.kind) - STACK_ORDER.indexOf(b.kind)
-    )
+    .sort((a, b) => STACK_ORDER.indexOf(a.kind) - STACK_ORDER.indexOf(b.kind))
 }

@@ -1,3 +1,5 @@
+import { findLastIndex } from '@/utils/arrayUtil'
+
 import { $el } from './utils'
 
 interface ToggleSwitchItem {
@@ -31,7 +33,7 @@ export function toggleSwitch(
       : { ...item, value: item.value ?? item.text }
   )
   const initialIndex = Math.max(
-    switchItems.findLastIndex((item) => item.selected),
+    findLastIndex(switchItems, (item) => item.selected),
     0
   )
 

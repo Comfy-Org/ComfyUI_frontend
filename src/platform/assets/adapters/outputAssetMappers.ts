@@ -17,6 +17,7 @@ import {
   parseFilePath
 } from '@/utils/formatUtil'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { findLast } from '@/utils/arrayUtil'
 
 /**
  * Extract asset type from tags array
@@ -135,11 +136,9 @@ export function unflattenOutputAssets(
   const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
     const ordered = [...assets].sort(byCreatedAtAsc)
     const representative =
-      [...ordered]
-        .sort(byIsTemp)
-        .findLast((asset) =>
-          isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
-        ) ?? ordered.at(-1)!
+      findLast([...ordered].sort(byIsTemp), (asset) =>
+        isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+      ) ?? ordered.at(-1)!
     return {
       ...representative,
       id: job_id,
