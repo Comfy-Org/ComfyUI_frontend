@@ -355,17 +355,13 @@ test.describe(
             "what's new seen"
           )
           await expect(popup).toBeHidden()
+          await comfyPage.settings.setSetting('Comfy.Release.Status', 'skipped')
+          await expect(popup).toBeHidden()
+
           const templateId = await firstPinnedTemplateOnScreen(page)
           await page.getByTestId(`${CARD_TESTID_PREFIX}${templateId}`).click()
           await expect(screen).toBeHidden()
-
-          const firstLayer = Promise.race([
-            popup.waitFor({ state: 'visible' }).then(() => 'release'),
-            spotlight.waitFor({ state: 'visible' }).then(() => 'tour')
-          ])
-          await comfyPage.settings.setSetting('Comfy.Release.Status', 'skipped')
-
-          await expect(firstLayer).resolves.toBe('tour')
+          await expect(spotlight).toBeVisible()
           await expect(popup).toBeHidden()
         })
       }

@@ -224,7 +224,10 @@ beforeEach(() => {
     engine.activeTour = null
     return true
   })
-  vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(true)
+  vi.mocked(useOnboardingTourStore().startTour).mockImplementation(async () => {
+    tourStarts('firstRun')
+    return true
+  })
   mocks.workflowStatus = ref(new Map())
   vi.mocked(useExecutionStore().getWorkflowStatus).mockImplementation(
     (workflow) => mocks.workflowStatus.value.get(workflow)
