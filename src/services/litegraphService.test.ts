@@ -8,6 +8,8 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
+import { convertContextMenuToOptions } from '@/composables/graph/contextMenuConverter'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -300,6 +302,32 @@ describe('canvas image context menu', () => {
       )
     }
   )
+  it('tags the preview display choices with their menu ids', async () => {
+    const nodeName = 'TestPreviewDisplayMenu'
+    await useLitegraphService().registerNodeDef(
+      nodeName,
+      createNodeDefV1({ name: nodeName })
+    )
+    const node = LiteGraph.createNode(nodeName)
+    assert.exists(node)
+    node.widgets ??= []
+    node.widgets.push({
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      type: 'custom',
+      value: undefined,
+      options: {},
+      y: 0
+    })
+    const options: (IContextMenuValue | null)[] = []
+
+    node.getExtraMenuOptions?.(app.canvas, options)
+
+    expect(
+      convertContextMenuToOptions(options)
+        .map(({ id }) => id)
+        .filter((id) => id?.startsWith('preview'))
+    ).toEqual(['previewShown', 'previewHidden'])
+  })
 })
 
 describe('canvas Copy Image action', () => {

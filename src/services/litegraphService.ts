@@ -669,9 +669,9 @@ export const useLitegraphService = () => {
         }
       }
       options.push(
-        ...previewDisplayChoices(this).map(({ label, choose }) => ({
+        ...previewDisplayChoices(this).map(({ id, label, choose }) => ({
           content: label,
-          callback: choose
+          callback: markNodeMenuCallback(choose, id)
         }))
       )
       if (this instanceof SubgraphNode) {
