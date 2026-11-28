@@ -61,7 +61,7 @@ import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
 import { promotedHostInputs } from './promotedHostInputs'
 import { reportLostEdit } from './reportLostEdit'
 import {
-  isValueWidget,
+  isReplicatedValueWidget,
   provenWidgetValuesForm,
   valueWidgetsOnly
 } from './widgetValuesForm'
@@ -312,11 +312,6 @@ function reachableIntentGraph(
   return path ? traverseSubgraphPath(graph, path) : null
 }
 
-/**
- * Whether the live widget, or the store metadata the intent was keyed by when
- * the live widget is missing or omits a field, identifies a value the document
- * carries. Unknown widgets fail closed.
- */
 function isValueWidgetWrite(
   owner: LGraphNode | null,
   event: IntentOf<'set_widget'>
@@ -328,7 +323,7 @@ function isValueWidgetWrite(
   const widget = owner?.widgets?.find(
     (candidate) => candidate.name === event.name
   )
-  return isValueWidget(widget, stored)
+  return isReplicatedValueWidget(widget, stored)
 }
 
 function promotedHostWrite(

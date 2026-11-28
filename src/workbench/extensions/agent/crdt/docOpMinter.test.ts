@@ -3337,13 +3337,12 @@ describe('attachDocOpMinter', () => {
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
     const { source } = seedGraph(graph)
-    // Built the way useNodeProgressText builds it: `serialize: false` and
-    // absent from the pinned catalog.
     const preview = source.addWidget(
       'text',
       '$$node-text-preview',
       '',
-      () => {}
+      () => {},
+      { serialize: false }
     )
     preview.serialize = false
     const doc = mintDocFrom(graph)
@@ -3369,9 +3368,10 @@ describe('attachDocOpMinter', () => {
 
   it.for([
     {
-      name: 'serialize false (live setter)',
+      name: 'prompt serialize false (live setter)',
       setup: () => {
         const { source } = seedGraph(graph)
+        source.widgets![0].options.serialize = false
         source.widgets![0].serialize = false
         source.widgets![0].value = 21
       }
@@ -3384,7 +3384,7 @@ describe('attachDocOpMinter', () => {
       }
     },
     {
-      name: 'serialize false (reachable subgraph)',
+      name: 'prompt serialize false (reachable subgraph)',
       setup: () => {
         const subgraph = createTestSubgraph({ rootGraph: graph })
         const host = createTestSubgraphNode(subgraph)
@@ -3393,6 +3393,7 @@ describe('attachDocOpMinter', () => {
           graph.add(host)
           subgraph.add(source)
         })
+        source.widgets![0].options.serialize = false
         source.widgets![0].serialize = false
         emitGraphIntent({
           type: 'set_widget',
@@ -3447,9 +3448,11 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('uses the live serialize flag for direct store-path intents', async () => {
+  it('mints a prompt value that workflow persistence omits', async () => {
     const { source } = seedGraph(graph)
-    source.widgets![0].serialize = false
+    const widget = source.widgets![0]
+    widget.options.serialize = true
+    widget.serialize = false
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3461,10 +3464,17 @@ describe('attachDocOpMinter', () => {
     })
     await afterFlush()
 
-    expect(minted).toEqual([])
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 21
+      }
+    ])
   })
 
-  it('lets an explicit live serialize flag override stale store metadata', async () => {
+  it('lets an explicit live prompt flag override stale store metadata', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
     const stored = useWidgetValueStore().getWidget(
@@ -3472,7 +3482,9 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
-    widget.serialize = true
+    stored.options = { ...stored.options, serialize: false }
+    widget.serialize = false
+    widget.options.serialize = true
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3552,7 +3564,7 @@ describe('attachDocOpMinter', () => {
     }
   )
 
-  it('uses the store serialize flag when a projected widget omits it', async () => {
+  it('uses the store prompt flag when a projected widget omits it', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
     const stored = useWidgetValueStore().getWidget(
@@ -3560,7 +3572,9 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
-    delete widget.serialize
+    stored.options = { ...stored.options, serialize: false }
+    widget.serialize = false
+    delete widget.options.serialize
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3575,7 +3589,7 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('uses the store serialize flag when a projected widget leaves it undefined', async () => {
+  it('uses the store prompt flag when a projected widget leaves it undefined', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
     const stored = useWidgetValueStore().getWidget(
@@ -3583,7 +3597,9 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
-    widget.serialize = undefined
+    stored.options = { ...stored.options, serialize: false }
+    widget.serialize = false
+    widget.options.serialize = undefined
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3711,6 +3727,7 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
+    stored.options = { ...stored.options, serialize: false }
     rootGraphId = toRootGraphId(previousGraph.id)
 
     emitGraphIntent({

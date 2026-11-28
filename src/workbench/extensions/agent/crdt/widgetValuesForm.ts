@@ -200,6 +200,21 @@ export function isValueWidget(
   return type !== 'button' && serialize !== false
 }
 
+/** Returns whether a live widget value belongs in the semantic document. */
+export function isReplicatedValueWidget(
+  widget: IBaseWidget | undefined,
+  stored?: WidgetState
+): boolean {
+  if (!widget && !stored) return false
+  const type = widget?.type ?? stored?.type
+  const workflowSerialize = widget?.serialize ?? stored?.serialize
+  const promptSerialize = widget?.options.serialize ?? stored?.options.serialize
+  return (
+    type !== 'button' &&
+    (workflowSerialize !== false || promptSerialize !== false)
+  )
+}
+
 /** The named values the document carries, dropping non-value widgets. */
 export function valueWidgetsOnly(
   node: LGraphNode,

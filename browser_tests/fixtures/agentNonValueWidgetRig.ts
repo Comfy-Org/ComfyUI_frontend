@@ -27,7 +27,7 @@ export function progressTextFrame(nodeId: string, text: string): Buffer {
   return frame
 }
 
-interface NonValueWidgetRigConfig {
+export interface NonValueWidgetRigConfig {
   catalog: WidgetCatalog
   messageId: string
   nodeDefs: Record<string, ComfyNodeDef>
@@ -176,6 +176,24 @@ export class AgentNonValueWidgetRig {
         widget.value = value
       },
       { nodeId: String(this.config.samplerNodeId), value }
+    )
+  }
+
+  /** Marks a widget for prompt inclusion but not workflow persistence. */
+  markWidgetPromptOnly(nodeId: number, name: string): Promise<void> {
+    return this.page.evaluate(
+      ({ nodeId, name }) => {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => String(candidate.id) === nodeId
+        )
+        const widget = node?.widgets?.find(
+          (candidate) => candidate.name === name
+        )
+        if (!widget) throw new Error(`Expected ${name} on node ${nodeId}`)
+        widget.options.serialize = true
+        widget.serialize = false
+      },
+      { nodeId: String(nodeId), name }
     )
   }
 
