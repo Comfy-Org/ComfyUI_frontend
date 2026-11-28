@@ -68,10 +68,6 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   },
