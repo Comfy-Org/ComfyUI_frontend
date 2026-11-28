@@ -1307,6 +1307,23 @@ describe('workspaceApi', () => {
       )
     })
 
+    it('preserves an above-limit refusal from the legacy top-up transport', async () => {
+      mockAxiosInstance.post.mockRejectedValue(
+        axiosRejection(400, {
+          code: 'INVALID_AMOUNT',
+          message: "Amount is above this workspace's top-up limit.",
+          details: { reason: 'above_max' }
+        })
+      )
+
+      await expect(billingApi.createTopup(500_100)).rejects.toMatchObject({
+        name: 'WorkspaceApiError',
+        status: 400,
+        code: 'INVALID_AMOUNT',
+        details: { reason: 'above_max' }
+      })
+    })
+
     it('createTopup() sends POST with amount_cents and idempotency_key', async () => {
       const data = {
         billing_op_id: 'op-4',

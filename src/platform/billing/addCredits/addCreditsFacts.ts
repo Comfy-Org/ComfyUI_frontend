@@ -47,9 +47,15 @@ export function topupCheckoutFailure(
       : readBillingErrorCode({ code: error.code, message: error.message })
   return {
     status: 'error',
-    code: error.status === 403 ? 'ACCESS_DENIED' : 'REQUEST_FAILED',
+    code:
+      error.code === 'INVALID_AMOUNT'
+        ? 'INVALID_AMOUNT'
+        : error.status === 403
+          ? 'ACCESS_DENIED'
+          : 'REQUEST_FAILED',
     ...(error.status === undefined ? {} : { httpStatus: error.status }),
     ...(serverCode === undefined ? {} : { serverCode }),
+    ...(error.details === undefined ? {} : { details: error.details }),
     ...(error.retryAfterSeconds === undefined
       ? {}
       : { retryAfterSeconds: error.retryAfterSeconds })

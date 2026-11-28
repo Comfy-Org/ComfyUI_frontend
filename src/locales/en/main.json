@@ -3143,6 +3143,7 @@
       "checkoutOpenedBody": "Credits are added to this workspace as soon as your payment goes through.",
       "reopenCheckout": "Reopen checkout",
       "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
+      "amountAboveMax": "This amount is above your workspace's top-up limit. Nothing has been charged. Choose a smaller amount, or contact support to raise your limit.",
       "setDefaultCard": "Set a default card",
       "setDefaultCardError": "Couldn't open card settings",
       "defaultCardBlockedTitle": "Payment page didn't open",
@@ -6943,6 +6944,10 @@
     "checkoutFailed": {
       "title": "Couldn't open checkout",
       "body": "Nothing was charged. Try again."
+    },
+    "amountAboveMax": {
+      "title": "This amount is above your workspace's top-up limit.",
+      "body": "Nothing has been charged. Choose a smaller amount, or contact support to raise your limit."
     },
     "notAllowed": {
       "title": "You can't add credits right now",

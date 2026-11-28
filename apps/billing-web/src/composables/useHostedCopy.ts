@@ -1,6 +1,9 @@
 import { useI18n } from 'vue-i18n'
 
-import type { BillingPlansData } from '@comfyorg/account-core/billing'
+import type {
+  BillingFailure,
+  BillingPlansData
+} from '@comfyorg/account-core/billing'
 import { PURCHASE_REFUSAL_SERVER_CODES } from '@comfyorg/account-core/billing'
 
 import { unbrokenDate } from '@/checkout/longDate'
@@ -28,6 +31,7 @@ export interface HostedCopy {
 interface RefusedCall {
   readonly code: string
   readonly serverMessage?: string
+  readonly details?: BillingFailure['details']
 }
 
 const SERVER_WORDED_CODES: ReadonlySet<string> = new Set([
@@ -44,7 +48,9 @@ export function useHostedCopy(): HostedCopy {
     return code !== undefined && te(key) ? t(key) : t(`hosted.${group}.unknown`)
   }
 
-  function refusal({ code, serverMessage }: RefusedCall): string {
+  function refusal({ code, serverMessage, details }: RefusedCall): string {
+    if (code === 'INVALID_AMOUNT' && details?.reason === 'above_max')
+      return t('checkout.fullPage.ending.amount_above_limit.body')
     return SERVER_WORDED_CODES.has(code) && serverMessage
       ? serverMessage
       : coded('failure', code)

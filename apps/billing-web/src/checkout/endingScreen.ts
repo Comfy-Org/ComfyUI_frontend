@@ -144,6 +144,7 @@ export type EndingScreen =
   | { readonly kind: 'plan_unavailable'; readonly code: string }
   /** A top-up link with no amount to quote: there is no plan to offer instead. */
   | { readonly kind: 'link_invalid'; readonly code: string }
+  | { readonly kind: 'amount_above_limit'; readonly code: string }
   | {
       readonly kind: 'load_failed'
       readonly cause: LoadFailure
@@ -184,6 +185,11 @@ function refusedEnding(
   page: Extract<CheckoutPage, { kind: 'refused' }>
 ): EndingScreen {
   if ('server' in page) {
+    if (
+      page.server.code === 'INVALID_AMOUNT' &&
+      page.server.details?.reason === 'above_max'
+    )
+      return { kind: 'amount_above_limit', code: page.server.code }
     const { code, message } = page.server
     return {
       kind: 'refused',

@@ -194,6 +194,21 @@ function settledTopup(
 
 const payButton = () => screen.getByRole('button', { name: 'Pay' })
 
+const ABOVE_LIMIT_COPY =
+  "This amount is above your workspace's top-up limit. Nothing has been charged. Choose a smaller amount, or contact support to raise your limit."
+
+const ABOVE_LIMIT_SERVER_REFUSAL = {
+  status: 'error',
+  code: 'INVALID_AMOUNT',
+  details: { reason: 'above_max' },
+  httpStatus: 400,
+  serverCode: readBillingErrorCode({
+    code: 'INVALID_AMOUNT',
+    message: "Amount is above this workspace's top-up limit."
+  }),
+  serverMessage: "Amount is above this workspace's top-up limit."
+} as const
+
 let featureReader = 0
 
 function serveFeatures(read: () => Promise<Response | undefined>) {
@@ -422,6 +437,64 @@ describe('FullPageTopupView', () => {
     )
   })
 
+  it('ends an above-limit quote with guidance to choose a smaller amount', async () => {
+    const user = userEvent.setup()
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const fake = renderTopup({
+      topupQuote: ABOVE_LIMIT_SERVER_REFUSAL
+    })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Amount above limit' })
+    ).toBeVisible()
+    expect(screen.getByText(ABOVE_LIMIT_COPY)).toBeVisible()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent(
+      'INVALID_AMOUNT'
+    )
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Pay' })).toBeNull()
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Add credits' }))
+
+    expect(assign).toHaveBeenCalledWith(
+      'https://testplatform.comfy.org/settings/billing?workspace=ws-team'
+    )
+  })
+
+  it.for<{ name: string; result: TopupQuoteResult }>([
+    {
+      name: 'below-minimum',
+      result: { status: 'error', code: 'INVALID_AMOUNT' }
+    },
+    {
+      name: 'part-dollar',
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({
+          code: 'INVALID_AMOUNT',
+          message: 'Amount must be whole dollars.'
+        }),
+        serverMessage: 'Amount must be whole dollars.'
+      }
+    }
+  ])('keeps the existing $name quote failure', async ({ result }) => {
+    renderTopup({ topupQuote: result })
+
+    expect(
+      await screen.findByRole('heading', {
+        name: "Couldn't load your checkout"
+      })
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled()
+    expect(screen.queryByText(ABOVE_LIMIT_COPY)).toBeNull()
+  })
+
   it.for([
     { name: 'no amount', query: '' },
     { name: 'an unreadable amount', query: '&amount_cents=12.50' }
@@ -547,6 +620,47 @@ function readyCardForm() {
 describe('FullPageTopupView paying once', () => {
   beforeEach(() => {
     form.mounts = 0
+  })
+
+  it.for<{ name: string; result: TopupResult; copy: string }>([
+    {
+      name: 'above-limit',
+      result: ABOVE_LIMIT_SERVER_REFUSAL,
+      copy: ABOVE_LIMIT_COPY
+    },
+    {
+      name: 'below-minimum',
+      result: { status: 'error', code: 'INVALID_AMOUNT' },
+      copy: 'Something went wrong. Please try again.'
+    },
+    {
+      name: 'part-dollar',
+      result: {
+        status: 'error',
+        code: 'REQUEST_FAILED',
+        httpStatus: 400,
+        serverCode: readBillingErrorCode({
+          code: 'INVALID_AMOUNT',
+          message: 'Amount must be whole dollars.'
+        }),
+        serverMessage: 'Amount must be whole dollars.'
+      },
+      copy: 'Amount must be whole dollars.'
+    }
+  ])('shows the $name Pay refusal inline', async ({ result, copy }) => {
+    const user = userEvent.setup()
+    renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] },
+      topup: result
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    await user.click(payButton())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(copy)
+    expect(payButton()).toBeEnabled()
+    expect(screen.queryByTestId('checkout-ending')).toBeNull()
   })
 
   it('pays with the saved card the customer picks, though none is the invoice default, and offers only cards', async () => {
@@ -1478,6 +1592,29 @@ function renderAutoTopUp(
 describe('FullPageTopupView with auto top-up from the link', () => {
   beforeEach(() => {
     form.mounts = 0
+  })
+
+  it('shows an above-limit hosted Pay refusal inline', async () => {
+    const user = userEvent.setup()
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`
+    )
+    createHostedTopupCheckout.mockResolvedValue({
+      status: 'error',
+      code: 'INVALID_AMOUNT',
+      details: { reason: 'above_max' }
+    })
+    await screen.findByTestId('checkout-auto-top-up-consent')
+
+    await user.click(payButton())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(ABOVE_LIMIT_COPY)
+    expect(payButton()).toBeEnabled()
+    expect(assign).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('checkout-ending')).toBeNull()
   })
 
   it('shows the consent with the chosen monthly limit and pays on the hosted checkout with the settings', async () => {

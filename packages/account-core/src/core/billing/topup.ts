@@ -11,6 +11,7 @@
  * observed so a host reads the coded decline and recovery action from it.
  */
 import type {
+  ErrorResponse,
   InteractiveTopupRequest,
   TopupAutoTopUpSettings,
   TopupPurchase
@@ -153,10 +154,10 @@ export interface TopupNoPaymentMethod {
   readonly recoveryAction: 'replace_payment_method'
 }
 
-/** The amount fails the generated request contract; nothing was sent. */
 export interface TopupInvalidAmount {
   readonly status: 'error'
   readonly code: 'INVALID_AMOUNT'
+  readonly details?: ErrorResponse['details']
 }
 
 export type TopupFailure =
@@ -301,6 +302,11 @@ const INVALID_AMOUNT = {
   code: 'INVALID_AMOUNT'
 } as const satisfies TopupInvalidAmount
 
+const ABOVE_MAX = {
+  ...INVALID_AMOUNT,
+  details: { reason: 'above_max' }
+} as const satisfies TopupInvalidAmount
+
 const INVALID_RETURN_URL = {
   status: 'error',
   code: 'INVALID_RETURN_URL'
@@ -342,6 +348,15 @@ const SUPERSEDED = {
 
 const PURCHASE_NOT_FOUND_SERVER_CODE = 'PURCHASE_NOT_FOUND'
 
+function mapTopupAmountFailure(
+  failure: BillingFailure
+): BillingFailure | TopupInvalidAmount {
+  return matchesServerCode(failure, INVALID_AMOUNT_SERVER_CODE) &&
+    failure.details?.reason === 'above_max'
+    ? { ...failure, code: 'INVALID_AMOUNT' }
+    : failure
+}
+
 function commandFailure(failure: BillingFailure): TopupFailure {
   if (matchesServerCode(failure, NO_PAYMENT_METHOD_SERVER_CODE)) {
     return {
@@ -355,7 +370,7 @@ function commandFailure(failure: BillingFailure): TopupFailure {
     !matchesServerCode(failure, PURCHASE_NOT_FOUND_SERVER_CODE)
   )
     return NOT_AVAILABLE
-  return failure
+  return mapTopupAmountFailure(failure)
 }
 
 function purchaseStateOf(
@@ -521,7 +536,7 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
       request,
       (raw) => TopupPurchaseSchema.safeParse(raw)
     )
-    if (response.status === 'error') return response
+    if (response.status === 'error') return mapTopupAmountFailure(response)
     return { status: 'ok', value: purchaseStateOf(response.value.data) }
   }
 
@@ -599,9 +614,16 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     const baseline = await credits.read()
     if (input.signal?.aborted)
       return { status: 'error', code: 'REQUEST_FAILED' }
+    const maxCents =
+      baseline.status === 'ok'
+        ? baseline.value.balance.max_topup_cents
+        : undefined
+    if (maxCents !== undefined && input.amountCents > maxCents) return ABOVE_MAX
     const session = await issueHostedCheckout(input)
     if (session.status === 'error') {
-      return session.httpStatus === 404 ? NOT_AVAILABLE : session
+      return session.httpStatus === 404
+        ? NOT_AVAILABLE
+        : mapTopupAmountFailure(session)
     }
     return {
       status: 'ok',
@@ -627,6 +649,8 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
       (raw) => TopupQuoteSchema.safeParse(raw)
     )
     if (response.status === 'error') {
+      const amountFailure = mapTopupAmountFailure(response)
+      if (amountFailure.code === 'INVALID_AMOUNT') return amountFailure
       if (matchesServerCode(response, INVALID_AMOUNT_SERVER_CODE))
         return INVALID_AMOUNT
       return response.httpStatus === 404 ? NOT_AVAILABLE : response

@@ -23,6 +23,7 @@ import type { BillingScopeContext } from './billingScope'
 import { sameBillingScope } from './billingScope'
 import {
   readBillingErrorCode,
+  readBillingErrorDetails,
   readBillingErrorMessage
 } from './billingErrorBody'
 import { codeForHttpStatus } from './httpStatus'
@@ -76,6 +77,7 @@ export async function readValidatedBillingResponse<T>(
   if (httpStatus < 200 || httpStatus >= 300) {
     const serverCode = readBillingErrorCode(body)
     const serverMessage = readBillingErrorMessage(body)
+    const details = readBillingErrorDetails(body)
     const retryAfterSeconds = readRetryAfterSeconds(response.value)
     return {
       status: 'error',
@@ -83,6 +85,7 @@ export async function readValidatedBillingResponse<T>(
       httpStatus,
       ...(serverCode === undefined ? {} : { serverCode }),
       ...(serverMessage === undefined ? {} : { serverMessage }),
+      ...(details === undefined ? {} : { details }),
       ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds })
     }
   }

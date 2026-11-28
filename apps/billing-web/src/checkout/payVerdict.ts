@@ -1,4 +1,5 @@
 import type {
+  BillingFailure,
   BillingOperationKind,
   BillingOperationState,
   BillingResult,
@@ -66,15 +67,11 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
     : { kind: 'outcome', outcome }
 }
 
-/**
- * A Pay the server refused before any operation settled: one already under
- * way is re-read, never a decline (rule 18); any other is the coded card.
- */
-/** A purchase the server refused: a pending or conflicting one is re-read, anything else is its card. */
 export function refusalVerdict(result: {
   readonly code: string
   readonly serverCode?: BillingServerCode
   readonly serverMessage?: string
+  readonly details?: BillingFailure['details']
 }): PayVerdict {
   if (result.code === 'OPERATION_ALREADY_PENDING' || result.code === 'CONFLICT')
     return { kind: 'outcome', outcome: { kind: 'reconciling' } }
@@ -88,7 +85,8 @@ export function refusalVerdict(result: {
           : result.code,
       ...(result.serverMessage === undefined
         ? {}
-        : { serverMessage: result.serverMessage })
+        : { serverMessage: result.serverMessage }),
+      ...(result.details === undefined ? {} : { details: result.details })
     }
   }
 }

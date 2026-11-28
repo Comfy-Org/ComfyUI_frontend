@@ -1,4 +1,5 @@
 import type {
+  BillingFailure,
   BillingOperationKind,
   BillingOperationState,
   BillingPlansData,
@@ -26,6 +27,7 @@ export interface ScheduledChange {
 export interface ServerRefusal {
   readonly code: string
   readonly message?: string
+  readonly details?: BillingFailure['details']
 }
 
 /** `none` means the read succeeded and the workspace has no saved method. */
@@ -72,6 +74,7 @@ export type InlineOutcome =
       readonly kind: 'processing_error'
       readonly code: string
       readonly serverMessage?: string
+      readonly details?: BillingFailure['details']
     }
   | { readonly kind: 'not_completed'; readonly operationId?: string }
   | { readonly kind: 'not_verified'; readonly operationId?: string }

@@ -722,6 +722,56 @@ describe('createInteractiveTopup', () => {
 })
 
 describe('createHostedTopupCheckout', () => {
+  it.for([
+    { name: 'the served maximum', maxTopupCents: 500_000 },
+    { name: 'an absent maximum', maxTopupCents: undefined }
+  ])('sends 500000 cents with $name', async ({ maxTopupCents }) => {
+    const { command, answer, calls } = harness()
+    answer(
+      'GET',
+      '/billing/balance',
+      httpOk({ ...balance(BASELINE_MICROS), max_topup_cents: maxTopupCents })
+    )
+
+    await expect(
+      command.createHostedTopupCheckout({
+        amountCents: 500_000,
+        returnUrl: RETURN_URL
+      })
+    ).resolves.toMatchObject({ status: 'ok', url: CHECKOUT_URL })
+    expect(postedBodies(calls)).toEqual([
+      {
+        body: {
+          amount_cents: 500_000,
+          return_url: RETURN_URL,
+          idempotency_key: 'key-1'
+        },
+        idempotencyKey: 'key-1'
+      }
+    ])
+  })
+
+  it('refuses 500100 cents above a served 500000 maximum without a session request', async () => {
+    const { command, answer, calls } = harness()
+    answer(
+      'GET',
+      '/billing/balance',
+      httpOk({ ...balance(BASELINE_MICROS), max_topup_cents: 500_000 })
+    )
+
+    await expect(
+      command.createHostedTopupCheckout({
+        amountCents: 500_100,
+        returnUrl: RETURN_URL
+      })
+    ).resolves.toEqual({
+      status: 'error',
+      code: 'INVALID_AMOUNT',
+      details: { reason: 'above_max' }
+    })
+    expect(postedBodies(calls)).toEqual([])
+  })
+
   it('returns the hosted session with the pre-purchase baseline and observes no operation', async () => {
     const { hosted, lifecycle, routes, calls } = harness()
 
@@ -977,6 +1027,97 @@ describe('server-owned top-up purchases', () => {
       serverCode: 'PURCHASE_NOT_FOUND'
     })
     expect(postedBodies(calls)[0].body).toMatchObject({ purchase_id: 'tpp_1' })
+  })
+})
+
+describe('above-limit top-up refusals', () => {
+  it.for([
+    {
+      name: 'a below-minimum refusal',
+      body: { code: 'INVALID_AMOUNT', message: 'Amount is below minimum.' }
+    },
+    {
+      name: 'a part-dollar refusal',
+      body: {
+        code: 'TOPUP_CHECKOUT_REJECTED',
+        message: 'Amount must be whole dollars.'
+      }
+    },
+    {
+      name: 'an unrelated refusal with the same detail',
+      body: {
+        code: 'INVALID_RETURN_URL',
+        message: 'Return origin is not allowed.',
+        details: { reason: 'above_max' }
+      }
+    }
+  ])('keeps $name distinct from above-max', async ({ body }) => {
+    const { hosted, answer } = harness()
+    answer('POST', TOPUP_CHECKOUT_ROUTE, httpStatus(400, body))
+
+    await expect(hosted()).resolves.toMatchObject({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      serverCode: body.code,
+      serverMessage: body.message
+    })
+  })
+
+  it.for([
+    {
+      name: 'hosted checkout',
+      route: TOPUP_CHECKOUT_ROUTE,
+      run: (command: ReturnType<typeof createTopupCommand>) =>
+        command.createHostedTopupCheckout({
+          amountCents: 5000,
+          returnUrl: RETURN_URL
+        })
+    },
+    {
+      name: 'saved-card checkout',
+      route: TOPUP_ROUTE,
+      run: (command: ReturnType<typeof createTopupCommand>) =>
+        command.createTopupCheckout({ amountCents: 5000 })
+    },
+    {
+      name: 'interactive Pay',
+      route: INTERACTIVE_TOPUP_ROUTE,
+      run: (command: ReturnType<typeof createTopupCommand>) =>
+        command.createInteractiveTopup({
+          amountCents: 5000,
+          payment: { savedPaymentMethodId: 'pm-1' },
+          idempotencyKey: 'pay-1'
+        })
+    },
+    {
+      name: 'purchase creation',
+      route: TOPUP_PURCHASES_ROUTE,
+      run: (command: ReturnType<typeof createTopupCommand>) =>
+        command.createTopupPurchase({ amountCents: 5000 })
+    },
+    {
+      name: 'quote',
+      route: TOPUP_QUOTE_ROUTE,
+      run: (command: ReturnType<typeof createTopupCommand>) =>
+        command.quoteTopup({ amountCents: 5000 })
+    }
+  ])('maps $name to the above-max result', async ({ route, run }) => {
+    const { command, answer } = harness()
+    answer(
+      'POST',
+      route,
+      httpStatus(400, {
+        code: 'INVALID_AMOUNT',
+        message: 'Amount is above this workspace limit.',
+        details: { reason: 'above_max' }
+      })
+    )
+
+    await expect(run(command)).resolves.toMatchObject({
+      status: 'error',
+      code: 'INVALID_AMOUNT',
+      details: { reason: 'above_max' }
+    })
   })
 })
 

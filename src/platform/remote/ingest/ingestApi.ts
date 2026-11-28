@@ -61,7 +61,7 @@ function retryAfterSeconds(header: unknown): number | undefined {
 export function handleAxiosError(err: unknown, operation: string): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const { code, message } = errorResponseFromBody(
+    const { code, message, details } = errorResponseFromBody(
       err.response?.data,
       err.message
     )
@@ -75,7 +75,8 @@ export function handleAxiosError(err: unknown, operation: string): never {
       code === UNKNOWN_ERROR_CODE ? undefined : code,
       undefined,
       operation,
-      retryAfterSeconds(err.response?.headers['retry-after'])
+      retryAfterSeconds(err.response?.headers['retry-after']),
+      details
     )
   }
   throw err

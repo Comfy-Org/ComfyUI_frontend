@@ -43,6 +43,9 @@ export const ADD_CREDITS_COPY = {
   'notVerified.action': 'Contact support',
   'checkoutFailed.title': "Couldn't open checkout",
   'checkoutFailed.body': 'Nothing was charged. Try again.',
+  'amountAboveMax.title': "This amount is above your workspace's top-up limit.",
+  'amountAboveMax.body':
+    'Nothing has been charged. Choose a smaller amount, or contact support to raise your limit.',
   'notAllowed.title': "You can't add credits right now",
   'notAllowed.body': 'Check Billing settings to see why.',
   'rateLimited.title': "You've hit the top-up limit for now",

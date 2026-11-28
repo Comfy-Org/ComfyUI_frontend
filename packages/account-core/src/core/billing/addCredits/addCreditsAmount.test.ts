@@ -63,6 +63,9 @@ describe('initialAddCreditsAmount', () => {
     { suggested: null, expected: { kind: 'preset', cents: 5000 } },
     { suggested: 5000, expected: { kind: 'preset', cents: 5000 } },
     { suggested: 11400, expected: { kind: 'custom', input: '114' } },
+    { suggested: 2000, expected: { kind: 'custom', input: '20' } },
+    { suggested: 500, expected: { kind: 'custom', input: '5' } },
+    { suggested: 0, expected: { kind: 'preset', cents: 5000 } },
     { suggested: 11450, expected: { kind: 'preset', cents: 5000 } }
   ])(
     'opens on $expected.kind for a suggestion of $suggested',

@@ -143,6 +143,22 @@ const summary = () => screen.getByTestId('add-credits-summary')
 const notice = () => screen.getByTestId('add-credits-notice')
 
 describe('AddCreditsDialog amount step', () => {
+  it.for([
+    { maxTopupCents: 2000, opening: '20', summary: '$20.00' },
+    { maxTopupCents: 500, opening: '5', summary: '$5.00' }
+  ])('opens at the served $opening maximum', async (row) => {
+    renderDialog({ maxTopupCents: row.maxTopupCents })
+
+    expect(field()).toHaveValue(row.opening)
+    expect(preset('$25')).toBeDisabled()
+    expect(preset('$50')).toBeDisabled()
+    expect(preset('$100')).toBeDisabled()
+    expect(
+      await within(summary()).findByText(`${row.summary}, paid at checkout`)
+    ).toBeVisible()
+    expect(continueButton()).toBeEnabled()
+  })
+
   it('opens on $50 with its quoted credits', async () => {
     const { ports } = renderDialog()
 
@@ -571,6 +587,26 @@ describe('AddCreditsDialog with a single-use checkout', () => {
 })
 
 describe('AddCreditsDialog refusals', () => {
+  it('shows the above-limit notice without a numeric limit', async () => {
+    const { ports, user } = renderDialog()
+    ports.refuse({ kind: 'amount_above_max' })
+
+    await user.click(continueButton())
+
+    expect(
+      within(notice()).getByText(
+        "This amount is above your workspace's top-up limit."
+      )
+    ).toBeVisible()
+    expect(
+      within(notice()).getByText(
+        'Nothing has been charged. Choose a smaller amount, or contact support to raise your limit.'
+      )
+    ).toBeVisible()
+    expect(notice()).not.toHaveTextContent('$')
+    expect(ports.tabs[0].closed).toBe(true)
+  })
+
   it.for<{ refusal: AddCreditsRefusal; wait: string }>([
     {
       refusal: { kind: 'rate_limited', retryAfterSeconds: 2400 },

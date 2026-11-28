@@ -290,6 +290,22 @@ export function useFullPageTopup() {
     quoted: TopupQuoteResult,
     saved: Promise<SavedArrival>
   ): Promise<CheckoutPageEvent> {
+    if (
+      quoted.status === 'error' &&
+      quoted.code === 'INVALID_AMOUNT' &&
+      quoted.details?.reason === 'above_max'
+    )
+      return {
+        type: 'notAllowed',
+        server: {
+          code: quoted.code,
+          details: quoted.details,
+          ...('serverMessage' in quoted &&
+          typeof quoted.serverMessage === 'string'
+            ? { message: quoted.serverMessage }
+            : {})
+        }
+      }
     if (quoted.status !== 'ok')
       return { type: 'unavailable', code: quoted.code }
     if (!paysOnce.value && purchaseId !== undefined)

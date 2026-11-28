@@ -1,4 +1,5 @@
 import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
+import type { ErrorResponse } from '@comfyorg/ingest-types'
 
 export class WorkspaceApiError extends Error {
   constructor(
@@ -7,7 +8,8 @@ export class WorkspaceApiError extends Error {
     public readonly code?: string,
     public readonly failureCategory?: BillingTelemetryFailure['failure_category'],
     public readonly operation?: string,
-    public readonly retryAfterSeconds?: number
+    public readonly retryAfterSeconds?: number,
+    public readonly details?: ErrorResponse['details']
   ) {
     super(message)
     this.name = 'WorkspaceApiError'

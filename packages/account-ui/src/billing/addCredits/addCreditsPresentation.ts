@@ -125,6 +125,7 @@ const REFUSAL_COPY: Record<
   readonly [AddCreditsCopyKey, AddCreditsCopyKey]
 > = {
   checkout_failed: ['checkoutFailed.title', 'checkoutFailed.body'],
+  amount_above_max: ['amountAboveMax.title', 'amountAboveMax.body'],
   not_allowed: ['notAllowed.title', 'notAllowed.body'],
   rate_limited: ['rateLimited.title', 'rateLimited.body'],
   purchases_paused: ['purchasesPaused.title', 'purchasesPaused.body']

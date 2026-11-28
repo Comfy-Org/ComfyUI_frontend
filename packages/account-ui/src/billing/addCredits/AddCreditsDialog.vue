@@ -147,6 +147,7 @@ import type {
   CapabilityDenialReason
 } from '@comfyorg/account-core/billing'
 import {
+  ADD_CREDITS_DEFAULT_CENTS,
   ADD_CREDITS_FALLBACK_BOUNDS,
   addCreditsRefusalBlocks,
   addCreditsRefusalForDenial,
@@ -267,7 +268,12 @@ const autoTopUpFields = useAddCreditsAutoTopUp(
 
 const dialog = useAddCreditsDialog({
   ports,
-  initialAmount: initialAddCreditsAmount(suggestedTopupCents),
+  initialAmount: initialAddCreditsAmount(
+    Math.min(
+      suggestedTopupCents ?? ADD_CREDITS_DEFAULT_CENTS,
+      bounds.value.maxCents
+    )
+  ),
   autoTopUp: autoTopUpFields.request,
   balanceCredits: () => negativeBalanceCredits,
   quoteScope: () => quoteScope,

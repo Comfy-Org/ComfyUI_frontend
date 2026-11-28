@@ -14,6 +14,8 @@
  * the customer, carried so a host can show it the way the legacy client does;
  * nothing in the core branches on it.
  */
+import type { ErrorResponse } from '@comfyorg/ingest-types'
+
 import type { SessionClient } from '#/core/session'
 
 /**
@@ -88,6 +90,7 @@ export type BillingFailure = {
    * client shows the same string.
    */
   readonly serverMessage?: string
+  readonly details?: ErrorResponse['details']
   /** The response's `Retry-After`, when it was a whole number of seconds. */
   readonly retryAfterSeconds?: number
 }

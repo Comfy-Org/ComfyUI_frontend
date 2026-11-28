@@ -18,6 +18,7 @@ import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
+import { usdToCredits } from '@/base/credits/comfyCredits'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
@@ -38,6 +39,7 @@ import {
   setLocalAutoTopUpAtCheckoutEnabled,
   setLocalBillingWebEnabled
 } from '@/platform/billing/localBillingWebEnabled'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
@@ -49,6 +51,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import type { BillingTab } from '@/platform/billing/billingTab'
+import type { BalanceInfo } from '@/platform/billing/composables/types'
 import type { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import type { issueLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
 
@@ -1177,4 +1180,79 @@ describe('AddCreditsDialogContent top-up telemetry', () => {
     )
     expect(hoisted.balanceIncreased).toBeUndefined()
   })
+})
+
+describe('AddCreditsDialogContent above the served maximum', () => {
+  beforeEach(() => {
+    stubFirebaseAuthHarness()
+    hoisted.setupUrl.mockResolvedValue(null)
+  })
+
+  it.for([
+    { maxTopupCents: 2000, opening: '20' },
+    { maxTopupCents: 500, opening: '5' }
+  ])(
+    'opens at the served $opening maximum and disables the presets above it',
+    ({ maxTopupCents, opening }) => {
+      const balance: BalanceInfo = {
+        amountMicros: 10_000,
+        currency: 'usd',
+        effectiveBalanceMicros: 10_000,
+        effectiveBalanceAuthoritative: true,
+        suggestedTopupAmountCents: null,
+        maxTopupCents,
+        maxTopupCredits: usdToCredits(maxTopupCents / 100)
+      }
+      Object.assign(mockBillingContext(), { balance: computed(() => balance) })
+      renderDialog({ atCheckout: false })
+
+      expect(screen.getByLabelText('Or enter an amount')).toHaveValue(opening)
+      expect(screen.getByRole('radio', { name: '$25' })).toBeDisabled()
+      expect(screen.getByRole('radio', { name: '$50' })).toBeDisabled()
+      expect(screen.getByRole('radio', { name: '$100' })).toBeDisabled()
+    }
+  )
+
+  it.for([
+    {
+      name: 'the server',
+      error: new WorkspaceApiError(
+        "Amount is above this workspace's top-up limit.",
+        400,
+        'INVALID_AMOUNT',
+        'api_rejected',
+        undefined,
+        undefined,
+        { reason: 'above_max' }
+      )
+    },
+    {
+      name: 'the served-max check',
+      error: new WorkspaceApiError(
+        'Unknown error',
+        undefined,
+        'INVALID_AMOUNT',
+        'validation',
+        undefined,
+        undefined,
+        { reason: 'above_max' }
+      )
+    }
+  ])(
+    'explains a checkout $name refuses above the workspace top-up limit',
+    async ({ error }) => {
+      hoisted.createHostedCheckout.mockRejectedValue(error)
+      const { user } = renderDialog({ atCheckout: false })
+
+      await user.click(continueButton())
+
+      const notice = await screen.findByTestId('add-credits-notice')
+      expect(notice).toHaveTextContent(
+        "This amount is above your workspace's top-up limit."
+      )
+      expect(notice).toHaveTextContent(
+        'Nothing has been charged. Choose a smaller amount, or contact support to raise your limit.'
+      )
+    }
+  )
 })

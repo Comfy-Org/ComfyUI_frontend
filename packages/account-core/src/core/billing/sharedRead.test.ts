@@ -27,6 +27,24 @@ function answering(
 }
 
 describe('readValidatedBillingResponse', () => {
+  it('carries structured refusal details from the generated error contract', async () => {
+    const result = await readValidatedBillingResponse(
+      answering(400, {
+        code: 'INVALID_AMOUNT',
+        message: 'Amount is above this workspace limit.',
+        details: { reason: 'above_max', field: 'amount_cents' }
+      }),
+      REQUEST,
+      (body) => Body.safeParse(body)
+    )
+
+    expect(result).toMatchObject({
+      status: 'error',
+      serverCode: 'INVALID_AMOUNT',
+      details: { reason: 'above_max', field: 'amount_cents' }
+    })
+  })
+
   it.for([
     { retryAfter: '2400', expected: { retryAfterSeconds: 2400 } },
     { retryAfter: 'Wed, 21 Oct 2026 07:28:00 GMT', expected: {} },
