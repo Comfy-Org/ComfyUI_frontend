@@ -86,14 +86,15 @@ function controlSizing(row: ControlRow): WidgetSizing {
     : { kind: 'fixed', height: fixedControlHeight(row) }
 }
 
-function itemSizing(item: BodyItem): WidgetSizing {
+function itemSizing(item: BodyItem, tokens: ThemeTokens): WidgetSizing {
   switch (item.kind) {
     case 'slots':
       return {
         kind: 'fixed',
         height:
           Math.max(item.inputs.length, item.outputs.length) *
-          VUE_NODE_BODY.slotRowHeight
+            VUE_NODE_BODY.slotRowHeight +
+          themePx(tokens, 'node-slot-block-margin-bottom')
       }
     case 'socket':
       return { kind: 'fixed', height: VUE_NODE_BODY.slotRowHeight }
@@ -122,10 +123,7 @@ function overlap(
 
 function gapBetween(above: BodyItem, below: BodyItem, tokens: ThemeTokens) {
   return (
-    VUE_NODE_BODY.gap +
-    (above.kind === 'slots'
-      ? themePx(tokens, 'node-slot-block-margin-bottom')
-      : 0) -
+    VUE_NODE_BODY.gap -
     overlap(above, below, tokens) -
     overlap(below, above, tokens)
   )
@@ -169,7 +167,7 @@ export function layoutVueNodeBody(
         kind: 'fixed',
         height: gapBetween(items[index - 1], item, tokens)
       })
-    sizings.push(itemSizing(item))
+    sizings.push(itemSizing(item, tokens))
   })
   const { paddingTop, paddingBottom } = VUE_NODE_BODY
   const allocated = layoutNodeBody(

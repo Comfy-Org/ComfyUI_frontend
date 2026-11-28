@@ -80,6 +80,18 @@ describe('layoutVueNodeBody', () => {
     expect(layout.outputs).toEqual(new Map([[0, { x: 190, y: 14 }]]))
   })
 
+  it('counts the slot block margin when the slot block is the last body item', () => {
+    const layout = layoutVueNodeBody(
+      200,
+      0,
+      [{ kind: 'slots', inputs: [0], outputs: [] }],
+      { ...DEFAULT_TOKENS, 'node-slot-block-margin-bottom': '20px' }
+    )
+
+    expect(layout.minBodyHeight).toBe(56)
+    expect(layout.inputs).toEqual(new Map([[0, { x: 0, y: 14 }]]))
+  })
+
   it.for([
     {
       name: 'a growable row takes the spare height',
