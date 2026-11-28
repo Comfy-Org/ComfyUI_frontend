@@ -66,8 +66,6 @@ import type { AgentAttachVerdict } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
-import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -85,13 +83,9 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
@@ -194,6 +188,7 @@ import {
   useAgentChatDrafts
 } from './composables/agent/useAgentChatDrafts'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
+import { useAgentGraphActivityPresentation } from './composables/agent/useAgentGraphActivityPresentation'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
@@ -688,6 +683,9 @@ const agentTabGraph: ComfyWorkflowJSON = {
 
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
+useAgentGraphActivityPresentation({
+  graph: () => canvasStore.canvas?.graph
+})
 const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
@@ -710,51 +708,6 @@ const crdtLogLevel = computed({
   }
 })
 const dialogStore = useDialogStore()
-watch(
-  () => canvasStore.canvas?.graph,
-  (graph, _previous, onCleanup) => {
-    if (!graph?.events) return
-    const events = graph.events as EventTarget
-    const onNodeRemoved: EventListener = (event) => {
-      if (!(event instanceof CustomEvent)) return
-      const nodeId = parseNodeId(String(event.detail.node?.id))
-      if (nodeId) graphActivity.removeNodes([nodeId])
-    }
-    events.addEventListener('node:removed', onNodeRemoved)
-    onCleanup(() => events.removeEventListener('node:removed', onNodeRemoved))
-  },
-  { immediate: true }
-)
-// Claimed on mount rather than in setup so a setup failure cannot leave the id
-// registered with no unmount to release it.
-let agentMinimapLayer: MinimapDecorationLayer | undefined
-function syncAgentMinimapLayer(activity: typeof graphActivity.state): void {
-  if (activity.phase === 'idle') {
-    agentMinimapLayer?.replace([])
-    return
-  }
-  const rootGraphId = toRootGraphId(activity.rootGraphId)
-  agentMinimapLayer?.replace(
-    activity.nodeIds.map((nodeId) => ({
-      target: {
-        rootGraphId,
-        owningGraphId: toOwningGraphId(activity.rootGraphId),
-        nodeId
-      },
-      enter: 'pop'
-    }))
-  )
-  if (
-    activity.phase === 'running' &&
-    !settingStore.get('Comfy.Minimap.Visible')
-  )
-    void settingStore.set('Comfy.Minimap.Visible', true)
-}
-watch(() => graphActivity.state, syncAgentMinimapLayer, { immediate: true })
-onMounted(() => {
-  agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
-  syncAgentMinimapLayer(graphActivity.state)
-})
 // Teardown must be total. Nothing is re-thrown: an error escaping an unmount
 // hook reaches Vue's logError, which re-throws outside production builds (this
 // app registers no app.config.errorHandler) and aborts both the steps after it
@@ -786,13 +739,6 @@ function runPanelTeardown(
     }
   }
 }
-onBeforeUnmount(() =>
-  runPanelTeardown({
-    disposeMinimapLayer: () => {
-      agentMinimapLayer?.dispose()
-    }
-  })
-)
 const { withConsent } = useAgentConsent()
 const workspaceStore = teamWorkspaceStore
 const onboardingKey = computed(() =>
