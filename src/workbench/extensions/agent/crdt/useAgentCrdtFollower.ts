@@ -8,7 +8,7 @@ import {
   watch,
   watchEffect
 } from 'vue'
-import type { EffectScope, Ref } from 'vue'
+import type { EffectScope, Ref, ShallowRef } from 'vue'
 
 import {
   observedDocCounter,
@@ -308,6 +308,8 @@ export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
   diagnosticsEnabled?: () => boolean
   userId?: () => string | null
+  /** Whether the current authenticated actor may mint and send operations. */
+  identityReady?: () => boolean
   isTargetActive?: Ref<boolean>
   /**
    * Live graph the document is applied to. Reactive reads inside the getter
@@ -321,7 +323,7 @@ export interface AgentCrdtFollowerOptions {
   knownLineageFor?: (workflowId: string) => number | null
 }
 
-type AgentFollowerSession = ReturnType<typeof startAgentCrdtFollower>
+export type AgentFollowerSession = ReturnType<typeof startAgentCrdtFollower>
 
 type AgentFollowerConsumer = Required<
   Omit<AgentCrdtFollowerOptions, 'isTargetActive'>
@@ -339,6 +341,8 @@ interface AgentFollowerSessionOwner {
   pageScope: EffectScope | null
   pageLease: FollowerSessionLease<AgentFollowerSession> | null
   pageLeaseDocumentId: string | null
+  readonly pageSession: ShallowRef<AgentFollowerSession | null>
+  detachedConsumerSession: AgentFollowerSession | null
 }
 
 const NOT_A_DOCUMENT_HOLDER = null
@@ -384,8 +388,11 @@ function createOwner(
         'transport' | 'applierDeps'
       > = {
         isTargetActive: computed(
-          () => consumer.value?.isTargetActive.value ?? false
+          () =>
+            (consumer.value?.isTargetActive.value ?? false) &&
+            (consumer.value?.identityReady() ?? true)
         ),
+        identityReady: () => consumer.value?.identityReady() ?? true,
         userId: () => consumer.value?.userId() ?? null,
         getGraph: () => consumer.value?.getGraph() ?? null,
         diagnosticsEnabled: () => consumer.value?.diagnosticsEnabled() ?? false,
@@ -422,7 +429,9 @@ function createOwner(
     binding,
     pageScope: null,
     pageLease: null,
-    pageLeaseDocumentId: null
+    pageLeaseDocumentId: null,
+    pageSession: shallowRef<AgentFollowerSession | null>(null),
+    detachedConsumerSession: null
   }
 }
 
@@ -445,13 +454,16 @@ function claimCurrentDocumentForPage(owner: AgentFollowerSessionOwner): void {
   const leaseForThePreviousDocument = owner.pageLease
   owner.pageLease = claim
   owner.pageLeaseDocumentId = documentId
+  owner.pageSession.value = claim.session
   leaseForThePreviousDocument?.release()
 }
 
 function releasePageClaim(owner: AgentFollowerSessionOwner): void {
-  owner.pageLease?.release()
+  const lease = owner.pageLease
+  owner.pageSession.value = null
   owner.pageLease = null
   owner.pageLeaseDocumentId = null
+  lease?.release()
 }
 
 function trackGateEdgeSynchronously(
@@ -503,6 +515,8 @@ export function destroyAgentFollowerSessions(): void {
   for (const owner of liveOwners) {
     owner.pageLease = null
     owner.pageLeaseDocumentId = null
+    owner.pageSession.value = null
+    owner.detachedConsumerSession = null
     owner.pageScope?.stop()
     owner.pageScope = null
     owner.registry.destroy()
@@ -512,6 +526,12 @@ export function destroyAgentFollowerSessions(): void {
     owners.delete(owner.transport)
   }
   liveOwners.clear()
+}
+
+export function retainedAgentFollowerSessionRef(
+  transport: AgentDocFrameTransport
+): Readonly<ShallowRef<AgentFollowerSession | null>> {
+  return ownerFor(transport).pageSession
 }
 
 /** Document ids a follower session is currently held for, across owners. */
@@ -527,6 +547,7 @@ export function useAgentCrdtFollower(
     transport,
     diagnosticsEnabled,
     userId = () => null,
+    identityReady = () => true,
     isTargetActive = ref(true),
     getGraph = () => null,
     events = {},
@@ -569,6 +590,7 @@ export function useAgentCrdtFollower(
         workflowId,
         transport,
         userId,
+        identityReady,
         isTargetActive,
         getGraph,
         events,
@@ -581,10 +603,14 @@ export function useAgentCrdtFollower(
       const lease = owner.registry.acquire(NOT_A_DOCUMENT_HOLDER)
       if (lease === null) return
       onCleanup(() => {
+        owner.detachedConsumerSession = follower.value ?? null
         follower.value = undefined
         lease.release()
       })
       follower.value = lease.session
+      if (owner.detachedConsumerSession === lease.session)
+        lease.session.refreshSubscription()
+      owner.detachedConsumerSession = null
     },
     { immediate: true, flush: 'sync' }
   )
@@ -904,6 +930,14 @@ function startAgentCrdtFollower(
     },
     onBatchSettled: settleHumanOps
   })
+  watch(
+    () => userId(),
+    (next, previous) => {
+      if (previous !== null && next !== previous)
+        sender.abortForIdentityChange()
+    },
+    { flush: 'sync' }
+  )
   const coalescer = createOpCoalescer((operations) => {
     sender.admit(operations)
     recordUnsynced()
@@ -1608,6 +1642,7 @@ function startAgentCrdtFollower(
       connected.value = false
       terminal.value = null
     },
+    refreshSubscription: () => lifecycle.refresh(),
     enqueueHumanOperations: (operations: GraphOperation[]) => {
       const sentAdds = sentAddsToCurrentDoc()
       for (const operation of operations)

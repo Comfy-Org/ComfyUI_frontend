@@ -15,7 +15,7 @@ const MAX_ATTEMPTS = 8
  */
 const MAX_REPORTED_FAILURES = MAX_ATTEMPTS
 
-interface AgentIdentityDeps {
+export interface AgentIdentityDeps {
   getIdentity(): Promise<{ userId: string }>
   onSocketOpen(listener: () => void): () => void
   isRetryable(error: unknown): boolean
@@ -31,7 +31,7 @@ export type AgentIdentityState =
   | { status: 'resolved'; userId: string }
   | { status: 'rejected' }
 
-interface ResolvedAgentIdentity {
+export interface ResolvedAgentIdentity {
   reset(): void
   state: Readonly<Ref<AgentIdentityState>>
   stop(): void

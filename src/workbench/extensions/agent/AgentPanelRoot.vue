@@ -190,7 +190,6 @@ import {
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { useAgentGraphActivityPresentation } from './composables/agent/useAgentGraphActivityPresentation'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
-import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -204,7 +203,6 @@ import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
-import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -230,7 +228,7 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { startCrdtLog } from './crdt/crdtLog'
 import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
-import { attachDocOpMinter } from './crdt/docOpMinter'
+import { retainDocOpMinterForPage } from './agentPageOpMinter'
 import {
   retainAgentFollowerSessionsForPage,
   useAgentCrdtFollower
@@ -311,7 +309,13 @@ const rest = createAgentRestClient()
 const authStore = useAuthStore()
 const apiKeyAuthStore = useApiKeyAuthStore()
 const teamWorkspaceStore = useTeamWorkspaceStore()
-const { events, docTransport, onIdentityChange } = useAgentPageSession(() =>
+const {
+  events,
+  docTransport,
+  onIdentityChange,
+  retainIdentity,
+  userId: agentUserId
+} = useAgentPageSession(() =>
   toSocketIdentity(
     authStore.userId,
     apiKeyAuthStore.currentUser?.id,
@@ -320,9 +324,8 @@ const { events, docTransport, onIdentityChange } = useAgentPageSession(() =>
   )
 )
 
-const agentIdentity = resolveAgentIdentity({
+retainIdentity({
   getIdentity: () => rest.getIdentity(),
-  onSocketOpen: (listener) => docTransport.onSocketOpen(listener),
   isRetryable: (error) => isRetryableRequestFailure(error, false),
   onFailure: (error) =>
     reportError(error, {
@@ -331,11 +334,6 @@ const agentIdentity = resolveAgentIdentity({
       level: 'warning'
     })
 })
-onBeforeUnmount(() => agentIdentity.stop())
-
-onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
-onBeforeUnmount(onIdentityChange(() => captureOutgoingCredentialForHandoff()))
-
 function onPaywallAction(
   action: AgentPaywallAction,
   surface: AgentPaywallSurface
@@ -1389,34 +1387,16 @@ provide(agentBoundWorkflowActiveKey, isBoundWorkflowActive)
 // session's bound workflow while its tab is active. Suspending the background
 // subscription makes reopening pull state-vector catch-up only after the
 // workflow's serialized activeState has hydrated the transient stores.
-const agentUserId = computed(() => {
-  const identity = agentIdentity.state.value
-  return identity.status === 'resolved' ? identity.userId : null
-})
-
-const isFollowerActive = computed(
-  () => isBoundWorkflowActive.value && agentUserId.value !== null
-)
-
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  enqueueHumanOperations,
-  noteUnboundLocalIntent,
   retrySubscription,
-  docInputNames,
-  docWidgetValue,
-  docPromotedWidgets,
-  mayWritePromotedHost,
-  isPreMintBinding,
-  docHasSubgraphDefinition,
-  notifyWidgetWriteRefused,
-  subscriptionSent,
   canResumeHeldWorkflow
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
   userId: () => agentUserId.value,
-  isTargetActive: isFollowerActive,
+  identityReady: () => agentUserId.value !== null,
+  isTargetActive: isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
@@ -1480,34 +1460,22 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
-function followerCanDeliver(): boolean {
-  return isFollowerActive.value && subscriptionSent()
+function visibleWorkflowIdFor(rootGraph: LGraph): string | null {
+  return bindingStore.workflowIdForGraph(rootGraph) ?? null
 }
-function noteUnboundVisibleIntent(rootGraph: LGraph): void {
-  const workflowId = bindingStore.workflowIdForGraph(rootGraph)
-  if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
-}
-const docOpMinter = attachDocOpMinter({
+const docOpMinter = retainDocOpMinterForPage(docTransport, {
   isEnabled: () => agentPanelStore.enabled,
-  isDocBound: followerCanDeliver,
-  onUnboundLocalIntent: noteUnboundLocalIntent,
-  onUnboundVisibleIntent: noteUnboundVisibleIntent,
+  isTargetActive: () =>
+    isBoundWorkflowActive.value && agentUserId.value !== null,
+  visibleWorkflowIdFor,
   isBoundWorkflow: (workflow) => {
     const bound = boundWorkflowId.value
     return (
       bound !== null && boundOrOpenWorkflowFor(bound)?.path === workflow.path
     )
   },
-  enqueue: enqueueHumanOperations,
   getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
-  boundRootGraphId,
-  docInputNames,
-  docWidgetValue,
-  docPromotedWidgets,
-  mayWritePromotedHost,
-  isPreMintBinding,
-  docHasSubgraphDefinition,
-  onWidgetWriteRefused: notifyWidgetWriteRefused
+  boundRootGraphId
 })
 watch([() => crdtStatus.value.connected, boundWorkflowId], () =>
   docOpMinter.deliverHeldRestores()
@@ -2061,9 +2029,6 @@ onBeforeUnmount(() => {
             cancelled.revision
           )
       }
-    },
-    detachDocOpMinter: () => {
-      docOpMinter.detach()
     },
     detachAgentWriteOverwriteWatch: () => {
       agentWriteOverwriteWatch.detach()

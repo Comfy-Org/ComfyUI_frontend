@@ -199,6 +199,7 @@ describe('createOpSender', () => {
   let boundWorkflow: string | null
   let observedSequence: number
   let observedCounter: number | undefined
+  let actor: string
   let sender: ReturnType<typeof createOpSender>
   let settleBatch: (outcome: BatchOutcome) => void
   const unsubscribe = vi.fn(() => {
@@ -234,6 +235,7 @@ describe('createOpSender', () => {
     boundWorkflow = WORKFLOW
     observedSequence = 41
     observedCounter = undefined
+    actor = ACTOR
     settleBatch = (outcome) => settled.push(outcome)
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
@@ -248,7 +250,7 @@ describe('createOpSender', () => {
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
-      actor: () => ACTOR,
+      actor: () => actor,
       baseVersion: () => observedSequence,
       observedCounter: () => observedCounter,
       onBatchSettled: (outcome) => settleBatch(outcome)
@@ -780,6 +782,33 @@ describe('createOpSender', () => {
     ])
     expect(sent).toHaveLength(2)
     expect(sent[1].ops[0].op_id).not.toBe(firstOpId)
+  })
+
+  it('does not send a held batch after the signed-in actor changes', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(500 * 6)
+
+    actor = 'human:account-b:tab'
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent).toHaveLength(0)
+    expect(settled).toEqual([
+      expect.objectContaining({ state: 'undeliverable' })
+    ])
+  })
+
+  it('settles held batches immediately when the identity owner changes', () => {
+    transportUp = false
+    sender.enqueue([addNode(1)])
+
+    sender.abortForIdentityChange()
+
+    expect(sender.pending()).toBe(0)
+    expect(settled).toEqual([
+      expect.objectContaining({ state: 'undeliverable' })
+    ])
   })
 
   it('stamps a new op above the highest counter in the document', () => {

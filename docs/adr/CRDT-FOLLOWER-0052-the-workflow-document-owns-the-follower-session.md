@@ -561,6 +561,145 @@ panel-close episodes. Stage 0 case (a) is the black-box form of the same
 check — closing the panel with one edit in flight and one queued must still
 deliver both — and is the backstop if the static rule is ever narrowed again.
 
+**As landed, the sender half was already discharged by Stage 1b and only the
+producer remained, and the difference matters for reading the guard.** Stage 1b
+moved the seam into a scope the follower session registry owns while the page
+keeps its own claim, so a panel close no longer reaches `runFollowerTeardown`
+and therefore no longer reaches `opSender.detach()` or `coalescer.detach()`.
+What a panel close still reached was `docOpMinter.detach()`, a step in
+`AgentPanelRoot.vue`'s own `runPanelTeardown` list — so an edit made _while_ the
+panel was closed minted nothing at all, which is strictly worse than a dropped
+batch because it produces no report either. `agentPageOpMinter.ts` is now the
+producer's owner: one producer per doc-frame transport, with its reconnect
+watcher in a detached `effectScope`. The panel installs its answers on each
+mount and nothing removes them on unmount.
+
+**The producer's inputs split the same two ways a session's do, and getting the
+split wrong reproduces the defect with extra machinery.** Session-facing inputs
+(`enqueue`, the document reads, `subscriptionSent`, the unbound-intent note)
+resolve the **page-held** session on every call through
+`retainedAgentFollowerSessionRef`. They must not read the panel's handle: the
+panel's consumer lease is released on unmount, after which every accessor it
+destructured from `useAgentCrdtFollower` answers with its null fallback while
+the session is still alive behind the page claim. Panel-facing inputs — the
+active-target flag, the graph accessor, the bound-workflow and bound-root-graph
+lookups, and the visible-workflow lookup — are
+installed by the live panel and **retained** across its unmount, because they
+are closures over refs, Pinia stores and the page session. That is sound for the
+same reason the retained session keeps its subscription through a close:
+`useAgentSession.stop()` deliberately does not clear `boundWorkflowId`, and a
+stopped `computed` still evaluates.
+
+**Both unbound-intent notes are session-facing, and only the lookup one is
+split.** `onUnboundVisibleIntent` needs a tab-binding lookup, so it reads as
+panel-facing — but the note itself must land on the page-held session, which is
+why the panel answers `visibleWorkflowIdFor` and the owner performs the note.
+The first implementation had the panel do the whole thing and lost the marker
+for every edit made with the panel closed; the fact is recorded below.
+
+**The active-target flag now reads page-owned identity.** The page session
+retains `resolveAgentIdentity`, resets it on an authenticated socket identity
+change, and stops it only during page teardown. Account and workspace changes
+therefore make the identity pending before reconnect delivery can resume, even
+when the panel is closed. Fresh admission requires a resolved page-owned
+identity and a sent subscription for the active target; transport replay and
+catch-up retain their existing acknowledgement ordering.
+
+**A latch in the producer was tried for this and reverted, which is worth
+recording so it is not tried again.** Observing the page session's
+`onIdentityChange` and refusing to mint until a panel reinstalled its inputs
+looked like a cheap safe-direction mitigation. It is not: inputs are installed
+only in `AgentPanelRoot.setup()`, so an identity change with the panel **open**
+latched the gate with nothing to clear it and stopped every hand edit minting
+for the rest of the page session. It also bypassed `deliverHeldRestores`, which
+checks the binding and the document rather than any such latch. That trades a
+narrow window for a page-wide outage. The latch was abandoned; the page-owned
+resolver described above supersedes it.
+
+**Stage 2 requires that no operation be minted or sent under an account identity
+other than the current account.** That covers fresh edits and previously held
+delivery. The page-owned resolver supplies the current answer, while the
+active-target gate closes admission while the page-owned identity is
+unresolved. Host refusal remains containment rather than a frontend correctness
+dependency.
+
+**The restore queue moved with the edit path, as this stage requires.** The
+delivery trigger was a panel watcher, so a reconnect completing with the panel
+closed would never release a held restore — the same defect in a narrower
+window. The owner now watches the page's claim and the session's own
+connectivity inside its own scope; `deliverHeldRestores` is a no-op when
+nothing is held and when the binding moved, so firing it on both edges is free.
+The panel keeps its own watcher for the panel-open case.
+
+**The enforceable form of the guard is `op-producers-outlive-the-panel` in
+`scripts/check-follower-invariants.ts`, and it has two halves because either
+alone passes while the defect stands.** Nothing outside the producer owner may
+call `attachDocOpMinter` (so nothing else holds a `detach` to call, and the
+owner's returned handle deliberately exposes only `deliverHeldRestores`), and no
+producer `detach()` may sit inside a call this stage names as a disposal route a
+panel close reaches — `onBeforeUnmount`, `onUnmounted`, `onScopeDispose`,
+`runPanelTeardown`, `runFollowerTeardown`. The route list is what
+this stage asked for above: a guard built from the Vue hook names alone finds no
+caller, because the call is a thunk in a keyed object or in an array, so the
+rule walks enclosing calls rather than matching statements. Its first test is
+the verbatim pre-stage shape of `AgentPanelRoot.vue`.
+
+**That second half carries one narrowing, and it is stated here rather than left
+in the code.** `useAgentCrdtFollower.ts` and `agentPageOpMinter.ts` are exempt,
+because their disposal is session or page teardown and not a panel close. The
+premise is the page claim: a panel close releases only the panel's consumer
+claim, the holder count never reaches zero, and the registry's scope is not
+stopped — exactly what `followerSessionLifetime.test.ts` pins in both
+directions. Remove the page claim and the session owner becomes panel-reachable
+again and the exemption becomes wrong, so **that pin is the control, not the
+exemption list.**
+
+**Four implementation facts that cost a cycle each, recorded here because the
+repository's comment rule puts rationale in an ADR rather than in the code.**
+
+_The visible-unbound note must travel on the page-held session too, and routing
+it through the panel silently loses it._ `docOpMinter` has two unbound-intent
+outputs, not one: `onUnboundLocalIntent` for an edit to the bound document and
+`onUnboundVisibleIntent` for an edit to the _visible_ root graph while a
+different one is bound. The second needs a tab-binding lookup, which is what
+tempts a reader to route the whole thing through the panel — and that sends the
+note to the panel's released `useAgentCrdtFollower` handle, so a workflow with
+an unsynced local edit made while the panel was closed reads as clean to every
+gate that consults the marker, `canResumeHeldWorkflow` among them. The producer
+owner therefore asks the panel only for the _lookup_ (`visibleWorkflowIdFor`)
+and performs the note itself against the page-held session.
+
+_The page claim follows a document-id edge through a deferred watcher._ Before
+that watcher runs, page-session accessors return null. `subscriptionSent()`
+describes a sent subscribe frame, not an acknowledged one. Unbound-intent notes
+can occur without a subscribed document and need a destination during this
+interval.
+
+_Page teardown of the producer is total per step, not per owner._ A throwing
+scope disposer sharing one `try` with the detach would skip the detach and leave
+the producer on the graph-intent bus with its session destroyed — the leak the
+containment exists to prevent. Each step reports under its own `step` tag and
+the loop continues, for the same reason `runPanelTeardown` is keyed per step.
+
+_The producer owner lives outside `crdt/`._ Its panel-facing inputs read tab
+bindings and the active workflow, which Decision 2 forbids anything under
+`crdt/` from doing. It sits beside `agentPageSession.ts`, the other
+page-lifetime owner.
+
+**One guard this stage asked for is a sender-level pin and was not re-added
+here.** "The `op_id`s observed before a panel unmount are the ones sent after
+remount" is a property of the retained batches, not of the producer: the
+producer emits `GraphOperation`s and wire identity is minted once inside
+`opSender`. `CRDT-REPLAY-0039`'s retention tests and
+`browser_tests/tests/agent/agentPanelCloseKeepsQueuedEdit.spec.ts` already hold
+it. What is new here is pinned instead by
+`browser_tests/tests/agent/agentPanelClosedEditStillMints.spec.ts` — the other
+half of Stage 0 case (a): an edit made _with the panel closed_ mints, reaches
+the document, is read by the next agent turn, and is not re-minted by the
+reopen — and by `src/workbench/extensions/agent/agentPageOpMinter.test.ts`,
+which pins that the mint survives the panel releasing its lease, follows a
+document rebind, does not double on a remount, and stops on page teardown.
+
 **Stage 3 — declare the cold seed.** Carry the "state vector was empty at
 subscribe" fact from the bridge to the projection, and surface divergence
 through the existing `canvasMayBeStale` status instead of a silent merge.

@@ -56,12 +56,12 @@ function violation(
   return { file, line: lineOf(sourceFile, node), rule, message }
 }
 
-function visit(sourceFile: ts.SourceFile, inspect: (node: ts.Node) => void) {
+function visit(root: ts.Node, inspect: (node: ts.Node) => void) {
   const walk = (node: ts.Node): void => {
     inspect(node)
     ts.forEachChild(node, walk)
   }
-  walk(sourceFile)
+  walk(root)
 }
 
 function propertyName(name: ts.PropertyName | undefined): string | undefined {
@@ -423,6 +423,380 @@ function pageSessionOwnsTransport(file: string, source: string): Violation[] {
 
 export { pageSessionOwnsTransport as checkPageSessionOwnsTransport }
 
+export const OP_PRODUCER_OWNER =
+  'src/workbench/extensions/agent/agentPageOpMinter.ts'
+
+const OP_PRODUCER_FACTORIES = new Set(['attachDocOpMinter'])
+
+const OP_PRODUCER_RECEIVERS = new Set(['docOpMinter', 'opSender', 'coalescer'])
+
+const PANEL_CLOSE_DISPOSAL_ROUTES = new Set([
+  'onBeforeUnmount',
+  'onUnmounted',
+  'onScopeDispose',
+  'runPanelTeardown',
+  'runFollowerTeardown'
+])
+
+function producerFactoryNames(sourceFile: ts.SourceFile): Set<string> {
+  const names = new Set(OP_PRODUCER_FACTORIES)
+  visit(sourceFile, (node) => {
+    if (!ts.isImportSpecifier(node)) return
+    const imported = node.propertyName?.text ?? node.name.text
+    if (OP_PRODUCER_FACTORIES.has(imported)) names.add(node.name.text)
+  })
+  return names
+}
+
+function producerFactory(
+  node: ts.Node,
+  factoryNames: Set<string>
+): string | undefined {
+  if (!ts.isCallExpression(node)) return
+  const { expression } = node
+  const name = ts.isIdentifier(expression)
+    ? expression.text
+    : ts.isPropertyAccessExpression(expression)
+      ? expression.name.text
+      : undefined
+  return name !== undefined && factoryNames.has(name) ? name : undefined
+}
+
+function receiverName(receiver: ts.Expression): string | undefined {
+  if (ts.isIdentifier(receiver)) return receiver.text
+  if (ts.isPropertyAccessExpression(receiver)) return receiver.name.text
+}
+
+function producerDetachReference(node: ts.Node): string | undefined {
+  if (!ts.isPropertyAccessExpression(node)) return
+  if (node.name.text !== 'detach') return
+  const name = receiverName(node.expression)
+  return name !== undefined && OP_PRODUCER_RECEIVERS.has(name)
+    ? name
+    : undefined
+}
+
+function calledName(node: ts.CallExpression): string | undefined {
+  const callee = node.expression
+  if (ts.isIdentifier(callee)) return callee.text
+  if (ts.isPropertyAccessExpression(callee)) return callee.name.text
+}
+
+function importedPanelCloseRouteAlias(node: ts.Node): string | undefined {
+  if (!ts.isImportSpecifier(node)) return
+  const imported = node.propertyName?.text ?? node.name.text
+  if (PANEL_CLOSE_DISPOSAL_ROUTES.has(imported)) return node.name.text
+}
+
+function assignedPanelCloseRouteAlias(
+  node: ts.Node,
+  routeNames: Set<string>
+): string | undefined {
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer &&
+    ts.isIdentifier(node.initializer) &&
+    routeNames.has(node.initializer.text)
+  )
+    return node.name.text
+}
+
+function panelCloseRouteAlias(
+  node: ts.Node,
+  routeNames: Set<string>
+): string | undefined {
+  return (
+    importedPanelCloseRouteAlias(node) ??
+    assignedPanelCloseRouteAlias(node, routeNames)
+  )
+}
+
+function panelCloseRouteNames(sourceFile: ts.SourceFile): Set<string> {
+  const names = new Set(PANEL_CLOSE_DISPOSAL_ROUTES)
+  visit(sourceFile, (node) => {
+    const alias = panelCloseRouteAlias(node, names)
+    if (alias !== undefined) names.add(alias)
+  })
+  return names
+}
+
+function isPanelCloseRouteCall(
+  node: ts.Node,
+  routeNames: Set<string>
+): node is ts.CallExpression {
+  if (!ts.isCallExpression(node)) return false
+  const name = calledName(node)
+  return name !== undefined && routeNames.has(name)
+}
+
+interface CallableBinding {
+  body: ts.Node
+  key: string
+  name?: string
+  scope: ts.Node
+}
+
+function lexicalScope(node: ts.Node): ts.Node {
+  let current: ts.Node = node.parent
+  while (!ts.isBlock(current) && !ts.isSourceFile(current))
+    current = current.parent
+  return current
+}
+
+function callableBinding(node: ts.Node): CallableBinding | undefined {
+  if (ts.isFunctionDeclaration(node) && node.body)
+    return {
+      key: `callable:${node.pos}`,
+      name: node.name?.text,
+      body: node.body,
+      scope: lexicalScope(node)
+    }
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer &&
+    (ts.isArrowFunction(node.initializer) ||
+      ts.isFunctionExpression(node.initializer))
+  )
+    return {
+      key: `callable:${node.initializer.pos}`,
+      name: node.name.text,
+      body: node.initializer.body,
+      scope: lexicalScope(node)
+    }
+  if (
+    ts.isVariableDeclaration(node) &&
+    ts.isIdentifier(node.name) &&
+    node.initializer
+  )
+    return {
+      key: `callable:${node.pos}`,
+      name: node.name.text,
+      body: node.initializer,
+      scope: lexicalScope(node)
+    }
+  if (
+    (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) &&
+    !ts.isVariableDeclaration(node.parent)
+  )
+    return {
+      key: `callable:${node.pos}`,
+      body: node.body,
+      scope: lexicalScope(node)
+    }
+}
+
+function scopeChain(node: ts.Node): ts.Node[] {
+  const scopes: ts.Node[] = []
+  let current = node
+  while (!ts.isSourceFile(current)) {
+    if (ts.isBlock(current)) scopes.push(current)
+    current = current.parent
+  }
+  scopes.push(current)
+  return scopes
+}
+
+function resolveCallable(
+  identifier: ts.Identifier,
+  bindings: readonly CallableBinding[]
+): CallableBinding | undefined {
+  for (const scope of scopeChain(identifier)) {
+    const match = bindings.find(
+      (binding) => binding.name === identifier.text && binding.scope === scope
+    )
+    if (match) return match
+  }
+}
+
+function callableBindings(sourceFile: ts.SourceFile): CallableBinding[] {
+  const bindings: CallableBinding[] = []
+  visit(sourceFile, (node) => {
+    const declaration = callableBinding(node)
+    if (declaration !== undefined) bindings.push(declaration)
+  })
+  return bindings
+}
+
+function directlyReachedBindings(
+  sourceFile: ts.SourceFile,
+  routeNames: Set<string>,
+  bindings: readonly CallableBinding[]
+): Set<string> {
+  const reached = new Set<string>()
+  visit(sourceFile, (node) => {
+    if (!isPanelCloseRouteCall(node, routeNames)) return
+    for (const argument of node.arguments) {
+      const walk = (candidate: ts.Node): void => {
+        if (ts.isFunctionDeclaration(candidate)) return
+        if (
+          ts.isArrowFunction(candidate) ||
+          ts.isFunctionExpression(candidate)
+        ) {
+          const inline = bindings.find(
+            (binding) => binding.key === `callable:${candidate.pos}`
+          )
+          if (inline) reached.add(inline.key)
+        }
+        if (ts.isIdentifier(candidate)) {
+          const isDeclarationName =
+            (ts.isVariableDeclaration(candidate.parent) ||
+              ts.isFunctionDeclaration(candidate.parent)) &&
+            candidate.parent.name === candidate
+          const isPropertyName =
+            ts.isPropertyAccessExpression(candidate.parent) &&
+            candidate.parent.name === candidate
+          if (!isDeclarationName && !isPropertyName) {
+            const binding = resolveCallable(candidate, bindings)
+            if (binding) reached.add(binding.key)
+          }
+        }
+        candidate.forEachChild(walk)
+      }
+      walk(argument)
+    }
+  })
+  return reached
+}
+
+function directCalledBindings(
+  binding: CallableBinding,
+  bindings: readonly CallableBinding[]
+): Set<string> {
+  const called = new Set<string>()
+  const walk = (node: ts.Node): void => {
+    if (node !== binding.body && callableBinding(node)) return
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const target = resolveCallable(node.expression, bindings)
+      if (target) called.add(target.key)
+    }
+    node.forEachChild(walk)
+  }
+  walk(binding.body)
+  return called
+}
+
+function expandReachedBindings(
+  reached: Set<string>,
+  bindings: readonly CallableBinding[]
+): void {
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const key of reached) {
+      const binding = bindings.find((candidate) => candidate.key === key)
+      if (!binding) continue
+      for (const called of directCalledBindings(binding, bindings)) {
+        if (reached.has(called)) continue
+        reached.add(called)
+        changed = true
+      }
+    }
+  }
+}
+
+function namesReachedByAPanelCloseRoute(
+  sourceFile: ts.SourceFile,
+  routeNames: Set<string>
+): Set<string> {
+  const bindings = callableBindings(sourceFile)
+  const reached = directlyReachedBindings(sourceFile, routeNames, bindings)
+  expandReachedBindings(reached, bindings)
+  return reached
+}
+
+function enclosingCallableKeys(node: ts.Node): string[] {
+  const keys: string[] = []
+  let parent = node.parent as ts.Node | undefined
+  while (parent !== undefined) {
+    if (ts.isFunctionDeclaration(parent)) {
+      keys.push(`callable:${parent.pos}`)
+      break
+    }
+    if (ts.isArrowFunction(parent) || ts.isFunctionExpression(parent)) {
+      keys.push(`callable:${parent.pos}`)
+      break
+    }
+    if (
+      ts.isVariableDeclaration(parent) &&
+      parent.initializer &&
+      !ts.isArrowFunction(parent.initializer) &&
+      !ts.isFunctionExpression(parent.initializer)
+    )
+      keys.push(`callable:${parent.pos}`)
+    parent = parent.parent
+  }
+  return keys
+}
+
+function insideAPanelCloseRoute(
+  node: ts.Node,
+  reachedNames: Set<string>,
+  routeNames: Set<string>
+): boolean {
+  const callables = enclosingCallableKeys(node)
+  if (callables.length > 0)
+    return callables.some((callable) => reachedNames.has(callable))
+  let parent = node.parent as ts.Node | undefined
+  while (parent !== undefined) {
+    if (isPanelCloseRouteCall(parent, routeNames)) return true
+    parent = parent.parent
+  }
+  return false
+}
+
+const SESSION_DISPOSAL_OWNERS = new Set([
+  'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts',
+  'src/workbench/extensions/agent/agentPageOpMinter.ts'
+])
+
+function opProducersOutliveThePanel(file: string, source: string): Violation[] {
+  if (!isAgentSurfaceFile(file)) return []
+  if (
+    ![...OP_PRODUCER_FACTORIES].some((name) => source.includes(name)) &&
+    !/\bdetach\b/.test(source)
+  )
+    return []
+  const parsed = parse(
+    file.endsWith('.vue') ? `${file}.ts` : file,
+    scriptOf(file, source)
+  )
+  if (parsed.violations.length) return atPath(file, parsed.violations)
+  const factoryNames = producerFactoryNames(parsed.sourceFile)
+  const routeNames = panelCloseRouteNames(parsed.sourceFile)
+  const reachedNames = namesReachedByAPanelCloseRoute(
+    parsed.sourceFile,
+    routeNames
+  )
+  const violations: Violation[] = []
+  visit(parsed.sourceFile, (node) => {
+    const factory = producerFactory(node, factoryNames)
+    if (factory !== undefined && file !== OP_PRODUCER_OWNER)
+      violations.push({
+        file,
+        line: lineOf(parsed.sourceFile, node),
+        rule: 'op-producers-outlive-the-panel',
+        message: `calls ${factory}() outside ${OP_PRODUCER_OWNER} — the op producer mints at the command site and its lifetime is the page, so a component that attaches one also detaches it on unmount and a hand edit made with the panel closed then mints nothing at all: no operation, no retained batch, nothing for the next resubscribe to replay; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2`
+      })
+    const receiver = producerDetachReference(node)
+    if (
+      receiver !== undefined &&
+      !SESSION_DISPOSAL_OWNERS.has(file) &&
+      insideAPanelCloseRoute(node, reachedNames, routeNames)
+    )
+      violations.push({
+        file,
+        line: lineOf(parsed.sourceFile, node),
+        rule: 'op-producers-outlive-the-panel',
+        message: `reaches ${receiver}.detach from a disposal route a panel close reaches — closing the Agent panel is an ordinary one-click unmount, and an edit made while it is closed must still mint, be held, and replay with its original op_id after the next acknowledged resubscribe; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 2`
+      })
+  })
+  return violations
+}
+
+export { opProducersOutliveThePanel as checkOpProducersOutliveThePanel }
+
 /** The one module allowed to own a follower session's lifetime. */
 export const FOLLOWER_SESSION_OWNER =
   'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts'
@@ -565,6 +939,7 @@ export function checkAgentSurfaceFiles(
     }
     violations.push(...pageSessionOwnsTransport(file, source))
     violations.push(...sessionOwnsFollowerLifetime(file, source))
+    violations.push(...opProducersOutliveThePanel(file, source))
   }
   return violations
 }
