@@ -407,7 +407,11 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const widgets = this.node.widgets ?? [this]
     ensureUniqueWidgetNames(widgets)
     const name = ownedWidgetNameKey(widgets, this)
-    if (name !== undefined) return widgetId(graphId, nodeId, name)
+    if (name !== undefined) {
+      const id = widgetId(graphId, nodeId, name)
+      const occupant = useWidgetValueStore().getWidget(id)
+      return !occupant || occupant === this._state ? id : undefined
+    }
     return this.boundWidgetId(graphId, nodeId)
   }
 

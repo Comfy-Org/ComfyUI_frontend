@@ -179,6 +179,9 @@ describe('unique-name refusal criterion', () => {
 
     node.widgets = (node.widgets ?? []).filter((widget) => widget !== seed)
 
+    const store = useWidgetValueStore()
+    expect(steps.widgetId).toBeUndefined()
+    expect(store.getNodeWidgetIds(graph.id, node.id)).toEqual([])
     expect(steps.value).toBe(2)
     expect(seed.value).toBe(1)
 
