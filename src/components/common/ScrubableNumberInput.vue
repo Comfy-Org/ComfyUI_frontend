@@ -25,7 +25,7 @@
           size="icon-sm"
           :disabled="!canDecrement"
           tabindex="-1"
-          @click="modelValue = clamp(modelValue - step)"
+          @click="updateValueBy(-step)"
         >
           <i class="icon-[lucide--minus]" data-part="widget-stepper-icon" />
         </Button>
@@ -52,10 +52,10 @@
             @blur="commitDraft"
             @keyup.enter="commitDraft"
             @keydown.esc.prevent.stop="cancelTextEdit"
-            @keydown.up.prevent="updateValueBy(step)"
-            @keydown.down.prevent="updateValueBy(-step)"
-            @keydown.page-up.prevent="updateValueBy(10 * step)"
-            @keydown.page-down.prevent="updateValueBy(-10 * step)"
+            @keydown.up.prevent="stepFromInput(step)"
+            @keydown.down.prevent="stepFromInput(-step)"
+            @keydown.page-up.prevent="stepFromInput(10 * step)"
+            @keydown.page-down.prevent="stepFromInput(-10 * step)"
           />
         </div>
         <slot />
@@ -70,7 +70,7 @@
           size="icon-sm"
           :disabled="!canIncrement"
           tabindex="-1"
-          @click="modelValue = clamp(modelValue + step)"
+          @click="updateValueBy(step)"
         >
           <i class="icon-[lucide--plus]" data-part="widget-stepper-icon" />
         </Button>
@@ -84,7 +84,7 @@
 
 <script setup lang="ts">
 import { useFocus } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -132,16 +132,19 @@ function clamp(value: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
+const stepMin = computed(() => Math.max(min, -Number.MAX_SAFE_INTEGER))
+const stepMax = computed(() => Math.min(max, Number.MAX_SAFE_INTEGER))
 const canDecrement = computed(
-  () => modelValue.value > min && !disabled && canStep.value
+  () => modelValue.value > stepMin.value && !disabled && canStep.value
 )
 const canIncrement = computed(
-  () => modelValue.value < max && !disabled && canStep.value
+  () => modelValue.value < stepMax.value && !disabled && canStep.value
 )
 const canStep = computed(
   () =>
     Number.isFinite(modelValue.value) &&
-    Math.abs(modelValue.value) <= Number.MAX_SAFE_INTEGER
+    Math.abs(modelValue.value) <= Number.MAX_SAFE_INTEGER &&
+    stepMin.value <= stepMax.value
 )
 
 function handleInput(event: Event) {
@@ -178,18 +181,27 @@ function startTextEdit() {
 
 useNumberScrub(scrubElement, {
   value: modelValue,
-  min: () => Math.max(min, -Number.MAX_SAFE_INTEGER),
-  max: () => Math.min(max, Number.MAX_SAFE_INTEGER),
+  min: stepMin,
+  max: stepMax,
   step: () => step,
   disabled: () => disabled || focused.value,
-  onScrub: (value) => {
-    modelValue.value = value
-  },
+  onScrub: updateIncrementalValue,
   onClick: startTextEdit
 })
 
+async function stepFromInput(delta: number) {
+  commitDraft()
+  await nextTick()
+  updateValueBy(delta)
+}
+
 function updateValueBy(delta: number) {
-  modelValue.value = Math.min(max, Math.max(min, modelValue.value + delta))
+  updateIncrementalValue(modelValue.value + delta)
+}
+
+function updateIncrementalValue(value: number) {
+  if (disabled || !canStep.value) return
+  modelValue.value = Math.min(stepMax.value, Math.max(stepMin.value, value))
   draft.value = undefined
 }
 </script>

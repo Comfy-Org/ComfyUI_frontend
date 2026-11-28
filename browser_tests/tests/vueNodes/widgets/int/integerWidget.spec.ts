@@ -19,7 +19,7 @@ test.describe('Vue Integer Widget', { tag: '@vue-nodes' }, () => {
 
     await input.press('ArrowUp')
 
-    await expect(input).toHaveValue('21')
+    await expect(input).toHaveValue('10000')
     await expect(async () => {
       const steppedBounds = (await input.boundingBox())!
       expect(steppedBounds.width).toBeLessThan(draftBounds.width - 50)
