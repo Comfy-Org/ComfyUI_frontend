@@ -105,9 +105,9 @@ vi.mock(import('../ui/logger'), () => ({
   fail: vi.fn(),
   info,
   pass: vi.fn(),
-  warn: vi.fn()
+  warn: vi.fn(),
+  stepHeader: vi.fn()
 }))
-vi.mock(import('../ui/steps'), () => ({ stepHeader: vi.fn() }))
 
 const originalIsTTY = process.stdin.isTTY
 
