@@ -1369,6 +1369,7 @@ export interface components {
         | 'disable'
         | 'enable'
         | 'install-model'
+        | 'reinstall'
       params:
         | components['schemas']['InstallPackParams']
         | components['schemas']['UpdatePackParams']
@@ -1492,6 +1493,8 @@ export interface components {
       aux_id?: string | null
       /** @description Whether the pack is enabled */
       enabled: boolean
+      /** @description True when the folder has neither .git nor .tracking, so the Manager can neither update it nor tell its version; absent or null otherwise. Its ver is then "unknown" and its cnr_id is the registry id of its pack when the registry list has it, otherwise [project].name of its pyproject.toml in lower case (also while the registry list is still loading), otherwise "". A reinstall task fixes it. */
+      invalid_installation?: boolean | null
     }
     /**
      * @description Version selection for pack installation

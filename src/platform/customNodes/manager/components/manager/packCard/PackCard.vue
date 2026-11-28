@@ -33,18 +33,31 @@
               <div v-if="nodesLabel" class="p-2 pl-0 text-xs">
                 {{ nodesLabel }}
               </div>
-              <PackVersionBadge
-                :node-pack="nodePack"
-                :is-selected="isSelected"
-                :fill="false"
-                :class="isInstalling ? 'pointer-events-none' : ''"
-              />
-              <div
-                v-if="formattedLatestVersionDate"
-                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground"
-              >
-                {{ formattedLatestVersionDate }}
-              </div>
+              <Tooltip v-if="isInvalidInstallation">
+                <TooltipTrigger as-child>
+                  <PackStatusMessage
+                    is-invalid-installation
+                    class="whitespace-nowrap"
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  {{ t('manager.invalidInstallation.message') }}
+                </TooltipContent>
+              </Tooltip>
+              <template v-else>
+                <PackVersionBadge
+                  :node-pack="nodePack"
+                  :is-selected="isSelected"
+                  :fill="false"
+                  :class="isInstalling ? 'pointer-events-none' : ''"
+                />
+                <div
+                  v-if="formattedLatestVersionDate"
+                  class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground"
+                >
+                  {{ formattedLatestVersionDate }}
+                </div>
+              </template>
             </div>
             <div class="flex">
               <span
@@ -71,6 +84,10 @@ import { computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import PackStatusMessage from '@/platform/customNodes/manager/components/manager/PackStatusMessage.vue'
 import PackVersionBadge from '@/platform/customNodes/manager/components/manager/PackVersionBadge.vue'
 import PackBanner from '@/platform/customNodes/manager/components/manager/packBanner/PackBanner.vue'
 import PackCardFooter from '@/platform/customNodes/manager/components/manager/packCard/PackCardFooter.vue'
@@ -91,15 +108,25 @@ const { nodePack, isSelected = false } = defineProps<{
 
 const { d, t } = useI18n()
 
-const { isPackInstalled, isPackEnabled, isPackInstalling } =
-  useComfyManagerStore()
+const {
+  isPackInstalled,
+  isPackEnabled,
+  isPackInstalling,
+  isPackInvalidInstallation
+} = useComfyManagerStore()
 
 const isInstalling = computed(() => isPackInstalling(nodePack?.id))
 provide(IsInstallingKey, isInstalling)
 
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
+const isInvalidInstallation = computed(() =>
+  isPackInvalidInstallation(nodePack?.id)
+)
 const isDisabled = computed(
-  () => isInstalled.value && !isPackEnabled(nodePack?.id)
+  () =>
+    isInstalled.value &&
+    !isInvalidInstallation.value &&
+    !isPackEnabled(nodePack?.id)
 )
 
 const nodesCount = computed(() =>

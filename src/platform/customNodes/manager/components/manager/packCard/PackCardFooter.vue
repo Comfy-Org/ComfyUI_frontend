@@ -7,8 +7,13 @@
       <span>{{ formattedDownloads }}</span>
     </div>
     <div v-else></div>
+    <PackReinstallButton
+      v-if="isPackInvalidInstallation(nodePack.id)"
+      :node-pack="nodePack"
+      :tooltip="$t('manager.invalidInstallation.message')"
+    />
     <PackInstallButton
-      v-if="!isInstalled"
+      v-else-if="!isInstalled"
       :node-packs="[nodePack]"
       :is-installing="isInstalling"
       :has-conflict="hasConflicts"
@@ -25,6 +30,7 @@ import { useI18n } from 'vue-i18n'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackEnableToggle from '@/platform/customNodes/manager/components/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/platform/customNodes/manager/components/manager/button/PackInstallButton.vue'
+import PackReinstallButton from '@/platform/customNodes/manager/components/manager/button/PackReinstallButton.vue'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import { IsInstallingKey } from '@/platform/customNodes/manager/types/comfyManagerTypes'
@@ -34,7 +40,7 @@ const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
 
-const { isPackInstalled } = useComfyManagerStore()
+const { isPackInstalled, isPackInvalidInstallation } = useComfyManagerStore()
 const isInstalled = computed(() => isPackInstalled(nodePack?.id))
 const isInstalling = inject(IsInstallingKey)
 

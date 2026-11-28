@@ -51,6 +51,7 @@
       <ModelInfoField :label="t('g.status')">
         <PackStatusMessage
           :has-import-failed="hasImportFailed"
+          :is-invalid-installation="hasInvalidInstallation"
           :status-type="overallStatus"
           :has-compatibility-issues="hasConflicts"
         />
@@ -106,6 +107,9 @@ const {
 } = usePacksSelection(nodePacksRef)
 
 const { hasImportFailed, overallStatus } = usePacksStatus(nodePacksRef)
+const hasInvalidInstallation = computed(() =>
+  nodePacks.some((pack) => managerStore.isPackInvalidInstallation(pack.id))
+)
 
 // Batch update state for nightly packs
 const isUpdatingSelected = ref(false)

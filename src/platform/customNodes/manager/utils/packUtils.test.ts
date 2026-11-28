@@ -171,6 +171,54 @@ describe('packUtils', () => {
 
       expect(normalizePackKeys(input)).toEqual(expected)
     })
+
+    describe('when a valid install and a flagged folder share a key', () => {
+      const validInstall = {
+        ver: '1.0.0',
+        cnr_id: 'comfyui-foo',
+        aux_id: null,
+        enabled: false
+      }
+      const flaggedFolder = {
+        ver: 'unknown',
+        cnr_id: 'comfyui-foo',
+        aux_id: null,
+        enabled: false,
+        invalid_installation: true
+      }
+
+      it.for([
+        {
+          order: 'valid install comes first',
+          packs: {
+            'comfyui-foo@1_0_0': validInstall,
+            'comfyui-foo': flaggedFolder
+          }
+        },
+        {
+          order: 'flagged folder comes first',
+          packs: {
+            'comfyui-foo': flaggedFolder,
+            'comfyui-foo@1_0_0': validInstall
+          }
+        }
+      ])('keeps the valid install when the $order', ({ packs }) => {
+        expect(normalizePackKeys(packs)).toEqual({
+          'comfyui-foo': validInstall
+        })
+      })
+
+      it('keeps the last of two valid installs', () => {
+        const olderInstall = { ...validInstall, ver: '0.9.0' }
+
+        expect(
+          normalizePackKeys({
+            'comfyui-foo@1_0_0': validInstall,
+            'comfyui-foo@0_9_0': olderInstall
+          })
+        ).toEqual({ 'comfyui-foo': olderInstall })
+      })
+    })
   })
 
   describe('Integration scenarios from JSDoc examples', () => {

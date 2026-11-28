@@ -1,4 +1,9 @@
-import { mapKeys } from 'es-toolkit/compat'
+import { mapKeys, omitBy, pickBy, values } from 'es-toolkit/compat'
+
+import type { components } from '@comfyorg/api-client/generatedManagerTypes'
+
+type InstalledPacks = components['schemas']['InstalledPacksResponse']
+type InstalledPack = components['schemas']['ManagerPackInstalled']
 
 /**
  * Normalizes a pack ID by removing the version suffix.
@@ -20,18 +25,45 @@ export function normalizePackId(packId: string): string {
   return packId.split('@')[0]
 }
 
+function isInvalidInstallation(entry: unknown): boolean {
+  return (
+    typeof entry === 'object' &&
+    entry !== null &&
+    'invalid_installation' in entry &&
+    entry.invalid_installation === true
+  )
+}
+
 /**
- * Normalizes all keys in a pack record by removing version suffixes.
- * This is used when receiving pack data from the server to ensure
- * consistent key format across the application.
- *
- * @param packs - Record of packs with potentially versioned keys
- * @returns Record with normalized keys
+ * Strips the version suffix of each key. When keys collide the last entry wins,
+ * but an entry flagged `invalid_installation` never replaces one without the flag.
  */
 export function normalizePackKeys<T>(
   packs: Record<string, T>
 ): Record<string, T> {
-  return mapKeys(packs, (_value, key) => normalizePackId(key))
+  const validInstalls = pickBy(packs, (entry) => !isInvalidInstallation(entry))
+  return {
+    ...mapKeys(packs, (_value, key) => normalizePackId(key)),
+    ...mapKeys(validInstalls, (_value, key) => normalizePackId(key))
+  }
+}
+
+function nodePackIdOf(pack: InstalledPack) {
+  return pack.cnr_id || pack.aux_id
+}
+
+/** Normalizes the keys and leaves out each `invalid_installation` entry whose nodepack also has an entry without the flag. */
+export function normalizeInstalledPacks(packs: InstalledPacks): InstalledPacks {
+  const validNodePackIds = new Set(
+    values(packs)
+      .filter((pack) => !pack.invalid_installation)
+      .map(nodePackIdOf)
+  )
+  function isInvalidBesideValidInstall(pack: InstalledPack) {
+    const id = nodePackIdOf(pack)
+    return !!pack.invalid_installation && !!id && validNodePackIds.has(id)
+  }
+  return normalizePackKeys(omitBy(packs, isInvalidBesideValidInstall))
 }
 
 /** Returns the normalized pack id from a `custom_nodes.<pack>` Python module path, or null for any other module. */

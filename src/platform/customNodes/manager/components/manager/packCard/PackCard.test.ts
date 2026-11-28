@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import Spinner from '@comfyorg/design-system/spinner/Spinner'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import PackCard from '@/platform/customNodes/manager/components/manager/packCard/PackCard.vue'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import type {
   MergedNodePack,
   RegistryPack
@@ -179,6 +181,22 @@ describe('PackCard', () => {
       renderComponent({ nodePack: packWithNodes })
 
       expect(screen.getByText('1 node')).toBeInTheDocument()
+    })
+
+    it('shows an invalid installation in place of the version and explains it on hover', async () => {
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
+      vi.mocked(
+        useComfyManagerStore().isPackInvalidInstallation
+      ).mockReturnValue(true)
+
+      renderComponent({ nodePack: mockNodePack })
+
+      const status = screen.getByRole('alert')
+      expect(status).toHaveTextContent('Invalid Installation')
+      await userEvent.hover(status)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        enMessages.manager.invalidInstallation.message
+      )
     })
   })
 
