@@ -20,6 +20,7 @@ export type AgentPaywallPresentation =
   | { kind: 'salesManaged' }
   | { kind: 'local' }
   | { kind: 'unavailable' }
+  | { kind: 'unresolved' }
 
 interface AgentPaywallPresentationInput {
   distribution: 'cloud' | 'local'
@@ -34,13 +35,18 @@ export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
   kind: 'unavailable'
 } as const satisfies AgentPaywallPresentation
 
+export const UNRESOLVED_AGENT_PAYWALL_PRESENTATION = {
+  kind: 'unresolved'
+} as const satisfies AgentPaywallPresentation
+
 const AGENT_PAYWALL_REASONS = {
   subscribed: 'no_funds',
   local: 'no_funds',
   subscriptionRequired: 'subscription_inactive',
   member: 'member_cannot_pay',
   salesManaged: 'sales_managed',
-  unavailable: 'unknown'
+  unavailable: 'unknown',
+  unresolved: 'unknown'
 } satisfies Record<AgentPaywallPresentation['kind'], AgentPaywallReason>
 
 export function toAgentPaywallReason(
@@ -70,7 +76,8 @@ const AGENT_PAYWALL_REMEDIATIONS = {
   subscriptionRequired: 'subscribe',
   member: undefined,
   salesManaged: undefined,
-  unavailable: undefined
+  unavailable: undefined,
+  unresolved: undefined
 } satisfies Record<
   AgentPaywallPresentation['kind'],
   AgentPaywallRemediation | undefined
