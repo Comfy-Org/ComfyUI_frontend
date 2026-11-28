@@ -12,6 +12,7 @@ import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'
+import { useWidgetFolderLockStore } from './widgetFolderLockStore'
 
 function state<T>(
   type: string,
@@ -36,6 +37,94 @@ describe('useWidgetValueStore', () => {
   const graphB = 'graph-b' as UUID
   const seedA = widgetId(graphA, toNodeId('node-1'), 'seed')
   const seedB = widgetId(graphB, toNodeId('node-1'), 'seed')
+
+  describe('folder lock components', () => {
+    it('keeps host, interior, and graph locks independent through rename and unlock', () => {
+      const store = useWidgetValueStore()
+      const interior = widgetId(graphA, toNodeId('subgraph:node-1'), 'seed')
+      const renamed = widgetId(graphA, toNodeId('node-1'), 'model')
+      store.registerWidget(seedA, state('combo', 'MOSS/image/a.safetensors'))
+      useWidgetFolderLockStore().set(seedA, { directory: ['MOSS', 'image'] })
+      useWidgetFolderLockStore().set(interior, { directory: ['SDXL'] })
+      useWidgetFolderLockStore().set(seedB, { directory: ['Flux'] })
+
+      store.renameWidget(seedA, renamed)
+      expect(useWidgetFolderLockStore().get(seedA)).toBeUndefined()
+      expect(useWidgetFolderLockStore().get(renamed)).toEqual({
+        directory: ['MOSS', 'image']
+      })
+      useWidgetFolderLockStore().set(renamed, undefined)
+
+      expect(useWidgetFolderLockStore().get(renamed)).toBeUndefined()
+      expect(useWidgetFolderLockStore().get(interior)).toEqual({
+        directory: ['SDXL']
+      })
+      expect(useWidgetFolderLockStore().get(seedB)).toEqual({
+        directory: ['Flux']
+      })
+      expect(store.getWidget(renamed)?.value).toBe('MOSS/image/a.safetensors')
+    })
+
+    it.for([
+      {
+        name: 'widget deletion',
+        remove: (store: ReturnType<typeof useWidgetValueStore>, id: WidgetId) =>
+          store.deleteWidget(id)
+      },
+      {
+        name: 'node deletion',
+        remove: (store: ReturnType<typeof useWidgetValueStore>) =>
+          store.clearNode(graphA, toNodeId('node-1'))
+      },
+      {
+        name: 'graph clearing',
+        remove: (store: ReturnType<typeof useWidgetValueStore>) =>
+          store.clearGraph(graphA)
+      },
+      {
+        name: 'discarding a detached node',
+        remove: (store: ReturnType<typeof useWidgetValueStore>) =>
+          store.releaseNodeWidgets(graphA, toNodeId('node-1'), {
+            discardValues: true
+          })
+      },
+      {
+        name: 'widget type replacement',
+        remove: (store: ReturnType<typeof useWidgetValueStore>, id: WidgetId) =>
+          store.registerWidget(id, state('string', 'text'))
+      }
+    ])(
+      'removes folder scope on $name without affecting another graph',
+      ({ remove }) => {
+        const store = useWidgetValueStore()
+        store.registerWidget(seedA, state('combo', 'MOSS/a.safetensors'))
+        useWidgetFolderLockStore().set(seedA, { directory: ['MOSS'] })
+        useWidgetFolderLockStore().set(seedB, { directory: ['Flux'] })
+
+        remove(store, seedA)
+
+        expect(useWidgetFolderLockStore().get(seedA)).toBeUndefined()
+        expect(useWidgetFolderLockStore().get(seedB)).toEqual({
+          directory: ['Flux']
+        })
+      }
+    )
+
+    it('preserves scope while a deleted node is retained for undo', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('combo', 'MOSS/a.safetensors'))
+      useWidgetFolderLockStore().set(seedA, { directory: ['MOSS'] })
+
+      store.releaseNodeWidgets(graphA, toNodeId('node-1'), {
+        discardValues: false
+      })
+      store.registerWidget(seedA, state('combo', 'ignored'))
+
+      expect(useWidgetFolderLockStore().get(seedA)).toEqual({
+        directory: ['MOSS']
+      })
+    })
+  })
 
   describe('widgetState.value access', () => {
     it('getWidget returns undefined for unregistered widget', () => {
