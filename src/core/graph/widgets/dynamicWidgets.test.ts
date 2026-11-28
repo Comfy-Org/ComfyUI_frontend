@@ -1062,30 +1062,51 @@ describe('Autogrow followed by an ordinary combo child (FE-258)', () => {
       graph.add(node)
       const slotOf = (name: string) =>
         node.inputs.findIndex((input) => input.name === `model.images.${name}`)
+      const sourceOf = new Map<string, LGraphNode['id']>()
       for (const ordinal of [1, 2, 3]) {
         const source = new ImageMaskSourceNode()
         graph.add(source)
         source.connect(0, node, slotOf(`image_${ordinal}`))
+        sourceOf.set(`image_${ordinal}`, source.id)
       }
       for (const ordinal of disconnected)
         node.disconnectInput(slotOf(`image_${ordinal}`))
 
       const reloaded = new LGraph()
-      vi.spyOn(app, 'configuringGraph', 'get').mockReturnValue(configuring)
-      reloaded.configure(structuredClone(graph.serialize()))
-      vi.restoreAllMocks()
+      const configuringSpy = vi
+        .spyOn(app, 'configuringGraph', 'get')
+        .mockReturnValue(configuring)
+      try {
+        reloaded.configure(structuredClone(graph.serialize()))
+      } finally {
+        configuringSpy.mockRestore()
+      }
 
       const reloadedNode = reloaded.getNodeById(node.id)
       assert.ok(reloadedNode, 'reloaded node')
       expect(
-        reloadedNode.inputs.flatMap((input, slot) =>
-          input.name.startsWith('model.images.')
-            ? [
-                `${input.name.slice('model.images.'.length)}${reloadedNode.getInputLink(slot) ? '*' : ''}`
-              ]
-            : []
-        )
-      ).toEqual(images)
+        reloadedNode.inputs.flatMap((input, slot) => {
+          if (!input.name.startsWith('model.images.')) return []
+          const link = reloadedNode.getInputLink(slot)
+          return [
+            {
+              name: input.name.slice('model.images.'.length),
+              source: link?.origin_id,
+              targetsThisSlot: link?.target_slot === slot
+            }
+          ]
+        })
+      ).toEqual(
+        images.map((image) => {
+          const name = image.replace('*', '')
+          const linked = image.endsWith('*')
+          return {
+            name,
+            source: linked ? sourceOf.get(name) : undefined,
+            targetsThisSlot: linked
+          }
+        })
+      )
     }
   )
 })
