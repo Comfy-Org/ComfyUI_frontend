@@ -1,12 +1,17 @@
 <template>
   <WidgetLayoutField
     data-testid="widget-text-row"
-    :widget="layoutWidget"
+    :widget-id
+    :display-label
     :input-id
     :value-text="modelValue"
     full-width-control
     :root-class="
-      cn(!isReadOnly && 'hover:bg-muted', size === 'large' && 'py-3 text-sm')
+      cn(
+        !isReadOnly && 'hover:bg-muted',
+        size === 'large' && 'py-3 text-sm',
+        invalid && 'border border-destructive'
+      )
     "
   >
     <Loader
@@ -30,7 +35,7 @@
       :size="1"
       data-part="widget-text-input"
       :data-size="size"
-      :aria-label="widget.name"
+      :aria-label="widgetName(widgetId)"
       :aria-invalid="invalid || undefined"
       :readonly="isReadOnly"
     />
@@ -42,8 +47,12 @@ import { computed, useId } from 'vue'
 
 import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -53,31 +62,29 @@ import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const {
-  widget,
+  widgetId,
+  displayLabel,
   size = 'medium',
   invalid = false,
   loading = false
 } = defineProps<{
-  widget: SimplifiedWidget<string>
+  widgetId: WidgetId
+  displayLabel?: string
   size?: 'medium' | 'large'
   invalid?: boolean
   loading?: boolean
 }>()
 
+const options = computed(() => widgetOptions(widgetId))
+
 const modelValue = defineModel<string>({ default: '' })
 const inputId = useId()
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, INPUT_EXCLUDED_PROPS)
 )
 
 const isReadOnly = computed(() =>
-  Boolean(widget.options?.read_only || widget.options?.disabled)
+  Boolean(options.value.read_only || options.value.disabled)
 )
-
-const layoutWidget = computed(() => ({
-  name: widget.name,
-  label: widget.label,
-  borderStyle: cn(widget.borderStyle, invalid && 'border border-destructive')
-}))
 </script>

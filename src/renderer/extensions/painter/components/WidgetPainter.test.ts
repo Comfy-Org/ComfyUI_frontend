@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+
 const sizeHolder = { width: 0, height: 0 }
 
 vi.mock(import('@vueuse/core'), { spy: true })
@@ -89,15 +91,17 @@ function primePainterState(overrides: Record<string, unknown> = {}) {
   painterHolder.state = { ...createDefaultPainterState(), ...overrides }
 }
 
-function renderWidget(
-  initialModel = '',
-  widget: { name: string; type: string } = { name: 'mask', type: 'painter' }
-) {
+function renderWidget(initialModel = '') {
   const value = ref(initialModel)
+  const widgetId = registerTestWidget({
+    name: 'mask',
+    type: 'painter',
+    value: initialModel
+  })
   const Harness = defineComponent({
     components: { WidgetPainter },
-    setup: () => ({ value, widget }),
-    template: '<WidgetPainter v-model="value" node-id="42" :widget />'
+    setup: () => ({ value, widgetId }),
+    template: '<WidgetPainter v-model="value" node-id="42" :widget-id />'
   })
   return render(Harness, {
     global: {

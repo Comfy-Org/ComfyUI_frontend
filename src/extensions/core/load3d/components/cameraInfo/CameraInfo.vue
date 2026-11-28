@@ -88,22 +88,15 @@ import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
 import type { ComponentWidget } from '@/types/domWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 const { widget, nodeId } = defineProps<{
-  widget: ComponentWidget<string[]> | SimplifiedWidget
+  widget?: ComponentWidget<string[]>
   nodeId?: NodeId
 }>()
 
-function isComponentWidget(
-  w: ComponentWidget<string[]> | SimplifiedWidget
-): w is ComponentWidget<string[]> {
-  return 'node' in w && w.node !== undefined
-}
-
 const node = useLiveGraphNode(() => {
-  if (isComponentWidget(widget)) return widget.node
+  if (widget?.node) return widget.node
   return nodeId ? resolveNode(nodeId) : null
 })
 

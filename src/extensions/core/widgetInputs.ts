@@ -22,7 +22,7 @@ import {
 import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { useApp } from '@/scripts/appInstance'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
 import { CONFIG, GET_CONFIG } from '@comfyorg/graph-model/widgets'

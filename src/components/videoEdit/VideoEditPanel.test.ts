@@ -6,6 +6,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+
 import VideoEditPanel from './VideoEditPanel.vue'
 
 const i18n = createI18n({
@@ -101,7 +103,7 @@ function renderPanel(
       stubs: {
         VideoFilmstripTrim: stub('stub-filmstrip'),
         VideoCropOverlay: stub('stub-crop-overlay'),
-        WidgetInputNumberInput: stub('stub-number-input'),
+        ScrubableNumberInput: stub('stub-number-input'),
         WidgetBoundingBox: stub('stub-bounding-box'),
         Loader: stub('stub-loader'),
         ...stubs
@@ -141,7 +143,7 @@ describe('VideoEditPanel', () => {
   it('reports trim frame inputs with a merge key per frame', async () => {
     const { emitted } = renderPanel(
       { features: ['trim'] },
-      { WidgetInputNumberInput: emitter('frame-input', 'update:modelValue', 5) }
+      { ScrubableNumberInput: emitter('frame-input', 'update:modelValue', 5) }
     )
     const [start, end] = screen.getAllByTestId('frame-input')
 
@@ -149,6 +151,23 @@ describe('VideoEditPanel', () => {
     await userEvent.click(end)
 
     expect(emitted('editEnd')).toEqual([['trim:start'], ['trim:end']])
+  })
+
+  it('edits the trim window through its labelled frame inputs, evaluating math', async () => {
+    const { emitted } = renderPanel(
+      { features: ['trim'], startFrame: 10, endFrame: 90 },
+      { ScrubableNumberInput: ScrubableNumberInput }
+    )
+
+    const start = screen.getByRole('spinbutton', { name: 'Start Frame' })
+    await userEvent.clear(start)
+    await userEvent.type(start, '20+5{Enter}')
+
+    expect(screen.getByRole('spinbutton', { name: 'End Frame' })).toHaveValue(
+      '90'
+    )
+    expect(emitted('update:startFrame')).toEqual([[25]])
+    expect(emitted('editEnd')).toEqual([['trim:start']])
   })
 
   it('renders the history slot in the playback controls', () => {

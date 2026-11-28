@@ -1,20 +1,21 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  widgetName,
+  widgetNodeLocatorId
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useApp } from '@/scripts/appInstance'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-
-export type LocatedWidget = Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export function locateWidgetNode(
-  widget: LocatedWidget,
+  id: WidgetId,
   fallbackNodeId?: NodeId
 ): { graph: LGraph; nodeId: NodeId } | null {
-  const located = widget.nodeLocatorId
-    ? parseNodeLocatorId(widget.nodeLocatorId)
-    : null
+  const nodeLocatorId = widgetNodeLocatorId(id)
+  const located = nodeLocatorId ? parseNodeLocatorId(nodeLocatorId) : null
   if (!located) {
     const graph = useApp().canvas.graph
     return graph && fallbackNodeId !== undefined
@@ -28,14 +29,14 @@ export function locateWidgetNode(
 }
 
 export function widgetHistoryScope(
-  widget: LocatedWidget,
+  id: WidgetId,
   fallbackNodeId?: NodeId
 ): WidgetHistoryScope | null {
-  const location = locateWidgetNode(widget, fallbackNodeId)
+  const location = locateWidgetNode(id, fallbackNodeId)
   return location
     ? {
         rootGraphId: useApp().rootGraph.id,
-        widgetId: widgetId(location.graph.id, location.nodeId, widget.name)
+        widgetId: widgetId(location.graph.id, location.nodeId, widgetName(id))
       }
     : null
 }

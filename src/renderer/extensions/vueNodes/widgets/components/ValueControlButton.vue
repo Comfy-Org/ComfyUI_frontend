@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import type { ControlOptions } from '@/types/simplifiedWidget'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { mode } = defineProps<{

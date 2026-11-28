@@ -6,17 +6,31 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+import { widgetOptions } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import enMessages from '@/locales/en/main.json'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/assets/integration/resolveWidgetValueAsset'))
+
+function comboWidget(values?: string[]) {
+  return registerTestWidget({
+    name: 'image',
+    type: 'combo',
+    value: undefined,
+    options: values ? { values } : {}
+  })
+}
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({
@@ -41,12 +55,7 @@ describe('useWidgetSelectActions', () => {
       const { updateSelectedItems } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => items),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            value: 'img_001.png'
-          }),
+        widgetId: comboWidget(),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -63,12 +72,7 @@ describe('useWidgetSelectActions', () => {
       const { updateSelectedItems } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => items),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            value: 'img_001.png'
-          }),
+        widgetId: comboWidget(),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -86,12 +90,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: ['existing.mp4'] }
-          }),
+        widgetId: comboWidget(['existing.mp4']),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -112,12 +111,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: ['existing.mp4'] }
-          }),
+        widgetId: comboWidget(['existing.mp4']),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined,
         videoOnly: () => true
@@ -146,13 +140,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => items),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            value: 'img_001.png',
-            options: { values: widgetValues }
-          }),
+        widgetId: comboWidget(widgetValues),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -173,12 +161,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: ref<string | undefined>(),
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: [] }
-          }),
+        widgetId: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -202,27 +185,56 @@ describe('useWidgetSelectActions', () => {
       )
 
       const modelValue = ref<string | undefined>()
-      const widgetValues = ['existing.png']
+      const id = comboWidget(['existing.png'])
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: widgetValues }
-          }),
+        widgetId: id,
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
 
       await handleFilesUpdate([new File(['test'], 'new.png')])
 
+      const widgetValues = widgetOptions(id).values
       expect(widgetValues).toContain('new.png')
       expect(widgetValues).toHaveLength(2)
     })
 
-    it('calls widget callback after upload', async () => {
+    it('tells the widget about a re-upload of the file already selected', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () => Promise.resolve({ name: 'same.png', subfolder: '' })
+        })
+      )
+      const graph = new LGraph()
+      vi.mocked(app).rootGraph = graph
+      const node = new LGraphNode('Load Image')
+      const received: unknown[] = []
+      node.addWidget(
+        'combo',
+        'image',
+        'same.png',
+        (value) => received.push(value),
+        { values: ['same.png'] }
+      )
+      graph.add(node)
+      const modelValue = ref<string | undefined>('same.png')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widgetId: widgetId(graph.id, node.id, 'image'),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['edited'], 'same.png')])
+
+      expect(received).toEqual(['same.png'])
+    })
+
+    it('writes the uploaded path to the model exactly once', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
           status: 200,
@@ -230,25 +242,18 @@ describe('useWidgetSelectActions', () => {
         })
       )
 
-      const mockCallback = vi.fn()
-      const modelValue = ref<string | undefined>()
+      const writeModel = vi.fn<(value: string | undefined) => void>()
       const { handleFilesUpdate } = useWidgetSelectActions({
-        modelValue,
+        modelValue: computed({ get: () => undefined, set: writeModel }),
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            callback: mockCallback,
-            options: { values: [] }
-          }),
+        widgetId: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
 
       await handleFilesUpdate([new File(['test'], 'uploaded.png')])
 
-      expect(mockCallback).toHaveBeenCalledWith('uploaded.png')
+      expect(writeModel).toHaveBeenCalledExactlyOnceWith('uploaded.png')
     })
 
     it('shows alert toast on upload failure', async () => {
@@ -263,12 +268,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue,
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: [] }
-          }),
+        widgetId: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -293,12 +293,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: ref<string | undefined>(),
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: [] }
-          }),
+        widgetId: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -320,12 +315,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: ref<string | undefined>(),
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: [] }
-          }),
+        widgetId: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -349,12 +339,7 @@ describe('useWidgetSelectActions', () => {
       const { handleFilesUpdate } = useWidgetSelectActions({
         modelValue: ref<string | undefined>(),
         dropdownItems: computed(() => []),
-        widget: () =>
-          fromPartial<SimplifiedWidget<string | undefined>>({
-            name: 'test',
-            type: 'combo',
-            options: { values: [] }
-          }),
+        widgetId: comboWidget([]),
         uploadFolder: () => 'input',
         uploadSubfolder: () => undefined
       })
@@ -392,12 +377,7 @@ describe('useWidgetSelectActions', () => {
         useWidgetSelectActions({
           modelValue: ref<string | undefined>(value),
           dropdownItems: computed(() => []),
-          widget: () =>
-            fromPartial<SimplifiedWidget<string | undefined>>({
-              name: 'image',
-              type: 'combo',
-              value
-            }),
+          widgetId: comboWidget(),
           uploadFolder: () => 'input',
           uploadSubfolder: () => undefined,
           locatorId: () => locatorId

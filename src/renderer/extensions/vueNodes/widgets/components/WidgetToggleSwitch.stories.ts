@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn } from 'storybook/test'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useStoryWidget } from '@/storybook/mocks/useStoryWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 
@@ -37,7 +37,7 @@ const meta: Meta<{
           value.value = next
         }
       )
-      const widget = computed<SimplifiedWidget<boolean>>(() => ({
+      const widgetId = useStoryWidget(() => ({
         name: 'add_noise',
         type: 'BOOLEAN',
         value: value.value,
@@ -47,12 +47,12 @@ const meta: Meta<{
           ...(args.labelled ? { on: args.onLabel, off: args.offLabel } : {})
         }
       }))
-      return { args, widget, value }
+      return { args, widgetId, value }
     },
     template: `
       <div class="flex w-72 flex-col gap-4 rounded-lg bg-node p-4 text-xs">
         <output aria-label="Value" class="text-muted-foreground">{{ value }}</output>
-        <WidgetToggleSwitch v-model="value" :widget @update:model-value="args.onChange" />
+        <WidgetToggleSwitch v-model="value" :widget-id="widgetId" @update:model-value="args.onChange" />
       </div>
     `
   })

@@ -3,11 +3,10 @@ import type {
   Meta,
   StoryObj
 } from '@storybook/vue3-vite'
-import { computed, ref, toRefs } from 'vue'
+import { ref, toRefs } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useStoryWidget } from '@/storybook/mocks/useStoryWidget'
 import type { ColorFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
-
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
@@ -50,15 +49,15 @@ export const Default: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#E06CBD')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -69,15 +68,15 @@ export const RGBFormat: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#3498DB')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -88,15 +87,15 @@ export const HSBFormat: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#2ECC71')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -106,15 +105,15 @@ export const CustomColor: Story = {
     setup() {
       const { format } = toRefs(args)
       const value = ref('#FF5733')
-      const widget = computed<SimplifiedWidget<string, WidgetOptions>>(() => ({
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'accent_color',
         type: 'STRING',
         value: '',
         options: { format: format.value }
       }))
-      return { value, widget }
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }
 
@@ -123,15 +122,15 @@ export const WithLabel: Story = {
     components: { WidgetColorPicker },
     setup() {
       const value = ref('#9B59B6')
-      const widget: SimplifiedWidget<string, WidgetOptions> = {
+      const widgetId = useStoryWidget<string, WidgetOptions>(() => ({
         name: 'background',
         type: 'STRING',
         value: '',
         label: 'Background Color',
         options: { format: 'hex' }
-      }
-      return { value, widget }
+      }))
+      return { value, widgetId }
     },
-    template: '<WidgetColorPicker :widget="widget" v-model="value" />'
+    template: '<WidgetColorPicker :widget-id="widgetId" v-model="value" />'
   })
 }

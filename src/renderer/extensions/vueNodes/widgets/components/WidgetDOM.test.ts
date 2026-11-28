@@ -23,7 +23,7 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import WidgetDOM from './WidgetDOM.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 beforeEach(() => {
   useCanvasStore().currentGraph = app.rootGraph
@@ -51,7 +51,7 @@ describe('WidgetDOM', () => {
     resolveDomWidgetOn(host, domElement)
     return render(WidgetDOM, {
       props: {
-        widget: createMockWidget<undefined>({
+        widgetId: registerTestWidget({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -77,7 +77,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<undefined>({
+        widgetId: registerTestWidget({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -103,7 +103,7 @@ describe('WidgetDOM', () => {
 
     const { container } = render(WidgetDOM, {
       props: {
-        widget: createMockWidget<undefined>({
+        widgetId: registerTestWidget({
           value: undefined,
           name: 'dom',
           type: 'dom'
@@ -127,7 +127,7 @@ describe('WidgetDOM', () => {
 
     render(WidgetDOM, {
       props: {
-        widget: createMockWidget<undefined>({
+        widgetId: registerTestWidget({
           value: undefined,
           name: 'dom',
           type: 'dom'

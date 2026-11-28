@@ -16,10 +16,12 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetVideoEdit from './WidgetVideoEdit.vue'
 
@@ -142,21 +144,17 @@ const PanelStub = defineComponent({
   }
 })
 
-function createWidget(
-  options: Record<string, unknown> = {},
-  extra: Record<string, unknown> = {}
-): SimplifiedWidget<VideoEditValue> {
-  return {
+function createWidget(options: Record<string, unknown> = {}): WidgetId {
+  return registerTestWidget({
     name: 'edit',
     type: 'videoedit',
     value: {},
-    options,
-    ...extra
-  }
+    options
+  })
 }
 
 function renderWidget(
-  widget = createWidget(),
+  widgetId = createWidget(),
   initial: VideoEditValue = {},
   nodeId: NodeId = toNodeId('node-1')
 ) {
@@ -165,7 +163,7 @@ function renderWidget(
     setup() {
       return () =>
         h(WidgetVideoEdit, {
-          widget,
+          widgetId,
           nodeId,
           modelValue: modelValue.value,
           'onUpdate:modelValue': (value: VideoEditValue) => {
@@ -245,6 +243,23 @@ function addHostNode(): LGraphNode {
   return node
 }
 
+function addEditWidget(node: LGraphNode): WidgetId {
+  node.addWidget('videoedit', 'edit', {}, () => {})
+  const graph = node.graph
+  if (!graph) throw new Error('Expected the node to be in a graph')
+  return widgetId(graph.rootGraph.id, node.id, 'edit')
+}
+
+function registerOrphanEditWidget(): WidgetId {
+  const id = widgetId(app.rootGraph.id, toNodeId(42), 'edit')
+  useWidgetValueStore().registerWidget(id, {
+    type: 'videoedit',
+    value: {},
+    options: {}
+  })
+  return id
+}
+
 function addPromotedSourceSubgraph() {
   const subgraph = createTestSubgraph({ rootGraph: app.rootGraph })
   app.rootGraph.subgraphs.set(subgraph.id, subgraph)
@@ -263,10 +278,10 @@ describe('WidgetVideoEdit', () => {
     mocks.retry.mockClear()
   })
 
-  it('resolves the source from the host node when no locator is present', () => {
+  it('resolves the source from the host node that owns the widget', () => {
     const host = addHostNode()
 
-    renderWidget(createWidget(), {}, host.id)
+    renderWidget(addEditWidget(host), {}, host.id)
 
     expect(mocks.resolvedSource).toBe(host)
   })
@@ -277,27 +292,15 @@ describe('WidgetVideoEdit', () => {
     const inner = new LGraphNode('inner')
     subgraph.add(inner)
 
-    renderWidget(
-      createWidget(
-        {},
-        { nodeLocatorId: createNodeLocatorId(subgraph.id, inner.id) }
-      ),
-      {},
-      host.id
-    )
+    renderWidget(addEditWidget(inner), {}, host.id)
 
     expect(mocks.resolvedSource).toBe(inner)
   })
 
   it('falls back to the host node when the locator resolves to nothing', () => {
     const host = addHostNode()
-    const subgraph = addPromotedSourceSubgraph()
 
-    renderWidget(
-      createWidget({}, { nodeLocatorId: createNodeLocatorId(subgraph.id, 42) }),
-      {},
-      host.id
-    )
+    renderWidget(registerOrphanEditWidget(), {}, host.id)
 
     expect(mocks.resolvedSource).toBe(host)
   })

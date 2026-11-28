@@ -1,6 +1,7 @@
 <template>
   <WidgetLayoutField
-    :widget
+    :widget-id
+    :display-label
     :input-id
     :value-text="selection.summary"
     :root-class="
@@ -15,7 +16,7 @@
       <Button
         type="button"
         tabindex="-1"
-        :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
+        :aria-label="`${fieldLabel}: ${$t('g.previous')}`"
         :disabled="isStepDisabled(-1)"
         class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
         data-part="widget-stepper"
@@ -64,7 +65,7 @@
               role="combobox"
               aria-haspopup="listbox"
               :aria-controls="listboxId"
-              :aria-label="widgetLabel"
+              :aria-label="fieldLabel"
               :aria-description="lockedDescription"
               :aria-invalid="selection.invalid || undefined"
               :aria-expanded="isOpen"
@@ -93,7 +94,7 @@
           <Button
             type="button"
             tabindex="-1"
-            :aria-label="`${widgetLabel}: ${$t('g.next')}`"
+            :aria-label="`${fieldLabel}: ${$t('g.next')}`"
             :disabled="isStepDisabled(1)"
             class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
             data-part="widget-stepper"
@@ -197,7 +198,7 @@
             :id="listboxId"
             data-testid="widget-select-default-viewport"
             role="listbox"
-            :aria-label="widgetLabel"
+            :aria-label="fieldLabel"
             :class="
               cn(
                 'max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-3rem)))] min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs',
@@ -294,43 +295,51 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/composables/useComboOptions'
 import type { ComboItem } from '@/renderer/extensions/vueNodes/widgets/composables/useComboOptions'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
+import {
+  widgetLabel,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { useWidgetHeight } from '@/types/widgetTypes'
+import { isWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 interface Props {
-  widget: SimplifiedWidget<string | undefined>
-  widgetId?: WidgetId
+  widgetId: WidgetId
+  displayLabel?: string
   filenameSummary?: boolean
 }
 
-type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
+type SelectWidgetOptions = IWidgetOptions & {
   filterPlaceholder?: string
 }
 
-const { widget, widgetId, filenameSummary = false } = defineProps<Props>()
+const { widgetId, displayLabel, filenameSummary = false } = defineProps<Props>()
 const { t } = useI18n()
 const inputId = useId()
-const widgetLabel = computed(() => widget.label || widget.name)
+const fieldLabel = computed(() => widgetLabel(widgetId) || widgetName(widgetId))
 const listboxId = useId()
 
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
-    const modelWidget = modelProps.widget as Props['widget'] | undefined
-    return resolveComboValues(modelWidget?.options?.values)[0] ?? ''
+    const id = modelProps.widgetId
+    const values = isWidgetId(id)
+      ? useWidgetValueStore().getWidget(id)?.options.values
+      : undefined
+    return resolveComboValues(values)[0] ?? ''
   }
 })
 
-const localFolderLock = ref<string[]>()
 const folderLocks = useWidgetFolderLockStore()
-const lockedDirectory = computed(() =>
-  widgetId ? folderLocks.get(widgetId)?.directory : localFolderLock.value
-)
+const lockedDirectory = computed(() => folderLocks.get(widgetId)?.directory)
 const combobox = useTemplateRef('combobox')
 const popup = useTemplateRef('popup')
 const isOpen = ref(false)
@@ -339,9 +348,7 @@ const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
   useRestoreFocusOnViewportPointer(focusSearchInput)
 
-const widgetOptions = computed(
-  () => widget.options as SelectWidgetOptions | undefined
-)
+const options = computed<SelectWidgetOptions>(() => widgetOptions(widgetId))
 
 const {
   searchQuery,
@@ -356,15 +363,15 @@ const {
   browseOptions,
   parentDirectory,
   refreshOptions
-} = useComboOptions(() => widgetOptions.value, modelValue, {
+} = useComboOptions(() => options.value, modelValue, {
   filenameSummary: () => filenameSummary,
   lockedDirectory,
   onSelect: selectOption
 })
-const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
-const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
+const disabled = computed(() => Boolean(options.value.disabled))
+const placeholder = computed(() => options.value.placeholder ?? '')
 const filterPlaceholder = computed(
-  () => widgetOptions.value?.filterPlaceholder ?? placeholder.value
+  () => options.value.filterPlaceholder ?? placeholder.value
 )
 
 const folderPath = computed(
@@ -410,12 +417,8 @@ const lockLabel = computed(() =>
 async function toggleFolderLock() {
   retainSearchInput.value = true
   const path = lockedDirectory.value ? undefined : [...directory.value]
-  if (widgetId) {
-    folderLocks.set(widgetId, path ? { directory: path } : undefined)
-    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-  } else {
-    localFolderLock.value = path
-  }
+  folderLocks.set(widgetId, path ? { directory: path } : undefined)
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   await nextTick()
   focusSearchInput()
 }

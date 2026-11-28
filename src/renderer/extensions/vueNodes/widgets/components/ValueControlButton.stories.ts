@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
+import { CONTROL_OPTIONS } from '@/core/graph/widgets/controlWidget'
 
 import ValueControlButton from './ValueControlButton.vue'
 

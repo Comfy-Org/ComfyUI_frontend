@@ -1,25 +1,36 @@
 <template>
-  <div class="w-full" :data-widget-name="widget.name">
+  <div class="w-full" :data-widget-name="widgetName(widgetId)">
     <VideoConcatPanel :clips="orderedClips" @reorder="reorder" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import VideoConcatPanel from '@/components/videoConcat/VideoConcatPanel.vue'
 import { useVideoConcatClips } from '@/composables/videoConcat/useVideoConcatClips'
 import { useVideoConcatOrder } from '@/composables/videoConcat/useVideoConcatOrder'
-import type {
-  IWidgetVideoConcatOptions,
-  VideoConcatValue
-} from '@comfyorg/graph-model/widgets'
+import type { VideoConcatValue } from '@comfyorg/graph-model/widgets'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  widgetName,
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<VideoConcatValue, IWidgetVideoConcatOptions>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId: NodeId
 }>()
+
+const source = computed(() => {
+  const options = widgetOptions(widgetId)
+  return 'source' in options && typeof options.source === 'string'
+    ? options.source
+    : ''
+})
 
 const modelValue = defineModel<VideoConcatValue>({
   default: () => ({})
@@ -27,10 +38,10 @@ const modelValue = defineModel<VideoConcatValue>({
 
 const node = useWidgetHostNode(
   () => nodeId,
-  () => widget.nodeLocatorId
+  () => widgetNodeLocatorId(widgetId)
 )
 
-const clips = useVideoConcatClips(node, () => widget.options?.source ?? '')
+const clips = useVideoConcatClips(node, () => source.value)
 
 const { orderedClips, reorder } = useVideoConcatOrder(modelValue, clips)
 </script>

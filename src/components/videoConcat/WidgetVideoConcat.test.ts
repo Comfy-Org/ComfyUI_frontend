@@ -11,7 +11,7 @@ import { api } from '@/scripts/api'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   clipTiles,
@@ -45,18 +45,14 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-const widget: SimplifiedWidget<VideoConcatValue, IWidgetVideoConcatOptions> = {
-  name: 'order',
-  type: 'videoconcat',
-  value: {},
-  options: { source: 'videos' }
-}
+const concatOptions: IWidgetVideoConcatOptions = { source: 'videos' }
 
 function buildConcat(files: string[]) {
   const graph = app.rootGraph
   const concat = new LGraphNode('ConcatenateVideo')
   for (const slot of files.keys())
     concat.addInput(`videos.video${slot}`, 'VIDEO')
+  concat.addWidget('videoconcat', 'order', {}, () => {}, concatOptions)
   graph.add(concat)
   for (const [slot, filename] of files.entries()) {
     const loader = new LGraphNode('LoadVideo')
@@ -72,7 +68,11 @@ function buildConcat(files: string[]) {
 
 function renderWidget(concat: LGraphNode, modelValue: VideoConcatValue) {
   return render(WidgetVideoConcat, {
-    props: { widget, nodeId: concat.id, modelValue },
+    props: {
+      widgetId: widgetId(app.rootGraph.id, concat.id, 'order'),
+      nodeId: concat.id,
+      modelValue
+    },
     global: { plugins: [i18n] }
   })
 }

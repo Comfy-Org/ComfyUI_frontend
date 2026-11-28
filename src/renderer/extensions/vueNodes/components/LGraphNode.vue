@@ -818,10 +818,7 @@ const measuredLabelsKey = computed(() =>
     ),
     ...processedWidgets.value
       .filter(({ visible }) => visible)
-      .map(
-        ({ widgetId, simplified }) =>
-          `${widgetId}:${simplified.displayLabel ?? simplified.name}`
-      )
+      .map(({ widgetId, name }) => `${widgetId}:${name}`)
   ].join('\n')
 )
 
@@ -843,8 +840,7 @@ const processedWidgetModel = computed(() => ({
 }))
 const hasExpandingWidget = computed(() =>
   processedWidgets.value.some(
-    (widget) =>
-      widget.visible && shouldExpand(widget.simplified.type, widget.sizing)
+    (widget) => widget.visible && shouldExpand(widget.type, widget.sizing)
   )
 )
 
@@ -852,26 +848,25 @@ const soleGrowableWidget = computed(() => {
   if (nodeMedia.value?.items.length || promotedPreviews.value.length) return
   const visible = processedWidgets.value.filter(({ visible }) => visible)
   const [widget] = visible
-  return visible.length === 1 &&
-    shouldExpand(widget.simplified.type, widget.sizing)
-    ? widget.simplified.name
+  return visible.length === 1 && shouldExpand(widget.type, widget.sizing)
+    ? widget.name
     : undefined
 })
 
 function soleGrowableMinHeight(name: string) {
   const sizing = processedWidgets.value.find(
-    ({ simplified }) => simplified.name === name
+    (widget) => widget.name === name
   )?.sizing
   return sizing && minRowHeight(sizing)
 }
 
 const widgetTakesSpareHeight = computed(() =>
   processedWidgets.value.some(
-    ({ visible, simplified, sizing }) =>
+    ({ visible, name, type, sizing }) =>
       visible &&
-      shouldExpand(simplified.type, sizing) &&
+      shouldExpand(type, sizing) &&
       (sizing?.kind !== 'growable' || sizing.maxHeight === undefined) &&
-      growable.heightOf(simplified.name) === undefined
+      growable.heightOf(name) === undefined
   )
 )
 

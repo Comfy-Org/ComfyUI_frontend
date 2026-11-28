@@ -22,9 +22,9 @@ const GRAPH_ID = 'graph-test'
 
 const WidgetStub = {
   name: 'WidgetStub',
-  props: ['widget', 'nodeId', 'nodeType', 'modelValue', 'invalid'],
+  props: ['widgetId', 'nodeId', 'nodeType', 'modelValue', 'invalid'],
   template:
-    '<div class="widget-stub" :data-node-type="nodeType" :data-name="widget.name" :aria-invalid="invalid || undefined">{{ nodeType }}</div>'
+    '<div class="widget-stub" :data-node-type="nodeType" :data-widget-id="widgetId" :aria-invalid="invalid || undefined">{{ nodeType }}</div>'
 }
 
 const AppInputStub = {
@@ -239,7 +239,9 @@ describe('NodeWidgets', () => {
     const suppliedId = widgetId(GRAPH_ID, toNodeId('supplied'), 'supplied')
     const suppliedWidget = fromPartial<ProcessedWidget>({
       renderKey: 'supplied',
-      simplified: { name: 'supplied', type: 'text', value: 'supplied' },
+      name: 'supplied',
+      type: 'text',
+      value: 'supplied',
       visible: true,
       vueComponent: WidgetStub,
       widgetId: suppliedId

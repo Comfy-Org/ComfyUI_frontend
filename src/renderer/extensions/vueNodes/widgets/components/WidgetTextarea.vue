@@ -3,8 +3,8 @@
     :class="
       cn(
         'group relative flex size-full flex-col overflow-hidden rounded-md border-(length:--node-widget-border-width) border-node-border transition-all focus-within:ring focus-within:ring-ring',
-        !widget.options?.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input'),
-        widget.borderStyle
+        !options.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input'),
+        borderStyle
       )
     "
     :style="{ minHeight: `${textareaMinHeight()}px` }"
@@ -51,7 +51,7 @@
           />
         </Button>
         <Button
-          v-if="!widget.linkedUpstream"
+          v-if="!widgetLinkedUpstream(widgetId)"
           variant="textonly"
           size="icon-sm"
           :class="actionButtonClass"
@@ -96,13 +96,20 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import {
+  useWidgetBorderStyle,
+  widgetLabel,
+  widgetLinkedUpstream,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { textareaMinHeight } from '@/renderer/extensions/vueNodes/widgets/textareaFloor'
 import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -112,16 +119,19 @@ const actionButtonClass =
   'pointer-events-none rounded-sm hover:bg-muted group-hover:pointer-events-auto pointer-coarse:pointer-events-auto'
 
 const {
-  widget,
+  widgetId,
   nodeId,
   nodeTitle,
   placeholder = ''
 } = defineProps<{
-  widget: SimplifiedWidget<string>
+  widgetId: WidgetId
   nodeId?: NodeId
   nodeTitle?: string
   placeholder?: string
 }>()
+
+const options = computed(() => widgetOptions(widgetId))
+const borderStyle = useWidgetBorderStyle(() => widgetId)
 
 const textAreaRef = useTemplateRef('textAreaRef')
 
@@ -138,10 +148,12 @@ const { copyToClipboard } = useCopyToClipboard()
 const isCopied = refAutoReset(false, 2000)
 
 const filteredProps = computed(() =>
-  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, INPUT_EXCLUDED_PROPS)
 )
 
-const displayName = computed(() => widget.label || widget.name)
+const displayName = computed(
+  () => widgetLabel(widgetId) || widgetName(widgetId)
+)
 const { t, n } = useI18n()
 const characterCount = computed(() =>
   t(
@@ -153,7 +165,7 @@ const characterCount = computed(() =>
 const id = useId()
 
 const isReadOnly = computed(() =>
-  Boolean(widget.options?.read_only || widget.options?.disabled)
+  Boolean(options.value.read_only || options.value.disabled)
 )
 
 function handleContextMenu(e: MouseEvent) {
@@ -190,7 +202,9 @@ function openPromptPanel(): boolean {
     nodeId === undefined
       ? undefined
       : canvasStore.currentGraph?.getNodeById(nodeId)
-  const target = node?.widgets?.find(({ name }) => name === widget.name)
+  const target = node?.widgets?.find(
+    ({ name }) => name === widgetName(widgetId)
+  )
   if (!node || !target) return false
   const next = { node, widget: target }
   if (!promptPanelStore.canOpen(next)) return false

@@ -5,9 +5,8 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetBoundingBox from './WidgetBoundingBox.vue'
 
@@ -46,19 +45,15 @@ const ScrubableNumberInputStub = defineComponent({
   `
 })
 
-function renderBox(
-  initial: Bounds,
-  disabled = false,
-  widget?: SimplifiedWidget
-) {
+function renderBox(initial: Bounds, disabled = false, widgetId?: WidgetId) {
   const value = ref<Bounds>(initial)
   const editEnds: unknown[] = []
   const onEditEnd = (field: unknown) => editEnds.push(field)
   const Harness = defineComponent({
     components: { WidgetBoundingBox },
-    setup: () => ({ value, disabled, widget, onEditEnd }),
+    setup: () => ({ value, disabled, widgetId, onEditEnd }),
     template:
-      '<WidgetBoundingBox v-model="value" :disabled="disabled" :widget="widget" @edit-end="onEditEnd" />'
+      '<WidgetBoundingBox v-model="value" :disabled="disabled" :widget-id="widgetId" @edit-end="onEditEnd" />'
   })
   const utils = render(Harness, {
     global: {
@@ -146,15 +141,11 @@ describe('WidgetBoundingBox', () => {
 
 describe('WidgetBoundingBox node history', () => {
   const start: Bounds = { x: 0, y: 0, width: 512, height: 512 }
-  const standalone: SimplifiedWidget = {
-    name: 'box',
-    type: 'boundingbox',
-    value: start,
-    nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
-  }
+  const registerStandalone = () =>
+    registerTestWidget({ name: 'box', type: 'boundingbox', value: start })
 
   it('undoes and redoes a field edit when used as its own widget', async () => {
-    const { value } = renderBox(start, false, standalone)
+    const { value } = renderBox(start, false, registerStandalone())
     const user = userEvent.setup()
     await user.type(screen.getByTestId('bounding-box-x'), '5')
 
@@ -166,7 +157,7 @@ describe('WidgetBoundingBox node history', () => {
   })
 
   it('undoes consecutive changes to one field as a single step', async () => {
-    const { value } = renderBox(start, false, standalone)
+    const { value } = renderBox(start, false, registerStandalone())
     const user = userEvent.setup()
     await user.type(screen.getByTestId('bounding-box-width'), '12')
     expect(value.value.width).toBe(51212)

@@ -9,6 +9,7 @@ import type { OwnershipOption } from '@comfyorg/assets-core/filtering'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { api } from '@/scripts/api'
 import { isPaged, pagedItems } from '@/utils/pagedList'
@@ -161,7 +162,7 @@ describe('useWidgetSelectItems', () => {
     const { updateSelectedItems } = useWidgetSelectActions({
       modelValue,
       dropdownItems: () => pagedItems(dropdownItems.value),
-      widget: fromPartial({ name: 'image', type: 'combo' }),
+      widgetId: registerTestWidget({ name: 'image', type: 'combo', value: '' }),
       uploadFolder: 'input',
       uploadSubfolder: undefined
     })

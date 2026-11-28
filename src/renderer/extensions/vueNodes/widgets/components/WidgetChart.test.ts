@@ -4,12 +4,14 @@ import type { ChartData } from 'chart.js'
 import { assert, beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
+
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import type { ChartWidgetOptions } from './WidgetChart.types'
 import WidgetChart from './WidgetChart.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 type ChartValue = Partial<ChartData> | null
 
@@ -25,10 +27,8 @@ const i18n = createI18n({
   messages: { en: { g: { chart: 'Chart', chartLowercase: 'chart' } } }
 })
 
-function makeWidget(
-  options: Partial<ChartWidgetOptions> = {}
-): SimplifiedWidget<ChartValue, ChartWidgetOptions> {
-  return createMockWidget<ChartValue>({
+function makeWidget(options: Partial<ChartWidgetOptions> = {}): WidgetId {
+  return registerTestWidget({
     value: { labels: [], datasets: [] },
     name: 'test_chart',
     type: 'chart',
@@ -36,12 +36,9 @@ function makeWidget(
   })
 }
 
-function renderChart(
-  widget: SimplifiedWidget<ChartValue, ChartWidgetOptions>,
-  modelValue: ChartValue
-) {
+function renderChart(widgetId: WidgetId, modelValue: ChartValue) {
   return render(WidgetChart, {
-    props: { widget, modelValue },
+    props: { widgetId, modelValue },
     global: { plugins: [i18n] }
   })
 }
@@ -62,7 +59,9 @@ describe('WidgetChart', () => {
 
   it('uses the translated "Chart" label when the widget has no name', () => {
     const widget = makeWidget()
-    widget.name = ''
+    const state = useWidgetValueStore().getWidget(widget)
+    assert(state)
+    state.name = ''
     renderChart(widget, { labels: [], datasets: [] })
 
     expect(

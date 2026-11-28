@@ -9,15 +9,19 @@ import {
   markRaw,
   nextTick,
   ref,
-  shallowRef
+  shallowRef,
+  watchEffect
 } from 'vue'
+import type { Component } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import WidgetDynamicGroupRow from '@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -88,27 +92,21 @@ it.for([false, true])(
     const name = grouped ? 'loras.0.model' : 'file'
     const row: WidgetGridItem = {
       ...widget(name, 'string', 0),
-      simplified: {
-        name,
-        type: 'string',
-        value: '',
-        label: grouped ? 'LoRA #1 model' : 'File'
-      },
+      value: '',
+      label: grouped ? 'LoRA #1 model' : 'File',
       get hasError() {
         return error.value
       }
     }
-    const header: WidgetGridItem = {
-      renderKey: 'header',
-      visible: true,
-      vueComponent: markRaw(WidgetDynamicGroupRow),
-      simplified: {
+    const header = registeredRow(
+      {
         name: 'loras.0',
         type: 'dynamic_group_row',
         value: undefined,
         label: 'LoRA #1'
-      }
-    }
+      },
+      WidgetDynamicGroupRow
+    )
     const { unmount } = renderGrid(grouped ? [header, row] : [row], false)
     expect(screen.getByTestId('widget-control')).not.toHaveAttribute(
       'aria-invalid'
@@ -155,10 +153,32 @@ const AppInputStub = defineComponent({
   `
 })
 
+function registeredRow(
+  init: Parameters<typeof registerTestWidget>[0] & {
+    name: string
+    type: string
+  },
+  vueComponent: Component
+): WidgetGridItem {
+  return {
+    renderKey: init.name,
+    visible: true,
+    widgetId: registerTestWidget(init),
+    name: init.name,
+    type: init.type,
+    value: init.value,
+    label: init.label,
+    disabled: init.disabled,
+    vueComponent: markRaw(vueComponent)
+  }
+}
+
 function widget(name: string, type: string, index: number): WidgetGridItem {
   return {
     renderKey: name,
-    simplified: { name, type, value: 0 },
+    name,
+    type,
+    value: 0,
     slotMetadata: {
       index,
       linked: false,
@@ -242,12 +262,7 @@ describe('WidgetGrid', () => {
         processedWidgets: [
           {
             ...widget('size', 'unknown', 0),
-            simplified: {
-              name: 'size',
-              label: 'Width & "Height"',
-              type: 'unknown',
-              value: 0
-            },
+            label: 'Width & "Height"',
             sizing: { kind: 'growable', minHeight: 60, minWidth: 0 }
           }
         ]
@@ -385,29 +400,25 @@ describe('WidgetGrid', () => {
     'displays $displayed while keeping the accessible name $label',
     ({ label, displayed, first }) => {
       const items: WidgetGridItem[] = [
-        {
-          renderKey: 'header',
-          visible: true,
-          simplified: {
+        registeredRow(
+          {
             name: 'loras.0',
             type: 'dynamic_group_row',
             value: undefined,
             label: 'LoRA #1'
           },
-          vueComponent: markRaw(WidgetDynamicGroupRow)
-        },
-        {
-          renderKey: 'model',
-          visible: true,
-          simplified: {
+          WidgetDynamicGroupRow
+        ),
+        registeredRow(
+          {
             name: 'loras.0.model',
             type: 'combo',
             value: 'A',
             label,
             options: { values: ['A', 'B'] }
           },
-          vueComponent: markRaw(WidgetSelectDefault)
-        }
+          WidgetSelectDefault
+        )
       ]
       renderGrid(items.slice(first), false)
 
@@ -423,48 +434,51 @@ describe('WidgetGrid', () => {
     async (min) => {
       const user = userEvent.setup()
       const rows = ref(['A', 'B', 'C'])
-      const items = computed<WidgetGridItem[]>(() => [
-        ...rows.value.flatMap((id, index) => [
-          {
-            renderKey: `${id}-header`,
-            visible: true,
-            simplified: {
-              name: `loras.${index}`,
-              type: 'dynamic_group_row',
-              value: undefined,
-              label: `LoRA #${index + 1}`,
-              options: { disabled: rows.value.length <= min },
-              callback: () => {
+      const items = shallowRef<WidgetGridItem[]>([])
+      watchEffect(() => {
+        items.value = [
+          ...rows.value.flatMap((id, index) => [
+            {
+              ...registeredRow(
+                {
+                  name: `loras.${index}`,
+                  type: 'dynamic_group_row',
+                  value: undefined,
+                  label: `LoRA #${index + 1}`,
+                  disabled: rows.value.length <= min
+                },
+                WidgetDynamicGroupRow
+              ),
+              renderKey: `${id}-header`,
+              updateHandler: () => {
                 rows.value = rows.value.filter((row) => row !== id)
               }
             },
-            vueComponent: markRaw(WidgetDynamicGroupRow)
-          },
-          {
-            renderKey: `${id}-model`,
-            visible: true,
-            simplified: {
-              name: `loras.${index}.model`,
-              type: 'combo',
-              value: id,
-              label: 'Model',
-              options: { values: ['A', 'B', 'C'] }
+            {
+              ...registeredRow(
+                {
+                  name: `loras.${index}.model`,
+                  type: 'combo',
+                  value: id,
+                  label: 'Model',
+                  options: { values: ['A', 'B', 'C'] }
+                },
+                WidgetSelectDefault
+              ),
+              renderKey: `${id}-model`
+            }
+          ]),
+          registeredRow(
+            {
+              name: 'loras.$add',
+              type: 'button',
+              value: undefined,
+              label: 'Add LoRA'
             },
-            vueComponent: markRaw(WidgetSelectDefault)
-          }
-        ]),
-        {
-          renderKey: 'add',
-          visible: true,
-          simplified: {
-            name: 'loras.$add',
-            type: 'button',
-            value: undefined,
-            label: 'Add LoRA'
-          },
-          vueComponent: markRaw(WidgetButton)
-        }
-      ])
+            WidgetButton
+          )
+        ]
+      })
       const Host = defineComponent({
         setup: () => () =>
           h(WidgetGrid, {
@@ -505,6 +519,31 @@ describe('WidgetGrid', () => {
       expect(screen.queryAllByRole('group')).toHaveLength(min)
     }
   )
+
+  it('rings advanced widgets on the node but not where the same widget renders alone', () => {
+    const row = registeredRow(
+      {
+        name: 'cfg',
+        type: 'number',
+        value: 7,
+        options: { advanced: true }
+      },
+      WidgetInputNumberInput
+    )
+    assert.exists(row.widgetId)
+    const { unmount } = renderGrid([row], false)
+    expect(screen.getByTestId('widget-number-row')).toHaveClass('ring-primary')
+    unmount()
+
+    render(WidgetInputNumberInput, {
+      props: { widgetId: row.widgetId, modelValue: 7 },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(screen.getByTestId('widget-number-row')).not.toHaveClass(
+      'ring-primary'
+    )
+  })
 
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
@@ -617,12 +656,7 @@ describe('WidgetGrid', () => {
     renderGrid([
       {
         ...widget('value_1', 'text', 0),
-        simplified: {
-          name: 'value_1',
-          label: 'duration',
-          type: 'text',
-          value: 0
-        },
+        label: 'duration',
         visible: false,
         suppressedByConnection: true
       },

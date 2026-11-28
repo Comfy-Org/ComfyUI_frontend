@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :input-id fill-width>
+  <WidgetLayoutField :widget-id :display-label :input-id fill-width>
     <template #between><slot name="between" /></template>
     <div
       :class="
@@ -13,19 +13,19 @@
       <GradientSlider
         v-model="modelValue"
         :stops="gradientStops"
-        :min="widget.options?.min ?? 0"
-        :max="widget.options?.max ?? 100"
+        :min="options.min ?? 0"
+        :max="options.max ?? 100"
         :step
-        :disabled="widget.options?.disabled"
-        :aria-label="widget.name"
+        :disabled="options.disabled"
+        :aria-label="widgetName(widgetId)"
         class="min-w-0 flex-1"
       />
       <NumberField
         v-model="modelValue"
         :step
-        :min="widget.options?.min"
-        :max="widget.options?.max"
-        :disabled="widget.options?.disabled"
+        :min="options.min"
+        :max="options.max"
+        :disabled="options.disabled"
         :format-options="{
           minimumFractionDigits: precision,
           maximumFractionDigits: precision
@@ -34,7 +34,7 @@
       >
         <NumberFieldInput
           :id="inputId"
-          :aria-label="widget.name"
+          :aria-label="widgetName(widgetId)"
           class="field-sizing-content w-auto max-w-16 flex-none text-right text-xs"
         />
       </NumberField>
@@ -49,12 +49,19 @@ import GradientSlider from '@comfyorg/design-system/slider/GradientSlider'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import type { ColorStop } from '@comfyorg/graph-model/interfaces'
-import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type {
+  IWidgetGradientSliderOptions,
+  IWidgetOptions
+} from '@comfyorg/graph-model/widgets'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
+import {
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
@@ -63,23 +70,28 @@ const DEFAULT_GRADIENT_STOPS: ColorStop[] = [
   { offset: 1, color: [255, 255, 255] }
 ]
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<number, IWidgetGradientSliderOptions>
+const { widgetId, displayLabel } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
 }>()
+
+const options = computed<
+  IWidgetOptions & Pick<IWidgetGradientSliderOptions, 'gradient_stops'>
+>(() => widgetOptions(widgetId))
 
 const modelValue = defineModel<number>({ default: 0 })
 const inputId = useId()
 
 const gradientStops = computed<ColorStop[]>(() => {
-  const stops = widget.options?.gradient_stops
+  const stops = options.value.gradient_stops
   if (stops && stops.length >= 2) return stops
   return DEFAULT_GRADIENT_STOPS
 })
 
 const precision = computed(() => {
-  const p = widget.options?.precision
+  const p = options.value.precision
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-const step = useNumberStepCalculation(widget.options, precision, true)
+const step = useNumberStepCalculation(options, precision, true)
 </script>

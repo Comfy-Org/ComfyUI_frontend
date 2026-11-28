@@ -10,7 +10,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
 
@@ -54,15 +55,16 @@ const i18n = createI18n({
 })
 
 function renderWidget(compare: LGraphNode) {
+  const id = widgetId(app.rootGraph.id, compare.id, 'compare_view')
+  useWidgetValueStore().registerWidget(id, {
+    type: 'imagecompare',
+    value: [],
+    options: {}
+  })
   return render(WidgetImageCompare, {
     global: { plugins: [i18n] },
     props: {
-      widget: {
-        name: 'compare_view',
-        type: 'imagecompare',
-        value: [],
-        nodeLocatorId: createNodeLocatorId(null, compare.id)
-      },
+      widgetId: id,
       nodeId: compare.id
     }
   })

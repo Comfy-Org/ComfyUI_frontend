@@ -25,9 +25,15 @@ import {
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import { isEqual } from 'es-toolkit'
 import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type {
+  IBaseWidget,
+  IWidgetOptions,
+  WidgetSizing
+} from '@comfyorg/graph-model/widgets'
 import { coerceRestoredWidgetValue } from '@/lib/litegraph/src/utils/restoredWidgetValue'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 interface ConvertedRestoredValue {
   nodeId: NodeId
@@ -35,9 +41,22 @@ interface ConvertedRestoredValue {
   stored: WidgetValue
 }
 
+interface WidgetPromotion {
+  sourceWidgetId: WidgetId
+  nodePath: readonly NodeId[]
+}
+
+/** A renderer the live widget demands over the one registered for its type. */
+export type WidgetRenderer = 'dom' | 'legacy'
+
 export interface WidgetRenderState {
+  control?: WidgetId
   hasLayoutSize?: boolean
   isDOMWidget?: boolean
+  promotion?: WidgetPromotion
+  renderer?: WidgetRenderer
+  sizing?: WidgetSizing
+  spec?: InputSpecV2
   tooltip?: string
 }
 
@@ -351,6 +370,18 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId } = parseWidgetId(widgetId)
     return graphWidgets.value.get(graphId)?.get(widgetId)?.render
   }
+  /** Writes the given render facts for a widget, skipping the write when none changed. */
+  function setWidgetRenderFacts(
+    widgetId: WidgetId,
+    facts: Partial<WidgetRenderState>
+  ): void {
+    const render = getWidgetRenderState(widgetId)
+    if (!render) return
+    const changed = Object.entries(facts).some(
+      ([key, value]) => !isEqual(Reflect.get(render, key), value)
+    )
+    if (changed) Object.assign(render, facts)
+  }
 
   function getWidgetVisibility(
     widgetId: WidgetId
@@ -613,6 +644,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getRestoredWidgetValue,
     getWidget,
     getWidgetRenderState,
+    setWidgetRenderFacts,
     getWidgetVisibility,
     setValue,
     restoreValue,

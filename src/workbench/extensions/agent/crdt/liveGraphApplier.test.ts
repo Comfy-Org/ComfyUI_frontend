@@ -40,7 +40,7 @@ import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { attachDocOpMinter } from './docOpMinter'

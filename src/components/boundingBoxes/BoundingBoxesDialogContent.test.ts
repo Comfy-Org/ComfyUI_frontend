@@ -5,7 +5,6 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import {
   assert,
   beforeEach,
@@ -21,31 +20,17 @@ import BoundingBoxesDialogContent from './BoundingBoxesDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { openBoundingBoxesDialog } from './boundingBoxesDialog'
 import messages from '@/locales/en/main.json'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
-const { appState } = vi.hoisted(() => {
-  const appState: {
-    node: unknown
-    events: EventTarget
-    rootEvents: EventTarget
-  } = { node: null, events: new EventTarget(), rootEvents: new EventTarget() }
-  return { appState }
-})
-
-vi.mock(import('@/composables/widgetHistoryScope'), () => ({
-  locateWidgetNode: () => ({
-    graph: fromAny({
-      getNodeById: () => appState.node,
-      events: appState.events,
-      rootGraph: { events: appState.rootEvents }
-    }),
-    nodeId: toNodeId('1')
-  }),
-  widgetHistoryScope: () => null
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('./BoundingBoxesDialogHeader.vue'), async () => {
   await new Promise((resolve) => setTimeout(resolve, 50))
@@ -75,6 +60,16 @@ const i18n = createI18n({
   }
 })
 
+function addBoxesNode(value: BoundingBox[] = [], callback = () => {}) {
+  const graph = app.rootGraph
+  const node = new LGraphNode('BoundingBoxes')
+  node.addWidget('number', 'width', 512, () => {})
+  node.addWidget('number', 'height', 512, () => {})
+  node.addWidget('boundingboxes', 'bboxes', value, callback)
+  graph.add(node)
+  return { graph, node, widgetId: widgetId(graph.id, node.id, 'bboxes') }
+}
+
 const box = (desc: string): BoundingBox => ({
   x: 64,
   y: 64,
@@ -90,12 +85,9 @@ beforeEach(() => {
 
 describe('openBoundingBoxesDialog', () => {
   it('shows the editor toolbar in the header even when the header module loads last', async () => {
-    seedNode([box('a cat')])
+    const { node, widgetId } = addBoxesNode([box('a cat')])
     render(GlobalDialog, { global: { plugins: [i18n] } })
-    openBoundingBoxesDialog(
-      toNodeId('1'),
-      fromPartial<SimplifiedWidget>({ name: 'bboxes' })
-    )
+    openBoundingBoxesDialog(node.id, widgetId)
 
     const header = await screen.findByRole('group')
     await waitFor(() =>
@@ -106,12 +98,12 @@ describe('openBoundingBoxesDialog', () => {
   })
 
   it('opens a maximized dialog editing the given widget', () => {
-    const widget = fromPartial<SimplifiedWidget>({ name: 'bboxes' })
-    openBoundingBoxesDialog(toNodeId('7'), widget)
+    const { node, widgetId } = addBoxesNode()
+    openBoundingBoxesDialog(node.id, widgetId)
 
     const options = vi.mocked(useDialogStore().showDialog).mock.calls[0][0]
     expect(options.key).toBe('global-bounding-boxes-editor')
-    expect(options.props).toMatchObject({ nodeId: toNodeId('7'), widget })
+    expect(options.props).toMatchObject({ nodeId: node.id, widgetId })
     expect(options.dialogComponentProps).toMatchObject({
       maximized: true,
       dismissOnPointerDownOutside: false
@@ -126,94 +118,93 @@ describe('openBoundingBoxesDialog', () => {
   })
 })
 
-function seedNode(value: unknown) {
-  appState.events = new EventTarget()
-  appState.rootEvents = new EventTarget()
-  appState.node = {
-    widgets: [
-      { name: 'width', value: 512 },
-      { name: 'height', value: 512 },
-      { name: 'bboxes', value }
-    ],
-    properties: {},
-    findInputSlot: () => -1,
-    getInputNode: () => null
-  }
-}
-
 describe('BoundingBoxesDialogContent', () => {
-  function renderContent(value: unknown, beforeOpen = () => {}) {
+  function renderContent(widgetId: WidgetId, nodeId: NodeId) {
     const target = document.createElement('div')
     target.id = 'bounding-boxes-header-actions'
     document.body.appendChild(target)
     onTestFinished(() => target.remove())
 
-    seedNode(value)
-    beforeOpen()
-    const callback = vi.fn()
     const close = vi.fn()
     const { unmount } = render(BoundingBoxesDialogContent, {
-      props: {
-        nodeId: toNodeId('1'),
-        widget: fromPartial<SimplifiedWidget>({ name: 'bboxes', callback }),
-        close
-      },
+      props: { nodeId, widgetId, close },
       global: { plugins: [i18n] }
     })
-    return { callback, close, unmount }
+    return { close, unmount }
+  }
+
+  function renderForNewNode(value: BoundingBox[] = [box('a cat')]) {
+    const callback = vi.fn()
+    const { graph, node, widgetId } = addBoxesNode(value, callback)
+    return { graph, node, callback, ...renderContent(widgetId, node.id) }
+  }
+
+  function reconfigure(graph: LGraph) {
+    graph.events.dispatch('configuring', {
+      data: graph.serialize(),
+      clearGraph: true
+    })
   }
 
   it('edits the boxes stored on the node widget', () => {
-    renderContent([box('a cat')])
+    renderForNewNode()
 
     expect(screen.getByDisplayValue('a cat')).toBeTruthy()
   })
 
-  it('writes edits back through the widget callback', async () => {
-    const { callback } = renderContent([box('a cat')])
+  it('writes edits back to the live widget', async () => {
+    const { node, callback } = renderForNewNode()
     await fireEvent.update(screen.getByDisplayValue('a cat'), 'a dog')
 
-    expect(callback).toHaveBeenLastCalledWith([box('a dog')])
+    expect(callback).toHaveBeenLastCalledWith(
+      [box('a dog')],
+      expect.anything(),
+      node
+    )
+    expect(node.widgets?.find((w) => w.name === 'bboxes')?.value).toEqual([
+      box('a dog')
+    ])
   })
 
   it('starts empty when the widget holds no box list', () => {
-    renderContent('not boxes')
+    const { node, widgetId } = addBoxesNode()
+    useWidgetValueStore().setValue(widgetId, 'not boxes')
+    renderContent(widgetId, node.id)
 
     expect(screen.getByText('Drag on the canvas to add a region.')).toBeTruthy()
   })
 
   it('closes at once when its node was removed before it opened', () => {
-    const { close } = renderContent([box('a cat')], () => {
-      appState.node = null
-    })
+    const { graph, node, widgetId } = addBoxesNode([box('a cat')])
+    graph.remove(node)
+
+    const { close } = renderContent(widgetId, node.id)
 
     expect(close).toHaveBeenCalledOnce()
   })
 
   it('closes when a workflow load reconfigures the graph', () => {
-    const { close } = renderContent([box('a cat')])
-    appState.rootEvents.dispatchEvent(new CustomEvent('configuring'))
+    const { graph, close } = renderForNewNode()
+    reconfigure(graph)
 
     expect(close).toHaveBeenCalledOnce()
   })
 
   it('closes when its node is removed but not for other nodes', () => {
-    const { close } = renderContent([box('a cat')])
-    appState.events.dispatchEvent(
-      new CustomEvent('node:removed', { detail: { node: {} } })
-    )
+    const { graph, node, close } = renderForNewNode()
+    const other = new LGraphNode('Other')
+    graph.add(other)
+    graph.remove(other)
     expect(close).not.toHaveBeenCalled()
 
-    appState.events.dispatchEvent(
-      new CustomEvent('node:removed', { detail: { node: appState.node } })
-    )
+    graph.remove(node)
     expect(close).toHaveBeenCalledOnce()
   })
 
   it('stops listening to the graph once closed', () => {
-    const { close, unmount } = renderContent([box('a cat')])
+    const { graph, close, unmount } = renderForNewNode()
     unmount()
-    appState.rootEvents.dispatchEvent(new CustomEvent('configuring'))
+    reconfigure(graph)
 
     expect(close).not.toHaveBeenCalled()
   })

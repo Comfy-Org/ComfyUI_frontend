@@ -1,6 +1,6 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-import type { Ref } from 'vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, toValue, watch } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
@@ -10,7 +10,6 @@ import {
 } from '@comfyorg/mask-editor/brushUtils'
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
 import { locateWidgetNode } from '@/composables/widgetHistoryScope'
-import type { LocatedWidget } from '@/composables/widgetHistoryScope'
 import {
   isWidgetInputConnected,
   resolveWidgetInputSource
@@ -34,6 +33,7 @@ import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 
@@ -45,7 +45,7 @@ export const PAINTER_TOOLS: Record<string, PainterTool> = {
 } as const
 
 interface UsePainterOptions {
-  widget: LocatedWidget
+  widgetId: MaybeRefOrGetter<WidgetId>
   canvasEl: Ref<HTMLCanvasElement | null>
   cursorEl: Ref<HTMLElement | null>
   modelValue: Ref<string>
@@ -72,7 +72,7 @@ function releasePointerIfCaptured(e: PointerEvent): boolean {
 
 export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const {
-    widget,
+    widgetId: id,
     canvasEl,
     cursorEl,
     modelValue,
@@ -122,7 +122,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   } | null = null
 
   const litegraphNode = useLiveGraphNode(() => {
-    const location = locateWidgetNode(widget, nodeId)
+    const location = locateWidgetNode(toValue(id), nodeId)
     return location?.graph.getNodeById(location.nodeId)
   })
 

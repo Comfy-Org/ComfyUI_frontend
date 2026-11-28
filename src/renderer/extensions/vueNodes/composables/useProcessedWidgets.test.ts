@@ -14,7 +14,10 @@ import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { WidgetUiCallbacks } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { app } from '@/scripts/app'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
@@ -25,10 +28,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
-import {
-  createNodeExecutionId,
-  createNodeLocatorId
-} from '@comfyorg/graph-model/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   toOwningGraphId,
   toRootGraphId
@@ -39,7 +39,16 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
+vi.mock(import('@/scripts/app'))
+
 const GRAPH_ID = 'graph-test'
+
+function computeOnAppGraph(
+  options: Parameters<typeof computeProcessedWidgets>[0]
+) {
+  vi.mocked(app).rootGraphOrUndefined = options.rootGraph ?? undefined
+  return computeProcessedWidgets(options)
+}
 
 function createMockWidget(
   overrides: Partial<IBaseWidget> & { widgetId?: WidgetId } = {}
@@ -85,8 +94,8 @@ function createGraphWithNode(
   return { graph, node }
 }
 
-const noopUi = {
-  getTooltipText: () => '',
+const testUi: WidgetUiCallbacks = {
+  getTooltipText: ({ tooltip }) => tooltip ?? '',
   handleNodeRightClick: () => {}
 }
 
@@ -127,7 +136,7 @@ function processWidgets({
   subgraphId?: string | null
   rootGraph?: LGraph | null
 }) {
-  return computeProcessedWidgets({
+  return computeOnAppGraph({
     nodeData: {
       id: nodeId,
       graphId: subgraphId ?? GRAPH_ID,
@@ -144,7 +153,7 @@ function processWidgets({
     showAdvanced,
     isGraphReady: rootGraph !== null,
     rootGraph,
-    ui: noopUi
+    ui: testUi
   })
 }
 
@@ -156,14 +165,14 @@ describe('widget slot ownership', () => {
     node.addInput('model', 'MODEL')
     node.addWidget('custom', 'model', null, () => {})
 
-    const [processedWidget] = computeProcessedWidgets({
+    const [processedWidget] = computeOnAppGraph({
       nodeData: node._state,
       widgetIds: undefined,
       graphId: GRAPH_ID,
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
-      ui: noopUi
+      ui: testUi
     })
 
     expect(processedWidget.slotMetadata).toBeUndefined()
@@ -196,22 +205,22 @@ describe('widget slot ownership', () => {
         }
       )
 
-      const [processedWidget] = computeProcessedWidgets({
+      const [processedWidget] = computeOnAppGraph({
         nodeData: node._state,
         widgetIds: undefined,
         graphId: GRAPH_ID,
         showAdvanced: false,
         isGraphReady: true,
         rootGraph: graph,
-        ui: noopUi
+        ui: testUi
       })
 
       if (ownership !== 'none') {
         expect(processedWidget.slotMetadata?.linked).toBe(true)
-        expect(processedWidget.simplified.options?.disabled).toBe(true)
+        expect(processedWidget.disabled).toBe(true)
       } else {
         expect(processedWidget.slotMetadata).toBeUndefined()
-        expect(processedWidget.simplified.options?.disabled).not.toBe(true)
+        expect(processedWidget.disabled).not.toBe(true)
       }
     }
   )
@@ -252,14 +261,14 @@ describe('widget slot ownership', () => {
     const id = widget.widgetId
     if (!id) throw new Error('Missing widget ID')
 
-    const [processedWidget] = computeProcessedWidgets({
+    const [processedWidget] = computeOnAppGraph({
       nodeData: node._state,
       widgetIds: [id],
       graphId: GRAPH_ID,
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
-      ui: noopUi
+      ui: testUi
     })
 
     expect(processedWidget.slotMetadata).toMatchObject({
@@ -382,7 +391,7 @@ describe('widget visibility', () => {
       widget.type = fromAny('converted-widget')
 
       const processed = process()
-      expect(processed.simplified.type).toBe('converted-widget')
+      expect(processed.type).toBe('converted-widget')
       expect(processed.slotMetadata).toEqual({
         index: 0,
         type: 'INT',
@@ -590,14 +599,14 @@ describe('promoted subgraph widgets', () => {
   ) {
     const id = hostNode.widgets[0]?.widgetId ?? hostNode.inputs[0]?.widgetId
     if (!id) throw new Error('Expected the promoted host widget to be keyed')
-    return computeProcessedWidgets({
+    return computeOnAppGraph({
       nodeData: hostNode._state,
       widgetIds: explicitWidgetIds ? [id] : undefined,
       graphId: graph.id,
       showAdvanced: false,
       isGraphReady: true,
       rootGraph: graph,
-      ui: noopUi
+      ui: testUi
     })[0]
   }
 
@@ -669,7 +678,7 @@ describe('promoted subgraph widgets', () => {
       const result = processHostWidget(graph, hostNode)
 
       expect(result.vueComponent).toBe(expected)
-      expect(result.simplified.value).toBe('promoted text')
+      expect(result.value).toBe('promoted text')
     }
   )
 
@@ -678,14 +687,6 @@ describe('promoted subgraph widgets', () => {
     recordInteriorError()
 
     expect(processHostWidget(graph, hostNode).hasError).toBe(true)
-  })
-
-  it('resolves the widget locator to the interior source node', () => {
-    const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
-
-    expect(processHostWidget(graph, hostNode).simplified.nodeLocatorId).toBe(
-      createNodeLocatorId(subgraph.id, INTERIOR_ID)
-    )
   })
 
   it('derives promoted sizing from the current concrete source without re-registering the host', () => {
@@ -701,16 +702,17 @@ describe('promoted subgraph widgets', () => {
       minWidth: 0
     })
     sourceNode.size = [183, 100]
-    const processed = processHostWidget(graph, hostNode)
+    hostNode.arrange()
 
-    expect(processed.sizing).toMatchObject({
+    expect(processHostWidget(graph, hostNode).sizing).toMatchObject({
       kind: 'growable',
       minHeight: 61
     })
 
     sourceNode.size = [249, 100]
+    hostNode.arrange()
 
-    expect(processed.sizing).toMatchObject({
+    expect(processHostWidget(graph, hostNode).sizing).toMatchObject({
       kind: 'growable',
       minHeight: 83
     })
@@ -731,12 +733,10 @@ describe('promoted subgraph widgets', () => {
       sourceWidget[callback] = () => {
         throw cause
       }
-      const processed = processHostWidget(graph, hostNode)
+      hostNode.arrange()
+      hostNode.arrange()
 
-      expect([processed.sizing, processed.sizing]).toEqual([
-        undefined,
-        undefined
-      ])
+      expect(processHostWidget(graph, hostNode).sizing).toBeUndefined()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         cause,
         expect.objectContaining({
@@ -748,8 +748,9 @@ describe('promoted subgraph widgets', () => {
 
       sourceWidget.computeSize = undefined
       sourceWidget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 67 })
+      hostNode.arrange()
 
-      expect(processed.sizing).toEqual({
+      expect(processHostWidget(graph, hostNode).sizing).toEqual({
         kind: 'growable',
         minWidth: 0,
         minHeight: 67
@@ -814,7 +815,7 @@ describe('computeProcessedWidgets', () => {
 
     const [processed] = processWidgets({ widgetIds: [id], nodeId })
 
-    expect(processed.simplified.value).toBe('before')
+    expect(processed.value).toBe('before')
     expect(processed.hasError).toBe(false)
     expect(missingModelSpy).not.toHaveBeenCalled()
     expect(missingMediaSpy).not.toHaveBeenCalled()
@@ -823,15 +824,6 @@ describe('computeProcessedWidgets', () => {
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe('after')
     expect(clearErrorSpy).not.toHaveBeenCalled()
-  })
-
-  it('applies advanced border styling to advanced widgets', () => {
-    const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
-    registerWidgetState(id, { type: 'text', options: { advanced: true } })
-
-    const result = processWidgets({ widgetIds: [id], showAdvanced: true })
-
-    expect(result[0].simplified.borderStyle).toBe('ring ring-primary')
   })
 
   it('serializes folder locks per input without changing widget values or sibling metadata', () => {
@@ -920,7 +912,7 @@ describe('computeProcessedWidgets', () => {
     )
   })
 
-  it('reads widget identity, value, label, and options from widgetId state', () => {
+  it('reads widget identity, value, and label from widgetId state', () => {
     const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
     registerWidgetState(id, {
       type: 'combo',
@@ -938,12 +930,9 @@ describe('computeProcessedWidgets', () => {
     expect(result[0]).toMatchObject({
       widgetId: id,
       renderKey: `${id}:combo`,
-      simplified: {
-        name: 'text',
-        value: 'state value',
-        label: 'State Label',
-        options: { values: ['state value'] }
-      }
+      name: 'text',
+      value: 'state value',
+      label: 'State Label'
     })
   })
 
@@ -960,7 +949,24 @@ describe('computeProcessedWidgets', () => {
       nodeId: toNodeId('host')
     })
 
-    expect(result[0].simplified.value).toBeNull()
+    expect(result[0].value).toBeNull()
+  })
+
+  it('reflects a value edit without recomputing the processed widgets', () => {
+    const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
+    registerWidgetState(id, { type: 'text', value: 'before' })
+    const scope = effectScope()
+    const processed = computed(() =>
+      processWidgets({ widgetIds: [id], nodeId: toNodeId('host') })
+    )
+    const renders: ProcessedWidget[][] = []
+    scope.run(() => watchSyncEffect(() => renders.push(processed.value)))
+
+    useWidgetValueStore().setValue(id, 'after')
+    scope.stop()
+
+    expect(renders).toHaveLength(1)
+    expect(renders[0][0].value).toBe('after')
   })
 
   it('uses the live widget type after runtime changes', () => {
@@ -1039,23 +1045,6 @@ describe('computeProcessedWidgets', () => {
     expect(result.vueComponent).toBe(getComponent('load3D'))
   })
 
-  it('uses widget state nodeId for simplified widget locator', () => {
-    const subgraphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-    const id = widgetId(GRAPH_ID, toNodeId('inner-node'), 'text')
-    registerWidgetState(id, { type: 'combo', value: 'a', options: {} })
-
-    const result = processWidgets({
-      widgetIds: [id],
-      nodeId: toNodeId('host-node'),
-      nodeType: 'SubgraphNode',
-      subgraphId
-    })
-
-    expect(result[0].simplified.nodeLocatorId).toBe(
-      createNodeLocatorId(subgraphId, toNodeId('inner-node'))
-    )
-  })
-
   it('deduplicates repeated widget ids', () => {
     const id = widgetId(GRAPH_ID, toNodeId(1), 'text')
     registerWidgetState(id, { type: 'text' })
@@ -1063,7 +1052,7 @@ describe('computeProcessedWidgets', () => {
     const result = processWidgets({ widgetIds: [id, id] })
 
     expect(result).toHaveLength(1)
-    expect(result[0].simplified.name).toBe('text')
+    expect(result[0].name).toBe('text')
   })
 
   it('keeps distinct widget ids separate even when names match', () => {
@@ -1106,13 +1095,31 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0]).toMatchObject({
-      simplified: {
-        name: 'display_slot',
-        borderStyle: 'ring ring-primary'
-      }
+      name: 'display_slot',
+      tooltipText: 'Choose checkpoint'
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
     expect(result[0].sizing).toBeUndefined()
+  })
+
+  it('sizes a widget whose node the canvas has never arranged', () => {
+    const { graph, node } = createGraphWithNode([])
+    node.addCustomWidget(
+      createMockWidget({
+        name: 'notes',
+        type: 'custom',
+        computeLayoutSize: () => ({ minHeight: 120, minWidth: 0 })
+      })
+    )
+    const id = widgetId(GRAPH_ID, node.id, 'notes')
+
+    const [processed] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(processed.sizing).toEqual({
+      kind: 'growable',
+      minHeight: 120,
+      minWidth: 0
+    })
   })
 
   it('treats explicit isDOMWidget false as authoritative', () => {
@@ -1148,16 +1155,14 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const [processed] = processUpdateWidgets([widget])
     processed.updateHandler(42)
 
-    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
+    expect(callback).toHaveBeenCalledWith(
+      42,
+      app.canvas,
+      expect.any(LGraphNode)
+    )
   })
 
   it('fires the live widget callback for a node id carrying a colon that is not a subgraph-scope prefix (insert_workflow remap, PM-1580)', () => {
-    // comfy-multi-player's insert_workflow remaps every inserted node's id
-    // to a derived string with colons unrelated to subgraph scoping
-    // (insert:<opId>:root:node:<originalId>). A colon-rejecting locator-id
-    // path resolves no host LGraphNode for such a node, so the stored
-    // widget value updates but the widget's own callback is silently
-    // skipped.
     const nodeId = toNodeId('insert:abc123:root:node:5')
     const callback = vi.fn()
     const id = widgetId(GRAPH_ID, nodeId, 'seed')
@@ -1173,33 +1178,11 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     processed.updateHandler(42)
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe(42)
-    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
-  })
-
-  it('calls a clicked button callback with its own value and leaves that value unchanged', () => {
-    const callback = vi.fn()
-    const id = widgetId(GRAPH_ID, NODE_ID, 'clear')
-    const widget = createMockWidget({
-      name: 'clear',
-      type: 'button',
-      value: 'clear',
-      widgetId: id,
-      callback
-    })
-    registerWidgetState(id, { type: 'button', value: 'clear' })
-
-    const [processed] = processUpdateWidgets([widget])
-    processed.simplified.callback?.(undefined)
-
-    expect(callback).toHaveBeenCalledExactlyOnceWith(
-      'clear',
-      undefined,
-      expect.any(LGraphNode),
-      undefined,
-      undefined
+    expect(callback).toHaveBeenCalledWith(
+      42,
+      app.canvas,
+      expect.any(LGraphNode)
     )
-    expect(widget.value).toBe('clear')
-    expect(useWidgetValueStore().getWidget(id)?.value).toBe('clear')
   })
 
   it('updates widgetState.value when store entry exists', () => {
@@ -1243,15 +1226,13 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(afterUpdate.hasError).toBe(false)
   })
 
-  it('clears execution errors from simplified callback without a live widget', () => {
+  it('clears execution errors from the update handler without a live widget', () => {
     const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
     registerWidgetState(id, { type: 'combo', value: 'bad-value' })
     seedSeedError()
 
     const [processed] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })
-    expect(processed.simplified.callback).toBe(processed.updateHandler)
-
-    processed.simplified.callback?.('fixed-value')
+    processed.updateHandler('fixed-value')
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe('fixed-value')
     const [afterUpdate] = processWidgets({ widgetIds: [id], nodeId: NODE_ID })

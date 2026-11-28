@@ -9,7 +9,9 @@ import { createDefaultLight } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import enMessages from '@/locales/en/main.json'
 import type { ComfyApp } from '@/scripts/app'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import LightInfo from './LightInfo.vue'
 import { useLightInfo } from '@/extensions/core/load3d/composables/useLightInfo'
@@ -62,6 +64,7 @@ const rootGraphNode = vi.hoisted(() => ({ current: {} as object | null }))
 vi.mock(import('@/scripts/app'), () => ({
   app: fromAny<ComfyApp, object>({
     rootGraph: {
+      id: 'root-graph',
       subgraphs: new Map(),
       getNodeById: () => rootGraphNode.current
     }
@@ -110,10 +113,19 @@ function lightState(lights: LightInfoEntry[] = [], selected = 0) {
   return state
 }
 
+const NODE_ID = toNodeId(7)
+
 function renderComponent() {
   const user = userEvent.setup()
   const result = render(LightInfo, {
-    props: { nodeId: toNodeId(7) },
+    props: {
+      nodeId: NODE_ID,
+      widgetId: registerTestWidget({
+        name: 'lights',
+        nodeId: NODE_ID,
+        value: []
+      })
+    },
     global: { plugins: [i18n] }
   })
   return { user, ...result }
@@ -179,6 +191,23 @@ describe('LightInfo lifecycle', () => {
     expect(
       screen.queryByRole('button', { name: 'Remove light' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('LightInfo history', () => {
+  function historyScope() {
+    const scope = vi.mocked(useLightInfo).mock.lastCall?.[1]
+    return scope?.()
+  }
+
+  it('scopes undo history to the widget it renders', () => {
+    lightState()
+    renderComponent()
+
+    expect(historyScope()).toEqual({
+      rootGraphId: 'root-graph',
+      widgetId: widgetId('root-graph', NODE_ID, 'lights')
+    })
   })
 })
 

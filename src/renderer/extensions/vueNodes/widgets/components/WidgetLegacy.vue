@@ -24,10 +24,11 @@ import {
   writeLegacyWidgetGeometry
 } from '@/renderer/extensions/vueNodes/widgets/utils/legacyWidgetCanvasGeometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetName } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<undefined>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId: NodeId
 }>()
 
@@ -36,7 +37,7 @@ const containerHeight = ref(20)
 let drawnHeight = 20
 
 const canvasStore = useCanvasStore()
-const owner = useWidgetHostNode(() => props.nodeId)
+const owner = useWidgetHostNode(() => nodeId)
 const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
@@ -50,7 +51,7 @@ function findLegacyWidget():
       widget: IBaseWidget
     }
   | undefined {
-  return resolveWidgetFromHostNode(owner.value, props.widget.name)
+  return resolveWidgetFromHostNode(owner.value, widgetName(widgetId))
 }
 
 function bindWidget() {

@@ -1,4 +1,3 @@
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   fireEvent,
   render,
@@ -8,21 +7,27 @@ import {
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { app } from '@/scripts/app'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetTextarea from './WidgetTextarea.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
+
+vi.mock(import('@/scripts/app'))
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
@@ -44,26 +49,20 @@ vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
 
 function createTextareaWidget(
   value: string = 'default text',
-  options: SimplifiedWidget<string>['options'] = {},
-  callback?: (value: string) => void
+  options: IWidgetOptions = {}
 ) {
-  return createMockWidget({
-    value,
-    name: 'test_textarea',
-    options,
-    callback
-  })
+  return registerTestWidget({ value, name: 'test_textarea', options })
 }
 
 function renderComponent(
-  widget: SimplifiedWidget<string>,
+  widgetId: WidgetId,
   modelValue: string | number | null,
   placeholder?: string,
   onUpdateModelValue?: (...args: unknown[]) => void
 ) {
   return render(WidgetTextarea, {
     props: {
-      widget,
+      widgetId,
       modelValue,
       placeholder,
       ...(onUpdateModelValue
@@ -146,16 +145,6 @@ describe('WidgetTextarea Value Binding', () => {
       await setTextareaValueAndTrigger(specialText)
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(specialText)
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createTextareaWidget('test', {}, undefined)
-      const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'test', undefined, onUpdateModelValue)
-
-      await setTextareaValueAndTrigger('new value')
-
-      expect(onUpdateModelValue).toHaveBeenCalledWith('new value')
     })
   })
 
@@ -308,8 +297,6 @@ describe('WidgetTextarea Value Binding', () => {
   })
 
   describe('Locked Field Hover Styling', () => {
-    // Tests assert on the Tailwind class name directly because that's the
-    // mechanism being guarded — a rename would need a baseline update anyway.
     const HOVER_CLASS = 'hover:bg-muted'
 
     it('omits the generic hover background class from the wrapper when read-only', () => {
@@ -318,7 +305,6 @@ describe('WidgetTextarea Value Binding', () => {
       })
       const { container } = renderComponent(widget, 'locked value')
 
-      // hover class lives on wrapper <div>, not the <textarea>
       // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
@@ -328,7 +314,6 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('linked value', { disabled: true })
       const { container } = renderComponent(widget, 'linked value')
 
-      // hover class lives on wrapper <div>, not the <textarea>
       // oxlint-disable-next-line testing-library/no-node-access
       const wrapper = container.firstElementChild
       expect(wrapper?.className).not.toContain(HOVER_CLASS)
@@ -412,8 +397,28 @@ describe('WidgetTextarea contextmenu', () => {
 })
 
 describe('WidgetTextarea expand to editor', () => {
+  function registerTextWidget(
+    init: { label?: string; options?: IWidgetOptions } = {}
+  ) {
+    return registerTestWidget({ value: 'a portrait', name: 'text', ...init })
+  }
+
+  function registerLinkedTextWidget() {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const source = new LGraphNode('Source')
+    source.addOutput('text', 'STRING')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('text', 'STRING', { widget: { name: 'text' } })
+    target.addWidget('text', 'text', 'a portrait', () => {})
+    graph.add(target)
+    source.connect(0, target, 0)
+    return widgetId(graph.id, target.id, 'text')
+  }
+
   function renderWithDialogHost(
-    widgetOverrides: Partial<SimplifiedWidget<string>> = {},
+    id: WidgetId = registerTextWidget(),
     { inSidePanel = false }: { inSidePanel?: boolean } = {}
   ) {
     const graph = createTestRootGraph()
@@ -425,11 +430,7 @@ describe('WidgetTextarea expand to editor', () => {
     render(GlobalDialog, { global: { plugins: [i18n] } })
     const view = render(WidgetTextarea, {
       props: {
-        widget: createMockWidget({
-          value: 'a portrait',
-          name: 'text',
-          ...widgetOverrides
-        }),
+        widgetId: id,
         nodeId: node.id,
         nodeTitle: 'CLIP Text Encode',
         modelValue: 'a portrait',
@@ -454,25 +455,18 @@ describe('WidgetTextarea expand to editor', () => {
 
   it.for<{
     state: string
-    overrides: Partial<SimplifiedWidget<string>>
+    register: () => WidgetId
     shown: boolean
   }>([
-    { state: 'editable', overrides: {}, shown: true },
+    { state: 'editable', register: () => registerTextWidget(), shown: true },
     {
       state: 'read-only',
-      overrides: { options: { read_only: true } },
+      register: () => registerTextWidget({ options: { read_only: true } }),
       shown: true
     },
-    {
-      state: 'linked',
-      overrides: {
-        options: { disabled: true },
-        linkedUpstream: { nodeId: toNodeId('upstream') }
-      },
-      shown: false
-    }
-  ])('shows the expand button when $state: $shown', ({ overrides, shown }) => {
-    renderWithDialogHost(overrides)
+    { state: 'linked', register: registerLinkedTextWidget, shown: false }
+  ])('shows the expand button when $state: $shown', ({ register, shown }) => {
+    renderWithDialogHost(register())
 
     const actions = screen.getByRole('group', { name: 'g.actions' })
 
@@ -511,7 +505,7 @@ describe('WidgetTextarea expand to editor', () => {
       'leaves the session out of the experiment in $context, where the panel could not open',
       async ({ inSidePanel, appMode }) => {
         useCanvasStore().linearMode = appMode
-        renderWithDialogHost({}, { inSidePanel })
+        renderWithDialogHost(registerTextWidget(), { inSidePanel })
 
         await openEditor()
 
@@ -585,7 +579,7 @@ describe('WidgetTextarea expand to editor', () => {
     )
 
     it('opens the dialog from the side panel, which also lists widgets of nodes inside subgraphs', async () => {
-      renderWithDialogHost({}, { inSidePanel: true })
+      renderWithDialogHost(registerTextWidget(), { inSidePanel: true })
 
       await openEditor()
 
@@ -597,7 +591,7 @@ describe('WidgetTextarea expand to editor', () => {
     { label: undefined, title: 'text · CLIP Text Encode' },
     { label: 'Prompt', title: 'Prompt · CLIP Text Encode' }
   ])('opens a dialog titled "$title"', async ({ label, title }) => {
-    renderWithDialogHost({ label })
+    renderWithDialogHost(registerTextWidget({ label }))
 
     await openEditor()
 
@@ -615,9 +609,9 @@ describe('WidgetTextarea expand to editor', () => {
   })
 
   it('opens a read-only widget in a read-only editor', async () => {
-    const { onUpdateModelValue } = renderWithDialogHost({
-      options: { read_only: true }
-    })
+    const { onUpdateModelValue } = renderWithDialogHost(
+      registerTextWidget({ options: { read_only: true } })
+    )
 
     const { editor } = await openEditor()
     await userEvent.type(editor, 'more')
@@ -628,24 +622,19 @@ describe('WidgetTextarea expand to editor', () => {
 
   it("keeps the widget's native textarea limits in the editor", async () => {
     const options = { multiline: true, maxlength: 12 }
-    const { view } = renderWithDialogHost({ options })
+    renderWithDialogHost(registerTextWidget({ options }))
     const { editor } = await openEditor()
     expect(editor).toHaveAttribute('maxlength', '12')
 
     const changed = { multiline: true, maxlength: 4 }
-    await view.rerender({
-      widget: createMockWidget({
-        value: 'a portrait',
-        name: 'text',
-        options: changed
-      })
-    })
+    registerTextWidget({ options: changed })
+    await nextTick()
 
     expect(editor).toHaveAttribute('maxlength', '4')
   })
 
   it('opens a disabled widget read-only with its text still selectable', async () => {
-    renderWithDialogHost({ options: { disabled: true } })
+    renderWithDialogHost(registerTextWidget({ options: { disabled: true } }))
 
     const { editor } = await openEditor()
 

@@ -12,8 +12,10 @@ import { createI18n } from 'vue-i18n'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { createMockWidget } from './widgetTestUtils'
+import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
+import { api } from '@/scripts/api'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { registerTestWidget } from './widgetTestUtils'
 
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
@@ -48,8 +50,8 @@ const { mockMediaAssets } = vi.hoisted(() => {
 
 vi.mock(import('@/platform/assets/adapters/outputAssetResolver'), { spy: true })
 
-const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
-const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
+const mockUpdateSelectedItems = vi.fn()
+const mockHandleFilesUpdate = vi.fn()
 
 const { mockItemsRef, mockSelectedSetRef } = vi.hoisted(() => {
   // oxlint-disable-next-line typescript/no-require-imports
@@ -84,12 +86,7 @@ vi.mock(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'),
-  () => ({
-    useWidgetSelectActions: () => ({
-      updateSelectedItems: mockUpdateSelectedItems,
-      handleFilesUpdate: mockHandleFilesUpdate
-    })
-  })
+  { spy: true }
 )
 
 const i18n = createI18n({
@@ -100,12 +97,16 @@ const i18n = createI18n({
 
 beforeEach(() => {
   useWorkflowStore().activeWorkflow = fromPartial({
-    changeTracker: { checkState: mockCheckState }
+    changeTracker: { checkState: mockCheckState, captureCanvasState: vi.fn() }
   })
 })
 
 describe('WidgetSelectDropdown', () => {
   beforeEach(() => {
+    vi.mocked(useWidgetSelectActions).mockReturnValue({
+      updateSelectedItems: mockUpdateSelectedItems,
+      handleFilesUpdate: mockHandleFilesUpdate
+    })
     mockMediaAssets.media.value = []
     mockAssetsData.items = []
     mockItemsRef.value = []
@@ -113,13 +114,13 @@ describe('WidgetSelectDropdown', () => {
   })
 
   function renderComponent(
-    widget: SimplifiedWidget<string | undefined>,
+    widgetId: WidgetId,
     modelValue: string | undefined,
     extraProps: Record<string, unknown> = {}
   ) {
     return render(WidgetSelectDropdown, {
       props: {
-        widget,
+        widgetId,
         modelValue,
         ...extraProps
       },
@@ -135,7 +136,7 @@ describe('WidgetSelectDropdown', () => {
       { id: 'input-1', name: 'photo_abc.jpg' }
     ]
     mockSelectedSetRef.value = new Set(['input-0'])
-    const widget = createMockWidget<string | undefined>({
+    const widget = registerTestWidget({
       value: 'img_001.png',
       name: 'test_image',
       type: 'combo',
@@ -152,13 +153,15 @@ describe('WidgetSelectDropdown', () => {
     const file = new File(['hdr pixels'], 'environment.exr', {
       type: 'application/octet-stream'
     })
-    const widget = createMockWidget<string | undefined>({
-      value: undefined,
-      name: 'test_image',
-      type: 'combo',
-      options: { values: [] },
-      spec: { type: 'COMBO', name: 'test_image', image_upload: true }
-    })
+    const widget = registerTestWidget(
+      {
+        value: undefined,
+        name: 'test_image',
+        type: 'combo',
+        options: { values: [] }
+      },
+      { spec: { type: 'COMBO', name: 'test_image', image_upload: true } }
+    )
     renderComponent(widget, undefined, {
       assetKind: 'image',
       allowUpload: true
@@ -180,7 +183,7 @@ describe('WidgetSelectDropdown', () => {
     ]
     mockItemsRef.value = [{ id: 'asset-1', name: 'model_a.safetensors' }]
     mockSelectedSetRef.value = new Set(['asset-1'])
-    const widget = createMockWidget<string | undefined>({
+    const widget = registerTestWidget({
       value: 'model_a.safetensors',
       name: 'test_model',
       type: 'combo',
@@ -204,7 +207,7 @@ describe('WidgetSelectDropdown', () => {
 
     function renderDefault() {
       mockItemsRef.value = items
-      const widget = createMockWidget<string | undefined>({
+      const widget = registerTestWidget({
         value: 'cat.png',
         name: 'test_image',
         type: 'combo',
@@ -240,5 +243,45 @@ describe('WidgetSelectDropdown', () => {
       expect(screen.getByText('dog.png')).toBeDefined()
       expect(screen.queryByText('cat.png')).toBeNull()
     })
+  })
+})
+
+describe('WidgetSelectDropdown upload', () => {
+  it('emits the uploaded path as update:modelValue', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      fromPartial<Response>({
+        status: 200,
+        json: () => Promise.resolve({ name: 'uploaded.png', subfolder: '' })
+      })
+    )
+    const widget = registerTestWidget(
+      {
+        value: 'existing.png',
+        name: 'image',
+        type: 'combo',
+        options: { values: ['existing.png'] }
+      },
+      { spec: { type: 'COMBO', name: 'image', image_upload: true } }
+    )
+    const { emitted } = render(WidgetSelectDropdown, {
+      props: {
+        widgetId: widget,
+        modelValue: 'existing.png',
+        assetKind: 'image',
+        allowUpload: true
+      },
+      global: { plugins: [getActivePinia()!, i18n] }
+    })
+
+    await userEvent
+      .setup()
+      .upload(
+        screen.getByLabelText('g.upload'),
+        new File(['png'], 'uploaded.png', { type: 'image/png' })
+      )
+
+    await vi.waitFor(() =>
+      expect(emitted()['update:modelValue']).toEqual([['uploaded.png']])
+    )
   })
 })

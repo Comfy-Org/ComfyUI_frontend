@@ -2,6 +2,8 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@comfyorg/graph-model/entityRegistry'
+import { reactive } from 'vue'
+
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
@@ -19,7 +21,11 @@ import type {
   WidgetLayoutSize
 } from '@comfyorg/graph-model/widgets'
 import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import {
+  controlWidgetId,
+  deriveWidgetRenderState
+} from '@/lib/litegraph/src/utils/widget'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
@@ -61,6 +67,27 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
 }
 
 const rawOptionsByShim = new WeakMap<object, object>()
+
+function isPlainDataWrite(
+  target: object,
+  property: string | symbol,
+  descriptor: PropertyDescriptor
+): descriptor is PropertyDescriptor & { value: unknown } {
+  if (!('value' in descriptor) || typeof property === 'symbol') return false
+  const existing = Object.getOwnPropertyDescriptor(target, property)
+  if (existing)
+    return (
+      'value' in existing &&
+      existing.writable === true &&
+      Object.keys(descriptor).length === 1
+    )
+  return (
+    Object.isExtensible(target) &&
+    descriptor.writable === true &&
+    descriptor.enumerable === true &&
+    descriptor.configurable === true
+  )
+}
 
 /**
  * Extensions sometimes assign a widget's own options facade back to itself
@@ -129,7 +156,20 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return this._node
   }
 
-  linkedWidgets?: IBaseWidget[]
+  private _linkedWidgets?: IBaseWidget[]
+  get linkedWidgets(): IBaseWidget[] | undefined {
+    return this._linkedWidgets
+  }
+  set linkedWidgets(value: IBaseWidget[] | undefined) {
+    this._linkedWidgets = value
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) return
+    const id = widgetId(graphId, nodeId, this.name)
+    useWidgetValueStore().setWidgetRenderFacts(id, {
+      control: controlWidgetId(this, id)
+    })
+  }
   private _name!: string
   get name(): string {
     return this._name
@@ -245,7 +285,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         return Reflect.get(target, property, receiver)
       },
       defineProperty: (target, property, descriptor) => {
-        const defined = Reflect.defineProperty(target, property, descriptor)
+        const defined = isPlainDataWrite(target, property, descriptor)
+          ? Reflect.set(reactive(target), property, descriptor.value)
+          : Reflect.defineProperty(target, property, descriptor)
         if (defined && this.isLegacyVisibilityKey(property)) {
           this.applyLegacyVisibilityKey(property, Reflect.get(target, property))
         }
@@ -278,6 +320,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
   set type(value: TWidget['type']) {
     this.setWidgetType(value)
+    this._state.type = extensionValue(value) ?? this._state.type
   }
 
   private setWidgetType(value: TWidget['type']): void {
@@ -299,7 +342,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       configurable: true,
       enumerable: true,
       get: () => this._type,
-      set: (value: TWidget['type']) => this.setWidgetType(value)
+      set: (value: TWidget['type']) => {
+        this.setWidgetType(value)
+        this._state.type = extensionValue(value) ?? this._state.type
+      }
     })
   }
   y: number = 0
@@ -416,8 +462,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (!graphId) return
     if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
 
+    const id = widgetId(graphId, nodeId, this.name)
     const registered = useWidgetValueStore().registerWidget(
-      widgetId(graphId, nodeId, this.name),
+      id,
       {
         disabled: this.disabled,
         label: this.label,
@@ -428,7 +475,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         value: this.value,
         y: this.y
       },
-      deriveWidgetRenderState(this),
+      {
+        ...deriveWidgetRenderState(this, id),
+        sizing: getWidgetSizing(this, this.node)
+      },
       this._visibility
     )
     if (!registered) return
@@ -471,7 +521,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // https://github.com/Comfy-Org/ComfyUI_frontend/blob/df86da3d672628a452baed3df3347a52c0c8d378/src/scripts/domWidget.ts#L125
     this.name = widget.name
     this.installOptionsShim(widget.options)
-    this.type = widget.type
+    this.setWidgetType(widget.type)
 
     // `node` has no setter - Object.assign will throw.
     // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022

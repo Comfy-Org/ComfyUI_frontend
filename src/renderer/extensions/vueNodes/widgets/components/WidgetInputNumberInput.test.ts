@@ -5,10 +5,11 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import en from '@/locales/en/main.json'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -19,28 +20,23 @@ const i18n = createI18n({
 function createNumberInputWidget(
   value: number = 0,
   type: 'int' | 'float' = 'int',
-  options: SimplifiedWidget['options'] = {},
-  callback?: (value: number) => void
-): SimplifiedWidget<number> {
-  return createMockWidget<number>({
+  options: IWidgetOptions = {}
+): WidgetId {
+  return registerTestWidget({
     value,
     name: 'test_input_number',
     type,
-    options,
-    callback
+    options
   })
 }
 
-function renderComponent(
-  widget: SimplifiedWidget<number>,
-  modelValue: number | undefined
-) {
+function renderComponent(widgetId: WidgetId, modelValue: number | undefined) {
   return render(WidgetInputNumberInput, {
     global: {
       plugins: [i18n]
     },
     props: {
-      widget,
+      widgetId,
       modelValue
     }
   })
@@ -275,7 +271,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       const user = userEvent.setup()
       const seed = 1_000_000_000
       const { rerender } = renderComponent(
-        createMockWidget<number>({
+        registerTestWidget({
           name: 'seed',
           type: 'int',
           value: seed,

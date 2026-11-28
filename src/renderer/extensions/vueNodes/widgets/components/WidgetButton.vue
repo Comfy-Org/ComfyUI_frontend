@@ -1,14 +1,14 @@
 <template>
   <Button
     class="w-full border-0 bg-input p-2 text-foreground"
-    :aria-label="widget.label"
+    :aria-label="widgetLabel(widgetId)"
     size="sm"
     variant="textonly"
     v-bind="filteredProps"
     @click="handleClick"
   >
-    {{ widget.label ?? widget.name }}
-    <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
+    {{ widgetLabel(widgetId) ?? widgetName(widgetId) }}
+    <i v-if="options.iconClass" :class="options.iconClass" />
   </Button>
 </template>
 
@@ -16,23 +16,36 @@
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  widgetLabel,
+  widgetLive,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
+import { useApp } from '@/scripts/appInstance'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   BADGE_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<undefined>
+const { widgetId } = defineProps<{
+  widgetId: WidgetId
 }>()
+
+const options = computed(() => widgetOptions(widgetId))
 
 const BUTTON_EXCLUDED_PROPS = [...BADGE_EXCLUDED_PROPS, 'iconClass'] as const
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, BUTTON_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, BUTTON_EXCLUDED_PROPS)
 )
 
 const handleClick = (click: MouseEvent) => {
-  props.widget.callback?.(undefined, click)
+  const live = widgetLive(widgetId)
+  if (!live) return
+  invokeButtonWidgetCallback(live.widget, live.node, useApp().canvas, click)
+  live.node.widgets?.forEach((w) => w.triggerDraw?.())
 }
 </script>

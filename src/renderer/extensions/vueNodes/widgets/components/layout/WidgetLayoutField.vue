@@ -1,25 +1,32 @@
 <script setup lang="ts">
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetBorderStyle } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useHideLayoutField, useWidgetHeight } from '@/types/widgetTypes'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WidgetLayoutFieldLabel from './WidgetLayoutFieldLabel.vue'
 
-const { widget, rootClass, valueText, inputId, fullWidthControl, noBorder } =
-  defineProps<{
-    widget: Pick<
-      SimplifiedWidget<string | number | undefined>,
-      'name' | 'label' | 'displayLabel' | 'borderStyle'
-    >
-    rootClass?: string
-    valueText?: string
-    inputId?: string
-    fullWidthControl?: boolean
-    noBorder?: boolean
-    fillWidth?: boolean
-  }>()
+const {
+  widgetId,
+  displayLabel,
+  rootClass,
+  valueText,
+  inputId,
+  fullWidthControl,
+  noBorder
+} = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
+  rootClass?: string
+  valueText?: string
+  inputId?: string
+  fullWidthControl?: boolean
+  noBorder?: boolean
+  fillWidth?: boolean
+}>()
 
 const hideLayoutField = useHideLayoutField()
+const borderStyle = useWidgetBorderStyle(() => widgetId)
 </script>
 
 <template>
@@ -28,7 +35,7 @@ const hideLayoutField = useHideLayoutField()
       cn(
         'relative isolate flex min-w-0 items-center rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none',
         fullWidthControl ? 'py-2' : useWidgetHeight(),
-        !noBorder && widget.borderStyle,
+        !noBorder && borderStyle,
         rootClass
       )
     "
@@ -46,7 +53,8 @@ const hideLayoutField = useHideLayoutField()
     />
     <slot name="leading" />
     <WidgetLayoutFieldLabel
-      :widget
+      :widget-id
+      :display-label
       :input-id
       :data-leading="$slots.leading ? '' : undefined"
       :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
@@ -65,7 +73,7 @@ const hideLayoutField = useHideLayoutField()
         )
       "
     >
-      <slot :border-style="widget.borderStyle" />
+      <slot :border-style="borderStyle" />
     </div>
   </div>
 </template>

@@ -10,7 +10,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
@@ -448,6 +448,27 @@ describe('SubgraphWidgetPromotion', () => {
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
+      expect(
+        useWidgetValueStore().getNodeWidgetIds(
+          subgraphNode.rootGraph.id,
+          subgraphNode.id
+        )
+      ).toEqual([])
+    })
+
+    it('drops the promoted widget from the host widget order when its subgraph input is removed', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'input', type: 'number' }]
+      })
+      const { node } = createNodeWithWidget('Test Node')
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+      const store = useWidgetValueStore()
+      const graphId = subgraphNode.rootGraph.id
+      expect(store.getNodeWidgetIds(graphId, subgraphNode.id)).toHaveLength(1)
+
+      subgraph.removeInput(subgraph.inputs[0])
+
+      expect(store.getNodeWidgetIds(graphId, subgraphNode.id)).toEqual([])
     })
 
     it('keeps the host value and adopts the new target constraints when a disconnected input is reconnected', async () => {
@@ -474,6 +495,9 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widget()).toBeUndefined()
       slot.connect(b.input, b.node)
       expect(widget()).toMatchObject({ value: 77, options: { max: 500 } })
+      expect(
+        useWidgetValueStore().getNodeWidgetIds(host.rootGraph.id, host.id)
+      ).toEqual([widgetId(host.rootGraph.id, host.id, 'number')])
     })
 
     it('keeps the host value when the same source is reconnected after a disconnect', async () => {

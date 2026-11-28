@@ -1,16 +1,16 @@
 import { useResizeObserver } from '@vueuse/core'
-import type { Ref } from 'vue'
-import { computed, ref, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
+import { computed, ref, toValue, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { locateWidgetNode } from '@/composables/widgetHistoryScope'
-import type { LocatedWidget } from '@/composables/widgetHistoryScope'
 import { resolveWidgetInputSource } from '@/composables/widgetInputSource'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 type ResizeDirection =
   | 'top'
@@ -64,7 +64,7 @@ export const ASPECT_RATIOS = {
 } as const
 
 interface UseImageCropOptions {
-  widget: LocatedWidget
+  widgetId: MaybeRefOrGetter<WidgetId>
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
@@ -81,11 +81,11 @@ function imageInputSlot(node: LGraphNode): number {
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
-  const { widget, imageEl, containerEl, modelValue, onEditEnd } = options
+  const { widgetId, imageEl, containerEl, modelValue, onEditEnd } = options
   const nodeOutputStore = useNodeOutputStore()
 
   const node = useLiveGraphNode(() => {
-    const location = locateWidgetNode(widget, nodeId)
+    const location = locateWidgetNode(toValue(widgetId), nodeId)
     return location?.graph.getNodeById(location.nodeId)
   })
 
