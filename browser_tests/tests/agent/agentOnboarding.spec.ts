@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 
 import {
@@ -12,6 +14,10 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { isPlaced, settledBox } from '@e2e/fixtures/utils/agentTourGeometry'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+
+const ONBOARDING_KEY = StorageKeys.agentOnboarded(
+  accountScope('test-user-e2e', 'ws-personal')!
+)
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('returns to the previous card without completing the tour', async ({
@@ -46,7 +52,9 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
 
     await expect(firstCard).toBeVisible()
     await expect
-      .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
+      .poll(() =>
+        page.evaluate((key) => localStorage.getItem(key), ONBOARDING_KEY)
+      )
       .toBe('false')
   })
 
@@ -76,7 +84,9 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     ).toHaveCount(0)
 
     await expect
-      .poll(() => page.evaluate((key) => localStorage.getItem(key), SCOPE_KEY))
+      .poll(() =>
+        page.evaluate((key) => localStorage.getItem(key), ONBOARDING_KEY)
+      )
       .not.toBe('true')
   })
 
@@ -182,11 +192,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       await expect(page.getByRole('dialog')).toHaveCount(0)
       await expect
         .poll(() =>
-          page.evaluate(() =>
-            localStorage.getItem(
-              'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
-            )
-          )
+          page.evaluate((key) => localStorage.getItem(key), ONBOARDING_KEY)
         )
         .toBe('true')
 

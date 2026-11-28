@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 import Button from '@comfyorg/design-system/button/Button'
-import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 import RunNoticeAction from './RunNoticeAction.vue'
 
@@ -23,10 +24,7 @@ const {
 }>()
 
 const emit = defineEmits<{ showTarget: []; newChat: [] }>()
-const dismissed = useSafeLocalStorage(
-  'Comfy.AgentPanel.runNoticeDismissed',
-  false
-)
+const dismissed = useAccountStorage(StorageKeys.agentRunNoticeDismissed, false)
 const contextMessages = {
   mismatch: 'agent.viewingDifferentWorkflow',
   unavailable: 'agent.targetWorkflowUnavailable',

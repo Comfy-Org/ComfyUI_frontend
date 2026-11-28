@@ -24,10 +24,11 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
+import { computed, defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import type { ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
@@ -35,6 +36,8 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
@@ -1375,6 +1378,9 @@ describe('Composer', () => {
     })
 
     it('keeps a re-picked mode when a slower load disagrees', async () => {
+      useCurrentUser().resolvedUserInfo = computed(() => ({
+        id: 'composer-user'
+      }))
       let resolveGet!: (response: Response) => void
       const pendingGet = new Promise<Response>((resolve) => {
         resolveGet = resolve
@@ -1385,7 +1391,9 @@ describe('Composer', () => {
           : pendingGet
       )
       localStorage.setItem(
-        'Comfy.Agent.RunModePreference',
+        StorageKeys.agentRunModePreference(
+          accountScope('composer-user', 'personal')!
+        ),
         JSON.stringify({ mode: 'auto', credit_limit: null })
       )
       mount()

@@ -55,6 +55,8 @@ import ErrorGroupList from '@/platform/workflowErrors/panel/ErrorGroupList.vue'
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
     id: 'root',

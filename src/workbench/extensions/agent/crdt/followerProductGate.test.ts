@@ -8,6 +8,8 @@ import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { hasUnsyncedHumanOps } from './unsyncedHumanOps'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 it('gates real document transport and removes reconnect listeners on revocation', async () => {
   const agentSocket = createFakeAgentSocket()
   const { send } = agentSocket

@@ -1,5 +1,7 @@
 import * as fc from 'fast-check'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { effectScope } from 'vue'
 
 import type {

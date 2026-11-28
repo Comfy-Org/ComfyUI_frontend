@@ -6,6 +6,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   agentTest as test,
@@ -73,7 +74,9 @@ test.describe(
         route.fulfill(jsonRoute(messages))
       )
       await page.addInitScript(({ key, id }) => localStorage.setItem(key, id), {
-        key: StorageKeys.agentThread('personal'),
+        key: StorageKeys.agentThread(
+          accountScope('test-user-e2e', 'ws-personal')!
+        ),
         id: threadId
       })
       cookieByAsset = new Map<string, string | null>()

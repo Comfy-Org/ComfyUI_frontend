@@ -3,6 +3,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { nextTick } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'

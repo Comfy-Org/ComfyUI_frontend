@@ -1,5 +1,5 @@
 import { useStorage } from '@vueuse/core'
-import type { RemovableRef, UseStorageOptions } from '@vueuse/core'
+import type { RemovableRef, StorageLike, UseStorageOptions } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
 
 import {
@@ -7,13 +7,13 @@ import {
   safeSessionStorage
 } from '@/base/storage/safeStorage'
 
-/** VueUse `useStorage` bound to `safeLocalStorage`; never throws when storage is blocked. */
 export function useSafeLocalStorage<T>(
   key: MaybeRefOrGetter<string>,
   defaults: MaybeRefOrGetter<T>,
-  options?: UseStorageOptions<T>
+  options?: UseStorageOptions<T>,
+  storage: StorageLike = safeLocalStorage.asStorage()
 ): RemovableRef<T> {
-  return useStorage(key, defaults, safeLocalStorage.asStorage(), options)
+  return useStorage(key, defaults, storage, options)
 }
 
 export function useSafeSessionStorage<T>(

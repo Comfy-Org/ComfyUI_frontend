@@ -18,6 +18,7 @@ import {
   AGENT_CONSENT_SETTING_ID,
   AGENT_ONBOARDED_SCOPES_SETTING_ID
 } from '@/platform/settings/constants/agent'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -41,11 +42,12 @@ import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+const AGENT_ACCOUNT_SCOPE = accountScope('test-user-e2e', 'ws-personal')!
 
 const onboardedScopesByPage = new WeakMap<Page, string[]>()
 
 export const AGENT_ONBOARDING_SCOPE_KEY =
-  'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+  StorageKeys.agentOnboarded(AGENT_ACCOUNT_SCOPE)
 
 export function storedOnboardedScopes(page: Page): readonly string[] {
   return onboardedScopesByPage.get(page) ?? []
@@ -301,7 +303,7 @@ export const restoredTargetlessAgentThreadTest =
       await page.addInitScript(
         ({ key, threadId }) => localStorage.setItem(key, threadId),
         {
-          key: StorageKeys.agentThread('personal'),
+          key: StorageKeys.agentThread(AGENT_ACCOUNT_SCOPE),
           threadId: AGENT_COMPOSER_THREAD_ID
         }
       )
@@ -319,11 +321,17 @@ export async function bootAgentApp(
   options: BootAgentAppOptions = {}
 ): Promise<void> {
   const { onboardingCompleted = true } = options
-  await page.addInitScript((completed) => {
-    if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
-      localStorage.setItem('Comfy.AgentPanel.onboarded', String(completed))
+  await page.addInitScript(
+    ({ key, completed }) => {
+      if (localStorage.getItem(key) === null) {
+        localStorage.setItem(key, String(completed))
+      }
+    },
+    {
+      key: StorageKeys.agentOnboarded(AGENT_ACCOUNT_SCOPE),
+      completed: onboardingCompleted
     }
-  }, onboardingCompleted)
+  )
   await mockAgentBoot(page, { agentFlag, ...options })
   await options.beforeNavigate?.(page)
   await bootCloud(page)

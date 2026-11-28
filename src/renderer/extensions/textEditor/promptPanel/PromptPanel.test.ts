@@ -16,6 +16,7 @@ import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/p
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const telemetry = vi.mocked(useTelemetry)()
 assert.exists(telemetry)

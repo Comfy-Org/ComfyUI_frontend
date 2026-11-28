@@ -9,6 +9,8 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'

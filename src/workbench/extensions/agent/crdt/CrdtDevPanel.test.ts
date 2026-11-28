@@ -6,6 +6,8 @@ import { nextTick } from 'vue'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 import {
   toTurnId,
   zAgentWsEvent

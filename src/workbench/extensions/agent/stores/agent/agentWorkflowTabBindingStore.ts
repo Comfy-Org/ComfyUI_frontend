@@ -1,18 +1,18 @@
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { toRaw, watch } from 'vue'
+import { computed, toRaw, watch } from 'vue'
 
 import { safeLocalStorage } from '@/base/storage/safeStorage'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import { agentStorage } from '@/platform/workflow/persistence/base/agentStorage'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  useAccountScope,
+  useAccountStorage
+} from '@/platform/workflow/persistence/composables/useAccountStorage'
 
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -60,12 +60,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function readStoredBindings(
-  storage: Storage,
-  key: string
-): string | null | undefined {
+function readStoredBindings(key: string): string | null | undefined {
   try {
-    return storage.getItem(key)
+    return agentStorage.getItem(key)
   } catch {
     return undefined
   }
@@ -104,25 +101,37 @@ function graphIdOf(tab: ComfyWorkflow): string | undefined {
 export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
-    clearLegacyAgentStorage()
-    const storageKey = StorageKeys.agentWorkflowTabBindings(getWorkspaceId())
-    const bindingsStorage = safeLocalStorage.asStorage()
-    const tabByWorkflow = useSafeLocalStorage<PersistedBindings>(
-      storageKey,
+    const scope = useAccountScope()
+    const storageKey = computed(() =>
+      scope.value === null
+        ? ''
+        : StorageKeys.agentWorkflowTabBindings(scope.value)
+    )
+    const tabByWorkflow = useAccountStorage<PersistedBindings>(
+      StorageKeys.agentWorkflowTabBindings,
       {},
-      {
-        listenToStorageChanges: false
-      }
+      {},
+      scope
     )
     tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
 
+    watch(
+      scope,
+      () => {
+        boundInstances.clear()
+        refusedInstances.clear()
+        tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
+      },
+      { flush: 'sync' }
+    )
     function isStorageEventForBindings(event: StorageEvent): boolean {
       return (
-        event.storageArea === bindingsStorage &&
-        (event.key === null || event.key === storageKey)
+        safeLocalStorage.isStorageArea(event.storageArea) &&
+        scope.value !== null &&
+        (event.key === null || event.key === storageKey.value)
       )
     }
 
@@ -165,7 +174,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
 
     function syncFromStorage(event: StorageEvent): void {
       if (!isStorageEventForBindings(event)) return
-      const serialized = readStoredBindings(bindingsStorage, storageKey)
+      const serialized = readStoredBindings(storageKey.value)
       if (serialized === JSON.stringify(tabByWorkflow.value)) return
       const stored = parseBindings(serialized)
       if (stored === undefined) return

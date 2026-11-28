@@ -1,20 +1,29 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
 
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const LEGACY_KEY = 'Comfy.Agent.WorkflowTabBindings'
 const UNSCOPED_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
-const STORAGE_KEY = StorageKeys.agentWorkflowTabBindings('personal')
+const STORAGE_KEY = StorageKeys.agentWorkflowTabBindings(
+  accountScope('user-1', 'personal')!
+)
 const DEFAULT_PATH = 'workflows/Unsaved Workflow.json'
 const SUFFIXED_PATH = 'workflows/Unsaved Workflow (2).json'
 const DRAFT_GRAPH_ID = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
@@ -45,6 +54,12 @@ describe('agentWorkflowTabBindingStore', () => {
   beforeEach(() => {
     localStorage.clear()
     sessionStorage.clear()
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-1' }))
+    vi.spyOn(
+      useTeamWorkspaceStore(),
+      'activeWorkspaceId',
+      'get'
+    ).mockImplementation(getWorkspaceId)
   })
 
   it.for(['before', 'after'])(
@@ -1073,7 +1088,9 @@ describe('agentWorkflowTabBindingStore', () => {
       JSON.stringify({ type: 'team', id: 'workspace-b' })
     )
     localStorage.setItem(
-      StorageKeys.agentWorkflowTabBindings('workspace-a'),
+      StorageKeys.agentWorkflowTabBindings(
+        accountScope('user-1', 'workspace-a')!
+      ),
       JSON.stringify({
         'wf-a': {
           tabPath: 'workflows/a.json',
@@ -1083,7 +1100,9 @@ describe('agentWorkflowTabBindingStore', () => {
       })
     )
     localStorage.setItem(
-      StorageKeys.agentWorkflowTabBindings('workspace-b'),
+      StorageKeys.agentWorkflowTabBindings(
+        accountScope('user-1', 'workspace-b')!
+      ),
       JSON.stringify({
         'wf-b': {
           tabPath: 'workflows/b.json',
@@ -1098,7 +1117,11 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(store.tabPathFor('wf-a')).toBeUndefined()
     expect(store.tabPathFor('wf-b')).toBe('workflows/b.json')
     expect(
-      localStorage.getItem(StorageKeys.agentWorkflowTabBindings('workspace-a'))
+      localStorage.getItem(
+        StorageKeys.agentWorkflowTabBindings(
+          accountScope('user-1', 'workspace-a')!
+        )
+      )
     ).not.toBeNull()
   })
 

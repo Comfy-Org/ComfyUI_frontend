@@ -8,6 +8,7 @@ import {
   useFreeUsePlacement
 } from './freeUsePlacement'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@comfyorg/telemetry'))
 
 describe('useFreeUsePlacement', () => {

@@ -18,6 +18,8 @@ import type {
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 import { api } from '@/scripts/api'
 
 import type {
@@ -31,8 +33,6 @@ const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
 const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const ACCEPTANCE_BILLING_REFRESH_WINDOW_MS = 5_000
-const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
-const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -78,13 +78,13 @@ export type AgentPanelView =
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
-  const isOpen = useSafeLocalStorage(OPEN_STORAGE_KEY, false, {
+  const isOpen = useSafeLocalStorage(StorageKeys.agentPanelOpen, false, {
     writeDefaults: false
   })
-  /** Whether the panel has ever been shown to this user, on any visit. */
-  const hasEverOpened = useSafeLocalStorage(DISCOVERED_STORAGE_KEY, false, {
-    writeDefaults: false
-  })
+  const hasEverOpened = useAccountStorage(
+    StorageKeys.agentPanelDiscovered,
+    false
+  )
   const gateSettled = ref(false)
   const heldSendGate = ref<HeldGate | null>(null)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })

@@ -1,5 +1,7 @@
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 

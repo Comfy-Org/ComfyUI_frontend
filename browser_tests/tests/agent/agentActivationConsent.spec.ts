@@ -99,7 +99,7 @@ test.describe(
   'Fresh signed-in Agent: the launch card, then the coach',
   { tag: ['@cloud', '@ui'] },
   () => {
-    test.use({ agentConsentAccepted: false })
+    test.use({ agentConsentAccepted: false, agentOnboardingCompleted: false })
 
     test('shows the card over the opened panel and runs the coach after Agree', async ({
       agentPanel,
@@ -146,6 +146,7 @@ test.describe(
   () => {
     test.use({
       agentConsentAccepted: false,
+      agentOnboardingCompleted: false,
       initialLocalStorage: {
         'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
           'true'

@@ -14,6 +14,8 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 import { createI18n } from 'vue-i18n'
 
 import BoundingBoxesDialogContent from './BoundingBoxesDialogContent.vue'

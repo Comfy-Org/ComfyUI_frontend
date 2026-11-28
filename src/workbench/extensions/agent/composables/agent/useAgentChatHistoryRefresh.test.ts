@@ -9,6 +9,8 @@ import type {
 import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 function thread(id: string, workflowId = '', title = id): AgentThreadSummary {
   return {
     id,

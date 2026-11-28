@@ -3,7 +3,9 @@ import { render, waitFor } from '@testing-library/vue'
 import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { computed, defineComponent, nextTick } from 'vue'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -22,6 +24,7 @@ import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/st
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@comfyorg/telemetry'))
@@ -1105,6 +1108,7 @@ describe('historical workflow restoration', () => {
   const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
 
   async function bindDraftThenReload(): Promise<void> {
+    useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     const beforeReload = useWorkflowStore()
     const draft = beforeReload.createTemporary('Agent draft.json', {
       ...blankGraph,

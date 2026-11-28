@@ -18,9 +18,11 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -182,32 +184,15 @@ const VERDICT_TONE: Record<string, string> = {
   'not-reached': 'text-muted-foreground border-border'
 }
 
-// ── open/close state, persisted ───────────────────────────────────────────
-const OPEN_KEY = 'Comfy.Agent.CrdtDevPanel.open'
-const HIDDEN_KEY = 'Comfy.Agent.CrdtDevPanel.hidden'
-
-const open = ref(readOpen())
+const open = useSafeLocalStorage(StorageKeys.agentCrdtPanelOpen, false)
 const tab = ref<'status' | 'log' | 'merge'>('status')
-const dismissed = ref(readHidden())
+const dismissed = useSafeLocalStorage(StorageKeys.agentCrdtPanelHidden, false)
 const chipButton = useTemplateRef<HTMLButtonElement>('chipButton')
 const closeButton = useTemplateRef<HTMLButtonElement>('closeButton')
-
-function readOpen(): boolean {
-  return safeLocalStorage.getItem(OPEN_KEY) === 'true'
-}
-
-function readHidden(): boolean {
-  return safeLocalStorage.getItem(HIDDEN_KEY) === 'true'
-}
-
-function setHidden(hidden: boolean): void {
-  safeLocalStorage.setItem(HIDDEN_KEY, String(hidden))
-}
 
 function setOpen(value: boolean) {
   open.value = value
   if (value) void nextTick(poll)
-  safeLocalStorage.setItem(OPEN_KEY, String(value))
 }
 
 function onDocumentKeydown(event: KeyboardEvent): void {
@@ -328,17 +313,7 @@ const level = defineModel<CrdtLogLevel>('level', { default: 'info' })
 const mergeScenarios = getMergeScenarios()
 const scenario = shallowRef<MergeScenario>(mergeScenarios[0])
 const simulation = shallowRef<MergeSimulation | null>(null)
-const NOTE_KEY = 'Comfy.Agent.CrdtDevPanel.note'
-
-function readNote(): string {
-  return safeLocalStorage.getItem(NOTE_KEY) ?? ''
-}
-
-const testerNote = ref(readNote())
-
-watch(testerNote, (next) => {
-  safeLocalStorage.setItem(NOTE_KEY, next)
-})
+const testerNote = useAccountStorage(StorageKeys.agentCrdtNote, '')
 
 function selectScenario(id: string) {
   const next = mergeScenarios.find((candidate) => candidate.id === id)
@@ -601,12 +576,10 @@ function collectIdentifiers(crdt: CrdtDebugSnapshot): ReportIdentifiers {
 function dismiss() {
   setOpen(false)
   dismissed.value = true
-  setHidden(true)
 }
 
 function restore() {
   dismissed.value = false
-  setHidden(false)
 }
 
 const proxyTarget = computed(() => api.apiURL(''))

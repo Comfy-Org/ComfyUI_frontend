@@ -8,6 +8,8 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@comfyorg/telemetry'))
 
 // The mocked module factory throws, so the dynamic import itself rejects -

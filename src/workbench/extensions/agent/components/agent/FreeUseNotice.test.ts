@@ -1,12 +1,14 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+
 import FreeUseNotice from './FreeUseNotice.vue'
-import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -40,6 +42,8 @@ function mount() {
 }
 
 describe('FreeUseNotice', () => {
+  beforeEach(() => signIn('user-1'))
+
   it('carries the bounded copy and an explainer link', () => {
     mount()
 
@@ -110,14 +114,19 @@ describe('FreeUseNotice', () => {
         userId.value === null ? null : { id: userId.value }
       )
     })
-    localStorage.setItem(freeUseNoticeDismissedKey('dismissed-user'), 'true')
+    localStorage.setItem(
+      StorageKeys.agentFreeUseNoticeDismissed(
+        accountScope('dismissed-user', 'personal')!
+      ),
+      'true'
+    )
 
     const { emitted } = mount()
 
     expect(screen.queryByRole('note')).toBeNull()
     expect(emitted('notice')).toBeUndefined()
     expect(
-      localStorage.getItem(freeUseNoticeDismissedKey(undefined)),
+      localStorage.getItem(''),
       'no default planted under the signed-out key on the way to the real one'
     ).toBeNull()
 

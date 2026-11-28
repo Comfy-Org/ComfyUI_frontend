@@ -1,3 +1,5 @@
+import { useEventListener } from '@vueuse/core'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { computed, reactive, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -10,8 +12,9 @@ import type {
 
 import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
-import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { agentStorage } from '@/platform/workflow/persistence/base/agentStorage'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 export interface CoachStep {
   card: AgentOnboardingCard
@@ -22,31 +25,12 @@ export interface CoachStep {
   tooltip?: string
 }
 
-const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
-
 export function scopedOnboardingKey(
   userId: string | undefined,
   workspaceId: string | null | undefined
 ): string | null {
-  if (!userId || !workspaceId) return null
-  return `${SHARED_ONBOARDING_KEY}.${userId}.${workspaceId}`
-}
-
-/**
- * The coach marks recorded one flag for the whole device, while consent is
- * recorded per account and workspace. A user who had seen the marks anywhere
- * therefore joined a new workspace, accepted consent again, and got no
- * guidance. Carry the old flag onto the scope in front of the user, then drop
- * the shared one so later scopes start clean.
- */
-export function adoptSharedOnboardingFlag(scopedKey: string): void {
-  if (safeLocalStorage.getItem(SHARED_ONBOARDING_KEY) !== 'true') return
-  if (
-    safeLocalStorage.getItem(scopedKey) === null &&
-    safeLocalStorage.setItem(scopedKey, 'true') !== 'ok'
-  )
-    return
-  safeLocalStorage.removeItem(SHARED_ONBOARDING_KEY)
+  const scope = accountScope(userId, workspaceId)
+  return scope === null ? null : StorageKeys.agentOnboarded(scope)
 }
 
 const reportedMissingTargets = new Set<string>()
@@ -141,7 +125,11 @@ function persistSeenToSettings(scopedKey: string, seen: boolean): void {
 }
 
 function localStorageRecordsSeen(scopedKey: string): boolean {
-  return safeLocalStorage.getItem(scopedKey) === 'true'
+  try {
+    return agentStorage.getItem(scopedKey) === 'true'
+  } catch {
+    return false
+  }
 }
 
 export function hasSeenCoach(scopedKey: string): boolean {
@@ -154,7 +142,11 @@ export function hasSeenCoach(scopedKey: string): boolean {
  */
 export function resetCoach(scopedKey: string): void {
   persistSeenToSettings(scopedKey, false)
-  safeLocalStorage.removeItem(scopedKey)
+  try {
+    agentStorage.removeItem(scopedKey)
+  } catch {
+    return
+  }
 }
 
 const shownScopes = new Set<string>()
@@ -179,9 +171,18 @@ export function trackCoachDeferral(
 
 export function useOnboarding(
   steps: MaybeRefOrGetter<CoachStep[]>,
-  storageKey = SHARED_ONBOARDING_KEY
+  storageKey: string
 ) {
-  const seenLocally = useSafeLocalStorage(storageKey, false)
+  const seenLocally = useSafeLocalStorage(
+    storageKey,
+    false,
+    undefined,
+    agentStorage
+  )
+  useEventListener(window, 'storage', (event) => {
+    if (event.key === storageKey || event.key === null)
+      seenLocally.value = localStorageRecordsSeen(storageKey)
+  })
   if (seenLocally.value) persistSeenToSettings(storageKey, true)
   else if (unsavedScopes.get(storageKey) === false)
     persistSeenToSettings(storageKey, false)

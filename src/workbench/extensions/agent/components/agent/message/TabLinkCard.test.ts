@@ -15,6 +15,8 @@ import { AgentTargetNavigationError } from '@/workbench/extensions/agent/service
 
 const apiEvents: EventTarget = api
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 vi.hoisted(() => {
   vi.stubGlobal(
     'ResizeObserver',

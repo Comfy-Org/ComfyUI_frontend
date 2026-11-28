@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 

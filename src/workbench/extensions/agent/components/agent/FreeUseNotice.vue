@@ -3,20 +3,19 @@ import { computed, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import type { AgentFreeUseNoticeMetadata } from '@comfyorg/telemetry/types'
 import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
-import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { useAccountStorage } from '@/platform/workflow/persistence/composables/useAccountStorage'
 
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
 const placement = 'near-composer' as const
 
-const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
-const dismissed = useSafeLocalStorage(
-  () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
-  false,
-  { writeDefaults: false }
+const { isAuthInitialized } = useCurrentUser()
+const dismissed = useAccountStorage(
+  StorageKeys.agentFreeUseNoticeDismissed,
+  false
 )
 
 const visible = computed(() => isAuthInitialized.value && !dismissed.value)

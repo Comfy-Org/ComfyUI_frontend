@@ -17,6 +17,8 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { PermanentDocSubscribeRefusalCode } from '@/workbench/extensions/agent/crdt/docFrameCodes'
 import type {
@@ -39,8 +41,9 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-export const AGENT_COACH_SEEN_KEY =
-  'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+export const AGENT_COACH_SEEN_KEY = StorageKeys.agentOnboarded(
+  accountScope('test-user-e2e', 'ws-personal')!
+)
 /** The cloud workflow id a turn ack binds the posting tab to. */
 export const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
@@ -412,15 +415,12 @@ async function mockAgentBoot(
   const csrfToken = 'csrf-e2e'
 
   await page.addInitScript(
-    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
+    ({ initiallyOpen, onboardingCompleted, onboardingKey, debugEnabled }) => {
       if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
         localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
       }
-      if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
-        localStorage.setItem(
-          'Comfy.AgentPanel.onboarded',
-          String(onboardingCompleted)
-        )
+      if (localStorage.getItem(onboardingKey) === null) {
+        localStorage.setItem(onboardingKey, String(onboardingCompleted))
       }
       if (debugEnabled) {
         localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
@@ -429,6 +429,9 @@ async function mockAgentBoot(
     {
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
+      onboardingKey: StorageKeys.agentOnboarded(
+        accountScope('test-user-e2e', 'ws-personal')!
+      ),
       debugEnabled: crdtDebugEnabled
     }
   )

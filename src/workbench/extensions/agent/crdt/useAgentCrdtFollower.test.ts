@@ -32,6 +32,8 @@ import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { hasUnsyncedHumanOps, recordUnsyncedHumanOps } from './unsyncedHumanOps'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
   let maxLiveSubscriptions = 0

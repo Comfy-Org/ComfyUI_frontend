@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -13,7 +14,9 @@ import { TestIds } from '@e2e/fixtures/selectors'
 // persisted workspace-scoped thread ID from localStorage and calls
 // `hydrateFromServer`, which re-fetches this same history and replays it
 // through `agentConversationStore.hydrate()`.
-const THREAD_KEY = StorageKeys.agentThread('personal')
+const THREAD_KEY = StorageKeys.agentThread(
+  accountScope('test-user-e2e', 'ws-personal')!
+)
 
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })

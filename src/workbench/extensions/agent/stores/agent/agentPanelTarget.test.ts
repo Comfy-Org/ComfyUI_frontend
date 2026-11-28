@@ -7,6 +7,7 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@comfyorg/telemetry'))
 const trackAgentTargetUnavailable = vi.mocked(
   useTelemetry()!.trackAgentTargetUnavailable

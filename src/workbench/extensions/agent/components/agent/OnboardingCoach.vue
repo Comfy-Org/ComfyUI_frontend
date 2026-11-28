@@ -35,7 +35,7 @@ const ARROW_CORNER_CLEARANCE = 20
 
 const { steps, storageKey, holdNotice } = defineProps<{
   steps: CoachStep[]
-  storageKey?: string
+  storageKey: string
   holdNotice?: string
 }>()
 const emit = defineEmits<{

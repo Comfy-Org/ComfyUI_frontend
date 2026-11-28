@@ -14,6 +14,8 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
 const openWorkflow = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(

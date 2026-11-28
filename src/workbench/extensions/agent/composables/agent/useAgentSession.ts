@@ -1,14 +1,14 @@
 import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useIntervalFn } from '@vueuse/core'
+import { until, useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
 import { computed, ref, shallowReactive, watch } from 'vue'
 import { ZodError } from 'zod'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { i18n } from '@/i18n'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
@@ -22,11 +22,11 @@ import type {
   AgentWorkflowBindSource,
   AgentWorkflowSyncErrorCode
 } from '@comfyorg/telemetry/types'
-import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import {
-  getWorkspaceId,
-  StorageKeys
-} from '@/platform/workflow/persistence/base/storageKeys'
+  useAccountScope,
+  useAccountStorage
+} from '@/platform/workflow/persistence/composables/useAccountStorage'
 import { createUuidv4 } from '@/utils/uuid'
 import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 import type {
@@ -568,8 +568,52 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workspaceId,
     workflow
   } = deps
-  const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
-  clearLegacyAgentStorage()
+  const { resolvedUserInfo } = useCurrentUser()
+  let loadGeneration = 0
+  let accountGeneration = 0
+  const scope = useAccountScope()
+  const owner = ref(scope.value)
+  const pendingThread = ref<string | null>()
+  const persistedThread = useAccountStorage<string | null>(
+    StorageKeys.agentThread,
+    null,
+    {
+      onError: (error) => {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_thread_persistence_failed'
+        })
+        trackAgentError('request_failed', 'post_acceptance', 'none')
+      }
+    },
+    computed(() => (scope.value === owner.value ? owner.value : null))
+  )
+  const storedThread = computed({
+    get: () =>
+      pendingThread.value === undefined
+        ? persistedThread.value
+        : pendingThread.value,
+    set: (value: string | null) => {
+      if (owner.value === null) pendingThread.value = value
+      else persistedThread.value = value
+    }
+  })
+  watch(
+    [scope, () => resolvedUserInfo.value?.id],
+    ([next, nextUserId], [, previousUserId]) => {
+      if (previousUserId !== undefined && nextUserId !== previousUserId) {
+        pendingThread.value = undefined
+        accountGeneration++
+        loadGeneration++
+      }
+      if (owner.value !== null || next === null) return
+      owner.value = next
+      if (pendingThread.value === undefined) return
+      persistedThread.value = pendingThread.value
+      pendingThread.value = undefined
+    },
+    { flush: 'sync' }
+  )
 
   const conversationStore = useAgentConversationStore()
   const sendGateStore = useAgentSendGateStore()
@@ -891,12 +935,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function initializeWorkflowContext(hasThread: boolean): void {
     workflow?.initialize?.(hasThread)
-    // The binding only outlives a remount together with its thread: a page
-    // with no surviving thread has no resumed turn the binding could serve.
-    if (
-      conversationStore.threadId === null &&
-      safeLocalStorage.getItem(threadStorageKey) === null
-    ) {
+    if (conversationStore.threadId === null && storedThread.value === null) {
       rememberedWorkflowId = null
       boundWorkflowId.value = null
     }
@@ -908,24 +947,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
     receivedStatusSnapshot = false
-    const surviving = conversationStore.threadId
-    const stored =
-      conversationStore.messages.length === 0
-        ? safeLocalStorage.getItem(threadStorageKey)
-        : null
-    const initialThreadId = surviving ?? stored
-    initializeWorkflowContext(initialThreadId !== null)
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
     unsubscribeSnapshotSettled = conversationStore.onSnapshotTurnSettled(
       (turn) => void reconcileSettledSnapshotTurn(turn)
     ).off
+    void initializeThread(restore)
+  }
+
+  async function initializeThread(restore: boolean): Promise<void> {
+    const generation = advanceLoadGeneration()
+    const isCurrent = () =>
+      !stopped &&
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration
+    if (owner.value === null) {
+      initializeWorkflowContext(false)
+      await until(owner).not.toBeNull()
+    }
+    if (!isCurrent()) return
+    const surviving = conversationStore.threadId
+    const stored =
+      conversationStore.messages.length === 0 ? storedThread.value : null
+    const initialThreadId = surviving ?? stored
+    initializeWorkflowContext(initialThreadId !== null)
     if (!restore) return
     if (initialThreadId === null) {
       onThreadActivated?.(null)
       return
     }
-    void restoreInitialThread(initialThreadId, surviving)
+    await restoreInitialThread(initialThreadId, surviving, isCurrent)
   }
 
   async function withHydrating<T>(
@@ -958,11 +1009,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   async function restoreInitialThread(
     initialThreadId: string,
-    surviving: string | null
+    surviving: string | null,
+    isCurrent: () => boolean
   ): Promise<void> {
-    const generation = advanceLoadGeneration()
-    const isCurrent = () =>
-      generation === loadGeneration && ownedGeneration === sessionGeneration
     return await withHydrating(
       initialThreadId,
       async () => {
@@ -1439,8 +1488,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function forgetMissingThread(threadId: string, clearActive: boolean): void {
     invalidateChat(threadId)
     deletedThreads.add(threadId)
-    if (safeLocalStorage.getItem(threadStorageKey) === threadId)
-      safeLocalStorage.removeItem(threadStorageKey)
+    if (storedThread.value === threadId) storedThread.value = null
     if (clearActive && conversationStore.threadId === threadId) {
       resetToBlankChat()
       onThreadActivated?.(null)
@@ -1708,8 +1756,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       deletedThreads.add(threadId)
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
-      if (safeLocalStorage.getItem(threadStorageKey) === threadId)
-        safeLocalStorage.removeItem(threadStorageKey)
+      if (storedThread.value === threadId) storedThread.value = null
       return false
     }
     const diagnostics = describeAgentRequestFailure(error)
@@ -2191,15 +2238,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
     )
-    const threadPersistence = safeLocalStorage.write(
-      threadStorageKey,
-      ack.thread_id
+    runAcceptedTurnSideEffect(
+      () => (storedThread.value = ack.thread_id),
+      'agent_thread_persistence_failed'
     )
-    if (threadPersistence.result !== 'ok')
-      reportAcceptedTurnSideEffectFailure(
-        threadPersistence.error,
-        'agent_thread_persistence_failed'
-      )
     if (adoptWorkflow)
       runAcceptedTurnSideEffect(
         adoptWorkflow,
@@ -2576,6 +2618,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadAtSend: string
     generation: number
   }): Promise<false> {
+    if (scope.value !== owner.value) return false
     releaseDisownedWorkflow(sentContext, error)
     let conflict: { reattached: boolean } | null = null
     if (isDeletedThreadOrigin(origin)) {
@@ -2900,6 +2943,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     if (!resolved) return false
     const generation = loadGeneration
+    const accountGenerationAtSend = accountGeneration
     const skillScopeAtSend = skillPacks.scope
     const threadAtSend = origin.kind === 'thread' ? origin.threadId : 'new'
     const canvasNodeIds = workflow?.canvasSelection?.(resolved.turnOrigin)
@@ -2946,6 +2990,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       conversationStore.capturePendingSendCanvasBaseline(sendId)
       const ack = await postTurn(threadAtSend, input, wfContext)
+      if (
+        accountGenerationAtSend !== accountGeneration ||
+        scope.value !== owner.value
+      )
+        return false
       accepted = true
       runAcceptedTurnSideEffect(
         () => onAccepted?.(),
@@ -2967,6 +3016,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         boundAtSend
       })
     } catch (error) {
+      if (accountGenerationAtSend !== accountGeneration) return false
       return recoverFailedSend({
         sendId,
         origin,
@@ -3586,7 +3636,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  let loadGeneration = 0
   let refusedTurnReattachGeneration = 0
 
   function clearUnactivatedThread(blankChatId?: string): void {
@@ -3604,7 +3653,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function resetToBlankChat(blankChatId?: string): void {
     clearUnactivatedThread(blankChatId)
     onThreadActivated?.(null)
-    safeLocalStorage.removeItem(threadStorageKey)
+    storedThread.value = null
   }
 
   function newChat(
@@ -3624,7 +3673,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function activateLoadedThread(threadId: string): void {
-    safeLocalStorage.setItem(threadStorageKey, threadId)
+    storedThread.value = threadId
     onThreadActivated?.(threadId)
   }
 
@@ -5022,7 +5071,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()
-    safeLocalStorage.removeItem(threadStorageKey)
+    storedThread.value = null
   }
 
   const isSending = computed(() => conversationStore.hasSendingPendingSend)

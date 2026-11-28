@@ -1,5 +1,8 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import { accountScope } from '@/platform/workflow/persistence/base/accountScope'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
@@ -21,7 +24,9 @@ test.describe(
       connectWebSocketToServer: false,
       initialFeatureFlags: { enable_telemetry: true },
       initialLocalStorage: {
-        'Comfy.Agent.WorkflowTabBindings:personal': 'null'
+        [StorageKeys.agentWorkflowTabBindings(
+          accountScope('test-user-e2e', 'ws-personal')!
+        )]: 'null'
       }
     })
 
