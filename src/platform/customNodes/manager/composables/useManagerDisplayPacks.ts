@@ -13,7 +13,7 @@ import {
   PACK_SORTABLE_FIELDS,
   getPackSortValue
 } from '@/platform/customNodes/manager/utils/nodePackSort'
-import { getPackUpdateStatus } from '@/platform/customNodes/manager/composables/nodePack/packUpdateStatus'
+import { usePackUpdateStatuses } from '@/platform/customNodes/manager/composables/nodePack/usePackUpdateStatuses'
 
 type NodePack = components['schemas']['Node']
 
@@ -59,7 +59,6 @@ export function useManagerDisplayPacks(
     )
   }
 
-  // Filter functions
   const filterNotInstalled = (packs: NodePack[]) =>
     packs.filter((p) => !comfyManagerStore.isPackInstalled(p.id))
 
@@ -72,12 +71,21 @@ export function useManagerDisplayPacks(
         )
     )
 
-  const filterOutdated = (packs: NodePack[]) =>
-    packs.filter(
-      (p) => getPackUpdateStatus(p, comfyManagerStore).isUpdateAvailable
-    )
+  const {
+    getStatus,
+    isLoading: isLoadingVersions,
+    hasError: hasUpdateError
+  } = usePackUpdateStatuses(() =>
+    tabType.value === ManagerTab.UpdateAvailable
+      ? isEmptySearch.value
+        ? installedPacks.value
+        : toValue(searchResults)
+      : []
+  )
 
-  // Data fetching triggers using whenever
+  const filterOutdated = (packs: NodePack[]) =>
+    packs.filter((p) => getStatus(p).isUpdateAvailable)
+
   const needsInstalledPacks = computed(() =>
     [
       ManagerTab.AllInstalled,
@@ -92,8 +100,6 @@ export function useManagerDisplayPacks(
     )
   )
 
-  // Sorting only applies to fully-fetched tabs with no active search; paged
-  // search/listing results (All, NotInstalled) are shown in the API's order.
   const isSortable = computed(
     () =>
       isEmptySearch.value &&
@@ -116,7 +122,6 @@ export function useManagerDisplayPacks(
     () => startFetchWorkflowPacks()
   )
 
-  // For Missing tab, also need installed packs to determine what's missing
   whenever(
     () =>
       tabType.value === ManagerTab.Missing &&
@@ -125,7 +130,6 @@ export function useManagerDisplayPacks(
     () => startFetchInstalled()
   )
 
-  // Single computed for display packs - replaces 7 watches
   const displayPacks = computed(() => {
     const tab = tabType.value
     const hasSearch = !isEmptySearch.value
@@ -171,7 +175,6 @@ export function useManagerDisplayPacks(
     }
   })
 
-  // Loading state - single computed
   const isLoading = computed(() => {
     const tab = tabType.value
     if (
@@ -181,7 +184,10 @@ export function useManagerDisplayPacks(
         ManagerTab.Conflicting
       ].includes(tab as ManagerTab)
     ) {
-      return isLoadingInstalled.value
+      return (
+        isLoadingInstalled.value ||
+        (tab === ManagerTab.UpdateAvailable && isLoadingVersions.value)
+      )
     }
     if ([ManagerTab.Workflow, ManagerTab.Missing].includes(tab as ManagerTab)) {
       return isLoadingWorkflow.value
@@ -195,6 +201,7 @@ export function useManagerDisplayPacks(
 
   return {
     displayPacks,
+    hasUpdateError,
     isSortable,
     isLoading,
     isLoadingInstalled,

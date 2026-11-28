@@ -4,7 +4,10 @@ import type { components } from '@/types/comfyRegistryTypes'
 import type { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 
 type NodePack = components['schemas']['Node']
-type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>
+type ComfyManagerStore = Pick<
+  ReturnType<typeof useComfyManagerStore>,
+  'isPackInstalled' | 'getInstalledPackVersion'
+>
 
 interface PackUpdateStatus {
   isInstalled: boolean
@@ -22,18 +25,17 @@ export function isNightlyVersion(version: string | undefined): boolean {
   return !!version && !valid(version)
 }
 
-/**
- * Derives the update status of a pack from its installed version and the
- * latest release version advertised by the registry. A nightly build is never
- * "outdated" since git hashes cannot be ordered.
- */
 export function getPackUpdateStatus(
   pack: NodePack | undefined,
-  managerStore: ComfyManagerStore
+  managerStore: ComfyManagerStore,
+  updateVersion = pack?.latest_version
 ): PackUpdateStatus {
   const isInstalled = managerStore.isPackInstalled(pack?.id)
   const installedVersion = managerStore.getInstalledPackVersion(pack?.id ?? '')
-  const latestVersion = pack?.latest_version?.version
+  const latestVersion =
+    updateVersion?.status === 'NodeVersionStatusActive'
+      ? updateVersion.version
+      : undefined
   const isNightly = isNightlyVersion(installedVersion)
 
   const isUpdateAvailable =

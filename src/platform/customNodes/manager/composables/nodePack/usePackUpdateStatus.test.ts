@@ -11,7 +11,7 @@ function makePack(overrides: Partial<NodePack> = {}): NodePack {
   return {
     id: 'pack-1',
     name: 'Pack',
-    latest_version: { version: '2.0.0' },
+    latest_version: { version: '2.0.0', status: 'NodeVersionStatusActive' },
     ...overrides
   }
 }
@@ -85,12 +85,18 @@ describe('usePackUpdateStatus', () => {
   })
 
   it('recomputes when the source pack changes', async () => {
-    const source = ref(makePack({ latest_version: { version: '1.0.0' } }))
+    const source = ref(
+      makePack({
+        latest_version: { version: '1.0.0', status: 'NodeVersionStatusActive' }
+      })
+    )
     const { isUpdateAvailable } = usePackUpdateStatus(source)
 
     expect(isUpdateAvailable.value).toBe(false)
 
-    source.value = makePack({ latest_version: { version: '3.0.0' } })
+    source.value = makePack({
+      latest_version: { version: '3.0.0', status: 'NodeVersionStatusActive' }
+    })
     await nextTick()
 
     expect(isUpdateAvailable.value).toBe(true)

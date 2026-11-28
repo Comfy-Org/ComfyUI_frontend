@@ -8,7 +8,10 @@ import {
 } from '@/platform/customNodes/manager/composables/nodePack/packUpdateStatus'
 
 type NodePack = components['schemas']['Node']
-type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>
+type ComfyManagerStore = Pick<
+  ReturnType<typeof useComfyManagerStore>,
+  'isPackInstalled' | 'getInstalledPackVersion'
+>
 
 const createPack = (
   id: string | undefined,
@@ -16,17 +19,18 @@ const createPack = (
 ): NodePack => ({
   id,
   name: `Pack ${id}`,
-  latest_version: latestVersion ? { version: latestVersion } : undefined
+  latest_version: latestVersion
+    ? { version: latestVersion, status: 'NodeVersionStatusActive' }
+    : undefined
 })
 
 const createStore = (
   installed: Record<string, string | undefined>
-): ComfyManagerStore =>
-  ({
-    isPackInstalled: (id: string | undefined) =>
-      id !== undefined && id in installed,
-    getInstalledPackVersion: (id: string) => installed[id]
-  }) as unknown as ComfyManagerStore
+): ComfyManagerStore => ({
+  isPackInstalled: (id: string | undefined) =>
+    id !== undefined && id in installed,
+  getInstalledPackVersion: (id: string) => installed[id]
+})
 
 describe('isNightlyVersion', () => {
   it('is true for a non-semver git hash version', () => {
@@ -103,4 +107,43 @@ describe('getPackUpdateStatus', () => {
     expect(status.latestVersion).toBeUndefined()
     expect(status.isUpdateAvailable).toBe(false)
   })
+  it.for([
+    'NodeVersionStatusPending',
+    'NodeVersionStatusFlagged',
+    'NodeVersionStatusBanned'
+  ] as const)(
+    'does not advertise a %s release as a default update',
+    (status) => {
+      const pack = createPack('pack-1', '3.0.0')
+      pack.latest_version = { version: '3.0.0', status }
+      expect(
+        getPackUpdateStatus(pack, createStore({ 'pack-1': '2.0.0' }))
+          .isUpdateAvailable
+      ).toBe(false)
+    }
+  )
+
+  it.for([
+    ['1.0.0', true],
+    ['2.0.0', false],
+    ['2.5.0', false]
+  ] as const)(
+    'compares installed %s with the resolved Active release',
+    ([installed, expected]) => {
+      const pack: NodePack = {
+        id: 'pack-1',
+        latest_version: { version: '3.0.0', status: 'NodeVersionStatusFlagged' }
+      }
+      const status = getPackUpdateStatus(
+        pack,
+        createStore({ 'pack-1': installed }),
+        {
+          version: '2.0.0',
+          status: 'NodeVersionStatusActive'
+        }
+      )
+      expect(status.latestVersion).toBe('2.0.0')
+      expect(status.isUpdateAvailable).toBe(expected)
+    }
+  )
 })
