@@ -38,6 +38,7 @@ const canvasActions = vi.mockObject<
     | 'deleteSelected'
     | 'emitAfterChange'
     | 'emitBeforeChange'
+    | 'finalizeGhostPlacement'
     | 'getWidgetAtCursor'
     | 'pasteFromClipboard'
     | 'processMouseDown'
@@ -69,6 +70,7 @@ const canvasActions = vi.mockObject<
     processMouseWheel() {},
     emitBeforeChange() {},
     emitAfterChange() {},
+    finalizeGhostPlacement() {},
     getWidgetAtCursor: () => undefined
   },
   { spy: true }

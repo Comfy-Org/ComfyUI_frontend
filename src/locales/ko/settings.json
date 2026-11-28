@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "와이어가 직선이 되도록 정렬"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Comfy Cloud 호환성을 확인하기 위해 노드 및 모델 이름을 전송하기 전에 묻기"
+  },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
   },

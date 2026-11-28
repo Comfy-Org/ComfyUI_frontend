@@ -7,6 +7,7 @@
         widget.borderStyle
       )
     "
+    :style="{ minHeight: `${textareaMinHeight()}px` }"
     data-part="widget-textarea"
   >
     <div class="flex h-6 shrink-0 items-center gap-2 px-3">
@@ -91,7 +92,9 @@ import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import { textareaMinHeight } from '@/renderer/extensions/vueNodes/widgets/textareaFloor'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -160,9 +163,11 @@ async function handleCopy() {
   })
 }
 
+const promptEditorExperiment = usePromptEditorExperimentStore()
 let closeTextEditor: (() => void) | undefined
 
 function openTextEditor() {
+  promptEditorExperiment.expose('control')
   closeTextEditor = showTextEditor({
     readText: () => text.value,
     widgetLabel: displayName.value,
