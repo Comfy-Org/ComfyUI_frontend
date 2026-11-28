@@ -2256,6 +2256,21 @@ describe('attachDocOpMinter', () => {
     return { host, doc }
   }
 
+  it('keeps a prompt-only legacy host input local without a refusal', async () => {
+    const { host } = seedPromotedHost()
+    const input = host.addInput('prompt', 'INT')
+    input.widget = { name: 'prompt' }
+    const prompt = host.addWidget('number', 'prompt', 7, () => {})
+    prompt.serialize = false
+    prompt.options.serialize = true
+
+    prompt.value = 8
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refusals).toEqual([])
+  })
+
   it('does not grow a promoted input the subgraph host doc lacks, reporting it instead', async () => {
     const { host, doc } = seedPromotedHost()
     expect(host.inputs[1].widget).toEqual({ name: 'text' })

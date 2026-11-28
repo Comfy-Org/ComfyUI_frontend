@@ -61,6 +61,7 @@ import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
 import { promotedHostInputs } from './promotedHostInputs'
 import { reportLostEdit } from './reportLostEdit'
 import {
+  isValueWidget,
   provenWidgetValuesForm,
   replicatedWidgetValues
 } from './widgetValuesForm'
@@ -323,6 +324,7 @@ function isValueWidgetWrite(
   const widget = owner?.widgets?.find(
     (candidate) => candidate.name === event.name
   )
+  if (owner?.isSubgraphNode()) return isValueWidget(widget, stored)
   return isReplicatedValueWidget(widget, stored)
 }
 

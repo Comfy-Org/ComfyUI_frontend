@@ -262,7 +262,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     )
   })
 
-  it('keeps a legacy promoted input whose widget is prompt-only', () => {
+  it('keeps prompt-only legacy inputs out of workflow positions', () => {
     const host = new LGraphNode('Prompt-only host')
     const input = host.addInput('prompt', 'INT')
     input.widget = { name: 'prompt' }
@@ -272,15 +272,15 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
 
     const promoted = promotedHostInputs(host)
 
-    expect(promoted.map(({ input }) => input.name)).toEqual(['prompt'])
-    expect(promoted.map(({ readValue }) => readValue())).toEqual([7])
+    expect(promoted).toEqual([])
+    expect(host.serialize().widgets_values).toBeUndefined()
   })
 
-  it('keeps prompt-only host positions aligned with serialized values', () => {
+  it('keeps later host positions aligned when a controller is prompt-only', () => {
     const { host } = buildHost('two speakers', 2)
     const mode = widget(host, 'mode')
     mode.serialize = false
-    delete mode.options.serialize
+    mode.options.serialize = true
 
     const promoted = promotedHostInputs(host)
 

@@ -578,8 +578,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const owned = this._extraWidgets.find(
         (widget) => widget.name === input.widget?.name
       )
-      return owned &&
-        (owned.serialize !== false || owned.options.serialize !== false)
+      return owned && owned.serialize !== false
         ? [{ input, value: owned.value }]
         : []
     })
