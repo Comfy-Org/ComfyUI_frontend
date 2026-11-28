@@ -404,40 +404,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
-    // Attempted for its effect, not its verdict: this is where a resolvable
-    // collision is settled. The verdict is whole-node, and whether *this*
-    // widget has an identity is not — see {@link ownedWidgetNameKey}.
     const widgets = this.node.widgets ?? [this]
     ensureUniqueWidgetNames(widgets)
-    // Minted from the key that answer was computed on, never from a second
-    // read of the accessor.
     const name = ownedWidgetNameKey(widgets, this)
     if (name !== undefined) return widgetId(graphId, nodeId, name)
     return this.boundWidgetId(graphId, nodeId)
   }
 
-  /**
-   * The id of the store entry this widget is *already bound to*, when its array
-   * position says it owns nothing.
-   *
-   * Position is the right rule for who may take an identity, and the wrong one
-   * for who already has it. A widget spliced off the node still answers to the
-   * entry it registered, and `dynamicWidgets.ts` depends on exactly that: it
-   * removes a group's widgets from `node.widgets` and *then* reads
-   * `widget.widgetId` to delete each entry. Answering `undefined` there — either
-   * because a same-named widget is still on the node or because this one is no
-   * longer listed — leaks the entry, and the next widget of that name and type
-   * silently inherits its value.
-   *
-   * Asking the store rather than the array is also what lets
-   * {@link ownedWidgetNameKey} refuse a non-member outright instead of falling
-   * open: the two questions are answered in the two places that can answer
-   * them.
-   *
-   * A widget that never registered — a refused duplicate, whose name belongs to
-   * the widget that kept it — is not bound to anything, so it still answers
-   * `undefined` and still cannot reach the keeper's entry.
-   */
   private boundWidgetId(graphId: string, nodeId: NodeId): WidgetId | undefined {
     const name = widgetNameKey(this)
     if (name === undefined) return undefined
@@ -445,45 +418,18 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return useWidgetValueStore().getWidget(id) === this._state ? id : undefined
   }
 
-  /**
-   * Associates this widget with a node ID and registers it in the WidgetValueStore.
-   * Once set, value reads/writes will be delegated to the store.
-   */
   setNodeId(nodeId: NodeId): void {
     this.installTypeVisibilityShim()
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
-    // Settle what can be settled, then ask only about this widget. A node
-    // carrying one pair nothing can rename apart must not cost every *other*
-    // widget on it its registration — that empties the node's whole widget
-    // order and a Vue node then draws nothing. The later of the pair still
-    // gets no id, so no colliding identity is ever registered.
     const widgets = this.node.widgets ?? [this]
     ensureUniqueWidgetNames(widgets)
-    // The key, not a boolean: the id is minted from the value the answer was
-    // computed on, so an accessor that answers differently on a second read
-    // cannot pass the check under one name and register under another.
     const name = ownedWidgetNameKey(widgets, this)
     if (name === undefined) return
 
     const store = useWidgetValueStore()
     const id = widgetId(graphId, nodeId, name)
 
-    // Ownership is positional over the live array, so it moves when the array
-    // does — a whole-array assignment, an unshift, or splicing the owner off
-    // can make the *duplicate* of an unresolved pair the first holder of the
-    // name. `registerWidget` hands back the existing same-type entry and keeps
-    // **its** value, and binding to it would weld this widget onto the other
-    // widget's `WidgetState` and silently drop its own value.
-    //
-    // An entry holding a different `WidgetState` is therefore someone else's
-    // identity, and adopting one is allowed only when nobody is left to lose
-    // it: no other widget on this node is bound to it, *and* this widget has
-    // never registered. That second half is load-bearing in the other
-    // direction — a replaced node's fresh widgets inheriting the previous
-    // occupant's values across a recycled `nodeId` is #13073 and has to keep
-    // working. A widget already bound to its own state that finds a different
-    // state at its id is taking an identity, not inheriting one.
     const occupant = store.getWidget(id)
     if (
       occupant &&
@@ -513,25 +459,16 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this.bindRegisteredState(nodeId, name)
   }
 
-  /**
-   * Whether another widget on this node is bound to {@link state}.
-   *
-   * The discriminator between the two states that otherwise look identical
-   * from inside {@link setNodeId}: an entry whose widget is still live on the
-   * node (taking it welds two widgets onto one value) against an entry left by
-   * a node that is gone (inheriting it is the point).
-   */
   private nodeBindsStateElsewhere(
     widgets: readonly IBaseWidget[],
     state: WidgetState
   ): boolean {
-    for (const candidate of widgets) {
-      if (candidate === this) continue
-      if (candidate instanceof BaseWidget && candidate._state === state) {
-        return true
-      }
-    }
-    return false
+    return widgets.some(
+      (candidate) =>
+        candidate !== this &&
+        candidate instanceof BaseWidget &&
+        candidate._state === state
+    )
   }
 
   releaseRegisteredState(): void {

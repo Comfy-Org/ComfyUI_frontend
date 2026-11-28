@@ -47,11 +47,7 @@ export function widgetNameKey(widget: { name: unknown }): string | undefined {
   return key === UNREADABLE_NAME ? undefined : key
 }
 
-/**
- * Returns the name key this widget may register on its node. The first widget
- * holding a key owns it; duplicates and widgets absent from the array fail
- * closed. The key is returned so callers do not read a volatile accessor twice.
- */
+/** Returns the name key this widget owns by position on its node. */
 export function ownedWidgetNameKey(
   widgets: readonly { name: unknown }[],
   widget: { name: unknown }
