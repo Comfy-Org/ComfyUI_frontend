@@ -401,6 +401,22 @@ describe('migrateWidgetsValues', () => {
     ).toEqual([42, 'randomize', 'test'])
   })
 
+  it('keeps a compact seed array that still holds a removed trailing value', () => {
+    const seedInputDefs = {
+      text_in: fromPartial<InputSpec>({ name: 'text_in', forceInput: true }),
+      seed: fromPartial<InputSpec>({ name: 'seed' }),
+      note: fromPartial<InputSpec>({ name: 'note' })
+    }
+    const widgets = [
+      makeWidget('seed'),
+      makeWidget('control_after_generate'),
+      makeWidget('note')
+    ]
+    const saved = [42, 'randomize', 'test', 'removed']
+
+    expect(migrateWidgetsValues(seedInputDefs, widgets, saved)).toEqual(saved)
+  })
+
   describe('with a non-trailing skipped widget', () => {
     const widgets = [makeWidget('a'), makeWidget('ui', false), makeWidget('c')]
 
