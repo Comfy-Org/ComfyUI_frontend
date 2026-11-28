@@ -724,14 +724,14 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-function resolveLGraphNode() {
-  const locatorId = nodeLocatorId.value
+function resolveLGraphNode(state: NodeState = nodeData) {
+  const locatorId = locatorIdFromState(state, canvasStore.rootGraphId)
   if (!locatorId) return null
 
   return getNodeByLocatorId(useApp().rootGraph, locatorId)
 }
 
-const lgraphNode = computed(resolveLGraphNode)
+const lgraphNode = computed(() => resolveLGraphNode(nodeData))
 
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
