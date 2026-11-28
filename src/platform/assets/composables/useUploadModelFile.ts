@@ -527,11 +527,6 @@ export function useUploadModelFile(
     signal: AbortSignal
   ): Promise<UploadModelSuccess | null> {
     const { file } = current
-    const followed = followedTaskOf(current)
-    if (followed && !(await settleFollowedTask(followed, run, signal))) {
-      return null
-    }
-    stopFollowing()
     const progress = progressHandlers(run, signal, file)
     progress.startSending()
 
@@ -564,8 +559,12 @@ export function useUploadModelFile(
     const { run, signal } = beginAttempt()
     const type = modelType.value
     const target = goesToDeployment.value ? deploymentTarget.value : undefined
-    if (!target) return uploadToLibrary(current, type, run, signal)
+    const followed = followedTaskOf(current)
+    if (followed && !(await settleFollowedTask(followed, run, signal))) {
+      return null
+    }
     stopFollowing()
+    if (!target) return uploadToLibrary(current, type, run, signal)
     return uploadToDeployment(current, type, target, run, signal)
   }
 

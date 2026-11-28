@@ -872,6 +872,40 @@ describe('useUploadModelFile', () => {
       expect(deployment.spy).not.toHaveBeenCalled()
     })
 
+    it('sends nothing to the deployment while the failed library task cannot be confirmed stopped', async () => {
+      vi.spyOn(taskService, 'cancelTask').mockResolvedValue({
+        ok: false,
+        error: new Error('Server returned 500')
+      })
+      const { upload } = setup()
+      const library = pendingUpload()
+      const deployment = pendingDeploymentUpload()
+      upload.choose(lora)
+      const first = upload.upload()
+      library.finish({ ok: true, taskId: TASK_ID })
+      await first
+      taskUpdate('failed', 'Storage was busy.')
+      await nextTick()
+
+      upload.destination.value = 'deployment'
+      await expect(upload.upload()).resolves.toBeNull()
+
+      expect(deployment.spy).not.toHaveBeenCalled()
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        taskId: TASK_ID,
+        error: enMessages.assetBrowser.fileUpload.notStopped
+      })
+      taskUpdate('completed')
+      await nextTick()
+      expect(upload.state.value).toEqual({
+        status: 'done',
+        file: lora,
+        modelType: 'loras'
+      })
+    })
+
     it('checks the file, shows bytes sent, then adding, then ready on the deployment', async () => {
       const { upload } = await setupOnDeployment()
       const library = vi.spyOn(modelFileUploadApi, 'uploadModelFile')
