@@ -291,14 +291,13 @@ export function createWidgetRestorationState(
   fallbackNames?: readonly string[]
 ) {
   const positional = Array.from(info.widgets_values ?? [])
+  const fallbackEntries = positional.flatMap((value, index) =>
+    fallbackNames?.[index] ? [[fallbackNames[index], value] as const] : []
+  )
   const named =
     info.widgets_values_named ??
-    (info.widgets_values && fallbackNames
-      ? Object.fromEntries(
-          positional.flatMap((value, index) =>
-            fallbackNames[index] ? [[fallbackNames[index], value]] : []
-          )
-        )
+    (info.widgets_values && fallbackEntries.length > 0
+      ? Object.fromEntries(fallbackEntries)
       : undefined)
 
   return {

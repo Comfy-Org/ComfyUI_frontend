@@ -10,6 +10,21 @@ afterEach(() => {
 })
 
 describe('fallback widget names', () => {
+  it('keeps positional restoration when an empty list cannot derive names', () => {
+    LiteGraph.namedValuesRestore = false
+
+    const restoration = createWidgetRestorationState(
+      { widgets_values: [123] },
+      []
+    )
+
+    expect(restoration).toStrictEqual({
+      positional: [123],
+      named: undefined,
+      restoreNamed: false
+    })
+  })
+
   it('derives named values from a populated fallback list', () => {
     LiteGraph.namedValuesRestore = false
 
