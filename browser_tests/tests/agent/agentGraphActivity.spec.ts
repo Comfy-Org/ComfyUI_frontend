@@ -99,5 +99,39 @@ test.describe(
         `Minimap. Highlighted nodes: ${added.length}`
       )
     })
+
+    test(`recorded ${SEQUENTIAL_CASE} removes deleted nodes from the minimap activity`, async ({
+      agentConversation,
+      page
+    }) => {
+      const added = agentConversation.addedNodeIds()
+      expect(added).toHaveLength(3)
+      await agentConversation.runTurns()
+
+      const minimap = page.getByTestId('minimap-container')
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        `Minimap. Highlighted nodes: ${added.length}`
+      )
+
+      await page
+        .getByTestId('agent-graph-added-toast')
+        .getByRole('button', { name: /View nodes/i })
+        .click()
+      await expect
+        .poll(() => agentConversation.nodesOutsideVisibleCanvas(added))
+        .toEqual([])
+
+      const removedNodeId = added[0]
+      await agentConversation.vueNodes.deleteNode(removedNodeId)
+
+      await expect(
+        agentConversation.vueNodes.getNodeLocator(removedNodeId)
+      ).toHaveCount(0)
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        `Minimap. Highlighted nodes: ${added.length - 1}`
+      )
+    })
   }
 )
