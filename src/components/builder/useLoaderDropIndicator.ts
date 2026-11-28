@@ -1,13 +1,15 @@
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { parseWidgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  extractWidgetStringValue,
+  parseImageWidgetValue
+} from '@/utils/imageUtil'
 
 type LoaderMediaType = 'image' | 'video' | 'audio'
 
@@ -55,13 +57,17 @@ function buildMediaUrl(
   mediaType: LoaderMediaType,
   filename: string,
   subfolder: string,
-  type: string
+  type: string,
+  previewRevision?: (filename: string) => number
 ) {
   if (!filename) return undefined
 
   const params = new URLSearchParams({ filename, subfolder, type })
   appendCloudResParam(params, filename)
-  const previewParam = mediaType === 'image' ? app.getPreviewFormatParam() : ''
+  const revision = previewRevision?.(filename)
+  if (revision) params.set('template_input_revision', String(revision))
+  const previewParam =
+    mediaType === 'image' ? useApp().getPreviewFormatParam() : ''
   return api.apiURL(`/view?${params}${previewParam}`)
 }
 
@@ -78,6 +84,7 @@ export function getLoaderDropIndicator(
     label: (key: string) => string
     onMaskEdit: (node: LGraphNode) => void
     widgetValueStore: Pick<ReturnType<typeof useWidgetValueStore>, 'getWidget'>
+    previewRevision?: (filename: string) => number
   }
 ): LoaderDropIndicator | undefined {
   const config = LOADER_MEDIA_CONFIG[node.type]
@@ -91,7 +98,13 @@ export function getLoaderDropIndicator(
     ? parseImageWidgetValue(stringValue)
     : { filename: '', subfolder: '', type: 'input' }
 
-  const mediaUrl = buildMediaUrl(config.mediaType, filename, subfolder, type)
+  const mediaUrl = buildMediaUrl(
+    config.mediaType,
+    filename,
+    subfolder,
+    type,
+    options.previewRevision
+  )
 
   return {
     iconClass: iconForMediaType(config.mediaType),

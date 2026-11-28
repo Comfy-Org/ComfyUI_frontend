@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 
 // Recorded full-stack source: the agent adds three nodes at x=1845, 2165 and
 // 2485, beyond the visible canvas. See the fixture provenance for cloud SHA,
@@ -64,6 +65,73 @@ test.describe(
           .poll(() => agentConversation.nodesOutsideVisibleCanvas(added))
           .toEqual([])
       })
+    })
+
+    test(`recorded ${SEQUENTIAL_CASE} reports the same nodes again after the panel closes and reopens`, async ({
+      agentConversation,
+      page
+    }) => {
+      const added = agentConversation.addedNodeIds()
+      await agentConversation.runTurns()
+
+      // The panel claims the minimap's agent decoration layer while it is
+      // mounted and gives it back when it unmounts. Nothing inside the panel
+      // shows whether that handover worked, so the accessible summary of the
+      // minimap is the only user-visible evidence: a layer the panel failed to
+      // release is still claimed on the next open, and the reopened panel then
+      // paints nothing for the rest of the session.
+      const minimap = page.getByTestId('minimap-container')
+      const panel = new AgentPanel(page)
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        `Minimap. Highlighted nodes: ${added.length}`
+      )
+
+      await panel.close()
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        'Minimap. Highlighted nodes: 0'
+      )
+
+      await panel.open()
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        `Minimap. Highlighted nodes: ${added.length}`
+      )
+    })
+
+    test(`recorded ${SEQUENTIAL_CASE} removes deleted nodes from the minimap activity`, async ({
+      agentConversation,
+      page
+    }) => {
+      const added = agentConversation.addedNodeIds()
+      expect(added).toHaveLength(3)
+      await agentConversation.runTurns()
+
+      const minimap = page.getByTestId('minimap-container')
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        `Minimap. Highlighted nodes: ${added.length}`
+      )
+
+      await page
+        .getByTestId('agent-graph-added-toast')
+        .getByRole('button', { name: /View nodes/i })
+        .click()
+      await expect
+        .poll(() => agentConversation.nodesOutsideVisibleCanvas(added))
+        .toEqual([])
+
+      const removedNodeId = added[0]
+      await agentConversation.vueNodes.deleteNode(removedNodeId)
+
+      await expect(
+        agentConversation.vueNodes.getNodeLocator(removedNodeId)
+      ).toHaveCount(0)
+      await expect(minimap).toHaveAttribute(
+        'aria-label',
+        `Minimap. Highlighted nodes: ${added.length - 1}`
+      )
     })
   }
 )

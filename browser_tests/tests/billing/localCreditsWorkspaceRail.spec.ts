@@ -8,9 +8,7 @@ import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAut
  * Regression coverage for 1.51 QA finding #11: on a local (non-Cloud)
  * distribution, a workspace without an active subscription had no way to add
  * credits — the subscribe CTA is hidden on Local and both Add credits entry
- * points were gated on an active subscription. Only reproduces on the
- * workspace billing rail; localCreditsNoSubscribeUi.spec.ts covers the
- * legacy rail.
+ * points were gated on an active subscription.
  */
 test.describe('Local credits surfaces on the workspace billing rail', () => {
   test('lets an unsubscribed workspace owner reach the top-up dialog', async ({
@@ -22,7 +20,8 @@ test.describe('Local credits surfaces on the workspace billing rail', () => {
     await page.getByTestId(TestIds.user.currentUserButton).click()
     const popover = page.getByTestId(TestIds.user.currentUserPopover)
     await expect(popover).toBeVisible()
-    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
+    await popover.getByTestId('credits-menu-item').hover()
+    await expect(page.getByTestId('add-credits-button')).toBeVisible()
     await expect(
       popover.getByTestId('upgrade-to-add-credits-button')
     ).toHaveCount(0)
@@ -30,14 +29,14 @@ test.describe('Local credits surfaces on the workspace billing rail', () => {
       popover.getByRole('button', { name: 'Subscribe', exact: true })
     ).toHaveCount(0)
 
-    await popover.getByTestId('add-credits-button').click()
+    await page.getByTestId('add-credits-button').click()
     await expect(topUpDialog.heading).toBeVisible()
     await topUpDialog.close()
 
     await page.getByTestId(TestIds.user.currentUserButton).click()
     await page
       .getByTestId(TestIds.user.currentUserPopover)
-      .getByTestId('plans-credits-menu-item')
+      .getByTestId('workspace-settings-menu-item')
       .click()
 
     const settingsDialog = comfyPage.settingDialog

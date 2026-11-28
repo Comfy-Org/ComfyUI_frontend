@@ -12,7 +12,7 @@ import {
   getInputNames
 } from '@e2e/fixtures/utils/nodeInputLinks'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const test = baseTest.extend({
   page: async ({ page }, use) => {
@@ -86,7 +86,14 @@ test.describe(
         `${REFERENCE_IMAGES_PREFIX}image_4`
       )
       expect(image4Index).toBeGreaterThanOrEqual(0)
-      await image4Source.connectOutput(0, referenceNode, image4Index)
+      await comfyPage.vueNodes
+        .getOutputSlotConnectionDot(String(image4Source.id), 0)
+        .dragTo(
+          comfyPage.vueNodes.getInputSlotConnectionDot(
+            AUTOGROW_REFERENCE_NODE_ID,
+            image4Index
+          )
+        )
       const inputsAfterFourth = await getInputNames(
         comfyPage,
         AUTOGROW_REFERENCE_NODE_ID,
@@ -96,7 +103,14 @@ test.describe(
         `${REFERENCE_IMAGES_PREFIX}image_5`
       )
       expect(image5Index).toBeGreaterThanOrEqual(0)
-      await image5Source.connectOutput(0, referenceNode, image5Index)
+      await comfyPage.vueNodes
+        .getOutputSlotConnectionDot(String(image5Source.id), 0)
+        .dragTo(
+          comfyPage.vueNodes.getInputSlotConnectionDot(
+            AUTOGROW_REFERENCE_NODE_ID,
+            image5Index
+          )
+        )
       await comfyPage.nextFrame()
 
       await expect

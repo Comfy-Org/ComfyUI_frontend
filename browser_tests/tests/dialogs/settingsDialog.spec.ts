@@ -1,37 +1,75 @@
 import { expect } from '@playwright/test'
 
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
-test.describe('Settings dialog', { tag: '@ui' }, () => {
-  test('About panel renders mocked version from server', async ({
+test.describe('Settings dialog - extension actions', { tag: '@ui' }, () => {
+  test.use({ viewport: { width: 1920, height: 1080 } })
+
+  test('opens the actions menu from its trigger without closing the dialog', async ({
     comfyPage
   }) => {
-    const stats = {
-      ...mockSystemStats,
-      system: {
-        ...mockSystemStats.system,
-        comfyui_version: MOCK_COMFYUI_VERSION
-      }
-    }
-    await comfyPage.page.route('**/system_stats**', async (route) => {
-      await route.fulfill({ json: stats })
-    })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-
     const dialog = comfyPage.settingDialog
     await dialog.open()
-    await dialog.goToAboutPanel()
+    await dialog.openExtensionActions()
 
-    const aboutPanel = comfyPage.page.getByTestId('about-panel')
-    await expect(aboutPanel).toBeVisible()
-    await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
-    await expect(aboutPanel).toContainText('ComfyUI_frontend')
+    await comfyPage.contextMenu.clickMenuItemExact('Enable Selected')
+    await expect(dialog.root).toBeVisible()
+  })
+})
+
+test.describe(
+  'Settings dialog - left panel',
+  { tag: ['@ui', '@screenshot'] },
+  () => {
+    test('outlines the search field against the panel at rest', async ({
+      comfyPage
+    }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await expect(dialog.searchBox).toBeFocused()
+      await dialog.searchBox.blur()
+      await expect(dialog.searchBox).not.toBeFocused()
+
+      await expectElementScreenshot(
+        dialog.leftPanel,
+        'settings-left-panel.png',
+        { threshold: 0.05 }
+      )
+    })
+  }
+)
+
+test.describe('Settings dialog', { tag: '@ui' }, () => {
+  test.describe('About panel', () => {
+    test.beforeEach(async ({ page }) => {
+      const stats = {
+        ...mockSystemStats,
+        system: {
+          ...mockSystemStats.system,
+          comfyui_version: MOCK_COMFYUI_VERSION
+        }
+      }
+      await page.route('**/system_stats**', async (route) => {
+        await route.fulfill({ json: stats })
+      })
+    })
+
+    test('renders mocked version from server', async ({ comfyPage }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await dialog.goToAboutPanel()
+
+      const aboutPanel = comfyPage.page.getByTestId('about-panel')
+      await expect(aboutPanel).toBeVisible()
+      await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
+      await expect(aboutPanel).toContainText('ComfyUI_frontend')
+    })
   })
 
   test('Toggling a boolean setting through UI persists the value', async ({
@@ -180,10 +218,6 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      // Wait for the search filter to fully settle — PrimeVue re-renders
-      // the entire settings list after typing, and the combobox element is
-      // replaced during re-render. Wait until the filtered list stabilises
-      // before interacting with the combobox.
       const settingItems = dialog.root.locator('[data-setting-id]')
       await expect
         .poll(() => settingItems.count(), { timeout: 5000 })
@@ -193,20 +227,16 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       await expect(select).toBeVisible()
       await expect(select).toBeEnabled()
 
-      // Open the dropdown via its combobox role and verify it expanded.
-      // Retry because the PrimeVue Select may still re-render after the
-      // filter settles, causing the first click to land on a stale element.
-      await expect(async () => {
-        const expanded = await select.getAttribute('aria-expanded')
-        if (expanded !== 'true') await select.click()
-        await expect(select).toHaveAttribute('aria-expanded', 'true')
-      }).toPass({ timeout: 10_000 })
+      await select.click()
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
-      await comfyPage.page
-        .getByRole('option', { name: targetValue, exact: true })
-        .click()
+      const targetOption = comfyPage.page.getByRole('option', {
+        name: targetValue,
+        exact: true
+      })
+      await expect(targetOption).toBeVisible()
+      await targetOption.click()
 
       await expect
         .poll(() => comfyPage.settings.getSetting<string>(settingId))

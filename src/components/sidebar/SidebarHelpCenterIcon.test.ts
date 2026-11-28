@@ -83,8 +83,7 @@ function renderIcon() {
   const result = render(SidebarHelpCenterIcon, {
     props: { isSmall: false },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} }
+      plugins: [i18n]
     }
   })
   return { ...result, user }

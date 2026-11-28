@@ -167,10 +167,16 @@ query (`AGENT_PG_EXEC` must reach that environment's Postgres), and runs the
 same assembly gates as a recording. So it imports a session whose audit
 database is still reachable, not any Langfuse session.
 
-UNVERIFIED until the first real trace: that `comfy.turn_id` is the message id
-the audit rows carry; that attributes arrive under `metadata.attributes` (a
-flattened `metadata` key is the fallback); that the page meta carries
-`totalPages` (a short page ends the walk otherwise).
+It reads Langfuse's v2 observations endpoint (`/api/public/v2/observations`,
+filtered by `traceId` or `sessionId`, paged by `meta.cursor`); the v1 traces and
+observations reads are removed on 2026-11-16. v2 returns input and output as raw
+strings, which the importer parses back to JSON when they are JSON, and
+flattens attributes to `attributes.<key>` metadata keys, which `attributeOf`
+reads alongside the v1 `metadata.attributes` shape. Checked 2026-10-27 against
+a production trace: the v1 and v2 reads give the same capture.
+
+UNVERIFIED until the first real import with audit rows: that `comfy.turn_id` is
+the message id the audit rows carry.
 
 An import keeps `response_side: recorded`: the replies and accepted ops are the
 agent's, only the socket framing was rebuilt, and the replay suite lists
@@ -181,7 +187,9 @@ to bind the workflow through.
 
 ## Capture
 
-The recorder keeps the `/ws` frames of the thread with their receipt times and,
+The recorder keeps the agent-socket frames of the thread (what the panel reads
+on `/api/agent/events`; the replay serves them there through
+`AgentFollowerHostSocket`) with their receipt times and,
 after the last turn completes, reads each turn's audit rows itself: the parent
 tool-call rows with their child op ids and statuses, plus the draft as it stands
 at the end of the thread (`readRows` in `scripts/agentConversationRecord.ts`

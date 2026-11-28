@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 vi.mock(import('@/services/litegraphService'))
@@ -35,6 +35,7 @@ describe('LGraph serialize when the node data store has already diverged', () =>
     expect(mockReportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
+        surface: 'graph',
         errorType: 'graph_serialization_state_mismatch'
       })
     )

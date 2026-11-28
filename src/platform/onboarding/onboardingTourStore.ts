@@ -3,13 +3,13 @@ import { computed, readonly, shallowRef, watch } from 'vue'
 
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   OnboardingTourNotStartedReason,
   OnboardingTourSkipReason,
   OnboardingTourStepStage
-} from '@/platform/telemetry/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+} from '@comfyorg/telemetry/types'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 import { targetMounted, waitForTarget } from './coachmarkRegistry'
@@ -246,10 +246,8 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       skipReason: 'target_timeout',
       reported: step
     })
-    useToastStore().add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('onboardingCoachmarks.loadError')
+    useToast().error(t('g.error'), {
+      description: t('onboardingCoachmarks.loadError')
     })
   }
   const lostTarget = computed(() => {
@@ -364,24 +362,10 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     void settingStore.set(TOUR_SEEN_SETTING, [...seen, entryPath])
   }
 
-  /**
-   * Reserves a run before there is anything of it to see. A tour is decided on
-   * at the point its definition is registered — from there its intro preview
-   * owns the canvas — but `startTour` is what enters the state machine, so
-   * without this the decision is invisible to everything outside the caller
-   * that made it.
-   *
-   * False when a tour is already committed or running. Give the reservation
-   * back with {@link releaseTour} if the run never starts.
-   */
   function commitTour(entryPath: EntryPath): boolean {
     return dispatch({ type: 'committed', tour: entryPath, run: nextRun() })
   }
 
-  /**
-   * Gives back a reservation whose tour never started. A no-op once the run is
-   * under way — a started tour ends through `finish`, which reports how.
-   */
   function releaseTour(entryPath: EntryPath): boolean {
     const current = state.value
     if (current.phase !== 'committed' || current.tour !== entryPath)
@@ -393,14 +377,11 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
     const definition = tourDefinition(entryPath)
     if (!definition || !tourHolds(entryPath)) return false
     const current = state.value
-    // A reservation is this run's own place in the machine, so it asks under
-    // the run it already holds rather than minting one the reducer refuses.
     const run =
       current.phase === 'committed' && current.tour === entryPath
         ? current.run
         : nextRun()
     if (!dispatch({ type: 'requested', tour: entryPath, run })) return false
-    // A new run has no ending yet; the one before it must not speak for it.
     lastEnding.value = null
     const built = await resolveDefinition(definition)
     const resolved = resolveSteps(built.steps, targetMounted)
@@ -409,7 +390,6 @@ export const useOnboardingTourStore = defineStore('onboardingTour', () => {
       reportNotStarted(entryPath, built.reason ?? 'no_steps')
       return false
     }
-    // Refused when this run ended while its definition was still resolving.
     if (!dispatch({ type: 'resolved', run, steps: resolved })) return false
     trackTour('started')
     void showStep(0)

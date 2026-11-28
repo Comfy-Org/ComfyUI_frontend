@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { vi } from 'vitest'
 
-import type { layoutStore as RealLayoutStore } from '../layoutStore'
+import type { layoutStore as RealLayoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 /** Inert layout store for tests that exercise canvas behavior. */
 export const layoutStore = fromPartial<typeof RealLayoutStore>({
@@ -11,6 +11,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   batchUpdateNodeBounds: vi.fn(),
   clearGraph: vi.fn(),
   clearViewGeometry: vi.fn(),
+  flushPendingChanges: vi.fn(),
   geometryVersion: 0,
   getAllGroups: vi.fn(() => ({ value: new Map() })),
   getGroupLayout: vi.fn(() => null),
@@ -18,7 +19,6 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   getNodeLayout: vi.fn(() => null),
   getNodeLayoutRef: vi.fn(() => ({ value: null })),
   getRerouteLayout: vi.fn(() => null),
-  getSlotOffset: vi.fn(() => null),
   getVersion: vi.fn(() => ({ value: 0 })),
   onChange: vi.fn(() => () => {}),
   onGeometryChange: vi.fn(() => () => {}),
@@ -28,5 +28,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   queryRerouteAtPoint: vi.fn(() => null),
   readNodeRect: vi.fn(() => false),
   contentSizeOf: vi.fn(() => undefined),
+  derivedSlotAnchorOf: vi.fn(() => undefined),
+  setDerivedSlotAnchors: vi.fn(),
   updateNodeSlotOffsets: vi.fn()
 })

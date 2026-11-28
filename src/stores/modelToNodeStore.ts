@@ -1,19 +1,26 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { MODEL_NODE_MAPPINGS } from '@/platform/assets/mappings/modelNodeMappings'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { MODEL_NODE_MAPPINGS } from '@/stores/modelNodeMappings'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { matchesWidgetName } from '@/utils/widgetBinding'
+
+const LEGACY_MODEL_FOLDERS: Partial<Record<string, string>> = {
+  unet: 'diffusion_models',
+  clip: 'text_encoders',
+  t2i_adapter: 'controlnet'
+}
 
 /** Helper class that defines how to construct a node from a model. */
 export class ModelNodeProvider {
   /** The node definition to use for this model. */
   public nodeDef: ComfyNodeDefImpl
 
-  /** The node input key for where to insert the model name. */
-  public key: string
+  /** The input name or pattern used to select the model widget. */
+  public key: string | RegExp
 
-  constructor(nodeDef: ComfyNodeDefImpl, key: string) {
+  constructor(nodeDef: ComfyNodeDefImpl, key: string | RegExp) {
     this.nodeDef = nodeDef
     this.key = key
   }
@@ -23,17 +30,21 @@ export class ModelNodeProvider {
 export const useModelToNodeStore = defineStore('modelToNode', () => {
   const modelToNodeMap = ref<Partial<Record<string, ModelNodeProvider[]>>>({})
   const nodeDefStore = useNodeDefStore()
-  const haveDefaultsLoaded = ref(false)
+  const isReady = computed(
+    () => Object.keys(nodeDefStore.nodeDefsByName).length > 0
+  )
+  let registeredNodeDefs: Record<string, ComfyNodeDefImpl> | undefined
 
-  /** Internal computed for reactive caching of registered node types */
-  const registeredNodeTypes = computed<Record<string, string>>(() => {
-    return Object.fromEntries(
+  const registeredNodeTypes = computed<
+    Partial<Record<string, string | RegExp>>
+  >(() =>
+    Object.fromEntries(
       Object.values(modelToNodeMap.value)
         .filter((providers) => providers !== undefined)
         .flat()
         .map((provider) => [provider.nodeDef.name, provider.key])
     )
-  })
+  )
 
   /** Internal computed for efficient reverse lookup: nodeType -> category */
   const nodeTypeToCategory = computed(() => {
@@ -51,9 +62,14 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   })
 
   /** Get set of all registered node types for efficient lookup */
-  function getRegisteredNodeTypes(): Record<string, string> {
+  function getRegisteredNodeTypes(): Partial<Record<string, string | RegExp>> {
     registerDefaults()
     return registeredNodeTypes.value
+  }
+
+  function isModelWidget(nodeType: string, widgetName: string): boolean {
+    const key = getRegisteredNodeTypes()[nodeType]
+    return key !== undefined && matchesWidgetName(widgetName, key)
   }
 
   /**
@@ -73,19 +89,9 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     return nodeTypeToCategory.value[nodeType]
   }
 
-  /**
-   * Find providers for modelType with hierarchical fallback.
-   * Tries exact match first, then progressively shorter parent paths.
-   * e.g., "a/b/c" tries "a/b/c" → "a/b" → "a".
-   */
-  function findProvidersWithFallback(
-    modelType: string
+  function findProvidersAlongPath(
+    segments: readonly string[]
   ): ModelNodeProvider[] | undefined {
-    if (!modelType || typeof modelType !== 'string') {
-      return undefined
-    }
-
-    const segments = modelType.split('/')
     for (let i = segments.length; i >= 1; i--) {
       const path = segments.slice(0, i).join('/')
       const providers = modelToNodeMap.value[path]
@@ -93,6 +99,23 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     }
 
     return undefined
+  }
+
+  function findProvidersWithFallback(
+    modelType: string
+  ): ModelNodeProvider[] | undefined {
+    if (!modelType || typeof modelType !== 'string') {
+      return undefined
+    }
+
+    const [folder, ...rest] = modelType.split('/')
+    const mappedFolder = LEGACY_MODEL_FOLDERS[folder]
+    return (
+      findProvidersAlongPath([folder, ...rest]) ??
+      (mappedFolder
+        ? findProvidersAlongPath([mappedFolder, ...rest])
+        : undefined)
+    )
   }
 
   /**
@@ -105,6 +128,10 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     if (typeof modelType !== 'string') return undefined
     registerDefaults()
     return findProvidersWithFallback(modelType)?.[0]
+  }
+
+  function hasNodeProvider(modelType: string): boolean {
+    return findProvidersWithFallback(modelType)?.[0] !== undefined
   }
 
   /**
@@ -125,7 +152,9 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    */
   function registerNodeProvider(
     modelType: string,
-    nodeProvider: ModelNodeProvider | { nodeDef: undefined; key: string }
+    nodeProvider:
+      | ModelNodeProvider
+      | { nodeDef: undefined; key: string | RegExp }
   ) {
     registerDefaults()
     if (!nodeProvider.nodeDef) return
@@ -138,7 +167,11 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
    * @param nodeClass The node class name to register.
    * @param key The key to use for the node input.
    */
-  function quickRegister(modelType: string, nodeClass: string, key: string) {
+  function quickRegister(
+    modelType: string,
+    nodeClass: string,
+    key: string | RegExp
+  ) {
     registerNodeProvider(
       modelType,
       new ModelNodeProvider(nodeDefStore.nodeDefsByName[nodeClass], key)
@@ -146,24 +179,38 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   }
 
   function registerDefaults() {
-    if (haveDefaultsLoaded.value) {
+    const { nodeDefsByName } = nodeDefStore
+    if (
+      nodeDefsByName === registeredNodeDefs ||
+      Object.keys(nodeDefsByName).length === 0
+    ) {
       return
     }
-    if (Object.keys(nodeDefStore.nodeDefsByName).length === 0) {
-      return
-    }
-    haveDefaultsLoaded.value = true
+    registeredNodeDefs = nodeDefsByName
 
     for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS) {
-      quickRegister(modelType, nodeClass, key)
+      if (!Object.hasOwn(nodeDefsByName, nodeClass)) continue
+      const nodeDef = nodeDefsByName[nodeClass]
+
+      const providers = (modelToNodeMap.value[modelType] ??= [])
+      const alreadyRegistered = providers.some(
+        (provider) =>
+          provider.nodeDef.name === nodeDef.name && provider.key === key
+      )
+      if (!alreadyRegistered) {
+        providers.push(new ModelNodeProvider(nodeDef, key))
+      }
     }
   }
 
   return {
     modelToNodeMap,
+    isReady,
     getRegisteredNodeTypes,
+    isModelWidget,
     getCategoryForNodeType,
     getNodeProvider,
+    hasNodeProvider,
     getAllNodeProviders,
     registerNodeProvider,
     quickRegister,

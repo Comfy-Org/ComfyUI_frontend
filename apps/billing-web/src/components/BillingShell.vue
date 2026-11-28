@@ -9,18 +9,19 @@
  */
 import { onUnmounted } from 'vue'
 
-import {
-  disposeBillingClient,
-  provideBillingClient
-} from '@comfyorg/account-ui/billing'
+import { provideBillingClient } from '@comfyorg/account-ui/billing'
 
-import { createBillingWebClient } from '@/session/billingWebClient'
-import { billingWebSessionClient } from '@/session/billingWebSession'
+import { provideAutoTopUpSettings } from '@/session/autoTopUpSettings'
+import { createModeBillingClient } from '@/session/billingWebAuth'
+import { disposeBillingWebClient } from '@/session/billingWebClient'
+import { provideWorkspaceInvites } from '@/session/workspaceInvites'
 
-const client = createBillingWebClient(billingWebSessionClient())
+const client = createModeBillingClient()
 
 provideBillingClient(client)
-onUnmounted(() => disposeBillingClient(client))
+provideWorkspaceInvites(client.invites)
+provideAutoTopUpSettings(client.autoTopUp)
+onUnmounted(() => disposeBillingWebClient(client))
 </script>
 
 <template>

@@ -89,7 +89,7 @@ import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/
 import ComfyHubCreateProfileForm from '@/platform/workflow/sharing/components/profile/ComfyHubCreateProfileForm.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import ComfyHubDescribeStep from './ComfyHubDescribeStep.vue'
 import ComfyHubExamplesStep from './ComfyHubExamplesStep.vue'
 import ComfyHubFinishStep from './ComfyHubFinishStep.vue'

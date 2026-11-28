@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 describe('createCanvasInteractionMode', () => {
   it.for([{ picking: false }, { picking: true }])(
@@ -9,7 +9,7 @@ describe('createCanvasInteractionMode', () => {
     ({ picking }) => {
       const mode = createCanvasInteractionMode()
 
-      useAgentNodeSelectionStore().isActive = picking
+      useCanvasStore().isPickingNodes = picking
 
       expect(mode.isSelectOnly()).toBe(picking)
     }

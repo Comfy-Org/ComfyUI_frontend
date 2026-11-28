@@ -9,6 +9,7 @@ import {
   triggerSerialization
 } from '@e2e/fixtures/utils/painter'
 import type { TestGraphAccess } from '@e2e/types/globals'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const HIDDEN_PAINTER_WIDGET_NAMES = ['width', 'height', 'bg_color'] as const
 const HIDDEN_PAINTER_NUMBER_WIDGET_NAMES = ['width', 'height'] as const
@@ -85,7 +86,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
         painterWidget.locator('input[type="color"]').first()
       ).toBeVisible()
 
-      await expect(node).toHaveScreenshot('painter-default-state.png')
+      await expectElementScreenshot(node, 'painter-default-state.png')
     }
   )
 
@@ -109,7 +110,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
         })
         .toBe(true)
 
-      await expect(node).toHaveScreenshot('painter-after-stroke.png')
+      await expectElementScreenshot(node, 'painter-after-stroke.png')
     }
   )
 
@@ -292,6 +293,26 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       }
 
       await expect(hardnessDisplay).toHaveText('90%')
+    })
+
+    test('Hardness slider accepts a click just above its track', async ({
+      comfyPage
+    }) => {
+      const hardnessRow = comfyPage.vueNodes
+        .getNodeLocator('1')
+        .getByTestId('painter-hardness-row')
+      const track = hardnessRow.locator('[data-slot="slider"]')
+      const hardnessDisplay = hardnessRow.getByTestId('painter-hardness-value')
+      await expect(hardnessDisplay).toHaveText('100%')
+
+      const box = await track.boundingBox()
+      if (!box) throw new Error('Hardness slider has no bounds')
+      await comfyPage.page.mouse.click(
+        box.x + box.width / 4,
+        box.y + box.height / 2 - 6
+      )
+
+      await expect(hardnessDisplay).not.toHaveText('100%')
     })
 
     test('Color picker changes the color of drawn strokes', async ({
@@ -484,7 +505,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
           .toBe(576)
 
         await expect.poll(() => hasCanvasContent(canvas)).toBe(true)
-        await expect(node).toHaveScreenshot('painter-after-resize.png')
+        await expectElementScreenshot(node, 'painter-after-resize.png')
       }
     )
   })

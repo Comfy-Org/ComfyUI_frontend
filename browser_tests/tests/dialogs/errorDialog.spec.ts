@@ -3,11 +3,11 @@ import type { Page } from '@playwright/test'
 
 import { expect, mergeTests } from '@playwright/test'
 
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import type {
   NodeError,
   PromptFailureResponse
-} from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/types'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
@@ -25,8 +25,10 @@ async function triggerConfigureError(
   message = 'Error on configure!'
 ) {
   await comfyPage.page.evaluate((msg: string) => {
-    const graph = window.graph!
-    ;(graph as { configure: () => void }).configure = () => {
+    const graphPrototype: { configure: () => void } = Object.getPrototypeOf(
+      window.graph!
+    )
+    graphPrototype.configure = () => {
       throw new Error(msg)
     }
   }, message)
@@ -56,8 +58,10 @@ test.describe('Error dialog', () => {
     await context.route('https://github.com/**/issues**', (route) =>
       route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
     )
-    await context.route('https://support.comfy.org/**', (route) =>
-      route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+    await context.route(
+      'https://comfysupport.portal.usepylon.com/**',
+      (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
     )
   })
 
@@ -144,7 +148,7 @@ test.describe('Error dialog', () => {
     await popup.close()
   })
 
-  test('Should open contact support when "Help Fix This" is clicked', async ({
+  test('Should open the Report a Bug form when "Help Fix This" is clicked', async ({
     comfyPage
   }) => {
     const errorDialog = await triggerConfigureError(comfyPage)
@@ -155,7 +159,9 @@ test.describe('Error dialog', () => {
     )
 
     const url = new URL(popup.url())
-    expect(url.hostname).toBe('support.comfy.org')
+    expect(url.origin + url.pathname).toBe(
+      'https://comfysupport.portal.usepylon.com/forms/report-a-bug'
+    )
 
     await popup.close()
   })
@@ -197,6 +203,9 @@ test.describe('Error dialog', () => {
 
     await expect(errorDialog.getByText('Custom Error Title')).toBeVisible()
     await expect(errorDialog.getByText('Something went wrong')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('dialog', { name: 'Custom Error Title' })
+    ).toBeVisible()
   })
 
   test('Should display default title when no title provided', async ({
@@ -213,6 +222,50 @@ test.describe('Error dialog', () => {
 
     await expect(errorDialog.getByText('Unknown Error')).toBeVisible()
     await expect(errorDialog.getByText('A simple string error')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('dialog', { name: 'Unknown Error' })
+    ).toBeVisible()
+  })
+
+  for (const title of ['', '   ']) {
+    test(`Should fall back to the default title for the blank title ${JSON.stringify(title)}`, async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.evaluate((title) => {
+        window.app!.extensionManager.dialog.showErrorDialog('Details', {
+          title
+        })
+      }, title)
+
+      await expect(
+        comfyPage.page.getByRole('dialog', { name: 'An error occurred' })
+      ).toBeVisible()
+    })
+  }
+
+  test('Should name a reopened dialog after its new title', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.dialog.showErrorDialog('Details', {
+        title: 'First Error'
+      })
+    })
+    const firstDialog = comfyPage.page.getByRole('dialog', {
+      name: 'First Error'
+    })
+    await expect(firstDialog).toBeVisible()
+    await firstDialog.getByRole('button', { name: 'Close' }).click()
+    await expect(firstDialog).toBeHidden()
+
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.dialog.showErrorDialog('Details', {
+        title: 'Second Error'
+      })
+    })
+    await expect(
+      comfyPage.page.getByRole('dialog', { name: 'Second Error' })
+    ).toBeVisible()
   })
 
   test.describe('Catalog messages', { tag: ['@ui', '@workflow'] }, () => {
@@ -329,6 +382,11 @@ test.describe('Error dialog', () => {
               name: 'Prompt validation failed'
             })
           ).toBeVisible()
+          await expect(
+            comfyPage.page.getByRole('dialog', {
+              name: 'Prompt validation failed'
+            })
+          ).toBeVisible()
           await expect(errorDialog).toContainText(scenario.summary)
           await expect(errorDialog).toContainText(scenario.details)
           await expect(errorDialog.locator('pre')).toBeHidden()
@@ -428,7 +486,6 @@ test.describe('Error dialog', () => {
           const ws = await getWebSocket()
           const execution = new ExecutionHelper(comfyPage, ws)
           const jobId = await execution.run()
-          execution.executionStart(jobId)
           ws.send(
             JSON.stringify({
               type: 'execution_error',
@@ -449,7 +506,16 @@ test.describe('Error dialog', () => {
             TestIds.dialogs.errorDialog
           )
           await expect(
-            errorDialog.getByRole('heading', { name: 'KSampler' })
+            errorDialog.getByRole('heading', {
+              name: 'KSampler (#3)',
+              exact: true
+            })
+          ).toBeVisible()
+          await expect(
+            comfyPage.page.getByRole('dialog', {
+              name: 'KSampler (#3)',
+              exact: true
+            })
           ).toBeVisible()
           await expect(errorDialog).toContainText(scenario.message)
           await expect(errorDialog).toContainText(scenario.rawMessage)

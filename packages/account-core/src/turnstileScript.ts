@@ -1,4 +1,4 @@
-import { createScriptLoader } from './loadExternalScript.js'
+import { createScriptLoader } from './loadExternalScript'
 
 const TURNSTILE_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'

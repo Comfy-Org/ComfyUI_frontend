@@ -3,12 +3,12 @@ import { computed, shallowRef, triggerRef } from 'vue'
 
 import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetId } from '@/types/widgetId'
-import { isWidgetId, parseWidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
 
 export type ResolvedSelection =
   | {
@@ -28,23 +28,23 @@ export type ResolvedSelection =
 
 export function useResolvedSelectedInputs() {
   const appModeStore = useAppModeStore()
-  const rootGraph = app.rootGraph
+  const app = useApp()
 
-  const graphNodes = shallowRef<LGraphNode[]>([...rootGraph.nodes])
-  const refreshGraphNodes = () => (graphNodes.value = [...rootGraph.nodes])
-  useEventListener(() => rootGraph.events, 'configured', refreshGraphNodes)
+  const graphNodes = shallowRef<LGraphNode[]>([...app.rootGraph.nodes])
+  const refreshGraphNodes = () => (graphNodes.value = [...app.rootGraph.nodes])
+  useEventListener(() => app.rootGraph.events, 'configured', refreshGraphNodes)
   useEventListener(
-    () => rootGraph.events,
+    () => app.rootGraph.events,
     'convert-to-subgraph',
     refreshGraphNodes
   )
   useEventListener(
-    () => rootGraph.events,
+    () => app.rootGraph.events,
     'subgraph-created',
     refreshGraphNodes
   )
   useEventListener(
-    () => rootGraph.events,
+    () => app.rootGraph.events,
     'node:slot-label:changed',
     () => triggerRef(graphNodes)
   )
@@ -55,7 +55,7 @@ export function useResolvedSelectedInputs() {
       ([widgetId, displayName, config]): ResolvedSelection[] => {
         if (!isWidgetId(widgetId)) return []
         const { nodeId, name } = parseWidgetId(widgetId)
-        const node = rootGraph.getNodeById(nodeId)
+        const node = app.rootGraph.getNodeById(nodeId)
         const widgets = node?.isSubgraphNode()
           ? promotedInputWidgets(node)
           : node?.widgets

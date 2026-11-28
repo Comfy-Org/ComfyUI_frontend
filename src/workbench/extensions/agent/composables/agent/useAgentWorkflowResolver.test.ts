@@ -1,18 +1,17 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { WorkflowResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { CloudWorkflowListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
 
 function workflow(
   path: string,
@@ -41,21 +40,91 @@ function setup(
     }
   })
   const bindings = useAgentWorkflowTabBindingStore()
-  const listCloudWorkflows = vi.fn(
-    async (): Promise<CloudWorkflowEntry[]> => cloud
+  const listCloudWorkflows = vi.fn(async (): Promise<CloudWorkflowListing> =>
+    listing(cloud)
+  )
+  const getCloudWorkflow = vi.fn(
+    async (workflowId: string): Promise<WorkflowResponse> =>
+      cloudRow(workflowId)
+  )
+  const getWorkflowSidebarFile = vi.fn(async (workflowId: string) => ({
+    path: `workflows/${workflowId}.json`
+  }))
+  const getWorkflowDraft = vi.fn(
+    async (_workflowId: string): Promise<Record<string, unknown>> => {
+      throw new AgentApiError('no draft', 404, undefined)
+    }
+  )
+  const getWorkflowContent = vi.fn(
+    async (_workflowId: string): Promise<Record<string, unknown>> => {
+      throw new AgentApiError('no version', 404, undefined)
+    }
   )
   const resolver = useAgentWorkflowResolver({
     workflows,
     bindings,
-    listCloudWorkflows
+    listCloudWorkflows,
+    getCloudWorkflow,
+    getWorkflowDraft,
+    getWorkflowContent,
+    getWorkflowSidebarFile
   })
-  return { workflows, bindings, listCloudWorkflows, resolver }
+  return {
+    workflows,
+    bindings,
+    listCloudWorkflows,
+    getCloudWorkflow,
+    getWorkflowSidebarFile,
+    getWorkflowDraft,
+    getWorkflowContent,
+    resolver
+  }
+}
+
+function listing(
+  entries: CloudWorkflowEntry[],
+  complete = true
+): CloudWorkflowListing {
+  return { entries, complete }
+}
+
+function cloudRow(id: string): WorkflowResponse {
+  return {
+    id,
+    latest_version: 0,
+    created_by: 'user-1',
+    created_at: '2026-09-11T10:00:00Z',
+    updated_at: '2026-09-11T10:00:00Z'
+  }
 }
 
 describe('Agent workflow resolution', () => {
   beforeEach(() => {
     localStorage.clear()
   })
+
+  it.for(['cold', 'closed', 'forgotten'])(
+    'does not use cached open resolution for a %s target despite its binding',
+    async (state) => {
+      const target = workflow('workflows/portrait.json', 'Portrait')
+      const { resolver, bindings, workflows } = setup(
+        [target],
+        [{ id: 'cloud-portrait', name: 'Portrait' }]
+      )
+      bindings.bind('cloud-portrait', target.path)
+      if (state !== 'cold') {
+        await resolver.refreshCloudWorkflowIds()
+        expect(resolver.cachedOpenWorkflowFor('cloud-portrait')).toBe(
+          workflows.openWorkflows[0]
+        )
+      }
+      if (state === 'closed') workflows.openWorkflows = []
+      if (state === 'forgotten')
+        resolver.forgetCloudWorkflowId('cloud-portrait')
+
+      expect(resolver.cachedOpenWorkflowFor('cloud-portrait')).toBeNull()
+    }
+  )
 
   it('does not resolve a new temporary tab through a reused persisted path', () => {
     const { resolver, bindings, workflows } = setup([
@@ -121,6 +190,8 @@ describe('Agent workflow resolution', () => {
     ])
     expect(resolver.storedWorkflowFor('cloud-shared')).toBeNull()
     expect(resolver.boundOrOpenWorkflowFor('cloud-ambiguous-1')).toBeNull()
+    expect(resolver.cachedOpenWorkflowFor('cloud-shared')).toBeNull()
+    expect(resolver.cachedOpenWorkflowFor('cloud-ambiguous-1')).toBeNull()
   })
 
   it('distinguishes open references from stored and explicitly bound closed workflows', async () => {
@@ -244,7 +315,7 @@ describe('Agent workflow resolution', () => {
       const { resolver, listCloudWorkflows } = setup([
         workflow('workflows/current.json', 'Current')
       ])
-      let resolveFirst: (entries: CloudWorkflowEntry[]) => void = () => {}
+      let resolveFirst: (listed: CloudWorkflowListing) => void = () => {}
       let rejectFirst: (error: Error) => void = () => {}
       listCloudWorkflows.mockReturnValueOnce(
         new Promise((resolve, reject) => {
@@ -252,21 +323,42 @@ describe('Agent workflow resolution', () => {
           rejectFirst = reject
         })
       )
-      listCloudWorkflows.mockResolvedValueOnce([
-        { id: 'latest', name: 'Current' }
-      ])
+      listCloudWorkflows.mockResolvedValueOnce(
+        listing([{ id: 'latest', name: 'Current' }])
+      )
       const first = resolver.refreshCloudWorkflowIds()
       expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
       if (outcome === 'success')
-        resolveFirst([{ id: 'stale', name: 'Current' }])
+        resolveFirst(listing([{ id: 'stale', name: 'Current' }]))
       else rejectFirst(new Error('Stale failure'))
-      expect(await first).toBe(false)
+      expect(await first).toBe(true)
       expect(resolver.availableWorkflowReferences.value).toEqual([
         { id: 'latest', name: 'Current' }
       ])
       expect(reportError).not.toHaveBeenCalled()
     }
   )
+
+  it('returns the newer refresh listing outcome to a superseded refreshCloudWorkflowListing caller', async () => {
+    const { resolver, listCloudWorkflows } = setup([
+      workflow('workflows/current.json', 'Current')
+    ])
+    let resolveFirst: (listed: CloudWorkflowListing) => void = () => {}
+    listCloudWorkflows.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFirst = resolve
+      })
+    )
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'latest', name: 'Current' }], true)
+    )
+
+    const first = resolver.refreshCloudWorkflowListing()
+    const second = resolver.refreshCloudWorkflowListing()
+    expect(await second).toBe('complete')
+    resolveFirst(listing([{ id: 'stale', name: 'Current' }], false))
+    expect(await first).toBe('complete')
+  })
 
   it('preserves known identities on refresh failure and recovers on retry', async () => {
     const { resolver, listCloudWorkflows } = setup(
@@ -281,11 +373,12 @@ describe('Agent workflow resolution', () => {
       { id: 'known', name: 'Current' }
     ])
     expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
       errorType: 'agent_cloud_workflow_ids_refresh_failed'
     })
-    listCloudWorkflows.mockResolvedValueOnce([
-      { id: 'updated', name: 'Current' }
-    ])
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'updated', name: 'Current' }])
+    )
     expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
     expect(resolver.availableWorkflowReferences.value).toEqual([
       { id: 'updated', name: 'Current' }
@@ -345,7 +438,11 @@ describe('Agent workflow resolution', () => {
     ])
   })
 
-  it.for(['boundOrOpenWorkflowFor', 'storedWorkflowFor'] as const)(
+  it.for([
+    'boundOrOpenWorkflowFor',
+    'storedWorkflowFor',
+    'cachedOpenWorkflowFor'
+  ] as const)(
     'rejects a stale %s binding when the target name is duplicated in the cloud index',
     async (resolve) => {
       const portrait = workflow('workflows/portrait.json', 'Portrait')
@@ -366,7 +463,11 @@ describe('Agent workflow resolution', () => {
     }
   )
 
-  it.for(['boundOrOpenWorkflowFor', 'storedWorkflowFor'] as const)(
+  it.for([
+    'boundOrOpenWorkflowFor',
+    'storedWorkflowFor',
+    'cachedOpenWorkflowFor'
+  ] as const)(
     'rejects a stale %s binding when the bound name is duplicated in the cloud index',
     async (resolve) => {
       const portrait = workflow('workflows/portrait.json', 'Portrait')
@@ -386,4 +487,273 @@ describe('Agent workflow resolution', () => {
       expect(bindings.tabPathFor('cloud-zimage')).toBeUndefined()
     }
   )
+})
+
+describe('Cloud listing completeness', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('reports nothing complete before the first listing', () => {
+    const { resolver } = setup([])
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
+  })
+
+  it.for([
+    { walk: 'reached the last page', complete: true },
+    { walk: 'gave up early', complete: false }
+  ])('carries that the listing $walk', async ({ complete }) => {
+    const { resolver, listCloudWorkflows } = setup([])
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-a', name: 'A' }], complete)
+    )
+
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
+    expect(resolver.cloudListingOmits('cloud-b')).toBe(complete)
+  })
+
+  it.for([
+    { walk: 'reached the last page', complete: true, outcome: 'complete' },
+    { walk: 'gave up early', complete: false, outcome: 'incomplete' }
+  ])(
+    'LK-02 LK-06: reports a listing that $walk as $outcome, while the id refresh still counts it as an answer',
+    async ({ complete, outcome }) => {
+      const { resolver, listCloudWorkflows } = setup([])
+      listCloudWorkflows.mockResolvedValue(
+        listing([{ id: 'cloud-a', name: 'A' }], complete)
+      )
+
+      expect(await resolver.refreshCloudWorkflowListing()).toBe(outcome)
+      expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    }
+  )
+
+  it('LK-04: reports a failed request as failed', async () => {
+    const { resolver, listCloudWorkflows } = setup([])
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
+
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('failed')
+  })
+
+  it('does not leave a truncated verdict standing after a complete refresh', async () => {
+    const { resolver, listCloudWorkflows } = setup([])
+    listCloudWorkflows.mockResolvedValueOnce(listing([], false))
+    await resolver.refreshCloudWorkflowIds()
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(false)
+
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-a', name: 'A' }])
+    )
+    await resolver.refreshCloudWorkflowIds()
+
+    expect(resolver.cloudListingOmits('cloud-b')).toBe(true)
+  })
+
+  it('keeps the last completeness verdict when a refresh fails', async () => {
+    const { resolver, listCloudWorkflows } = setup([])
+    await resolver.refreshCloudWorkflowIds()
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(true)
+
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(false)
+
+    expect(resolver.cloudListingOmits('cloud-a')).toBe(true)
+  })
+
+  it('requires a complete listing before accepting a name match in authoritativeCloudIdFor while preserving verified bindings', async () => {
+    const portrait = workflow('workflows/portrait.json', 'Portrait')
+    const bound = workflow('workflows/bound.json', 'Bound')
+    const { resolver, bindings, listCloudWorkflows } = setup([portrait, bound])
+    bindings.bind('cloud-bound', bound.path)
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-portrait-other', name: 'Portrait' }], false)
+    )
+
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('incomplete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.authoritativeCloudIdFor(bound)).toBe('cloud-bound')
+
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-portrait', name: 'Portrait' }], true)
+    )
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('complete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBe('cloud-portrait')
+  })
+})
+
+describe('Cloud workflow lifecycle', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('reads a served row as live whatever its version', async () => {
+    const { resolver, getCloudWorkflow } = setup([])
+    getCloudWorkflow.mockResolvedValueOnce({
+      ...cloudRow('cloud-a'),
+      latest_version: 3
+    })
+
+    expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('live')
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reads a live unpromoted draft as live, not as absent from the list', async () => {
+    const { resolver } = setup([])
+    expect(await resolver.cloudWorkflowLifecycle('cloud-draft')).toBe('live')
+  })
+
+  it('reads a 404 as gone without reporting it as an error', async () => {
+    const { resolver, getCloudWorkflow } = setup([])
+    getCloudWorkflow.mockRejectedValueOnce(
+      new AgentApiError('workflow not found', 404, undefined)
+    )
+
+    expect(await resolver.cloudWorkflowLifecycle('cloud-gone')).toBe('gone')
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for([403, 500])(
+    'leaves a %s inconclusive rather than calling the workflow gone',
+    async (status) => {
+      const { resolver, getCloudWorkflow } = setup([])
+      const error = new AgentApiError('refused', status, undefined)
+      getCloudWorkflow.mockRejectedValueOnce(error)
+
+      expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('unknown')
+
+      expect(reportError).toHaveBeenCalledWith(error, {
+        surface: 'agent',
+        errorType: 'failure_reading_agent_cloud_workflow'
+      })
+    }
+  )
+
+  it('leaves an unreachable server inconclusive', async () => {
+    const { resolver, getCloudWorkflow } = setup([])
+    getCloudWorkflow.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    expect(await resolver.cloudWorkflowLifecycle('cloud-a')).toBe('unknown')
+  })
+})
+
+describe('Server copy of a workflow', () => {
+  beforeEach(() => localStorage.clear())
+
+  const draft = { nodes: [], links: [], version: 0.4 }
+  const saved = { nodes: [{ id: 1 }], links: [], version: 0.4 }
+
+  it('prefers the agent draft over the newest saved version', async () => {
+    const { resolver, getWorkflowDraft, getWorkflowContent } = setup([])
+    getWorkflowDraft.mockResolvedValueOnce(draft)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 2
+      })
+    ).toEqual({ outcome: 'found', content: draft })
+
+    expect(getWorkflowContent).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the newest saved version, quietly, when the agent has no draft', async () => {
+    const { resolver, getWorkflowContent } = setup([])
+    getWorkflowContent.mockResolvedValueOnce(saved)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 2
+      })
+    ).toEqual({ outcome: 'found', content: saved })
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('has nothing for a version-less workflow with no draft, without asking for a version', async () => {
+    const { resolver, getWorkflowContent } = setup([])
+
+    expect(await resolver.serverWorkflowContent(cloudRow('cloud-a'))).toEqual({
+      outcome: 'none'
+    })
+
+    expect(getWorkflowContent).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed draft read and still tries the saved version', async () => {
+    const { resolver, getWorkflowDraft, getWorkflowContent } = setup([])
+    const error = new AgentApiError('upstream failed', 502, undefined)
+    getWorkflowDraft.mockRejectedValueOnce(error)
+    getWorkflowContent.mockResolvedValueOnce(saved)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 1
+      })
+    ).toEqual({ outcome: 'found', content: saved })
+
+    expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
+      errorType: 'failure_reading_agent_workflow_draft'
+    })
+  })
+
+  it('keeps a failed draft read of a version-less workflow distinct from no content', async () => {
+    const { resolver, getWorkflowDraft } = setup([])
+    const error = new AgentApiError('upstream failed', 502, undefined)
+    getWorkflowDraft.mockRejectedValueOnce(error)
+
+    expect(await resolver.serverWorkflowContent(cloudRow('cloud-a'))).toEqual({
+      outcome: 'failed',
+      cause: error
+    })
+  })
+
+  it('reports a failed saved-version read as a failure, not as no content', async () => {
+    const { resolver, getWorkflowContent } = setup([])
+    const error = new AgentApiError('upstream failed', 500, undefined)
+    getWorkflowContent.mockRejectedValueOnce(error)
+
+    expect(
+      await resolver.serverWorkflowContent({
+        ...cloudRow('cloud-a'),
+        latest_version: 1
+      })
+    ).toEqual({ outcome: 'failed', cause: error })
+
+    expect(reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
+      errorType: 'failure_reading_agent_workflow_content'
+    })
+  })
+
+  it('keeps an ambiguous cloud name unresolved after forgetting one duplicate until a newer listing resolves it', async () => {
+    const portrait = workflow('workflows/Portrait.json', 'Portrait')
+    const { resolver, bindings, listCloudWorkflows } = setup(
+      [portrait],
+      [
+        { id: 'wf-portrait-1', name: 'Portrait' },
+        { id: 'wf-portrait-2', name: 'Portrait' }
+      ]
+    )
+
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('complete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
+
+    resolver.forgetCloudWorkflowId('wf-portrait-1')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.cloudIdFor(portrait)).toBeUndefined()
+
+    bindings.bind('wf-portrait-2', portrait.path)
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBe('wf-portrait-2')
+    bindings.unbind(portrait.path)
+
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'wf-portrait-2', name: 'Portrait' }])
+    )
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('complete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBe('wf-portrait-2')
+  })
 })

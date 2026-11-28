@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { Settings, SettingParams } from '@/platform/settings/types'
+import type { Settings, SettingParams } from '@comfyorg/settings-core/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
@@ -158,8 +158,11 @@ test.describe('Topbar commands', () => {
 
     test.describe('Passing through attrs to setting components', () => {
       const testCases: Array<{
-        config: Pick<SettingParams, 'type' | 'defaultValue'> &
-          Partial<Omit<SettingParams, 'id' | 'type' | 'defaultValue'>>
+        config: {
+          type: Extract<SettingParams['type'], string>
+          defaultValue: string | number | boolean
+          options?: string[]
+        }
         selector: string
       }> = [
         {
@@ -174,14 +177,14 @@ test.describe('Topbar commands', () => {
             type: 'number',
             defaultValue: 10
           },
-          selector: '.p-inputnumber input'
+          selector: 'input[inputmode="decimal"]'
         },
         {
           config: {
             type: 'slider',
             defaultValue: 10
           },
-          selector: '.p-slider.p-component'
+          selector: '[data-slot="slider"]'
         },
         {
           config: {
@@ -189,14 +192,14 @@ test.describe('Topbar commands', () => {
             defaultValue: 'foo',
             options: ['foo', 'bar', 'baz']
           },
-          selector: '.p-select.p-component'
+          selector: '[role="combobox"]'
         },
         {
           config: {
             type: 'text',
             defaultValue: 'Hello'
           },
-          selector: '.p-inputtext'
+          selector: 'input'
         },
         {
           config: {
@@ -231,16 +234,11 @@ test.describe('Topbar commands', () => {
             .getByText('TestSetting Test')
             .locator(selector)
 
-          await expect
-            .poll(() =>
-              component.evaluate((el) =>
-                el instanceof HTMLInputElement ||
-                el instanceof HTMLButtonElement
-                  ? el.disabled
-                  : el.classList.contains('p-disabled')
-              )
-            )
-            .toBe(true)
+          if (config.type === 'slider') {
+            await expect(component).toHaveAttribute('aria-disabled', 'true')
+          } else {
+            await expect(component).toBeDisabled()
+          }
         })
       }
     })
@@ -314,6 +312,43 @@ test.describe('Topbar commands', () => {
           )
         )
         .toBe(true)
+    })
+
+    test('Should center a native legacy modal over Settings and let it take clicks', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settingDialog.open()
+      await comfyPage.page.evaluate(() => {
+        const dialog = document.createElement('dialog')
+        dialog.className = 'comfy-dialog comfyui-dialog comfy-modal'
+        dialog.style.display = 'flex'
+        const option = document.createElement('input')
+        option.type = 'checkbox'
+        option.setAttribute('aria-label', 'Extension option')
+        dialog.append(option)
+        document.body.append(dialog)
+        dialog.showModal()
+      })
+      const option = comfyPage.page.getByRole('checkbox', {
+        name: 'Extension option'
+      })
+      const dialog = comfyPage.page.getByRole('dialog').filter({ has: option })
+
+      await expect
+        .poll(() =>
+          dialog.evaluate((element) => {
+            const bounds = element.getBoundingClientRect()
+            return Math.max(
+              Math.abs(bounds.x + bounds.width / 2 - window.innerWidth / 2),
+              Math.abs(bounds.y + bounds.height / 2 - window.innerHeight / 2)
+            )
+          })
+        )
+        .toBeLessThan(1)
+
+      await option.click()
+
+      await expect(option).toBeChecked()
     })
 
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {

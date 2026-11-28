@@ -31,22 +31,6 @@ const PRIVATE_ASSET: AssetInfo = {
 
 const test = comfyPageFixture
 
-/**
- * Enable the workflow_sharing_enabled server feature flag at runtime.
- * FeatureFlagHelper.mockServerFeatures() intercepts `/api/features` but the
- * flags are already loaded by the time tests run, so direct mutation of the
- * reactive ref is the only reliable approach for server-side flags.
- */
-async function enableWorkflowSharing(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const api = window.app!.api
-    api.serverFeatureFlags.value = {
-      ...api.serverFeatureFlags.value,
-      workflow_sharing_enabled: true
-    }
-  })
-}
-
 async function mockPublishStatus(
   page: Page,
   record: PublishRecord | null
@@ -150,7 +134,6 @@ async function saveAndWait(
 }
 
 async function openShareDialog(page: Page): Promise<void> {
-  await enableWorkflowSharing(page)
   await dismissOverlays(page)
   const shareButton = page.getByRole('button', { name: 'Share workflow' })
   await shareButton.click()

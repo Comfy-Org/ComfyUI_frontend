@@ -6,17 +6,15 @@ import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}
@@ -30,19 +28,19 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
-// Mock the API
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false),
-    internalURL: vi.fn((path) => `mock-internal-url${path}`),
-    fileURL: vi.fn((path) => `mock-file-url${path}`),
-    apiURL: vi.fn((path) => `mock-api-url${path}`),
-    fetchApi: vi.fn(async () =>
-      Response.json({ name: 'kitten_cop.mp4', type: 'input' })
-    )
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+  vi.mocked(api.internalURL).mockImplementation(
+    (path) => `mock-internal-url${path}`
+  )
+  vi.mocked(api.fileURL).mockImplementation((path) => `mock-file-url${path}`)
+  vi.mocked(api.apiURL).mockImplementation((path) => `mock-api-url${path}`)
+  vi.mocked(api.fetchApi).mockImplementation(async () =>
+    Response.json({ name: 'kitten_cop.mp4', type: 'input' })
+  )
+})
 
 // loadGraphData resolves to the workflow it activated; the education card
 // binds to that, so the mock returns a per-test workflow object.
@@ -82,20 +80,71 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
 
-const { mockDistributionIsCloud } = vi.hoisted(() => ({
-  mockDistributionIsCloud: { value: false }
-}))
+const { mockDistributionIsCloud, mockDistributionIsDesktop } = vi.hoisted(
+  () => ({
+    mockDistributionIsCloud: { value: false },
+    mockDistributionIsDesktop: { value: false }
+  })
+)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
+  get isDesktop() {
+    return mockDistributionIsDesktop.value
+  },
   get isCloud() {
     return mockDistributionIsCloud.value
   }
 }))
+
+function createDesktopBridge() {
+  return {
+    isRemote: () => false,
+    getTemplateInputAssets: vi.fn<
+      NonNullable<ComfyDesktop2Bridge['getTemplateInputAssets']>
+    >(async () => [
+      {
+        assetId: 'kitten-video',
+        filename: 'kitten_cop.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/kitten_cop.mp4',
+        availability: 'missing'
+      }
+    ]),
+    downloadTemplateInputAsset: vi.fn<
+      NonNullable<ComfyDesktop2Bridge['downloadTemplateInputAsset']>
+    >(async () => ({
+      status: 'accepted',
+      download: {
+        downloadId: 'kitten-download',
+        filename: 'kitten_cop.mp4',
+        progress: 0,
+        status: 'pending'
+      }
+    }))
+  } satisfies ComfyDesktop2Bridge
+}
+
+const { mockGraphSync } = vi.hoisted(() => ({
+  mockGraphSync: { syncCompletedTemplateInputsWithCurrentGraph: vi.fn() }
+}))
+
+vi.mock(
+  import('@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'),
+  () => mockGraphSync
+)
+
+const loadableWorkflow = {
+  version: 0.4,
+  last_node_id: 0,
+  last_link_id: 0,
+  nodes: [],
+  links: []
+}
 
 type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
 
@@ -107,12 +156,12 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => Response.json({ workflow: 'data' }))
+    vi.mocked(fetch).mockImplementation(async () =>
+      Response.json(loadableWorkflow)
     )
     mockIsCloud.value = true
     mockDistributionIsCloud.value = false
+    mockDistributionIsDesktop.value = false
     mockLoadedWorkflow.value = { key: 'loaded-template' }
 
     mockWorkflowTemplatesStore = useWorkflowTemplatesStore()
@@ -187,12 +236,12 @@ describe('useTemplateWorkflows', () => {
       'not-started'
     )
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: i18n.global.t('templateWorkflows.error.loading')
-      }
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.loading')
+      })
     ])
     expect(fetch).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -218,14 +267,14 @@ describe('useTemplateWorkflows', () => {
       'not-started'
     )
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: i18n.global.t('templateWorkflows.error.templateNotFound', {
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.templateNotFound', {
           templateName: 'missing'
         })
-      }
+      })
     ])
     expect(fetch).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -373,6 +422,45 @@ describe('useTemplateWorkflows', () => {
     expect(loadingTemplateId.value).toBe(null) // Should reset after loading
   })
 
+  it.for([
+    { sourceModule: 'default', expectedCalls: 1 },
+    { sourceModule: 'some-extension', expectedCalls: 0 }
+  ])(
+    'starts $expectedCalls native input downloads for $sourceModule',
+    async ({ sourceModule, expectedCalls }) => {
+      const bridge = createDesktopBridge()
+      vi.stubGlobal('__comfyDesktop2', bridge)
+      const { loader } = mountTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        sourceModule
+      )
+      assert.exists(prepared)
+
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true
+      })
+      await flushPromises()
+
+      expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledTimes(
+        expectedCalls
+      )
+    }
+  )
+
+  it('rebinds completed inputs against the graph it just loaded', async () => {
+    const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
+    mockWorkflowTemplatesStore.isLoaded = true
+
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(
+      mockGraphSync.syncCompletedTemplateInputsWithCurrentGraph
+    ).toHaveBeenCalledOnce()
+  })
+
   it('should load a template from a regular category', async () => {
     const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
 
@@ -438,7 +526,7 @@ describe('useTemplateWorkflows', () => {
     )
   })
 
-  it('retires the card instead of requesting it when no workflow was activated', async () => {
+  it('leaves education state unchanged when the load was superseded', async () => {
     const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
     mockWorkflowTemplatesStore.isLoaded = true
     mockWorkflowTemplatesStore.enhancedTemplates.push(enhancedTemplate(true))
@@ -448,7 +536,9 @@ describe('useTemplateWorkflows', () => {
 
     await loadWorkflowTemplate('template1', 'default')
 
-    expect(usePartnerNodesEducationStore().isCardRequested).toBe(false)
+    expect(usePartnerNodesEducationStore().requestedForWorkflowKey).toBe(
+      'previous-template'
+    )
   })
 
   it('binds to the workflow this load activated, resolved by loadGraphData', async () => {
@@ -510,9 +600,168 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe('not-started')
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
     expect(loader.loadingTemplateId.value).toBeNull()
+  })
+
+  it('does not open a template when the endpoint reports an HTTP failure', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify(loadableWorkflow), { status: 404 })
+    )
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'not-started'
+    )
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to fetch workflow template'),
+      {
+        surface: 'graph',
+        errorType: 'error_fetching_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
+    )
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.loading')
+      })
+    )
+  })
+
+  it('opens a workflow that only satisfies the legacy load contract', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    const legacyWorkflow = {
+      version: 0.4,
+      nodes: [{ id: 1, type: 'PreviewImage' }]
+    }
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(legacyWorkflow))
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'loaded'
+    )
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      expect.objectContaining({ version: 0.4 }),
+      true,
+      true,
+      'template1',
+      { openSource: 'template', initiator: 'user' }
+    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'graph',
+      errorType: 'error_validating_workflow_template_schema',
+      level: 'warning',
+      tags: { template_id: 'template1', source_module: 'default' }
+    })
+  })
+
+  describe('prepared template lifecycle', () => {
+    it('keeps the load owned after preparing and releases it on discard', async () => {
+      const { loader } = mountTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+
+      assert.exists(prepared)
+      expect(loader.loadingTemplateId.value).toBe('template1')
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+
+      loader.discardPreparedWorkflowTemplate(prepared)
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(prepared.controller.signal.aborted).toBe(true)
+    })
+
+    it('opens the prepared handle and releases the same load', async () => {
+      const { loader } = mountTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      assert.exists(prepared)
+
+      expect(await loader.openPreparedWorkflowTemplate(prepared)).toBe('loaded')
+
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(prepared.controller.signal.aborted).toBe(false)
+    })
+
+    it('does not open when the store refuses graph admission', async () => {
+      const { loader } = mountTemplateWorkflows()
+      mockWorkflowTemplatesStore.isLoaded = true
+
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        'default'
+      )
+      assert.exists(prepared)
+      // A newer selection takes the slot before this one is admitted.
+      mockWorkflowTemplatesStore.startTemplateLoad('template2')
+
+      expect(await loader.openPreparedWorkflowTemplate(prepared)).toBe(
+        'not-started'
+      )
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+  })
+
+  it('rejects a legacy workflow whose nodes cannot be instantiated', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ version: 0.4, nodes: [{}] })
+    )
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'not-started'
+    )
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('not a loadable workflow'),
+      {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
+    )
+  })
+
+  it('does not open a payload that is not a workflow', async () => {
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ detail: 'template not found' })
+    )
+
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'not-started'
+    )
+
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.stringContaining('not a loadable workflow'),
+      {
+        surface: 'graph',
+        errorType: 'error_validating_workflow_template',
+        tags: { template_id: 'template1', source_module: 'default' }
+      }
+    )
   })
 
   function addVideoTemplate(
@@ -561,6 +810,226 @@ describe('useTemplateWorkflows', () => {
     return graph
   }
 
+  it('does not download or upload native Desktop samples before choosing how to open', async () => {
+    const bridge = createDesktopBridge()
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    addVideoTemplate()
+    const { loader } = mountTemplateWorkflows()
+
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+    expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'native Desktop', legacyDesktop: false },
+    { name: 'legacy Desktop', legacyDesktop: true }
+  ])(
+    'opens direct URL and Getting Started templates without downloads on $name',
+    async ({ legacyDesktop }) => {
+      mockDistributionIsDesktop.value = legacyDesktop
+      const bridge = createDesktopBridge()
+      vi.stubGlobal('__comfyDesktop2', legacyDesktop ? undefined : bridge)
+      const graph = addVideoTemplate()
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(
+        'loaded'
+      )
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        graph,
+        true,
+        true,
+        'video',
+        { openSource: 'template', initiator: 'user' }
+      )
+    }
+  )
+
+  it.for([
+    { name: 'malformed', isRemote: false },
+    {
+      name: 'throwing',
+      isRemote: () => {
+        throw new Error('Host detection failed')
+      }
+    }
+  ])(
+    'releases a direct template load after $name host detection and allows retry',
+    async ({ isRemote }) => {
+      const bridge = createDesktopBridge()
+      vi.stubGlobal('__comfyDesktop2', { ...bridge, isRemote })
+      addVideoTemplate()
+      const { loader } = mountTemplateWorkflows()
+
+      await expect(
+        loader.loadWorkflowTemplate('video', 'default')
+      ).resolves.toBe('not-started')
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
+        errorType: 'error_loading_template'
+      })
+
+      vi.stubGlobal('__comfyDesktop2', bridge)
+      await expect(
+        loader.loadWorkflowTemplate('video', 'default')
+      ).resolves.toBe('loaded')
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      name: 'local web',
+      nativeHost: false,
+      remote: undefined,
+      remoteFlag: undefined
+    },
+    {
+      name: 'remote Desktop',
+      nativeHost: true,
+      remote: () => true,
+      remoteFlag: undefined
+    },
+    {
+      name: 'older remote Desktop',
+      nativeHost: true,
+      remote: undefined,
+      remoteFlag: true
+    }
+  ])(
+    'preserves automatic sample preparation without native downloads on $name',
+    async ({ nativeHost, remote, remoteFlag }) => {
+      const bridge = { ...createDesktopBridge(), isRemote: remote }
+      vi.stubGlobal('__comfyDesktop2', nativeHost ? bridge : undefined)
+      vi.stubGlobal('__comfyDesktop2Remote', remoteFlag)
+      const graph = addVideoTemplate()
+      vi.mocked(fetch).mockImplementation(async (url) => {
+        if (String(url).startsWith('mock-internal-url'))
+          return Response.json([])
+        if (String(url).endsWith('.mp4')) return new Response('video')
+        return Response.json(graph)
+      })
+
+      expect(
+        await mountTemplateWorkflows().loader.loadWorkflowTemplate(
+          'video',
+          'default'
+        )
+      ).toBe('loaded')
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/upload/image',
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('prepares native Desktop samples and starts input downloads only after opting in', async () => {
+    const bridge = createDesktopBridge()
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const graph = addVideoTemplate()
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).startsWith('mock-internal-url')) return Response.json([])
+      if (String(url).endsWith('.mp4')) return new Response('video')
+      return Response.json(graph)
+    })
+    const { loader } = mountTemplateWorkflows()
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+
+    expect(
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true
+      })
+    ).toBe('loaded')
+    expect(api.fetchApi).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ method: 'POST' })
+    )
+    await vi.waitFor(() =>
+      expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledWith(
+        'video',
+        'kitten-video'
+      )
+    )
+    expect(app.loadGraphData).toHaveBeenCalledOnce()
+  })
+
+  it('opens with present samples unchanged while downloading another missing native input', async () => {
+    const bridge = createDesktopBridge()
+    const inputAssets: NonNullable<
+      Awaited<ReturnType<typeof bridge.getTemplateInputAssets>>
+    > = [
+      {
+        assetId: 'kitten-video',
+        filename: 'kitten_cop.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/kitten_cop.mp4',
+        availability: 'present'
+      },
+      {
+        assetId: 'other-video',
+        filename: 'other.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/other.mp4',
+        availability: 'missing'
+      }
+    ]
+    bridge.getTemplateInputAssets.mockResolvedValue(inputAssets)
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const graph = addVideoTemplate()
+    const { loader } = mountTemplateWorkflows()
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+
+    expect(
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true,
+        inputAssets
+      })
+    ).toBe('loaded')
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, 'video', {
+      openSource: 'template',
+      initiator: 'user'
+    })
+    await vi.waitFor(() =>
+      expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledExactlyOnceWith(
+        'video',
+        'other-video'
+      )
+    )
+  })
+
   it.for([
     { restoreNamed: false, positional: 'kitten_cop.mp4', named: 'stale.mp4' },
     { restoreNamed: true, positional: 'stale.mp4', named: 'kitten_cop.mp4' }
@@ -601,7 +1070,7 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
     }
   )
@@ -622,7 +1091,7 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
     )
-    const refreshed = deferred<void>()
+    const refreshed = deferred<boolean>()
     vi.mocked(app.reloadNodeDefs).mockImplementation(() => refreshed.promise)
     const { loader } = mountTemplateWorkflows()
     const result = loader.loadWorkflowTemplate('video', 'default')
@@ -632,7 +1101,7 @@ describe('useTemplateWorkflows', () => {
     download.resolve(new Response('video'))
     await vi.waitFor(() => expect(app.reloadNodeDefs).toHaveBeenCalled())
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    refreshed.resolve()
+    refreshed.resolve(true)
     expect(await result).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -645,9 +1114,58 @@ describe('useTemplateWorkflows', () => {
       true,
       true,
       expect.any(String),
-      { openSource: 'template' }
+      { openSource: 'template', initiator: 'user' }
     )
   })
+
+  it.for([
+    {
+      name: 'the upload succeeds',
+      settle: (download: ReturnType<typeof deferred<Response>>) =>
+        download.resolve(new Response('video'))
+    },
+    {
+      name: 'the download fails',
+      settle: (download: ReturnType<typeof deferred<Response>>) =>
+        download.resolve(Promise.reject(new Error('offline')))
+    }
+  ])(
+    'shows the media progress toast only while samples upload when $name',
+    async ({ settle }) => {
+      const graph = addVideoTemplate()
+      const download = deferred<Response>()
+      const started = deferred<void>()
+      vi.mocked(fetch).mockImplementation((url) => {
+        if (String(url).startsWith('mock-internal-url'))
+          return Promise.resolve(Response.json([]))
+        if (String(url).endsWith('.mp4')) {
+          started.resolve()
+          return download.promise
+        }
+        return Promise.resolve(Response.json(graph))
+      })
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
+      )
+      const { loader } = mountTemplateWorkflows()
+      const result = loader.loadWorkflowTemplate('video', 'default')
+      await started.promise
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'loading',
+          title: i18n.global.t('templateWorkflows.preparingMedia')
+        })
+      ])
+
+      settle(download)
+
+      expect(await result).toBe('loaded')
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'loading' })
+      )
+    }
+  )
 
   it.for([null, 'main'])(
     'opens a template without downloading unversioned samples (revision: %s)',
@@ -664,12 +1182,10 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(useToastStore().messagesToAdd).not.toContainEqual(
-        expect.objectContaining({ severity: 'info' })
-      )
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -700,7 +1216,6 @@ describe('useTemplateWorkflows', () => {
         }
       }
       vi.mocked(fetch).mockImplementation(async () => Response.json(graph))
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       const { loader } = mountTemplateWorkflows()
 
       expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(
@@ -711,12 +1226,12 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(api.fetchApi).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).not.toContainEqual(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     }
   )
@@ -765,14 +1280,14 @@ describe('useTemplateWorkflows', () => {
         true,
         true,
         expect.any(String),
-        { openSource: 'template' }
+        { openSource: 'template', initiator: 'user' }
       )
       expect(app.reloadNodeDefs).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: expect.stringContaining('choose your own files')
+          kind: 'warning',
+          description: expect.stringContaining('choose your own files')
         })
       )
     }
@@ -800,14 +1315,14 @@ describe('useTemplateWorkflows', () => {
       true,
       true,
       expect.any(String),
-      { openSource: 'template' }
+      { openSource: 'template', initiator: 'user' }
     )
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(api.fetchApi).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: expect.stringContaining('choose your own files')
+        kind: 'warning',
+        description: expect.stringContaining('choose your own files')
       })
     )
   })
@@ -838,7 +1353,7 @@ describe('useTemplateWorkflows', () => {
       true,
       true,
       expect.any(String),
-      { openSource: 'template' }
+      { openSource: 'template', initiator: 'user' }
     )
   })
 
@@ -899,12 +1414,13 @@ describe('useTemplateWorkflows', () => {
     expect(await first).toBe('graph-failed')
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'graph',
       errorType: 'error_loading_template'
     })
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: i18n.global.t('templateWorkflows.error.loading')
+        kind: 'error',
+        description: i18n.global.t('templateWorkflows.error.loading')
       })
     ])
     expect(second).toBe('not-started')
@@ -927,15 +1443,15 @@ describe('useTemplateWorkflows', () => {
     const second = nextLoader.loadWorkflowTemplate('template2', 'default')
 
     unmount()
-    firstJson.resolve(Response.json({ workflow: 'first' }))
+    firstJson.resolve(Response.json({ ...loadableWorkflow, id: 'first' }))
     expect(await first).toBe('not-started')
     expect(nextLoader.loadingTemplateId.value).toBe('template2')
 
-    secondJson.resolve(Response.json({ workflow: 'second' }))
+    secondJson.resolve(Response.json({ ...loadableWorkflow, id: 'second' }))
     expect(await second).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledOnce()
     expect(nextLoader.loadingTemplateId.value).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('does not open the workflow when the loader unmounts while fetching the template', async () => {
@@ -946,7 +1462,7 @@ describe('useTemplateWorkflows', () => {
     const result = loader.loadWorkflowTemplate('template1', 'default')
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     unmount()
-    templateJson.resolve(Response.json({ workflow: 'data' }))
+    templateJson.resolve(Response.json(loadableWorkflow))
     expect(await result).toBe('not-started')
     expect(app.loadGraphData).not.toHaveBeenCalled()
     expect(loader.loadingTemplateId.value).toBeNull()
@@ -999,7 +1515,7 @@ describe('useTemplateWorkflows', () => {
       expect(requestSignal?.aborted).toBe(true)
       expect(loader.loadingTemplateId.value).toBeNull()
       expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toEqual([])
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -1031,7 +1547,7 @@ describe('useTemplateWorkflows', () => {
       vi.mocked(fetch).mockImplementation((url) =>
         String(url).includes('template1')
           ? templateJson.promise
-          : Promise.resolve(Response.json({ workflow: 'data' }))
+          : Promise.resolve(Response.json(loadableWorkflow))
       )
       const { loader } = mountTemplateWorkflows()
       const first = loader.loadWorkflowTemplate('template1', 'default')
@@ -1040,15 +1556,13 @@ describe('useTemplateWorkflows', () => {
       expect(
         await nextLoader.loadWorkflowTemplate('template2', 'default')
       ).toBe('loaded')
-      templateJson.resolve(Response.json({ workflow: 'data' }))
+      templateJson.resolve(Response.json(loadableWorkflow))
       expect(await first).toBe('not-started')
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(
-        useToastStore().messagesToAdd.filter(
-          (message) => message.severity === 'error'
-        )
-      ).toEqual([])
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
+      )
     }
   )
 
@@ -1100,11 +1614,60 @@ describe('useTemplateWorkflows', () => {
       expect(await first).toBe('not-started')
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
-      expect(
-        useToastStore().messagesToAdd.filter(
-          (message) => message.severity === 'error'
-        )
-      ).toEqual([])
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
+      )
     }
   )
+
+  describe('example workflows survey tracking', () => {
+    const SURVEY_ID = 'example-workflows'
+
+    beforeEach(() => {
+      localStorage.clear()
+      mockWorkflowTemplatesStore.isLoaded = true
+    })
+
+    it('counts a template that reached the canvas', async () => {
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+        'loaded'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(1)
+    })
+
+    it('does not count a template whose graph failed to load', async () => {
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+        'graph-failed'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
+    })
+
+    it('does not count a template whose graph load was superseded', async () => {
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(undefined)
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+        'not-started'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
+    })
+
+    it('does not count a custom-node template', async () => {
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('video', 'extension')).toBe(
+        'loaded'
+      )
+
+      expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
+    })
+  })
 })

@@ -1,4 +1,4 @@
-import type { IChartWidget } from '../types/widgets'
+import type { IChartWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

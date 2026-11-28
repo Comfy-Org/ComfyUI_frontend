@@ -1,31 +1,34 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FakeWebSessionEndpoint, FakeWebSessionState } from '../testing.js'
-import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
+import type { FakeWebSessionEndpoint, FakeWebSessionState } from '#/testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '#/testing'
+import { deferred } from './__fixtures__/sessionFakes'
 import type {
   CrossTabRefreshPort,
   WebSession,
   WebSessionResult
-} from './sessionContracts.js'
+} from './sessionContracts'
 import type {
   RememberedLogin,
   ScheduleRetry,
   VisibilityPort,
+  WebSessionIdentity,
   WebSessionIdentityOptions,
   WebSessionIdentityState,
   WebSessionIdentityTransition,
   WebSessionSharedMessage
-} from './webSessionIdentity.js'
+} from './webSessionIdentity'
 import {
   createWebSessionIdentity,
   transitionWebSessionIdentity
-} from './webSessionIdentity.js'
+} from './webSessionIdentity'
 
 const API = 'https://cloud.example/api'
 const ORIGIN = 'https://www.comfy.example'
 const HEARTBEAT_MS = 10 * 60 * 1000
 const USER_1 = fakeWebSessionUser({ id: 'user-1' })
 const USER_2 = fakeWebSessionUser({ id: 'user-2', email: 'user-2@example.com' })
+const PROOF_TIMEOUT_MS = 15_000
 
 type AccountChange = Parameters<
   NonNullable<WebSessionIdentityOptions['onAccountChanged']>
@@ -112,7 +115,9 @@ function createFakeSiteBus() {
 function fakeRememberedLogin(userId: string | null) {
   return {
     currentUserId: vi.fn(async () => userId),
-    getProof: vi.fn(async () => 'remembered-proof'),
+    getProof: vi.fn<RememberedLogin['getProof']>(
+      async () => 'remembered-proof'
+    ),
     signOutLocally: vi.fn(async () => undefined)
   } satisfies RememberedLogin
 }
@@ -155,6 +160,25 @@ function liveEndpoint(
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+async function reach(
+  identity: WebSessionIdentity,
+  reached: (state: WebSessionIdentityState) => boolean
+): Promise<WebSessionIdentityState> {
+  const { promise, resolve } = deferred<WebSessionIdentityState>()
+  const unsubscribe = identity.subscribe((state) => {
+    if (reached(state)) resolve(state)
+  })
+  const state = await promise
+  unsubscribe()
+  return state
+}
+
+const booted = (identity: WebSessionIdentity) =>
+  reach(
+    identity,
+    ({ phase }) => phase === 'signed_in' || phase === 'signed_out'
+  )
 
 function summarize(state: WebSessionIdentityState): string {
   if (state.phase === 'signed_in') return `signed_in:${state.session.user.id}`
@@ -232,6 +256,26 @@ describe('tabs of one site', () => {
     ])
   })
 
+  it('a follower adopts the personal-workspace answer the leader read', async () => {
+    const endpoint = liveEndpoint()
+    const site = createFakeSiteBus()
+    const leader = openTab({ endpoint, site })
+    const follower = openTab({ endpoint, site })
+    await settle()
+
+    endpoint.state = {
+      kind: 'live',
+      user: { ...USER_1, hasPersonalWorkspace: false }
+    }
+    leader.scheduler.fire(HEARTBEAT_MS)
+    await settle()
+
+    expect(follower.identity.getState()).toMatchObject({
+      phase: 'signed_in',
+      session: { user: { hasPersonalWorkspace: false } }
+    })
+  })
+
   it('hands leadership to a visible sibling when the leader is hidden', async () => {
     const endpoint = liveEndpoint()
     const site = createFakeSiteBus()
@@ -277,6 +321,173 @@ describe('tabs of one site', () => {
     expect(summarize(sibling.identity.getState())).toBe('signed_out:revoked')
     expect(sibling.login.signOutLocally).toHaveBeenCalledOnce()
     expect(sibling.remoteSignOuts).toEqual([])
+  })
+
+  it('a sign-out during an interactive sign-in wins, in this tab and its siblings', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    const site = createFakeSiteBus()
+    let releasePost = () => {}
+    const postHeld = new Promise<void>((resolve) => {
+      releasePost = resolve
+    })
+    const acting = openTab({
+      endpoint,
+      site,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST') await postHeld
+        return endpoint.fetch(input, init)
+      }
+    })
+    const sibling = openTab({ endpoint, site, remembered: null })
+    await settle()
+
+    const signingIn = acting.identity.signedIn(async () => 'fresh-proof')
+    await settle()
+    await acting.identity.signOut()
+    releasePost()
+    const answer = await signingIn
+    await settle()
+
+    expect(answer).toMatchObject({ status: 'error', code: 'SESSION_REVOKED' })
+    expect(summarize(acting.identity.getState())).toBe('signed_out:signed_out')
+    expect(summarize(sibling.identity.getState())).toBe('signed_out:signed_out')
+    expect(methods(endpoint).slice(-4)).toEqual([
+      'DELETE',
+      'POST',
+      'GET',
+      'DELETE'
+    ])
+  })
+
+  it('a sibling tab signing out invalidates a pending sign-in in this tab', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    const site = createFakeSiteBus()
+    let releasePost = () => {}
+    const postHeld = new Promise<void>((resolve) => {
+      releasePost = resolve
+    })
+    const acting = openTab({
+      endpoint,
+      site,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST') await postHeld
+        return endpoint.fetch(input, init)
+      }
+    })
+    const sibling = openTab({ endpoint, site, remembered: null })
+    await settle()
+
+    const signingIn = acting.identity.signedIn(async () => 'fresh-proof')
+    await settle()
+    await sibling.identity.signOut()
+    releasePost()
+    const answer = await signingIn
+    await settle()
+
+    expect(answer).toMatchObject({ status: 'error', code: 'SESSION_REVOKED' })
+    expect(summarize(acting.identity.getState())).toBe('signed_out:signed_out')
+    expect(summarize(sibling.identity.getState())).toBe('signed_out:signed_out')
+    expect(endpoint.state.kind).toBe('dead')
+  })
+
+  it('a stale sign-in never deletes the session a later sign-in created', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    let releaseFirstPost = () => {}
+    const firstPostHeld = new Promise<void>((resolve) => {
+      releaseFirstPost = resolve
+    })
+    let posts = 0
+    const tab = openTab({
+      endpoint,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST' && ++posts === 1) await firstPostHeld
+        return endpoint.fetch(input, init)
+      }
+    })
+    await settle()
+
+    const stale = tab.identity.signedIn(async () => 'first-proof')
+    await settle()
+    await tab.identity.signOut()
+    await tab.identity.signedIn(async () => 'second-proof')
+    const afterSecond = methods(endpoint).length
+    releaseFirstPost()
+    await stale
+    await settle()
+
+    expect(summarize(tab.identity.getState())).toBe('signed_in:user-2')
+    expect(methods(endpoint).slice(afterSecond)).not.toContain('DELETE')
+  })
+
+  it('a stale sign-in still deletes its session when the later sign-in failed', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    let releaseFirstPost = () => {}
+    const firstPostHeld = new Promise<void>((resolve) => {
+      releaseFirstPost = resolve
+    })
+    let posts = 0
+    const tab = openTab({
+      endpoint,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        const post = init?.method === 'POST' ? ++posts : 0
+        if (post === 1) await firstPostHeld
+        if (post === 2) return new Response('{}', { status: 503 })
+        return endpoint.fetch(input, init)
+      }
+    })
+    await settle()
+
+    const stale = tab.identity.signedIn(async () => 'first-proof')
+    await settle()
+    await tab.identity.signOut()
+    expect(
+      await tab.identity.signedIn(async () => 'second-proof')
+    ).toMatchObject({ status: 'error' })
+    releaseFirstPost()
+
+    expect(await stale).toMatchObject({
+      status: 'error',
+      code: 'SESSION_REVOKED'
+    })
+    await settle()
+    expect(summarize(tab.identity.getState())).toBe('signed_out:signed_out')
+    expect(endpoint.state.kind).toBe('dead')
+  })
+
+  it('reports a failed cleanup instead of a clean revocation', async () => {
+    const endpoint = liveEndpoint({ kind: 'dead', code: 'no_session' })
+    let releasePost = () => {}
+    const postHeld = new Promise<void>((resolve) => {
+      releasePost = resolve
+    })
+    let deletes = 0
+    const tab = openTab({
+      endpoint,
+      remembered: null,
+      fetchImpl: async (input, init) => {
+        if (init?.method === 'POST') await postHeld
+        if (init?.method === 'DELETE' && ++deletes === 2) {
+          return new Response('{}', { status: 503 })
+        }
+        return endpoint.fetch(input, init)
+      }
+    })
+    await settle()
+
+    const signingIn = tab.identity.signedIn(async () => 'fresh-proof')
+    await settle()
+    await tab.identity.signOut()
+    releasePost()
+
+    expect(await signingIn).toMatchObject({
+      status: 'error',
+      code: 'SESSION_UNAVAILABLE'
+    })
+    expect(summarize(tab.identity.getState())).toBe('signed_out:signed_out')
   })
 
   it('a tab that signed out is not signed back in by a sibling heartbeat', async () => {
@@ -417,6 +628,298 @@ describe('account change under an open tab', () => {
   })
 })
 
+describe('refresh', () => {
+  const RENAMED = fakeWebSessionUser({ id: 'user-1', name: 'Old Name' })
+
+  it('reads the session now and adopts the same user without an account change', async () => {
+    const endpoint = liveEndpoint({ kind: 'live', user: RENAMED })
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    endpoint.state = { kind: 'live', user: USER_1 }
+
+    const refreshed = await tab.identity.refresh()
+
+    expect(refreshed).toMatchObject({
+      phase: 'signed_in',
+      session: { user: { id: 'user-1', name: 'Test User' } }
+    })
+    expect(tab.identity.getState()).toBe(refreshed)
+    expect(methods(endpoint)).toEqual(['GET', 'GET'])
+    expect(tab.changes).toEqual([])
+  })
+
+  it('takes the account-change path when another user holds the session', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    endpoint.state = { kind: 'live', user: USER_2 }
+
+    const refreshed = await tab.identity.refresh('user-1')
+
+    expect(summarize(refreshed)).toBe('signed_in:user-2')
+    expect(tab.changes).toEqual([
+      expect.objectContaining({ reason: 'user_changed', epoch: 1 })
+    ])
+  })
+
+  it('shares what it read with sibling tabs', async () => {
+    const endpoint = liveEndpoint({ kind: 'live', user: RENAMED })
+    const site = createFakeSiteBus()
+    const sibling = openTab({ endpoint, site })
+    const tab = openTab({ endpoint, site })
+    await Promise.all([booted(sibling.identity), booted(tab.identity)])
+    endpoint.state = { kind: 'live', user: USER_1 }
+
+    await tab.identity.refresh()
+
+    const adopted = await reach(
+      sibling.identity,
+      (state) =>
+        state.phase === 'signed_in' && state.session.user.name === 'Test User'
+    )
+    expect(summarize(adopted)).toBe('signed_in:user-1')
+  })
+
+  it.for<{ name: string; state: FakeWebSessionState; settled: string }>([
+    {
+      name: 'a revoked session',
+      state: { kind: 'dead', code: 'session_revoked' },
+      settled: 'signed_out:revoked'
+    },
+    {
+      name: 'a dead session whose restore fails',
+      state: { kind: 'dead', code: 'no_session' },
+      settled: 'signed_out:restore_failed'
+    },
+    {
+      name: 'an outage',
+      state: { kind: 'unavailable', status: 503 },
+      settled: 'signed_in:user-1'
+    }
+  ])('resolves once $name has settled', async ({ state, settled }) => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    endpoint.state = state
+
+    const refreshed = await tab.identity.refresh()
+
+    expect(summarize(refreshed)).toBe(settled)
+  })
+
+  it('shares one restore between refreshes that find the session lapsed', async () => {
+    const endpoint = createFakeWebSessionEndpoint({
+      state: { kind: 'live', user: USER_1 },
+      signInUser: USER_1
+    })
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    const proof = deferred<string>()
+    tab.login.getProof.mockReturnValue(proof.promise)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshes = Promise.all([
+      tab.identity.refresh(),
+      tab.identity.refresh()
+    ])
+    await settle()
+    proof.resolve('remembered-proof')
+    const refreshed = await refreshes
+
+    expect(refreshed.map(summarize)).toEqual([
+      'signed_in:user-1',
+      'signed_in:user-1'
+    ])
+    expect(tab.login.getProof).toHaveBeenCalledOnce()
+    expect(methods(endpoint).filter((method) => method === 'POST')).toEqual([
+      'POST'
+    ])
+  })
+
+  it('gives up on a stalled proof so refreshes waiting on the restore settle', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    const proof = deferred<string>()
+    tab.login.getProof.mockReturnValue(proof.promise)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshes = Promise.all([
+      tab.identity.refresh(),
+      tab.identity.refresh()
+    ])
+    await settle()
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    const refreshed = await refreshes
+    proof.resolve('late-proof')
+    await settle()
+
+    expect(refreshed.map(summarize)).toEqual([
+      'signed_in:user-1',
+      'signed_in:user-1'
+    ])
+    expect(methods(endpoint)).not.toContain('POST')
+  })
+
+  it('tries the restore once more after a stalled proof while signed in', async () => {
+    const endpoint = createFakeWebSessionEndpoint({
+      state: { kind: 'live', user: USER_1 },
+      signInUser: USER_1
+    })
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    tab.login.getProof.mockReturnValueOnce(deferred<string>().promise)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshed = tab.identity.refresh()
+    await settle()
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await refreshed
+    tab.scheduler.fire(1000)
+    await settle()
+
+    expect(tab.login.getProof).toHaveBeenCalledTimes(2)
+    expect(methods(endpoint).filter((method) => method === 'POST')).toEqual([
+      'POST'
+    ])
+    expect(summarize(tab.identity.getState())).toBe('signed_in:user-1')
+  })
+
+  it('tries a stalled restore only once more', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    tab.login.getProof.mockImplementation(() => deferred<string>().promise)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshed = tab.identity.refresh()
+    await settle()
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await refreshed
+    tab.scheduler.fire(1000)
+    await settle()
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await settle()
+
+    expect(tab.login.getProof).toHaveBeenCalledTimes(2)
+    expect(tab.scheduler.delays()).not.toContain(1000)
+    expect(methods(endpoint)).not.toContain('POST')
+  })
+
+  it('cancels pending proof retries when a heartbeat adopts a live session', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    tab.login.getProof
+      .mockReturnValueOnce(deferred<string>().promise)
+      .mockRejectedValueOnce(new Error('provider unavailable'))
+      .mockResolvedValue(null)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshed = tab.identity.refresh()
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toContain(PROOF_TIMEOUT_MS)
+    )
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await refreshed
+    expect(tab.scheduler.delays()).toContain(1000)
+    await tab.identity.refresh()
+    expect(tab.scheduler.delays().filter((delay) => delay === 1000)).toEqual([
+      1000
+    ])
+
+    endpoint.state = { kind: 'live', user: USER_1 }
+    tab.scheduler.fire(HEARTBEAT_MS)
+    await vi.waitFor(() => expect(tab.scheduler.delays()).not.toContain(1000))
+
+    expect(tab.login.getProof).toHaveBeenCalledTimes(2)
+    expect(methods(endpoint)).not.toContain('POST')
+    expect(summarize(tab.identity.getState())).toBe('signed_in:user-1')
+  })
+
+  it('recovers on the next heartbeat after both proof attempts time out', async () => {
+    const endpoint = createFakeWebSessionEndpoint({
+      state: { kind: 'live', user: USER_1 },
+      signInUser: USER_1
+    })
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    tab.login.getProof
+      .mockReturnValueOnce(deferred<string>().promise)
+      .mockReturnValueOnce(deferred<string>().promise)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshed = tab.identity.refresh()
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toContain(PROOF_TIMEOUT_MS)
+    )
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await refreshed
+    tab.scheduler.fire(1000)
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toContain(PROOF_TIMEOUT_MS)
+    )
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toEqual([HEARTBEAT_MS])
+    )
+
+    expect(methods(endpoint)).not.toContain('POST')
+    expect(tab.scheduler.delays()).not.toContain(1000)
+
+    tab.scheduler.fire(HEARTBEAT_MS)
+    await vi.waitFor(() => {
+      expect(methods(endpoint).filter((method) => method === 'POST')).toEqual([
+        'POST'
+      ])
+      expect(summarize(tab.identity.getState())).toBe('signed_in:user-1')
+    })
+
+    expect(tab.login.getProof).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not wait on a restore left over from the previous account', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    const proofRequested = deferred<void>()
+    tab.login.getProof.mockImplementationOnce(() => {
+      proofRequested.resolve()
+      return new Promise<string>(() => {})
+    })
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+    tab.scheduler.fire(HEARTBEAT_MS)
+    await proofRequested.promise
+    await tab.identity.signedIn(async () => 'interactive-proof')
+
+    const refreshed = await tab.identity.refresh('user-2')
+
+    expect(summarize(refreshed)).toBe('signed_in:user-2')
+  })
+
+  it.for<{ name: string; initial: FakeWebSessionState; expected?: string }>([
+    {
+      name: 'the tab is signed out',
+      initial: { kind: 'dead', code: 'session_revoked' }
+    },
+    {
+      name: 'the tab holds another user than expected',
+      initial: { kind: 'live', user: USER_1 },
+      expected: 'user-2'
+    }
+  ])('reads nothing when $name', async ({ initial, expected }) => {
+    const endpoint = liveEndpoint(initial)
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    const before = tab.identity.getState()
+
+    const refreshed = await tab.identity.refresh(expected)
+
+    expect(refreshed).toBe(before)
+    expect(methods(endpoint)).toEqual(['GET'])
+  })
+})
+
 function session(userId: string, csrfToken = 'csrf-1'): WebSession {
   return {
     user: fakeWebSessionUser({ id: userId }),
@@ -482,12 +985,12 @@ describe('a heartbeat answer while signed in', () => {
       expected: {
         state: { phase: 'signed_out', outcome: 'revoked' },
         effects: [
-          { type: 'sign_out_locally' },
-          { type: 'report_signed_out_remotely' },
           {
             type: 'account_changed',
             change: { reason: 'signed_out', outcome: 'revoked' }
-          }
+          },
+          { type: 'sign_out_locally' },
+          { type: 'report_signed_out_remotely' }
         ]
       }
     },

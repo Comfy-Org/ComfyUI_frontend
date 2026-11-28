@@ -1,6 +1,8 @@
 import { parsePreloadError } from '@/utils/preloadErrorUtil'
 
-import { reportError } from './reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { isExtensionImportError } from './customNodeLoadTelemetry'
 
 /**
  * Whether a failed resource is one we ship, and can therefore act on.
@@ -49,6 +51,7 @@ export function reportResourceLoadError(url: string, tagName: string): void {
   }
 
   reportError(new Error(`Resource load failed: ${url}`), {
+    surface: 'platform',
     errorType: 'resource_load_error',
     tags: { tag_name: tagName }
   })
@@ -68,6 +71,7 @@ export function reportPreloadError(error: Error): void {
   }
 
   reportError(error, {
+    surface: 'platform',
     errorType: 'vite_preload_error',
     tags: {
       file_type: info.fileType,
@@ -78,5 +82,16 @@ export function reportPreloadError(error: Error): void {
       fileType: info.fileType,
       chunkName: info.chunkName
     }
+  })
+}
+
+/**
+ * Reports a preload failure that was left to reject at its importer, unless
+ * the extension loader caught it, since that loader reports it with the
+ * extension's path as `error_loading_extension`.
+ */
+export function reportPreloadErrorUnlessExtensionImport(error: Error): void {
+  setTimeout(() => {
+    if (!isExtensionImportError(error)) reportPreloadError(error)
   })
 }

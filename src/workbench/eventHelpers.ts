@@ -1,9 +1,3 @@
-// eslint-disable-next-line import-x/no-restricted-paths
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-/**
- * Utility functions for handling workbench events
- */
-
 function activeTextSelection(): Selection | null {
   const selection = window.getSelection()
   return selection !== null && !selection.isCollapsed ? selection : null
@@ -55,33 +49,4 @@ export function collapseOutsideSelectionOnPrimaryPointerDown(
 ): void {
   if (event.button === 0 && event.target instanceof Element)
     collapseTextSelectionOutside(event.target)
-}
-
-/**
- * Used by clipboard handlers to determine if copy/paste events should be
- * intercepted for graph operations vs. allowing default browser behavior
- * for text inputs and other UI elements.
- *
- * @param target - The event target to check
- * @returns true if copy paste events will be handled by target
- */
-export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
-  const isTextInput =
-    target instanceof HTMLTextAreaElement ||
-    (target instanceof HTMLElement && target.isContentEditable) ||
-    (target instanceof HTMLInputElement &&
-      ![
-        'button',
-        'checkbox',
-        'file',
-        'hidden',
-        'image',
-        'radio',
-        'range',
-        'reset',
-        'submit'
-      ].includes(target.type))
-  return (
-    isTextInput || useCanvasStore().linearMode || activeTextSelection() !== null
-  )
 }

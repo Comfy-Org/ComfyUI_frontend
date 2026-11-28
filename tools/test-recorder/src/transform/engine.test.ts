@@ -18,7 +18,7 @@ test('my test', async ({ page }) => {
       tags: ['@canvas']
     })
     expect(result.code).toContain('comfyPageFixture as test')
-    expect(result.code).toContain('async ({ comfyPage })')
+    expect(result.code).toMatch(/async \(\{ comfyPage ?\}\)/)
     expect(result.code).not.toContain('page.goto')
     expect(result.code).toContain('comfyPage.canvas')
     expect(result.code).toContain('comfyPage.nextFrame()')

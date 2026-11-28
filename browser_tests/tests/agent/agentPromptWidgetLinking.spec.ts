@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 // Three stories of qa/user-story-test-matrix.md (in-app-agent-program), all
 // about the same slot -- a prompt widget that also accepts a wire:
@@ -11,6 +12,9 @@ import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConve
 //      a draft WIP harness. Frozen area, so black-box only.
 //   51 "A text widget disappears when I connect an input to it"
 //      -- slack-27, linear-6. Expected: grey out. Actual: gone. Pin 18110.
+//      On a plain node the canvas replaces the control with the input slot
+//      row when a person wires it (subgraphPromotedWidgetExternalLink.spec),
+//      so an agent wire must land on that same row, not remove it.
 //   52 "Agent creates an incompatible connection, or refuses a compatible one"
 //      -- linear-15 (PM-1027). IMAGE-to-STRING accepted or wrongly denied.
 //      No pin. Frozen area.
@@ -79,6 +83,24 @@ function renderedLinks(page: {
   )
 }
 
+function liveInputSlot(
+  page: { evaluate: <T, A>(fn: (arg: A) => T, arg: A) => Promise<T> },
+  nodeId: string,
+  inputName: string
+): Promise<number> {
+  return page.evaluate(
+    ({ nodeId, inputName }) => {
+      const node = window.app!.graph.getNodeById(nodeId as NodeId)
+      const slot = node?.inputs.findIndex((input) => input.name === inputName)
+      if (slot === undefined || slot < 0) {
+        throw new Error(`Input ${inputName} is missing from node ${nodeId}`)
+      }
+      return slot
+    },
+    { nodeId, inputName }
+  )
+}
+
 test.describe(
   'Wiring a text output into a prompt widget',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -94,13 +116,22 @@ test.describe(
       await test.step('replay the recorded turn so the follower is bound', () =>
         agentConversation.runTurns())
 
+      const promptTextSlot = await liveInputSlot(
+        page,
+        PROMPT_NODE_ID,
+        PROMPT_WIDGET
+      )
+
       const promptNode =
         agentConversation.vueNodes.getNodeLocator(PROMPT_NODE_ID)
-      const promptWidget = promptNode.getByLabel(PROMPT_WIDGET, { exact: true })
+      const promptTextbox = promptNode.getByRole('textbox', {
+        name: PROMPT_WIDGET,
+        exact: true
+      })
 
       await test.step('before the wire, the prompt widget is on the node and editable', async () => {
-        await expect(promptWidget).toBeVisible()
-        await expect(promptWidget).toBeEditable()
+        await expect(promptTextbox).toBeVisible()
+        await expect(promptTextbox).toBeEditable()
       })
 
       await test.step('agent adds a string node and wires it into the prompt', () => {
@@ -128,13 +159,21 @@ test.describe(
             fromNode: String(STRING_SOURCE_ID),
             fromSlot: 0,
             toNode: PROMPT_NODE_ID,
-            toSlot: PROMPT_TEXT_SLOT
+            toSlot: promptTextSlot
           })
       })
 
-      await test.step('story 51: the prompt widget is greyed out, not gone', async () => {
-        await expect(promptWidget).toBeVisible()
-        await expect(promptWidget).not.toBeEditable()
+      await test.step('story 51: the prompt row stays as its input slot, as when a person wires it', async () => {
+        await expect(promptTextbox).toHaveCount(0)
+        await expect(
+          agentConversation.vueNodes.getInputSlotConnectionDot(
+            PROMPT_NODE_ID,
+            promptTextSlot
+          )
+        ).toBeVisible()
+        await expect(
+          promptNode.getByText(PROMPT_WIDGET, { exact: true })
+        ).toBeVisible()
       })
     })
 
@@ -146,6 +185,12 @@ test.describe(
 
       await test.step('replay the recorded turn so the follower is bound', () =>
         agentConversation.runTurns())
+
+      const promptTextSlot = await liveInputSlot(
+        page,
+        PROMPT_NODE_ID,
+        PROMPT_WIDGET
+      )
 
       const before = await renderedLinks(page)
 
@@ -178,7 +223,7 @@ test.describe(
         expect(
           after.filter(
             (link) =>
-              link.toNode === PROMPT_NODE_ID && link.toSlot === PROMPT_TEXT_SLOT
+              link.toNode === PROMPT_NODE_ID && link.toSlot === promptTextSlot
           ),
           'an IMAGE output must not land on a STRING prompt input'
         ).toEqual([])

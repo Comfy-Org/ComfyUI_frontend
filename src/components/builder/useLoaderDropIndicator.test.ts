@@ -2,12 +2,12 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
-import { toNodeId } from '@/types/nodeId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { getLoaderDropIndicator } from './useLoaderDropIndicator'
 

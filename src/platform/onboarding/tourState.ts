@@ -80,36 +80,37 @@ export type TourEvent =
   | { type: 'stepShown'; run: RunId; idx: number }
   | { type: 'ended'; run: RunId }
 
-/**
- * The only transition table. An event meaningless in the current phase, or from
- * a run that is over, returns `state` itself rather than a phase that shouldn't
- * follow.
- */
-export function reduceTour(state: TourState, event: TourEvent): TourState {
-  if (event.type === 'committed')
-    return state.phase === 'idle'
-      ? { phase: 'committed', tour: event.tour, run: event.run }
-      : state
+type LiveState = Exclude<TourState, typeof IDLE>
+type LiveEvent = Exclude<
+  TourEvent,
+  { type: 'committed' } | { type: 'requested' }
+>
 
-  if (event.type === 'requested') {
-    if (state.phase === 'idle')
-      return { phase: 'resolving', tour: event.tour, run: event.run }
-    // A run may ask for the tour it already reserved; anything else is a
-    // request arriving over a tour that is already under way.
-    return state.phase === 'committed' &&
-      state.tour === event.tour &&
-      state.run === event.run
-      ? { phase: 'resolving', tour: event.tour, run: event.run }
-      : state
-  }
+function commitTour(
+  state: TourState,
+  event: Extract<TourEvent, { type: 'committed' }>
+): TourState {
+  return state.phase === 'idle'
+    ? { phase: 'committed', tour: event.tour, run: event.run }
+    : state
+}
 
-  // The tour name alone would let a later run inherit an earlier run's reply.
-  if (state.phase === 'idle' || state.run !== event.run) return state
+function requestTour(
+  state: TourState,
+  event: Extract<TourEvent, { type: 'requested' }>
+): TourState {
+  if (state.phase === 'idle')
+    return { phase: 'resolving', tour: event.tour, run: event.run }
+  return state.phase === 'committed' &&
+    state.tour === event.tour &&
+    state.run === event.run
+    ? { phase: 'resolving', tour: event.tour, run: event.run }
+    : state
+}
 
+function transitionLiveTour(state: LiveState, event: LiveEvent): TourState {
   switch (event.type) {
     case 'released':
-      // Only a reservation can be given back. Once a run is asking for its
-      // steps it ends by `ended`, which says how it ended.
       return state.phase === 'committed' ? IDLE : state
     case 'resolved':
       return state.phase === 'resolving'
@@ -156,9 +157,13 @@ export function reduceTour(state: TourState, event: TourEvent): TourState {
           }
         : state
     case 'ended':
-      // Nothing of a merely committed tour has happened yet, so there is no
-      // ending to report: `finish` would name an outcome and a skip reason for
-      // a run that never started. Its reservation goes back via `released`.
       return state.phase === 'committed' ? state : IDLE
   }
+}
+
+export function reduceTour(state: TourState, event: TourEvent): TourState {
+  if (event.type === 'committed') return commitTour(state, event)
+  if (event.type === 'requested') return requestTour(state, event)
+  if (state.phase === 'idle' || state.run !== event.run) return state
+  return transitionLiveTour(state, event)
 }

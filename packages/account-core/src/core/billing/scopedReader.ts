@@ -14,22 +14,19 @@ import type {
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
+} from './billingContracts'
 import type {
   BillingScope,
   BillingScopeContext,
   BillingScopeSource
-} from './billingScope.js'
-import { createBillingScopeTracker } from './billingScope.js'
-import type {
-  ParsedBillingBody,
-  ValidatedBillingResponse
-} from './sharedRead.js'
+} from './billingScope'
+import { createBillingScopeTracker } from './billingScope'
+import type { ParsedBillingBody, ValidatedBillingResponse } from './sharedRead'
 import {
   matchesScopedRead,
   readValidatedBillingResponse,
   releaseOnAbort
-} from './sharedRead.js'
+} from './sharedRead'
 
 /** Every reader's read options carry at least the caller's release signal. */
 export interface ScopedReadOptions {

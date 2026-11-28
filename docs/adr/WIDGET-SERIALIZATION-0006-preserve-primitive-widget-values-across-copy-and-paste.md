@@ -45,10 +45,7 @@ and has not materialized its widget. The first complete link-derived widget
 build consumes the state through the generic lookup path. A completed build,
 type mismatch, or disconnect clears any unconsumed state.
 
-Do not add a Primitive-specific restoration type, store, or scheduler. A general
-connectivity-to-widget-materialization system can replace the remaining
-lifecycle ordering when the application has an authoritative coordinator for
-that phase.
+Do not add a Primitive-specific restoration type, store, or scheduler.
 
 ## Consequences
 

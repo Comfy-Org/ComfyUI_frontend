@@ -8,8 +8,8 @@ import type {
   AccountCredential,
   AccountUser,
   SessionFailure
-} from './sessionContracts.js'
-import { isPermanentSessionError } from './sessionContracts.js'
+} from './sessionContracts'
+import { isPermanentSessionError } from './sessionContracts'
 
 export interface SessionState<TUser extends AccountUser = AccountUser> {
   readonly user: TUser | null

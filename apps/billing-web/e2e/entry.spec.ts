@@ -39,3 +39,28 @@ for (const { link, path, reason } of BAD_LINKS) {
     expect(shown).toBe(path)
   })
 }
+
+test('sends a pricing link back to the host, where plans are chosen', async ({
+  page
+}) => {
+  await page.goto('/v1/pricing?product=comfyui&return_to=comfyui_workspace')
+
+  await expect(page).toHaveURL('https://testcloud.comfy.org/')
+  await expect(page.getByRole('heading', { name: 'Host app' })).toBeVisible()
+})
+
+test('sends a platform pricing link back to the test platform', async ({
+  page
+}) => {
+  await page.route('https://testplatform.comfy.org/', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><title>Platform</title><h1>Platform</h1>'
+    })
+  )
+
+  await page.goto('/v1/pricing?product=platform&return_to=platform_account')
+
+  await expect(page).toHaveURL('https://testplatform.comfy.org/')
+  await expect(page.getByRole('heading', { name: 'Platform' })).toBeVisible()
+})

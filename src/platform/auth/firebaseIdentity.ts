@@ -7,7 +7,7 @@ import {
 import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 
 import { getFirebaseConfig } from '@/config/firebase'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 class FirebaseBeforeRemoteConfigError extends Error {
   constructor() {
@@ -19,7 +19,7 @@ class FirebaseBeforeRemoteConfigError extends Error {
 }
 
 function loadedFirebaseConfig() {
-  if (remoteConfigState.value === 'unloaded') {
+  if (useRemoteConfigStore().loadState === 'unloaded') {
     throw new FirebaseBeforeRemoteConfigError()
   }
   return getFirebaseConfig()
@@ -40,5 +40,6 @@ export const firebaseIdentity = createFirebaseIdentity({
     browserLocalPersistence,
     indexedDBLocalPersistence,
     browserSessionPersistence
-  ]
+  ],
+  watchPopupSignIn: true
 })

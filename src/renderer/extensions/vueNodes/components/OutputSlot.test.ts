@@ -1,32 +1,33 @@
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import OutputSlot from './OutputSlot.vue'
+import SharedNodeTooltip from './SharedNodeTooltip.vue'
 
 vi.mock(import('@/composables/useErrorHandling'))
+
+vi.mock(
+  import('@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'),
+  () => ({
+    useSlotLinkReveal: () => ({ revealLinks: vi.fn(), unrevealLinks: vi.fn() })
+  })
+)
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/links/slotLinkDragUIState'),
   () => ({
     useSlotLinkDragUIState: () => ({
       state: { active: false, compatible: new Map() }
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/vueNodes/composables/useNodeTooltips'),
-  () => ({
-    useNodeTooltips: () => ({
-      getOutputSlotTooltip: () => '',
-      createTooltipConfig: (text: string) => ({ value: text })
     })
   })
 )
@@ -62,13 +63,48 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { SlotConnectionDot: SlotConnectionDotStub }
     }
   })
 }
 
 describe('OutputSlot', () => {
+  it('shows the output description to the right on hover', async () => {
+    useSettingStore().settingValues['Comfy.EnableTooltips'] = true
+    const user = userEvent.setup()
+    render(
+      () =>
+        h(TooltipProvider, { delayDuration: 0 }, () => [
+          h(OutputSlot, {
+            slotData: {
+              name: 'samples',
+              type: 'LATENT',
+              boundingRect: [0, 0, 0, 0]
+            },
+            index: 0,
+            nodeId: toNodeId('test-node')
+          }),
+          h(SharedNodeTooltip)
+        ]),
+      {
+        global: {
+          plugins: [i18n],
+          stubs: { SlotConnectionDot: SlotConnectionDotStub }
+        }
+      }
+    )
+
+    await user.hover(screen.getByText('samples'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Output: samples'
+    )
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'right'
+    )
+  })
+
   it('renders label when present on slotData', () => {
     renderOutputSlot({
       name: 'internal_name',
@@ -95,6 +131,12 @@ describe('OutputSlot', () => {
     renderOutputSlot({ name: 'internal_name' })
 
     expect(screen.getByText('internal_name')).toBeInTheDocument()
+  })
+
+  it('renders label when the name is empty', () => {
+    renderOutputSlot({ name: '', label: 'BOOLEAN' })
+
+    expect(screen.getByText('BOOLEAN')).toBeInTheDocument()
   })
 
   it('falls back to "Output N" when all names are absent', () => {

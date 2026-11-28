@@ -61,7 +61,7 @@ The instinct is "ship a new build, the hashes change". **Measured, and it is
 false for exactly the chunks that matter.** Two cloud builds of this repo
 differing only in commit hash:
 
-- 153 of 495 JS chunks rotated
+- only about a third of the JS chunks rotated
 - `rolldown-runtime`, `vendor-datadog`, `vendor-sentry`, `vendor-vue-core`
   **kept byte-identical filenames**
 
@@ -98,7 +98,7 @@ ASSET_CACHE_BUST=20260818 pnpm build:cloud
 assets/rolldown-runtime-xtsTai4I.js  ->  assets/rolldown-runtime-cb20260818-xtsTai4I.js
 ```
 
-Verified: **495 of 495** hashed JS/CSS assets get a new URL, `index.html` is
+Verified: **every** hashed JS/CSS asset gets a new URL, `index.html` is
 rewritten to match, and unset behaviour is byte-identical to today's build.
 Non-hashed static files (`favicon.ico`, `images/`, `CREDIT.txt`,
 `sorted-custom-node-map.json`) do not carry hashes and are unaffected — if one

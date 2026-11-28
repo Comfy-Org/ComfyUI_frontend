@@ -1,9 +1,11 @@
 import {
+  OPAQUE_WIDGETS_KEY,
   SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
   linksMap,
   mint,
+  nodesMap,
   project,
   readGraph
 } from '@comfyorg/comfy-multi-player'
@@ -14,8 +16,10 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
+import type { DocSubscribedData, DocUpdateData } from '@comfyorg/ingest-types'
 import * as Y from 'yjs'
 
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -81,7 +85,8 @@ export class HostDoc {
   constructor(
     private readonly workflowId: string,
     seed: WorkflowJSON,
-    private readonly catalog: WidgetCatalog
+    private readonly catalog: WidgetCatalog,
+    private readonly lineageSeq = 1
   ) {
     this.doc = mint(seed, catalog)
   }
@@ -102,6 +107,10 @@ export class HostDoc {
   // merely different one.
   corruptSchemaVersion(): void {
     this.doc.getMap('meta').delete('schema_version')
+  }
+
+  advanceSchemaVersionBeyondReader(): void {
+    this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION + 1)
   }
 
   // Test-only: restores meta.schema_version and returns the frame carrying
@@ -127,8 +136,9 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         ok: true,
-        seq: this.seq
-      }
+        seq: this.seq,
+        ...(this.lineageSeq !== 0 && { lineage_seq: this.lineageSeq })
+      } satisfies DocSubscribedData
     }
   }
 
@@ -185,6 +195,26 @@ export class HostDoc {
     )
   }
 
+  seedDefinition(definition: ExportedSubgraph): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const minted = mint(
+      { nodes: [], links: [], definitions: { subgraphs: [definition] } },
+      this.catalog
+    )
+      .getMap<unknown>('definitions')
+      .get(definition.id)
+    if (!(minted instanceof Y.Map)) {
+      throw new Error('the definition did not mint')
+    }
+    this.doc.getMap<unknown>('definitions').set(definition.id, minted.clone())
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
   replaceLink(link: HostLinkTuple): HostFrame {
     const before = Y.encodeStateVector(this.doc)
     const replacement = new Y.Array<unknown>()
@@ -203,30 +233,64 @@ export class HostDoc {
     return link instanceof Y.Array ? link.toJSON() : link
   }
 
-  // A batch the client minted itself (envelope included), answered the way
-  // the relay answers a human write: one `doc_ops_result`, then the delta as
-  // a `doc_update` when anything landed. The applier stays the only judge.
-  //
-  // Per `ApplyOutcome`'s contract (comfy-multi-player `dist/types.d.ts`
-  // ~L456-461): `applied` counts every op that consumed its `op_id` THIS
-  // call, including LWW-dropped writes and delete-wins no-ops (protocol-level
-  // applies); `skipped` is idempotency only — an `op_id` the document had
-  // already applied before this call OR earlier in this same batch. This
-  // fixture derives that split by walking `outcomes` in order and advancing a
-  // seen-ID set as it goes (seeded from `hasAppliedOp`, the ADR-004 read
-  // surface, `dist/read.d.ts` L133), so a same-batch duplicate op_id is
-  // classified by position, not just by pre-batch state — without the
-  // package's deprecated `result.applied`/`result.skipped` accessors
-  // (`dist/applier.js` L183-199, marked "Remove in 0.3").
-  //
-  // `ops` is typed `WireOpEnvelope`, not `Op`: a deferred kind such as
-  // `reset_doc` must reach the real applier verbatim so its `op_deferred` +
-  // abort-remainder verdict runs, rather than being filtered out upstream
-  // (`parseWireOps`). `applyOps`'s declared parameter is `Op[]`, but its own
-  // `ApplyFailure.op` field is typed `WireOp` because a rejected `reset_doc`
-  // genuinely reaches it (`dist/types.d.ts` ~L437-440) — the cast below
-  // matches that documented runtime contract; `WireOpEnvelope` only claims
-  // the two fields `parseWireOps` actually validated upstream of this call.
+  /** Test-only frame for widget keys `set_widget` rejects, such as `_extra_N`. */
+  setDocumentWidget(nodeId: number, name: string, value: unknown): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const widgets = nodesMap(this.doc).get(String(nodeId))?.get('widgets')
+    if (!(widgets instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} has no named widget map`)
+    }
+    widgets.set(name, value)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  /** Test-only replacement preserving the caller's named-widget key order. */
+  replaceDocumentWidgets(
+    nodeId: number,
+    entries: readonly (readonly [string, unknown])[]
+  ): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const node = nodesMap(this.doc).get(String(nodeId))
+    if (!(node instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} does not exist`)
+    }
+    const widgets = new Y.Map<unknown>()
+    for (const [name, value] of entries) widgets.set(name, value)
+    node.set('widgets', widgets)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
+  replaceOpaqueWidgetValues(
+    nodeId: number,
+    values: readonly unknown[]
+  ): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
+    const node = nodesMap(this.doc).get(String(nodeId))
+    if (!(node instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} does not exist`)
+    }
+    if (!Array.isArray(node.get(OPAQUE_WIDGETS_KEY))) {
+      throw new Error(`Host node ${String(nodeId)} has no opaque widget values`)
+    }
+    node.set(OPAQUE_WIDGETS_KEY, [...values])
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
+  }
+
   applyWire(ops: WireOpEnvelope[]): WireApplyResult {
     const before = Y.encodeStateVector(this.doc)
     const seen = new Set(
@@ -235,17 +299,23 @@ export class HostDoc {
     const { outcomes } = applyOps(this.doc, ops as Op[], this.catalog)
     const applied: string[] = []
     const skipped: string[] = []
+    const lwwDropped: string[] = []
     for (const outcome of outcomes) {
       if (outcome.outcome === 'rejected') continue
       if (seen.has(outcome.op_id)) {
         skipped.push(outcome.op_id)
+      } else if (outcome.outcome === 'lww-dropped') {
+        skipped.push(outcome.op_id)
+        lwwDropped.push(outcome.op_id)
+        seen.add(outcome.op_id)
       } else {
         applied.push(outcome.op_id)
         seen.add(outcome.op_id)
       }
     }
     const rejected = outcomes.find(isRejected)
-    if (applied.length > 0) this.seq += 1
+    const consumed = applied.length + lwwDropped.length > 0
+    if (consumed) this.seq += 1
     const result: HostFrame = {
       type: 'doc_ops_result',
       data: {
@@ -253,8 +323,10 @@ export class HostDoc {
         workflow_id: this.workflowId,
         ok: rejected === undefined,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         applied,
         skipped,
+        ...(lwwDropped.length > 0 && { lww_dropped: lwwDropped }),
         ...(rejected && {
           failed: {
             index: outcomes.indexOf(rejected),
@@ -265,14 +337,13 @@ export class HostDoc {
         })
       }
     }
-    const update =
-      applied.length > 0
-        ? this.updateFrame(
-            Y.encodeStateAsUpdate(this.doc, before),
-            advisoryActor(ops[0]),
-            applied
-          )
-        : null
+    const update = consumed
+      ? this.updateFrame(
+          Y.encodeStateAsUpdate(this.doc, before),
+          advisoryActor(ops[0]),
+          applied
+        )
+      : null
     return { result, update, outcomes }
   }
 
@@ -287,10 +358,11 @@ export class HostDoc {
         v: DOC_PROTOCOL_VERSION,
         workflow_id: this.workflowId,
         seq: this.seq,
+        lineage_seq: this.lineageSeq,
         update_b64: toBase64(update),
         actor,
         op_ids: opIds
-      }
+      } satisfies DocUpdateData
     }
   }
 }

@@ -19,6 +19,11 @@ class SubgraphBreadcrumbHelper {
     await this.page.getByTestId(`subgraph-breadcrumb-item-${key}`).click()
   }
 
+  async activateRootWithKeyboard(): Promise<void> {
+    await this.panel.rootItem.focus()
+    await this.panel.rootItem.press('Enter')
+  }
+
   async openActiveItemMenu(menuKey: string): Promise<void> {
     await this.panel.activeItem.click()
     await expect(this.panel.menuFor(menuKey)).toBeVisible()

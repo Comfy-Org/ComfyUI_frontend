@@ -1,17 +1,36 @@
-import { useEventListener, useLocalStorage } from '@vueuse/core'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { useEventListener, useWindowSize } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, toRaw, watch } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { readComfyAgentFeature } from '@/platform/remoteConfig/comfyAgentFeature'
+import {
+  SIDEBAR_MIN_WIDTH,
+  SIDE_TOOLBAR_WIDTH
+} from '@/constants/splitterConstants'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentPanelCloseSource,
-  AgentPanelOpenedMetadata
-} from '@/platform/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+  AgentPanelOpenedMetadata,
+  AgentTargetUnavailableMetadata
+} from '@comfyorg/telemetry/types'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
+
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
+import type { HeldGate } from '@/workbench/extensions/agent/composables/agent/useAgentSendGates'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
+const FUNDS_RECHECK_TIMEOUT_MS = 10_000
+const ACCEPTANCE_BILLING_REFRESH_WINDOW_MS = 5_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
@@ -19,21 +38,94 @@ type TargetTracking =
   | { mode: 'uninitialized' }
   | { mode: 'following' }
   | { mode: 'restoring' }
-  | { mode: 'retained'; workflow: ComfyWorkflow | null }
+  | { mode: 'retained'; workflow: ComfyWorkflow }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath: string
+      unavailable?: never
+    }
+  | {
+      mode: 'retained'
+      workflow: null
+      closedPath?: never
+      unavailable: true
+    }
+
+interface BillingRefreshEntry {
+  result: Promise<boolean>
+  lateErrors: Set<(error: unknown) => void>
+  lateSuccesses: Set<() => void>
+}
+
+export type AgentPanelView =
+  | { screen: 'chat' }
+  | { screen: 'skills' }
+  | {
+      screen: 'history'
+      previousThreadId: string | null
+      selection:
+        | { status: 'idle' }
+        | { status: 'loading' | 'failed'; id: string }
+    }
 
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
-  // writeDefaults false: no storage key planted for flag-off users.
-  const isOpen = useLocalStorage(OPEN_STORAGE_KEY, false, {
+  const isOpen = useSafeLocalStorage(OPEN_STORAGE_KEY, false, {
     writeDefaults: false
   })
   /** Whether the panel has ever been shown to this user, on any visit. */
-  const hasEverOpened = useLocalStorage(DISCOVERED_STORAGE_KEY, false, {
+  const hasEverOpened = useSafeLocalStorage(DISCOVERED_STORAGE_KEY, false, {
     writeDefaults: false
   })
   const gateSettled = ref(false)
-  const width = ref(PANEL_MIN_WIDTH)
+  const heldSendGate = ref<HeldGate | null>(null)
+  const view = shallowRef<AgentPanelView>({ screen: 'chat' })
+  const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  /** The server's `agent` feature; undefined unless its state is known. */
+  const comfyAgent = computed(readComfyAgentFeature)
+  const maximized = ref(false)
+  const draggedWidth = ref(PANEL_MIN_WIDTH)
+  const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
+  const reportedExhaustionIdentity = ref<string | null>(null)
+  const billingRefreshedAcceptances = ref(0)
+  const reportedFreeUseImpression = ref(false)
+  const reportedCreditUsageExposure = ref(false)
+  const fundsRechecks = ref(new Map<number, string>())
+  const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+  const fundsRecheckFinished = new Map<number, () => void>()
+  let nextFundsRecheckId = 0
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
+  const creditTransitionRefresh = shallowRef<{
+    identity: string
+    epoch: number
+    ready: boolean
+  } | null>(null)
+  const billingRefreshes = new Map<string, BillingRefreshEntry>()
+  const acceptanceBillingRefresh = shallowRef<{
+    billingType: string
+    identity: string
+    openEpoch: number
+    recordedAt: number
+    read: Promise<boolean>
+  } | null>(null)
+  const panelOpenEpoch = ref(0)
+  let latestBillingRefresh: Promise<void> | undefined
+  let creditTransitionRefreshEpoch = 0
+  watch(isOpen, (open, wasOpen) => {
+    if (open && !wasOpen) panelOpenEpoch.value += 1
+  })
+  const pendingCloudHandoff = ref<string | null>(null)
+  const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -45,12 +137,29 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (target.mode === 'following') return workflowStore.activeWorkflow
     return target.mode === 'retained' ? target.workflow : null
   })
+  const targetUnavailable = computed(
+    () =>
+      targetTracking.value.mode === 'retained' &&
+      targetTracking.value.workflow === null &&
+      targetTracking.value.unavailable === true
+  )
   const canRestoreWorkflow = computed(
     () => targetTracking.value.mode === 'restoring'
   )
 
   function beginWorkflowRestoration(): void {
     targetTracking.value = { mode: 'restoring' }
+  }
+
+  function interruptHistorySelection(): void {
+    if (
+      view.value.screen === 'history' &&
+      view.value.selection.status === 'loading'
+    )
+      view.value = {
+        ...view.value,
+        selection: { status: 'failed', id: view.value.selection.id }
+      }
   }
 
   function initializeTargetTracking(hasThread: boolean): void {
@@ -68,33 +177,100 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
-    targetTracking.value = { mode: 'retained', workflow }
+    targetTracking.value =
+      workflow === null
+        ? { mode: 'retained', workflow: null }
+        : { mode: 'retained', workflow }
   }
 
-  // Only a retained target can become detached. A following target belongs to
-  // the editor, including its replacement when the visible tab closes.
+  function markWorkflowTargetUnavailable(
+    report: AgentTargetUnavailableMetadata
+  ): void {
+    useTelemetry()?.trackAgentTargetUnavailable(report)
+    targetTracking.value = {
+      mode: 'retained',
+      workflow: null,
+      unavailable: true
+    }
+  }
+
+  function detachClosedTarget(workflow: ComfyWorkflow): void {
+    targetTracking.value = workflow.isTemporary
+      ? { mode: 'retained', workflow: null }
+      : { mode: 'retained', workflow: null, closedPath: workflow.path }
+  }
+
   watch(
     () => [targetTracking.value, ...workflowStore.openWorkflows],
     () => {
       const target = targetTracking.value
-      if (
-        target.mode === 'retained' &&
-        target.workflow !== null &&
-        !workflowStore.openWorkflows.includes(target.workflow)
+      if (target.mode !== 'retained') return
+      if (target.workflow !== null) {
+        if (!workflowStore.openWorkflows.includes(target.workflow))
+          detachClosedTarget(target.workflow)
+      } else if (
+        workflowStore.openWorkflows.some(
+          ({ path }) => path === target.closedPath
+        )
       )
         setWorkflowTarget(null)
     }
   )
 
+  function isRetainedTarget(workflow: ComfyWorkflow): boolean {
+    const target = targetTracking.value
+    if (target.mode !== 'retained') return false
+    return target.workflow === null
+      ? target.closedPath === workflow.path
+      : toRaw(target.workflow) === toRaw(workflow)
+  }
+
+  function followClosedTargetRename(oldPath: string, newPath: string): void {
+    const target = targetTracking.value
+    if (
+      target.mode === 'retained' &&
+      target.workflow === null &&
+      target.closedPath === oldPath
+    )
+      targetTracking.value = {
+        mode: 'retained',
+        workflow: null,
+        closedPath: newPath
+      }
+  }
+
+  workflowStore.$onAction(({ name, args, after }) => {
+    if (name === 'deleteWorkflow') {
+      const [workflow] = args
+      if (!workflow.isTemporary)
+        after(() => {
+          if (isRetainedTarget(workflow))
+            markWorkflowTargetUnavailable({
+              cause: 'workflow_deleted',
+              workflow_id: null,
+              startup_tab_restore_settled: null
+            })
+        })
+    } else if (name === 'renameWorkflow') {
+      const [workflow] = args
+      const oldPath = workflow.path
+      after(() => followClosedTargetRename(oldPath, workflow.path))
+    }
+  })
+
   let openedAt: number | null = null
-  // Guards the pagehide teardown report below: true once this open epoch has
-  // reported a close, so a bfcache-frozen page that fires pagehide again
-  // (background/resume/close) can't emit a second overlapping duration for
-  // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
   let teardownReported = false
 
+  function startOpenEpoch(): void {
+    openedAt = Date.now()
+    teardownReported = false
+    reportedFreeUseImpression.value = false
+    reportedCreditUsageExposure.value = false
+  }
+
+  const restoredOpenHeld = ref(false)
   const isVisible = computed(
-    () => enabled.value && isOpen.value && consentAccepted.value
+    () => enabled.value && isOpen.value && !restoredOpenHeld.value
   )
 
   watch(isVisible, (visible) => {
@@ -104,20 +280,44 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     }
     hasEverOpened.value = true
     if (openedAt !== null) return
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
-  const isMaximized = computed(() => width.value === PANEL_MAX_WIDTH)
+  const { width: windowWidth } = useWindowSize()
+
+  const maxWidth = computed(() =>
+    clamp(windowWidth.value - reservedWorkspaceWidth.value, 0, PANEL_MAX_WIDTH)
+  )
+
+  /**
+   * The rendered width. Narrowing the window clamps it; widening restores the
+   * width the user asked for, so a maximized panel never leaves the viewport.
+   */
+  const width = computed(() =>
+    Math.min(
+      maxWidth.value,
+      maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+    )
+  )
+  const requestedWidth = computed(() =>
+    maximized.value ? PANEL_MAX_WIDTH : draggedWidth.value
+  )
+  const isOverlay = computed(
+    () =>
+      windowWidth.value <= requestedWidth.value + reservedWorkspaceWidth.value
+  )
+
+  const isMaximized = computed(() => maximized.value)
 
   function open(
     source: AgentPanelOpenedMetadata['source'] = 'topbar_button'
   ): void {
-    if (isOpen.value) return
+    const wasHeld = restoredOpenHeld.value
+    restoredOpenHeld.value = false
+    if (isOpen.value && !wasHeld) return
     isOpen.value = true
-    openedAt = Date.now()
-    teardownReported = false
+    startOpenEpoch()
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -135,14 +335,18 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function suppressRestoredOpen(): void {
     if (!isOpen.value || isVisible.value) return
     isOpen.value = false
+    restoredOpenHeld.value = false
     openedAt = null
   }
 
-  // pagehide is the reliable teardown signal on tab close/reload and even on
-  // some mobile Safari backgrounding, where nothing else is guaranteed to
-  // fire again. Reports the open duration without mutating isOpen/local
-  // storage, so the localStorage-backed restore-on-reload behaviour
-  // (FE-1284/PM-648) is untouched.
+  function holdRestoredOpen(): void {
+    if (isOpen.value) restoredOpenHeld.value = true
+  }
+
+  function releaseRestoredOpen(): void {
+    restoredOpenHeld.value = false
+  }
+
   useEventListener(window, 'pagehide', () => {
     if (!isVisible.value || openedAt === null || teardownReported) return
     teardownReported = true
@@ -152,11 +356,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   })
 
-  // A bfcache restore resumes this same frozen interval rather than starting
-  // a new one, so the pagehide report above already closed it out. Starting
-  // a fresh interval here keeps a later close()/pagehide measuring only the
-  // time since resume, instead of re-including (and double counting) the
-  // span already reported.
   useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
     if (!event.persisted || !isVisible.value) return
     openedAt = Date.now()
@@ -164,17 +363,217 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
 
   function toggle(): void {
-    if (isOpen.value) close('topbar_button')
+    if (isOpen.value && !restoredOpenHeld.value) close('topbar_button')
     else open()
   }
 
+  function setReservedWorkspaceWidth(px: number): void {
+    reservedWorkspaceWidth.value = Math.max(0, px)
+  }
+
   function setWidth(px: number): void {
-    width.value = Math.min(PANEL_MAX_WIDTH, Math.max(PANEL_MIN_WIDTH, px))
+    maximized.value = false
+    draggedWidth.value = clamp(px, PANEL_MIN_WIDTH, PANEL_MAX_WIDTH)
   }
 
   function toggleMaximize(): void {
-    setWidth(isMaximized.value ? PANEL_MIN_WIDTH : PANEL_MAX_WIDTH)
+    maximized.value = !maximized.value
+    if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
+
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
+  }
+
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    return dispatchCreditTransitionNotice({
+      type: 'shown',
+      identity
+    })
+  }
+
+  function dismissCreditTransitionNotice(identity: string): boolean {
+    return dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  }
+
+  function beginCreditTransitionRefresh(identity: string): number {
+    const current = creditTransitionRefresh.value
+    if (current?.identity === identity && !current.ready) return current.epoch
+    const epoch = ++creditTransitionRefreshEpoch
+    creditTransitionRefresh.value = { identity, epoch, ready: false }
+    return epoch
+  }
+
+  function completeCreditTransitionRefresh(
+    identity: string,
+    epoch: number
+  ): boolean {
+    const current = creditTransitionRefresh.value
+    if (current?.identity !== identity || current.epoch !== epoch) return false
+    creditTransitionRefresh.value = { ...current, ready: true }
+    return true
+  }
+
+  function claimCompletedCreditTransitionRefresh(identity: string): boolean {
+    const current = creditTransitionRefresh.value
+    if (current?.identity !== identity || !current.ready) return false
+    creditTransitionRefresh.value = null
+    return true
+  }
+
+  function recordAcceptanceBillingRefresh(
+    billingType: string,
+    identity: string,
+    read: Promise<boolean>
+  ): void {
+    if (isOpen.value) return
+    acceptanceBillingRefresh.value = {
+      billingType,
+      identity,
+      openEpoch: panelOpenEpoch.value + 1,
+      recordedAt: Date.now(),
+      read
+    }
+  }
+
+  function acceptanceBillingRefreshForOpen(
+    billingType: string,
+    identity: string
+  ): Promise<boolean> | null {
+    const current = acceptanceBillingRefresh.value
+    if (current === null) return null
+    if (current.openEpoch < panelOpenEpoch.value) {
+      acceptanceBillingRefresh.value = null
+      return null
+    }
+    if (
+      current.billingType !== billingType ||
+      current.identity !== identity ||
+      current.openEpoch !== panelOpenEpoch.value ||
+      Date.now() - current.recordedAt > ACCEPTANCE_BILLING_REFRESH_WINDOW_MS
+    )
+      return null
+    return current.read
+  }
+
+  function refreshBillingStatus(
+    key: string,
+    fetchStatus: () => Promise<boolean>,
+    afterCurrent = false,
+    onLateError?: (error: unknown) => void,
+    onLateSuccess?: () => void
+  ): Promise<boolean> {
+    const existing = billingRefreshes.get(key)
+    if (existing) {
+      if (onLateError) existing.lateErrors.add(onLateError)
+      if (onLateSuccess) existing.lateSuccesses.add(onLateSuccess)
+      return existing.result
+    }
+    const previous = afterCurrent ? latestBillingRefresh : undefined
+    const lateErrors = new Set<(error: unknown) => void>()
+    const lateSuccesses = new Set<() => void>()
+    if (onLateError) lateErrors.add(onLateError)
+    if (onLateSuccess) lateSuccesses.add(onLateSuccess)
+    const notifyLateErrors = (error: unknown) => {
+      for (const report of lateErrors) {
+        try {
+          report(error)
+        } catch {
+          continue
+        }
+      }
+    }
+    const fetchPromise = (previous ?? Promise.resolve()).then(fetchStatus)
+    let timedOut = false
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+    const result = new Promise<boolean>((resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        timedOut = true
+        resolve(false)
+      }, 15_000)
+      fetchPromise.then(
+        (adopted) => {
+          if (!timedOut) resolve(adopted)
+          else if (adopted) {
+            for (const callback of lateSuccesses) {
+              try {
+                callback()
+              } catch (error) {
+                notifyLateErrors(error)
+              }
+            }
+          }
+        },
+        (error: unknown) => {
+          if (!timedOut) reject(error)
+          else notifyLateErrors(error)
+        }
+      )
+    })
+    const entry = { result, lateErrors, lateSuccesses }
+    const settled = fetchPromise
+      .then(
+        () => undefined,
+        () => undefined
+      )
+      .finally(() => {
+        if (timeoutId !== undefined) clearTimeout(timeoutId)
+        if (billingRefreshes.get(key) === entry) {
+          billingRefreshes.delete(key)
+        }
+        if (latestBillingRefresh === settled) latestBillingRefresh = undefined
+      })
+    billingRefreshes.set(key, entry)
+    latestBillingRefresh = settled
+    return result
+  }
+
+  function beginFundsRecheck(
+    identity: string,
+    onFinished?: () => void
+  ): number {
+    const id = ++nextFundsRecheckId
+    fundsRechecks.value.set(id, identity)
+    if (onFinished) fundsRecheckFinished.set(id, onFinished)
+    fundsRecheckTimeouts.set(
+      id,
+      setTimeout(() => finishFundsRecheck(id), FUNDS_RECHECK_TIMEOUT_MS)
+    )
+    return id
+  }
+
+  function finishFundsRecheck(id: number): void {
+    clearTimeout(fundsRecheckTimeouts.get(id))
+    fundsRecheckTimeouts.delete(id)
+    fundsRechecks.value.delete(id)
+    fundsRecheckFinished.get(id)?.()
+    fundsRecheckFinished.delete(id)
+  }
+
+  function cancelFundsRechecks(): void {
+    for (const id of fundsRechecks.value.keys()) finishFundsRecheck(id)
+  }
+
+  function hasPendingFundsRecheck(identity: string): boolean {
+    return [...fundsRechecks.value.values()].includes(identity)
+  }
+
+  onScopeDispose(cancelFundsRechecks)
 
   return {
     enabled,
@@ -183,23 +582,64 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    heldSendGate,
+    view,
+    interruptHistorySelection,
+    flagsSettled,
+    comfyAgent,
+    reportedExhaustionIdentity,
+    billingRefreshedAcceptances,
+    reportedFreeUseImpression,
+    reportedCreditUsageExposure,
+    creditTransitionNotice:
+      computed<Readonly<CreditTransitionNoticeState> | null>(
+        () => creditTransitionNotice.value
+      ),
+    creditTransitionRefresh: computed<Readonly<{
+      identity: string
+      epoch: number
+      ready: boolean
+    }> | null>(() => creditTransitionRefresh.value),
+    panelOpenEpoch: computed(() => panelOpenEpoch.value),
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
+    beginCreditTransitionRefresh,
+    completeCreditTransitionRefresh,
+    claimCompletedCreditTransitionRefresh,
+    refreshBillingStatus,
+    recordAcceptanceBillingRefresh,
+    acceptanceBillingRefreshForOpen,
+    beginFundsRecheck,
+    finishFundsRecheck,
+    cancelFundsRechecks,
+    hasPendingFundsRecheck,
     width,
+    requestedWidth,
+    isOverlay,
     isMaximized,
     dismissedSelectionSignature,
     open,
     targetTracking,
     followsVisibleWorkflow,
+    pendingErrorContext,
+    pendingCloudHandoff,
     initializeTargetTracking,
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,
     selectedWorkflow,
+    targetUnavailable,
+    markWorkflowTargetUnavailable,
     canRestoreWorkflow,
     beginWorkflowRestoration,
     setWorkflowTarget,
     toggle,
     close,
     suppressRestoredOpen,
+    holdRestoredOpen,
+    releaseRestoredOpen,
     setWidth,
+    setReservedWorkspaceWidth,
     toggleMaximize
   }
 })

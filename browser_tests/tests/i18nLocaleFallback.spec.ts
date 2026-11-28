@@ -18,8 +18,8 @@ test.describe('i18n locale fallback', () => {
     }
   })
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.page.addInitScript(() => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
       Object.defineProperty(navigator, 'language', {
         value: 'de-DE',
         configurable: true
@@ -29,8 +29,6 @@ test.describe('i18n locale fallback', () => {
         configurable: true
       })
     })
-    await comfyPage.page.reload()
-    await comfyPage.waitForAppReady()
   })
 
   test('sidebar labels render translated strings, not raw i18n keys', async ({

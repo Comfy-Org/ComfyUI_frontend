@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { ComposerPrompt } from '../../../types/composerPrompt'
-import '../../../agentPanel.css'
+import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import InlinePromptEditor from './InlinePromptEditor.vue'
 
@@ -44,7 +44,7 @@ const meta: Meta<typeof InlinePromptEditor> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope w-100 rounded-lg bg-secondary-background p-3"><story /></div>'
+        '<div class="agent-scope w-100 rounded-lg bg-secondary p-3"><story /></div>'
     })
   ],
   args: {

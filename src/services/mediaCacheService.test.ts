@@ -1,15 +1,43 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { useMediaCache } from './mediaCacheService'
+import { disposeMediaCache, useMediaCache } from './mediaCacheService'
 
-// Mock fetch
-global.fetch = vi.fn()
-global.URL = {
-  createObjectURL: vi.fn(() => 'blob:mock-url'),
-  revokeObjectURL: vi.fn()
-} as Partial<typeof URL> as typeof URL
+vi.hoisted(() => vi.spyOn(window, 'addEventListener'))
+
+function unloadCalls(calls: unknown[][]) {
+  return calls.filter(([type]) => type === 'beforeunload')
+}
+
+const unloadListenersAddedAtImport = unloadCalls(
+  vi.mocked(window.addEventListener).mock.calls
+).length
 
 describe('mediaCacheService', () => {
+  afterEach(() => disposeMediaCache())
+
+  describe('lifecycle', () => {
+    it('registers no unload listener at import', () => {
+      expect(unloadListenersAddedAtImport).toBe(0)
+    })
+
+    it('owns its unload listener and cleanup interval from creation until disposal', () => {
+      vi.useFakeTimers()
+      const addListener = vi.spyOn(window, 'addEventListener')
+      const removeListener = vi.spyOn(window, 'removeEventListener')
+
+      useMediaCache()
+      useMediaCache()
+      expect(unloadCalls(addListener.mock.calls)).toHaveLength(1)
+      expect(vi.getTimerCount()).toBe(1)
+
+      disposeMediaCache()
+      expect(unloadCalls(removeListener.mock.calls)).toEqual([
+        ['beforeunload', unloadCalls(addListener.mock.calls)[0][1]]
+      ])
+      expect(vi.getTimerCount()).toBe(0)
+    })
+  })
+
   describe('URL reference counting', () => {
     it('should handle URL acquisition for non-existent cache entry', () => {
       const { acquireUrl } = useMediaCache()
@@ -23,13 +51,6 @@ describe('mediaCacheService', () => {
 
       // Should not throw error
       expect(() => releaseUrl('non-existent.jpg')).not.toThrow()
-    })
-
-    it('should provide acquireUrl and releaseUrl methods', () => {
-      const cache = useMediaCache()
-
-      expect(typeof cache.acquireUrl).toBe('function')
-      expect(typeof cache.releaseUrl).toBe('function')
     })
   })
 })

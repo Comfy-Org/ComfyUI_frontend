@@ -1,7 +1,9 @@
-import { useLocalStorage, useTimestamp } from '@vueuse/core'
+import { useTimestamp } from '@vueuse/core'
+import { orderBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
   getWorkspaceId,
@@ -12,6 +14,9 @@ export interface ChatSession {
   id: string
   title: string
   updatedAt: number
+  titleSource: 'server' | 'fallback'
+  workflowId?: string
+  lastActivityAt?: number
 }
 
 export interface HistoryGroups {
@@ -51,7 +56,8 @@ export function groupSessionsByRecency(
 }
 
 export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
-  const sessions = ref<ChatSession[]>([])
+  const serverSessions = ref<ChatSession[]>([])
+  const pendingServerSessions = ref<ChatSession[]>([])
   const activeId = ref<string | null>(null)
   const now = useTimestamp({ interval: 60_000 })
   const workspaceId = getWorkspaceId()
@@ -61,13 +67,19 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   // The server owns thread titles but has no rename or delete endpoint yet
   // (BE-3130), so renames live in a local overlay applied over the server
   // titles and deletes in a local tombstone set filtered out of every refresh.
-  const customTitles = useLocalStorage<Partial<Record<string, string>>>(
+  const customTitles = useSafeLocalStorage<Partial<Record<string, string>>>(
     StorageKeys.agentChatTitles(workspaceId),
     {}
   )
-  const deletedIds = useLocalStorage<string[]>(
+  const deletedIds = useSafeLocalStorage<string[]>(
     StorageKeys.agentDeletedThreads(workspaceId),
     []
+  )
+
+  const sessions = computed(() =>
+    [...pendingServerSessions.value, ...serverSessions.value].filter(
+      (session) => !deletedIds.value.includes(session.id)
+    )
   )
 
   const titled = computed(() =>
@@ -85,6 +97,14 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     return id === null ? undefined : customTitles.value[id]
   }
 
+  function sessionsFor(workflowId: string): ChatSession[] {
+    return orderBy(
+      titled.value.filter((session) => session.workflowId === workflowId),
+      [({ lastActivityAt }) => lastActivityAt ?? Number.NEGATIVE_INFINITY],
+      ['desc']
+    )
+  }
+
   function rename(id: string, title: string): void {
     const trimmed = title.trim()
     if (trimmed === '') return
@@ -92,7 +112,10 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   }
 
   function remove(id: string): void {
-    sessions.value = sessions.value.filter((item) => item.id !== id)
+    serverSessions.value = serverSessions.value.filter((item) => item.id !== id)
+    pendingServerSessions.value = pendingServerSessions.value.filter(
+      (item) => item.id !== id
+    )
     const { [id]: _removed, ...rest } = customTitles.value
     customTitles.value = rest
     if (!deletedIds.value.includes(id))
@@ -101,8 +124,14 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   }
 
   function replaceAll(next: ChatSession[]): void {
-    sessions.value = next.filter(
+    const filtered = next.filter(
       (session) => !deletedIds.value.includes(session.id)
+    )
+    const listedIds = new Set(filtered.map((session) => session.id))
+    serverSessions.value = filtered
+    pendingServerSessions.value = pendingServerSessions.value.filter(
+      (session) =>
+        !deletedIds.value.includes(session.id) && !listedIds.has(session.id)
     )
   }
 
@@ -110,14 +139,31 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     activeId.value = id
   }
 
+  function isDeleted(id: string): boolean {
+    return deletedIds.value.includes(id)
+  }
+
+  function rememberSession(session: ChatSession): void {
+    if (isDeleted(session.id)) return
+    if (
+      serverSessions.value.some((item) => item.id === session.id) ||
+      pendingServerSessions.value.some((item) => item.id === session.id)
+    )
+      return
+    pendingServerSessions.value = [session, ...pendingServerSessions.value]
+  }
+
   return {
     sessions,
     activeId,
     grouped,
     titleFor,
+    sessionsFor,
     rename,
     remove,
     replaceAll,
-    setActive
+    setActive,
+    isDeleted,
+    rememberSession
   }
 })

@@ -4,7 +4,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
   Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
@@ -20,69 +19,43 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * Subscription outcomes the other SDK-rail specs leave uncovered: leaving a
- * team plan for a personal one, a subscribe parked on a hosted payment page,
- * a session where only the subscription rail is on, and the end date a
- * cancelled plan shows once the page is reloaded.
- *
- * As in `planChangeSdkRail.spec.ts`, the transport is what tells the rails
- * apart: the SDK runs on `fetch` and keys every write, the legacy workspace
- * client runs on axios' XHR adapter and keys none.
- */
-const SUBSCRIPTION_RAIL_ONLY = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_subscription_enabled: true,
-  billing_sdk_topup_enabled: false
+const RAIL_FEATURES = {
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const OPERATION_ID = 'op-e2e-outcome'
 const HOSTED_PAYMENT_URL = 'https://checkout.stripe.example/pay/op-e2e-outcome'
 
-function annualPlan(
-  slug: string,
-  tier: Plan['tier'],
-  priceCents: number,
-  creditsCents: number
-): Plan {
-  return {
-    slug,
-    tier,
-    duration: 'ANNUAL',
-    price_cents: priceCents,
-    credits_cents: creditsCents,
-    max_seats: 1,
-    availability: { available: true },
-    seat_summary: {
-      seat_count: 1,
-      total_cost_cents: priceCents,
-      total_credits_cents: creditsCents
-    }
-  }
-}
-
-const STANDARD_ANNUAL_PLAN = annualPlan(
-  'standard-annual',
-  'STANDARD',
-  19_200,
-  4_200
-)
-const CREATOR_ANNUAL_PLAN = annualPlan(
-  'creator-annual',
-  'CREATOR',
-  33_600,
-  7_400
-)
-const PRO_ANNUAL_PLAN = annualPlan('pro-annual', 'PRO', 96_000, 21_100)
+const STANDARD_ANNUAL_PLAN = createPlan({
+  slug: 'standard-annual',
+  tier: 'STANDARD',
+  duration: 'ANNUAL',
+  priceCents: 19_200,
+  monthlyCredits: 4_200
+})
+const CREATOR_ANNUAL_PLAN = createPlan({
+  slug: 'creator-annual',
+  tier: 'CREATOR',
+  duration: 'ANNUAL',
+  priceCents: 33_600,
+  monthlyCredits: 7_400
+})
+const PRO_ANNUAL_PLAN = createPlan({
+  slug: 'pro-annual',
+  tier: 'PRO',
+  duration: 'ANNUAL',
+  priceCents: 96_000,
+  monthlyCredits: 21_100
+})
 
 const ACTIVE_STANDARD_STATUS = {
   is_active: true,
@@ -94,8 +67,10 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -145,10 +120,8 @@ interface RailRoutes {
   readonly previewRequests: Request[]
   readonly opsRequests: Request[]
   readonly cancelRequests: Request[]
-  readonly topupRequests: Request[]
   readonly statusRequests: Request[]
   readonly memberRemovals: Request[]
-  /** Every URL the app asked the browser to open, in order. */
   openedUrls: () => Promise<string[]>
 }
 
@@ -168,19 +141,27 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
     previewRequests: [] as Request[],
     opsRequests: [] as Request[],
     cancelRequests: [] as Request[],
-    topupRequests: [] as Request[],
     statusRequests: [] as Request[],
     memberRemovals: [] as Request[]
   }
 
-  // Recorded rather than performed: a hosted page is an external origin, and
-  // the truthy return keeps the popup-blocked fallback out of these rows.
   await page.addInitScript(() => {
     const opened: string[] = []
     Object.defineProperty(window, '__openedUrls', { get: () => opened })
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? {
+              set href(destination: string) {
+                opened.push(destination)
+              }
+            }
+          : Reflect.get(target, property),
+      set: () => true
+    })
     window.open = (url?: string | URL) => {
-      opened.push(String(url))
-      return window
+      if (url) opened.push(String(url))
+      return standInTab
     }
   })
 
@@ -193,14 +174,8 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
         is_original_owner: true
       })
     ],
-    features: SUBSCRIPTION_RAIL_ONLY,
+    features: RAIL_FEATURES,
     billingCapabilities: createWorkspaceBillingCapabilities(setup.workspace)
-  })
-  // The handshake is the fallback channel; seeding it too keeps the two
-  // channels agreeing, so neither alone is what the rows rest on.
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: true,
-    billing_sdk_topup_enabled: false
   })
 
   await page.route('**/api/settings', (route) =>
@@ -248,18 +223,6 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
       jsonRoute({ billing_op_id: OPERATION_ID, status: 'pending' })
     )
   })
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
-    routes.topupRequests.push(route.request())
-    return route.fulfill(
-      jsonRoute({
-        billing_op_id: 'op-e2e-topup',
-        topup_id: 'topup-e2e',
-        status: 'completed',
-        amount_cents: 5_000
-      } satisfies CreateTopupResponse)
-    )
-  })
   await page.route('**/api/billing/ops/**', (route) => {
     routes.opsRequests.push(route.request())
     return route.fulfill(jsonRoute(setup.operation?.() ?? SETTLED_OPERATION))
@@ -282,11 +245,6 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
 /** The SDK transport sends this header; the legacy axios client never does. */
 function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
-}
-
-/** Which transport issued the request, and so which rail served it. */
-function transport(request: Request): string {
-  return request.resourceType()
 }
 
 /** Settings ▸ Workspace ▸ Plan & Credits. */
@@ -312,7 +270,15 @@ async function returnToTab(page: Page) {
 const successHeading = (page: Page) =>
   page.getByRole('heading', { name: "You're all set" })
 
+const PROCESSING_OPERATION = {
+  id: OPERATION_ID,
+  status: 'pending',
+  started_at: '2026-09-21T00:00:00Z'
+} satisfies BillingOpStatusResponse
+
 test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('moves a team plan to a personal plan through the SDK transport', async ({
     page
   }) => {
@@ -338,20 +304,20 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await cloudAppExpect(successHeading(page)).toBeVisible()
     expect(routes.subscribeRequests).toHaveLength(1)
     const [issued] = routes.subscribeRequests
-    expect(transport(issued)).toBe('fetch')
+    expect(billingClient(issued)).toBe('sdk')
     expect(idempotencyKey(issued)).toBeTruthy()
     expect(issued.postDataJSON()).toMatchObject({
       plan_slug: 'creator-annual',
       idempotency_key: idempotencyKey(issued)
     })
     expect(routes.previewRequests.length).toBeGreaterThan(0)
-    expect(routes.previewRequests.map(transport)).not.toContain('xhr')
-    // The owner is the only member, so nothing is removed before billing.
+    expect(routes.previewRequests.map(billingClient)).not.toContain('legacy')
     expect(routes.memberRemovals).toHaveLength(0)
   })
 
   test('opens the hosted payment page once for a parked subscribe, and settles when the operation succeeds', async ({
-    page
+    page,
+    toast
   }) => {
     let operation: BillingOpStatusResponse = PARKED_OPERATION
     const routes = await setupRail(page, {
@@ -378,9 +344,11 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     await expect.poll(() => routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
-    expect(transport(routes.subscribeRequests[0])).toBe('fetch')
+    expect(billingClient(routes.subscribeRequests[0])).toBe('sdk')
+    await expect(
+      toast.withText('Verify your payment to finish setting up your workspace')
+    ).toBeVisible()
 
-    // A poll that still reports the same parked step must not offer it again.
     const pollsBefore = routes.opsRequests.length
     await returnToTab(page)
     await expect
@@ -395,40 +363,45 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await expect(successHeading(page)).toBeVisible()
     expect(await routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
-    expect(routes.opsRequests.map(transport)).not.toContain('xhr')
+    expect(routes.opsRequests.map(billingClient)).not.toContain('legacy')
   })
 
-  test('keeps each write on its own rail when only the subscription rail is on', async ({
-    page
+  test('shows the progress toast while a subscribe processes, and clears it when it settles', async ({
+    page,
+    toast
   }) => {
-    const routes = await setupRail(page, {
+    let operation: BillingOpStatusResponse = PROCESSING_OPERATION
+    await setupRail(page, {
       workspace: workspace('personal', 'owner'),
-      billingStatus: () => ACTIVE_STANDARD_STATUS
+      billingStatus: () => ACTIVE_STANDARD_STATUS,
+      plans: {
+        current_plan_slug: 'standard-annual',
+        plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN]
+      },
+      preview: quote('upgrade', CREATOR_ANNUAL_PLAN),
+      subscribeResponse: {
+        billing_op_id: OPERATION_ID,
+        status: 'pending_payment'
+      },
+      operation: () => operation
     })
-    await page.goto(APP_URL)
-    await waitForCloudApp(page)
 
-    const cancelDialog = new CancelSubscriptionDialog(page)
-    await cancelDialog.open('2099-02-20T00:00:00Z')
-    await cancelDialog.confirmCancelButton.click()
-    await expect(cancelDialog.root).toBeHidden()
+    await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
+    await cloudAppExpect(
+      page.getByRole('heading', { name: 'Confirm your upgrade' })
+    ).toBeVisible()
+    await page.getByRole('button', { name: 'Confirm upgrade' }).click()
 
-    const topUp = new TopUpCreditsDialog(page)
-    await topUp.open()
-    await topUp.root
-      .getByRole('button', { name: 'Add credits', exact: true })
-      .click()
-    await topUp.root.getByRole('button', { name: 'Pay $50.00' }).click()
+    const progressToast = toast.withText(
+      'Processing payment — setting up your workspace...'
+    )
+    await expect(progressToast).toBeVisible()
 
-    await expect.poll(() => routes.topupRequests.length).toBe(1)
-    expect(routes.cancelRequests).toHaveLength(1)
-    const [cancel] = routes.cancelRequests
-    expect(transport(cancel)).toBe('fetch')
-    expect(idempotencyKey(cancel)).toBeTruthy()
-    const [topup] = routes.topupRequests
-    expect(transport(topup)).toBe('xhr')
-    expect(idempotencyKey(topup)).toBeUndefined()
-    expect(topup.postDataJSON()).not.toHaveProperty('idempotency_key')
+    operation = SETTLED_OPERATION
+    await returnToTab(page)
+
+    await expect(successHeading(page)).toBeVisible()
+    await expect(progressToast).toBeHidden()
   })
 
   test('shows the server end date for a cancelled plan after a reload', async ({
@@ -454,9 +427,8 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     const cancelDialog = new CancelSubscriptionDialog(page)
     await cancelDialog.open('2099-03-15T10:00:00Z')
-    await cancelDialog.confirmCancelButton.click()
-    await expect(cancelDialog.root).toBeHidden()
-    expect(transport(routes.cancelRequests[0])).toBe('fetch')
+    await cancelDialog.confirmCancel()
+    expect(billingClient(routes.cancelRequests[0])).toBe('sdk')
 
     const statusReadsBeforeReload = routes.statusRequests.length
     await page.reload()
@@ -469,6 +441,6 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
       statusReadsBeforeReload
     )
     expect(readsAfterReload.length).toBeGreaterThan(0)
-    expect(readsAfterReload.map(transport)).not.toContain('xhr')
+    expect(readsAfterReload.map(billingClient)).not.toContain('legacy')
   })
 })

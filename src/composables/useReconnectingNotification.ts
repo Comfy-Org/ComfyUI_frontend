@@ -1,9 +1,10 @@
 import { useDocumentVisibility, useTimeoutFn } from '@vueuse/core'
-import type { ToastMessageOptions } from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { createToastId } from '@/types/toastId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const RECONNECT_TOAST_DELAY_MS = 2000
@@ -15,19 +16,15 @@ export function useReconnectingNotification() {
   const { t } = useI18n()
   const toast = useToast()
   const settingStore = useSettingStore()
+  const { handleSignOut, onUserLogout } = useCurrentUser()
 
-  const reconnectingMessage: ToastMessageOptions = {
-    severity: 'error',
-    summary: t('g.reconnecting')
-  }
-
-  const reconnectingToastShown = ref(false)
   const toastDelayMs = ref(RECONNECT_TOAST_DELAY_MS)
+  const reconnectingToastId = createToastId()
+  const sessionRevokedToastId = createToastId()
 
   const { start, stop, isPending } = useTimeoutFn(
     () => {
-      toast.add(reconnectingMessage)
-      reconnectingToastShown.value = true
+      toast.error(t('g.reconnecting'), { id: reconnectingToastId })
     },
     toastDelayMs,
     { immediate: false }
@@ -51,6 +48,8 @@ export function useReconnectingNotification() {
     if (isPending.value) start()
   })
 
+  onUserLogout(() => toast.dismiss(sessionRevokedToastId))
+
   function onReconnecting() {
     if (settingStore.get('Comfy.Toast.DisableReconnectingToast')) return
     start()
@@ -58,17 +57,21 @@ export function useReconnectingNotification() {
 
   function onReconnected() {
     stop()
+    toast.dismiss(sessionRevokedToastId)
 
-    if (reconnectingToastShown.value) {
-      toast.remove(reconnectingMessage)
-      toast.add({
-        severity: 'success',
-        summary: t('g.reconnected'),
-        life: 2000
-      })
-      reconnectingToastShown.value = false
+    if (toast.dismiss(reconnectingToastId)) {
+      toast.success(t('g.reconnected'), { duration: 2000 })
     }
   }
 
-  return { onReconnecting, onReconnected }
+  function onRevokedSocketEnded() {
+    stop()
+    toast.dismiss(reconnectingToastId)
+    toast.error(t('g.sessionRevoked'), {
+      id: sessionRevokedToastId,
+      action: { label: t('auth.signOut.signOut'), onClick: handleSignOut }
+    })
+  }
+
+  return { onReconnecting, onReconnected, onRevokedSocketEnded }
 }

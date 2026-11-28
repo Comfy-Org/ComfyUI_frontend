@@ -1,5 +1,6 @@
 import { isCloud } from '@/platform/distribution/types'
-import { reportError } from '@/platform/telemetry/reportError'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 const REPLAY_KEY = 'Comfy.OnboardingReplay'
 
@@ -14,6 +15,7 @@ function reportStorageError(
   operation: 'writing' | 'reading' | 'clearing'
 ) {
   reportError(error, {
+    surface: 'platform',
     errorType: `error_${operation}_onboarding_replay_request`
   })
 }
@@ -31,13 +33,10 @@ function isReplayRequest(value: unknown): value is ReplayRequest {
 }
 
 function writeReplayRequest(request: ReplayRequest): boolean {
-  try {
-    sessionStorage.setItem(REPLAY_KEY, JSON.stringify(request))
-    return true
-  } catch (error) {
-    reportStorageError(error, 'writing')
-    return false
-  }
+  const outcome = safeSessionStorage.write(REPLAY_KEY, JSON.stringify(request))
+  if (outcome.result === 'ok') return true
+  reportStorageError(outcome.error, 'writing')
+  return false
 }
 
 function readReplayRequest(
@@ -45,11 +44,11 @@ function readReplayRequest(
 ): ReplayRequest | undefined {
   if (ownerId === undefined) return
   try {
-    const stored = sessionStorage.getItem(REPLAY_KEY)
+    const stored = safeSessionStorage.getItem(REPLAY_KEY)
     if (stored === null) return
     const request: unknown = JSON.parse(stored)
     if (!isReplayRequest(request) || request.ownerId !== ownerId) {
-      sessionStorage.removeItem(REPLAY_KEY)
+      safeSessionStorage.removeItem(REPLAY_KEY)
       return
     }
     return request
@@ -65,11 +64,9 @@ function consumeReplayRequest(
   const request = readReplayRequest(ownerId)
   if (!request) return
   const next = { ...request, [gate]: false }
-  try {
-    sessionStorage.setItem(REPLAY_KEY, JSON.stringify(next))
-  } catch (error) {
-    reportStorageError(error, 'clearing')
-  }
+  const outcome = safeSessionStorage.write(REPLAY_KEY, JSON.stringify(next))
+  if (outcome.result === 'ok') return
+  reportStorageError(outcome.error, 'clearing')
 }
 
 export function isSurveyReplayRequested(ownerId: string | undefined): boolean {
@@ -104,7 +101,7 @@ export function consumeFirstRunReplayRequest(
 
 export function requestOnboardingReplay(ownerId: string | undefined): boolean {
   if (!isCloud) return true
-  if (ownerId === undefined) return false
+  if (ownerId === undefined || !safeSessionStorage.isPersistent) return false
   return writeReplayRequest({
     ownerId,
     survey: true,
@@ -113,10 +110,8 @@ export function requestOnboardingReplay(ownerId: string | undefined): boolean {
 }
 
 export function clearOnboardingReplay(ownerId?: string): void {
-  try {
-    sessionStorage.removeItem(REPLAY_KEY)
-  } catch (error) {
-    reportStorageError(error, 'clearing')
-    if (ownerId) writeReplayRequest({ ownerId, survey: false, firstRun: false })
-  }
+  const removal = safeSessionStorage.remove(REPLAY_KEY)
+  if (removal.ok) return
+  reportStorageError(removal.error, 'clearing')
+  if (ownerId) writeReplayRequest({ ownerId, survey: false, firstRun: false })
 }

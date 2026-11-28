@@ -34,21 +34,29 @@ describe('WidgetVisibilitySource', () => {
 
 describe('deriveWidgetSurfaces', () => {
   it.for([
-    [{ type: 'number' }, ['shown', 'shown', 'shown']],
+    ['plain number', { type: 'number' }, ['shown', 'shown', 'shown']],
     [
+      'number with options.advanced',
       { type: 'number', options: { advanced: true } },
       ['shown', 'advanced', 'advanced']
     ],
-    [{ type: 'number', advanced: true }, ['advanced', 'advanced', 'advanced']],
     [
+      'number with advanced',
+      { type: 'number', advanced: true },
+      ['advanced', 'advanced', 'advanced']
+    ],
+    [
+      'combo with canvasOnly',
       { type: 'combo', options: { canvasOnly: true } },
       ['shown', 'never', 'never']
     ],
     [
+      'text with hideInPanel',
       { type: 'text', options: { hideInPanel: true } },
       ['shown', 'shown', 'never']
     ],
     [
+      'text with explicit surfaces',
       {
         type: 'text',
         options: {
@@ -58,6 +66,7 @@ describe('deriveWidgetSurfaces', () => {
       ['shown', 'shown', 'never']
     ],
     [
+      'combo with canvasOnly and explicit surfaces',
       {
         type: 'combo',
         options: {
@@ -67,7 +76,7 @@ describe('deriveWidgetSurfaces', () => {
       },
       ['shown', 'shown', 'never']
     ]
-  ] as const)('applies surface policy for %o', ([widget, expected]) => {
+  ] as const)('applies surface policy for %s', ([, widget, expected]) => {
     const surfaces = deriveWidgetSurfaces(widget)
     expect(WIDGET_SURFACES.map((surface) => surfaces[surface])).toEqual(
       expected

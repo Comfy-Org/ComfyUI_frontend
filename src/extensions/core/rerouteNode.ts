@@ -4,15 +4,18 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
-import { app } from '../../scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Node that allows you to redirect connections for cleaner graphs
 
-app.registerExtension({
+export const rerouteNodeExtension: ComfyExtension = {
   name: 'Comfy.RerouteNode',
   registerCustomNodes() {
     interface RerouteNode extends LGraphNode {
@@ -56,7 +59,7 @@ app.registerExtension({
       ) {
         const { graph } = this
         if (!graph) return
-        if (app.configuringGraph) return
+        if (useApp().configuringGraph) return
 
         // Prevent multiple connections to different types when we have no input
         if (connected && type === LiteGraph.OUTPUT) {
@@ -115,7 +118,7 @@ app.registerExtension({
           }
         }
 
-        const displayType = inputType || outputType || '*'
+        const displayType = slotTypeKey(inputType || outputType || '*')
         const color = LGraphCanvas.link_type_colors[displayType]
 
         let widgetConfig
@@ -189,7 +192,7 @@ app.registerExtension({
                 this.outputs[0].name = ''
               }
               this.setSize(this.computeSize())
-              app.canvas.setDirty(true, true)
+              useApp().canvas.setDirty(true, true)
             }
           },
           {
@@ -221,16 +224,19 @@ app.registerExtension({
       static setDefaultTextVisibility(visible: boolean) {
         RerouteNode.defaultVisibility = visible
         if (visible) {
-          localStorage['Comfy.RerouteNode.DefaultVisibility'] = 'true'
+          safeLocalStorage.setItem(
+            'Comfy.RerouteNode.DefaultVisibility',
+            'true'
+          )
         } else {
-          delete localStorage['Comfy.RerouteNode.DefaultVisibility']
+          safeLocalStorage.removeItem('Comfy.RerouteNode.DefaultVisibility')
         }
       }
     }
 
     // Load default visibility
     RerouteNode.setDefaultTextVisibility(
-      !!localStorage['Comfy.RerouteNode.DefaultVisibility']
+      !!safeLocalStorage.getItem('Comfy.RerouteNode.DefaultVisibility')
     )
 
     function findRootInput(start: RerouteNode, graph: LGraph) {
@@ -272,4 +278,4 @@ app.registerExtension({
 
     RerouteNode.category = 'utilities'
   }
-})
+}

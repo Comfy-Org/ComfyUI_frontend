@@ -1,4 +1,4 @@
-import type { IMarkdownWidget } from '../types/widgets'
+import type { IMarkdownWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

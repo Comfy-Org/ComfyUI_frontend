@@ -1,11 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  extractWorkflow,
-  fetchJobDetail
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { JobDetail } from '@comfyorg/api-client/jobTypes'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { extractWorkflow, fetchJobDetail } from '@comfyorg/api-client/fetchJobs'
 
 const mockWorkflow: ComfyWorkflowJSON = {
   last_node_id: 5,
@@ -51,7 +48,9 @@ describe('fetchJobDetail', () => {
 
     await fetchJobDetail(mockFetchApi, 'test-job-id')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/jobs/test-job-id')
+    expect(mockFetchApi).toHaveBeenCalledWith('/jobs/test-job-id', {
+      signal: undefined
+    })
   })
 
   it('should return job detail with workflow and outputs', async () => {

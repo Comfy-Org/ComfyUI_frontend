@@ -1,7 +1,7 @@
-import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
+import type { PositionedRect as Positioned } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
-import type { Point as LGPoint } from '@/lib/litegraph/src/interfaces'
 import {
   RENDER_SCALE_FACTOR,
   getGraphRenderAnchor,
@@ -10,11 +10,6 @@ import {
 } from '@/renderer/core/layout/transform/graphRenderTransform'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-
-interface Positioned {
-  pos: LGPoint
-  size: LGPoint
-}
 
 /**
  * One-time legacy normalizer for workflows saved with Vue-scaled coordinates.
@@ -31,7 +26,7 @@ interface Positioned {
  * @param targetGraph - The graph to normalize.
  */
 export function ensureCorrectLayoutScale(
-  rendererVersion: RendererType | undefined,
+  rendererVersion: LGraphExtra['workflowRendererVersion'],
   graph: LGraph
 ): boolean {
   const currentRenderer = graph.extra.workflowRendererVersion

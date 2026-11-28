@@ -1,25 +1,22 @@
-import type {
-  HubWorkflowDetail,
-  ImportPublishedAssetsRequest,
-  AssetInfo
-} from '@comfyorg/ingest-types'
+import type { HubWorkflowDetail, AssetInfo } from '@comfyorg/ingest-types'
 import { zGetHubWorkflowResponse } from '@comfyorg/ingest-types/zod'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import type {
   PublishPrefill,
   SharedWorkflowPayload,
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   zPublishRecordResponse,
   zSharedWorkflowResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 class SharedWorkflowLoadError extends Error {
   readonly status: number | null
@@ -240,10 +237,10 @@ export function useWorkflowShareService() {
   async function getShareableAssets(
     includingPublic = false
   ): Promise<AssetInfo[]> {
-    if (!app.isGraphReady) return []
+    if (!useApp().isGraphReady) return []
 
-    const graph = app.rootGraph
-    const { output } = await app.graphToPrompt(graph)
+    const graph = useApp().rootGraph
+    const { output } = await useApp().graphToPrompt(graph)
     const { assets } = await api.getShareableAssets(output)
 
     return includingPublic ? assets : assets.filter((asset) => !asset.public)
@@ -280,19 +277,15 @@ export function useWorkflowShareService() {
     assetIds: string[],
     shareId?: string
   ): Promise<void> {
-    const body: ImportPublishedAssetsRequest = {
+    const result = await assetService.importPublishedAssets({
       published_asset_ids: assetIds,
       ...(shareId ? { share_id: shareId } : {})
-    }
-
-    const response = await api.fetchApi('/assets/import', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
     })
 
-    if (!response.ok) {
-      throw new Error(`Failed to import assets: ${response.status}`)
+    if (!result.ok) {
+      throw new Error(
+        `Failed to import assets: ${result.status ?? 'network error'}`
+      )
     }
 
     await useAssetsStore().inputAssets.invalidate()

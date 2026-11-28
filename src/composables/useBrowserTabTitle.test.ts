@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
@@ -52,6 +53,14 @@ describe('useBrowserTabTitle', () => {
     const scope = effectScope()
     scope.run(() => useBrowserTabTitle())
     expect(document.title).toBe('ComfyUI')
+    scope.stop()
+  })
+
+  it('falls back to the document title present when the composable starts', () => {
+    document.title = 'Comfy Cloud'
+    const scope = effectScope()
+    scope.run(() => useBrowserTabTitle())
+    expect(document.title).toBe('Comfy Cloud')
     scope.stop()
   })
 
@@ -202,5 +211,47 @@ describe('useBrowserTabTitle', () => {
     await nextTick()
     expect(document.title).toBe('[40%][2 nodes running]')
     scope.stop()
+  })
+
+  describe('when a feature sets a title prefix', () => {
+    it('prefixes the title until the feature clears it', async () => {
+      workflowStore.activeWorkflow = fromPartial<
+        NonNullable<typeof workflowStore.activeWorkflow>
+      >({ filename: 'myFlow', isModified: false, isPersisted: true })
+      const titleStore = useBrowserTabTitleStore()
+      const scope = effectScope()
+      scope.run(() => useBrowserTabTitle())
+
+      titleStore.setPrefix('feature', 'Input needed')
+      await nextTick()
+      expect(document.title).toBe('[Input needed] myFlow - ComfyUI')
+
+      titleStore.setPrefix('feature', null)
+      await nextTick()
+      expect(document.title).toBe('myFlow - ComfyUI')
+      scope.stop()
+    })
+
+    it('puts the prefix before execution progress', async () => {
+      Object.assign(executionStore, { isIdle: false, executionProgress: 0.4 })
+      executionStore.nodeProgressStates = {
+        '1': {
+          state: 'running',
+          value: 5,
+          max: 10,
+          node_id: '1',
+          prompt_id: 'test'
+        }
+      }
+      Object.assign(executionStore, {
+        executingNode: { type: 'Foo', title: 'Foo' }
+      })
+      useBrowserTabTitleStore().setPrefix('feature', 'Input needed')
+      const scope = effectScope()
+      scope.run(() => useBrowserTabTitle())
+      await nextTick()
+      expect(document.title).toBe('[Input needed] [40%][50%] Foo')
+      scope.stop()
+    })
   })
 })

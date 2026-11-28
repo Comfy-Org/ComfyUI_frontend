@@ -1,13 +1,13 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { Mock } from 'vitest'
 
 let mockInvalidateInputs: Mock<
@@ -48,6 +48,12 @@ function createMockNode(): LGraphNode {
 
 function createFile(name = 'test.png', type = 'image/png'): File {
   return new File(['data'], name, { type })
+}
+
+const TWO_AND_A_HALF_MIB = 2_621_440
+
+function createFileOfBytes(name: string, bytes: number): File {
+  return new File([new Uint8Array(bytes)], name, { type: 'image/png' })
 }
 
 function successResponse(name: string, subfolder?: string) {
@@ -104,6 +110,15 @@ describe('useNodeImageUpload', () => {
     })
   })
 
+  it('budgets a single direct upload by its own size', async () => {
+    const { handleUpload } = useNodeImageUpload(node, { onUploadComplete })
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('a.png'))
+
+    await handleUpload(createFileOfBytes('a.png', TWO_AND_A_HALF_MIB))
+
+    expect(vi.mocked(api.fetchApi).mock.calls[0][1]?.timeoutMs).toBe(130_000)
+  })
+
   it.for([
     { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
     { mediaType: 'video', filename: 'clip.mp4', mimeType: 'video/mp4' }
@@ -156,10 +171,54 @@ describe('useNodeImageUpload', () => {
     invalidateResolve()
     await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/upload/image',
-      expect.objectContaining({ timeoutMs: 120_000 })
+  })
+
+  it('gives each concurrent upload in a drop the response timeout of the whole batch', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () =>
+      successResponse('a.png')
     )
+
+    await capturedDragOnDrop([
+      createFileOfBytes('a.png', TWO_AND_A_HALF_MIB),
+      createFileOfBytes('b.png', TWO_AND_A_HALF_MIB)
+    ])
+
+    expect(
+      vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.timeoutMs)
+    ).toEqual([140_000, 140_000])
+  })
+
+  describe('when the server stalls', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, init) =>
+          new Promise((_resolve, reject) =>
+            setTimeout(
+              () => reject(new DOMException('Fetch timeout', 'TimeoutError')),
+              init?.timeoutMs ?? undefined
+            )
+          )
+      )
+    })
+
+    it('waits out the batch budget, then reports a timeout and frees the node', async () => {
+      const drop = capturedDragOnDrop([
+        createFileOfBytes('a.png', TWO_AND_A_HALF_MIB),
+        createFileOfBytes('b.png', TWO_AND_A_HALF_MIB)
+      ])
+
+      await vi.advanceTimersByTimeAsync(139_999)
+      expect(node.isUploading).toBe(true)
+      expect(useToast().warning).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(await drop).toEqual([])
+      expect(node.isUploading).toBe(false)
+      expect(useToast().warning).toHaveBeenCalledTimes(2)
+      expect(useToast().warning).toHaveBeenCalledWith('g.uploadTimedOut')
+      expect(onUploadError).toHaveBeenCalledOnce()
+    })
   })
 
   it('includes subfolder in returned path', async () => {
@@ -186,9 +245,7 @@ describe('useNodeImageUpload', () => {
     await capturedDragOnDrop([createFile()])
 
     expect(t).toHaveBeenCalledWith('g.uploadFileTooLarge')
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.uploadFileTooLarge'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadFileTooLarge')
   })
 
   it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
@@ -214,6 +271,19 @@ describe('useNodeImageUpload', () => {
     })
   })
 
+  it('shows a localized upload-failed toast when the upload throws', async () => {
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', {
+      reason: 'Network error'
+    })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'warning', title: 'g.uploadFailed' })
+    ])
+  })
+
   it('resets isUploading even when upload fails', async () => {
     vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
 
@@ -233,9 +303,7 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
-      'g.uploadAlreadyInProgress'
-    )
+    expect(useToast().warning).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
 
     await first
   })

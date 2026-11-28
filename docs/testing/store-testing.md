@@ -14,11 +14,19 @@ This guide covers patterns and examples for testing Pinia stores in the ComfyUI 
 
 ## Setting Up Store Tests
 
-`vitest.setup.ts` already installs a fresh testing Pinia
+For sequential frontend tests, `vitest.setup.ts` installs a fresh testing Pinia
 (`createTestingPinia({ stubActions: false })`) before every test and disposes it
-afterwards. Do **not** create your own — the `comfy/use-global-pinia` oxlint
+afterwards. Do **not** create your own. The `comfy/use-global-pinia` oxlint
 rule fails any test file that imports `createPinia`/`createTestingPinia` or
-mocks `pinia`/`@pinia/testing`. Just call the store composable:
+mocks `pinia`/`@pinia/testing`.
+
+Audited concurrent store tests use the per-test `pinia` fixture from
+`@/testing/pinia` in the `isolated-stores` project. See
+[selective concurrency](../guidance/vitest.md#own-setup-resources-and-test-teardown)
+for eligibility and migration instructions. That fixture uses real actions,
+without the automatic spies provided by frontend setup.
+
+In sequential frontend tests, call the store composable:
 
 ```typescript
 // Example from a colocated store unit test

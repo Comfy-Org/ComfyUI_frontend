@@ -12,9 +12,9 @@ import type {
   ISerialisedGraph,
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/serialisation'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Pins the remint→remap contract for serialized link endpoints (ADR-ECS-0008,

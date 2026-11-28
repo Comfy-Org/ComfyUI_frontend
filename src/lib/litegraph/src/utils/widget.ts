@@ -1,10 +1,8 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
@@ -79,11 +77,22 @@ function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
   )
 }
 
+export function prefersDOMElement(widget: Readonly<IBaseWidget>): boolean {
+  return (
+    isDOMBackedWidget(widget) &&
+    'element' in widget &&
+    !!widget.element &&
+    !(
+      'vueNodeRenderer' in widget.options &&
+      widget.options.vueNodeRenderer === 'native'
+    )
+  )
+}
+
 export function deriveWidgetRenderState(
   widget: Readonly<IBaseWidget>
 ): WidgetRenderState {
   return {
-    hasLayoutSize: typeof widget.computeLayoutSize === 'function',
     isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip
   }

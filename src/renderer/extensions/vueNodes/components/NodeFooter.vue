@@ -1,7 +1,7 @@
 <template>
-  <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -9,17 +9,16 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none pt-9 pb-3',
+          errorColorClass,
           errorRadiusClass
         )
       "
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('openErrors')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
-      </div>
+      <span class="truncate">{{ errorLabel }}</span>
+      <i class="icon-[lucide--info]" />
     </Button>
 
     <Button
@@ -28,7 +27,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -36,14 +35,11 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('enterSubgraph')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.enter') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
-      </div>
+      <span class="truncate">{{ t('g.enter') }}</span>
+      <i class="icon-[comfy--workflow]" />
     </Button>
   </div>
 
-  <!-- Case 1b: Advanced + Error (Dual Tabs, Regular Nodes) -->
   <div
     v-else-if="
       !isSubgraph &&
@@ -51,6 +47,7 @@
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
     "
+    data-part="node-footer"
     :class="errorWrapperStyles"
   >
     <Button
@@ -58,17 +55,16 @@
       :class="
         cn(
           tabStyles,
-          'z-10 box-border w-1/2 rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
+          'z-10 box-border w-1/2 rounded-none pt-9 pb-3',
+          errorColorClass,
           errorRadiusClass
         )
       "
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('openErrors')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
-      </div>
+      <span class="truncate">{{ errorLabel }}</span>
+      <i class="icon-[lucide--info]" />
     </Button>
 
     <Button
@@ -77,7 +73,7 @@
       :class="
         cn(
           tabStyles,
-          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-component-header-surface pt-9 pb-3 pl-5 text-node-component-slot-text',
+          '-ml-5 box-border w-[calc(50%+20px)] rounded-none bg-node-header pt-9 pb-3 pl-5 text-inherit',
           enterRadiusClass
         )
       "
@@ -85,126 +81,103 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{
+      <span class="truncate">{{
+        showAdvancedState
+          ? t('rightSidePanel.hideAdvancedShort')
+          : t('rightSidePanel.showAdvancedShort')
+      }}</span>
+      <i
+        :class="
           showAdvancedState
-            ? t('rightSidePanel.hideAdvancedShort')
-            : t('rightSidePanel.showAdvancedShort')
-        }}</span>
-        <i
-          :class="
-            showAdvancedState
-              ? 'icon-[lucide--chevron-up] size-4 shrink-0'
-              : 'icon-[lucide--settings-2] size-4 shrink-0'
-          "
-        />
-      </div>
+            ? 'icon-[lucide--chevron-up]'
+            : 'icon-[lucide--settings-2]'
+        "
+      />
     </Button>
   </div>
 
-  <!-- Case 2: Error Only (Full Width) -->
-  <div
+  <Button
     v-else-if="hasAnyError && showErrorsTabEnabled"
-    :class="errorWrapperStyles"
+    data-part="node-footer"
+    variant="textonly"
+    :class="
+      cn(
+        footerWrapperBase,
+        '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        tabStyles,
+        'box-border rounded-none pt-9 pb-3',
+        errorColorClass,
+        footerRadiusClass
+      )
+    "
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('openErrors')"
   >
-    <Button
-      variant="textonly"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none bg-destructive-background pt-9 pb-3 text-white hover:bg-destructive-background-hover',
-          footerRadiusClass
-        )
-      "
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('openErrors')"
-    >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.error') }}</span>
-        <i class="icon-[lucide--info] size-4 shrink-0" />
-      </div>
-    </Button>
-  </div>
+    <span class="truncate">{{ errorLabel }}</span>
+    <i class="icon-[lucide--info]" />
+  </Button>
 
-  <!-- Case 3: Subgraph only (Full Width) -->
-  <div
+  <Button
     v-else-if="isSubgraph"
+    variant="textonly"
+    data-testid="subgraph-enter-button"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
-        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+        tabStyles,
+        'box-border w-full rounded-none bg-node-header text-inherit',
+        hasAnyError && '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
+        footerRadiusClass
       )
     "
+    :style="headerColorStyle"
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('enterSubgraph')"
   >
-    <Button
-      variant="textonly"
-      data-testid="subgraph-enter-button"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
-          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
-          footerRadiusClass
-        )
-      "
-      :style="headerColorStyle"
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('enterSubgraph')"
-    >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow] size-4 shrink-0" />
-      </div>
-    </Button>
-  </div>
+    <span class="truncate">{{ t('g.enterSubgraph') }}</span>
+    <i class="icon-[comfy--workflow]" />
+  </Button>
 
-  <!-- Case 4: Advanced Footer (Regular Nodes) -->
-  <div
+  <Button
     v-else-if="showAdvancedInputsButton || showAdvancedState"
+    variant="textonly"
+    data-testid="advanced-inputs-button"
+    data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
-        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+        tabStyles,
+        'box-border w-full rounded-none bg-node-header text-inherit',
+        hasAnyError && '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
+        footerRadiusClass
       )
     "
+    :style="headerColorStyle"
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('toggleAdvanced')"
   >
-    <Button
-      variant="textonly"
-      data-testid="advanced-inputs-button"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none bg-node-component-header-surface text-node-component-slot-text',
-          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
-          footerRadiusClass
-        )
-      "
-      :style="headerColorStyle"
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('toggleAdvanced')"
-    >
-      <div class="flex size-full items-center justify-center gap-2">
-        <template v-if="showAdvancedState">
-          <span class="truncate">{{
-            t('rightSidePanel.hideAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--chevron-up] size-4 shrink-0" />
-        </template>
-        <template v-else>
-          <span class="truncate">{{
-            t('rightSidePanel.showAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--settings-2] size-4 shrink-0" />
-        </template>
-      </div>
-    </Button>
-  </div>
+    <template v-if="showAdvancedState">
+      <span class="truncate">{{
+        t('rightSidePanel.hideAdvancedInputsButton')
+      }}</span>
+      <i class="icon-[lucide--chevron-up]" />
+    </template>
+    <template v-else>
+      <span class="truncate">{{
+        t('rightSidePanel.showAdvancedInputsButton')
+      }}</span>
+      <i class="icon-[lucide--settings-2]" />
+    </template>
+  </Button>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -213,7 +186,7 @@ const { t } = useI18n()
 
 interface Props {
   isSubgraph: boolean
-  hasAnyError: boolean
+  errorSeverity: 'none' | 'missing' | 'error'
   showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
   showAdvancedState?: boolean
@@ -223,7 +196,7 @@ interface Props {
 
 const {
   isSubgraph,
-  hasAnyError,
+  errorSeverity,
   showErrorsTabEnabled,
   showAdvancedInputsButton,
   showAdvancedState,
@@ -236,6 +209,16 @@ const emit = defineEmits<{
   openErrors: []
   toggleAdvanced: []
 }>()
+
+const hasAnyError = computed(() => errorSeverity !== 'none')
+const errorLabel = computed(() =>
+  t(errorSeverity === 'missing' ? 'rightSidePanel.errors' : 'g.error')
+)
+const errorColorClass = computed(() =>
+  errorSeverity === 'missing'
+    ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+    : 'bg-destructive text-white hover:bg-destructive/90'
+)
 
 let suppressNextClick = false
 
@@ -260,8 +243,8 @@ function getBottomRadius(
 ): string {
   if (nodeShape === RenderShape.BOX) return ''
   return nodeShape === RenderShape.CARD || corners === 'right'
-    ? 'rounded-br-xl'
-    : 'rounded-b-xl'
+    ? 'rounded-br-(--node-radius)'
+    : 'rounded-b-(--node-radius)'
 }
 
 const footerRadiusClass = computed(() => getBottomRadius(shape))
@@ -270,7 +253,7 @@ const errorRadiusClass = computed(() => getBottomRadius(shape))
 
 const enterRadiusClass = computed(() => getBottomRadius(shape, 'right'))
 
-const tabStyles = 'pointer-events-auto h-11 text-xs font-normal'
+const tabStyles = 'pointer-events-auto h-11 font-normal'
 const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
 const errorWrapperStyles = cn(
   footerWrapperBase,

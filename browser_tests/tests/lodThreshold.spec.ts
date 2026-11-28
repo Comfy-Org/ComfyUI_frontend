@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -148,48 +149,40 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     'Should show visual difference between LOD on and off',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      // Load a workflow with text-heavy nodes for clear visual difference
       await comfyPage.workflow.loadWorkflow('default')
 
-      // Set zoom level clearly below the threshold to ensure LOD activates
-      const targetZoom = 0.4 // Well below default threshold of ~0.571
+      const targetZoom = 0.4
 
-      // Zoom to target level
       await comfyPage.page.evaluate((zoom) => {
         window.app!.canvas.ds.scale = zoom
         window.app!.canvas.setDirty(true, true)
       }, targetZoom)
       await comfyPage.nextFrame()
 
-      // Wait for LOD to activate before taking screenshot
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => window.app!.canvas.low_quality)
         )
         .toBe(true)
 
-      // Take snapshot with LOD active (default 8px setting)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'lod-comparison-low-quality.png'
+      const region = await screenshotRegion(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs()
       )
+      await region.expectScreenshot('lod-comparison-low-quality.png')
 
-      // Disable LOD to see high quality at same zoom
       await comfyPage.settings.setSetting(
         'LiteGraph.Canvas.MinFontSizeForLOD',
         0
       )
 
-      // Wait for LOD to deactivate after setting change
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() => window.app!.canvas.low_quality)
         )
         .toBe(false)
 
-      // Take snapshot with LOD disabled (full quality at same zoom)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'lod-comparison-high-quality.png'
-      )
+      await region.expectScreenshot('lod-comparison-high-quality.png')
 
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))

@@ -7,7 +7,7 @@ import {
 import { delay } from 'es-toolkit'
 import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -35,6 +35,25 @@ const OFFLINE_GRACE_MS = 20_000
 /** How long a submitted run has to be accepted before the card stops promising. */
 const ACCEPT_DEADLINE_MS = 15_000
 
+type TourStartState =
+  | { phase: 'idle' }
+  | {
+      phase: 'claimed'
+      ownership: symbol
+      restoreRenderer: boolean
+    }
+  | {
+      phase: 'writingRenderer'
+      ownership: symbol
+      restoreRenderer: boolean
+      write: Promise<void>
+    }
+  | {
+      phase: 'previewing'
+      ownership: symbol
+      restoreRenderer: boolean
+    }
+
 function useFirstRunTourControllerInternal() {
   const engine = useOnboardingTourStore()
   const billing = useBillingContext()
@@ -46,6 +65,7 @@ function useFirstRunTourControllerInternal() {
   const desktopLayout = useBreakpoints(breakpointsTailwind).greaterOrEqual('md')
   const tourWorkflow = shallowRef<ComfyWorkflow | null>(null)
   const nudgeArmed = ref(false)
+  let tourStart: TourStartState = { phase: 'idle' }
   /** Only a tour walked to the end made a first result to be congratulated for. */
   const tourWasCompleted = ref(false)
 
@@ -199,7 +219,7 @@ function useFirstRunTourControllerInternal() {
       if (!(event.target instanceof Element)) return
       if (!event.target.closest(RUN_BUTTON_SELECTOR)) return
 
-      if (!billing.canRunWorkflows.value) {
+      if (billing.type.value !== 'unknown' && !billing.canRunWorkflows.value) {
         engine.postpone()
         return
       }
@@ -236,21 +256,126 @@ function useFirstRunTourControllerInternal() {
     nudgeArmed.value = false
   }
 
-  /** False when there is no tour to give; any renderer switch is undone. */
+  function ownsTourStart(ownership: symbol): boolean {
+    return tourStart.phase !== 'idle' && tourStart.ownership === ownership
+  }
+
+  function releaseTourStart(ownership: symbol): void {
+    if (!ownsTourStart(ownership)) return
+    engine.releaseTour('firstRun')
+    tourStart = { phase: 'idle' }
+  }
+
+  async function writeRenderer(
+    ownership: symbol,
+    enabled: boolean,
+    restoreRenderer: boolean
+  ): Promise<void> {
+    const write = settingStore.set('Comfy.VueNodes.Enabled', enabled)
+    const writingState: TourStartState = {
+      phase: 'writingRenderer',
+      ownership,
+      restoreRenderer,
+      write
+    }
+    tourStart = writingState
+    try {
+      await write
+    } finally {
+      if (tourStart === writingState) {
+        tourStart = { phase: 'claimed', ownership, restoreRenderer }
+      }
+    }
+  }
+
+  async function cleanUpFailedTourStart(
+    ownership: symbol,
+    shouldCancel: () => boolean
+  ) {
+    const currentStart = tourStart
+    if (currentStart.phase === 'idle' || currentStart.ownership !== ownership)
+      return
+    releaseFirstRunTargets()
+    tourWorkflow.value = null
+    const { restoreRenderer } = currentStart
+    if (restoreRenderer && shouldCancel()) {
+      engine.releaseTour('firstRun')
+      return
+    }
+    try {
+      if (restoreRenderer)
+        await writeRenderer(ownership, false, restoreRenderer)
+    } finally {
+      releaseTourStart(ownership)
+    }
+  }
+
+  function canBeginTour(shouldCancel: () => boolean): boolean {
+    const available =
+      !engine.activeTour ||
+      (engine.activeTour === 'firstRun' &&
+        !engine.tourStarted &&
+        tourStart.phase !== 'idle')
+    return !shouldCancel() && available && canvasContextHolds.value
+  }
+
+  async function claimTourStart(ownership: symbol): Promise<boolean> {
+    const previousStart = tourStart
+    const restoreRenderer =
+      previousStart.phase === 'idle'
+        ? !settingStore.get('Comfy.VueNodes.Enabled')
+        : previousStart.restoreRenderer
+
+    if (previousStart.phase === 'writingRenderer') {
+      tourStart = { ...previousStart, ownership }
+      await previousStart.write.catch(() => undefined)
+      if (ownsTourStart(ownership))
+        tourStart = { phase: 'claimed', ownership, restoreRenderer }
+    } else {
+      tourStart = { phase: 'claimed', ownership, restoreRenderer }
+    }
+    return restoreRenderer
+  }
+
+  async function claimRendererForTour(ownership: symbol): Promise<boolean> {
+    const restoreRenderer = await claimTourStart(ownership)
+    if (!ownsTourStart(ownership)) return restoreRenderer
+    if (restoreRenderer && !settingStore.get('Comfy.VueNodes.Enabled'))
+      await writeRenderer(ownership, true, restoreRenderer)
+    return restoreRenderer
+  }
+
+  async function cancelPendingStart(): Promise<void> {
+    const previousStart = tourStart
+    if (previousStart.phase === 'idle') return
+    const ownership = Symbol('cancelled-first-run-tour-start')
+    try {
+      const restoreRenderer = await claimTourStart(ownership)
+      if (
+        ownsTourStart(ownership) &&
+        restoreRenderer &&
+        settingStore.get('Comfy.VueNodes.Enabled')
+      )
+        await writeRenderer(ownership, false, restoreRenderer)
+    } finally {
+      releaseTourStart(ownership)
+    }
+  }
+
   async function beginTour(
     templateId?: string,
     shouldCancel: () => boolean = () => false
   ): Promise<boolean> {
-    if (engine.activeTour) return false
-    // Holds only ever end a tour that is already running, and only when they
-    // change — a context lost before the tour opens (`?template=X&mode=linear`
-    // boots straight into linear mode) never produces that change. Refused
-    // here, ahead of the renderer switch below, so nothing is left to undo.
-    if (!canvasContextHolds.value) return false
+    const ownership = Symbol('first-run-tour-start')
+    if (!canBeginTour(shouldCancel)) return false
 
-    const enabledForTour = !settingStore.get('Comfy.VueNodes.Enabled')
-    if (enabledForTour) await settingStore.set('Comfy.VueNodes.Enabled', true)
+    const restoreRenderer = await claimRendererForTour(ownership)
+    if (!ownsTourStart(ownership) || shouldCancel()) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      return false
+    }
 
+    tourStart = { phase: 'previewing', ownership, restoreRenderer }
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
     runState.value = 'idle'
     nudgeArmed.value = false
@@ -259,41 +384,34 @@ function useFirstRunTourControllerInternal() {
       () => firstRunTourSteps(templateId, runState),
       tourContextHolds
     )
-    // The tour is committed here, not at `startTour`: its steps are registered
-    // and the preview below is already its, undimmed on purpose. Reserving the
-    // run is what lets anything else see that — `activeTour` reads `null` over
-    // this window otherwise, and the canvas reads as free while it is spoken
-    // for. Given back below on every path that produces no tour.
-    engine.commitTour('firstRun')
-    let started = false
+    const alreadyCommitted =
+      engine.activeTour === 'firstRun' && !engine.tourStarted
+    if (!alreadyCommitted && !engine.commitTour('firstRun')) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      return false
+    }
     try {
       await delay(INTRO_PREVIEW_MS)
-      // The preview is long enough for the canvas to go away underneath it,
-      // and the holds watcher cannot catch that: the reservation is not a
-      // running tour for it to end.
-      const contextStillHolds = (): boolean => canvasContextHolds.value
-      started =
-        contextStillHolds() &&
+      const started =
+        ownsTourStart(ownership) &&
+        canvasContextHolds.value &&
         !shouldCancel() &&
         (await engine.startTour('firstRun'))
       if (!started) {
-        releaseFirstRunTargets()
-        tourWorkflow.value = null
-        if (enabledForTour)
-          await settingStore.set('Comfy.VueNodes.Enabled', false)
+        await cleanUpFailedTourStart(ownership, shouldCancel)
+      } else {
+        releaseTourStart(ownership)
       }
       return started
-    } finally {
-      // A reservation that outlives its `beginTour` is the dead-latch failure
-      // again: `activeTour` would name a tour that never opened for the rest
-      // of the page's life, withholding everything that waits on a free
-      // screen. Released here so a throw cannot leak one.
-      if (!started) engine.releaseTour('firstRun')
+    } catch (error) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      throw error
     }
   }
 
   return {
     beginTour,
+    cancelPendingStart,
     nudgeArmed: readonly(nudgeArmed),
     tourWasCompleted: readonly(tourWasCompleted),
     dismissNudge

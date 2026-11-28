@@ -4,7 +4,7 @@
  * Tests for edge cases, error handling, and boundary conditions in the subgraph system.
  * This covers unusual scenarios, invalid states, and stress testing.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 
@@ -24,15 +24,13 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     const sub1 = createTestSubgraph({ name: 'Sub1' })
     const sub2 = createTestSubgraph({ name: 'Sub2' })
 
-    // Create circular reference
     const node1 = createTestSubgraphNode(sub1, { id: 1 })
     const node2 = createTestSubgraphNode(sub2, { id: 2 })
 
-    // Current limitation: adding a circular reference overflows recursion depth.
     sub1.add(node2)
     expect(() => {
       sub2.add(node1)
-    }).toThrow(RangeError)
+    }).not.toThrow()
   })
 
   it('should handle deep nesting scenarios', () => {
@@ -49,14 +47,13 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     expect(firstLevel.isSubgraphNode()).toBe(true)
   })
 
-  it('should throw RangeError for self-referential subgraph', () => {
-    // Current limitation: creating self-referential subgraph instances overflows recursion depth.
+  it('should handle a self-referential subgraph without crashing', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
     const subgraphNode = createTestSubgraphNode(subgraph)
 
     expect(() => {
       subgraph.add(subgraphNode)
-    }).toThrow(RangeError)
+    }).not.toThrow()
   })
 
   it('should respect MAX_NESTED_SUBGRAPHS constant', () => {
@@ -82,11 +79,9 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeInput
     >[0]
 
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     subgraph.removeInput(fakeInput)
 
-    expect(consoleError).toHaveBeenCalledWith('Input not found')
+    expect(console.error).toHaveBeenCalledWith('Input not found')
     expect(subgraph.inputs).toHaveLength(0)
   })
 
@@ -100,11 +95,9 @@ describe('SubgraphEdgeCases - Invalid States', () => {
       typeof subgraph.removeOutput
     >[0]
 
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     subgraph.removeOutput(fakeOutput)
 
-    expect(consoleError).toHaveBeenCalledWith('Output not found')
+    expect(console.error).toHaveBeenCalledWith('Output not found')
     expect(subgraph.outputs).toHaveLength(0)
   })
 

@@ -228,4 +228,49 @@ describe('ImpactTelemetryProvider', () => {
       }
     ])
   })
+
+  it.for([
+    { name: 'with no API key', apiKeyUser: null },
+    {
+      name: 'over a stored API key',
+      apiKeyUser: { id: 'api-key-user-123', email: 'apikey@example.com' }
+    }
+  ])(
+    'identifies a session-only SSO user by the session user $name',
+    async ({ apiKeyUser }) => {
+      apiKeyAuthStore.currentUser = apiKeyUser && fromPartial(apiKeyUser)
+      Object.assign(authStore, {
+        sessionOnlyUser: { id: 'sso-user-123', email: 'SSO@example.com' }
+      })
+      vi.stubGlobal('crypto', {
+        subtle: {
+          digest: vi.fn(
+            async (_algorithm: AlgorithmIdentifier, data: BufferSource) => {
+              const digest = createHash('sha1')
+                .update(toUint8Array(data))
+                .digest()
+              return Uint8Array.from(digest).buffer
+            }
+          )
+        }
+      })
+
+      const provider = new ImpactTelemetryProvider()
+      provider.trackPageView('home', {
+        path: 'https://cloud.comfy.org/?im_ref=impact-123'
+      })
+
+      await flushAsyncWork()
+
+      expect(window.ire?.a?.[0]).toEqual([
+        'identify',
+        {
+          customerId: 'sso-user-123',
+          customerEmail: createHash('sha1')
+            .update('sso@example.com')
+            .digest('hex')
+        }
+      ])
+    }
+  )
 })

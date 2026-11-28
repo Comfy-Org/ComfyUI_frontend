@@ -1,61 +1,71 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { useHideLayoutField } from '@/types/widgetTypes'
+import { useHideLayoutField, useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { widget, rootClass } = defineProps<{
-  widget: Pick<
-    SimplifiedWidget<string | number | undefined>,
-    'name' | 'label' | 'borderStyle'
-  >
-  rootClass?: string
-  noBorder?: boolean
-}>()
+import WidgetLayoutFieldLabel from './WidgetLayoutFieldLabel.vue'
+
+const { widget, rootClass, valueText, inputId, fullWidthControl, noBorder } =
+  defineProps<{
+    widget: Pick<
+      SimplifiedWidget<string | number | undefined>,
+      'name' | 'label' | 'displayLabel' | 'borderStyle'
+    >
+    rootClass?: string
+    valueText?: string
+    inputId?: string
+    fullWidthControl?: boolean
+    noBorder?: boolean
+    fillWidth?: boolean
+  }>()
 
 const hideLayoutField = useHideLayoutField()
-const borderStyle = computed(() =>
-  cn(
-    'focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
-    widget.borderStyle
-  )
-)
 </script>
 
 <template>
   <div
     :class="
       cn(
-        'grid min-w-0 grid-cols-subgrid justify-between gap-2 text-node-component-slot-text',
+        'relative isolate flex min-w-0 items-center rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input focus-within:ring focus-within:ring-ring **:focus-visible:ring-0 **:focus-visible:outline-none',
+        fullWidthControl ? 'py-2' : useWidgetHeight(),
+        !noBorder && widget.borderStyle,
         rootClass
       )
     "
+    data-part="widget-field"
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
   >
+    <label
+      v-if="inputId && !hideLayoutField"
+      :for="inputId"
+      aria-hidden="true"
+      data-testid="widget-row-hit-area"
+      class="absolute inset-0 -z-10 cursor-[inherit]"
+    />
+    <slot name="leading" />
+    <WidgetLayoutFieldLabel
+      :widget
+      :input-id
+      :data-leading="$slots.leading ? '' : undefined"
+      :class="cn($slots.leading ? 'pl-2' : 'pl-3', fullWidthControl && 'z-10')"
+    />
+    <slot name="between" />
     <div
-      v-if="!hideLayoutField"
-      data-testid="widget-layout-field-label"
-      class="content-center-safe truncate"
+      :data-value="valueText"
+      :class="
+        cn(
+          'ml-auto grid min-w-0 shrink *:col-start-1 *:row-start-1 *:min-w-0',
+          fillWidth && 'flex-1',
+          valueText !== undefined &&
+            'before:invisible before:col-start-1 before:row-start-1 before:truncate before:pl-2 before:content-[attr(data-value)]',
+          valueText !== undefined &&
+            (fullWidthControl ? 'before:pr-2' : 'before:pr-7')
+        )
+      "
     >
-      <template v-if="widget.name">
-        {{ widget.label || widget.name }}
-      </template>
-    </div>
-    <!-- basis-full grow -->
-    <div class="relative min-w-0 flex-1">
-      <div
-        :class="
-          cn(
-            'min-w-0 cursor-default rounded-md transition-all',
-            !noBorder && borderStyle
-          )
-        "
-        @pointerdown.stop
-        @pointermove.stop
-        @pointerup.stop
-      >
-        <slot :border-style />
-      </div>
+      <slot :border-style="widget.borderStyle" />
     </div>
   </div>
 </template>

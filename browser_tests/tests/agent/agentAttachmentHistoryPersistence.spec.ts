@@ -5,6 +5,7 @@ import type { AgentMessage } from '@comfyorg/ingest-types'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   dropAssets,
   expectAssets
@@ -12,6 +13,7 @@ import {
 import type { ExpectedAssetPreview } from '@e2e/fixtures/utils/agentAttachmentHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // PM-1148 / PM-1409 / PM-717: an attached asset preview on a USER message
 // used to disappear after a browser refresh, while the same preview inside
@@ -92,20 +94,20 @@ for (const scenario of [
   test(
     `keeps ${scenario.name} after refresh and chat switching`,
     { tag: ['@cloud', '@ui'] },
-    async ({ page, promptHistory, workflowSelection }, testInfo) => {
+    async ({ page, promptHistory }, testInfo) => {
       const filenames = scenario.assets.map((asset) => asset.filename)
       let attachmentThreadId: string | undefined
 
       await page.route(
-        `**/view?filename=${firstImage.filename}&type=input`,
+        `**/view?filename=${firstImage.filename}&type=input*`,
         (route) => route.fulfill({ path: assetPath('image64x64.webp') })
       )
       await page.route(
-        `**/view?filename=${secondImage.filename}&type=input`,
+        `**/view?filename=${secondImage.filename}&type=input*`,
         (route) => route.fulfill({ path: assetPath('image32x32.webp') })
       )
       await page.route(
-        `**/view?filename=${video.filename}&type=input`,
+        `**/view?filename=${video.filename}&type=input*`,
         (route) =>
           route.fulfill({
             path: assetPath('workflowInMedia/workflow.mp4'),
@@ -162,35 +164,22 @@ for (const scenario of [
         return route.fulfill(jsonRoute(messages))
       })
 
-      await page
-        .getByRole('button', {
-          name: enMessages.agent.entryButton,
-          exact: true
-        })
-        .click()
+      const panel = await new AgentPanel(page).open()
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      const panel = page.locator('#agent-panel-root')
-      await expect(panel).toBeVisible()
-      await panel
-        .getByRole('button', { name: enMessages.agent.switchWorkflow })
-        .click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
 
       // Simulate dropping a generated asset card into the composer, the same
       // way agentBatchOutputAttachment.spec.ts does: the real drag source puts
       // this shape on the DataTransfer.
       await dropAssets(page, panel, scenario.assets)
 
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = panel.getByRole('textbox', {
+        name: AGENT_COMPOSER_LABEL
+      })
       await composer.pressSequentially('compare these attachments')
       await panel
         .getByRole('button', { name: enMessages.agent.send, exact: true })

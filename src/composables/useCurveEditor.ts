@@ -2,18 +2,21 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { createInterpolator } from '@/components/curve/curveUtils'
-import type { CurveInterpolation, CurvePoint } from '@/components/curve/types'
+import type { CurveInterpolation } from '@comfyorg/graph-model/curve'
+import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface UseCurveEditorOptions {
   svgRef: Ref<SVGSVGElement | null>
   modelValue: Ref<CurvePoint[]>
   interpolation: Ref<CurveInterpolation>
+  onEditEnd?: () => void
 }
 
 export function useCurveEditor({
   svgRef,
   modelValue,
-  interpolation
+  interpolation,
+  onEditEnd
 }: UseCurveEditorOptions) {
   const dragIndex = ref(-1)
   let cleanupDrag: (() => void) | null = null
@@ -104,6 +107,7 @@ export function useCurveEditor({
         const newPoints = [...modelValue.value]
         newPoints.splice(index, 1)
         modelValue.value = newPoints
+        onEditEnd?.()
       }
       return
     }
@@ -132,6 +136,7 @@ export function useCurveEditor({
       svg.removeEventListener('pointerup', endDrag)
       svg.removeEventListener('lostpointercapture', endDrag)
       cleanupDrag = null
+      onEditEnd?.()
     }
 
     cleanupDrag = endDrag

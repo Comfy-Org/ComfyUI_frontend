@@ -3,22 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
-const mockToastAdd = vi.fn()
-const mockToastRemove = vi.fn()
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd,
-      remove: mockToastRemove
-    })
-  })
-)
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 function setupComposable(): ReturnType<typeof useReconnectingNotification> {
   const i18n = createI18n({
@@ -28,8 +18,10 @@ function setupComposable(): ReturnType<typeof useReconnectingNotification> {
       en: {
         g: {
           reconnecting: 'Reconnecting',
-          reconnected: 'Reconnected'
-        }
+          reconnected: 'Reconnected',
+          sessionRevoked: 'Access ended'
+        },
+        auth: { signOut: { signOut: 'Log Out' } }
       }
     }
   })
@@ -55,7 +47,7 @@ describe('useReconnectingNotification', () => {
 
     onReconnecting()
 
-    expect(mockToastAdd).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('shows error toast after delay', () => {
@@ -64,10 +56,10 @@ describe('useReconnectingNotification', () => {
     onReconnecting()
     vi.advanceTimersByTime(2000)
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Reconnecting'
+        kind: 'error',
+        title: 'Reconnecting'
       })
     )
   })
@@ -80,8 +72,7 @@ describe('useReconnectingNotification', () => {
     onReconnected()
     vi.advanceTimersByTime(2000)
 
-    expect(mockToastAdd).not.toHaveBeenCalled()
-    expect(mockToastRemove).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('removes toast and shows success when reconnected after delay', () => {
@@ -89,23 +80,15 @@ describe('useReconnectingNotification', () => {
 
     onReconnecting()
     vi.advanceTimersByTime(2000)
-    mockToastAdd.mockClear()
-
     onReconnected()
 
-    expect(mockToastRemove).toHaveBeenCalledWith(
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Reconnecting'
+        kind: 'success',
+        title: 'Reconnected',
+        duration: 2000
       })
-    )
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'success',
-        summary: 'Reconnected',
-        life: 2000
-      })
-    )
+    ])
   })
 
   it('does nothing when toast is disabled via setting', () => {
@@ -117,8 +100,7 @@ describe('useReconnectingNotification', () => {
     vi.advanceTimersByTime(1500)
     onReconnected()
 
-    expect(mockToastAdd).not.toHaveBeenCalled()
-    expect(mockToastRemove).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('does nothing when onReconnected is called without prior onReconnecting', () => {
@@ -126,19 +108,79 @@ describe('useReconnectingNotification', () => {
 
     onReconnected()
 
-    expect(mockToastAdd).not.toHaveBeenCalled()
-    expect(mockToastRemove).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
-  it('handles multiple reconnecting events without duplicating toasts', () => {
-    const { onReconnecting } = setupComposable()
+  it('shows one reconnecting toast across repeated disconnects and clears it on reconnect', () => {
+    const { onReconnecting, onReconnected } = setupComposable()
 
     onReconnecting()
-    vi.advanceTimersByTime(2000) // first toast fires
-    onReconnecting() // second reconnecting event
-    vi.advanceTimersByTime(2000) // second toast fires
+    vi.advanceTimersByTime(2000)
+    onReconnecting()
+    vi.advanceTimersByTime(2000)
+    expect(useToast().toasts.map(({ kind }) => kind)).toEqual(['error'])
 
-    expect(mockToastAdd).toHaveBeenCalledTimes(2)
+    onReconnected()
+    expect(useToast().toasts.map(({ kind }) => kind)).toEqual(['success'])
+  })
+
+  describe('access revoked', () => {
+    it('replaces the reconnecting toast with a persistent access-lost toast', () => {
+      const { onReconnecting, onRevokedSocketEnded } = setupComposable()
+
+      onReconnecting()
+      vi.advanceTimersByTime(2000)
+      onRevokedSocketEnded()
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'Access ended',
+          duration: Number.POSITIVE_INFINITY,
+          actions: [expect.objectContaining({ label: 'Log Out' })]
+        })
+      ])
+    })
+
+    it('cancels a reconnecting toast that has not shown yet', () => {
+      const { onReconnecting, onRevokedSocketEnded } = setupComposable()
+
+      onReconnecting()
+      onRevokedSocketEnded()
+      vi.advanceTimersByTime(2000)
+
+      expect(useToast().toasts.map(({ title }) => title)).toEqual([
+        'Access ended'
+      ])
+    })
+
+    it('signs the user out from the toast action', async () => {
+      const { onRevokedSocketEnded } = setupComposable()
+
+      onRevokedSocketEnded()
+      await useToast().toasts[0].actions[0].onClick()
+
+      expect(useCurrentUser().handleSignOut).toHaveBeenCalledOnce()
+    })
+
+    it('clears the access-lost toast once realtime reconnects', () => {
+      const { onRevokedSocketEnded, onReconnected } = setupComposable()
+
+      onRevokedSocketEnded()
+      onReconnected()
+
+      expect(useToast().toasts).toEqual([])
+    })
+
+    it('clears the access-lost toast when the user signs out', () => {
+      const { onRevokedSocketEnded } = setupComposable()
+      const [[signedOut]] = vi.mocked(useCurrentUser().onUserLogout).mock.calls
+
+      onRevokedSocketEnded()
+      signedOut()
+
+      expect(useToast().toasts).toEqual([])
+    })
   })
 
   describe('tab visibility regained', () => {
@@ -166,12 +208,12 @@ describe('useReconnectingNotification', () => {
 
       // Would have fired under the original (unextended) delay by now.
       vi.advanceTimersByTime(1900)
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
 
       // Extended delay (5000ms) elapses from the point visibility was regained.
       vi.advanceTimersByTime(3100)
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error', summary: 'Reconnecting' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error', title: 'Reconnecting' })
       )
     })
 
@@ -187,8 +229,7 @@ describe('useReconnectingNotification', () => {
       onReconnected()
       vi.advanceTimersByTime(5000)
 
-      expect(mockToastAdd).not.toHaveBeenCalled()
-      expect(mockToastRemove).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('reverts to the base delay once the post-visibility grace period elapses', async () => {
@@ -201,8 +242,8 @@ describe('useReconnectingNotification', () => {
       onReconnecting()
       vi.advanceTimersByTime(2000) // base delay again, not the extended one
 
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error', summary: 'Reconnecting' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error', title: 'Reconnecting' })
       )
     })
   })

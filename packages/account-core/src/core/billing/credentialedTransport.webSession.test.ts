@@ -1,15 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FakeWebSessionState } from '../../testing.js'
-import {
-  createFakeWebSessionEndpoint,
-  fakeWebSessionUser
-} from '../../testing.js'
-import { COMFY_CLIENT, createRequestAuthorizer } from '../requestAuth.js'
-import type { WebSession } from '../sessionContracts.js'
-import { readWebSession } from '../webSession.js'
-import type { BillingScope } from './billingScope.js'
-import { createCredentialedBillingTransport } from './credentialedTransport.js'
+import type { FakeWebSessionState } from '#/testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '#/testing'
+import { COMFY_CLIENT, createRequestAuthorizer } from '#/core/requestAuth'
+import type { WebSession } from '#/core/sessionContracts'
+import { readWebSession } from '#/core/webSession'
+import type { BillingScope } from './billingScope'
+import { createCredentialedBillingTransport } from './credentialedTransport'
 
 const BASE = 'https://cloud.test/api'
 const USER = fakeWebSessionUser({ id: 'user-1' })
@@ -91,6 +88,14 @@ describe('createCredentialedBillingTransport with a web session', () => {
     },
     {
       method: 'POST' as const,
+      expected: {
+        'x-comfy-client': COMFY_CLIENT,
+        'x-comfy-workspace-id': 'ws-1',
+        'x-csrf-token': 'stale-csrf'
+      }
+    },
+    {
+      method: 'PUT' as const,
       expected: {
         'x-comfy-client': COMFY_CLIENT,
         'x-comfy-workspace-id': 'ws-1',
@@ -228,6 +233,21 @@ describe('createCredentialedBillingTransport with a web session', () => {
     expect(result).toEqual({ status: 'error', code: 'SUPERSEDED' })
     expect(fetchImpl).toHaveBeenCalledOnce()
     expect(endpoint.requests).toEqual([])
+  })
+
+  it('does not replay once the host left the scope during the re-read', async () => {
+    let reread = () => false
+    const { transport, fetchImpl, endpoint } = makeTransport({
+      responses: [refusal('csrf_invalid')],
+      scope: () => (reread() ? { ...SCOPE, workspaceId: 'ws-2' } : SCOPE)
+    })
+    reread = () => endpoint.requests.length > 0
+
+    const result = await transport({ method: 'POST', route: '/billing/topup' })
+
+    expect(result).toEqual({ status: 'error', code: 'SUPERSEDED' })
+    expect(endpoint.requests).toHaveLength(1)
+    expect(fetchImpl).toHaveBeenCalledOnce()
   })
 
   it('reports NOT_AUTHENTICATED without sending when there is no session', async () => {

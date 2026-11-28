@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 
 import { prepareTemplateInputs } from './templateInputService'
@@ -45,14 +45,11 @@ function prepare(
   signal = new AbortController().signal,
   restoreNamed = false
 ) {
-  return prepareTemplateInputs(graph, inputs, signal, restoreNamed)
+  return prepareTemplateInputs(graph, inputs, signal, { restoreNamed })
 }
 
 beforeEach(() => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => new Response('video bytes'))
-  )
+  vi.mocked(fetch).mockImplementation(async () => new Response('video bytes'))
   vi.spyOn(api, 'fetchApi').mockResolvedValue(
     Response.json({
       name: 'kitten_cop.mp4',
@@ -187,9 +184,17 @@ describe('template input preparation', () => {
     }
   )
 
-  it.for([undefined, null, 'main', 'v1.0.0', '0123456', '../main', 42])(
-    'opens without downloading when the catalog has no immutable revision: %s',
-    async (revision) => {
+  it.for([
+    { revision: undefined },
+    { revision: null },
+    { revision: 'main' },
+    { revision: 'v1.0.0' },
+    { revision: '0123456' },
+    { revision: '../main' },
+    { revision: 42 }
+  ])(
+    'opens without downloading when the catalog has no immutable revision: $revision',
+    async ({ revision }) => {
       const graph = workflow()
       const result = await prepare(graph, [
         { ...input(), sourceRevision: revision }
@@ -282,7 +287,7 @@ describe('template input preparation', () => {
     Response.json({}, { status: 500 }),
     Response.json({ type: 'input' })
   ])(
-    'reports an input failure when the backend does not return a saved file',
+    'reports an input failure when the backend answers HTTP $status without a saved file',
     async (response) => {
       vi.mocked(api.fetchApi).mockResolvedValue(response)
       await expect(prepare()).resolves.toMatchObject({
@@ -362,8 +367,7 @@ describe('template input preparation', () => {
         workflow(),
         inputs,
         new AbortController().signal,
-        false,
-        onStart
+        { restoreNamed: false, onStart }
       )
       expect(onStart).not.toHaveBeenCalled()
       expect(fetch).not.toHaveBeenCalled()
@@ -380,8 +384,7 @@ describe('template input preparation', () => {
       workflow(),
       [input()],
       new AbortController().signal,
-      false,
-      onStart
+      { restoreNamed: false, onStart }
     )
     expect(result.errors).toEqual([])
     expect(onStart).toHaveBeenCalledOnce()

@@ -4,7 +4,10 @@ import { expect } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { boxAspectRatio } from '@e2e/fixtures/utils/locatorBox'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 const IMAGE_COMPARE_NODE_ID = toNodeId(1)
 
@@ -118,6 +121,26 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
     return new RegExp(`filename=${filename.replace(/\./g, '\\.')}`)
   }
 
+  test('double-clicking the resize corner fits both comparison images', async ({
+    comfyPage
+  }) => {
+    await setSavedImages(comfyPage, {
+      beforeImages: [testImage('Before', '#c00')],
+      afterImages: [testImage('After', '#00c')]
+    })
+    const node = new VueNodeFixture(
+      comfyPage.vueNodes.getNodeLocator(IMAGE_COMPARE_NODE_ID)
+    )
+    const viewport = node.root.getByTestId(TestIds.imageCompare.viewport)
+    await waitForImagesLoaded(viewport)
+    await expect(viewport.getByRole('img')).toHaveCount(2)
+    await expect.poll(() => boxAspectRatio(viewport)).toBeGreaterThan(1.1)
+
+    await node.getResizeHandle('SE').dblclick()
+
+    await expect.poll(() => boxAspectRatio(viewport)).toBeCloseTo(1, 2)
+  })
+
   test(
     'Shows empty state when the node is unconnected and has not run',
     { tag: '@smoke' },
@@ -223,7 +246,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       await waitForImagesLoaded(node)
       await comfyPage.page.mouse.move(0, 0)
-      await expect(node).toHaveScreenshot('image-compare-default-50.png')
+      await expectElementScreenshot(node, 'image-compare-default-50.png')
     }
   )
 
@@ -558,7 +581,7 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
           .poll(() => getClipPathInsetRightPercent(beforeImg))
           .toBeLessThan(expectedClipMax)
 
-        await expect(node).toHaveScreenshot(`image-compare-slider-${pct}.png`)
+        await expectElementScreenshot(node, `image-compare-slider-${pct}.png`)
       }
     )
   }

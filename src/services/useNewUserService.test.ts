@@ -3,24 +3,8 @@ import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-const mockLocalStorage = vi.hoisted(() => ({
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn()
-}))
-
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage,
-  writable: true
-})
-
 import { useNewUserService } from '@/services/useNewUserService'
-import { reportError } from '@/platform/telemetry/reportError'
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>
@@ -35,8 +19,7 @@ describe('useNewUserService', () => {
       service = useNewUserService()
     })
     service.reset()
-
-    mockLocalStorage.getItem.mockReturnValue(null)
+    localStorage.clear()
   })
 
   afterEach(() => scope.stop())
@@ -45,7 +28,6 @@ describe('useNewUserService', () => {
     it('should identify new user when all conditions are met', async () => {
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -59,8 +41,6 @@ describe('useNewUserService', () => {
 
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
 
-      mockLocalStorage.getItem.mockReturnValue(null)
-
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(true)
@@ -71,7 +51,6 @@ describe('useNewUserService', () => {
         'Comfy.TutorialCompleted': true
       }
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -81,10 +60,7 @@ describe('useNewUserService', () => {
     it('should identify existing user when workflow exists', async () => {
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'workflow') return 'some-workflow'
-        return null
-      })
+      localStorage.setItem('workflow', 'some-workflow')
 
       await service.initializeIfNewUser()
 
@@ -94,10 +70,7 @@ describe('useNewUserService', () => {
     it('should identify existing user when previous workflow exists', async () => {
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.PreviousWorkflow') return 'some-previous-workflow'
-        return null
-      })
+      localStorage.setItem('Comfy.PreviousWorkflow', 'some-previous-workflow')
 
       await service.initializeIfNewUser()
 
@@ -107,10 +80,7 @@ describe('useNewUserService', () => {
     it('should identify existing user when V1 draft store keys exist', async () => {
       useSettingStore().settingValues = {}
 
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.Drafts') return '{}'
-        return null
-      })
+      localStorage.setItem('Comfy.Workflow.Drafts', '{}')
 
       await service.initializeIfNewUser()
 
@@ -120,10 +90,7 @@ describe('useNewUserService', () => {
     it('should identify existing user when V1 draft order key exists', async () => {
       useSettingStore().settingValues = {}
 
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.DraftOrder') return '[]'
-        return null
-      })
+      localStorage.setItem('Comfy.Workflow.DraftOrder', '[]')
 
       await service.initializeIfNewUser()
 
@@ -133,25 +100,49 @@ describe('useNewUserService', () => {
     it('should identify existing user when V2 draft index has entries', async () => {
       useSettingStore().settingValues = {}
 
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.DraftIndex.v2:personal')
-          return '{"v":2,"updatedAt":1,"order":["abc"],"entries":{"abc":{"path":"workflows/Untitled.json","name":"Untitled","isTemporary":true,"updatedAt":1}}}'
-        return null
-      })
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:personal',
+        '{"v":2,"updatedAt":1,"order":["abc"],"entries":{"abc":{"path":"workflows/Untitled.json","name":"Untitled","isTemporary":true,"updatedAt":1}}}'
+      )
 
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(false)
     })
 
+    it('should identify existing user when a Cloud team workspace has draft history', async () => {
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:ws-team-123',
+        '{"v":2,"updatedAt":1,"order":["abc"],"entries":{"abc":{"path":"workflows/Untitled.json","name":"Untitled","isTemporary":true,"updatedAt":1}}}'
+      )
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(false)
+    })
+
+    it('should identify new user when every workspace draft index is empty', async () => {
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:personal',
+        '{"v":2,"updatedAt":1,"order":[],"entries":{}}'
+      )
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:ws-team-123',
+        '{"v":2,"updatedAt":1,"order":[],"entries":{}}'
+      )
+
+      await service.initializeIfNewUser()
+
+      expect(service.isNewUser()).toBe(true)
+    })
+
     it('should identify new user when V2 draft index exists but is empty', async () => {
       useSettingStore().settingValues = {}
 
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.DraftIndex.v2:personal')
-          return '{"v":2,"updatedAt":1,"order":[],"entries":{}}'
-        return null
-      })
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:personal',
+        '{"v":2,"updatedAt":1,"order":[],"entries":{}}'
+      )
 
       await service.initializeIfNewUser()
 
@@ -162,10 +153,7 @@ describe('useNewUserService', () => {
       useSettingStore().settingValues = {}
       const corrupt = '{"order":["workflows/client-brief.json", nope]}'
 
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.DraftIndex.v2:personal') return corrupt
-        return null
-      })
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:personal', corrupt)
 
       await service.initializeIfNewUser()
 
@@ -173,6 +161,7 @@ describe('useNewUserService', () => {
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         new Error('Workflow draft index is not valid JSON'),
         {
+          surface: 'graph',
           errorType: 'error_parsing_workflow_draft_index',
           level: 'warning',
           context: { length: corrupt.length }
@@ -183,10 +172,7 @@ describe('useNewUserService', () => {
     it('treats a draft index holding valid non-object JSON as empty, not corrupt', async () => {
       useSettingStore().settingValues = {}
 
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'Comfy.Workflow.DraftIndex.v2:personal') return 'null'
-        return null
-      })
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:personal', 'null')
 
       await service.initializeIfNewUser()
 
@@ -199,7 +185,6 @@ describe('useNewUserService', () => {
         'Comfy.TutorialCompleted': false
       }
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = false
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -212,7 +197,6 @@ describe('useNewUserService', () => {
         'Comfy.TutorialCompleted': true
       }
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -222,11 +206,7 @@ describe('useNewUserService', () => {
     it('should identify existing user when only one condition fails', async () => {
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockImplementation((key: string) => {
-        if (key === 'workflow') return 'some-workflow'
-        if (key === 'Comfy.PreviousWorkflow') return null
-        return null
-      })
+      localStorage.setItem('workflow', 'some-workflow')
 
       await service.initializeIfNewUser()
 
@@ -240,7 +220,6 @@ describe('useNewUserService', () => {
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
       expect(service.isNewUser()).toBe(true)
@@ -263,21 +242,18 @@ describe('useNewUserService', () => {
       const mockCallback = vi
         .fn()
         .mockRejectedValue(new Error('Callback error'))
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
       await service.registerInitCallback(mockCallback)
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'New user initialization callback failed:',
         expect.any(Error)
       )
-      consoleSpy.mockRestore()
     })
   })
 
@@ -285,7 +261,6 @@ describe('useNewUserService', () => {
     it('should set installed version for new users', async () => {
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -300,7 +275,6 @@ describe('useNewUserService', () => {
         'Comfy.ColorPalette': 'dark'
       }
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -316,7 +290,6 @@ describe('useNewUserService', () => {
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -333,7 +306,6 @@ describe('useNewUserService', () => {
         'Comfy.ColorPalette': 'dark'
       }
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -342,27 +314,23 @@ describe('useNewUserService', () => {
 
     it('should handle callback errors during initialization', async () => {
       const mockCallback = vi.fn().mockRejectedValue(new Error('Init error'))
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       await service.registerInitCallback(mockCallback)
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'New user initialization callback failed:',
         expect.any(Error)
       )
-      consoleSpy.mockRestore()
     })
 
     it('should not reinitialize if already determined', async () => {
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
       expect(useSettingStore().set).toHaveBeenCalledTimes(1)
@@ -374,7 +342,6 @@ describe('useNewUserService', () => {
     it('should correctly determine new user status', async () => {
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       expect(service.isNewUser()).toBeNull()
 
@@ -397,8 +364,6 @@ describe('useNewUserService', () => {
     it('should return cached result after determination', async () => {
       useSettingStore().settingValues = {}
 
-      mockLocalStorage.getItem.mockReturnValue(null)
-
       await service.initializeIfNewUser()
 
       expect(service.isNewUser()).toBe(true)
@@ -406,25 +371,12 @@ describe('useNewUserService', () => {
   })
 
   describe('edge cases', () => {
-    it('should handle settingStore.get returning false as not completed', async () => {
-      useSettingStore().settingValues = {
-        'Comfy.TutorialCompleted': false
-      }
-      useSettingStore().settingValues['Comfy.TutorialCompleted'] = false
-      mockLocalStorage.getItem.mockReturnValue(null)
-
-      await service.initializeIfNewUser()
-
-      expect(service.isNewUser()).toBe(true)
-    })
-
     it('should handle multiple callback registrations after initialization', async () => {
       const mockCallback1 = vi.fn().mockResolvedValue(undefined)
       const mockCallback2 = vi.fn().mockResolvedValue(undefined)
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service.initializeIfNewUser()
 
@@ -443,7 +395,6 @@ describe('useNewUserService', () => {
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service1.initializeIfNewUser()
 
@@ -463,7 +414,6 @@ describe('useNewUserService', () => {
 
       useSettingStore().settingValues = {}
       useSettingStore().settingValues['Comfy.TutorialCompleted'] = undefined
-      mockLocalStorage.getItem.mockReturnValue(null)
 
       await service1.initializeIfNewUser()
 

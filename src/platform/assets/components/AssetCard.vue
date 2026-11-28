@@ -8,15 +8,15 @@
     :tabindex="interactive ? 0 : -1"
     :class="
       cn(
-        'flex h-full flex-col gap-2 overflow-hidden rounded-2xl bg-modal-card-background p-2 transition-all duration-200 select-none',
+        'flex h-full flex-col gap-2 overflow-hidden rounded-2xl bg-secondary p-2 transition-all duration-200 select-none',
         interactive &&
-          'group m-0 appearance-none border-none bg-transparent text-left outline-4 outline-base-foreground outline-none hover:bg-secondary-background focus:bg-secondary-background focus:outline-solid',
-        focused && 'bg-secondary-background outline-solid'
+          'group m-0 appearance-none border-none bg-transparent text-left outline-4 outline-foreground outline-none hover:bg-secondary focus:bg-secondary focus:outline-solid',
+        focused && 'bg-secondary outline-solid'
       )
     "
     @click.stop="interactive && $emit('focus', asset)"
     @focus="interactive && $emit('focus', asset)"
-    @keydown.enter.self="interactive && $emit('select', asset)"
+    @keydown.enter.self="interactive && handleKeyboardSelect()"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
@@ -30,17 +30,18 @@
         class="size-full cursor-pointer object-cover"
       />
 
-      <AssetBadgeGroup :badges="asset.badges" />
+      <AssetBadgeGroup :badges="badges" />
       <IconGroup
         :class="
           cn(
             'invisible absolute top-2 right-2 group-hover:visible',
-            dropdownMenuButton?.isOpen && 'visible'
+            assetMenuOpen && 'visible'
           )
         "
       >
         <Button
-          v-tooltip.bottom="$t('assetBrowser.modelInfo.title')"
+          :tooltip="$t('assetBrowser.modelInfo.title')"
+          tooltip-side="bottom"
           :aria-label="$t('assetBrowser.modelInfo.title')"
           variant="secondary"
           size="sm"
@@ -48,49 +49,55 @@
         >
           <i class="icon-[lucide--info]" />
         </Button>
-        <MoreButton
+        <Menu
           v-if="showAssetOptions"
-          ref="dropdown-menu-button"
-          size="sm"
+          v-model:open="assetMenuOpen"
+          :items="assetMenuItems"
+          align="end"
         >
-          <template #default>
+          <template #trigger>
             <Button
+              size="sm"
               variant="secondary"
-              size="md"
-              class="justify-start"
-              @click="confirmDeletion"
-            >
-              <i class="icon-[lucide--trash-2]" />
-              <span>{{ $t('g.delete') }}</span>
-            </Button>
+              icon="icon-[lucide--ellipsis]"
+              :aria-label="$t('g.more')"
+            />
           </template>
-        </MoreButton>
+        </Menu>
       </IconGroup>
     </div>
     <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
-      <h3
-        :id="titleId"
-        v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
-        :class="
-          cn(
-            'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
-            'text-base-foreground'
-          )
-        "
-      >
-        {{ displayName }}
-      </h3>
-      <p
-        :id="descId"
-        v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
-        :class="
-          cn(
-            'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
-          )
-        "
-      >
-        {{ asset.secondaryText }}
-      </p>
+      <Tooltip :disabled="!displayName" :delay-duration="tooltipDelay">
+        <TooltipTrigger as-child>
+          <h3
+            :id="titleId"
+            :class="
+              cn(
+                'm-0 line-clamp-2 text-sm font-semibold wrap-anywhere',
+                'text-foreground'
+              )
+            "
+          >
+            {{ displayName }}
+          </h3>
+        </TooltipTrigger>
+        <TooltipContent>{{ displayName }}</TooltipContent>
+      </Tooltip>
+      <Tooltip :disabled="!asset.secondaryText" :delay-duration="tooltipDelay">
+        <TooltipTrigger as-child>
+          <p
+            :id="descId"
+            :class="
+              cn(
+                'm-0 line-clamp-2 [display:-webkit-box] text-sm text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
+              )
+            "
+          >
+            {{ asset.secondaryText }}
+          </p>
+        </TooltipTrigger>
+        <TooltipContent>{{ asset.secondaryText }}</TooltipContent>
+      </Tooltip>
       <div class="mt-auto flex items-center justify-between gap-2">
         <div class="flex gap-3 text-xs text-muted-foreground">
           <span v-if="asset.stats.stars" class="flex items-center gap-1">
@@ -111,14 +118,21 @@
         </div>
         <Button
           v-if="interactive"
+          :tooltip="useDisabledReason"
+          tooltip-side="top"
           variant="secondary"
           size="lg"
-          class="relative shrink-0"
+          :aria-disabled="!canUseAsset"
+          :aria-label="useButtonLabel"
+          :class="
+            cn('shrink-0', !canUseAsset && 'cursor-not-allowed opacity-50')
+          "
           @click.stop="handleSelect"
         >
           {{ $t('g.use') }}
-          <StatusBadge
+          <Badge
             v-if="isNewlyImported"
+            variant="dot"
             severity="contrast"
             class="absolute -top-0.5 -right-0.5"
           />
@@ -129,28 +143,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
+import { computed, ref, toValue, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import IconGroup from '@/components/button/IconGroup.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetCardTitle } from '@comfyorg/assets-core/metadata'
+import { canCreateNodeForAsset } from '@/platform/assets/integration/resolveModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { asset, interactive, focused } = defineProps<{
+const {
+  asset,
+  interactive,
+  focused,
+  requireNodeProvider = false
+} = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
   focused?: boolean
+  requireNodeProvider?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -165,9 +190,13 @@ const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
-const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
-  'dropdown-menu-button'
+const badges = computed<AssetDisplayItem['badges']>(() =>
+  asset.isWorkspaceLibrary
+    ? [{ label: t('assetBrowser.library'), type: 'type' }, ...asset.badges]
+    : asset.badges
 )
+
+const assetMenuOpen = ref(false)
 
 const titleId = useId()
 const descId = useId()
@@ -186,6 +215,17 @@ const formattedDate = computed(() =>
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 
 const showAssetOptions = computed(() => !(asset.is_immutable ?? true))
+const canUseAsset = computed(
+  () => !requireNodeProvider || canCreateNodeForAsset(asset)
+)
+const useDisabledReason = computed(() =>
+  canUseAsset.value ? undefined : t('assetBrowser.useDisabledNoProvider')
+)
+const useButtonLabel = computed(() =>
+  canUseAsset.value
+    ? t('g.use')
+    : `${t('g.use')}: ${t('assetBrowser.useDisabledNoProvider')}`
+)
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
@@ -197,12 +237,21 @@ const { isLoading, error } = useImageQuiet({
 })
 
 function handleSelect() {
+  if (!canUseAsset.value) {
+    emit('focus', asset)
+    return
+  }
   acknowledgeAsset(asset.id)
   emit('select', asset)
 }
 
+function handleKeyboardSelect() {
+  if (!canUseAsset.value) return
+  emit('select', asset)
+}
+
 function confirmDeletion() {
-  dropdownMenuButton.value?.hide()
+  assetMenuOpen.value = false
   const assetName = toValue(displayName)
   const promptText = ref<string>(t('assetBrowser.deletion.body'))
   const optionsDisabled = ref(false)
@@ -214,10 +263,10 @@ function confirmDeletion() {
       promptText
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
-      // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-danger-200 text-base-foreground ring-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring'
+        'bg-destructive ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
@@ -233,7 +282,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.complete', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
           emit('deleted', asset)
         } catch (err: unknown) {
@@ -241,7 +289,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.failed', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 3_000))
         } finally {
           closeDialog(confirmDialog)
@@ -250,4 +297,12 @@ function confirmDeletion() {
     }
   })
 }
+
+const assetMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: () => t('g.delete'),
+    icon: 'icon-[lucide--trash-2]',
+    command: confirmDeletion
+  }
+])
 </script>

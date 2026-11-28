@@ -1,20 +1,16 @@
 ## Summary
 
-<!-- One sentence describing what changed and why. -->
-
-## Changes
-
-- **What**: <!-- Core functionality added/modified -->
-- **Breaking**: <!-- Any breaking changes (if none, remove this line) -->
-- **Dependencies**: <!-- New dependencies (if none, remove this line) -->
-
-## Review Focus
-
-<!-- Critical design decisions or edge cases that need attention -->
+<!-- In 1-2 sentences, explain the problem and resulting behavior. -->
+<!-- Mention known risks or non-obvious design decisions when useful. -->
 
 <!-- If this PR fixes an issue, uncomment and update the line below -->
 <!-- Fixes #ISSUE_NUMBER -->
 
-## Screenshots (if applicable)
+## Verification
 
-<!-- Add screenshots or video recording to help explain your changes -->
+<!-- Include only what applies; keep it concise.
+- Tests: coverage, commands and results; note gaps or remaining test plans.
+- Human QA: environment, reproducible steps, expected and observed results.
+  Link QA evidence and before/after screenshots or recordings where useful.
+- After release: logs, telemetry or metrics that indicate success or failure.
+-->

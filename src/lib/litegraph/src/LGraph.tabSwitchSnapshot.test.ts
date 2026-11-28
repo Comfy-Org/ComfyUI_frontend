@@ -18,11 +18,9 @@ import {
 import type {
   ExportedSubgraph,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import {
-  createMockCanvasRenderingContext2D,
-  reloadSerializedGraph
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@comfyorg/graph-model/serialisation'
+import { reloadSerializedGraph } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 const INTERIOR_TYPE = 'Fixture/BlueprintInterior'
 

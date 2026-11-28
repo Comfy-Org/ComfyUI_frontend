@@ -1,14 +1,21 @@
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
 import { consultEscapeOverride } from './escapeOverride'
-import { KeyComboImpl } from './keyCombo'
-import { KeybindingImpl } from './keybinding'
-import { useKeybindingStore } from './keybindingStore'
+import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+
+function isExcludedFromDistribution(keybinding: { commandId: string }) {
+  return (
+    isCloud &&
+    keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
+  )
+}
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
@@ -43,14 +50,10 @@ export function useKeybindingService() {
     }
 
     const target = event.composedPath()[0] as HTMLElement
-    // Let the active menu own Escape without also triggering the global shortcut.
-    // `target` is usually the focused element, but when nothing has focus some
-    // browsers (e.g. Safari) target the event at `document` instead of
-    // `document.body`, which has no `closest` method.
     if (
       event.key === 'Escape' &&
       target instanceof Element &&
-      target.closest('[role="menu"], [role="menubar"]')
+      target.closest('[role="menu"], [role="menubar"], [role="dialog"]')
     ) {
       return
     }
@@ -79,23 +82,24 @@ export function useKeybindingService() {
         }
       }
       if (isModalOpen(dialogStore.dialogStack.length)) {
-        // Bare keys still have to reach inputs inside the dialog.
         if (keyCombo.ctrl) {
           event.preventDefault()
         }
         return
       }
 
-      // A registered override (e.g. the agent composer owning Escape while a
-      // turn is running) wins over the default keybinding, but only once an
-      // open menu or dialog has already had first refusal above - those are
-      // more specific to the moment than "some feature elsewhere is running".
       if (event.key === 'Escape' && consultEscapeOverride(event)) {
         if (!event.defaultPrevented) event.preventDefault()
         return
       }
 
       event.preventDefault()
+      if (
+        event.repeat &&
+        keybinding.targetElementId === 'graph-canvas-container'
+      ) {
+        return
+      }
       const runCommandIds = new Set([
         'Comfy.QueuePrompt',
         'Comfy.QueuePromptFront',
@@ -136,12 +140,7 @@ export function useKeybindingService() {
 
   function registerCoreKeybindings() {
     for (const keybinding of CORE_KEYBINDINGS) {
-      if (
-        isCloud &&
-        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
-      ) {
-        continue
-      }
+      if (isExcludedFromDistribution(keybinding)) continue
       keybindingStore.addDefaultKeybinding(new KeybindingImpl(keybinding))
     }
   }
@@ -149,19 +148,12 @@ export function useKeybindingService() {
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
     for (const keybinding of unsetBindings) {
-      if (!commandStore.isRegistered(keybinding.commandId)) {
-        continue
-      }
-      keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
+      if (isExcludedFromDistribution(keybinding)) continue
+      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(keybinding))
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
     for (const keybinding of newBindings) {
-      if (
-        isCloud &&
-        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
-      ) {
-        continue
-      }
+      if (isExcludedFromDistribution(keybinding)) continue
       keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
     }
   }

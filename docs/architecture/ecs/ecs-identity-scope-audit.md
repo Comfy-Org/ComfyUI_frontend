@@ -118,7 +118,7 @@ Runtime registration is deliberately not a repair boundary. `linkStore` and
 7. Direct extension insertion that bypasses import normalization can be
    rejected after partial surrounding work. Use graph APIs and handle failure;
    see
-   [Link registration migration](../../extensions/link-registration-migration.md).
+   [Link registration migration](https://docs.comfy.org/custom-nodes/js/link-registration-migration).
 
 ## Evidence and remaining tests
 

@@ -1,0 +1,74 @@
+<template>
+  <Tooltip :disabled="!isOverflowing">
+    <TooltipTrigger as-child>
+      <div
+        v-bind="$attrs"
+        :class="
+          cn(
+            'flex cursor-pointer items-center-safe gap-2 rounded-md p-3 text-sm text-foreground transition-colors select-none',
+            active ? 'bg-muted' : 'hover:bg-accent'
+          )
+        "
+        role="button"
+        @mouseenter="checkOverflow"
+        @click="onClick"
+      >
+        <NavIcon v-if="icon" :icon="icon" />
+        <i v-else class="icon-[lucide--folder] text-foreground" />
+        <span ref="textRef" class="min-w-0 truncate">
+          <slot />
+        </span>
+        <Badge
+          v-if="badge !== undefined"
+          severity="contrast"
+          variant="circle"
+          class="ml-auto min-h-5 min-w-5 px-1"
+        >
+          {{ badge }}
+        </Badge>
+        <i
+          v-else-if="suffixIcon"
+          :class="cn('ml-auto shrink-0', suffixIcon)"
+          aria-hidden="true"
+        />
+      </div>
+    </TooltipTrigger>
+    <TooltipContent side="right" class="w-max whitespace-nowrap">{{
+      tooltipText
+    }}</TooltipContent>
+  </Tooltip>
+</template>
+
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import type { NavItemData } from '@comfyorg/design-system/lib/navigation/types'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import NavIcon from './NavIcon.vue'
+
+defineOptions({ inheritAttrs: false })
+
+const { icon, badge, suffixIcon, active, onClick } = defineProps<{
+  icon: NavItemData['icon']
+  badge?: NavItemData['badge']
+  suffixIcon?: NavItemData['suffixIcon']
+  active?: boolean
+  onClick: () => void
+}>()
+
+const textRef = ref<HTMLElement | null>(null)
+const isOverflowing = ref(false)
+
+const checkOverflow = () => {
+  if (!textRef.value) return
+  isOverflowing.value =
+    textRef.value.scrollWidth > textRef.value.clientWidth + 1
+}
+
+const tooltipText = computed(() => textRef.value?.textContent ?? '')
+</script>

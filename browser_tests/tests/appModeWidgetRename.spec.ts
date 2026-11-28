@@ -12,10 +12,6 @@ test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
     initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test('Rename from builder input-select sidebar via menu', async ({
     comfyPage
   }) => {

@@ -1,20 +1,15 @@
 import { t } from '@/i18n'
-import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
-import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import type { AssetSortOption } from '@comfyorg/assets-core/filtering'
+import { sortAssets } from '@comfyorg/assets-core/filtering'
 
 import type { FormDropdownItem, SortOption } from './types'
 
-/**
- * Marker class for the dropdown's sub-popover panels (Sort / Ownership /
- * Base-model). Those panels teleport to `document.body`, so they render outside
- * the menu's DOM subtree; the outside-press dismiss logic uses this class to
- * recognize a press inside them as still "inside" the dropdown.
- */
+/** Marks the dropdown's teleported popover panels so a press inside them does not dismiss the dropdown. */
 export const DROPDOWN_PANEL_CLASS = 'comfy-form-dropdown-panel'
 
 export async function defaultSearcher(
   query: string,
-  items: FormDropdownItem[]
+  items: readonly FormDropdownItem[]
 ) {
   if (query.trim() === '') return items
   const words = query.trim().toLowerCase().split(' ')
