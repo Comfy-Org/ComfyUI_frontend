@@ -9,9 +9,19 @@ export const IDLE = { phase: 'idle' } as const
  */
 export type RunId = number & { readonly __brand: 'RunId' }
 
-/** `entering` is separate from `showing` because `onEnter` runs between them. */
+/**
+ * `entering` is separate from `showing` because `onEnter` runs between them.
+ *
+ * `committed` is separate from `resolving` because a tour is decided on before
+ * it is asked for: its definition is registered and its intro preview already
+ * owns the canvas while nothing of it is on screen. Without a phase for that
+ * window the only record of the decision is a local variable inside whoever
+ * made it, and every observer that asks "is a tour running" is told no over a
+ * screen the tour already has.
+ */
 export type TourState =
   | typeof IDLE
+  | { phase: 'committed'; tour: EntryPath; run: RunId }
   | { phase: 'resolving'; tour: EntryPath; run: RunId }
   | {
       phase: 'waiting'
@@ -60,6 +70,8 @@ export function shownIdx(state: TourState): number | null {
 
 /** Events answering an `await` name their run, so a late reply can be refused. */
 export type TourEvent =
+  | { type: 'committed'; tour: EntryPath; run: RunId }
+  | { type: 'released'; run: RunId }
   | { type: 'requested'; tour: EntryPath; run: RunId }
   | { type: 'resolved'; run: RunId; steps: CoachStep[] }
   | { type: 'resolvedEmpty'; run: RunId }
@@ -68,21 +80,38 @@ export type TourEvent =
   | { type: 'stepShown'; run: RunId; idx: number }
   | { type: 'ended'; run: RunId }
 
-/**
- * The only transition table. An event meaningless in the current phase, or from
- * a run that is over, returns `state` itself rather than a phase that shouldn't
- * follow.
- */
-export function reduceTour(state: TourState, event: TourEvent): TourState {
-  if (event.type === 'requested')
-    return state.phase === 'idle'
-      ? { phase: 'resolving', tour: event.tour, run: event.run }
-      : state
+type LiveState = Exclude<TourState, typeof IDLE>
+type LiveEvent = Exclude<
+  TourEvent,
+  { type: 'committed' } | { type: 'requested' }
+>
 
-  // The tour name alone would let a later run inherit an earlier run's reply.
-  if (state.phase === 'idle' || state.run !== event.run) return state
+function commitTour(
+  state: TourState,
+  event: Extract<TourEvent, { type: 'committed' }>
+): TourState {
+  return state.phase === 'idle'
+    ? { phase: 'committed', tour: event.tour, run: event.run }
+    : state
+}
 
+function requestTour(
+  state: TourState,
+  event: Extract<TourEvent, { type: 'requested' }>
+): TourState {
+  if (state.phase === 'idle')
+    return { phase: 'resolving', tour: event.tour, run: event.run }
+  return state.phase === 'committed' &&
+    state.tour === event.tour &&
+    state.run === event.run
+    ? { phase: 'resolving', tour: event.tour, run: event.run }
+    : state
+}
+
+function transitionLiveTour(state: LiveState, event: LiveEvent): TourState {
   switch (event.type) {
+    case 'released':
+      return state.phase === 'committed' ? IDLE : state
     case 'resolved':
       return state.phase === 'resolving'
         ? {
@@ -128,6 +157,13 @@ export function reduceTour(state: TourState, event: TourEvent): TourState {
           }
         : state
     case 'ended':
-      return IDLE
+      return state.phase === 'committed' ? state : IDLE
   }
+}
+
+export function reduceTour(state: TourState, event: TourEvent): TourState {
+  if (event.type === 'committed') return commitTour(state, event)
+  if (event.type === 'requested') return requestTour(state, event)
+  if (state.phase === 'idle' || state.run !== event.run) return state
+  return transitionLiveTour(state, event)
 }

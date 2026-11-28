@@ -15,6 +15,7 @@ import type { BillingStatusResponse } from '@comfyorg/billing-core'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { createMockRelease } from '@e2e/fixtures/helpers/HelpCenterHelper'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 import type { Position } from '@e2e/fixtures/types'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
@@ -59,20 +60,6 @@ const FIRST_RUN_SETTINGS = {
   'Comfy.VueNodes.Enabled': true,
   'Comfy.TutorialCompleted': false,
   'Comfy.OnboardingCoachmarks.Seen': ['appMode']
-}
-
-const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
-  is_active: true,
-  max_seats: 1,
-  occupied_seats: 1,
-  ended_at: null,
-  team_credit_stop: null,
-  scheduled_change: null,
-  next_charge: null,
-  subscription_tier: 'PRO',
-  subscription_duration: 'MONTHLY',
-  renewal_date: '2099-01-01T00:00:00Z',
-  has_funds: true
 }
 
 const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
@@ -236,9 +223,7 @@ test.describe(
         settings: FIRST_RUN_SETTINGS,
         objectInfo: 'server'
       })
-      await page.route('**/api/billing/status', (route) =>
-        route.fulfill(jsonRoute(ACTIVE_SUBSCRIPTION))
-      )
+      await mockBilling(page)
       await page.route('**/api/assets**', (route) =>
         route.fulfill(jsonRoute(NO_ASSETS))
       )
@@ -306,6 +291,85 @@ test.describe(
 
       return { spotlight, card, totalSteps }
     }
+
+    test.describe(
+      'intro preview ownership',
+      {
+        annotation: {
+          type: 'source',
+          description:
+            'https://github.com/Comfy-Org/ComfyUI_frontend/pull/19013'
+        }
+      },
+      () => {
+        test.use({
+          initialSettings: {
+            ...FIRST_RUN_SETTINGS,
+            'Comfy.TutorialCompleted': true,
+            'Comfy.DevMode': true,
+            'Comfy.Notification.ShowVersionUpdates': true,
+            'Comfy.Release.Version': '0.3.10',
+            'Comfy.Release.Status': "what's new seen"
+          }
+        })
+
+        test('keeps the release popup behind the tour during preview', async ({
+          comfyPage
+        }) => {
+          const { page } = comfyPage
+          const screen = page.getByRole('dialog', {
+            name: GETTING_STARTED_TITLE
+          })
+          const spotlight = page.getByTestId('coach-spotlight')
+          const popup = page.locator('.whats-new-popup')
+
+          await page.route('**/releases**', (route) =>
+            route.fulfill(
+              jsonRoute([
+                createMockRelease({
+                  version: '0.3.10',
+                  attention: 'high'
+                })
+              ])
+            )
+          )
+
+          await comfyPage.settings.setSetting('Comfy.DevMode', true)
+          const replaying = comfyPage.command
+            .executeCommand('Comfy.Onboarding.Replay')
+            .catch(() => undefined)
+          const replayDialog = page.getByRole('dialog', {
+            name: 'Replay onboarding?'
+          })
+          await expect(replayDialog).toBeVisible()
+          await replayDialog.getByRole('button', { name: 'Confirm' }).click()
+          await replaying
+          const releaseLoaded = page.waitForResponse('**/releases**')
+          await page.reload()
+
+          await releaseLoaded
+          await expect(screen).toBeVisible()
+          await comfyPage.settings.setSetting('Comfy.Release.Version', '0.3.10')
+          await comfyPage.settings.setSetting(
+            'Comfy.Release.Status',
+            "what's new seen"
+          )
+          await expect(popup).toBeHidden()
+          const templateId = await firstPinnedTemplateOnScreen(page)
+          await page.getByTestId(`${CARD_TESTID_PREFIX}${templateId}`).click()
+          await expect(screen).toBeHidden()
+
+          const firstLayer = Promise.race([
+            popup.waitFor({ state: 'visible' }).then(() => 'release'),
+            spotlight.waitFor({ state: 'visible' }).then(() => 'tour')
+          ])
+          await comfyPage.settings.setSetting('Comfy.Release.Status', 'skipped')
+
+          await expect(firstLayer).resolves.toBe('tour')
+          await expect(popup).toBeHidden()
+        })
+      }
+    )
 
     /** Clicks Run and waits for the Result step to admit the run is in flight. */
     async function runFromTourStep(

@@ -19,6 +19,7 @@ const LATE_STEPS: CoachStep[] = [
 
 const STATES = {
   idle: { phase: 'idle' },
+  committed: { phase: 'committed', tour: 'appMode', run: RUN },
   resolving: { phase: 'resolving', tour: 'appMode', run: RUN },
   waiting: {
     phase: 'waiting',
@@ -39,6 +40,8 @@ const STATES = {
 } as const satisfies Record<string, TourState>
 
 const EVENTS = {
+  committed: { type: 'committed', tour: 'appMode', run: OTHER_RUN },
+  released: { type: 'released', run: RUN },
   requested: { type: 'requested', tour: 'appMode', run: OTHER_RUN },
   resolved: { type: 'resolved', run: RUN, steps: LATE_STEPS },
   resolvedEmpty: { type: 'resolvedEmpty', run: RUN },
@@ -54,6 +57,8 @@ type EventName = keyof typeof EVENTS
 /** The phase each pair produces; `null` means the event is refused. */
 const TRANSITIONS: Record<PhaseName, Record<EventName, PhaseName | null>> = {
   idle: {
+    committed: 'committed',
+    released: null,
     requested: 'resolving',
     resolved: null,
     resolvedEmpty: null,
@@ -62,7 +67,22 @@ const TRANSITIONS: Record<PhaseName, Record<EventName, PhaseName | null>> = {
     stepShown: null,
     ended: null
   },
+  committed: {
+    committed: null,
+    released: 'idle',
+    // A request naming another run, so refused: the matching one is its own
+    // test below, and it is the whole point of the phase.
+    requested: null,
+    resolved: null,
+    resolvedEmpty: null,
+    targetAwaited: null,
+    stepEntering: null,
+    stepShown: null,
+    ended: null
+  },
   resolving: {
+    committed: null,
+    released: null,
     requested: null,
     resolved: 'entering',
     resolvedEmpty: 'idle',
@@ -72,6 +92,8 @@ const TRANSITIONS: Record<PhaseName, Record<EventName, PhaseName | null>> = {
     ended: 'idle'
   },
   waiting: {
+    committed: null,
+    released: null,
     requested: null,
     resolved: null,
     resolvedEmpty: null,
@@ -81,6 +103,8 @@ const TRANSITIONS: Record<PhaseName, Record<EventName, PhaseName | null>> = {
     ended: 'idle'
   },
   entering: {
+    committed: null,
+    released: null,
     requested: null,
     resolved: null,
     resolvedEmpty: null,
@@ -90,6 +114,8 @@ const TRANSITIONS: Record<PhaseName, Record<EventName, PhaseName | null>> = {
     ended: 'idle'
   },
   showing: {
+    committed: null,
+    released: null,
     requested: null,
     resolved: null,
     resolvedEmpty: null,
@@ -116,6 +142,30 @@ describe('reduceTour', () => {
       }
       expect(after.phase).toBe(expected)
     })
+  })
+
+  it('lets a reservation ask for the tour it reserved', () => {
+    const asking: TourEvent = { type: 'requested', tour: 'appMode', run: RUN }
+    const after = reduceTour(STATES.committed, asking)
+    if (after.phase !== 'resolving') throw new Error(`entered ${after.phase}`)
+    expect(
+      after.run,
+      'a reservation that cannot be cashed in stops the tour it was taken for'
+    ).toBe(RUN)
+  })
+
+  it('refuses a request for a tour the reservation was not taken for', () => {
+    const other: TourEvent = { type: 'requested', tour: 'firstRun', run: RUN }
+    expect(reduceTour(STATES.committed, other)).toBe(STATES.committed)
+  })
+
+  it('refuses to end a tour that never started, so there is no ending to report', () => {
+    expect(reduceTour(STATES.committed, EVENTS.ended)).toBe(STATES.committed)
+  })
+
+  it('refuses to give back a reservation on behalf of another run', () => {
+    const stale: TourEvent = { type: 'released', run: OTHER_RUN }
+    expect(reduceTour(STATES.committed, stale)).toBe(STATES.committed)
   })
 
   it('refuses a reply from a run that already ended', () => {

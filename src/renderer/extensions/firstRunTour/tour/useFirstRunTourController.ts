@@ -231,8 +231,11 @@ function useFirstRunTourControllerInternal() {
     { capture: true }
   )
 
+  // `tourStarted`, not `activeTour` alone: a reservation given back because no
+  // tour ever opened is not an ending. Arming the nudge on it would point the
+  // user at what to do after a tour they never had.
   watch(
-    () => engine.activeTour === 'firstRun',
+    () => engine.activeTour === 'firstRun' && engine.tourStarted,
     (active) => {
       if (active) return
       // Every ending leaves the user somewhere to go next, so every ending arms
@@ -258,7 +261,9 @@ function useFirstRunTourControllerInternal() {
   }
 
   function releaseTourStart(ownership: symbol): void {
-    if (ownsTourStart(ownership)) tourStart = { phase: 'idle' }
+    if (!ownsTourStart(ownership)) return
+    engine.releaseTour('firstRun')
+    tourStart = { phase: 'idle' }
   }
 
   async function writeRenderer(
@@ -293,13 +298,25 @@ function useFirstRunTourControllerInternal() {
     releaseFirstRunTargets()
     tourWorkflow.value = null
     const { restoreRenderer } = currentStart
-    if (restoreRenderer && shouldCancel()) return
-    if (restoreRenderer) await writeRenderer(ownership, false, restoreRenderer)
-    releaseTourStart(ownership)
+    if (restoreRenderer && shouldCancel()) {
+      engine.releaseTour('firstRun')
+      return
+    }
+    try {
+      if (restoreRenderer)
+        await writeRenderer(ownership, false, restoreRenderer)
+    } finally {
+      releaseTourStart(ownership)
+    }
   }
 
   function canBeginTour(shouldCancel: () => boolean): boolean {
-    return !shouldCancel() && !engine.activeTour && canvasContextHolds.value
+    const available =
+      !engine.activeTour ||
+      (engine.activeTour === 'firstRun' &&
+        !engine.tourStarted &&
+        tourStart.phase !== 'idle')
+    return !shouldCancel() && available && canvasContextHolds.value
   }
 
   async function claimTourStart(ownership: symbol): Promise<boolean> {
@@ -320,14 +337,6 @@ function useFirstRunTourControllerInternal() {
     return restoreRenderer
   }
 
-  async function claimRendererForTour(ownership: symbol): Promise<boolean> {
-    const restoreRenderer = await claimTourStart(ownership)
-    if (!ownsTourStart(ownership)) return restoreRenderer
-    if (restoreRenderer && !settingStore.get('Comfy.VueNodes.Enabled'))
-      await writeRenderer(ownership, true, restoreRenderer)
-    return restoreRenderer
-  }
-
   async function cancelPendingStart(): Promise<void> {
     const previousStart = tourStart
     if (previousStart.phase === 'idle') return
@@ -345,20 +354,32 @@ function useFirstRunTourControllerInternal() {
     }
   }
 
-  /** False when there is no tour to give; any renderer switch is undone. */
   async function beginTour(
     templateId?: string,
     shouldCancel: () => boolean = () => false
   ): Promise<boolean> {
     const ownership = Symbol('first-run-tour-start')
-    // Holds only ever end a tour that is already running, and only when they
-    // change — a context lost before the tour opens (`?template=X&mode=linear`
-    // boots straight into linear mode) never produces that change. Refused
-    // here, ahead of the renderer switch below, so nothing is left to undo.
     if (!canBeginTour(shouldCancel)) return false
 
-    const restoreRenderer = await claimRendererForTour(ownership)
-    if (!ownsTourStart(ownership) || shouldCancel()) return false
+    const restoreRenderer = await claimTourStart(ownership)
+    if (!ownsTourStart(ownership) || shouldCancel()) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      return false
+    }
+
+    const alreadyCommitted =
+      engine.activeTour === 'firstRun' && !engine.tourStarted
+    if (!alreadyCommitted && !engine.commitTour('firstRun')) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      return false
+    }
+
+    if (restoreRenderer && !settingStore.get('Comfy.VueNodes.Enabled'))
+      await writeRenderer(ownership, true, restoreRenderer)
+    if (!ownsTourStart(ownership) || shouldCancel()) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      return false
+    }
 
     tourStart = { phase: 'previewing', ownership, restoreRenderer }
     tourWorkflow.value = workflowStore.activeWorkflow ?? null
@@ -369,19 +390,23 @@ function useFirstRunTourControllerInternal() {
       () => firstRunTourSteps(templateId, runState),
       tourContextHolds
     )
-    await delay(INTRO_PREVIEW_MS)
-    // The preview is long enough for the canvas to go away underneath it, and
-    // the holds watcher cannot catch that: there is no active tour to end yet.
-    const contextStillHolds = (): boolean => canvasContextHolds.value
-    const started =
-      ownsTourStart(ownership) &&
-      contextStillHolds() &&
-      !shouldCancel() &&
-      (await engine.startTour('firstRun'))
-    if (!started) {
+    try {
+      await delay(INTRO_PREVIEW_MS)
+      const started =
+        ownsTourStart(ownership) &&
+        canvasContextHolds.value &&
+        !shouldCancel() &&
+        (await engine.startTour('firstRun'))
+      if (!started) {
+        await cleanUpFailedTourStart(ownership, shouldCancel)
+      } else {
+        releaseTourStart(ownership)
+      }
+      return started
+    } catch (error) {
       await cleanUpFailedTourStart(ownership, shouldCancel)
-    } else releaseTourStart(ownership)
-    return started
+      throw error
+    }
   }
 
   return {

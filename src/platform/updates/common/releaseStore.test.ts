@@ -68,6 +68,7 @@ beforeEach(() => {
 
 describe('useReleaseStore', () => {
   let activeTour: Ref<ReturnType<typeof useOnboardingTourStore>['activeTour']>
+  let tourStarted: Ref<boolean>
   let overlayActive: Ref<boolean>
   const mockRelease = {
     id: 1,
@@ -83,6 +84,10 @@ describe('useReleaseStore', () => {
     activeTour = ref(null)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
       () => activeTour.value
+    )
+    tourStarted = ref(false)
+    vi.spyOn(useOnboardingTourStore(), 'tourStarted', 'get').mockImplementation(
+      () => tourStarted.value
     )
     overlayActive = ref(false)
     vi.spyOn(useOnboardingOverlayStore(), 'active', 'get').mockImplementation(
@@ -567,7 +572,7 @@ describe('useReleaseStore', () => {
   })
 
   describe('popup visibility', () => {
-    it('withholds the popup while the first-run tour is on screen', () => {
+    it('withholds the popup from reservation through the first-run tour', () => {
       const store = useReleaseStore()
       const systemStatsStore = useSystemStatsStore()
       const settingStore = useSettingStore()
@@ -581,9 +586,14 @@ describe('useReleaseStore', () => {
       store.releases = [mockRelease]
 
       activeTour.value = 'firstRun'
+      expect(tourStarted.value).toBe(false)
+      expect(store.shouldShowPopup).toBe(false)
+
+      tourStarted.value = true
       expect(store.shouldShowPopup).toBe(false)
 
       activeTour.value = null
+      tourStarted.value = false
       expect(store.shouldShowPopup).toBe(true)
     })
 
