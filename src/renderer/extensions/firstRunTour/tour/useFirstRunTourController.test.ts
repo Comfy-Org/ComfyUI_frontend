@@ -682,6 +682,24 @@ describe('useFirstRunTourController', () => {
       ).toHaveBeenCalledWith('firstRun')
     })
 
+    it('owns the screen before an async renderer switch can expose another layer', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      const finishRendererSetup = deferRendererEnable()
+      mocks.steps = [runStep()]
+      const controller = await freshController()
+      const engine = useOnboardingTourStore()
+
+      const starting = controller.beginTour('image_z_image_turbo')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(engine.activeTour).toBe('firstRun')
+      expect(engine.tourStarted).toBe(false)
+
+      finishRendererSetup()
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+      await starting
+    })
+
     it('gives the reservation back when the engine turns the start down', async () => {
       mocks.steps = [runStep()]
       vi.mocked(useOnboardingTourStore().startTour).mockResolvedValue(false)

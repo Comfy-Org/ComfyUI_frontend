@@ -337,14 +337,6 @@ function useFirstRunTourControllerInternal() {
     return restoreRenderer
   }
 
-  async function claimRendererForTour(ownership: symbol): Promise<boolean> {
-    const restoreRenderer = await claimTourStart(ownership)
-    if (!ownsTourStart(ownership)) return restoreRenderer
-    if (restoreRenderer && !settingStore.get('Comfy.VueNodes.Enabled'))
-      await writeRenderer(ownership, true, restoreRenderer)
-    return restoreRenderer
-  }
-
   async function cancelPendingStart(): Promise<void> {
     const previousStart = tourStart
     if (previousStart.phase === 'idle') return
@@ -369,7 +361,21 @@ function useFirstRunTourControllerInternal() {
     const ownership = Symbol('first-run-tour-start')
     if (!canBeginTour(shouldCancel)) return false
 
-    const restoreRenderer = await claimRendererForTour(ownership)
+    const restoreRenderer = await claimTourStart(ownership)
+    if (!ownsTourStart(ownership) || shouldCancel()) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      return false
+    }
+
+    const alreadyCommitted =
+      engine.activeTour === 'firstRun' && !engine.tourStarted
+    if (!alreadyCommitted && !engine.commitTour('firstRun')) {
+      await cleanUpFailedTourStart(ownership, shouldCancel)
+      return false
+    }
+
+    if (restoreRenderer && !settingStore.get('Comfy.VueNodes.Enabled'))
+      await writeRenderer(ownership, true, restoreRenderer)
     if (!ownsTourStart(ownership) || shouldCancel()) {
       await cleanUpFailedTourStart(ownership, shouldCancel)
       return false
@@ -384,12 +390,6 @@ function useFirstRunTourControllerInternal() {
       () => firstRunTourSteps(templateId, runState),
       tourContextHolds
     )
-    const alreadyCommitted =
-      engine.activeTour === 'firstRun' && !engine.tourStarted
-    if (!alreadyCommitted && !engine.commitTour('firstRun')) {
-      await cleanUpFailedTourStart(ownership, shouldCancel)
-      return false
-    }
     try {
       await delay(INTRO_PREVIEW_MS)
       const started =
