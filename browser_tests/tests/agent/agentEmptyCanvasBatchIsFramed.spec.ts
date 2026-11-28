@@ -1,10 +1,9 @@
 import { expect } from '@playwright/test'
 
-import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import {
-  AgentEmptyCanvasFramingHarness,
   TEMPLATE_NODE_IDS,
   TEMPLATE_NODE_POSITIONS,
+  agentEmptyCanvasFramingTest as test,
   nodePositions,
   nodeVisibility
 } from '@e2e/fixtures/helpers/AgentEmptyCanvasFramingHarness'
@@ -21,13 +20,13 @@ test.describe(
           description: 'https://linear.app/comfyorg/issue/PM-2072'
         }
       },
-      async ({ page }, testInfo) => {
+      async ({ page, agentEmptyCanvasFraming }, testInfo) => {
         test.setTimeout(60_000)
-        const harness = new AgentEmptyCanvasFramingHarness(page)
-        await harness.boot()
-        await harness.sendPrompt('Build me an image edit workflow')
-        await harness.insertTemplate()
-        await harness.waitForTurnComplete()
+        await agentEmptyCanvasFraming.sendPrompt(
+          'Build me an image edit workflow'
+        )
+        await agentEmptyCanvasFraming.insertTemplate()
+        await agentEmptyCanvasFraming.waitForTurnComplete()
 
         await expect
           .poll(async () => nodePositions(page, TEMPLATE_NODE_IDS), {

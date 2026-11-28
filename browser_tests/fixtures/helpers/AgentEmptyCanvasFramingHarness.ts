@@ -11,7 +11,7 @@ import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
-import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
@@ -116,8 +116,7 @@ export async function nodePositions(
   }, ids.map(String))
 }
 
-/** Drives a controlled agent turn that inserts a template into an empty tab. */
-export class AgentEmptyCanvasFramingHarness {
+class AgentEmptyCanvasFramingHarness {
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
 
@@ -245,3 +244,13 @@ export class AgentEmptyCanvasFramingHarness {
     this.hostSocket.send(frame)
   }
 }
+
+export const agentEmptyCanvasFramingTest = agentTest.extend<{
+  agentEmptyCanvasFraming: AgentEmptyCanvasFramingHarness
+}>({
+  agentEmptyCanvasFraming: async ({ page }, use) => {
+    const harness = new AgentEmptyCanvasFramingHarness(page)
+    await harness.boot()
+    await use(harness)
+  }
+})
