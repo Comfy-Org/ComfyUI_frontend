@@ -511,6 +511,16 @@ describe('useNodeResize', () => {
       )
     })
 
+    it('moves at least one grid cell when snapping to a grid wider than the step', () => {
+      snapState.shouldSnap = true
+      snapState.gridSize = 20
+      const { nudgeResize } = useNodeResize(callback)
+
+      nudgeResize(keyEvent(), 'SE', { x: -16, y: 0 }, origin())
+
+      expect(callback.mock.calls[0][0].size.width).toBe(280)
+    })
+
     it('ends a pointer drag that is still in progress', () => {
       const { startResize, nudgeResize } = useNodeResize(callback)
       startResizeAt(startResize, handle, 'SE')

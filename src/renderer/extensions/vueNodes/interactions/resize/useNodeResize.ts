@@ -170,15 +170,21 @@ export function useNodeResize(
     endActiveResize = cleanup
   }
 
-  /** Resizes once from `corner` as if its handle were dragged by `delta` screen pixels. */
+  /** Resizes once from `corner` as if its handle were dragged by `delta` screen pixels, or by at least one grid cell when snapping. */
   function nudgeResize(
     event: KeyboardEvent,
     corner: CompassCorners,
     delta: Point,
     origin: ResizeOrigin
   ) {
+    const snapToGrid = shouldSnap(event)
+    const minStep = snapToGrid
+      ? gridSize.value * (transformState.camera.z || 1)
+      : 0
+    const step = (pixels: number) =>
+      Math.sign(pixels) * Math.max(Math.abs(pixels), minStep)
     const resize = beginResize(corner, origin)
-    resize.resizeBy(delta, shouldSnap(event))
+    resize.resizeBy({ x: step(delta.x), y: step(delta.y) }, snapToGrid)
     resize.end()
   }
 
