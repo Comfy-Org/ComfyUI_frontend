@@ -149,7 +149,17 @@
       "types": "./dist-types/oauthPkce.d.ts",
       "default": "./src/oauthPkce.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./analyticsConsentReceiptBridge": {
+      "@comfyorg/account-core": "./src/core/analyticsConsentReceiptBridge.ts",
+      "types": "./dist-types/core/analyticsConsentReceiptBridge.d.ts",
+      "default": "./src/core/analyticsConsentReceiptBridge.ts"
+    },
+    "./analyticsConsentRuntime": {
+      "@comfyorg/account-core": "./src/core/analyticsConsentRuntime.ts",
+      "types": "./dist-types/core/analyticsConsentRuntime.d.ts",
+      "default": "./src/core/analyticsConsentRuntime.ts"
+    }
   },
   "publishConfig": {
     "exports": {
@@ -245,7 +255,15 @@
         "types": "./dist/oauthPkce.d.ts",
         "import": "./dist/oauthPkce.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./analyticsConsentReceiptBridge": {
+        "types": "./dist/core/analyticsConsentReceiptBridge.d.ts",
+        "import": "./dist/core/analyticsConsentReceiptBridge.js"
+      },
+      "./analyticsConsentRuntime": {
+        "types": "./dist/core/analyticsConsentRuntime.d.ts",
+        "import": "./dist/core/analyticsConsentRuntime.js"
+      }
     },
     "access": "public"
   },
