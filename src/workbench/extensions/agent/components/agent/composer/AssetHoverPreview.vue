@@ -9,6 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { MediaKind } from '@comfyorg/assets-core/media'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
@@ -112,18 +113,20 @@ useEventListener(document, 'keydown', dismissOnEscape, { capture: true })
 <template>
   <PopoverRoot :open @update:open="onOpenChange">
     <PopoverAnchor as-child>
-      <button
-        ref="trigger"
-        type="button"
-        :aria-label="t('agent.previewAsset', { name })"
-        aria-haspopup="dialog"
-        :aria-expanded="open"
-        :aria-controls="open ? contentId : undefined"
-        class="relative flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-md hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
-        @click="activate"
-      >
-        <slot />
-      </button>
+      <Button as-child variant="textonly" size="unset">
+        <button
+          ref="trigger"
+          type="button"
+          :aria-label="t('agent.previewAsset', { name })"
+          aria-haspopup="dialog"
+          :aria-expanded="open"
+          :aria-controls="open ? contentId : undefined"
+          class="size-full overflow-hidden"
+          @click="activate"
+        >
+          <slot />
+        </button>
+      </Button>
     </PopoverAnchor>
     <PopoverContent
       :id="contentId"
@@ -134,7 +137,7 @@ useEventListener(document, 'keydown', dismissOnEscape, { capture: true })
       :collision-padding="16"
       :class="
         cn(
-          'max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
+          'max-w-[calc(100vw-2rem)] overflow-hidden p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "

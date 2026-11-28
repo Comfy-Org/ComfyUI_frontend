@@ -128,7 +128,7 @@ const chatMenuItems = computed<MenuItem[]>(() => [
       variant="muted-textonly"
       size="icon-sm"
       :aria-label="t('agent.showChatHistory')"
-      class="size-6 shrink-0 data-coach-hover:bg-accent"
+      class="shrink-0 data-coach-hover:bg-accent"
       @click="emit('openHistory')"
     >
       <i aria-hidden="true" class="icon-[lucide--history]" />
@@ -139,7 +139,7 @@ const chatMenuItems = computed<MenuItem[]>(() => [
         v-model="renameDraft"
         type="text"
         :aria-label="t('g.rename')"
-        class="h-6 flex-1 px-2 py-1 text-xs"
+        class="flex-1"
         @keydown="onRenameKeydown"
         @blur="commitRename"
       />
@@ -175,7 +175,7 @@ const chatMenuItems = computed<MenuItem[]>(() => [
             variant="muted-textonly"
             size="icon-sm"
             :aria-label="t('agent.chatOptions')"
-            class="size-6 shrink-0"
+            class="shrink-0"
           >
             <i aria-hidden="true" class="icon-[lucide--chevron-down] size-3" />
           </Button>

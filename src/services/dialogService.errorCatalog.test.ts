@@ -9,6 +9,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
+import { ref } from 'vue'
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -35,7 +36,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: vi.fn(async () => true)
+  })
 }))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))

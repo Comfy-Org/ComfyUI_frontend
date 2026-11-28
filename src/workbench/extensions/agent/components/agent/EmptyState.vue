@@ -139,7 +139,7 @@ function onPromptClick(prompt: string, label: string, index: number): void {
           size="md"
           :class="
             cn(
-              'w-full max-w-full min-w-0 justify-start rounded-full px-3 text-sm @min-[460px]:w-auto',
+              'w-full max-w-full min-w-0 justify-start @min-[460px]:w-auto',
               displayIndex >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
             )
           "

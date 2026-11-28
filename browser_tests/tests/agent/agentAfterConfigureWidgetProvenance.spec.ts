@@ -47,9 +47,8 @@ test.describe(
       ).toHaveValue('47')
 
       await page.getByTestId('crdt-dev-panel-tab-log').click()
-      await page
-        .getByTestId('crdt-dev-panel-filter')
-        .selectOption('mint_divergence')
+      await page.getByTestId('crdt-dev-panel-filter').click()
+      await page.getByRole('option', { name: 'mint_divergence' }).click()
       await expect(page.getByTestId('crdt-dev-panel-log')).toBeEmpty()
     })
   }

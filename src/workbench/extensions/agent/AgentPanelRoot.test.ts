@@ -42,7 +42,6 @@ import {
   watch
 } from 'vue'
 import type { Ref } from 'vue'
-import { useClipboard } from '@vueuse/core'
 import { z } from 'zod'
 
 vi.mock(import('firebase/auth'))
@@ -257,9 +256,13 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), async () => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
-
-vi.mock(import('@vueuse/core'), { spy: true })
+const clipboard = vi.hoisted(() => ({ copyToClipboard: vi.fn() }))
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: clipboard.copyToClipboard
+  })
+}))
 
 vi.mock(import('@comfyorg/telemetry'))
 const telemetryProvider = useTelemetry()
@@ -415,14 +418,6 @@ beforeEach(() => {
     fromPartial<ComfyWorkflowJSON>(
       typeof content === 'object' && content !== null ? content : {}
     )
-  )
-  vi.mocked(useClipboard).mockReturnValue(
-    fromPartial({
-      copy: clipboard.copy,
-      copied: computed(() => false),
-      isSupported: ref(true),
-      text: ref('')
-    })
   )
   vi.mocked(useWorkspaceUI).mockReturnValue(
     fromPartial({
@@ -855,21 +850,21 @@ describe('AgentPanelRoot first-use experience', () => {
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
-    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveValue('warn')
-
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-verbosity'),
-      'trace'
+    expect(screen.getByTestId('crdt-dev-panel-verbosity')).toHaveTextContent(
+      'warn'
     )
+
+    await user.click(screen.getByTestId('crdt-dev-panel-verbosity'))
+    await user.click(screen.getByRole('option', { name: 'trace' }))
     await waitFor(() => {
       expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
     })
     unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
-      'trace'
-    )
+    expect(
+      await screen.findByTestId('crdt-dev-panel-verbosity')
+    ).toHaveTextContent('trace')
   })
 
   it('keeps the latest diagnostic level when saves finish out of order', async () => {
@@ -892,14 +887,10 @@ describe('AgentPanelRoot first-use experience', () => {
     )
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-verbosity'),
-      'trace'
-    )
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-verbosity'),
-      'warn'
-    )
+    await user.click(screen.getByTestId('crdt-dev-panel-verbosity'))
+    await user.click(screen.getByRole('option', { name: 'trace' }))
+    await user.click(screen.getByTestId('crdt-dev-panel-verbosity'))
+    await user.click(screen.getByRole('option', { name: 'warn' }))
 
     finishSecond()
     await second
@@ -910,9 +901,9 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('warn')
     unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
-      'warn'
-    )
+    expect(
+      await screen.findByTestId('crdt-dev-panel-verbosity')
+    ).toHaveTextContent('warn')
   })
 
   it('retains the diagnostic level and reports a failed save', async () => {
@@ -927,10 +918,8 @@ describe('AgentPanelRoot first-use experience', () => {
     localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
     const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
-    await user.selectOptions(
-      screen.getByTestId('crdt-dev-panel-verbosity'),
-      'trace'
-    )
+    await user.click(screen.getByTestId('crdt-dev-panel-verbosity'))
+    await user.click(screen.getByRole('option', { name: 'trace' }))
 
     await waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(failure, {
@@ -942,9 +931,9 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
     unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
-      'trace'
-    )
+    expect(
+      await screen.findByTestId('crdt-dev-panel-verbosity')
+    ).toHaveTextContent('trace')
   })
 
   const reportFreeUseNotice = vi.fn()
@@ -10910,7 +10899,7 @@ describe('AgentPanelRoot history', () => {
 
 describe('AgentPanelRoot transcript copy', () => {
   beforeEach(() => {
-    clipboard.copy.mockClear()
+    clipboard.copyToClipboard.mockClear()
   })
 
   it.for(['current', 'pending'])(
@@ -10992,11 +10981,11 @@ describe('AgentPanelRoot transcript copy', () => {
       )
 
       if (loaded === 'current') {
-        expect(clipboard.copy).toHaveBeenCalledWith(
+        expect(clipboard.copyToClipboard).toHaveBeenCalledWith(
           '**You:** make a cat with @[Workflow: Portrait]\n@[Node: KSampler #12]\n@[File: brief.txt]\n\n**Agent:** Here is a cat.'
         )
       } else {
-        expect(clipboard.copy).not.toHaveBeenCalled()
+        expect(clipboard.copyToClipboard).not.toHaveBeenCalled()
         expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
             title: i18n.global.t('agent.copyUnavailable')

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 import RunNoticeAction from './RunNoticeAction.vue'
@@ -69,50 +70,54 @@ const contextAction = computed(() => {
 </script>
 
 <template>
-  <div
+  <Message
     v-if="visible"
+    severity="secondary"
     role="note"
     :data-testid="context ? `agent-run-notice-${context}` : undefined"
-    :aria-live="liveness"
-    class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-background p-4 ring-1 ring-border/50 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted"
+    :aria-live="liveness ?? 'off'"
   >
-    <i
-      aria-hidden="true"
-      class="icon-[heroicons--information-circle-20-solid] size-5 text-muted-foreground"
-    />
-    <p class="my-0 min-w-0 flex-1 text-sm">
-      <template v-if="context">
-        {{ $t(contextMessages[context], { workflowName }) }}
-        <RunNoticeAction
-          v-if="contextAction"
-          v-bind="contextAction"
-          :workflow-name="workflowName"
-          @run="contextAction.run"
-        />
-      </template>
-      <i18n-t
-        v-else-if="workflowName"
-        keypath="agent.workflowEditNotice"
-        tag="span"
-      >
-        <template #workflow>
-          <span class="underline decoration-solid">{{ workflowName }}</span>
+    <template #icon>
+      <i
+        aria-hidden="true"
+        class="icon-[heroicons--information-circle-20-solid] size-5 text-muted-foreground"
+      />
+    </template>
+    <div class="flex items-start gap-2">
+      <p class="my-0 min-w-0 flex-1">
+        <template v-if="context">
+          {{ $t(contextMessages[context], { workflowName }) }}
+          <RunNoticeAction
+            v-if="contextAction"
+            v-bind="contextAction"
+            :workflow-name="workflowName"
+            @run="contextAction.run"
+          />
         </template>
-      </i18n-t>
-      <template v-else>
-        {{ $t(defaultNotice) }}
-      </template>
-    </p>
-    <Button
-      v-if="!context"
-      type="button"
-      variant="muted-textonly"
-      size="icon-sm"
-      :aria-label="$t('agent.dismiss')"
-      class="shrink-0"
-      @click="dismissed = true"
-    >
-      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
-    </Button>
-  </div>
+        <i18n-t
+          v-else-if="workflowName"
+          keypath="agent.workflowEditNotice"
+          tag="span"
+        >
+          <template #workflow>
+            <span class="underline decoration-solid">{{ workflowName }}</span>
+          </template>
+        </i18n-t>
+        <template v-else>
+          {{ $t(defaultNotice) }}
+        </template>
+      </p>
+      <Button
+        v-if="!context"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="$t('agent.dismiss')"
+        class="shrink-0"
+        @click="dismissed = true"
+      >
+        <i aria-hidden="true" class="icon-[lucide--x] size-5" />
+      </Button>
+    </div>
+  </Message>
 </template>

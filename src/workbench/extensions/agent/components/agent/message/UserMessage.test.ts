@@ -1,8 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
@@ -15,31 +14,23 @@ import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({
   text: '',
-  copy: vi.fn<VueUse.UseClipboardReturn<true>['copy']>(async (value) => {
-    clipboard.text = typeof value === 'string' ? value : ''
+  copyToClipboard: vi.fn(async (value: string) => {
+    clipboard.text = value
+    return true
   })
 }))
 
-vi.mock(import('@vueuse/core'), { spy: true })
-
 beforeEach(() => {
   clipboard.text = ''
-  clipboard.copy.mockClear()
-  vi.mocked(VueUse.useClipboard).mockReturnValue({
-    copy: clipboard.copy,
-    copied: ref(false),
-    copyPending: ref(false),
-    isSupported: computed(() => true),
-    text: ref('')
-  })
-  vi.mocked(VueUse.useClipboardItems).mockReturnValue({
-    copy: vi.fn(),
-    copied: ref(false),
-    isSupported: computed(() => false),
-    content: ref([]),
-    read: vi.fn()
-  })
+  clipboard.copyToClipboard.mockClear()
 })
+
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: clipboard.copyToClipboard
+  })
+}))
 
 const t = i18n.global.t
 
@@ -341,7 +332,7 @@ describe('UserMessage', () => {
     )
     await user.click(copyButton)
 
-    expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+    expect(clipboard.copyToClipboard).toHaveBeenCalledWith('make it cinematic')
     expect(screen.getByRole('tooltip')).toBeInTheDocument()
   })
 
@@ -383,7 +374,7 @@ describe('UserMessage', () => {
     expect(screen.getByRole('button', { name: t('agent.copy') })).toHaveFocus()
 
     await user.keyboard('{Enter}')
-    expect(clipboard.copy).toHaveBeenCalledWith('make it cinematic')
+    expect(clipboard.copyToClipboard).toHaveBeenCalledWith('make it cinematic')
   })
 
   it('offers an accessible edit action only when the prompt is editable', async () => {

@@ -5,7 +5,7 @@ import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { until, useClipboard, useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -22,6 +22,7 @@ import { useI18n } from 'vue-i18n'
 
 import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -2138,7 +2139,7 @@ onBeforeUnmount(() => {
   })
 })
 
-const { copy } = useClipboard({ legacy: true })
+const { copyToClipboard } = useCopyToClipboard({ showSuccessToast: false })
 
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement(isCloud)
@@ -2509,7 +2510,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId && id === threadId.value)
-    void copy(buildTranscriptMarkdown(entries.value))
+    void copyToClipboard(buildTranscriptMarkdown(entries.value))
   else toast.info(t('agent.copyUnavailable'))
 }
 

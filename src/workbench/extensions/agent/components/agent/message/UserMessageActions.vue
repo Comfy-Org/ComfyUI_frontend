@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useClipboard, useClipboardItems } from '@vueuse/core'
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -8,6 +6,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
@@ -41,11 +40,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
-const richClipboard = useClipboardItems({ copiedDuring: 2000 })
-const copied = computed(
-  () => plainClipboard.copied.value || richClipboard.copied.value
-)
+const { copied, copyToClipboard } = useCopyToClipboard({
+  copiedDuring: 2000,
+  showSuccessToast: false
+})
 
 function onEdit(): void {
   emit('edit', {
@@ -58,7 +56,6 @@ function onEdit(): void {
 async function copyMessage(): Promise<void> {
   if (
     (workflowReferences.length || skillReference) &&
-    richClipboard.isSupported.value &&
     typeof ClipboardItem !== 'undefined'
   ) {
     const content = userMessageClipboard({
@@ -68,20 +65,17 @@ async function copyMessage(): Promise<void> {
       tags,
       attachments
     })
-    try {
-      await richClipboard.copy([
+    await copyToClipboard(content.text, {
+      clipboardItems: [
         new ClipboardItem({
           'text/plain': new Blob([content.text], { type: 'text/plain' }),
           'text/html': new Blob([content.html], { type: 'text/html' })
         })
-      ])
-      return
-    } catch {
-      await plainClipboard.copy(content.text)
-      return
-    }
+      ]
+    })
+    return
   }
-  await plainClipboard.copy(readableText)
+  await copyToClipboard(readableText)
 }
 </script>
 
@@ -96,7 +90,6 @@ async function copyMessage(): Promise<void> {
       variant="muted-textonly"
       size="icon-sm"
       :aria-label="t('g.edit')"
-      class="size-6 rounded-lg"
       @click="onEdit"
     >
       <i aria-hidden="true" class="icon-[lucide--pencil] size-3" />
@@ -108,7 +101,6 @@ async function copyMessage(): Promise<void> {
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-          class="size-6 rounded-lg"
           @click="copyMessage"
         >
           <i

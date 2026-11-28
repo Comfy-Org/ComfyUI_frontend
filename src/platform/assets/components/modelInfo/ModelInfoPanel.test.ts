@@ -16,6 +16,7 @@ import ModelInfoPanel from './ModelInfoPanel.vue'
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
+    copied: ref(false),
     copyToClipboard: vi.fn()
   })
 }))

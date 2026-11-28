@@ -12,7 +12,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { defineComponent, nextTick, provide } from 'vue'
+import { defineComponent, nextTick, provide, ref } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
@@ -100,6 +100,7 @@ vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
+    copied: ref(false),
     copyToClipboard: vi.fn()
   }))
 }))

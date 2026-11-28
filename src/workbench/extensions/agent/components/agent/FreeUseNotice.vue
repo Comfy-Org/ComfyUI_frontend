@@ -2,6 +2,7 @@
 import { computed, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import type { AgentFreeUseNoticeMetadata } from '@comfyorg/telemetry/types'
@@ -36,37 +37,40 @@ function onDismiss(): void {
 </script>
 
 <template>
-  <div
+  <Message
     v-if="visible"
+    severity="info"
     role="note"
+    aria-live="off"
     :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
-    class="flex items-start gap-3 rounded-lg bg-primary/30 px-4 py-3 text-foreground"
   >
-    <p class="my-0 min-w-0 flex-1 text-sm/5">
-      {{ $t('agent.firstChatFreeNotice') }}
+    <div class="flex items-start gap-3">
+      <p class="my-0 min-w-0 flex-1">
+        {{ $t('agent.firstChatFreeNotice') }}
+        <Button
+          variant="link"
+          size="link"
+          as="a"
+          :href="AGENT_COST_DOCS_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="py-0 underline"
+          @click="emit('notice', { action: 'learn_more_clicked', placement })"
+        >
+          {{ $t('g.learnMore') }}
+        </Button>
+      </p>
       <Button
-        variant="link"
-        size="unset"
-        as="a"
-        :href="AGENT_COST_DOCS_URL"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="inline p-0 text-sm/5 font-normal text-foreground underline underline-offset-4"
-        @click="emit('notice', { action: 'learn_more_clicked', placement })"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="$t('agent.dismiss')"
+        class="shrink-0"
+        @click="onDismiss"
       >
-        {{ $t('g.learnMore') }}
+        <i aria-hidden="true" class="icon-[lucide--x] size-5" />
       </Button>
-    </p>
-    <Button
-      type="button"
-      variant="muted-textonly"
-      size="icon-sm"
-      :aria-label="$t('agent.dismiss')"
-      class="shrink-0"
-      @click="onDismiss"
-    >
-      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
-    </Button>
-  </div>
+    </div>
+  </Message>
 </template>
