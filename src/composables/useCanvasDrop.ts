@@ -18,6 +18,20 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 
+function comboValueForModel(
+  widget: { options?: { values?: unknown } },
+  fileName: string
+): string {
+  const values = widget.options?.values
+  if (!Array.isArray(values) || values.includes(fileName)) return fileName
+  const wanted = fileName.replaceAll('\\', '/')
+  const match = values.find(
+    (value): value is string =>
+      typeof value === 'string' && value.replaceAll('\\', '/') === wanted
+  )
+  return match ?? fileName
+}
+
 export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
@@ -77,7 +91,7 @@ export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
               matchesWidgetName(widget.name, key)
             )
             if (widget) {
-              widget.value = model.file_name
+              widget.value = comboValueForModel(widget, model.file_name)
             }
           }
         } else if (node.data instanceof ComfyWorkflow) {
