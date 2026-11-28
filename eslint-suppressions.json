@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "apps/billing-web/src/components/SubscriptionActions.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 4
-    }
-  },
   "apps/billing-web/src/components/auth/SignInEmailForm.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1

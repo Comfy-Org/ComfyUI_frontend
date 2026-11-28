@@ -9,6 +9,8 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@comfyorg/design-system/button/Button'
+
 import type {
   BillingCapabilities,
   SubscriptionCommandResult
@@ -59,6 +61,14 @@ const busy = ref(false)
 const notice = ref<string | undefined>()
 const failure = ref<string | undefined>()
 
+function focusCancelTrigger() {
+  cancelTrigger.value?.focus?.() || (cancelTrigger.value as any)?.$el?.focus?.()
+}
+
+function focusConfirmCancelAction() {
+  confirmCancelAction.value?.focus?.() || (confirmCancelAction.value as any)?.$el?.focus?.()
+}
+
 async function readCapabilities(forceRefresh = false) {
   const result = await capabilities.read({ forceRefresh })
   allowed.value = result.status === 'ok' ? result.value.capabilities : undefined
@@ -99,14 +109,14 @@ async function askToCancel() {
   confirmingCancel.value = true
   cancelFlow.intent()
   await nextTick()
-  confirmCancelAction.value?.focus()
+  focusConfirmCancelAction()
 }
 
 async function keepPlan() {
   confirmingCancel.value = false
   cancelFlow.abandoned()
   await nextTick()
-  cancelTrigger.value?.focus()
+  focusCancelTrigger()
 }
 
 async function cancelSubscription() {
@@ -142,46 +152,42 @@ async function resubscribe() {
         {{ t('hosted.subscription.cancelConfirm') }}
       </p>
       <div class="flex gap-2">
-        <button
+        <Button
           ref="confirmCancelAction"
-          type="button"
+          variant="destructive"
           :disabled="busy"
-          class="h-11 cursor-pointer rounded-lg bg-destructive px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
           @click="cancelSubscription"
         >
           {{ t('hosted.subscription.cancelConfirmAction') }}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="secondary"
           :disabled="busy"
-          class="h-11 cursor-pointer rounded-lg bg-secondary px-5 font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
           @click="keepPlan"
         >
           {{ t('hosted.subscription.keepPlan') }}
-        </button>
+        </Button>
       </div>
     </div>
 
     <div v-else class="flex gap-2">
-      <button
+      <Button
         v-if="allowed?.can_cancel"
         ref="cancelTrigger"
-        type="button"
+        variant="secondary"
         :disabled="busy"
-        class="h-11 cursor-pointer rounded-lg bg-secondary px-5 font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         @click="askToCancel"
       >
         {{ t('hosted.subscription.cancel') }}
-      </button>
-      <button
+      </Button>
+      <Button
         v-if="allowed?.can_reactivate"
-        type="button"
+        variant="primary"
         :disabled="busy"
-        class="h-11 cursor-pointer rounded-lg bg-foreground px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
         @click="resubscribe"
       >
         {{ t('hosted.subscription.resubscribe') }}
-      </button>
+      </Button>
     </div>
   </section>
 </template>
