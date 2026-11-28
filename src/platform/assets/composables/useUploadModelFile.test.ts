@@ -1055,6 +1055,60 @@ describe('useUploadModelFile', () => {
       expect(server.options().freshUpload).toBe(true)
     })
 
+    it('still sends the file fresh on the next Try again after a fresh attempt fails before sending', async () => {
+      const { upload, server } = await failedOnDeployment()
+      vi.spyOn(
+        deploymentModelUploadApi,
+        'clearDeploymentModel'
+      ).mockResolvedValue(true)
+
+      const retry = upload.upload()
+      await vi.waitFor(() => expect(server.spy).toHaveBeenCalledTimes(2))
+      expect(server.options().freshUpload).toBe(true)
+      server.finish({
+        ok: false,
+        reason: 'failed',
+        cause: new TypeError('Failed to fetch')
+      })
+      await expect(retry).resolves.toBeNull()
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: 'Upload failed. Try again.',
+        freshUpload: true
+      })
+
+      const again = upload.upload()
+      await vi.waitFor(() => expect(server.spy).toHaveBeenCalledTimes(3))
+      server.finish({ ok: true, modelId: 'model-2' })
+
+      await expect(again).resolves.toMatchObject({ status: 'processing' })
+      expect(server.options().freshUpload).toBe(true)
+    })
+
+    it('says the file may still be on the deployment when a cancel kept an entry made from stored bytes, and removes nothing on Try again', async () => {
+      const { upload } = await setupOnDeployment()
+      const server = pendingDeploymentUpload()
+      const clear = vi.spyOn(deploymentModelUploadApi, 'clearDeploymentModel')
+      upload.choose(lora)
+
+      const result = upload.upload()
+      upload.cancel()
+      server.finish({ ok: false, reason: 'cancelled', mayBeListed: true })
+
+      await expect(result).resolves.toBeNull()
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error:
+          'Upload canceled. The file may still be on the deployment, where you can remove it.'
+      })
+
+      void upload.upload()
+      await vi.waitFor(() => expect(server.spy).toHaveBeenCalledTimes(2))
+      expect(clear).not.toHaveBeenCalled()
+    })
+
     it('says the file is still listed when a canceled upload could not remove its entry', async () => {
       const { upload } = await setupOnDeployment()
       const server = pendingDeploymentUpload()

@@ -381,9 +381,16 @@ export function useUploadModelFile(
 
   function failedOnDeployment(
     file: File,
-    result: DeploymentUploadStopped
-  ): ModelFileUpload {
-    const failed = failedUpload(file, result, 'deployment')
+    result: DeploymentUploadStopped,
+    freshUpload?: true
+  ): FailedUpload {
+    const failed: FailedUpload = {
+      ...failedUpload(file, result, 'deployment'),
+      ...(freshUpload && { freshUpload })
+    }
+    if (result.mayBeListed) {
+      return { ...failed, error: t('assetBrowser.fileUpload.mayBeListed') }
+    }
     if (!result.modelId) return failed
     const error = result.stillListed
       ? t('assetBrowser.fileUpload.stillListed')
@@ -518,7 +525,7 @@ export function useUploadModelFile(
     )
     if (run !== generation) return null
     if (!result.ok) {
-      state.value = failedOnDeployment(file, result)
+      state.value = failedOnDeployment(file, result, failed?.freshUpload)
       return null
     }
     state.value = { status: 'adding', file }

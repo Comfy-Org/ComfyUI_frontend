@@ -4943,6 +4943,7 @@
       "failed": "Upload failed. Try again.",
       "featureDisabled": "Model uploads are currently unavailable.",
       "findInLoader": "Pick it from a loader's model list.",
+      "mayBeListed": "Upload canceled. The file may still be on the deployment, where you can remove it.",
       "notAddedToDeployment": "{name} was not added to this deployment. Try again to replace it.",
       "notSafetensors": "Only .safetensors files can be uploaded.",
       "notStopped": "Couldn't confirm the earlier upload stopped, so the file wasn't sent again.",

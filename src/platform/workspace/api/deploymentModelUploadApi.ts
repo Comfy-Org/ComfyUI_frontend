@@ -29,6 +29,7 @@ export type DeploymentModelUploadResult =
       cause?: unknown
       modelId?: string
       stillListed?: true
+      mayBeListed?: true
     }
 
 type UploadStopped = Extract<DeploymentModelUploadResult, { ok: false }>
@@ -281,20 +282,6 @@ async function fillUpload(
   return sendPieces(file, target, { blobId, parts }, options)
 }
 
-async function listedBefore(
-  { workspaceId, deploymentId }: DeploymentModelTarget,
-  created: Extract<CreatedUpload, { ok: true }>,
-  signal: AbortSignal
-): Promise<Set<string>> {
-  if (created.parts) return new Set()
-  const models = await workspaceApi.listDeploymentModels(
-    workspaceId,
-    deploymentId,
-    signal
-  )
-  return new Set(models.map((model) => model.id))
-}
-
 async function addToDeployment(
   file: File,
   target: DeploymentModelTarget,
@@ -302,7 +289,6 @@ async function addToDeployment(
 ): Promise<DeploymentModelUploadResult> {
   const created = await createUpload(file, target, options)
   if (!created.ok) return created
-  const listed = await listedBefore(target, created, options.signal)
   const added = await workspaceApi.addDeploymentModel(
     target.workspaceId,
     target.deploymentId,
@@ -311,7 +297,7 @@ async function addToDeployment(
   if (added === 'notOn') return { ok: false, reason: 'notOn' }
   const stopped = await fillUpload(file, target, created, options)
   if (!stopped) return { ok: true, modelId: added.id }
-  if (listed.has(added.id)) return stopped
+  if (!created.parts) return { ...stopped, mayBeListed: true }
   return removeAfter(target, added.id, stopped)
 }
 

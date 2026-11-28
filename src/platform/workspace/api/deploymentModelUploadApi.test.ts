@@ -319,22 +319,37 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
 
   it.for([
     {
-      outcome: 'leaves the entry another upload already listed',
-      listed: true,
+      outcome:
+        'keeps the entry the add answered, which another upload may have made',
+      freshUpload: false,
+      expected: { ok: false, reason: 'cancelled', mayBeListed: true },
       removed: false
     },
-    { outcome: 'removes the entry it made', listed: false, removed: true }
+    {
+      outcome: 'removes the entry its fresh bytes made',
+      freshUpload: true,
+      expected: { ok: false, reason: 'cancelled', modelId: MODEL_ID },
+      removed: true
+    }
   ])(
-    'on a cancel while stored bytes are added, $outcome',
-    async ({ listed, removed }) => {
+    'on a cancel while the add is answered, $outcome',
+    async ({ freshUpload, expected, removed }) => {
       const ingest = ingestAnswers([])
-      ingest.create.mockResolvedValue({ blobId: BLOB_ID, deduplicated: true })
+      ingest.create.mockImplementation(
+        async (_workspace, _deployment, request) =>
+          request.reuse
+            ? { blobId: BLOB_ID, deduplicated: true }
+            : {
+                blobId: 'blob-fresh-1',
+                deduplicated: false,
+                parts: [piece(1)]
+              }
+      )
       const entry = {
         id: MODEL_ID,
         filename: 'my_style_v2.safetensors',
         status: 'adding'
       }
-      ingest.list.mockResolvedValue(listed ? [entry] : [])
       const controller = new AbortController()
       let answerAdd!: () => void
       ingest.add.mockImplementation(
@@ -344,17 +359,13 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
           })
       )
 
-      const { result } = upload(modelFile(1), controller.signal)
+      const { result } = upload(modelFile(1), controller.signal, freshUpload)
       await vi.waitFor(() => expect(ingest.add).toHaveBeenCalledOnce())
+      ingest.list.mockResolvedValue([entry])
       controller.abort()
       answerAdd()
 
-      await expect(result).resolves.toEqual(
-        removed
-          ? { ok: false, reason: 'cancelled', modelId: MODEL_ID }
-          : { ok: false, reason: 'cancelled' }
-      )
-      expect(ingest.list).toHaveBeenCalledBefore(ingest.add)
+      await expect(result).resolves.toEqual(expected)
       expect(ingest.remove).toHaveBeenCalledTimes(removed ? 1 : 0)
       expect(StorageRequest.sent).toHaveLength(0)
     }
