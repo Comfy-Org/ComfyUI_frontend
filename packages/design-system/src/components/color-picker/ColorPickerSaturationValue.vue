@@ -3,9 +3,11 @@ import { computed, ref } from 'vue'
 const { hue } = defineProps<{
   hue: number
 }>()
-
 const saturation = defineModel<number>('saturation', { required: true })
 const value = defineModel<number>('value', { required: true })
+const emit = defineEmits<{
+  update: [saturation: number, value: number]
+}>()
 
 const containerRef = ref<HTMLElement | null>(null)
 
@@ -22,8 +24,11 @@ function updateFromPointer(e: PointerEvent) {
   const rect = el.getBoundingClientRect()
   const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
-  saturation.value = Math.round(x * 100)
-  value.value = Math.round((1 - y) * 100)
+  const nextSaturation = Math.round(x * 100)
+  const nextValue = Math.round((1 - y) * 100)
+  saturation.value = nextSaturation
+  value.value = nextValue
+  emit('update', nextSaturation, nextValue)
 }
 
 function handlePointerDown(e: PointerEvent) {

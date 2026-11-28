@@ -8,7 +8,7 @@ import type {
 } from '@comfyorg/design-system/lib/color-picker/types'
 import {
   hexToHsva,
-  hsbToRgb,
+  hexToRgb,
   hsvaToHex,
   rgbToHex
 } from '@comfyorg/shared-frontend-utils/colorUtil'
@@ -47,30 +47,59 @@ function readHsva(hex: string): HSVA {
   return next
 }
 
+function withHexPrefix(hex: string) {
+  return hex.startsWith('#') ? hex : `#${hex}`
+}
+
+function applyAlpha(hex: string, alpha: number) {
+  if (alpha >= 100) return hex
+  const alphaHex = Math.round((alpha / 100) * 255)
+    .toString(16)
+    .padStart(2, '0')
+  return `${hex}${alphaHex}`
+}
+
 const hsva = ref<HSVA>(readHsva(modelValue.value))
+const exactHex = ref(modelValue.value)
 const displayMode = ref<'hex' | 'rgba'>('hex')
+let isReadingModel = false
+let previousHsva = { ...hsva.value }
 
 watch(modelValue, (newVal) => {
+  exactHex.value = newVal
   const current = hsvaToHex(hsva.value)
   if (newVal !== current) {
-    hsva.value = readHsva(newVal)
+    isReadingModel = true
+    try {
+      hsva.value = readHsva(newVal)
+    } finally {
+      isReadingModel = false
+    }
   }
 })
 
 watch(
   hsva,
   (newHsva) => {
-    const hex = hsvaToHex(newHsva)
+    const colorChanged =
+      newHsva.h !== previousHsva.h ||
+      newHsva.s !== previousHsva.s ||
+      newHsva.v !== previousHsva.v
+    previousHsva = { ...newHsva }
+    if (isReadingModel) return
+    const rgbHex = colorChanged
+      ? hsvaToHex({ ...newHsva, a: 100 })
+      : rgbToHex(baseRgb.value)
+    const hex = applyAlpha(rgbHex, newHsva.a)
+    exactHex.value = hex
     if (hex !== modelValue.value) {
       modelValue.value = hex
     }
   },
-  { deep: true }
+  { deep: true, flush: 'sync' }
 )
 
-const baseRgb = computed(() =>
-  hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
-)
+const baseRgb = computed(() => hexToRgb(withHexPrefix(exactHex.value)))
 
 const previewColor = computed(() => {
   const hex = rgbToHex(baseRgb.value)
@@ -138,6 +167,7 @@ const isOpen = ref(false)
       <ColorPickerPanel
         v-model:hsva="hsva"
         v-model:display-mode="displayMode"
+        :color-value="exactHex"
         :alpha
         :hex-label
         :rgba-label

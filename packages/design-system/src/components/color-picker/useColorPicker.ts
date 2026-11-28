@@ -5,6 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import type { HSVA } from '@comfyorg/design-system/lib/color-picker/types'
 import {
   hexToHsva,
+  hexToRgb,
   hsbToRgb,
   normalizeHex,
   rgbToHex,
@@ -34,10 +35,17 @@ function useDraftField<T>(source: () => T, apply: (draft: T) => void) {
   })
 }
 
-export function useColorPicker(hsva: Ref<HSVA>) {
-  const rgb = computed(() =>
-    hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
-  )
+export function useColorPicker(
+  hsva: Ref<HSVA>,
+  colorValue?: Readonly<Ref<string | undefined>>
+) {
+  const rgb = computed(() => {
+    if (colorValue?.value) {
+      const hex = colorValue.value
+      return hexToRgb(hex.startsWith('#') ? hex : `#${hex}`)
+    }
+    return hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
+  })
   const hexString = computed(() => rgbToHex(rgb.value).toLowerCase())
 
   const hex = useDraftField(

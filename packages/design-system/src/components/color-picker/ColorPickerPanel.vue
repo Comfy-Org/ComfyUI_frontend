@@ -3,10 +3,11 @@
     class="flex w-[211px] flex-col gap-2 rounded-lg border border-border/50 bg-background p-2 shadow-md"
   >
     <ColorPickerSaturationValue
-      v-model:saturation="hsva.s"
-      v-model:value="hsva.v"
+      :saturation="hsva.s"
+      :value="hsva.v"
       :hue="hsva.h"
       :aria-label="saturationBrightnessLabel"
+      @update="updateSaturationValue"
     />
     <ColorPickerSlider v-model="hsva.h" type="hue" :aria-label="hueLabel" />
     <ColorPickerSlider
@@ -91,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@comfyorg/design-system/select/SelectContent'
@@ -114,7 +115,8 @@ const {
   greenLabel,
   blueLabel,
   saturationBrightnessLabel,
-  formatLabel
+  formatLabel,
+  colorValue
 } = defineProps<{
   alpha?: boolean
   hexLabel: string
@@ -126,6 +128,7 @@ const {
   blueLabel: string
   saturationBrightnessLabel: string
   formatLabel: string
+  colorValue?: string
 }>()
 
 const hsva = defineModel<HSVA>('hsva', { required: true })
@@ -139,5 +142,16 @@ const channelLabels = computed(() => ({
   b: blueLabel
 }))
 
-const { hex, rgb, alpha: alphaField } = useColorPicker(hsva)
+function updateSaturationValue(saturation: number, value: number) {
+  hsva.value = { ...hsva.value, s: saturation, v: value }
+}
+
+const {
+  hex,
+  rgb,
+  alpha: alphaField
+} = useColorPicker(
+  hsva,
+  toRef(() => colorValue)
+)
 </script>
