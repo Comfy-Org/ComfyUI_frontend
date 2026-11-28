@@ -77,7 +77,7 @@ import type {
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 import { promotedHostInputs } from './promotedHostInputs'
-import { isReplicatedValueWidget } from './widgetValuesForm'
+import { isReplicatedValueWidget } from './replicatedValueWidget'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 

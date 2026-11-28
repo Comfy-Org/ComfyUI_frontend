@@ -2,7 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import { isReplicatedValueWidget } from './widgetValuesForm'
+import { isReplicatedValueWidget } from './replicatedValueWidget'
 
 interface PromotedHostInput {
   input: INodeInputSlot

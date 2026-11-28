@@ -31,6 +31,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
+import { isReplicatedValueWidget } from './replicatedValueWidget'
+
 /** The post-hook halves of a serialized node this module reads. */
 type SerializedWidgetValues = Pick<ISerialisedNode, 'widgets_values_named'>
 
@@ -198,27 +200,6 @@ export function isValueWidget(
   // drift apart again.
   const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
   return type !== 'button' && serialize !== false
-}
-
-/** Returns whether a live widget value belongs in the semantic document. */
-export function isReplicatedValueWidget(
-  widget: IBaseWidget | undefined,
-  stored?: WidgetState
-): boolean {
-  if (!widget && !stored) return false
-  const type = widget?.type ?? stored?.type
-  const workflowSerialize = widget?.serialize ?? stored?.serialize
-  const liveOptions = (
-    widget as { options?: { serialize?: boolean } } | undefined
-  )?.options
-  const storedOptions = (
-    stored as { options?: { serialize?: boolean } } | undefined
-  )?.options
-  const promptSerialize = liveOptions?.serialize ?? storedOptions?.serialize
-  return (
-    type !== 'button' &&
-    (workflowSerialize !== false || promptSerialize !== false)
-  )
 }
 
 /** The named values the document carries, dropping non-value widgets. */

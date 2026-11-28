@@ -61,10 +61,10 @@ import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
 import { promotedHostInputs } from './promotedHostInputs'
 import { reportLostEdit } from './reportLostEdit'
 import {
-  isReplicatedValueWidget,
   provenWidgetValuesForm,
   replicatedWidgetValues
 } from './widgetValuesForm'
+import { isReplicatedValueWidget } from './replicatedValueWidget'
 
 export interface DocOpMinterDeps {
   /** Slice 00's product gate. */
