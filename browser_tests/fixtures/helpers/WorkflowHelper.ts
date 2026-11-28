@@ -183,10 +183,9 @@ export class WorkflowHelper {
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
-    await this.comfyPage.page.evaluate(
-      (wf) => window.app!.loadGraphData(wf),
-      workflow
-    )
+    await this.comfyPage.page.evaluate(async (wf) => {
+      await window.app!.loadGraphData(wf)
+    }, workflow)
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()
@@ -247,6 +246,14 @@ export class WorkflowHelper {
       const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow
       return workflow?.changeTracker.undoQueue.length
+    })
+  }
+
+  async getChangeCount(): Promise<number | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow
+      return workflow?.changeTracker.changeCount
     })
   }
 
@@ -338,7 +345,10 @@ export class WorkflowHelper {
   }
 
   async switchToTab(tabName: string): Promise<void> {
-    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    const { topbar } = this.comfyPage.menu
+    const tab = topbar.getWorkflowTab(tabName)
+    await tab.click()
+    await expect(tab.and(topbar.getActiveTab())).toBeVisible()
     await this.waitForWorkflowIdle()
   }
 

@@ -1,5 +1,5 @@
 <template>
-  <WidgetLayoutField :widget :input-id>
+  <WidgetLayoutField :widget-id :display-label :input-id>
     <AppColorPicker
       v-model="localValue"
       :trigger-id="inputId"
@@ -12,9 +12,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetOptions } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   hexToInt,
   intToHex,
@@ -30,33 +31,36 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 type ColorWidgetValue = string | number
 
-const { widget } = defineProps<{
-  widget: SimplifiedWidget<ColorWidgetValue, IColorWidgetOptions>
+const { widgetId, displayLabel } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
 }>()
 
 const modelValue = defineModel<ColorWidgetValue>({ required: true })
 const inputId = useId()
 
-const format =
-  widget.options?.format === 'int' || isColorFormat(widget.options?.format)
-    ? widget.options.format
+const format = computed(() => {
+  const { format: optionFormat }: IColorWidgetOptions = widgetOptions(widgetId)
+  return optionFormat === 'int' || isColorFormat(optionFormat)
+    ? optionFormat
     : 'hex'
+})
 
 function toPickerValue(value: ColorWidgetValue): string {
-  if (format === 'int') {
+  if (format.value === 'int') {
     return typeof value === 'number' ? intToHex(value) : '#000000'
   }
-  return toHexFromFormat(value || '#000000', format)
+  return toHexFromFormat(value || '#000000', format.value)
 }
 
 const localValue = ref(toPickerValue(modelValue.value))
 
-watch(modelValue, (newVal) => {
+watch([modelValue, format], ([newVal]) => {
   localValue.value = toPickerValue(newVal)
 })
 
 function onUpdate(val: string) {
   localValue.value = val
-  modelValue.value = format === 'int' ? hexToInt(val) : val
+  modelValue.value = format.value === 'int' ? hexToInt(val) : val
 }
 </script>

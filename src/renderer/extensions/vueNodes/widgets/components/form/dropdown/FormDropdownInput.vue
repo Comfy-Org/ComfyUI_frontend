@@ -57,7 +57,7 @@ function showPicker() {
   }
 }
 
-defineExpose({ focus, showPicker })
+defineExpose({ focus, showPicker, anchor: buttonRef })
 </script>
 
 <template>
@@ -71,6 +71,7 @@ defineExpose({ focus, showPicker })
     <button
       :id="inputId"
       ref="buttonRef"
+      data-part="dropdown-trigger"
       :class="
         cn(
           theButtonStyle,
@@ -83,7 +84,10 @@ defineExpose({ focus, showPicker })
       "
       @click="emit('select-click', $event)"
     >
-      <span class="min-w-0 flex-1 truncate py-2 text-left">
+      <span
+        class="min-w-0 flex-1 truncate py-2 text-left"
+        data-part="dropdown-summary"
+      >
         <span v-if="!selectedItems.length">
           {{ placeholder }}
         </span>
@@ -111,6 +115,7 @@ defineExpose({ focus, showPicker })
           'flex size-8 items-center justify-center rounded-r-lg border-l border-node-border'
         )
       "
+      data-part="dropdown-upload"
     >
       <Loader v-if="isUploading" size="sm" />
       <i v-else class="icon-[lucide--folder-search]" aria-hidden="true" />

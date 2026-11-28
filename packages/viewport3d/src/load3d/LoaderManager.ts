@@ -1,7 +1,12 @@
 import type * as THREE from 'three'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
-import { createAdapterRef, fetchModelData } from './ModelAdapter'
+import {
+  ModelTooLargeError,
+  createAdapterRef,
+  fetchModelData,
+  isNotFoundError
+} from './ModelAdapter'
 import type {
   AdapterRef,
   ModelAdapter,
@@ -20,20 +25,6 @@ import type {
   LoaderManagerInterface,
   ModelManagerInterface
 } from './interfaces'
-
-function isNotFoundError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
-  if (
-    'response' in error &&
-    typeof error.response === 'object' &&
-    error.response !== null &&
-    'status' in error.response &&
-    error.response.status === 404
-  ) {
-    return true
-  }
-  return /\b404\b/.test(error.message)
-}
 
 /**
  * Default adapter set: mesh + splat + pointCloud. Each adapter declares the
@@ -202,6 +193,7 @@ export class LoaderManager implements LoaderManagerInterface {
     this.eventManager.emitEvent('modelLoadingEnd', null)
     if (options?.silent) throw error
     console.error('Error loading model:', error)
+    if (error instanceof ModelTooLargeError) return 'too-large'
     return isNotFoundError(error) ? 'not-found' : 'failed'
   }
 

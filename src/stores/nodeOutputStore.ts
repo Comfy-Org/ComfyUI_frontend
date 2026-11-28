@@ -42,7 +42,7 @@ import {
   isVideoNode,
   resolveNode
 } from '@/utils/litegraphUtil'
-import { isInputPreviewOutput } from '@/utils/nodeOutputUtil'
+import { isInputPreviewOutput, mergeNodeOutput } from '@/utils/nodeOutputUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -289,16 +289,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
 
     if (options.merge && existingOutput) {
-      const mergedOutput = { ...existingOutput }
-      for (const [key, newValue] of Object.entries(outputs)) {
-        const existingValue = existingOutput[key]
-
-        if (Array.isArray(existingValue) && Array.isArray(newValue)) {
-          mergedOutput[key] = existingValue.concat(newValue)
-        } else {
-          mergedOutput[key] = newValue
-        }
-      }
+      const mergedOutput = mergeNodeOutput(existingOutput, outputs)
       nodeOutputs.value[nodeLocatorId] = mergedOutput
       useApp().nodeOutputs[nodeLocatorId] = clone(mergedOutput)
       return
@@ -415,6 +406,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       surface: 'graph',
       errorType: 'failure_resolving_node_output_execution_id',
       level: 'warning',
+      sentryMode: 'never',
       tags: { executionId },
       context: {
         filenames: filenames?.length ? filenames : undefined
@@ -513,18 +505,12 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
-  /**
-   * Move the live previews into the stash so `app.clean()` cannot revoke them
-   * while `workflowPath` is loaded out of the editor. Preview frames arrive
-   * over the websocket and cannot be re-fetched, so releasing their object
-   * URLs on a tab switch loses them for good.
-   */
   function stashPreviewsForWorkflow(workflowPath: string) {
     discardClosedWorkflowPreviews()
-    discardPreviewsForWorkflow(workflowPath)
 
     const previews = nodePreviewImages.value
     if (Object.keys(previews).length) {
+      discardPreviewsForWorkflow(workflowPath)
       stashedPreviews.set(workflowPath, previews)
     }
     nodePreviewImages.value = {}

@@ -7,9 +7,6 @@ import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 const withDefault = <T>(value: T | null | undefined, fallback: T): T =>
   value ?? fallback
 
-/**
- * Queue progress composable exposing total/current node progress values and styles.
- */
 export function useQueueProgress() {
   const { locale } = useI18n()
   const executionStore = useExecutionStore()
@@ -34,22 +31,10 @@ export function useQueueProgress() {
     formatPercent0(locale.value, currentNodePercent.value)
   )
 
-  const totalProgressStyle = computed(() => ({
-    transform: `scaleX(${totalPercent.value / 100})`,
-    background: 'var(--primary)'
-  }))
-
-  const currentNodeProgressStyle = computed(() => ({
-    transform: `scaleX(${currentNodePercent.value / 100})`,
-    background: 'color-mix(in srgb, var(--primary) 30%, transparent)'
-  }))
-
   return {
     totalPercent,
     totalPercentFormatted,
     currentNodePercent,
-    currentNodePercentFormatted,
-    totalProgressStyle,
-    currentNodeProgressStyle
+    currentNodePercentFormatted
   }
 }

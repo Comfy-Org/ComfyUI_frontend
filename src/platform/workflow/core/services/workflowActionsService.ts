@@ -111,7 +111,10 @@ export function useWorkflowActionsService() {
 
     try {
       const temp = workflowStore.createTemporary(filename, workflow)
-      const opened = await workflowService.openWorkflow(temp)
+      const opened = await workflowService.openWorkflow(temp, {
+        initiator: 'user',
+        opening: 'brought_in'
+      })
       if (opened) return { success: true }
       return { success: false, errorPresentation: 'handled' }
     } catch (error) {

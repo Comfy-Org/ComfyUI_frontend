@@ -1,12 +1,14 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ComfyApp } from '@/scripts/app'
+import type { ComponentWidget } from '@/types/domWidget'
 
 const i18n = createI18n({
   legacy: false,
@@ -87,20 +89,27 @@ vi.mock<unknown>(
   }
 )
 
-const { getNodeByLocatorIdMock, rootGraph } = vi.hoisted(() => ({
-  getNodeByLocatorIdMock: vi.fn<() => { id: number } | null>(() => ({ id: 7 })),
-  rootGraph: { events: new EventTarget() }
+const { appGraph } = vi.hoisted(() => ({
+  appGraph: { current: undefined as LGraph | undefined }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraphOrUndefined: rootGraph }
+vi.mock(import('@/scripts/app'), () => ({
+  app: fromAny<ComfyApp, object>({
+    isGraphReady: true,
+    get rootGraph() {
+      return appGraph.current
+    },
+    get rootGraphOrUndefined() {
+      return appGraph.current
+    }
+  })
 }))
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import CameraAngle from './CameraAngle.vue'
 
@@ -126,19 +135,28 @@ const Passthrough = defineComponent({
   template: '<slot />'
 })
 
-function makeWidget(): SimplifiedWidget {
-  return {
-    name: 'view',
-    type: 'cameraAngle',
-    value: 'camera',
-    options: {},
-    nodeLocatorId: createNodeLocatorId(null, toNodeId(7))
-  }
+function registerCameraAngleNode() {
+  const graph = new LGraph()
+  const node = new LGraphNode('CameraAngle')
+  node.id = toNodeId(7)
+  node.addWidget('text', 'view', 'camera', () => {})
+  graph.add(node)
+  appGraph.current = graph
+  return widgetId(graph.id, node.id, 'view')
 }
 
-function renderComponent() {
+function dispatchGraphConfigured() {
+  appGraph.current!.events.dispatch('configured')
+}
+
+function renderComponent(
+  props: {
+    widget?: ComponentWidget<string | object>
+    widgetId?: ReturnType<typeof widgetId>
+  } = { widgetId: registerCameraAngleNode() }
+) {
   return render(CameraAngle, {
-    props: { widget: makeWidget() },
+    props,
     global: {
       plugins: [i18n],
       stubs: {
@@ -158,7 +176,7 @@ function api(): ApiMocks {
 
 describe('CameraAngle', () => {
   beforeEach(() => {
-    rootGraph.events = new EventTarget()
+    appGraph.current = undefined
     holder.state!.value = { horizontal: 0, vertical: 0, zoom: 5 }
     holder.viewMode!.value = 'camera'
     holder.previewVisible!.value = false
@@ -171,7 +189,7 @@ describe('CameraAngle', () => {
 
   it('initializes the viewport on mount and cleans up on unmount', () => {
     const { unmount } = renderComponent()
-    expect(getNodeByLocatorIdMock).toHaveBeenCalledWith(
+    expect(getNodeByLocatorId).toHaveBeenCalledWith(
       expect.anything(),
       createNodeLocatorId(null, toNodeId(7))
     )
@@ -181,11 +199,23 @@ describe('CameraAngle', () => {
     expect(api().cleanup).toHaveBeenCalledOnce()
   })
 
+  it('initializes the viewport for the node of a canvas DOM widget', () => {
+    const node = new LGraphNode('CameraAngle')
+    renderComponent({
+      widget: fromPartial<ComponentWidget<string | object>>({ node })
+    })
+
+    expect(getNodeByLocatorId).not.toHaveBeenCalled()
+    expect(api().initialize).toHaveBeenCalledOnce()
+  })
+
   it('initializes the viewport again for the node a reloaded graph holds', async () => {
     renderComponent()
-    getNodeByLocatorIdMock.mockReturnValueOnce({ id: 7 })
+    vi.mocked(getNodeByLocatorId).mockReturnValueOnce(
+      new LGraphNode('CameraAngle')
+    )
 
-    rootGraph.events.dispatchEvent(new Event('configured'))
+    dispatchGraphConfigured()
     await nextTick()
 
     expect(api().initialize).toHaveBeenCalledTimes(2)
@@ -193,9 +223,9 @@ describe('CameraAngle', () => {
 
   it('cleans up the viewport when a reload leaves no node behind', async () => {
     renderComponent()
-    getNodeByLocatorIdMock.mockReturnValueOnce(null)
+    vi.mocked(getNodeByLocatorId).mockReturnValueOnce(null)
 
-    rootGraph.events.dispatchEvent(new Event('configured'))
+    dispatchGraphConfigured()
     await nextTick()
 
     expect(api().cleanup).toHaveBeenCalledOnce()

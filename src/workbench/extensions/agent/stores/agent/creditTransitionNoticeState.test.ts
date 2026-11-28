@@ -7,6 +7,7 @@ import type {
 } from './creditTransitionNoticeState'
 import {
   isCreditTransitionNoticeShown,
+  isInitialNoGrant,
   reduceCreditTransitionNotice
 } from './creditTransitionNoticeState'
 
@@ -151,17 +152,25 @@ describe('reduceCreditTransitionNotice', () => {
   })
 
   describe('dismissed', () => {
-    it.for(['idle', 'armed', 'shown'] as const)(
-      'closes a %s episode',
-      (phase) => {
-        expect(
-          reduceCreditTransitionNotice(episode(phase, false), {
-            type: 'dismissed',
-            identity: IDENTITY
-          })
-        ).toEqual(episode('dismissed', false))
-      }
-    )
+    it.for(['armed', 'shown'] as const)('closes a %s episode', (phase) => {
+      expect(
+        reduceCreditTransitionNotice(episode(phase, false), {
+          type: 'dismissed',
+          identity: IDENTITY
+        })
+      ).toEqual(episode('dismissed', false))
+    })
+
+    it('does not dismiss an episode that was never shown', () => {
+      const state = episode('idle', false)
+
+      expect(
+        reduceCreditTransitionNotice(state, {
+          type: 'dismissed',
+          identity: IDENTITY
+        })
+      ).toBe(state)
+    })
   })
 
   describe('events for an identity the state does not hold', () => {
@@ -198,5 +207,25 @@ describe('isCreditTransitionNoticeShown', () => {
     expect(
       isCreditTransitionNoticeShown(episode('armed', false, OTHER), IDENTITY)
     ).toBe(false)
+  })
+})
+
+describe('isInitialNoGrant', () => {
+  it('identifies an initial authoritative no-grant read', () => {
+    expect(isInitialNoGrant(episode('idle', false), IDENTITY)).toBe(true)
+  })
+
+  it.for(['armed', 'shown', 'dismissed'] as const)(
+    'does not mislabel a %s transition episode as initial no-grant',
+    (phase) => {
+      expect(isInitialNoGrant(episode(phase, false), IDENTITY)).toBe(false)
+    }
+  )
+
+  it('does not match a grant or another identity', () => {
+    expect(isInitialNoGrant(episode('idle', true), IDENTITY)).toBe(false)
+    expect(isInitialNoGrant(episode('idle', false, OTHER), IDENTITY)).toBe(
+      false
+    )
   })
 })

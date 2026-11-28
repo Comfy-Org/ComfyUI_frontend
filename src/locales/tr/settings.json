@@ -59,6 +59,28 @@
     "name": "Seçim araç kutusunu göster",
     "tooltip": "Düğümler seçildiğinde, yaygın işlemlere hızlı erişim sağlayan bir araç çubuğu gösterir."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Sürüklerken ve yeniden boyutlandırırken yakındaki düğümlere, gruplara ve bağlantı çizgilerine hizala",
+    "tooltip": "Kılavuz çizgilerini gösterir ve hizalı kenarlara, eşit aralıklara ve düz bağlantı çizgilerine hizalar. Bunun yerine ızgaraya hizalamak için Shift tuşunu basılı tutun."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Başka bir düğümün yanına hizalanırken boşluk"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Hizalama mesafesi (ekran pikselleri)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Diğer düğümlerin ve grupların kenarlarına hizala"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Düğümler arasındaki eşit aralığa hizala"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Bağlantı çizgilerinin düz olması için hizala"
+  },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Comfy Cloud uyumluluğunu denetlemek için düğüm ve model adlarını göndermeden önce sor"
+  },
   "Comfy_ConfirmClear": {
     "name": "İş akışını temizlerken onay iste"
   },
@@ -69,8 +91,8 @@
     "name": "Geliştirici modu seçeneklerini etkinleştir (API kaydetme, vb.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Varsayılan ondalık sayı widget yuvarlamasını devre dışı bırak.",
-    "tooltip": "(sayfanın yeniden yüklenmesini gerektirir) Arka uçtaki düğüm tarafından yuvarlama ayarlandığında yuvarlama devre dışı bırakılamaz."
+    "name": "Varsayılan kayan noktalı sayı bileşeni yuvarlamasını devre dışı bırak (kullanımdan kaldırıldı).",
+    "tooltip": "(sayfanın yeniden yüklenmesini gerektirir) Kullanımdan kaldırılmıştır ve varsayılan olarak açıktır. Kapatıldığında, düzenlenen kayan noktalı değerler bileşen adımının ondalık basamaklarına yuvarlanır. Düğüm tarafından tanımlanan yuvarlama her zaman uygulanır."
   },
   "Comfy_DisableSliders": {
     "name": "Düğüm widget kaydırıcılarını devre dışı bırak"
@@ -87,6 +109,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "Sorunlar sekmesinde eksik modelleri göster",
     "tooltip": "Devre dışı bırakıldığında, bulunamayan model dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Sorunlar sekmesinde eksik düğümleri göster",
+    "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri Sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, bunlar yüklenene kadar yine de çalıştırılamaz."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Canlı önizleme yöntemi",
@@ -434,6 +460,10 @@
     "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
     "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": " .safetensors ve .sft uzantılarını gizle",
+    "tooltip": "Yalnızca Düğümler 2.0 için. Bu uzantıları kapalı model parçacıklarında gizleyin. Diğer uzantılar görünür kalır; açılır menü seçenekleri ve kaydedilen değerler tam dosya adlarını korur."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget kontrol modu",
     "options": {
@@ -468,10 +498,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Sorunlar sekmesinde eksik medyayı göster",
     "tooltip": "Devre dışı bırakıldığında, bulunamayan giriş görüntüleri, videoları ve ses dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
-  },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Sorunlar sekmesinde eksik düğümleri göster",
-    "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, yüklenene kadar yine de çalıştırılamaz."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"

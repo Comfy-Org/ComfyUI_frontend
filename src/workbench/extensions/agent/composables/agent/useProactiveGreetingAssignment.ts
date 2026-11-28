@@ -17,10 +17,7 @@ import {
 } from '@/platform/telemetry/hostProactiveGreeting'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { isCloud } from '@/platform/distribution/types'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AgentGreetingAssignment } from '@/workbench/extensions/agent/types/proactiveGreeting'
@@ -155,6 +152,7 @@ export function useProactiveGreetingAssignment() {
   const firebaseUser = () => authStore.currentUser
   const workspace = useTeamWorkspaceStore()
   const panel = useAgentPanelStore()
+  const remoteConfigStore = useRemoteConfigStore()
   const requiresHostAdmission = requiresHostProactiveGreetingAdmission()
   const reportAssignmentFailure = once(() =>
     reportError(new Error('Failed to load proactive greeting assignment'), {
@@ -212,9 +210,9 @@ export function useProactiveGreetingAssignment() {
     )
       return
     if (!isCloud) return admitted?.assignment
-    if (authenticatedRemoteConfigState.value !== 'authenticated') return
+    if (!remoteConfigStore.isAuthenticatedConfigLoaded) return
     return resolveProactiveGreetingAssignment(
-      remoteConfig.value,
+      remoteConfigStore.config,
       identity.value
     )
   }

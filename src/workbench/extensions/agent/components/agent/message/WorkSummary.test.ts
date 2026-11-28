@@ -194,6 +194,42 @@ describe('ActivityTrace', () => {
     expect(screen.getByText('Loaded comfy-director')).toBeInTheDocument()
   })
 
+  it('names the model file while the agent downloads it and after', async () => {
+    const download = 'flux1-dev.safetensors'
+    const { rerender } = render(ActivityTrace, {
+      props: { parts: [{ ...tool('c1', 'bash', 'streaming'), download }] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText('Downloading flux1-dev.safetensors')
+    ).toHaveAttribute('title', 'Downloading flux1-dev.safetensors')
+    expect(screen.queryByText('Bash')).not.toBeInTheDocument()
+
+    await rerender({
+      parts: [{ ...tool('c1', 'bash', 'done', true), download }]
+    })
+    expect(
+      screen.getByText('Downloaded flux1-dev.safetensors')
+    ).toBeInTheDocument()
+
+    await rerender({
+      parts: [{ ...tool('c1', 'bash', 'done', false), download }]
+    })
+    expect(
+      screen.getByText('Failed to download flux1-dev.safetensors')
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the plain tool label for a bash call that downloads nothing', () => {
+    render(ActivityTrace, {
+      props: { parts: [tool('c1', 'bash', 'streaming')] },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Bash')).toBeInTheDocument()
+  })
+
   it('names a skill load that finishes with an error', () => {
     render(ActivityTrace, {
       props: {
@@ -255,7 +291,7 @@ describe('ActivityTrace', () => {
 })
 
 describe('WorkSummary', () => {
-  it('uses a timing-free collapsed label', () => {
+  it('shows the total elapsed work in the collapsed label', () => {
     render(WorkSummary, {
       props: {
         parts: [
@@ -266,17 +302,34 @@ describe('WorkSummary', () => {
             durationMs: 100
           },
           tool('c1', 'add_node', 'done', true, 1300),
-          tool('c2', 'switch_tab', 'done', true, 900)
+          tool('c2', 'switch_tab', 'done', true, 900),
+          tool('c3', 'list_slots', 'done', true)
         ]
       },
       global: { plugins: [i18n] }
     })
 
     const trigger = screen.getByRole('button', {
-      name: /^worked$/i
+      name: 'Worked for 3 seconds'
     })
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Add node')).not.toBeInTheDocument()
+  })
+
+  it('formats a minute or more as minutes and seconds', () => {
+    render(WorkSummary, {
+      props: {
+        parts: [
+          tool('c1', 'add_node', 'done', true, 59_100),
+          tool('c2', 'switch_tab', 'done', true, 2_000)
+        ]
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Worked for 1m 2s' })
+    ).toBeInTheDocument()
   })
 
   it('reveals the whole trace on click', async () => {

@@ -83,9 +83,16 @@ describe('useProgressTextPreviews', () => {
   describe('progress_text events', () => {
     it('shows the text preview on the executing node', () => {
       const node = showCanvasNode()
+      const workflow = createWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+      storeActiveJob(workflow)
       mountPreviews()
 
-      fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
+      fireProgressText({
+        nodeId: toNodeId('1'),
+        text: 'warming up',
+        prompt_id: 'job-1'
+      })
 
       expect(showTextPreview).toHaveBeenCalledExactlyOnceWith(
         node,
@@ -95,9 +102,16 @@ describe('useProgressTextPreviews', () => {
 
     it('resolves nested execution ids through the workflow store', () => {
       const node = showCanvasNode()
+      const workflow = createWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+      storeActiveJob(workflow)
       mountPreviews()
 
-      fireProgressText({ nodeId: toNodeId('3:1'), text: 'warming up' })
+      fireProgressText({
+        nodeId: toNodeId('3:1'),
+        text: 'warming up',
+        prompt_id: 'job-1'
+      })
 
       expect(showTextPreview).toHaveBeenCalledExactlyOnceWith(
         node,

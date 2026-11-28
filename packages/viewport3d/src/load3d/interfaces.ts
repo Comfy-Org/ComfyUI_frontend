@@ -272,6 +272,7 @@ export interface SceneOverlay {
  *   the file, or the adapter produced no model.
  * - `'unknown-type'`: the file type could not be determined from the name.
  * - `'not-found'`: the model file responded with HTTP 404.
+ * - `'too-large'`: the model exceeds the inline preview size limit.
  * - `'failed'`: fetching, parsing, or model setup threw.
  *
  * With `{ silent: true }`, every outcome except `'loaded'` and `'cancelled'`
@@ -283,6 +284,7 @@ export type LoadModelOutcome =
   | 'empty'
   | 'unknown-type'
   | 'not-found'
+  | 'too-large'
   | 'failed'
 
 export interface LoaderManagerInterface {

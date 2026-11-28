@@ -58,6 +58,7 @@ function capabilitiesFor(
       can_manage_partner_node_access: isOwner,
       can_view_pending_invites: isOwner,
       can_view_team_usage: isOwner,
+      can_view_workspace_usage: isOwner,
       can_edit_workspace: isOwner,
       can_manage_auto_top_up: isOwner,
       can_view_auto_top_up: isOwner,

@@ -8,14 +8,19 @@ import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 import { isPaged, pagedItems } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import type {
+  FormDropdownItem,
+  LayoutMode,
+  SortOption,
+  ThumbnailSize
+} from './types'
 
 interface Props {
   items: MaybePaged<FormDropdownItem>
@@ -29,6 +34,7 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
+  hasThumbnailSizes?: boolean
 }
 
 const {
@@ -52,6 +58,7 @@ const emit = defineEmits<{
 
 const filterSelected = defineModel<string>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
+const thumbnailSize = defineModel<ThumbnailSize>('thumbnailSize')
 const sortSelected = defineModel<string>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
@@ -60,34 +67,47 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected')
 type LayoutConfig = {
   maxColumns: number
   itemHeight: number
-  itemWidth: number
+  minItemWidth?: number
   gap: string
 }
 
 const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   grid: {
-    maxColumns: 4,
+    maxColumns: 8,
     itemHeight: 120,
-    itemWidth: 89,
+    minItemWidth: 96,
     gap: 'var(--spacing-4) var(--spacing-2)'
   },
   list: {
     maxColumns: 1,
     itemHeight: 64,
-    itemWidth: 380,
     gap: 'var(--spacing-2)'
   },
   'list-small': {
     maxColumns: 1,
     itemHeight: 40,
-    itemWidth: 380,
     gap: 'var(--spacing-1)'
   }
 }
 
-const layoutConfig = computed<LayoutConfig>(
-  () => LAYOUT_CONFIGS[layoutMode.value ?? 'grid']
-)
+const thumbnailLayouts = {
+  compact: { maxColumns: 10, itemHeight: 104, minItemWidth: 76 },
+  standard: LAYOUT_CONFIGS.grid,
+  large: { maxColumns: 1, itemHeight: 412 }
+} satisfies Record<
+  ThumbnailSize,
+  Pick<LayoutConfig, 'maxColumns' | 'itemHeight' | 'minItemWidth'>
+>
+
+const layoutConfig = computed<LayoutConfig>(() => {
+  const layout = layoutMode.value ?? 'grid'
+  return layout === 'grid'
+    ? {
+        ...LAYOUT_CONFIGS.grid,
+        ...thumbnailLayouts[thumbnailSize.value ?? 'standard']
+      }
+    : LAYOUT_CONFIGS[layout]
+})
 
 const gridStyle = computed<CSSProperties>(() => ({
   display: 'grid',
@@ -111,7 +131,7 @@ const onWheel = (event: WheelEvent) => {
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
+    class="flex min-h-0 flex-1 flex-col rounded-lg bg-node py-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
     @wheel="onWheel"
@@ -129,6 +149,8 @@ const onWheel = (event: WheelEvent) => {
       v-model:search-query="searchQuery"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
+      v-model:thumbnail-size="thumbnailSize"
+      :has-thumbnail-sizes
       :sort-options
       :show-ownership-filter
       :ownership-options
@@ -149,12 +171,12 @@ const onWheel = (event: WheelEvent) => {
     </div>
     <VirtualGrid
       v-else
-      :key="layoutMode"
+      :key="layoutMode === 'grid' ? thumbnailSize : layoutMode"
       :items="menuItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
-      :default-item-width="layoutConfig.itemWidth"
+      :min-item-width="layoutConfig.minItemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
       :on-load-more="loadMore"

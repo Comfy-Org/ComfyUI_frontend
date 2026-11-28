@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetGalleria from './WidgetGalleria.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -35,7 +35,7 @@ function renderGallery(value: string[] = images, options: IWidgetOptions = {}) {
   return render(WidgetGalleria, {
     global: { plugins: [i18n] },
     attrs: {
-      widget: createMockWidget({
+      'widget-id': registerTestWidget({
         value,
         name: 'gallery',
         type: 'galleria',
@@ -149,7 +149,7 @@ describe('WidgetGalleria', () => {
   it('does not render internal widget metadata on the gallery root', () => {
     renderGallery()
 
-    expect(screen.getByRole('region')).not.toHaveAttribute('widget')
+    expect(screen.getByRole('region')).not.toHaveAttribute('widget-id')
   })
 
   it('clamps the active image when the image list shrinks and recovers after emptying', async () => {

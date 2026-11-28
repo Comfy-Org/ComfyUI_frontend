@@ -31,6 +31,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
+import { isReplicatedValueWidget } from './replicatedValueWidget'
+
 /** The post-hook halves of a serialized node this module reads. */
 type SerializedWidgetValues = Pick<ISerialisedNode, 'widgets_values_named'>
 
@@ -213,7 +215,8 @@ export function valueWidgetsOnly(
       ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
       : undefined
     const carriesValue = node.widgets?.some(
-      (candidate) => candidate.name === name && isValueWidget(candidate, stored)
+      (candidate) =>
+        candidate.name === name && isReplicatedValueWidget(candidate, stored)
     )
     if (carriesValue)
       Object.defineProperty(filtered, name, {
@@ -224,6 +227,33 @@ export function valueWidgetsOnly(
       })
   }
   return filtered
+}
+
+export function replicatedWidgetValues(
+  node: LGraphNode,
+  named: object
+): Record<string, unknown> {
+  const values = valueWidgetsOnly(node, named)
+  const rootGraphId = node.graph?.rootGraph.id
+  const widgetValueStore = useWidgetValueStore()
+  for (const widget of node.widgets ?? []) {
+    if (!widget.name || Object.hasOwn(values, widget.name)) continue
+    const stored = rootGraphId
+      ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, widget.name))
+      : undefined
+    if (
+      isValueWidget(widget, stored) ||
+      !isReplicatedValueWidget(widget, stored)
+    )
+      continue
+    Object.defineProperty(values, widget.name, {
+      value: widget.value,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    })
+  }
+  return values
 }
 
 /** The post-hook payload and the live widget list, read once. */
@@ -253,7 +283,7 @@ function formProof(
             widgetId(rootGraphId, node.id, widget.name)
           )
         : undefined
-      return isValueWidget(widget, stored)
+      return isReplicatedValueWidget(widget, stored)
     })
     .map((widget) => widget.name)
   return {
@@ -407,7 +437,7 @@ export function widgetValuesFormVerdict(node: LGraphNode): WidgetFormVerdict {
   }
   const verdict = classifyWidgetValuesForm(
     node,
-    valueWidgetsOnly(node, named),
+    replicatedWidgetValues(node, named),
     serialized
   )
   if (!verdict.declared) record(node.type, verdict.reason)

@@ -7,12 +7,17 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import {
+  cloudRelayedNodeErrors,
+  cloudValidationSummary
+} from '@e2e/fixtures/data/cloudValidationRejection'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { jobsRouteFixture } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
-const test = mergeTests(comfyPageFixture, webSocketFixture)
+const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 
 const VALIDATION_ERROR_NODE_ID = '1'
 const VALIDATION_ERROR_MESSAGE = 'Required input is missing: source'
@@ -153,6 +158,7 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     let promptRequestBody: unknown
 
     const jobId = await exec.run({
+      start: false,
       nodeErrors,
       onPromptRequest: (requestBody) => {
         promptRequestBody = requestBody
@@ -185,7 +191,6 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     const ws = await getWebSocket()
     const exec = new ExecutionHelper(comfyPage, ws)
     const jobId = await exec.run()
-    exec.executionStart(jobId)
     exec.outputsSkipped(jobId, {
       [VALIDATION_ERROR_NODE_ID]: buildPreviewAnyValidationError()
     })
@@ -203,7 +208,7 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
   })
 
   test(
-    'renders cloud node errors when optional details are omitted',
+    'renders cloud node errors a summary-only validation rejection relays',
     { tag: '@cloud' },
     async ({ comfyPage, getWebSocket }) => {
       await comfyPage.workflow.loadWorkflow('execution/partial_execution')
@@ -212,6 +217,91 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       const exec = new ExecutionHelper(comfyPage, ws)
       const jobId = await exec.run()
       exec.executionStart(jobId)
+      exec.promptRejectedAtValidation(
+        jobId,
+        VALIDATION_ERROR_NODE_ID,
+        cloudValidationSummary,
+        cloudRelayedNodeErrors
+      )
+
+      const errorOverlay = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorOverlay
+      )
+      await expect(errorOverlay).toBeVisible()
+      await expect(errorOverlay).toContainText(
+        'Preview as Text is missing a required input: source'
+      )
+    }
+  )
+
+  for (const { name, nodeErrors, shown } of [
+    {
+      name: 'its relayed node errors',
+      nodeErrors: cloudRelayedNodeErrors,
+      shown: 'Preview as Text is missing a required input: source'
+    },
+    {
+      name: 'the summary when its relayed errors break the contract',
+      nodeErrors: {
+        [VALIDATION_ERROR_NODE_ID]: {
+          ...cloudRelayedNodeErrors[VALIDATION_ERROR_NODE_ID],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: VALIDATION_ERROR_MESSAGE,
+              extra_info: { input_name: 'source', received_value: ['a.png'] }
+            }
+          ]
+        }
+      },
+      shown: 'Prompt validation failed'
+    }
+  ]) {
+    test(
+      `shows a validation rejection that ended during a disconnect from ${name}`,
+      { tag: '@cloud' },
+      async ({ comfyPage, getWebSocket, jobsRoutes }) => {
+        await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+        const ws = await getWebSocket()
+        const exec = new ExecutionHelper(comfyPage, ws)
+        const jobId = await exec.run()
+        exec.executionStart(jobId)
+        const errorOverlay = comfyPage.page.getByTestId(
+          TestIds.dialogs.errorOverlay
+        )
+        await expect(errorOverlay).toBeHidden()
+
+        await jobsRoutes.mockJobDetail(jobId, {
+          id: jobId,
+          status: 'failed',
+          create_time: Date.now(),
+          execution_error: {
+            node_id: VALIDATION_ERROR_NODE_ID,
+            node_type: 'PreviewAny',
+            exception_type: 'ValidationError',
+            exception_message: cloudValidationSummary,
+            traceback: [],
+            node_errors: nodeErrors
+          }
+        })
+        await ws.close()
+
+        await expect(errorOverlay).toBeVisible()
+        await expect(errorOverlay).toContainText(shown)
+      }
+    )
+  }
+
+  test(
+    'renders cloud node errors when optional details are omitted',
+    { tag: '@cloud' },
+    async ({ comfyPage, getWebSocket }) => {
+      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const jobId = await exec.run()
       exec.validationError(jobId, VALIDATION_ERROR_NODE_ID, {
         [VALIDATION_ERROR_NODE_ID]: {
           class_type: 'PreviewAny',
@@ -236,3 +326,41 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     }
   )
 })
+
+test.describe(
+  'Cloud validation rejection with the Errors tab off',
+  { tag: ['@workflow', '@cloud'] },
+  () => {
+    test.use({
+      initialSettings: {
+        'Comfy.RightSidePanel.ShowErrorsTab': false
+      }
+    })
+
+    test('explains the relayed node errors in the error dialog', async ({
+      comfyPage,
+      getWebSocket
+    }) => {
+      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+      const ws = await getWebSocket()
+      const exec = new ExecutionHelper(comfyPage, ws)
+      const jobId = await exec.run()
+      exec.executionStart(jobId)
+      exec.promptRejectedAtValidation(
+        jobId,
+        VALIDATION_ERROR_NODE_ID,
+        cloudValidationSummary,
+        cloudRelayedNodeErrors
+      )
+
+      const errorDialog = comfyPage.page.getByTestId(
+        TestIds.dialogs.errorDialog
+      )
+      await expect(errorDialog).toBeVisible()
+      await expect(errorDialog).toContainText(
+        'is missing a required input: source'
+      )
+    })
+  }
+)

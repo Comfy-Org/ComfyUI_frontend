@@ -1,6 +1,6 @@
 import type { Asset } from '@comfyorg/ingest-types'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 /**
  * Core-native asset shape: the ingest Asset plus the `loader_path` contract
@@ -111,6 +111,13 @@ export const STABLE_CHECKPOINT: Asset = createModelAsset({
   created_at: '2025-01-15T10:30:00Z',
   updated_at: '2025-01-15T10:30:00Z'
 })
+
+export const UNSUPPORTED_QWEN_TTS: Asset = {
+  ...STABLE_CHECKPOINT,
+  id: 'test-qwen-tts-001',
+  name: 'Qwen3-TTS-12Hz-0.6B-CustomVoice.safetensors',
+  tags: ['models', 'qwen-tts/Qwen3-TTS-12Hz-0.6B-CustomVoice']
+}
 
 export const STABLE_CHECKPOINT_2: Asset = createModelAsset({
   id: 'test-checkpoint-002',

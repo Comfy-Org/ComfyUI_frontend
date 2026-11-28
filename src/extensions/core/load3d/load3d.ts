@@ -474,6 +474,31 @@ function createPreview3DAdvancedExtension(
       const onExecuted = node.onExecuted
       const { onLoad3dReady, waitForLoad3d } = useLoad3d(node)
 
+      // Installed synchronously (not inside waitForLoad3d below): a live "executed"
+      // event calls node.onExecuted directly before the viewer may have mounted,
+      // and a result arriving while this is unset is dropped for good.
+      node.onExecuted = function (output: NodeExecutionOutput) {
+        onExecuted?.call(this, output)
+
+        const reported = readModel3DOutput(output)
+        if (!reported) {
+          const msg = t('toastMessages.unableToGetModelFilePath')
+          console.error(msg)
+          useToast().warning(msg)
+          return
+        }
+
+        waitForLoad3d((load3d) => {
+          applyPreview3DAdvancedResult(
+            node,
+            nodeToLoad3dMap.get(node) ?? load3d,
+            reported,
+            loadFolder,
+            comfyClass
+          )
+        })
+      }
+
       onLoad3dReady((load3d) => {
         const lastTimeModelFile = node.properties['Last Time Model File']
         if (!lastTimeModelFile) return
@@ -562,26 +587,6 @@ function createPreview3DAdvancedExtension(
             recording: '',
             model_3d_info
           }
-        }
-
-        node.onExecuted = function (output: NodeExecutionOutput) {
-          onExecuted?.call(this, output)
-
-          const reported = readModel3DOutput(output)
-          if (!reported) {
-            const msg = t('toastMessages.unableToGetModelFilePath')
-            console.error(msg)
-            useToast().warning(msg)
-            return
-          }
-
-          applyPreview3DAdvancedResult(
-            node,
-            resolveLoad3d(),
-            reported,
-            loadFolder,
-            comfyClass
-          )
         }
       })
     }

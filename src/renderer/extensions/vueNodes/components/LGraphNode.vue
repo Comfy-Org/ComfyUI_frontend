@@ -10,6 +10,10 @@
     :data-collapsed="isCollapsed || undefined"
     :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
+    :data-node-type="nodeData.type"
+    :data-mode="stateAttributes.mode"
+    :data-executing="stateAttributes.executing"
+    :data-error="stateAttributes.error"
     :class="
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
@@ -17,7 +21,9 @@
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : compactHeader
+            ? 'w-max max-w-(--collapsed-node-max-width)'
+            : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -28,7 +34,9 @@
     "
     :style="{
       ...nodeSizeStyle,
-      '--min-node-width': `${MIN_NODE_WIDTH}px`,
+      '--min-node-width': `${minNodeWidth}px`,
+      '--collapsed-node-max-width': `${MIN_NODE_WIDTH}px`,
+      '--node-header-height': `${VUE_NODE_BODY.headerHeight}px`,
       transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
@@ -78,11 +86,12 @@
     >
       <div
         data-testid="node-inner-wrapper"
+        data-part="node-frame"
         :class="
           cn(
             'flex flex-1 flex-col bg-node-header',
             'w-(--node-width)',
-            !isRerouteNode && 'min-w-(--min-node-width)',
+            !isRerouteNode && !compactHeader && 'min-w-(--min-node-width)',
             shapeClass,
             hasAnyError && 'ring-4',
             errorSeverity === 'missing' && 'ring-warning',
@@ -93,9 +102,9 @@
           )
         "
         :style="{
-          '--node': applyLightThemeColor(nodeData.bgcolor),
+          '--node': themeStore.toNodeColor(nodeData.bgcolor),
           '--component-node-background': 'var(--node)',
-          backgroundColor: applyLightThemeColor(nodeData?.color)
+          backgroundColor: themeStore.toNodeColor(nodeData?.color)
         }"
       >
         <div
@@ -126,15 +135,10 @@
           />
         </div>
 
-        <div
+        <NodeProgressBar
           v-if="isCollapsed && executing && progress !== undefined"
-          :class="
-            cn(
-              'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
-              progressClasses
-            )
-          "
-          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+          :progress
+          collapsed
         />
 
         <template v-if="!isCollapsed && isRerouteNode">
@@ -142,26 +146,19 @@
         </template>
 
         <template v-else-if="!isCollapsed">
-          <div class="relative">
-            <div
-              v-if="executing && progress !== undefined"
-              :class="
-                cn(
-                  'absolute inset-x-0 top-1/2 -translate-y-1/2',
-                  !!(progress < 1) && 'rounded-r-full',
-                  progressClasses
-                )
-              "
-              :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-            />
+          <div v-if="executing && progress !== undefined" class="relative">
+            <NodeProgressBar :progress />
           </div>
 
           <div
-            :class="
-              cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
-            "
-            :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
+            :class="cn('flex flex-1 flex-col bg-node', bodyRoundingClass)"
+            :style="{
+              rowGap: `${VUE_NODE_BODY.gap}px`,
+              paddingTop: `${VUE_NODE_BODY.paddingTop}px`,
+              paddingBottom: `${VUE_NODE_BODY.paddingBottom}px`
+            }"
             :data-testid="`node-body-${nodeData.id}`"
+            data-part="node-body"
           >
             <NodeSlots :node-data />
 
@@ -174,6 +171,12 @@
             <div
               v-for="(region, index) in mediaRegions"
               :key="region.name"
+              :data-media-region="region.name"
+              :data-media-fills-node="
+                mediaRegions.length === 1 && region.fills && !hasExpandingWidget
+                  ? ''
+                  : undefined
+              "
               :class="
                 cn(
                   'relative flex min-h-0 flex-col',
@@ -182,7 +185,9 @@
                     : region.fills
                       ? 'flex-1'
                       : 'shrink-0',
-                  region.growsIntoLeftover && 'grow'
+                  region.height === undefined &&
+                    region.growsIntoLeftover &&
+                    'grow'
                 )
               "
               :style="
@@ -191,13 +196,13 @@
                   : { gridTemplateRows: userHeightTrack(region.height) }
               "
             >
-              <div class="flex min-h-0 flex-1 flex-col">
-                <LivePreview
-                  v-if="region.media.type === 'preview'"
-                  :image-url="region.media.url"
-                />
-                <NodeContent v-else :node-data :media="region.media" />
+              <div
+                v-if="region.media.type === 'preview'"
+                class="flex min-h-0 flex-1 flex-col"
+              >
+                <LivePreview :image-url="region.media.url" />
               </div>
+              <NodeContent v-else :node-data :media="region.media" />
               <GrowableRegionHandle
                 :name="region.name"
                 :label="
@@ -221,7 +226,7 @@
         :show-errors-tab-enabled="showErrorsTabEnabled"
         :show-advanced-inputs-button="showAdvancedInputsButton"
         :show-advanced-state="!!nodeData.showAdvanced"
-        :header-color="applyLightThemeColor(nodeData?.color)"
+        :header-color="themeStore.toNodeColor(nodeData?.color)"
         :shape="nodeData.shape"
         @enter-subgraph="handleEnterSubgraph"
         @open-errors="handleOpenErrors"
@@ -248,12 +253,15 @@
 </template>
 
 <script setup lang="ts">
+import { isEqual } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import {
   computed,
   onErrorCaptured,
   provide,
   ref,
+  shallowReactive,
+  shallowRef,
   useTemplateRef,
   watch
 } from 'vue'
@@ -270,6 +278,7 @@ import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -288,7 +297,7 @@ import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composable
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useMountedNodeSize } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import {
   growableRegionsKey,
@@ -296,6 +305,15 @@ import {
   userHeightTrack
 } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
+import type {
+  BodyItem,
+  VueNodeBodyLayout
+} from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import {
+  layoutVueNodeBody,
+  VUE_NODE_BODY
+} from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import { vueNodeBodyKey } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
   shouldHideLinkedCoreLoadAudioPlayer,
@@ -307,10 +325,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import {
-  applyLightThemeColor,
-  shapeVariantClass
-} from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { shapeVariantClass } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isVideoResult } from '@/utils/resultItem'
@@ -331,6 +346,7 @@ import {
 import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
+import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -342,6 +358,7 @@ import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeResizeHandle from './NodeResizeHandle.vue'
+import NodeProgressBar from './NodeProgressBar.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
@@ -357,13 +374,12 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const themeStore = useThemeStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 
 const nodeId = computed(() => nodeData.id)
-
-useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
@@ -388,14 +404,33 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+const bodyTop = computed(
+  () =>
+    (displayHeader.value ? VUE_NODE_BODY.headerHeight : 0) -
+    LiteGraph.NODE_TITLE_HEIGHT
+)
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const compactHeader = computed(
+  () =>
+    isCollapsed.value &&
+    displayHeader.value &&
+    !isRerouteNode.value &&
+    !nodeData.showAdvanced &&
+    !(hasAnyError.value && showErrorsTabEnabled.value)
+)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
+
+const stateAttributes = computed(() => ({
+  mode: bypassed.value ? 'bypass' : muted.value ? 'muted' : undefined,
+  executing: executing.value ? '' : undefined,
+  error: hasAnyError.value ? errorSeverity.value : undefined
+}))
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
@@ -428,6 +463,11 @@ onErrorCaptured((error) => {
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
 const nodeRef = useTemplateRef<HTMLElement>('nodeRef')
+useMountedNodeSize(
+  nodeRef,
+  () => nodeId.value,
+  () => nodeData.type
+)
 const nodeTransform = computed(
   () =>
     `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`
@@ -531,15 +571,34 @@ provide(growableRegionsKey, {
 function handleResizeDoubleClick(event: MouseEvent) {
   if (!canResizeNode.value) return
   const widget = soleGrowableWidget.value
-  if (widget) growable.resetWidget(event, widget)
-  else growable.fitNode(event)
+  const layout = bodyLayout.value
+  if (widget) growable.resetWidget(event, widget, soleGrowableMinHeight(widget))
+  else if (layout && !mediaRegions.value.length && !fillsWithUnsizedRow()) {
+    resizeNodeTo(
+      layout.minBodyHeight +
+        bodyTop.value +
+        footerOverhang.value +
+        LiteGraph.NODE_TITLE_HEIGHT
+    )
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  } else growable.fitNode(event)
+}
+
+function fillsWithUnsizedRow() {
+  return (widgetItems.value?.() ?? []).some(
+    (item) =>
+      item.kind === 'control' &&
+      item.growable &&
+      !item.sizing &&
+      item.userHeight === undefined
+  )
 }
 
 const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   resizeNodeTo(
     result.size.height,
-    Math.max(result.size.width, MIN_NODE_WIDTH),
+    Math.max(result.size.width, minNodeWidth.value),
     result.position
   )
 })
@@ -550,7 +609,13 @@ const handleResizePointerDown = (
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
   const element = nodeRef.value
-  if (element) startResize(event, corner, { element, position: position.value })
+  if (element)
+    startResize(event, corner, {
+      element,
+      position: position.value,
+      rowSlack: () => bodyLayout.value?.slack ?? 0,
+      snapItem: resolveLGraphNode() ?? undefined
+    })
 }
 
 const mediaRegions = computed(() => [
@@ -573,9 +638,6 @@ const mediaRegions = computed(() => [
     growsIntoLeftover: false
   }))
 ])
-
-// Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
@@ -745,6 +807,31 @@ const { canSelectInputs, gridRows, nodeType, processedWidgets } =
     () => nodeData,
     () => renderedWidgetIds.value
   )
+const measuredLabelsKey = computed(() =>
+  [
+    nodeData.title,
+    ...nodeData.inputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
+    ...nodeData.outputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
+    ...processedWidgets.value
+      .filter(({ visible }) => visible)
+      .map(({ widgetId, name }) => `${widgetId}:${name}`)
+  ].join('\n')
+)
+
+const minNodeWidth = ref(LiteGraph.NODE_WIDTH)
+watch(
+  [lgraphNode, measuredLabelsKey, isCollapsed],
+  ([node, , collapsed]) => {
+    if (node && !collapsed)
+      minNodeWidth.value = Math.ceil(node.computeSize()[0])
+  },
+  { immediate: true }
+)
+
 const hasRenderableWidgets = computed(() => gridRows.value.length > 0)
 const processedWidgetModel = computed(() => ({
   processedWidgets: gridRows.value,
@@ -753,8 +840,7 @@ const processedWidgetModel = computed(() => ({
 }))
 const hasExpandingWidget = computed(() =>
   processedWidgets.value.some(
-    (widget) =>
-      widget.visible && shouldExpand(widget.simplified.type, widget.sizing)
+    (widget) => widget.visible && shouldExpand(widget.type, widget.sizing)
   )
 )
 
@@ -762,19 +848,25 @@ const soleGrowableWidget = computed(() => {
   if (nodeMedia.value?.items.length || promotedPreviews.value.length) return
   const visible = processedWidgets.value.filter(({ visible }) => visible)
   const [widget] = visible
-  return visible.length === 1 &&
-    shouldExpand(widget.simplified.type, widget.sizing)
-    ? widget.simplified.name
+  return visible.length === 1 && shouldExpand(widget.type, widget.sizing)
+    ? widget.name
     : undefined
 })
 
+function soleGrowableMinHeight(name: string) {
+  const sizing = processedWidgets.value.find(
+    (widget) => widget.name === name
+  )?.sizing
+  return sizing && minRowHeight(sizing)
+}
+
 const widgetTakesSpareHeight = computed(() =>
   processedWidgets.value.some(
-    ({ visible, simplified, sizing }) =>
+    ({ visible, name, type, sizing }) =>
       visible &&
-      shouldExpand(simplified.type, sizing) &&
+      shouldExpand(type, sizing) &&
       (sizing?.kind !== 'growable' || sizing.maxHeight === undefined) &&
-      growable.heightOf(simplified.name) === undefined
+      growable.heightOf(name) === undefined
   )
 )
 
@@ -812,7 +904,7 @@ const hasVideoPreviewWidget = computed(() =>
 
 const nodeMedia = computed(() => {
   const node = lgraphNode.value
-  if (!node || node.hideOutputImages || hideExecutedOutput.value)
+  if (!node || node.hideOutputImages !== false || hideExecutedOutput.value)
     return undefined
   if (node instanceof SubgraphNode) return undefined
 
@@ -867,4 +959,88 @@ function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
   useApp().dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
+
+const FOOTER_TAB_OVERHANG = 24
+const ERROR_FOOTER_OVERHANG = 20
+
+const footerOverhang = computed(() => {
+  if (isRerouteNode.value) return 0
+  if (hasAnyError.value && showErrorsTabEnabled.value)
+    return ERROR_FOOTER_OVERHANG
+  const hasTab =
+    !!lgraphNode.value?.isSubgraphNode() ||
+    showAdvancedInputsButton.value ||
+    !!nodeData.showAdvanced
+  if (!hasTab) return 0
+  return hasAnyError.value ? ERROR_FOOTER_OVERHANG : FOOTER_TAB_OVERHANG
+})
+
+const slotItems = shallowRef<(() => BodyItem[]) | undefined>()
+const widgetItems = shallowRef<(() => BodyItem[]) | undefined>()
+const contentHeights = shallowReactive(new Map<string, number>())
+
+const bodyWidth = computed(() => Math.max(size.value.width, minNodeWidth.value))
+const bodyHeight = computed(
+  () => size.value.height - bodyTop.value - footerOverhang.value
+)
+
+const bodyLayout = computed<VueNodeBodyLayout | undefined>((previous) => {
+  if (isCollapsed.value || isRerouteNode.value) return undefined
+  const items = [
+    ...(slotItems.value?.() ?? []),
+    ...(widgetItems.value?.() ?? []),
+    ...mediaRegions.value
+      .filter((region) => region.fills)
+      .map((region): BodyItem => ({
+        kind: 'media',
+        key: region.name,
+        userHeight: region.height
+      }))
+  ].map((item) =>
+    item.kind === 'control'
+      ? { ...item, contentHeight: contentHeights.get(item.key) }
+      : item
+  )
+  const next = layoutVueNodeBody(bodyWidth.value, bodyHeight.value, items)
+  return previous && isEqual(previous, next) ? previous : next
+})
+
+function offsetFromBody(points: ReadonlyMap<number, { x: number; y: number }>) {
+  return new Map(
+    [...points].map(([index, { x, y }]) => [index, { x, y: y + bodyTop.value }])
+  )
+}
+
+const slotAnchors = computed(() => {
+  const layout = bodyLayout.value
+  return (
+    layout && {
+      input: offsetFromBody(layout.inputs),
+      output: offsetFromBody(layout.outputs)
+    }
+  )
+})
+
+provide(vueNodeBodyKey, {
+  slotItems,
+  widgetItems,
+  rowOf: (key) => bodyLayout.value?.rows.get(key),
+  reportContentHeight: (key, height) => {
+    if (Math.abs((contentHeights.get(key) ?? 0) - height) > 0.5)
+      contentHeights.set(key, height)
+  }
+})
+
+watch(
+  [() => canvasStore.rootGraphId, () => nodeData.id, slotAnchors],
+  ([rootGraphId, id, anchors], _, onCleanup) => {
+    if (!rootGraphId) return
+    layoutStore.setDerivedSlotAnchors(rootGraphId, id, anchors)
+    onCleanup(() =>
+      layoutStore.setDerivedSlotAnchors(rootGraphId, id, undefined)
+    )
+  },
+  { immediate: true }
+)
+watch(bodyLayout, () => canvasStore.canvas?.setDirty(true, true))
 </script>

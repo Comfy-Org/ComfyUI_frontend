@@ -3,7 +3,7 @@ import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
-import type { FilterOption } from '@/platform/assets/types/filterTypes'
+import type { FilterOption } from '@comfyorg/assets-core/filtering'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { filterOptions } = defineProps<{
@@ -25,7 +25,7 @@ const uploadButtonStyle =
 </script>
 
 <template>
-  <div class="mb-4 flex gap-1 px-4 text-muted-foreground">
+  <div class="mb-4 flex flex-wrap gap-1 px-4 text-muted-foreground">
     <button
       v-for="option in filterOptions"
       :key="option.value"
@@ -35,10 +35,10 @@ const uploadButtonStyle =
         cn(
           'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-foreground select-none',
           !singleFilterOption &&
-            'cursor-pointer transition-all duration-150 hover:bg-accent hover:text-foreground active:scale-95',
+            'cursor-pointer transition-all duration-150 hover:text-foreground active:scale-95',
           !singleFilterOption && filterSelected === option.value
-            ? 'bg-muted! text-foreground'
-            : 'bg-transparent'
+            ? 'bg-muted'
+            : 'bg-transparent hover:bg-accent'
         )
       "
       @click="filterSelected = option.value"

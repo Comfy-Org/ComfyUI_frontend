@@ -7,6 +7,7 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
 import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
+import { TEMPLATES_DEFAULT_SORT } from '@/platform/settings/constants/templates'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
@@ -23,6 +24,12 @@ import { breakpointsTailwind } from '@vueuse/core'
  * when they are no longer needed.
  */
 export const CORE_SETTINGS: SettingParams[] = [
+  {
+    id: 'Comfy.Agent.CrdtDebug.Level',
+    name: 'CRDT diagnostic log level',
+    type: 'hidden',
+    defaultValue: 'info'
+  },
   {
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
@@ -300,6 +307,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Cloud.AskBeforeCompatibilityCheck',
+    category: ['Comfy', 'Comfy Cloud', 'AskBeforeCompatibilityCheck'],
+    name: 'Ask before sending node and model names to check Comfy Cloud compatibility',
+    type: isCloud ? 'hidden' : 'boolean',
+    defaultValue: true
+  },
+  {
     id: 'Comfy.Desktop.CloudNotificationShown',
     name: 'Cloud notification shown',
     type: 'hidden',
@@ -400,6 +414,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Show width × height below the image preview',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.VueNodes.HideSafeModelExtensions',
+    category: ['LiteGraph', 'Node Widget', 'HideSafeModelExtensions'],
+    name: 'Hide .safetensors and .sft extensions',
+    type: 'boolean',
+    defaultValue: true,
+    tooltip:
+      'Nodes 2.0 only. Hide these extensions in closed model widgets. Other extensions remain visible; dropdown options and saved values keep full filenames.'
   },
   {
     id: 'Comfy.Node.DownscaleImagePreviews',
@@ -545,11 +568,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.DisableFloatRounding',
     category: ['LiteGraph', 'Node Widget', 'DisableFloatRounding'],
-    name: 'Disable default float widget rounding.',
+    name: 'Disable default float widget rounding (deprecated).',
     tooltip:
-      '(requires page reload) Cannot disable round when round is set by the node in the backend.',
+      '(requires page reload) Deprecated and on by default. Turning it off rounds edited float values to the decimal places of the widget step. Rounding declared by the node always applies.',
     type: 'boolean',
-    defaultValue: false
+    defaultValue: true,
+    versionModified: '1.61.5'
   },
   {
     id: 'Comfy.FloatRoundingPrecision',
@@ -573,7 +597,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 3000,
       step: 50
     },
-    defaultValue: 500,
+    defaultValue: 1500,
     versionAdded: '1.9.0'
   },
   {
@@ -865,6 +889,58 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When dragging and resizing nodes while holding shift they will be aligned to the grid, this controls the size of that grid.',
     defaultValue: LiteGraph.CANVAS_GRID_SIZE
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.Enabled',
+    category: ['LiteGraph', 'Smart Guides', 'Enabled'],
+    name: 'Snap to nearby nodes, groups, and wires while dragging and resizing',
+    tooltip:
+      'Shows guide lines and snaps to aligned edges, even spacing, and straight wires. Hold Shift to snap to the grid instead.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapToEdges',
+    category: ['LiteGraph', 'Smart Guides', 'SnapToEdges'],
+    name: 'Snap to the edges of other nodes and groups',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapToWires',
+    category: ['LiteGraph', 'Smart Guides', 'SnapToWires'],
+    name: 'Snap so that wires become straight',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapToSpacing',
+    category: ['LiteGraph', 'Smart Guides', 'SnapToSpacing'],
+    name: 'Snap to even spacing between nodes',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.SnapDistance',
+    category: ['LiteGraph', 'Smart Guides', 'SnapDistance'],
+    name: 'Snap distance (screen pixels)',
+    type: 'slider',
+    attrs: { min: 2, max: 24, step: 1 },
+    defaultValue: 8,
+    versionAdded: '1.62.0'
+  },
+  {
+    id: 'Comfy.Canvas.SmartGuides.Gap',
+    category: ['LiteGraph', 'Smart Guides', 'Gap'],
+    name: 'Gap when snapping next to another node',
+    type: 'slider',
+    attrs: { min: 0, max: 100, step: 1 },
+    defaultValue: 0,
+    versionAdded: '1.62.0'
   },
   // Keep the 'pysssss.SnapToGrid' setting id so we don't need to migrate setting values.
   // Using a new setting id can cause existing users to lose their existing settings.
@@ -1209,10 +1285,20 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: []
   },
   {
+    id: 'Comfy.Templates.HasOpenedLibrary',
+    name: 'Template library - Opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.62.0'
+  },
+  {
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
-    defaultValue: 'default'
+    defaultValue: TEMPLATES_DEFAULT_SORT,
+    // The 'default' (unsorted) option was removed; fall back to the new default.
+    migrateDeprecatedValue: (value: unknown) =>
+      value === 'default' ? TEMPLATES_DEFAULT_SORT : value
   },
 
   /**
@@ -1329,7 +1415,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.40.0'
   },
   {
-    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    id: 'Comfy.ErrorSystem.ShowMissingNodes',
     category: ['Comfy', 'Error System', 'MissingNodes'],
     sortOrder: -1,
     name: 'Show missing nodes in the issues tab',
@@ -1337,7 +1423,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed.',
     type: 'boolean',
     defaultValue: true,
-    versionAdded: '1.55.0'
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.ErrorSystem.ShowMissingModels',

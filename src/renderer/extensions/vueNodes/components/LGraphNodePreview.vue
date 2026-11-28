@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
 import type {
   INodeInputSlot,
@@ -48,10 +48,13 @@ import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import { dynamicComboOptionKeys } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -129,7 +132,9 @@ const resolvedWidgetValues = computed(() =>
   )
 )
 
-const previewWidgets = computed<WidgetGridItem[]>(() =>
+const previewGraphId = createUuidv4()
+
+const previewWidgetEntries = computed(() =>
   widgetInputs.value
     .filter(([, input]) => !input.hidden && !input.advanced)
     .map(([name, input]) => {
@@ -150,11 +155,37 @@ const previewWidgets = computed<WidgetGridItem[]>(() =>
           ? [leadValue, ...comboValues.filter((option) => option !== leadValue)]
           : comboValues
       return {
-        visible: true,
-        renderKey: `preview:${nodeDef.name}:${name}`,
-        vueComponent: getComponent(type) ?? WidgetLegacy,
-        simplified: { name, type, value, options: { values }, spec: input }
+        id: widgetId(previewGraphId, nodeData.value.id, name),
+        name,
+        type,
+        value,
+        values,
+        spec: input
       }
     })
+)
+
+watch(
+  previewWidgetEntries,
+  (entries, _, onCleanup) => {
+    const store = useWidgetValueStore()
+    for (const { id, type, value, values, spec } of entries)
+      store.registerWidget(id, { type, value, options: { values } }, { spec })
+    onCleanup(() => store.clearGraph(previewGraphId))
+  },
+  { immediate: true }
+)
+
+const previewWidgets = computed<WidgetGridItem[]>(() =>
+  previewWidgetEntries.value.map(({ id, name, type, value, spec }) => ({
+    visible: true,
+    renderKey: `preview:${nodeDef.name}:${name}`,
+    vueComponent: getComponent(type) ?? WidgetLegacy,
+    widgetId: id,
+    name,
+    type,
+    value,
+    spec
+  }))
 )
 </script>

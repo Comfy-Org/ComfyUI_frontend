@@ -7,21 +7,29 @@ import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
-import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { useAssetWidgetData } from '@/platform/assets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import {
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
-import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { OwnershipOption } from '@comfyorg/assets-core/filtering'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { AssetKind } from '@/types/widgetTypes'
 import { pagedItems } from '@/utils/pagedList'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
+import { isWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 interface Props {
-  widget: SimplifiedWidget<string | undefined>
+  widgetId: WidgetId
+  displayLabel?: string
   nodeType?: string
   assetKind?: AssetKind
   allowUpload?: boolean
@@ -41,8 +49,10 @@ provide(
 
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
-    const modelWidget = modelProps.widget as Props['widget'] | undefined
-    const values = modelWidget?.options?.values
+    const id = modelProps.widgetId
+    const values = isWidgetId(id)
+      ? useWidgetValueStore().getWidget(id)?.options.values
+      : undefined
     return (Array.isArray(values) ? values[0] : undefined) ?? ''
   }
 })
@@ -58,13 +68,14 @@ const stringModelValue = computed({
 
 const { t } = useI18n()
 
+const options = computed(() => widgetOptions(props.widgetId))
+
 const combinedProps = computed(() =>
-  filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
+  filterWidgetProps(options.value, PANEL_EXCLUDED_PROPS)
 )
 
 const getAssetData = () => {
-  const nodeType: string | undefined =
-    props.widget.options?.nodeType ?? props.nodeType
+  const nodeType: string | undefined = options.value.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -82,7 +93,7 @@ const {
   baseModelOptions,
   selectedSet: selected
 } = useWidgetSelectItems({
-  getOptionLabel: () => props.widget.options?.getOptionLabel,
+  getOptionLabel: () => options.value.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
   assetData,
@@ -94,19 +105,17 @@ const {
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   dropdownItems: () => pagedItems(items.value),
-  locatorId: props.widget.nodeLocatorId,
+  locatorId: () => widgetNodeLocatorId(props.widgetId),
   modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
   uploadSubfolder: () => props.uploadSubfolder,
-  widget: () => props.widget,
+  widgetId: () => props.widgetId,
   videoOnly: () => props.assetKind === 'video'
 })
 
 const placeholder = computed(() => {
-  const options = props.widget.options
-
-  if (options?.placeholder) {
-    return options.placeholder
+  if (options.value.placeholder) {
+    return options.value.placeholder
   }
 
   switch (props.assetKind) {
@@ -158,7 +167,7 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget :input-id root-class="h-auto">
+  <WidgetLayoutField :widget-id :display-label :input-id root-class="h-auto">
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"

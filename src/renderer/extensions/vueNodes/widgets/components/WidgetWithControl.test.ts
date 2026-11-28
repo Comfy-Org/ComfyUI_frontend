@@ -1,21 +1,22 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { assert, describe, expect, it, vi } from 'vitest'
+import { defineComponent, markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import type {
-  SafeControlWidget,
-  SimplifiedControlWidget,
-  WidgetValue
-} from '@/types/simplifiedWidget'
+import { app } from '@/scripts/app'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 import WidgetWithControl from './WidgetWithControl.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { addControlledWidget } from './controlledWidgetFixture'
+
+vi.mock(import('@/scripts/app'))
 
 const ValueControlButtonStub = defineComponent({
   name: 'ValueControlButton',
@@ -41,13 +42,13 @@ const ValueControlPopoverStub = defineComponent({
 const RenderedComponent = defineComponent({
   name: 'RenderedComponent',
   props: {
-    widget: { type: Object, default: () => ({}) },
+    widgetId: { type: String, required: true },
     modelValue: { type: Number, default: 0 }
   },
   template: `
     <div
       data-testid="rendered"
-      :data-widget-name="widget?.name"
+      :data-widget-id="widgetId"
       :data-model-value="String(modelValue)"
     >
       <slot name="between" />
@@ -55,24 +56,13 @@ const RenderedComponent = defineComponent({
   `
 })
 
-const makeControlWidget = (
-  update: (value: WidgetValue) => void = () => {},
-  initial = 'randomize'
-): SimplifiedControlWidget => {
-  const controlWidget: SafeControlWidget = {
-    value: initial as SafeControlWidget['value'],
-    update: (value) => update(value)
-  }
-  return createMockWidget<WidgetValue>({
-    value: 0,
-    name: 'wrapped_widget',
-    type: 'int',
-    options: {},
-    controlWidget
-  }) as SimplifiedControlWidget
+const makeControlWidget = (mode: ControlOptions = 'randomize') => {
+  const controlled = addControlledWidget({ name: 'wrapped_widget', mode })
+  vi.mocked(app).rootGraph = controlled.graph
+  return controlled
 }
 
-const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
+const mount = (widgetId: WidgetId, modelValue = 0) =>
   render(WidgetWithControl, {
     global: {
       stubs: {
@@ -80,7 +70,7 @@ const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
         ValueControlPopover: ValueControlPopoverStub
       }
     },
-    props: { widget, modelValue, component: RenderedComponent }
+    props: { widgetId, modelValue, component: markRaw(RenderedComponent) }
   })
 
 describe('WidgetWithControl', () => {
@@ -91,30 +81,26 @@ describe('WidgetWithControl', () => {
   ])(
     'changes the generation mode for a unified $name',
     async ({ component }) => {
-      let mode: WidgetValue = 'randomize'
-      const widget: SimplifiedControlWidget<number> = {
-        name: 'controlled_widget',
-        type: 'number',
+      const {
+        graph,
+        widgetId,
+        control: controlWidget
+      } = addControlledWidget({
         value: 1,
-        options: { values: [1, 2], min: 0, max: 10 },
-        controlWidget: {
-          value: 'randomize',
-          update: (value) => {
-            mode = value
-          }
-        }
-      }
+        options: { values: [1, 2], min: 0, max: 10 }
+      })
+      vi.mocked(app).rootGraph = graph
       const onNodePointer = vi.fn()
       const Harness = defineComponent({
         components: { WidgetWithControl },
-        setup: () => ({ widget, component, onNodePointer }),
+        setup: () => ({ widgetId, component, onNodePointer }),
         template: `
           <div
             @pointerdown="onNodePointer"
             @pointermove="onNodePointer"
             @pointerup="onNodePointer"
           >
-            <WidgetWithControl :widget :component :model-value="1" />
+            <WidgetWithControl :widget-id :component :model-value="1" />
           </div>
         `
       })
@@ -136,40 +122,82 @@ describe('WidgetWithControl', () => {
       expect(onNodePointer).not.toHaveBeenCalled()
       await user.click(await screen.findByRole('radio', { name: /fixed/i }))
 
-      expect(mode).toBe('fixed')
+      expect(controlWidget.value).toBe('fixed')
     }
   )
 
-  it('renders the passed component with widget and modelValue', () => {
-    mount(makeControlWidget(), 42)
+  it('renders the passed component with the widgetId and modelValue', () => {
+    const { widgetId } = makeControlWidget()
+    mount(widgetId, 42)
     const rendered = screen.getByTestId('rendered')
-    expect(rendered).toHaveAttribute('data-widget-name', 'wrapped_widget')
+    expect(rendered).toHaveAttribute('data-widget-id', widgetId)
     expect(rendered).toHaveAttribute('data-model-value', '42')
   })
 
-  it('initializes ValueControlButton mode from widget.controlWidget.value', () => {
-    mount(makeControlWidget(() => {}, 'increment'))
+  it("initializes the mode button from the control widget's mode", () => {
+    mount(makeControlWidget('increment').widgetId)
     expect(screen.getByTestId('control-button')).toHaveAttribute(
       'data-mode',
       'increment'
     )
   })
 
-  it('calls widget.controlWidget.update when popover emits a new mode', async () => {
-    const update = vi.fn<(value: WidgetValue) => void>()
-    mount(makeControlWidget(update, 'randomize'))
+  it('reflects external mode changes from the store', async () => {
+    const { widgetId, control } = makeControlWidget('fixed')
+    assert.exists(control.widgetId)
+    mount(widgetId)
+
+    useWidgetValueStore().setValue(control.widgetId, 'decrement')
+    await nextTick()
+
+    expect(screen.getByTestId('control-button')).toHaveAttribute(
+      'data-mode',
+      'decrement'
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('control-button'))
+    await user.click(screen.getByTestId('set-fixed'))
+    expect(control.value).toBe('fixed')
+    expect(screen.getByTestId('control-button')).toHaveAttribute(
+      'data-mode',
+      'fixed'
+    )
+  })
+
+  it('uses the current control binding after the widget is replaced', async () => {
+    const original = makeControlWidget('randomize')
+    const { rerender } = mount(original.widgetId)
+    const replacement = makeControlWidget('increment')
+
+    await rerender({ widgetId: replacement.widgetId })
+    expect(screen.getByTestId('control-button')).toHaveAttribute(
+      'data-mode',
+      'increment'
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('control-button'))
+    await user.click(screen.getByTestId('set-fixed'))
+
+    expect(replacement.control.value).toBe('fixed')
+    expect(original.control.value).toBe('randomize')
+  })
+
+  it('writes the chosen mode to the control widget', async () => {
+    const { widgetId, control } = makeControlWidget('randomize')
+    mount(widgetId)
 
     const user = userEvent.setup()
     await user.click(screen.getByTestId('control-button'))
     await user.click(screen.getByTestId('set-fixed'))
     await nextTick()
 
-    expect(update).toHaveBeenCalledWith('fixed')
+    expect(control.value).toBe('fixed')
   })
 
   it('does not call update on initial mount', () => {
-    const update = vi.fn()
-    mount(makeControlWidget(update, 'randomize'))
+    const { widgetId, control } = makeControlWidget('randomize')
+    const update = vi.spyOn(control, 'value', 'set')
+    mount(widgetId)
     expect(update).not.toHaveBeenCalled()
   })
 })

@@ -3,7 +3,7 @@
     <BoundingBoxesEditor
       v-model="modelValue"
       :node-id="nodeId"
-      :widget="widget"
+      :widget-id="widgetId"
       fullscreen
     />
   </div>
@@ -13,21 +13,24 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 
 import BoundingBoxesEditor from '@/components/boundingBoxes/BoundingBoxesEditor.vue'
-import { locateWidgetNode } from '@/composables/widgetHistoryScope'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  setWidgetValue,
+  widgetLive,
+  widgetValue
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
-const { nodeId, widget, close } = defineProps<{
+const { nodeId, widgetId, close } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget
+  widgetId: WidgetId
   close: () => void
 }>()
 
-const location = locateWidgetNode(widget, nodeId)
-const graph = location?.graph
-const node = location ? graph?.getNodeById(location.nodeId) : undefined
-const liveWidget = node?.widgets?.find((w) => w.name === widget.name)
+const live = widgetLive(widgetId)
+const graph: LGraph | null | undefined = live?.node.graph
 
 const listeners = new AbortController()
 graph?.rootGraph.events.addEventListener('configuring', close, {
@@ -36,20 +39,20 @@ graph?.rootGraph.events.addEventListener('configuring', close, {
 graph?.events.addEventListener(
   'node:removed',
   ({ detail }) => {
-    if (detail.node === node) close()
+    if (detail.node === live?.node) close()
   },
   { signal: listeners.signal }
 )
 onMounted(() => {
-  if (!liveWidget) close()
+  if (!live) close()
 })
 onBeforeUnmount(() => listeners.abort())
 
 const modelValue = computed<BoundingBox[]>({
   get: () => {
-    const value = liveWidget?.value
+    const value = widgetValue(widgetId)
     return Array.isArray(value) ? value : []
   },
-  set: (boxes) => widget.callback?.(boxes)
+  set: (boxes) => setWidgetValue(widgetId, boxes)
 })
 </script>

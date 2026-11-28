@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0 : transformez une photo et un extrait de parole ou de chanson en vidéo parlante ou chantante. La vidéo a la même durée que l'audio et le conserve inchangé.",
+    "display_name": "Avatar Creatify Aurora 2.0",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Parole ou chanson, jusqu'à 60 secondes (14 en 2k). Facturé par seconde entamée."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Au moins 256 pixels de chaque côté, avec un ratio compris entre 1:4 et 4:1. La vidéo conserve le ratio de la photo."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine détermine si le nœud doit être réexécuté ; les résultats sont non déterministes, quelle que soit la graine."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Facultatif : scène, caméra, éclairage, expression ou mouvement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3, le modèle H3 post-entraîné de Creatify conçu pour les publicités vidéo. Générez une vidéo avec du son guidée par des images, vidéos et audios de référence.",
+    "display_name": "Creatify Boreal-H3 Référence vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto suit la première image de référence, sinon la première vidéo de référence."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée",
+        "tooltip": "En 2k, le maximum est de 14 secondes."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Référez-vous aux éléments de référence sous la forme @Image1, @Video1, @Audio1."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto et ads réécrivent le prompt pour une publicité vidéo et peuvent ajouter des répliques parlées ; general le réécrit pour tout autre type de vidéo ; none génère le prompt tel qu'il est écrit."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Jusqu'à 3 extraits, désignés par @Audio1..@Audio3. La parole guide la voix, pas les mots ; la musique instrumentale peut devenir la bande sonore."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu'à 9 images, désignées dans le prompt par @Image1..@Image9 selon l'ordre de connexion. Au moins une image ou vidéo est requise, avec un maximum de 12 références au total."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Jusqu'à 3 vidéos d'au moins 1 seconde, désignées par @Video1..@Video3. Facturation pour un maximum de 15 secondes de vidéo au total. Leur son est réutilisé lorsque le prompt demande de le poursuivre ; une nouvelle ligne dans le prompt le remplace."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine détermine si le nœud doit être réexécuté. Creatify choisit son propre aléa : avec prompt_enhancement réglé sur none, les mêmes entrées donnent la même vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3, le modèle H3 post-entraîné de Creatify conçu pour les publicités vidéo. Générez une vidéo avec du son à partir de texte, en commençant éventuellement par une première image et en terminant par une dernière image.",
+    "display_name": "Vidéo Creatify Boreal-H3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Utilisé sans première image. Avec une première image, conservez auto : la vidéo suit le ratio de l'image."
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "duration": {
+        "name": "durée",
+        "tooltip": "En 2k, le maximum est de 14 secondes."
+      },
+      "first_frame": {
+        "name": "première image"
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Nécessite une première image."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "prompt_enhancement": {
+        "name": "amélioration du prompt",
+        "tooltip": "auto et ads réécrivent le prompt pour une publicité vidéo et peuvent ajouter des répliques parlées ; general le réécrit pour toute autre vidéo ; none génère le prompt tel qu’il est écrit."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être réexécuté. Creatify choisit sa propre part d’aléatoire : avec prompt_enhancement none, les mêmes entrées produisent la même vidéo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "Rogner et redimensionner des régions du lot d’images d’entrée selon les boîtes englobantes fournies.",
     "display_name": "CropByBBoxes",
@@ -5444,7 +5569,7 @@
       },
       "text": {
         "name": "text",
-        "tooltip": "Description textuelle de l’effet sonore à générer."
+        "tooltip": "Décrivez le son en anglais, avec un maximum de 450 caractères. Les prompts dans d’autres langues sont souvent lus à voix haute au lieu d’être transformés en son."
       }
     },
     "outputs": {
@@ -7350,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "Choisissez l'une de vos options pour du texte, des images, de l'audio ou de la vidéo. Connectez `choice` à un nœud Branch dont les entrées portent les noms des options, ou utilisez `option_index`.",
+    "display_name": "Décision Google Gemini (Choix)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Extrait audio facultatif à utiliser comme contexte pour le modèle."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) facultative(s) à utiliser comme contexte pour le modèle. Jusqu'à 16 images."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Une option par ligne, utilisée exactement telle qu'elle est saisie. Ajoutez une option telle que `other` pour les entrées qui ne correspondent à aucune d'elles."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "La question à laquelle répondent les options. Avec plusieurs entrées, utilisez les noms des sockets, par exemple « Quelle saison est représentée dans image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, par exemple un prompt ou une réponse de LLM."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Extrait vidéo facultatif à utiliser comme contexte pour le modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choix",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position de l'option choisie dans la liste des options, en commençant à 0."
+      },
+      "2": {
+        "name": "confiance",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "Choisissez une image dans un lot. Connectez `index` à Get Image from Batch pour conserver l'image choisie.",
+    "display_name": "Décision Google Gemini (Choisir une image)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images parmi lesquelles choisir, de 2 à 64."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "L'image à choisir. Connectez le prompt à `text` pour choisir l'image qui lui correspond le mieux."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, tel que le prompt à partir duquel les images ont été créées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": null
+      },
+      "1": {
+        "name": "confiance",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "Notez du texte, des images, de l'audio ou de la vidéo de 1 à 10. Connectez `result` à un nœud If/Else Switch pour agir selon le score.",
+    "display_name": "Décision Google Gemini (Noter)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Extrait audio facultatif à utiliser comme contexte pour le modèle."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) facultative(s) à utiliser comme contexte pour le modèle. Jusqu'à 16 images."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Ce qu'il faut noter, sur une échelle de 1 à 10. Indiquez ce que signifient 1 et 10, comme dans l'exemple."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, tel qu’un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "`result` est vrai lorsque le score atteint au moins cette valeur. Les images nettes et bien définies obtiennent environ 7 à 8, les images fortement dégradées environ 3 à 5."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Extrait vidéo facultatif à utiliser comme contexte pour le modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "Posez une question oui/non sur du texte, des images, de l’audio ou de la vidéo. Connectez `result` à un nœud If/Else Switch pour choisir entre deux chemins.",
+    "display_name": "Décision Google Gemini (Oui/Non)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Extrait audio facultatif à utiliser comme contexte pour le modèle."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) facultative(s) à utiliser comme contexte pour le modèle. Jusqu’à 16 images."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Une question appelant une réponse par oui ou par non au sujet de ce qui est connecté. Formulez-la de sorte que oui soit le cas sur lequel vous agissez. Avec plusieurs entrées, utilisez les noms des prises, par exemple « image_2 montre-t-elle la même personne que image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, tel qu’un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "La réponse est oui lorsque la probabilité de oui atteint au moins cette valeur. Les réponses clairement affirmatives obtiennent un score d’environ 0.85 à 0.92 ; ainsi, 0.9 ou plus en rejette beaucoup."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Extrait vidéo facultatif à utiliser comme contexte pour le modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réponse",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilité",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8465,6 +8758,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "Générez une vidéo parlante d’un avatar HeyGen avec HeyGen Avatar 6, pilotée par un script texte ou votre propre audio.",
+    "display_name": "HeyGen Avatar 6 : identité vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "« auto » suit la séquence source de l’avatar."
+      },
+      "avatar": {
+        "name": "avatar"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "motion_expressiveness": {
+        "name": "motion_expressiveness",
+        "tooltip": "« less » produit des gestes moins nombreux et plus petits. Le prompt de mouvement est prioritaire lorsqu’ils se chevauchent."
+      },
+      "motion_prompt": {
+        "name": "motion_prompt",
+        "tooltip": "Gestes, expression, posture et mouvement de la caméra."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être réexécuté ; les résultats ne sont pas déterministes, quelle que soit la graine."
+      },
+      "speech": {
+        "name": "parole",
+        "tooltip": "Pilotez l’avatar avec un script texte (synthèse vocale HeyGen) ou votre propre audio."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "texte"
+      },
+      "speech_voice": {
+        "name": "voix"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "Faites parler une personne ou un personnage issu d’une photo ou d’une vidéo avec l’audio connecté grâce à HeyGen Avatar 6. Connectez une image, une vidéo ou les deux.",
+    "display_name": "HeyGen Avatar 6 : référence vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_motion_expressiveness": {
+        "name": "motion_expressiveness"
+      },
+      "model_motion_prompt": {
+        "name": "motion_prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "Générez une vidéo de présentateur parlant à partir d’un avatar HeyGen. Inclut les avatars publics les plus populaires de HeyGen ; tout identifiant de look peut être fourni en remplacement.",
     "display_name": "Vidéo Avatar HeyGen",
@@ -8541,6 +8921,143 @@
       },
       "1": {
         "name": "aperçu",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionChoice": {
+    "description": "Choisissez l’une de vos options pour du texte, des images, de l’audio ou de la vidéo. Connectez `choice` à un nœud Branch dont les entrées portent les noms des options, ou utilisez `option_index`.",
+    "display_name": "Décision HeyGen (Choix)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio d’une durée maximale de 30 minutes."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 4 images au total, en comptant chaque image d’un lot. Elles sont numérotées de image_1 à image_4 dans l’ordre sur l’ensemble des prises ; ainsi, un lot de 2 sur la première prise correspond à image_1 et image_2."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Une option par ligne, utilisée exactement telle qu’elle est saisie. Ajoutez une option telle que `other` pour les entrées qui ne correspondent à aucune d’entre elles."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "La question à laquelle répondent les options. Avec plusieurs entrées, désignez-les par image_1, image_2, audio_1 ou video_1, par exemple « Quelle saison est représentée dans image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, tel qu’un prompt ou une réponse de LLM."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vidéo d’une durée maximale de 60 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choix",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position de l’option choisie dans la liste des options, en commençant à 0."
+      },
+      "2": {
+        "name": "confiance",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "Évaluez du texte, des images, de l’audio ou de la vidéo de 1 à 10. Connectez `result` à un nœud If/Else Switch pour agir en fonction du score.",
+    "display_name": "Décision HeyGen (score)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio d’une durée maximale de 30 minutes."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 4 images au total, en comptant chaque image d’un lot. Elles sont numérotées de image_1 à image_4 dans l’ordre des sockets ; ainsi, un lot de 2 sur le premier socket correspond à image_1 et image_2."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Ce qu’il faut évaluer, sur une échelle de 1 à 10. Indiquez ce que signifient 1 et 10, comme dans l’exemple."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel la question se rapporte, comme un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "`result` est vrai lorsque le score est au moins égal à cette valeur. Les images nettes et bien définies obtiennent environ 7, celles qui sont très endommagées environ 3 à 5."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vidéo d’une durée maximale de 60 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "Posez une question oui/non sur du texte, des images, de l’audio ou de la vidéo. Connectez `result` à un nœud If/Else Switch pour choisir entre deux chemins.",
+    "display_name": "Décision HeyGen (Oui/Non)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio d’une durée maximale de 30 minutes."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 4 images au total, en comptant chaque image d’un lot. Elles sont numérotées de image_1 à image_4 dans l’ordre des sockets ; ainsi, un lot de 2 sur le premier socket correspond à image_1 et image_2."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Une question dont la réponse est oui ou non concernant ce qui est connecté. Formulez-la de sorte que oui corresponde au cas sur lequel vous agissez. Avec plusieurs entrées, désignez-les par image_1, image_2, audio_1 ou video_1, par exemple : « image_2 montre-t-elle la même personne que image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel la question se rapporte, comme un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "La réponse est oui lorsque la probabilité de oui est au moins égale à cette valeur. Les réponses claires sont proches de 0 ou de 1."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Vidéo d’une durée maximale de 60 secondes."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réponse",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilité",
         "tooltip": null
       }
     }
@@ -8772,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "Clonez une voix à partir de l’enregistrement d’un seul locuteur et faites-lui prononcer du texte avec HeyGen Voice 1.0.",
+    "display_name": "HeyGen Voice 1.0 Clone instantané de texte en parole",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "langue"
+      },
+      "model_recording_language": {
+        "name": "recording_language"
+      },
+      "model_remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_similarity": {
+        "name": "similarité"
+      },
+      "model_text": {
+        "name": "texte"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "Fait lire du texte avec une voix clonée avec HeyGen Voice 1.0 Instant Clone.",
+    "description": "Faites prononcer du texte avec une voix HeyGen grâce à HeyGen Voice 1.0. Pour prononcer du texte avec une voix clonée depuis un enregistrement, utilisez HeyGen Voice 1.0 Instant Clone Text to Speech.",
     "display_name": "Synthèse vocale HeyGen Voice 1.0",
     "inputs": {
       "model": {
@@ -9313,8 +9868,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Modifie ou combine jusqu’à 5 images selon une invite textuelle à l’aide d’Ideogram 4.5. Effectue un nouveau rendu de l’image entière et peut modifier sa taille ou son rapport largeur/hauteur ; utilisez Ideogram 4.5 Modification précise pour que les pixels non modifiés restent inchangés.",
-    "display_name": "Ideogram 4.5 Modifier",
+    "description": "Modifie ou combine jusqu’à 5 images, guidé par un prompt textuel, à l’aide d’Ideogram 4.6 ou 4.5. Génère à nouveau l’image entière et peut modifier sa taille ou son rapport d’aspect ; utilisez Édition précise Ideogram pour conserver les pixels non modifiés.",
+    "display_name": "Édition Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "contrôle après la génération"
@@ -9322,6 +9877,9 @@
       "model": {
         "name": "modèle",
         "tooltip": "Modèle à utiliser."
+      },
+      "model_background": {
+        "name": "arrière-plan"
       },
       "model_height": {
         "name": "hauteur"
@@ -9391,8 +9949,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Modifie une image à l’aide d’un prompt textuel avec l’édition précise d’Ideogram 4.5 : seuls les éléments demandés par le prompt changent, les pixels non modifiés restent identiques et la sortie conserve la taille de l’image 1 (les images dépassant environ 4 MP sont d’abord réduites). Permet également de modifier une seule région, définie par un mask ou des cadres de délimitation, et de renvoyer l’image en taille maximale. Accepte jusqu’à 4 images de référence (3 avec context_window_mask).",
-    "display_name": "Ideogram 4.5 Modification précise",
+    "description": "Modifie une image guidée par un prompt textuel à l’aide de l’édition précise d’Ideogram 4.6 ou 4.5 : seuls les éléments demandés par le prompt sont modifiés, les pixels non touchés restent identiques et la sortie conserve la taille de l’image 1 (les grandes images sont d’abord réduites). Peut également modifier une seule région, définie par un mask ou des boîtes englobantes, et renvoyer l’image en taille réelle. Accepte jusqu’à 4 images de référence (3 avec un mask).",
+    "display_name": "Édition précise Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "contrôle après la génération"
@@ -9421,8 +9979,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Génère des images à partir d’une invite textuelle à l’aide d’Ideogram 4.5.",
-    "display_name": "Ideogram 4.5 Texte vers image",
+    "description": "Génère des images à partir d’un prompt textuel à l’aide d’Ideogram 4.6 ou 4.5.",
+    "display_name": "Texte vers image Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -9430,6 +9988,12 @@
       "model": {
         "name": "modèle",
         "tooltip": "Modèle à utiliser."
+      },
+      "model_background": {
+        "name": "arrière-plan"
+      },
+      "model_height": {
+        "name": "hauteur"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9445,6 +10009,9 @@
       },
       "model_size": {
         "name": "taille"
+      },
+      "model_width": {
+        "name": "largeur"
       }
     },
     "outputs": {
@@ -10645,6 +11212,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "Générez ou modifiez des images à partir d’un prompt texte et de jusqu’à 10 images de référence, sous la forme d’une image unique ou d’une série d’images associées.",
+    "display_name": "Kling 4.0 Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto suit les images de référence, sinon le prompt."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Faites référence aux images de référence sous la forme @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine détermine si le nœud doit être réexécuté ; les résultats ne sont pas déterministes, quelle que soit la graine."
+      },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "Générez une série d’images associées qui conservent les mêmes personnages et le même style. auto laisse le modèle choisir entre 2 et 10 images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "Générez une vidéo avec audio à l’aide de մինչև 10 images clés sur kling-4.0, ou à partir d’une première image sur kling-4.0-flash. Les images intermédiaires sont espacées uniformément ; la vidéo adopte le rapport d’aspect de la première image clé.",
     "display_name": "Kling 4.0 — image vers vidéo",
@@ -10666,6 +11269,32 @@
       },
       "model_seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "Générez une image verticale : une conception de page web ou une page de détail de produit e-commerce.",
+    "display_name": "Kling 4.0 Image longue",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "skill": {
+        "name": "compétence"
+      },
+      "skill_prompt": {
+        "name": "prompt"
+      },
+      "skill_resolution": {
+        "name": "résolution"
+      },
+      "skill_seed": {
+        "name": "graine"
       }
     },
     "outputs": {
@@ -14140,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "Anime une première image, ou passe d’une première image à une dernière image, pour créer une vidéo 1080p de 4 à 30 secondes avec audio natif.",
+    "display_name": "MAGI-2 Image vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto choisit le ratio le plus proche de celui de la première image. MAGI-2 étire les images au ratio choisi."
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Modifier le seed relance le nœud ; les résultats de MAGI-2 varient même avec le même seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "Génère une vidéo 1080p de 4 à 30 secondes avec audio natif, guidée par des images, vidéos et fichiers audio de référence afin de conserver la cohérence des personnages, lieux, mouvements de caméra ou voix.",
+    "display_name": "MAGI-2 Référence vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Référez-vous aux références en tant que @Image1, @Video1, @Audio1 (numérotées par type, dans l’ordre des entrées ; chaque image d’un lot compte)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Les clips de plus de 30 s sont tronqués à leurs 30 premières secondes, et chaque type est limité à 30 s au total. Les fichiers audio de moins de 2 s sont complétés par du silence ; les vidéos doivent durer au moins 2 s."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu’à 10 images au total."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Les clips de plus de 30 s sont tronqués à leurs 30 premières secondes, et chaque type est limité à 30 s au total. Les fichiers audio de moins de 2 s sont complétés par du silence ; les vidéos doivent durer au moins 2 s."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Modifier le seed relance le nœud ; les résultats de MAGI-2 varient même avec le même seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "Génère une vidéo 1080p de 4 à 30 secondes avec audio natif à partir d’un prompt textuel.",
+    "display_name": "MAGI-2 Texte vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Modifier le seed relance le nœud ; les résultats de MAGI-2 varient même avec le même seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "Reluminez une image avec des ajustements de lumière et un transfert de lumière basé sur une référence en option.",
     "display_name": "Magnific Relumination d’Image",
@@ -14841,6 +15589,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Transformez une photo en modèle bas-relief et en carte de profondeur 16 bits pour l’impression 3D, la gravure laser et l’usinage CNC. Seules les sorties connectées sont générées et téléchargées ; sans sortie de modèle connectée, la tâche renvoie uniquement la carte de profondeur.",
+    "display_name": "Meshy : image en relief",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none retire l’arrière-plan et ne crée aucune plaque."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex bombe la face avant vers l’extérieur, concave la courbe vers l’intérieur."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss rehausse les parties les plus proches de la photo, engrave les creuse."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Colore les fichiers GLB, OBJ, FBX et USDZ avec la photo. Les fichiers STL et 3MF restent blancs."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Les motifs sombres sur fond clair sont rehaussés. La transparence est supprimée avant l’envoi ; aplatissez donc d’abord un logo transparent sur un fond blanc."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Points de maillage le long du côté le plus long de la photo. À 1024, le GLB fait environ 50 Mo et le STL environ 105 Mo ; à 2048, environ 200 Mo et 420 Mo. Une courbure double ces tailles."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low : gravure peu profonde pour la gravure laser, la CNC et les plaques. high : gravure plus profonde pour les pièces imprimées en 3D."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats ne sont pas déterministes, quelle que soit la graine. Modifiez-la pour demander une sortie qui a été connectée après la dernière exécution."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Longueur du côté le plus long de la photo sur le modèle, mesurée à plat avant toute courbure."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Carte de profondeur utilisant toute la plage 16 bits ; Save Image (Advanced) l’écrit sous forme de PNG 16 bits."
+      },
+      "7": {
+        "name": "aperçu",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy : Multi-image vers modèle",
     "inputs": {
@@ -15136,6 +15969,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Appliquez une texture à un modèle créé précédemment avec Meshy N1 à partir de 1 à 4 vues de référence du même objet.",
+    "display_name": "Meshy : texturer un modèle (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Utilisez les UV d’origine du modèle au lieu de générer de nouveaux UV. Lorsqu’elle est activée, Meshy préserve les textures existantes du modèle envoyé. Si le modèle ne possède pas d’UV d’origine, la qualité de la sortie pourrait être moins bonne."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "Vues supplémentaires du même objet, dans n’importe quel ordre. Avec front_view, 4 images au maximum."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "La vue que Meshy considère comme la face avant. Une image texture la face avant et laisse l’arrière uni ; ajoutez des vues arrière et latérales dans extra_views pour obtenir un arrière fidèle."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -16169,6 +17040,9 @@
       "model": {
         "name": "modèle",
         "tooltip": "Modèle à utiliser."
+      },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
       },
       "model_negative_prompt": {
         "name": "prompt_négatif"
@@ -17644,6 +18518,206 @@
       }
     }
   },
+  "ModelMergeMiniMaxH3": {
+    "description": "Fusionne deux modèles MiniMax H3 compatibles par composant. Chaque ratio correspond à la part de model1. Les buffers sont conservés depuis model1.",
+    "display_name": "Fusion de modèles MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocs.11."
+      },
+      "blocks_12_": {
+        "name": "blocs.12."
+      },
+      "blocks_13_": {
+        "name": "blocs.13."
+      },
+      "blocks_14_": {
+        "name": "blocs.14."
+      },
+      "blocks_15_": {
+        "name": "blocs.15."
+      },
+      "blocks_16_": {
+        "name": "blocs.16."
+      },
+      "blocks_17_": {
+        "name": "blocs.17."
+      },
+      "blocks_18_": {
+        "name": "blocs.18."
+      },
+      "blocks_19_": {
+        "name": "blocs.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocs.20."
+      },
+      "blocks_21_": {
+        "name": "blocs.21."
+      },
+      "blocks_22_": {
+        "name": "blocs.22."
+      },
+      "blocks_23_": {
+        "name": "blocs.23."
+      },
+      "blocks_24_": {
+        "name": "blocs.24."
+      },
+      "blocks_25_": {
+        "name": "blocs.25."
+      },
+      "blocks_26_": {
+        "name": "blocs.26."
+      },
+      "blocks_27_": {
+        "name": "blocs.27."
+      },
+      "blocks_28_": {
+        "name": "blocs.28."
+      },
+      "blocks_29_": {
+        "name": "blocs.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocs.30."
+      },
+      "blocks_31_": {
+        "name": "blocs.31."
+      },
+      "blocks_32_": {
+        "name": "blocs.32."
+      },
+      "blocks_33_": {
+        "name": "blocs.33."
+      },
+      "blocks_34_": {
+        "name": "blocs.34."
+      },
+      "blocks_35_": {
+        "name": "blocs.35."
+      },
+      "blocks_36_": {
+        "name": "blocs.36."
+      },
+      "blocks_37_": {
+        "name": "blocs.37."
+      },
+      "blocks_38_": {
+        "name": "blocs.38."
+      },
+      "blocks_39_": {
+        "name": "blocs.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "blocs.40."
+      },
+      "blocks_41_": {
+        "name": "blocs.41."
+      },
+      "blocks_42_": {
+        "name": "blocs.42."
+      },
+      "blocks_43_": {
+        "name": "blocs.43."
+      },
+      "blocks_44_": {
+        "name": "blocs.44."
+      },
+      "blocks_45_": {
+        "name": "blocs.45."
+      },
+      "blocks_46_": {
+        "name": "blocs.46."
+      },
+      "blocks_47_": {
+        "name": "blocs.47."
+      },
+      "blocks_48_": {
+        "name": "blocs.48."
+      },
+      "blocks_49_": {
+        "name": "blocs.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "couche_finale.norm."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ModelMergeMochiPreview": {
     "display_name": "Aperçu de la Fusion de Modèles Mochi",
     "inputs": {
@@ -19064,6 +20138,39 @@
       "prompt": {
         "name": "invite",
         "tooltip": "Entrées textuelles pour le modèle, utilisées pour générer une réponse."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIChatNodeV2": {
+    "description": "Générez des réponses textuelles avec les modèles GPT d’OpenAI. Fournissez une invite textuelle et, éventuellement, des images ou des fichiers comme contexte.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle utilisé pour générer la réponse."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
       }
     },
     "outputs": {
@@ -21065,6 +22172,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Génère une vidéo parlante à partir d’un portrait et de parole avec Pruna P-Video-2 Pro Avatar : votre propre audio ou un script lu par synthèse vocale.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Ajoute au prompt les mouvements visibles dans le portrait, tels que ceux de l’arrière-plan, des lumières et du corps. Désactivez cette option pour utiliser le prompt tel qu’il est écrit et reproduire exactement un résultat avec le même seed."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Portrait à partir duquel commence la vidéo. La vidéo conserve un rapport largeur/hauteur de 1:2 à 4:1 ; les images plus extrêmes, comme 1:5, sont recadrées en 9:16 ou 16:9."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Décrit ce que montre la vidéo. Jusqu’à 5 000 caractères."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "1080p, 2k et 4k mettent à l’échelle la vidéo 768p. La 2k est limitée à 150 secondes et la 4k à 60 secondes."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed pour la génération. Le même seed ne reproduit exactement un résultat que lorsque enhance_prompt est désactivé."
+      },
+      "speech": {
+        "name": "parole",
+        "tooltip": "Pilotez la vidéo avec un script de synthèse vocale ou votre propre audio."
+      },
+      "speech_language": {
+        "name": "langue"
+      },
+      "speech_script": {
+        "name": "script"
+      },
+      "speech_voice": {
+        "name": "voix"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Anime une image en vidéo à l’aide des modèles vidéo Pruna, avec en option une dernière image, un son généré ou une piste audio.",
     "display_name": "Pruna P-Video-2 Image en vidéo",
@@ -21113,7 +22270,7 @@
     "inputs": {
       "fps": {
         "name": "ips",
-        "tooltip": "Fréquence d’images de sortie. « source » conserve la fréquence de la vidéo, jusqu’à 60. Une fréquence plus élevée est interpolée. Une sortie au-delà de 30 ips coûte deux fois plus cher."
+        "tooltip": "Fréquence d’images de sortie. « source » conserve la fréquence de la vidéo, jusqu’à 60. Une fréquence plus élevée est interpolée. Une sortie au-dessus de 30 fps coûte deux fois plus cher, sauf avec turbo."
       },
       "target": {
         "name": "cible",
@@ -21121,11 +22278,53 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Agrandissement plus rapide avec des détails plus doux, au même prix."
+        "tooltip": "Mise à l’échelle plus rapide avec des détails plus doux, à un prix inférieur."
       },
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo à agrandir, jusqu’à 512 Mio."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Génère une vidéo à partir d’un prompt, guidée par des images, vidéos et fichiers audio de référence, à l’aide des modèles vidéo Pruna.",
+    "display_name": "Pruna P-Video-2 Pro Référence vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "mode"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -22046,7 +23245,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en termes de style et nécessitent toujours un style_id ou des style_references ; recraftv4_1_flash est le modèle le plus rapide et le moins cher et ne prend en charge aucun style."
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references ; recraftv4_1_flash exécute Recraft V4.1 Flash V2, le modèle le plus rapide et le moins cher, et ne prend pas du tout en charge les styles."
       },
       "model_size": {
         "name": "taille"
@@ -22157,6 +23356,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "superpose les formes en couches hiérarchiques ; cut_out crée des formes qui ne se chevauchent jamais, pour les traceurs, les découpeuses de vinyle et la sérigraphie."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) produit des SVG plus nets avec des courbes lisses, des lignes droites et des angles vifs, idéal pour le lettrage et les formes complexes."
       }
     },
     "outputs": {
@@ -23003,15 +24210,15 @@
       },
       "bbox_height": {
         "name": "hauteur_boîte",
-        "tooltip": "Hauteur de la boîte englobante (axe Z)."
+        "tooltip": "Hauteur de la boîte englobante (verticale)."
       },
       "bbox_length": {
         "name": "longueur_boîte",
-        "tooltip": "Longueur de la boîte englobante (axe X)."
+        "tooltip": "Longueur de la boîte englobante (d’avant en arrière)."
       },
       "bbox_width": {
         "name": "largeur_boîte",
-        "tooltip": "Largeur de la boîte englobante (axe Y). Mettre à 0 avec les autres pour ignorer la boîte."
+        "tooltip": "Largeur de la boîte englobante (d’un côté à l’autre). Réglez-la sur 0 avec les autres pour ignorer bbox."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -23084,15 +24291,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "Hauteur de la boîte englobante (axe Z)."
+        "tooltip": "Hauteur de la boîte englobante (verticale)."
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "Longueur de la boîte englobante (axe X)."
+        "tooltip": "Longueur de la boîte englobante (d’avant en arrière)."
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "Largeur de la boîte englobante (axe Y). Mettre à 0 avec les autres pour ignorer la boîte."
+        "tooltip": "Largeur de la boîte englobante (d’un côté à l’autre). Réglez-la sur 0 avec les autres pour ignorer bbox."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -25291,6 +26498,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "Encodez les images de référence, la réflexion sur l'image, le texte entrelacé ou l'auto-correction avec CLIP. Connectez HiDream-O1 Reference Images avant ce nœud et utilisez un échantillonneur standard pour les images. La génération texte-vers-image sans réflexion nécessite uniquement CLIP Text Encode ; les sorties de texte seul peuvent utiliser Generate Text.",
+    "display_name": "Conditionnement SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "conditionnement"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "Nombre maximal de jetons générés pendant cet appel."
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "task": {
+        "name": "tâche",
+        "tooltip": "Sélectionnez la tâche. Son modèle de prompt et son comportement d'arrêt sont définis automatiquement."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "conditionnement",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "Texte généré par cet appel. Utilisez SenseNova Interleave Decode pour le résultat complet."
+      },
+      "2": {
+        "name": "négatif",
+        "tooltip": "Conditionnement négatif mis à jour pour l'entrelacement et l'auto-correction."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "Extrait le texte généré, les images et la réflexion de l'historique d'entrelacement produit par SenseNova Conditioning, y compris l'auto-correction U1.6. Avec les boucles, utilisez End Loop avec l'option accumulate désactivée. Les images de référence en entrée sont exclues. Les consommateurs d'images sont ignorés lorsqu'aucune image n'a été générée.",
+    "display_name": "Décodage d'entrelacement SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "conditionnement"
+      },
+      "samples": {
+        "name": "échantillons",
+        "tooltip": "Dernier latent de pixels KSampler, si la boucle s'est terminée sur une demande d'image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texte",
+        "tooltip": null
+      },
+      "1": {
+        "name": "images",
+        "tooltip": null
+      },
+      "2": {
+        "name": "réflexion",
         "tooltip": null
       }
     }
@@ -28138,7 +29416,7 @@
       },
       "face_limit": {
         "name": "limite_faces",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces avec v3.x standard, 2 M avec detailed). Tripo limite silencieusement : v2.5 à 500 000, maillages en quads à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -28215,7 +29493,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M sur detailed). Tripo applique silencieusement une limite : v2.5 à 500 000, les maillages quad à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -28358,7 +29636,7 @@
       },
       "face_limit": {
         "name": "limite_visage",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces avec v3.x standard, 2 M avec detailed). Tripo limite silencieusement : v2.5 à 500 000, maillages en quads à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -28995,6 +30273,37 @@
       }
     }
   },
+  "TripoSmartUVNode": {
+    "description": "Déplie à nouveau les UV d’un modèle et remappe ses textures, son rig et son animation sur la nouvelle disposition. L’entrée ne doit pas dépasser 80 000 triangles (un quad compte pour deux) ; réduisez les modèles plus grands avec Tripo: Retopology ou face_limit au préalable.",
+    "display_name": "Tripo : UV intelligents",
+    "inputs": {
+      "bake": {
+        "name": "Cuisson",
+        "tooltip": "Cuit les textures existantes sur la nouvelle disposition UV. Désactivé ignore la cuisson et renvoie le modèle sans ses textures de couleur."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id du modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vide lorsque le modèle source est au format FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Renseigné uniquement lorsque le modèle source est au format FBX, par exemple un maillage de quads."
+      },
+      "3": {
+        "name": "Atlas UV",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Encode l’image avec DINOv3 et le Flux2 VAE en conditionnement positif/négatif TripoSplat, et crée la cible de bruit de taille fixe (latent + caméra) pour le KSampler",
     "display_name": "Conditionnement TripoSplat",
@@ -29099,7 +30408,7 @@
       },
       "face_limit": {
         "name": "limite_visage",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1.4M de faces avec v3.x standard, 2M avec detailed). Tripo limite silencieusement : v2.5 à 500,000, les maillages quad à 150,000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29176,7 +30485,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Nombre maximal de faces. -1 permet à Tripo de choisir de manière adaptative (environ 1,4 M de faces pour la version standard v3.x, 2 M pour detailed). Tripo applique silencieusement des limites : v2.5 à 500 000, les maillages quad à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29243,8 +30552,7 @@
         "name": "modèle_id_tâche"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modèle de texture : v3.0 pour les maillages générés avec v3.x, v2.5 pour les maillages générés avec v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -29307,8 +30615,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modèle de texture : v3.0 pour les maillages générés avec v3.x, v2.5 pour les maillages générés avec v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -29373,6 +30680,150 @@
       "0": {
         "name": "textes",
         "tooltip": "Textes traités"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Choisissez l’une de vos options pour du texte ou des images. Connectez `choice` à un nœud Branch dont les entrées portent les noms des options, ou utilisez `option_index`.",
+    "display_name": "TypeSafe Jev (Choix)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images auxquelles se rapporte la question. Jusqu’à 32 images au total ; plus de 4 images sont envoyées dans une taille réduite."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Une option par ligne. Ajoutez une option telle que `other` pour les entrées qui ne correspondent à aucune d’entre elles."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "La question à laquelle répondent les options. Avec plusieurs entrées, utilisez les noms des sockets, par exemple « Quelle saison est représentée dans image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, comme un prompt ou une réponse de LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choix",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position de l’option choisie dans la liste des options, à partir de 0."
+      },
+      "2": {
+        "name": "confiance",
+        "tooltip": "Niveau de certitude de Jev, de 0 (aucun gagnant clair) à 1 (certain)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Choisissez une image dans un lot. Connectez `index` à Get Image from Batch pour conserver l’image sélectionnée.",
+    "display_name": "TypeSafe Jev (Sélectionner une image)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images parmi lesquelles choisir, de 2 à 32."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "L’image à sélectionner. Connectez le prompt à `text` pour sélectionner l’image qui lui correspond le mieux."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte auquel se rapporte la question, comme le prompt à partir duquel les images ont été créées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "Position de l’image sélectionnée dans le lot, à partir de 0."
+      },
+      "1": {
+        "name": "confiance",
+        "tooltip": "Niveau de certitude de Jev, de 0 (aucun gagnant clair) à 1 (certain)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Évaluez du texte ou des images de 1 à 10. Connectez `result` à un nœud If/Else Switch pour agir en fonction du score.",
+    "display_name": "TypeSafe Jev (Évaluation)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images auxquelles se rapporte la question. Jusqu’à 32 images au total ; plus de 4 images sont envoyées dans une taille réduite."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Ce qu’il faut évaluer, sur une échelle de 1 à 10. Indiquez ce que signifient 1 et 10, comme dans l’exemple."
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte concerné par la question, comme un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "`result` est vrai lorsque le score est au moins égal à cette valeur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Posez une question oui/non sur du texte ou des images. Connectez `result` à un nœud If/Else Switch pour choisir entre deux chemins.",
+    "display_name": "TypeSafe Jev (Oui/Non)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Les images concernées par la question. Jusqu’à 32 images au total ; au-delà de 4, elles sont envoyées dans une taille plus petite."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Une question dont la réponse est oui ou non sur ce qui est connecté. Formulez-la de sorte que oui corresponde au cas sur lequel vous souhaitez agir. Avec plusieurs entrées, utilisez les noms des sockets, par exemple « image_2 montre-t-elle la même personne que image_1 ? »"
+      },
+      "text": {
+        "name": "texte",
+        "tooltip": "Le texte concerné par la question, comme un prompt ou une réponse de LLM."
+      },
+      "threshold": {
+        "name": "seuil",
+        "tooltip": "La réponse est oui lorsque la probabilité de oui est au moins égale à cette valeur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "résultat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réponse",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilité",
+        "tooltip": null
       }
     }
   },

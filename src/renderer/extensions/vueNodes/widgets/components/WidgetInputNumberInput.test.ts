@@ -5,10 +5,11 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import en from '@/locales/en/main.json'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -19,28 +20,23 @@ const i18n = createI18n({
 function createNumberInputWidget(
   value: number = 0,
   type: 'int' | 'float' = 'int',
-  options: SimplifiedWidget['options'] = {},
-  callback?: (value: number) => void
-): SimplifiedWidget<number> {
-  return createMockWidget<number>({
+  options: IWidgetOptions = {}
+): WidgetId {
+  return registerTestWidget({
     value,
     name: 'test_input_number',
     type,
-    options,
-    callback
+    options
   })
 }
 
-function renderComponent(
-  widget: SimplifiedWidget<number>,
-  modelValue: number | undefined
-) {
+function renderComponent(widgetId: WidgetId, modelValue: number | undefined) {
   return render(WidgetInputNumberInput, {
     global: {
       plugins: [i18n]
     },
     props: {
-      widget,
+      widgetId,
       modelValue
     }
   })
@@ -83,7 +79,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       value: 37,
       draft: '1000',
       commitKey: '',
-      expected: '1133'
+      expected: '1020'
     },
     {
       pointer: 'TouchA',
@@ -91,7 +87,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       value: 37,
       draft: '1000',
       commitKey: '',
-      expected: '1133'
+      expected: '1020'
     },
     {
       pointer: 'TouchA',
@@ -99,7 +95,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       value: 37,
       draft: '1000',
       commitKey: '{Enter}',
-      expected: '1133'
+      expected: '1020'
     },
     {
       pointer: 'TouchA',
@@ -115,7 +111,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
       value: 18446744073709552000,
       draft: '1000',
       commitKey: '',
-      expected: '1133'
+      expected: '1020'
     }
   ])(
     'blocks $pointer scrubbing of "$draft" from $value until blur (key="$commitKey")',
@@ -130,11 +126,7 @@ describe('WidgetInputNumberInput Value Binding', () => {
           rerender({ modelValue: value })
       })
       const input = screen.getByRole('spinbutton')
-      const row = screen.getByTestId('widget-number-row')
       const label = screen.getByText('test_input_number')
-      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
-        new DOMRect(0, 0, 300, 24)
-      )
 
       await user.clear(input)
       await user.type(input, `${draft}${commitKey}`)
@@ -273,12 +265,48 @@ describe('WidgetInputNumberInput Value Binding', () => {
     }
   )
 
+  it.for([285, 570])(
+    'scrubs a large seed one step per CSS pixel on a %i px row',
+    async (width) => {
+      const user = userEvent.setup()
+      const seed = 1_000_000_000
+      const { rerender } = renderComponent(
+        registerTestWidget({
+          name: 'seed',
+          type: 'int',
+          value: seed,
+          options: { min: 0, max: 2 ** 64, step2: 1, precision: 0 }
+        }),
+        seed
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const row = screen.getByTestId('widget-number-row')
+      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, width, 24)
+      )
+
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: row,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { target: row, coords: { clientX: 70, clientY: 10 } },
+        { keys: '[/MouseLeft]', target: row }
+      ])
+
+      expect(screen.getByRole('spinbutton')).toHaveValue('1000000050')
+    }
+  )
+
   it.for([
     {
       name: 'fragmented',
       start: 37,
       step: 2,
-      width: 300,
       max: 5000,
       moves: [30, 40, 50, 80],
       expected: 157
@@ -287,7 +315,6 @@ describe('WidgetInputNumberInput Value Binding', () => {
       name: 'return to origin',
       start: 37,
       step: 2,
-      width: 300,
       max: 5000,
       moves: [80, 20],
       expected: 37
@@ -296,34 +323,14 @@ describe('WidgetInputNumberInput Value Binding', () => {
       name: 'return after clamping',
       start: 37,
       step: 2,
-      width: 300,
       max: 50,
       moves: [620, 20],
       expected: 37
     },
     {
-      name: 'larger magnitude',
-      start: 3700,
-      step: 2,
-      width: 300,
-      max: 10000,
-      moves: [80],
-      expected: 5180
-    },
-    {
-      name: 'scaled row',
-      start: 3700,
-      step: 2,
-      width: 600,
-      max: 10000,
-      moves: [140],
-      expected: 5180
-    },
-    {
       name: 'zero',
       start: 0,
       step: 2,
-      width: 300,
       max: 5000,
       moves: [80],
       expected: 120
@@ -332,14 +339,13 @@ describe('WidgetInputNumberInput Value Binding', () => {
       name: 'fractional',
       start: -0.75,
       step: 0.05,
-      width: 300,
       max: 5000,
       moves: [80],
       expected: 2.25
     }
   ])(
     'keeps scrubbing position-based for $name',
-    async ({ start, step, width, max, moves, expected }) => {
+    async ({ start, step, max, moves, expected }) => {
       const user = userEvent.setup()
       const { rerender } = renderComponent(
         createNumberInputWidget(start, 'float', {
@@ -354,9 +360,6 @@ describe('WidgetInputNumberInput Value Binding', () => {
           rerender({ modelValue: value })
       })
       const row = screen.getByTestId('widget-number-row')
-      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
-        new DOMRect(0, 0, width, 24)
-      )
 
       await user.pointer([
         {

@@ -23,7 +23,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
     // A plain string, not a RegExp: the locale text goes into the pattern
     // unescaped, so a `(`, `?` or `+` in a translation would change or break
@@ -71,7 +70,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     comfyPage
   }) => {
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
     // Deliberately NOT getByRole: while the modal menu is open the composer
     // subtree leaves the accessibility tree, and Playwright's role engine
@@ -127,7 +125,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     const page = comfyPage.page
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
 
     // The popover renders through a portal, so it is addressed from the page
@@ -181,7 +178,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     })
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
 
     const askTrigger = panel.getByRole('button', {
@@ -264,7 +260,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     })
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
     const autoOption = page.getByRole('menuitemradio', {
       name: new RegExp(enMessages.agent.runModeAuto)
@@ -364,7 +359,6 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     })
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
     const askTrigger = panel.getByRole('button', {
       name: enMessages.agent.runModeTriggerAsk,

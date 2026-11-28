@@ -71,6 +71,7 @@
         :loading="isLoading"
         :focused-asset-id="focusedAsset?.id"
         :empty-message
+        :require-node-provider="props.nodeType === undefined"
         @asset-focus="handleAssetFocus"
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
@@ -109,9 +110,9 @@ import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
-import { getPrimaryCategoryTag } from '@/platform/assets/utils/assetMetadataUtils'
+import { getPrimaryCategoryTag } from '@comfyorg/assets-core/metadata'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 

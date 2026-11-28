@@ -34,10 +34,12 @@ const canvasActions = vi.mockObject<
   Pick<
     RealComfyApp['canvas'],
     | '_deserializeItems'
+    | 'adjustMouseEvent'
     | 'copyToClipboard'
     | 'deleteSelected'
     | 'emitAfterChange'
     | 'emitBeforeChange'
+    | 'finalizeGhostPlacement'
     | 'getWidgetAtCursor'
     | 'pasteFromClipboard'
     | 'processMouseDown'
@@ -58,6 +60,7 @@ const canvasActions = vi.mockObject<
     _deserializeItems() {
       assert.fail('Configure app.canvas._deserializeItems for this test')
     },
+    adjustMouseEvent() {},
     copyToClipboard: () => '',
     pasteFromClipboard() {},
     selectItems() {},
@@ -69,6 +72,7 @@ const canvasActions = vi.mockObject<
     processMouseWheel() {},
     emitBeforeChange() {},
     emitAfterChange() {},
+    finalizeGhostPlacement() {},
     getWidgetAtCursor: () => undefined
   },
   { spy: true }
@@ -84,6 +88,7 @@ const actions = vi.mockObject<
     | 'getRandParam'
     | 'graphToPrompt'
     | 'handleFile'
+    | 'hasPendingCamera'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -121,12 +126,15 @@ const actions = vi.mockObject<
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },
-    async refreshComboInNodes() {},
+    async refreshComboInNodes() {
+      return true
+    },
     clean() {},
     openClipspace() {},
     getPreviewFormatParam: () => '',
     getRandParam: () => '',
     async handleFile() {},
+    hasPendingCamera: () => false,
     showErrorOnFileLoad() {}
   },
   { spy: true }
@@ -272,6 +280,12 @@ export const app = {
   get isGraphReady() {
     return state().rootGraph.value !== undefined
   },
+  createRootGraph: vi.fn(() => new LGraph()),
+  enqueueGraphLoad: vi.fn(<T>(operation: () => Promise<T>) => operation()),
+  activateRootGraph: vi.fn((graph: LGraph) => {
+    state().rootGraph.value = graph
+    state().canvas.setGraph(graph)
+  }),
   get nodeOutputs() {
     return state().nodeOutputs
   },

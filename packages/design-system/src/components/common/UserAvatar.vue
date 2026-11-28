@@ -15,12 +15,13 @@
       class="size-full object-cover"
       @error="handleImageError"
     />
-    <i
-      v-else
-      data-testid="avatar-icon"
-      :aria-label="label"
-      :class="cn('icon-[lucide--user]', iconClass)"
-    />
+    <slot v-else>
+      <i
+        data-testid="avatar-icon"
+        :aria-label="label"
+        :class="cn('icon-[lucide--user]', iconClass)"
+      />
+    </slot>
   </span>
 </template>
 

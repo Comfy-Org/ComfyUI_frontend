@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  widgetLabel,
+  widgetName
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useHideLayoutField } from '@/types/widgetTypes'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
-const { widget, inputId } = defineProps<{
-  widget: Pick<SimplifiedWidget, 'name' | 'label' | 'displayLabel'>
+const { widgetId, displayLabel, inputId } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
   inputId?: string
 }>()
 
 const hideLayoutField = useHideLayoutField()
-const label = computed(() =>
-  widget.name ? (widget.displayLabel ?? (widget.label || widget.name)) : ''
+const label = computed(
+  () => displayLabel ?? (widgetLabel(widgetId) || widgetName(widgetId))
 )
 </script>
 
@@ -21,9 +26,9 @@ const label = computed(() =>
     :for="inputId"
     :title="label"
     class="max-w-fit min-w-0 flex-1 cursor-[inherit] content-center-safe truncate text-node-foreground select-none"
+    data-part="widget-label"
+    data-testid="widget-layout-field-label"
   >
-    <span data-testid="widget-layout-field-label" class="block truncate">
-      {{ label }}
-    </span>
+    {{ label }}
   </label>
 </template>

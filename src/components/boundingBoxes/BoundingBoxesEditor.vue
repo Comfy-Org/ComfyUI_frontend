@@ -158,7 +158,8 @@ import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { IWidgetBoundingBoxesOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetOptions } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 
 const layouts = {
   inline: {
@@ -184,16 +185,18 @@ const actionBtnClass =
 
 const {
   nodeId,
-  widget,
+  widgetId,
   fullscreen = false
 } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget<WidgetValue, IWidgetBoundingBoxesOptions>
+  widgetId: WidgetId
   fullscreen?: boolean
 }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
 const layout = fullscreen ? layouts.fullscreen : layouts.inline
-const maxBoxes = widget.options?.max_boxes
+const boundingBoxesOptions: IWidgetBoundingBoxesOptions =
+  widgetOptions(widgetId)
+const maxBoxes = boundingBoxesOptions.max_boxes
 
 const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
 const inlineEditorEl = useTemplateRef<HTMLTextAreaElement>('inlineEditorEl')
@@ -230,7 +233,7 @@ const {
   canvasEl,
   inlineEditorEl,
   modelValue,
-  widget,
+  widgetId: () => widgetId,
   alwaysShowActive: fullscreen,
   maxBoxes
 })

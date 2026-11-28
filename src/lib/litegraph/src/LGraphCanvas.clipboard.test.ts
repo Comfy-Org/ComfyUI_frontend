@@ -43,8 +43,9 @@ import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY
-} from './canvas/clipboardStorage'
+  CANVAS_CLIPBOARD_KEY,
+  readClipboardStorage
+} from '@/core/graph/clipboard/clipboardStorage'
 
 vi.mock(import('@/services/litegraphService'))
 const telemetryMocks = vi.hoisted(() => ({ reportError: vi.fn() }))
@@ -130,6 +131,25 @@ describe('clipboard ID allocation', () => {
 
     expect(before).toHaveBeenCalledOnce()
     expect(after).toHaveBeenCalledOnce()
+  })
+
+  it('preserves advisory model properties through a cached copy and paste', () => {
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    onTestFinished(() => {
+      localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
+      localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
+    })
+    const node = createTestNode(rootGraph)
+    node.properties.models = [{ name: 'local-model.safetensors' }]
+    canvas.copyToClipboard([node])
+
+    canvas.pasteFromClipboard()
+
+    expect(rootGraph.nodes.map((pasted) => pasted.properties.models)).toEqual([
+      [{ name: 'local-model.safetensors' }],
+      [{ name: 'local-model.safetensors' }]
+    ])
   })
 
   it('clones extension values that structuredClone cannot clone', () => {
@@ -285,6 +305,8 @@ describe('clipboard ID allocation', () => {
     LiteGraph.registerNodeType(nodeType, ThrowingConfiguredNode)
     const rootGraph = new LGraph()
     const canvas = createCanvas(rootGraph)
+    const selected = createTestNode(rootGraph)
+    canvas.selectItems([selected])
     const origin = createSerialisedNode(1, nodeType)
     const target = createSerialisedNode(2, nodeType)
     origin.outputs = [{ name: 'output', type: '*', links: [1] }]
@@ -311,7 +333,8 @@ describe('clipboard ID allocation', () => {
       )
     ).toThrow('graph configured failed')
     expect(topologyExisted).toBe(true)
-    expect(rootGraph.nodes).toEqual([])
+    expect(rootGraph.nodes).toEqual([selected])
+    expect([...canvas.selectedItems]).toEqual([selected])
     expect(rootGraph.links.size).toBe(0)
     expect(rootGraph.reroutes.size).toBe(0)
   })
@@ -389,6 +412,8 @@ describe('clipboard ID allocation', () => {
       throw undefined
     })
     const canvas = createCanvas(rootGraph)
+    const selected = createTestNode(rootGraph)
+    canvas.selectItems([selected])
 
     let completed = false
     try {
@@ -402,7 +427,8 @@ describe('clipboard ID allocation', () => {
     }
 
     expect(completed).toBe(false)
-    expect(rootGraph.nodes).toEqual([])
+    expect(rootGraph.nodes).toEqual([selected])
+    expect([...canvas.selectedItems]).toEqual([selected])
   })
 
   it('retains a falsy paste operation failure after rollback', () => {
@@ -821,15 +847,14 @@ describe('copyToClipboard', () => {
     })
 
     const first = canvas.copyToClipboard([node])
-    const firstId = localStorage.getItem('litegrapheditor_clipboard_id')
     const second = canvas.copyToClipboard([node])
 
-    expect(second).toBe(first)
+    expect(second).not.toBe(first)
     expect(localStorage.getItem('litegrapheditor_clipboard')).toBe(second)
-    expect(firstId).toMatch(/^[0-9a-f-]{36}$/)
-    expect(localStorage.getItem('litegrapheditor_clipboard_id')).not.toBe(
-      firstId
-    )
+    expect(JSON.parse(second)).toMatchObject({
+      nodes: [{ id: Number(node.id) }],
+      clipboardId: expect.stringMatching(/^[0-9a-f-]{36}$/)
+    })
   })
 
   it('reports unexpected failures from clipboard storage', () => {
@@ -873,43 +898,9 @@ describe('copyToClipboard when storage is full', () => {
       expect(JSON.parse(copied)).toMatchObject({
         nodes: [{ id: Number(current.id), type: current.type }]
       })
-      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBeNull()
-      expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBeNull()
+      expect(readClipboardStorage()).toBeNull()
       expect(canvas._pasteFromClipboard()).toBeUndefined()
       expect(rootGraph.nodes).toHaveLength(2)
-      expect(telemetryMocks.reportError).not.toHaveBeenCalled()
-    } finally {
-      setItem.mockRestore()
-    }
-  })
-
-  it('keeps the payload when only the copy stamp cannot be written', () => {
-    const rootGraph = createTestRootGraph()
-    const previous = createTestNode(rootGraph)
-    const current = createTestNode(rootGraph)
-    const canvas = createCanvas(rootGraph)
-    canvas.copyToClipboard([previous])
-    const setItem = vi
-      .spyOn(window.localStorage, 'setItem')
-      .mockImplementation((key, value) => {
-        if (key === CANVAS_CLIPBOARD_ID_KEY) {
-          throw new DOMException(
-            'The quota has been exceeded.',
-            'QuotaExceededError'
-          )
-        }
-        Storage.prototype.setItem.call(localStorage, key, value)
-      })
-
-    try {
-      const copied = canvas.copyToClipboard([current])
-
-      expect(JSON.parse(copied)).toMatchObject({
-        nodes: [{ id: Number(current.id), type: current.type }]
-      })
-      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(copied)
-      expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBeNull()
-      expect(canvas._pasteFromClipboard()).toBeDefined()
       expect(telemetryMocks.reportError).not.toHaveBeenCalled()
     } finally {
       setItem.mockRestore()

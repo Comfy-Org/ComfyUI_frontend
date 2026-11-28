@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   getWidgetSizing,
   minRowHeight
@@ -17,11 +18,17 @@ import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/util
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
+import {
+  readLegacyWidgetGeometry,
+  rememberGeometryBeforeVueNodes,
+  writeLegacyWidgetGeometry
+} from '@/renderer/extensions/vueNodes/widgets/utils/legacyWidgetCanvasGeometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetName } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<undefined>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId: NodeId
 }>()
 
@@ -30,11 +37,12 @@ const containerHeight = ref(20)
 let drawnHeight = 20
 
 const canvasStore = useCanvasStore()
-const owner = useWidgetHostNode(() => props.nodeId)
+const owner = useWidgetHostNode(() => nodeId)
 const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
+let rowGeometry: { y: number; width: number; canvasHeight: number } | undefined
 const scaleFactor = 2
 
 function findLegacyWidget():
@@ -43,7 +51,7 @@ function findLegacyWidget():
       widget: IBaseWidget
     }
   | undefined {
-  return resolveWidgetFromHostNode(owner.value, props.widget.name)
+  return resolveWidgetFromHostNode(owner.value, widgetName(widgetId))
 }
 
 function bindWidget() {
@@ -109,27 +117,49 @@ function classicDrawY(
   return !grows && height > minHeight ? node.size[1] - height : 1
 }
 
+function withRowGeometry(run: () => void) {
+  if (!widgetInstance || !node || !rowGeometry) return run()
+  const widget = widgetInstance
+  const host = node
+  const canvasGeometry = readLegacyWidgetGeometry(widget, host)
+  if (LiteGraph.vueNodesMode)
+    rememberGeometryBeforeVueNodes(widget, host, canvasGeometry)
+  writeLegacyWidgetGeometry(widget, host, {
+    y: rowGeometry.y,
+    last_y: rowGeometry.y,
+    width: rowGeometry.width,
+    canvasHeight: rowGeometry.canvasHeight
+  })
+  try {
+    run()
+  } finally {
+    if (!LiteGraph.vueNodesMode)
+      writeLegacyWidgetGeometry(widget, host, canvasGeometry)
+  }
+}
+
 function draw() {
   if (!widgetInstance || !node) return
+  const widget = widgetInstance
+  const host = node
   const row = canvasEl.value.parentElement
   const width = row.clientWidth
-  const heights = getRowHeights(widgetInstance, node, row)
+  const heights = getRowHeights(widget, host, row)
   const { minHeight, height, grows } = heights
   containerHeight.value = minHeight
   drawnHeight = grows ? height : minHeight
-  node.canvasHeight = height
-  const drawY = classicDrawY(node, heights)
-  widgetInstance.y = drawY - 1
-  widgetInstance.last_y = drawY - 1
-  widgetInstance.width = width
-  if (grows) widgetInstance.computedHeight = height
+  const drawY = classicDrawY(host, heights)
+  rowGeometry = { y: drawY - 1, width, canvasHeight: height }
+  if (grows) widget.computedHeight = height
   canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
-  const ctx = canvasEl.value.getContext('2d')
-  if (!ctx) return
-  ctx.scale(scaleFactor, scaleFactor)
-  ctx.translate(0, 1 - drawY)
-  widgetInstance.draw?.(ctx, node, width, drawY, drawnHeight)
+  withRowGeometry(() => {
+    const ctx = canvasEl.value.getContext('2d')
+    if (!ctx) return
+    ctx.scale(scaleFactor, scaleFactor)
+    ctx.translate(0, 1 - drawY)
+    widget.draw?.(ctx, host, width, drawY, drawnHeight)
+  })
 }
 function augmentToWidgetPointerEvent(
   e: PointerEvent,
@@ -149,33 +179,42 @@ function handleDown(e: PointerEvent) {
   if (!isInWidgetBand(e)) return
   e.stopPropagation()
   if (!node || !widgetInstance || !pointer || e.button !== 0) return
-  augmentToWidgetPointerEvent(e, node)
-  pointer.down(e)
-  if (widgetInstance.mouse)
-    pointer.onDrag = (e) =>
-      widgetInstance!.mouse?.(
-        e,
-        [e.offsetX, e.offsetY + (widgetInstance!.y ?? 0)],
-        node!
-      )
-  canvas.processWidgetClick(e, node, widgetInstance, pointer)
+  const host = node
+  const widget = widgetInstance
+  const activePointer = pointer
+  withRowGeometry(() => {
+    augmentToWidgetPointerEvent(e, host)
+    activePointer.down(e)
+    if (widget.mouse)
+      activePointer.onDrag = (e) =>
+        widget.mouse?.(e, [e.offsetX, e.offsetY + (widget.y ?? 0)], host)
+    canvas.processWidgetClick(e, host, widget, activePointer)
+  })
   canvas.setDirty(true)
 }
 function handleUp(e: PointerEvent) {
   if (!pointer || !node) return
   if (!pointer.eDown && !isInWidgetBand(e)) return
   e.stopPropagation()
-  augmentToWidgetPointerEvent(e, node)
-  e.click_time = e.timeStamp - (pointer.eDown?.timeStamp ?? 0)
-  pointer.up(e)
+  const host = node
+  const activePointer = pointer
+  withRowGeometry(() => {
+    augmentToWidgetPointerEvent(e, host)
+    e.click_time = e.timeStamp - (activePointer.eDown?.timeStamp ?? 0)
+    activePointer.up(e)
+  })
   canvas.setDirty(true)
 }
 function handleMove(e: PointerEvent) {
   if (!pointer || !node) return
   if (!pointer.eDown && !isInWidgetBand(e)) return
   e.stopPropagation()
-  augmentToWidgetPointerEvent(e, node)
-  pointer.move(e)
+  const host = node
+  const activePointer = pointer
+  withRowGeometry(() => {
+    augmentToWidgetPointerEvent(e, host)
+    activePointer.move(e)
+  })
   if (e.buttons) canvas.setDirty(true)
 }
 </script>

@@ -1,24 +1,31 @@
 import { getActivePinia } from 'pinia'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { render, screen } from '@testing-library/vue'
 import { computed } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const WidgetGridProbe = {
   props: ['processedWidgets'],
   setup(props: { processedWidgets?: WidgetGridItem[] }) {
     const widgets = computed(() =>
       (props.processedWidgets ?? []).map((widget) => ({
-        name: widget.simplified.name,
-        value: widget.simplified.value,
-        options: { values: widget.simplified.options?.values }
+        widgetId: widget.widgetId,
+        name: widget.name,
+        value: widget.value,
+        options: {
+          values:
+            widget.widgetId &&
+            useWidgetValueStore().getWidget(widget.widgetId)?.options.values
+        }
       }))
     )
     return { widgets }
@@ -28,6 +35,7 @@ const WidgetGridProbe = {
 }
 
 interface ProbedWidget {
+  widgetId?: WidgetId
   name: string
   value?: unknown
   options?: { values?: string[] }
@@ -42,11 +50,11 @@ const nodeDef = fromPartial<ComfyNodeDefV2>({
   outputs: []
 })
 
-function renderedWidgets(
+function renderPreview(
   def: ComfyNodeDefV2,
   props: { widgetValues?: readonly WidgetValueBinding[] } = {}
 ) {
-  render(LGraphNodePreview, {
+  const result = render(LGraphNodePreview, {
     props: { nodeDef: def, ...props },
     global: {
       plugins: [getActivePinia()!],
@@ -60,7 +68,14 @@ function renderedWidgets(
   const nodeData: { widgets?: ProbedWidget[] } = JSON.parse(
     screen.getByTestId('node-data').textContent
   )
-  return nodeData.widgets ?? []
+  return { ...result, widgets: nodeData.widgets ?? [] }
+}
+
+function renderedWidgets(
+  def: ComfyNodeDefV2,
+  props: { widgetValues?: readonly WidgetValueBinding[] } = {}
+) {
+  return renderPreview(def, props).widgets
 }
 
 function renderedComboWidget(
@@ -174,6 +189,21 @@ describe('LGraphNodePreview', () => {
 
     expect(widgets.find((w) => w.name === 'steps')?.value).toBe(20)
     expect(widgets.find((w) => w.name === 'text')?.value).toBe('')
+  })
+
+  it('removes its widgets from the widget value store on unmount', () => {
+    const {
+      unmount,
+      widgets: [widget]
+    } = renderPreview(nodeDef)
+    assert.exists(widget.widgetId)
+    expect(useWidgetValueStore().getWidget(widget.widgetId)).toMatchObject({
+      name: 'ckpt_name'
+    })
+
+    unmount()
+
+    expect(useWidgetValueStore().getWidget(widget.widgetId)).toBeUndefined()
   })
 
   it('hides advanced widgets in previews', () => {

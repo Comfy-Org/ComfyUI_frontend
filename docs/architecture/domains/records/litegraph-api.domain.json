@@ -1,7 +1,7 @@
 {
   "id": "litegraph-api",
   "capability": "LiteGraph public API",
-  "description": "The LiteGraph barrel and global singleton that custom nodes and extensions consume: node type registration and creation, global configuration, late-bound instance access, deprecation feedback, and canvas polyfills.",
+  "description": "The LiteGraph barrel and global singleton that custom nodes and extensions consume: node type registration and creation, global configuration, late-bound instance access, deprecation feedback, canvas polyfills, and the asset widget renderer that invokes the supplied browser callback.",
   "modules": [
     {
       "path": "src/composables/useGlobalLitegraph.ts"
@@ -20,6 +20,9 @@
     },
     {
       "path": "src/lib/litegraph/src/utils/feedback.ts"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgets/AssetWidget.ts"
     }
   ],
   "publicEntryPoints": [],

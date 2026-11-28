@@ -10,6 +10,7 @@ import {
   RUNNING_OPEN_TAB_TOOL_EVENT,
   RUNNING_RUN_TOOL_EVENT,
   THINKING_EVENT,
+  TOOL_CALL_EVENT,
   agentTest,
   pushAgentEvent,
   thinkingEvent,
@@ -30,7 +31,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Open a new tab for the upscale graph')
@@ -71,7 +71,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Run the workflow')
@@ -98,7 +97,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Remember this and prepare another tab')
@@ -147,7 +145,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Plan the upscale pass before you edit')
@@ -178,13 +175,34 @@ test.describe(
       await expect(thinkingRow).toBeInViewport({ ratio: 1 })
     })
 
+    test('shows the scrubbed Worked trace as a complete sentence', async ({
+      agentPanel,
+      getAgentSocket,
+      postedMessages
+    }) => {
+      await agentPanel.open()
+
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('Set the color to red')
+      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+
+      const thinking = 'The color value is 16711680, which is hex 0xFF0000.'
+      pushAgentEvent(ws, thinkingEvent(thinking))
+      pushAgentEvent(ws, TOOL_CALL_EVENT)
+      pushAgentEvent(ws, MESSAGE_DELTA_EVENT)
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
+
+      await expect(agentPanel.sendButton).toBeVisible()
+      await agentPanel.openWorkSummary()
+      await expect(agentPanel.activityRow(thinking)).toHaveCount(1)
+    })
+
     test('names how long the finished turn took', async ({
       agentPanel,
       getAgentSocket,
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Set the prompt to a red fox in the snow')
@@ -198,7 +216,6 @@ test.describe(
       await expect(agentPanel.sendButton).toBeVisible()
       await expect(agentPanel.workSummary).toHaveCount(1)
 
-      test.fail()
       await expect(agentPanel.workSummary).toHaveText(
         /Worked for (\d+ seconds|\d+m \d+s)/
       )

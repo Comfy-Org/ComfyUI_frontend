@@ -5,19 +5,22 @@ import type { UploadImageResponse } from '@comfyorg/ingest-types'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { setWidgetValue } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { uploadTimeoutMs } from '@/utils/uploadTimeout'
 import {
   isExtensionlessVideo,
   isUntypedOrVideoWithoutExtension
@@ -50,11 +53,8 @@ function toUploadedPath({ subfolder, name }: UploadResponse) {
   return subfolder ? `${subfolder}/${name}` : name
 }
 
-function addMissingOptionValues(
-  widget: SimplifiedWidget<string | undefined>,
-  paths: (string | undefined)[]
-) {
-  const values = widget.options?.values
+function addMissingOptionValues(id: WidgetId, paths: (string | undefined)[]) {
+  const values = useWidgetValueStore().getWidget(id)?.options.values
   if (!Array.isArray(values)) return
   for (const path of paths) if (!values.includes(path)) values.push(path)
 }
@@ -62,7 +62,7 @@ function addMissingOptionValues(
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
   dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
-  widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
+  widgetId: MaybeRefOrGetter<WidgetId>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
@@ -115,6 +115,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   async function uploadFile(
     file: File,
+    timeoutMs: number,
     isPasted: boolean = false,
     formFields: Partial<{ type: ResultItemType }> = {}
   ) {
@@ -129,7 +130,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
-      body
+      body,
+      timeoutMs
     })
 
     if (resp.status !== 200) {
@@ -148,8 +150,9 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   async function uploadFiles(files: File[]): Promise<UploadResponse[]> {
     const folder = toValue(options.uploadFolder) ?? 'input'
+    const timeoutMs = uploadTimeoutMs(files)
     const uploadPromises = files.map((file) =>
-      uploadFile(file, false, { type: folder })
+      uploadFile(file, timeoutMs, false, { type: folder })
     )
     return (await Promise.all(uploadPromises)).filter((data) => !!data)
   }
@@ -183,10 +186,11 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
         return
       }
 
-      const widget = toValue(options.widget)
-      addMissingOptionValues(widget, uploadedPaths)
-      modelValue.value = uploadedPaths[0]
-      widget.callback?.(uploadedPaths[0])
+      const id = toValue(options.widgetId)
+      addMissingOptionValues(id, uploadedPaths)
+      const [uploadedPath] = uploadedPaths
+      if (modelValue.value === uploadedPath) setWidgetValue(id, uploadedPath)
+      else modelValue.value = uploadedPath
       showUploadPreview(uploadedResponses[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()

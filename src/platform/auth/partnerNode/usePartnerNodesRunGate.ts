@@ -18,24 +18,23 @@ import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 type PartnerRunGate = 'sign-in' | 'none'
 type ApiKeyAuthStore = ReturnType<typeof useApiKeyAuthStore>
 
-/**
- * A gate block has no server backstop, so every one is reported. The gate only
- * blocks when isLoggedIn is false, so the tags read the raw sessions instead:
- * either being true means a signed-in user was blocked (Sentry alert #16504).
- */
 function reportGateBlocked(
   trigger: 'run-button' | 'auto-queue',
   partnerNodes: PartnerNodeInfo[],
   apiKeyStore: ApiKeyAuthStore
 ) {
+  const hasFirebaseSession = firebaseIdentity.currentUser() !== null
+  const hasStoredApiKey = Boolean(apiKeyStore.getApiKey())
   reportError(new Error(`Partner run gate blocked ${trigger}`), {
     surface: 'billing',
     errorType: 'partner_run_gate_blocked',
     level: 'warning',
+    sentryMode:
+      hasFirebaseSession || hasStoredApiKey ? 'once_per_page' : 'never',
     tags: {
       trigger,
-      hasFirebaseSession: firebaseIdentity.currentUser() !== null,
-      hasStoredApiKey: Boolean(apiKeyStore.getApiKey()),
+      hasFirebaseSession,
+      hasStoredApiKey,
       partnerNodeCount: partnerNodes.length
     },
     context: { partnerNodeTypes: partnerNodes.map((n) => n.nodeName) }

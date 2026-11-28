@@ -99,10 +99,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { signedInOnWebSession } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import {
-  remoteConfigErrorStatus,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
@@ -123,6 +120,7 @@ const initializationState = ref<
 const initializationRetryable = ref(true)
 const errorPanel = useTemplateRef<HTMLElement>('errorPanel')
 const billingCapabilities = useBillingCapabilities()
+const remoteConfigStore = useRemoteConfigStore()
 syncWorkspaceTelemetryContext()
 let initializationGeneration = 0
 let initializationController: AbortController | null = null
@@ -190,7 +188,7 @@ async function initialize(): Promise<void> {
       })
     ]).finally(() => clearTimeout(timeoutId))
     if (generation !== initializationGeneration) return
-    if (remoteConfigState.value !== 'authenticated') {
+    if (remoteConfigStore.loadState !== 'authenticated') {
       throw new Error('Failed to load authenticated remote config')
     }
 
@@ -249,8 +247,8 @@ function initializationFailureReport(
 
 function isRetryableInitializationError(error: unknown): boolean {
   if (
-    remoteConfigErrorStatus.value === 401 ||
-    remoteConfigErrorStatus.value === 403
+    remoteConfigStore.errorStatus === 401 ||
+    remoteConfigStore.errorStatus === 403
   ) {
     return false
   }

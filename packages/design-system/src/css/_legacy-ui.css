@@ -117,12 +117,6 @@ button.comfy-close-menu-btn {
   width: 100%;
 }
 
-.comfy-menu-btns button {
-  font-size: 10px;
-  width: 50%;
-  color: var(--muted-foreground) !important;
-}
-
 .comfy-menu > button {
   width: 100%;
 }
@@ -144,6 +138,12 @@ button.comfy-close-menu-btn {
   color: var(--input-text);
   background-color: var(--comfy-input-bg);
   border-color: var(--border-color);
+}
+
+.comfy-menu-btns button {
+  font-size: 10px;
+  width: 50%;
+  color: var(--muted-foreground);
 }
 
 .comfy-menu > button:hover,
@@ -215,7 +215,7 @@ span.drag-handle::after {
 }
 
 button.comfy-queue-btn {
-  margin: 6px 0 !important;
+  margin: 6px 0;
 }
 
 .comfy-modal.comfy-manage-templates {
@@ -234,10 +234,8 @@ button.comfy-queue-btn {
 
 @media only screen and (max-height: 850px) {
   .comfy-menu {
-    top: 0 !important;
-    bottom: 0 !important;
-    left: auto !important;
-    right: 0 !important;
+    /* stylelint-disable-next-line declaration-no-important */
+    inset: 0 0 0 auto !important;
     border-radius: 0;
   }
 
@@ -349,7 +347,7 @@ dialog::backdrop {
 
 .litegraph.litecontextmenu,
 .litegraph.litecontextmenu.dark {
-  z-index: var(--z-index-overlay) !important;
+  z-index: var(--z-index-overlay);
   background-color: var(--background);
 }
 
@@ -393,7 +391,7 @@ dialog::backdrop {
 }
 
 .litegraph.litesearchbox {
-  z-index: var(--z-index-overlay) !important;
+  z-index: var(--z-index-overlay);
   background-color: var(--background);
   overflow: hidden;
   display: block;

@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, watch } from 'vue'
@@ -53,7 +54,7 @@ async function readServedFlags(): Promise<LocalCloudFlags> {
           Authorization: `Bearer ${token}`,
           'X-Comfy-Surface': localSurface()
         },
-        signal: AbortSignal.timeout(READ_TIMEOUT_MS)
+        signal: createTimeoutSignal(READ_TIMEOUT_MS)
       }
     )
     if (!response.ok) return ALL_OFF

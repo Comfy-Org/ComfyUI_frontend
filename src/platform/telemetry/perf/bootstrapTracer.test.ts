@@ -1,9 +1,10 @@
 import type { DatadogRum } from '@datadog/browser-rum'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 
 import { BootstrapTracer } from './bootstrapTracer'
 
@@ -181,7 +182,11 @@ describe('bootstrapTracer', () => {
 
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
-    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 150 })
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      hidden_ms: 150,
+      visible_ms: 50
+    })
   })
 
   it('counts time before the tracer existed as hidden when startup began hidden', async () => {
@@ -202,7 +207,11 @@ describe('bootstrapTracer', () => {
 
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
-    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 100 })
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      hidden_ms: 100,
+      visible_ms: 100
+    })
   })
 
   it('reads visibility changes from before the tracer existed when the browser buffers them', async () => {
@@ -227,7 +236,36 @@ describe('bootstrapTracer', () => {
 
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
-    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 70 })
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      hidden_ms: 70,
+      visible_ms: 130
+    })
+  })
+
+  it('reports visible time for a timed-out startup that is still hidden', async () => {
+    const telemetry = sharedUseTelemetry()
+    assert.exists(telemetry)
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog(300)
+
+    await vi.advanceTimersByTimeAsync(100)
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(200)
+    visibility.mockRestore()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata).toMatchObject({
+      outcome: 'timed_out',
+      total_ms: 300,
+      hidden_ms: 200,
+      visible_ms: 100
+    })
   })
 
   it('reports a failed startup, closing phases still open', () => {
@@ -241,12 +279,252 @@ describe('bootstrapTracer', () => {
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
     expect(metadata.outcome).toBe('failed')
+    expect(metadata.failure_phase).toBe('bootstrap/object-info')
+    expect(metadata).not.toHaveProperty('failure_error')
     expect(Object.keys(metadata.phases)).toEqual(['bootstrap/object-info'])
     expect(addAction).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.BOOTSTRAP_COMPLETE,
       metadata
     )
     expect(setViewLoadingTime).not.toHaveBeenCalled()
+  })
+
+  it('names the innermost phase whose work rejected when startup fails', async () => {
+    const tracer = new BootstrapTracer()
+
+    await expect(
+      tracer.settle('bootstrap/extensions-load', () =>
+        tracer.settle('bootstrap/extensions-load-custom', () =>
+          Promise.reject(new UnauthorizedError('secret detail'))
+        )
+      )
+    ).rejects.toThrow('secret detail')
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      outcome: 'failed',
+      failure_phase: 'bootstrap/extensions-load-custom',
+      failure_error: 'Error'
+    })
+    expect(
+      JSON.stringify(metadata),
+      'error messages can carry user data and must never reach RUM'
+    ).not.toContain('secret detail')
+  })
+
+  it('keeps the first rejection when a sibling phase rejects differently afterward', async () => {
+    const tracer = new BootstrapTracer()
+    const first = new RangeError('core failed')
+    const second = new TypeError('custom failed')
+
+    const core = tracer.settle('bootstrap/extensions-load-core', () =>
+      Promise.reject(first)
+    )
+    await expect(core).rejects.toBe(first)
+
+    const custom = tracer.settle('bootstrap/extensions-load-custom', () =>
+      Promise.reject(second)
+    )
+    await expect(custom).rejects.toBe(second)
+
+    tracer.complete('failed', { error: first })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/extensions-load-core',
+      failure_error: 'RangeError'
+    })
+  })
+
+  it('attributes a failure reported as data instead of a rejection', () => {
+    const tracer = new BootstrapTracer()
+    const error = new TypeError('settings fetch failed')
+
+    tracer.noteFailure('bootstrap/settings', error)
+    tracer.complete('failed', { error })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/settings',
+      failure_error: 'TypeError'
+    })
+  })
+
+  it('does not let a noted failure override an earlier settled rejection', async () => {
+    const tracer = new BootstrapTracer()
+    const rejection = new RangeError('bad defs')
+
+    await expect(
+      tracer.settle('bootstrap/object-info', () => Promise.reject(rejection))
+    ).rejects.toBe(rejection)
+
+    tracer.noteFailure('bootstrap/settings', new TypeError('ignored'))
+    tracer.complete('failed', { error: rejection })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/object-info',
+      failure_error: 'RangeError'
+    })
+  })
+
+  it('reports an unrecognized error name as Error', async () => {
+    const tracer = new BootstrapTracer()
+    const error = new Error('boom')
+    error.name = 'Alice'
+
+    await expect(
+      tracer.settle('bootstrap/settings', () => Promise.reject(error))
+    ).rejects.toThrow('boom')
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/settings',
+      failure_error: 'Error'
+    })
+  })
+
+  it('records a phase that rejected with undefined', async () => {
+    const tracer = new BootstrapTracer()
+
+    await expect(
+      tracer.settle('bootstrap/workflows', () => Promise.reject(undefined))
+    ).rejects.toBeUndefined()
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/workflows',
+      failure_error: 'undefined'
+    })
+  })
+
+  it('does not blame a handled rejection for a later, different terminal error', async () => {
+    const tracer = new BootstrapTracer()
+
+    await expect(
+      tracer.settle('bootstrap/new-user', () =>
+        Promise.reject(new Error('handled by the caller'))
+      )
+    ).rejects.toThrow()
+    tracer.complete('failed', { error: new TypeError('no canvas') })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'untraced',
+      failure_error: 'TypeError'
+    })
+  })
+
+  it('keeps a later phase failure after an earlier, different failure was recorded', async () => {
+    const tracer = new BootstrapTracer()
+    const earlier = new Error('handled by the caller')
+    const terminal = new TypeError('workflow restore failed')
+
+    await expect(
+      tracer.settle('bootstrap/new-user', () => Promise.reject(earlier))
+    ).rejects.toBe(earlier)
+    await expect(
+      tracer.settle('bootstrap/workflow-restore', () =>
+        Promise.reject(terminal)
+      )
+    ).rejects.toBe(terminal)
+
+    tracer.complete('failed', { error: terminal })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/workflow-restore',
+      failure_error: 'TypeError'
+    })
+  })
+
+  it('keeps the rejecting phase when the terminal error is that rejection', async () => {
+    const tracer = new BootstrapTracer()
+    const error = new RangeError('bad defs')
+
+    await expect(
+      tracer.settle('bootstrap/object-info', () => Promise.reject(error))
+    ).rejects.toBe(error)
+    tracer.complete('failed', { error })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/object-info',
+      failure_error: 'RangeError'
+    })
+  })
+
+  it('reports uninspectable when reading the error name throws', () => {
+    const tracer = new BootstrapTracer()
+    const error = new Error('x')
+    Object.defineProperty(error, 'name', {
+      get() {
+        throw new Error('getter')
+      }
+    })
+
+    tracer.complete('failed', { error })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({ failure_error: 'uninspectable' })
+    expect(tracer.outcome).toBe('failed')
+  })
+
+  it('reports uninspectable when a revoked error proxy cannot be classified', () => {
+    const tracer = new BootstrapTracer()
+    const { proxy, revoke } = Proxy.revocable(new Error('x'), {})
+    revoke()
+
+    expect(() => tracer.complete('failed', { error: proxy })).not.toThrow()
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({ failure_error: 'uninspectable' })
+    expect(tracer.outcome).toBe('failed')
+  })
+
+  it('reports a failure outside every phase as untraced', () => {
+    const tracer = new BootstrapTracer()
+
+    tracer.complete('failed')
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      outcome: 'failed',
+      failure_phase: 'untraced'
+    })
+  })
+
+  it('adds no failure fields to a completed startup', async () => {
+    const tracer = new BootstrapTracer()
+
+    await expect(
+      tracer.settle('bootstrap/new-user', () =>
+        Promise.reject(new Error('handled by the caller'))
+      )
+    ).rejects.toThrow()
+    tracer.complete()
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).not.toHaveProperty('failure_phase')
+    expect(metadata).not.toHaveProperty('failure_error')
+  })
+
+  it('still rethrows a phase rejection that settles after startup completed', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.complete('failed', { error: new Error('settings failed') })
+    addAction.mockClear()
+
+    const lateRejection = new Error('workflows rejected after completion')
+    await expect(
+      tracer.settle('bootstrap/workflows', () => Promise.reject(lateRejection))
+    ).rejects.toBe(lateRejection)
+    tracer.noteFailure('bootstrap/i18n', new Error('also late'))
+
+    tracer.complete('failed', { error: lateRejection })
+    expect(addAction).not.toHaveBeenCalled()
   })
 
   it('exposes the startup outcome once it is known', () => {

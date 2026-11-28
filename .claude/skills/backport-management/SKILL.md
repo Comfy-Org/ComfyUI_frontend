@@ -77,7 +77,7 @@ Branch protection on `core/**` and `cloud/**` requires an approval and the requi
 
 ```bash
 gh api repos/Comfy-Org/ComfyUI_frontend/issues/$PR/labels \
-  -f "labels[]=needs-backport" -f "labels[]=TARGET_BRANCH"
+  -f "labels[]=needs-backport"
 ```
 
 ### Automation Over-Reports Conflicts
@@ -266,11 +266,8 @@ Each row includes:
 
 ### Label-Driven Automation (default path)
 
-```bash
-gh api repos/Comfy-Org/ComfyUI_frontend/issues/$PR/labels \
-  -f "labels[]=needs-backport" -f "labels[]=TARGET_BRANCH"
-# Wait 3 min, check: gh pr list --base TARGET_BRANCH --state open
-```
+Use `needs-backport` when the fix should go to every eligible core branch.
+Use the manual cherry-pick below when the requester wants only one branch.
 
 ### Manual Worktree Cherry-Pick (conflict fallback)
 

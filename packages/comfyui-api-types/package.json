@@ -21,6 +21,9 @@
     "format": "oxfmt --write",
     "format:check": "oxfmt --check"
   },
+  "dependencies": {
+    "zod": "catalog:"
+  },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.97.3",
     "typescript": "catalog:"

@@ -35,11 +35,13 @@ import {
   nodePositionView,
   nodeSizeBuffer,
   nodeSizeView,
+  readNodePosition,
+  readNodeRenderingSize,
   refreshNodeGeometry,
   setNodePosition,
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { readMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import type {
@@ -161,7 +163,10 @@ import {
   outputAsSerialisable
 } from './node/slotUtils'
 import type { NodeLike } from './types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type {
+  CanvasMouseEvent,
+  CanvasPointerEvent
+} from '@comfyorg/graph-model/events'
 import {
   LGraphEventMode,
   NodeSlotType,
@@ -193,6 +198,7 @@ import { layoutNodeBody } from './utils/nodeBodyLayout'
 import {
   getWidgetSizing,
   minRowHeight,
+  publishWidgetRenderFacts,
   widgetRowSizings
 } from './utils/widgetLayout'
 import { truncateText } from './utils/textUtils'
@@ -647,8 +653,9 @@ export class LGraphNode
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
+    const color = this.color || this.constructor.color
     const baseColor =
-      this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+      typeof color === 'string' && color ? color : LiteGraph.NODE_DEFAULT_COLOR
     return adjustColor(baseColor, { lightness: LiteGraph.nodeLightness })
   }
 
@@ -833,7 +840,7 @@ export class LGraphNode
   declare isLoading?: boolean
   declare isUploading?: boolean
   declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
-  /** If true, output images are stored but not rendered below the node */
+  /** Only false enables the default executed-output preview in Vue mode. */
   declare hideOutputImages?: boolean
 
   declare preview?: string[]
@@ -876,22 +883,31 @@ export class LGraphNode
 
   /** @inheritdoc {@link boundingRect} */
   private _boundingRect: Rectangle = new Rectangle()
+  private _measuredPos: Point | undefined
   /**
    * Cached node position & area as `x, y, width, height`.  Includes changes made by {@link onBounding}, if present.
    *
-   * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
+   * Determines the node hitbox and other rendering effects.  Measured once at the start of every frame, and moved with the node until the next measure.
    */
   get boundingRect(): ReadOnlyRectangle {
-    return this._boundingRect
+    const bounds = this._boundingRect
+    const measured = this._measuredPos
+    if (!measured) return bounds
+    const pos = readNodePosition(this)
+    const x = pos[0]
+    const y = pos[1]
+    bounds[0] += x - measured[0]
+    bounds[1] += y - measured[1]
+    measured[0] = x
+    measured[1] = y
+    return bounds
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
   get boundingOffset(): Readonly<Point> {
-    const {
-      pos: [posX, posY],
-      boundingRect: [bX, bY]
-    } = this
-    return [posX - bX, posY - bY]
+    const { boundingRect } = this
+    const pos = readNodePosition(this)
+    return [pos[0] - boundingRect[0], pos[1] - boundingRect[1]]
   }
 
   get _posSize(): Rectangle {
@@ -938,12 +954,12 @@ export class LGraphNode
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    const renderedSize = refreshNodeGeometry(this)
-    if (!this.flags.collapsed) return renderedSize
-
-    const contentSize = this.graph
-      ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)
-      : undefined
+    const collapsed = !!this.flags.collapsed
+    const contentSize =
+      LiteGraph.vueNodesMode && this.graph
+        ? readMountedNodeSize(this.graph, this.id, { collapsed })
+        : undefined
+    if (!collapsed) return readNodeRenderingSize(this, contentSize)
     return [
       contentSize?.width ??
         this._collapsed_width ??
@@ -1166,7 +1182,7 @@ export class LGraphNode
   /** @param pos Offset from {@link LGraphNode.pos}. */
   onDblClick?(
     this: LGraphNode,
-    e: CanvasPointerEvent,
+    e: CanvasMouseEvent,
     pos: Point,
     canvas: LGraphCanvas
   ): void
@@ -1403,8 +1419,7 @@ export class LGraphNode
         )
         reportNamedValuesShadowDiff(
           this,
-          diffNamedValuesShadow(namedValues, legacyShadow),
-          Boolean(info.widgets_values_named)
+          diffNamedValuesShadow(namedValues, legacyShadow)
         )
       }
     } finally {
@@ -2444,19 +2459,6 @@ export class LGraphNode
       widget.setNodeId(this.id)
     }
 
-    if (widget.serialize === false) return widget
-
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
-    const restored = useWidgetValueStore().getRestoredWidgetValue(
-      this.graph?.rootGraph.id ?? zeroUuid,
-      this.id,
-      widget,
-      positionalIndex
-    )
-    if (restored) widget.value = restored.value
-
     return widget
   }
 
@@ -2578,6 +2580,7 @@ export class LGraphNode
   updateArea(ctx?: CanvasRenderingContext2D): void {
     const bounds = this._boundingRect
     this.measure(bounds, ctx)
+    this._measuredPos = [this.pos[0], this.pos[1]]
     this.onBounding?.(bounds)
 
     const renderArea = this._renderArea
@@ -4105,12 +4108,17 @@ export class LGraphNode
     const startY =
       this.widgets_start_y ?? (this.widgets_up ? 0 : widgetStartY) + 2
     const visibleWidgets = this.getLayoutWidgets()
+    const sizings = visibleWidgets.map((widget) =>
+      getWidgetSizing(widget, this)
+    )
+    visibleWidgets.forEach((widget, i) =>
+      publishWidgetRenderFacts(this, widget, sizings[i])
+    )
     const layout = layoutNodeBody(
       bodyHeight,
       startY,
       widgetRowSizings(
-        visibleWidgets,
-        this,
+        sizings,
         LiteGraph.NODE_WIDGET_HEIGHT,
         LiteGraph.NODE_WIDGET_GAP
       )
@@ -4122,7 +4130,7 @@ export class LGraphNode
       widget.computedHeight = row.height
     }
 
-    if (!this.graph) throw new NullGraphError()
+    if (!this.graph) return
 
     if (!LiteGraph.vueNodesMode && layout.contentHeight > bodyHeight) {
       this.setSize([this.size[0], layout.contentHeight])
