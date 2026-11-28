@@ -19,6 +19,8 @@ import {
 } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { withWorkflowViewState } from '@/platform/workflow/persistence/base/workflowViewState'
+import { isWorkflowStorageTransitioning } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -79,11 +81,28 @@ export const useWorkflowStore = defineStore('workflow', () => {
     getDraftScope: () => useWorkflowDraftStoreV2().getScope(),
     getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
     saveDraft(workflow, state) {
+      if (isWorkflowStorageTransitioning()) return
+      const drafts = useWorkflowDraftStoreV2()
       try {
-        const saved = useWorkflowDraftStoreV2().saveDraft(
+        const app = useApp()
+        const graph = workflow.graph
+        const view =
+          graph && app.rootGraphOrUndefined === graph
+            ? app.hasPendingCamera(graph)
+              ? undefined
+              : app.canvasOrUndefined?.ds
+            : workflow.changeTracker?.ds
+        const draftState = withWorkflowViewState(state, view, {
+          enabled: useSettingStore().get('Comfy.EnableWorkflowViewRestore')
+        })
+        const saved = drafts.saveDraft(
           workflow.path,
-          JSON.stringify(state),
-          { name: workflow.key, isTemporary: workflow.isTemporary },
+          JSON.stringify(draftState),
+          {
+            name: workflow.key,
+            isTemporary: workflow.isTemporary,
+            isModified: workflow.isModified
+          },
           { minUpdatedAt: workflow.lastModified }
         )
         if (saved) return
@@ -93,7 +112,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
           errorType: 'error_persisting_workflow_draft'
         })
       }
-      showDraftSaveFailedToast()
+      if (drafts.shouldNotifySaveFailure()) {
+        showDraftSaveFailedToast()
+      }
     },
     removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
     markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),

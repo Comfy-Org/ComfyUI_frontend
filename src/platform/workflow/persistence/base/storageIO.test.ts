@@ -19,6 +19,7 @@ import {
   readIndex,
   readOpenPaths,
   readPayload,
+  readPersistentOpenPaths,
   writeActivePath,
   writeIndex,
   writeOpenPaths,
@@ -76,6 +77,57 @@ describe('storageIO', () => {
         JSON.stringify({ v: 1 })
       )
       expect(readIndex(workspaceId)).toBeNull()
+    })
+
+    it('drops malformed persisted modification metadata', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:test-workspace',
+        JSON.stringify({
+          v: 2,
+          updatedAt: 1,
+          order: ['abc123'],
+          entries: {
+            abc123: {
+              path: 'workflows/test.json',
+              name: 'test',
+              isTemporary: false,
+              isModified: 0,
+              updatedAt: 1
+            }
+          }
+        })
+      )
+
+      expect(readIndex(workspaceId)?.entries.abc123?.isModified).toBeUndefined()
+    })
+
+    it('drops malformed ordered entries without a valid path', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.DraftIndex.v2:test-workspace',
+        JSON.stringify({
+          v: 2,
+          updatedAt: 1,
+          order: ['broken', 'valid'],
+          entries: {
+            broken: {
+              name: 'broken',
+              isTemporary: false,
+              updatedAt: 1
+            },
+            valid: {
+              path: 'workflows/valid.json',
+              name: 'valid',
+              isTemporary: false,
+              updatedAt: 1
+            }
+          }
+        })
+      )
+
+      const index = readIndex(workspaceId)
+      expect(index?.order).toEqual(['valid'])
+      expect(index?.entries.broken).toBeUndefined()
+      expect(index?.entries.valid?.path).toBe('workflows/valid.json')
     })
   })
 
@@ -188,6 +240,19 @@ describe('storageIO', () => {
 
     it('returns null for missing open paths', () => {
       expect(readOpenPaths('missing')).toBeNull()
+    })
+
+    it('rejects a durable open-path pointer from another workspace', () => {
+      localStorage.setItem(
+        'Comfy.Workflow.LastOpenPaths:ws-1',
+        JSON.stringify({
+          workspaceId: 'ws-2',
+          paths: ['workflows/foreign.json'],
+          activeIndex: 0
+        })
+      )
+
+      expect(readPersistentOpenPaths('ws-1')).toBeNull()
     })
 
     it('falls back to workspace search when clientId does not match and migrates', () => {
@@ -929,6 +994,35 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.getPayloadKeys('ws-1')).toEqual([])
     })
 
+    it('blocks tab pointer reads and ordinary deletion during an identity fence', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const workspaceId = 'ws-1'
+      const clientId = 'client-1'
+      const path = 'workflows/a.json'
+      isolatedStorageIO.writeActivePath(clientId, { workspaceId, path })
+      isolatedStorageIO.writeOpenPaths(clientId, {
+        workspaceId,
+        paths: [path],
+        activeIndex: 0
+      })
+      const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      try {
+        expect(isolatedStorageIO.readActivePath(clientId, workspaceId)).toBeNull()
+        expect(isolatedStorageIO.readOpenPaths(clientId, workspaceId)).toBeNull()
+        expect(isolatedStorageIO.readPersistentOpenPaths(workspaceId)).toBeNull()
+        isolatedStorageIO.clearActivePath(clientId, workspaceId)
+      } finally {
+        transition.release()
+      }
+
+      expect(isolatedStorageIO.readActivePath(clientId, workspaceId)?.path).toBe(
+        path
+      )
+      expect(
+        isolatedStorageIO.readOpenPaths(clientId, workspaceId)?.paths
+      ).toEqual([path])
+    })
+
     it('blocks reads when a logout overlaps a workspace transition', async () => {
       const isolatedStorageIO = await import('./storageIO')
       isolatedStorageIO.writePayload('ws-1', 'draft', {
@@ -968,6 +1062,29 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.readPayload('ws-1', 'draft')).not.toBeNull()
       expect(isolatedStorageIO.getPayloadKeys('ws-1')).toContain('draft')
       cancelTransition.release()
+    })
+
+    it('does not delete draft payloads while a workspace transition fences writes', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      expect(
+        isolatedStorageIO.writePayload('ws-1', 'draft', {
+          data: '{}',
+          updatedAt: 1
+        })
+      ).toBe(true)
+
+      const cancelTransition =
+        isolatedStorageIO.prepareWorkflowWorkspaceTransition()
+
+      expect(isolatedStorageIO.deletePayload('ws-1', 'draft')).toBe(false)
+      expect(isolatedStorageIO.deleteOrphanPayloads('ws-1', new Set())).toBe(0)
+      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).not.toBeNull()
+
+      cancelTransition()
+
+      expect(isolatedStorageIO.deleteOrphanPayloads('ws-1', new Set())).toBe(1)
+      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).toBeNull()
     })
   })
 
