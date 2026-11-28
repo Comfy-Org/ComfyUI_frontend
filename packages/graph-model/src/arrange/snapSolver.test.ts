@@ -184,15 +184,24 @@ describe('snapMove', () => {
     expect(guides.filter((g) => g.kind === 'gap')).toHaveLength(2)
   })
 
-  it('draws one alignment line per axis, spanning only to the nearest aligned box', () => {
-    const index = buildSnapIndex(
-      [box(100, 0, 100, 60), box(100, 1000, 100, 60)],
-      edgesOnly
-    )
-    expect(
-      snapMove(index, box(104, 300, 100, 50), { threshold }).guides
-    ).toEqual([{ kind: 'line', axis: 'x', at: 100, from: 0, to: 350 }])
-  })
+  it.for([
+    {
+      name: 'listed first',
+      targets: [box(100, 0, 100, 60), box(100, 1000, 100, 60)]
+    },
+    {
+      name: 'listed last',
+      targets: [box(100, 1000, 100, 60), box(100, 0, 100, 60)]
+    }
+  ])(
+    'draws one alignment line per axis, spanning only to the nearest aligned box when it is $name',
+    ({ targets }) => {
+      const index = buildSnapIndex(targets, edgesOnly)
+      expect(
+        snapMove(index, box(104, 300, 100, 50), { threshold }).guides
+      ).toEqual([{ kind: 'line', axis: 'x', at: 100, from: 0, to: 350 }])
+    }
+  )
 
   it.for([
     {
