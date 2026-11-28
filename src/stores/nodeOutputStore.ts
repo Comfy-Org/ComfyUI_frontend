@@ -116,6 +116,18 @@ function isInteriorLocator(nodeLocatorId: NodeLocatorId): boolean {
   return !!parseNodeLocatorId(nodeLocatorId)?.subgraphUuid
 }
 
+function readInstanceEntry<T>(
+  shared: Partial<Record<string, T>>,
+  instances: InstanceMap<T>,
+  nodeLocatorId: NodeLocatorId,
+  executionId: NodeExecutionId
+): T | undefined {
+  const group = instances[nodeLocatorId]
+  return group && isInteriorLocator(nodeLocatorId)
+    ? group[executionId]
+    : shared[nodeLocatorId]
+}
+
 function preserveInputPreviewImages(
   existingOutput: ExecutedWsMessage['output'] | undefined,
   outputs: ExecutedWsMessage['output'] | ResultItem
@@ -330,31 +342,30 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     )
   }
 
-  /**
-   * Outputs of one instance. Inside a subgraph, falls back to the node's shared
-   * outputs only while no instance of the node has executed.
-   */
   function getNodeOutputByExecutionId(
     executionId: NodeExecutionId
   ): ExecutedWsMessage['output'] | undefined {
     const locatorId = resolveLocator(executionId)
     if (!locatorId) return undefined
-    const shared = nodeOutputs.value[locatorId]
-    const instances = instanceOutputs.value[locatorId]
-    if (!shared || !instances || !isInteriorLocator(locatorId)) return shared
-    return instances[executionId]
+    return readInstanceEntry(
+      nodeOutputs.value,
+      instanceOutputs.value,
+      locatorId,
+      executionId
+    )
   }
 
-  /** Reads one instance's live previews; see {@link getNodeOutputByExecutionId}. */
   function getNodePreviewImagesByExecutionId(
     executionId: NodeExecutionId
   ): string[] | undefined {
     const locatorId = resolveLocator(executionId)
     if (!locatorId) return undefined
-    const instances = instancePreviewImages.value[locatorId]
-    if (!instances || !isInteriorLocator(locatorId))
-      return nodePreviewImages.value[locatorId]
-    return instances[executionId]
+    return readInstanceEntry(
+      nodePreviewImages.value,
+      instancePreviewImages.value,
+      locatorId,
+      executionId
+    )
   }
 
   function getNodeImageUrlsByExecutionId(

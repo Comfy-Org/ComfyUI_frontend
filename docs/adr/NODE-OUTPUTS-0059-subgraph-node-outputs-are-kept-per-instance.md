@@ -64,10 +64,15 @@ still sit at the root.
 Reading by execution ID:
 
 - a root ID reads the locator entry;
-- an interior ID reads its instance entry;
-- an interior ID with no instance entry reads the locator entry **only while
-  no instance of that node has an entry**. An instance that has not run shows
-  nothing; it never shows a sibling's result.
+- an interior ID reads the locator entry while the locator has no instance
+  group, and its own instance entry once the group exists. An instance with no
+  entry in an existing group shows nothing; it never shows a sibling's result.
+
+The group's lifetime carries the rule. A write from execution creates the
+group. A write from the node itself, or removing the node's outputs, deletes
+it. Pruning a removed host, or releasing an instance's live frame, removes
+only that entry and keeps the group, even when it is left empty, so the
+remaining hosts show nothing rather than the removed host's result.
 
 Readers that hold only a node object, such as `getNodeOutputs(node)`, the
 canvas, and extensions, keep reading the locator entry, which is the last
@@ -97,8 +102,10 @@ writer for interior nodes.
 The new maps are not reachable from extensions.
 
 Every store write echoes back through the `app.nodeOutputs` mutation view, so
-the legacy write path cannot tell an extension write from the store's own. It
-therefore updates only the locator entry and never clears instance entries.
+the legacy write path cannot tell an extension write from the store's own.
+Setting a key therefore updates only the locator entry. Deleting a key, or
+replacing `app.nodeOutputs`, also deletes the instance groups of the locators
+it removes.
 
 ## Relation to ADR-WIDGET-COMPONENTS-0058
 
