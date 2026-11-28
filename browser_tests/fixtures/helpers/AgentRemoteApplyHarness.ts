@@ -20,7 +20,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import { catalog, emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'

@@ -7,7 +7,6 @@ import type {
   WebEntryBounceReason,
   WebEntryBounceTarget
 } from '@comfyorg/account-core/billing'
-import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import type {
   BillingEntry,
   BillingIntent,
@@ -27,6 +26,7 @@ import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { HANDOFF_PATH, handoffTab, isHandoffPath } from '@/handoff/handoffTab'
+import type { BillingWebSessionPhase } from '@/session/sessionPhase'
 import {
   billingWebLivePhase,
   billingWebPhase,
@@ -111,8 +111,6 @@ const routes: RouteRecordRaw[] = [
     component: EntryErrorView
   }
 ]
-
-export type BillingWebSessionPhase = SessionSnapshot['phase']
 
 const HANDOFF_ENTRY = { product: 'comfyui', return_to: 'platform_billing' }
 

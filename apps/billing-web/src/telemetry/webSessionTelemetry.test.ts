@@ -1,4 +1,4 @@
-import type { BillingWebSessionPhase } from '@/router'
+import type { BillingWebSessionPhase } from '@/session/sessionPhase'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 import {
   reportSessionFailed,

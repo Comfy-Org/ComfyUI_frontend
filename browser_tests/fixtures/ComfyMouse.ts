@@ -1,7 +1,7 @@
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Mouse } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
 import type { Position } from '@e2e/fixtures/types'
 
 /**
@@ -29,7 +29,7 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
 
   readonly mouse: Mouse
 
-  constructor(readonly comfyPage: ComfyPage) {
+  constructor(readonly comfyPage: ComfyPageCore) {
     this.mouse = comfyPage.page.mouse
   }
 

@@ -1,3 +1,5 @@
+export type BillingSurface = 'cloud_app' | 'billing_web'
+
 export type BillingTierKey = 'free' | 'standard' | 'creator' | 'pro' | 'founder'
 
 export type BillingCycle = 'monthly' | 'yearly'

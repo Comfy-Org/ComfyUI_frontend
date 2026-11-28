@@ -9,8 +9,8 @@ import type {
   AgentConversation,
   zAgentConversationRequest
 } from '../browser_tests/fixtures/data/agent/agentConversation'
+import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/recordedGraphOperation'
 import {
-  OP_ENVELOPE_KEYS,
   assertOpsApply,
   mintedIds,
   zAgentConversation,

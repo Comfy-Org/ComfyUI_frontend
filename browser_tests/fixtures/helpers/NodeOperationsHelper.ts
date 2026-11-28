@@ -9,16 +9,27 @@ import type {
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import type { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import type { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
+import type { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import type { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
+type ComfyPageHost = ComfyPageCore & {
+  readonly canvasOps: CanvasHelper
+  readonly vueNodes: VueNodeHelpers
+  readonly settings: SettingsHelper
+  readonly command: CommandHelper
+} & ConstructorParameters<typeof NodeReference>[1]
+
 export class NodeOperationsHelper {
   public readonly promptDialogInput: Locator
 
-  constructor(private comfyPage: ComfyPage) {
+  constructor(private comfyPage: ComfyPageHost) {
     this.promptDialogInput = this.page.getByRole('dialog').getByRole('textbox')
   }
 

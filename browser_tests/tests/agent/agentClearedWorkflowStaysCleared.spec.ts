@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 
 import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
 
 const test = mergeTests(agentConversationTest, hostTelemetryFixture)

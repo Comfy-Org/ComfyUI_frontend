@@ -1,17 +1,25 @@
 import type { Locator } from '@playwright/test'
 
-import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { ComfyMenu } from '@e2e/fixtures/components/ComfyMenu'
+import type { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly selectionToolbox: Locator
+  readonly menu: ComfyMenu
+  readonly contextMenu: ContextMenu
+}
 
 export class SubgraphEditor {
   public readonly root: Locator
   public readonly promotionItems: Locator
   public readonly selectionToolboxButton: Locator
 
-  constructor(protected readonly comfyPage: ComfyPage) {
+  constructor(protected readonly comfyPage: ComfyPageHost) {
     this.root = this.comfyPage.menu.propertiesPanel.root
     this.promotionItems = this.root.getByTestId(
       TestIds.subgraphEditor.widgetItem

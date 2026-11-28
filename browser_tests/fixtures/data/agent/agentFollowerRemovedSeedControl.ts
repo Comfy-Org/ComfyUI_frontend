@@ -2,7 +2,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 
 export const packSeedNodeType = 'TestPackRemovedSeedControl'
 export const packSeedNodeId = 821

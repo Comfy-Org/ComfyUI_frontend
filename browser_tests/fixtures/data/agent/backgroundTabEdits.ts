@@ -1,6 +1,6 @@
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import {
   agentThreadSummary,
   agentUserTranscript

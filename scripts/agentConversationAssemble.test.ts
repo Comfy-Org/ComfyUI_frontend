@@ -12,7 +12,7 @@ import type {
 import { assembleConversation, zRowsDump } from './agentConversationAssemble'
 import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
 import type { GraphOperation } from '../src/workbench/extensions/agent/crdt/graphOperations'
-import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/agentConversation'
+import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/recordedGraphOperation'
 
 const THREAD = 'thread-1'
 const MESSAGE = 'message-1'

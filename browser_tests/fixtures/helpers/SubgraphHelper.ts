@@ -10,7 +10,14 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import type { ComfyMenu } from '@e2e/fixtures/components/ComfyMenu'
+import type { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import type { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import type { NodeOperationsHelper } from '@e2e/fixtures/helpers/NodeOperationsHelper'
+import type { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
 import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { Position, Size } from '@e2e/fixtures/types'
@@ -18,6 +25,19 @@ import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
 import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
 import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly vueNodes: VueNodeHelpers
+  readonly contextMenu: ContextMenu
+  readonly canvas: Locator
+  readonly canvasOps: CanvasHelper
+  readonly workflow: WorkflowHelper
+  readonly nodeOps: NodeOperationsHelper
+  readonly isVueNodes: boolean
+  readonly selectionToolbox: Locator
+  readonly menu: ComfyMenu
+  readonly command: CommandHelper
+} & ConstructorParameters<typeof SubgraphSlotReference>[2]
 
 interface SubgraphDefinitionRow {
   name: string
@@ -35,7 +55,7 @@ export class SubgraphHelper {
   public readonly addInputSocket: Locator
   public readonly addOutputSocket: Locator
 
-  constructor(private readonly comfyPage: ComfyPage) {
+  constructor(private readonly comfyPage: ComfyPageHost) {
     this.editor = new SubgraphEditor(comfyPage)
     const { subgraphIo, node } = TestIds
     this.inputPanel = comfyPage.page.getByTestId(subgraphIo.inputPanel)

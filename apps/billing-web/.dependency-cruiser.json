@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sverweij/dependency-cruiser/v18.5.0/src/schema/configuration.schema.json",
+  "forbidden": [
+    {
+      "name": "no-circular",
+      "severity": "error",
+      "from": {},
+      "to": { "circular": true }
+    }
+  ],
+  "options": {
+    "tsConfig": { "fileName": "tsconfig.json" },
+    "tsPreCompilationDeps": true,
+    "includeOnly": {
+      "path": "^(src|e2e|node_modules|\\.\\.)/|^[^/]+\\.ts$"
+    },
+    "doNotFollow": { "path": ["node_modules", "^\\.\\./"] },
+    "enhancedResolveOptions": {
+      "extensions": [".ts", ".mts", ".js", ".vue", ".json"],
+      "mainFields": ["module", "main", "types"],
+      "exportsFields": ["exports"],
+      "conditionNames": ["import", "default"]
+    }
+  }
+}

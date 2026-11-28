@@ -10,7 +10,10 @@
     {
       "name": "assets-core-is-independent-of-application-runtime",
       "severity": "error",
-      "from": { "path": "^packages/assets-core/src/" },
+      "from": {
+        "path": "^packages/assets-core/src/",
+        "pathNot": "\\.(test|spec|stories)\\.ts$|/__tests?__/|/test/"
+      },
       "to": {
         "path": "^(src/|packages/(api-client|account-core|account-ui|graph-model)/|node_modules/(vue|pinia|@vueuse)/|node_modules/\\.pnpm/[^/]+/node_modules/(vue|pinia|@vueuse)/)"
       }
@@ -18,49 +21,68 @@
     {
       "name": "agent-feedback-through-platform-support",
       "severity": "error",
-      "from": { "path": "^src/workbench/extensions/agent/" },
+      "from": {
+        "path": "^src/workbench/extensions/agent/",
+        "pathNot": "\\.(test|spec|stories)\\.ts$|/__tests?__/|/test/"
+      },
       "to": { "path": "^src/platform/surveys/openTypeformDialog\\.ts$" }
     },
     {
       "name": "workspace-does-not-own-billing-or-account-ui",
       "severity": "error",
-      "from": { "path": "^src/platform/workspace/" },
+      "from": {
+        "path": "^src/platform/workspace/",
+        "pathNot": "\\.(test|spec|stories)\\.ts$|/__tests?__/|/test/"
+      },
       "to": { "path": "^src/platform/(billing|account)/" }
     },
     {
       "name": "billing-uses-workspace-ports",
       "severity": "error",
-      "from": { "path": "^src/platform/billing/" },
+      "from": {
+        "path": "^src/platform/billing/",
+        "pathNot": "\\.(test|spec|stories)\\.ts$|/__tests?__/|/test/"
+      },
       "to": { "path": "^src/platform/workspace/(api|stores|composables)/" }
     },
     {
       "name": "billing-does-not-own-account-ui",
       "severity": "error",
-      "from": { "path": "^src/platform/billing/" },
+      "from": {
+        "path": "^src/platform/billing/",
+        "pathNot": "\\.(test|spec|stories)\\.ts$|/__tests?__/|/test/"
+      },
       "to": { "path": "^src/platform/account/" }
     },
     {
       "name": "shared-ingest-is-domain-independent",
       "severity": "error",
-      "from": { "path": "^src/platform/remote/ingest/" },
+      "from": {
+        "path": "^src/platform/remote/ingest/",
+        "pathNot": "\\.(test|spec|stories)\\.ts$|/__tests?__/|/test/"
+      },
       "to": { "path": "^src/platform/(workspace|billing|account)/" }
     }
   ],
   "options": {
     "tsConfig": { "fileName": "tsconfig.json" },
-    "tsPreCompilationDeps": "specify",
+    "tsPreCompilationDeps": true,
     "doNotFollow": { "path": "node_modules" },
+    "includeOnly": {
+      "path": "^(src|__mocks__|packages|scripts|tools|browser_tests|build|\\.storybook|\\.github/scripts|node_modules)/|^[^/]+\\.m?ts$"
+    },
     "exclude": {
       "path": [
-        "\\.(test|spec|stories)\\.ts$",
-        "/__tests?__/",
-        "/test/",
-        "^src/__ecs_matrix__/"
+        "^src/__ecs_matrix__/",
+        "^packages/[^/]+/(dist|dist-types)/",
+        "^(apps|packages|tools)/[^/]+/node_modules/"
       ]
     },
     "enhancedResolveOptions": {
       "extensions": [".ts", ".mts", ".js", ".vue", ".json"],
-      "mainFields": ["module", "main", "types"]
+      "mainFields": ["module", "main", "types"],
+      "exportsFields": ["exports"],
+      "conditionNames": ["import", "default"]
     }
   }
 }

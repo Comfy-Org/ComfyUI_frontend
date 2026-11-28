@@ -24,7 +24,7 @@ import type { ServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameC
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 

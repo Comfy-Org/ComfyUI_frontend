@@ -93,7 +93,7 @@ Guardrails: agents must use `comfyPage` fixture (not bare `page`), never add `wa
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
-- `pnpm deps:audit`: Reject production `src/` import cycles, including type-only imports
+- `pnpm deps:audit`: Reject import cycles in every source, test, and script file, including type-only imports
 - `pnpm audit:inherited-classes [--write]`: Report text color, size, weight and family classes that repeat a value every render context already inherits, following slots and component usages (manual, not a gate)
 - `pnpm storybook`: Start Storybook development server
 

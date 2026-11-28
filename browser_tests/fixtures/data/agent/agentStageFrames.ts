@@ -1,6 +1,6 @@
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 
 export const STAGE_FRAMES_WORKFLOW_ID = 'b3e7d9c1-0000-4000-8000-000000000947'
 export const STAGE_FRAMES_MESSAGE_ID = 'b3e7d9c1-0000-4000-8000-000000000948'

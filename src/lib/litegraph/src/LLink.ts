@@ -50,13 +50,13 @@ import type {
 } from '@comfyorg/graph-model/linkNetwork'
 import type {
   Serialisable,
-  SerialisableLLink,
-  SerialisedLLinkArray
+  SerialisableLLink
 } from '@comfyorg/graph-model/serialisation'
+import type { SerialisedLLinkArray } from '@comfyorg/graph-model/serialisedLinkTuple'
 import { toRaw } from 'vue'
 
 export type { LinkId } from '@comfyorg/graph-model/linkId'
-export type { SerialisedLLinkArray } from '@comfyorg/graph-model/serialisation'
+export type { SerialisedLLinkArray } from '@comfyorg/graph-model/serialisedLinkTuple'
 
 const linkByTopology = new WeakMap<LinkTopology, LLink>()
 

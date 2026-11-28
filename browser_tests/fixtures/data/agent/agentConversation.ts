@@ -1,13 +1,12 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-import { FROZEN_OPS } from '@comfyorg/comfy-multi-player'
-import type { OpBase } from '@comfyorg/comfy-multi-player'
 import { z } from 'zod'
 
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { zGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 
 export const mintedIds: { thread_id: true; message_id: true } = {
   thread_id: true,
@@ -43,30 +42,6 @@ export const zRecordedWsEvent = z.discriminatedUnion('type', [
   })
 ])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
-
-// GraphOperation is the wire op minus this envelope, which the replay remints
-// through mintWireOps. Exhaustive by construction: a new OpBase field fails to
-// typecheck here rather than slipping into a recording.
-const OP_ENVELOPE: Record<keyof OpBase, true> = {
-  op_id: true,
-  actor: true,
-  base_version: true,
-  stamp: true
-}
-export const OP_ENVELOPE_KEYS = Object.keys(OP_ENVELOPE)
-
-// Only the vocabulary and the absence of the envelope are checked here; a
-// recorded op stays structural. Nothing in this fixture parses the semantic
-// operation contract, which the package owns; assertOpsApply below applies
-// the ops to a document and reports what that application shows.
-const zGraphOperation = z
-  .object({ op: z.enum(FROZEN_OPS) })
-  .passthrough()
-  .refine(
-    (op) => OP_ENVELOPE_KEYS.every((key) => !(key in op)),
-    'a recorded op carries the semantic operation only; the wire envelope is minted at replay'
-  )
-export type RecordedGraphOperation = z.infer<typeof zGraphOperation>
 
 // WorkflowJSON and WorkflowNode declare an index signature, so the schema
 // validates the guaranteed fields and keeps the rest.

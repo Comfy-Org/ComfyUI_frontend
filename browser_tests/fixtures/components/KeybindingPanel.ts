@@ -2,7 +2,12 @@ import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly contextMenu: ContextMenu
+}
 
 export class KeybindingPanel {
   public readonly editDialog: Locator
@@ -17,7 +22,7 @@ export class KeybindingPanel {
 
   constructor(
     public readonly page: Page,
-    private readonly comfyPage: ComfyPage
+    private readonly comfyPage: ComfyPageHost
   ) {
     this.editDialog = this.page.getByRole('dialog', {
       name: /Modify keybinding/i

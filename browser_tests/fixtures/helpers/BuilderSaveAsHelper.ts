@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
 
 export class BuilderSaveAsHelper {
   /** The save-as dialog (scoped by its stable dialog key). */
@@ -20,7 +20,7 @@ export class BuilderSaveAsHelper {
   public readonly overwriteDialog: Locator
   public readonly overwriteButton: Locator
 
-  constructor(private readonly comfyPage: ComfyPage) {
+  constructor(private readonly comfyPage: ComfyPageCore) {
     this.dialog = this.page.locator('[data-dialog-key="builder-save"]')
     this.successDialog = this.page.locator(
       '[aria-labelledby="builder-save-success"]'

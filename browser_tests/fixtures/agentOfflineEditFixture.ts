@@ -18,7 +18,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import {
   AGENT_NODE_IDS,
   emptySeed

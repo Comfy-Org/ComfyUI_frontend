@@ -29,7 +29,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { useBillingEntry } from '@/entry/billingEntry'
-import type { BillingWebSessionPhase } from '@/router'
+import type { BillingWebSessionPhase } from '@/session/sessionPhase'
 import { addRumAction, clearRumUser, setRumUser } from '@/telemetry/rum'
 
 export type SessionIdentity =

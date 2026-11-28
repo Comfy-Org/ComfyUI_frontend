@@ -1,7 +1,7 @@
 import { createMemoryHistory } from 'vue-router'
 
 import { createBillingRouter } from '@/router'
-import type { BillingWebSessionPhase } from '@/router'
+import type { BillingWebSessionPhase } from '@/session/sessionPhase'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'

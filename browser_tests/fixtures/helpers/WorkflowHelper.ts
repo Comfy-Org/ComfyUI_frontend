@@ -16,8 +16,29 @@ import {
   zNodeId
 } from '@comfyorg/graph-model/workflowSchema'
 import type { WorkspaceStore } from '@e2e/types/globals'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPageCore } from '@e2e/fixtures/comfyPageCore'
+import type { APIRequestContext, Locator } from '@playwright/test'
+import type { ComfyMenu } from '@e2e/fixtures/components/ComfyMenu'
+import type { CommandHelper } from '@e2e/fixtures/helpers/CommandHelper'
+import type { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
+import type { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
+import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
+import type { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+
+type ComfyPageHost = ComfyPageCore & {
+  readonly vueNodes: VueNodeHelpers
+  readonly menu: ComfyMenu
+  readonly workflowUploadInput: Locator
+  readonly url: string
+  readonly toast: ToastHelper
+  readonly request: APIRequestContext
+  readonly id: string
+  readonly contextMenu: ContextMenu
+  readonly confirmDialog: ConfirmDialog
+  readonly command: CommandHelper
+  waitForAppReady(): Promise<void>
+}
 
 type FolderStructure = {
   [key: string]: FolderStructure | string
@@ -62,7 +83,7 @@ function workflowWithOverrides(
 }
 
 export class WorkflowHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  constructor(private readonly comfyPage: ComfyPageHost) {}
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
     const result: FolderStructure = {}

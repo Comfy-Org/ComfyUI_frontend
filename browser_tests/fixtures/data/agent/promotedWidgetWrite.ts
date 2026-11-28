@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 
 export const PROMOTED_WIDGET_SUBGRAPH_TYPE =
   'f2fdebf6-dfaf-43b6-9eb2-7f70613cfdc1'

@@ -7,7 +7,7 @@ import {
   ADDITIVE_READINESS_WIDGET
 } from '@e2e/fixtures/data/agent/agentCanvasAdditive'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'

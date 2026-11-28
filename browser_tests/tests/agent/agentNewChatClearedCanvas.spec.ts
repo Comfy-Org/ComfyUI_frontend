@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentNewChatTest as test } from '@e2e/fixtures/agentNewChatFixture'
-import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/recordedGraphOperation'
 
 // One turn in which the agent adds three nodes to a seeded graph, so the chat
 // ends bound to a workflow document that holds nodes.
