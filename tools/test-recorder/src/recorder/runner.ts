@@ -7,6 +7,7 @@ import {
   cleanupRecordingTemplate,
   ensureStorageStateDir,
   generateRecordingTemplate,
+  pruneStaleStorageStates,
   recordedCodePath,
   recordingTarget,
   removeLegacyCustomStorageState,
@@ -98,6 +99,7 @@ export async function runRecording(
     if (options.distribution?.id === 'custom') {
       removeLegacyCustomStorageState(storageStateFile)
     }
+    pruneStaleStorageStates(storageStateFile)
     ensureStorageStateDir(storageStateFile)
   }
 

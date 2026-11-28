@@ -1,9 +1,13 @@
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
+  utimesSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -15,6 +19,7 @@ import {
   cleanupRecordedCode,
   cleanupRecordingTemplate,
   generateRecordingTemplate,
+  pruneStaleStorageStates,
   recordedCodePath,
   recordingTarget,
   removeLegacyCustomStorageState,
@@ -357,6 +362,122 @@ describe('recording template', () => {
         )
       ).not.toThrow()
       expect(existsSync(legacyStateFile)).toBe(true)
+    })
+  })
+
+  describe('pruneStaleStorageStates', () => {
+    let stateDir: string
+
+    beforeEach(() => {
+      stateDir = mkdtempSync(join(browserTestsDir, 'storage-state-'))
+    })
+
+    afterEach(() => {
+      rmSync(stateDir, { recursive: true, force: true })
+    })
+
+    function seed(name: string, ageDays: number): string {
+      const path = join(stateDir, name)
+      writeFileSync(path, '{}')
+      const past = new Date(Date.now() - ageDays * 24 * 60 * 60 * 1000)
+      utimesSync(path, past, past)
+      return path
+    }
+
+    function seedPack(count: number, firstAgeDays: number): void {
+      for (let i = 0; i < count; i++) {
+        seed(
+          `storage-state.custom-${String(i).padStart(2, '0')}.json`,
+          firstAgeDays + i
+        )
+      }
+    }
+
+    it('keeps the active file even when it is the oldest', () => {
+      const active = seed('storage-state.cloud.json', 90)
+      seed('storage-state.custom-abc.json', 1)
+
+      pruneStaleStorageStates(active)
+
+      expect(existsSync(active)).toBe(true)
+    })
+
+    it('drops files older than the retention window', () => {
+      const stale = seed('storage-state.custom-abc.json', 31)
+      const fresh = seed('storage-state.cloud.json', 5)
+
+      pruneStaleStorageStates(fresh)
+
+      expect(existsSync(stale)).toBe(false)
+      expect(existsSync(fresh)).toBe(true)
+    })
+
+    it('keeps the 8 newest non-active files plus the active one over the cap', () => {
+      const active = seed('storage-state.cloud.json', 1)
+      seedPack(9, 2)
+
+      pruneStaleStorageStates(active)
+
+      const kept = readdirSync(stateDir).filter((name) =>
+        name.startsWith('storage-state.')
+      )
+      expect(kept).toHaveLength(9)
+      expect(kept).toContain('storage-state.cloud.json')
+      expect(kept).not.toContain('storage-state.custom-08.json')
+    })
+
+    it('skips a candidate it cannot remove and keeps pruning the rest', () => {
+      const stale = seed('storage-state.custom-abc.json', 40)
+      const locked = join(stateDir, 'storage-state.custom-locked.json')
+      mkdirSync(locked)
+      utimesSync(
+        locked,
+        new Date(Date.now() - 39 * 86400000),
+        new Date(Date.now() - 39 * 86400000)
+      )
+      const active = seed('storage-state.cloud.json', 1)
+
+      expect(() => pruneStaleStorageStates(active)).not.toThrow()
+
+      expect(existsSync(stale)).toBe(false)
+      expect(existsSync(locked)).toBe(true)
+      expect(existsSync(active)).toBe(true)
+    })
+
+    it('skips a candidate whose metadata cannot be read and keeps pruning the rest', (ctx) => {
+      const vanished = join(stateDir, 'storage-state.custom-vanished.json')
+      const stale = seed('storage-state.custom-abc.json', 40)
+      try {
+        symlinkSync(join(stateDir, 'removed-by-someone-else.json'), vanished)
+      } catch {
+        ctx.skip()
+        return
+      }
+      const active = seed('storage-state.cloud.json', 1)
+
+      expect(() => pruneStaleStorageStates(active)).not.toThrow()
+
+      expect(lstatSync(vanished).isSymbolicLink()).toBe(true)
+      expect(existsSync(stale)).toBe(false)
+      expect(existsSync(active)).toBe(true)
+    })
+
+    it('leaves files that do not match the storage-state pattern alone', () => {
+      const other = join(stateDir, 'other.json')
+      writeFileSync(other, '{}')
+      const fresh = seed('storage-state.cloud.json', 1)
+
+      pruneStaleStorageStates(fresh)
+
+      expect(existsSync(other)).toBe(true)
+    })
+
+    it('does not throw when the directory does not exist', () => {
+      expect(() =>
+        pruneStaleStorageStates(
+          join(stateDir, 'absent', 'storage-state.cloud.json')
+        )
+      ).not.toThrow()
     })
   })
 })
