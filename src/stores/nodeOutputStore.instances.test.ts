@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -110,6 +111,22 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     ])
   })
 
+  it('shows a preview set from the shared widget on every instance', () => {
+    const { locator, firstRun, secondRun } = arrangeTwoInstances()
+    const store = useNodeOutputStore()
+    store.setNodePreviewsByExecutionId(firstRun, ['blob:hostA'])
+    store.setNodePreviewsByExecutionId(secondRun, ['blob:hostB'])
+
+    store.setNodePreviewsByLocatorId(locator, ['blob:glsl'])
+
+    expect(store.getNodePreviewImagesByExecutionId(firstRun)).toEqual([
+      'blob:glsl'
+    ])
+    expect(store.getNodePreviewImagesByExecutionId(secondRun)).toEqual([
+      'blob:glsl'
+    ])
+  })
+
   it.for([{ merge: false }, { merge: true }])(
     'keeps the shared input preview once when an instance first runs without images (%o)',
     (options) => {
@@ -158,8 +175,46 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     expect(store.getNodePreviewImagesByExecutionId(firstRun)).toBeUndefined()
   })
 
-  it('keeps instances apart across a snapshot and restore', () => {
+  it('keeps each instance live preview across a workflow tab round trip', () => {
     const { firstRun, secondRun } = arrangeTwoInstances()
+    Object.assign(useWorkflowStore(), { openWorkflows: [{ path: 'a.json' }] })
+    const store = useNodeOutputStore()
+    store.setNodePreviewsByExecutionId(firstRun, ['blob:roundTripA'])
+    store.setNodePreviewsByExecutionId(secondRun, ['blob:roundTripB'])
+
+    store.stashPreviewsForWorkflow('a.json')
+    store.restorePreviewsForWorkflow('a.json')
+
+    expect(store.getNodePreviewImagesByExecutionId(firstRun)).toEqual([
+      'blob:roundTripA'
+    ])
+    expect(store.getNodePreviewImagesByExecutionId(secondRun)).toEqual([
+      'blob:roundTripB'
+    ])
+  })
+
+  it('keeps the restored workflow instance preview when a revoke scheduled before the switch fires', () => {
+    const { firstRun } = arrangeTwoInstances()
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [{ path: 'a.json' }, { path: 'b.json' }]
+    })
+    const store = useNodeOutputStore()
+    store.setNodePreviewsByExecutionId(firstRun, ['blob:workflowB'])
+    store.stashPreviewsForWorkflow('b.json')
+    store.setNodePreviewsByExecutionId(firstRun, ['blob:workflowA'])
+
+    store.revokePreviewsByExecutionId(firstRun)
+    store.stashPreviewsForWorkflow('a.json')
+    store.restorePreviewsForWorkflow('b.json')
+    vi.runAllTimers()
+
+    expect(store.getNodePreviewImagesByExecutionId(firstRun)).toEqual([
+      'blob:workflowB'
+    ])
+  })
+
+  it('keeps instances apart across a snapshot and restore', () => {
+    const { locator, firstRun, secondRun } = arrangeTwoInstances()
     const store = useNodeOutputStore()
     store.setNodeOutputsByExecutionId(firstRun, images('hostA.png'))
     store.setNodeOutputsByExecutionId(secondRun, images('hostB.png'))
@@ -174,6 +229,7 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     expect(filenames(store.getNodeOutputByExecutionId(secondRun))).toEqual([
       'hostB.png'
     ])
+    expect(Object.keys(app.nodeOutputs)).toEqual([locator])
   })
 
   it('shows nothing for the remaining instance after a snapshot of a removed instance output', () => {
@@ -250,6 +306,17 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     const snapshot = store.snapshotOutputs()
     assert.exists(snapshot.instances[locator]?.[firstRun])
     expect(snapshot.instances[locator]?.[secondRun]).toBeUndefined()
+  })
+
+  it('shows no live preview on a removed instance brought back', () => {
+    const { rootGraph, second, secondRun } = arrangeTwoInstances()
+    const store = useNodeOutputStore()
+    store.setNodePreviewsByExecutionId(secondRun, ['blob:removedB'])
+
+    rootGraph.remove(second)
+    rootGraph.add(second)
+
+    expect(store.getNodePreviewImagesByExecutionId(secondRun)).toBeUndefined()
   })
 
   it('prunes the entries of a subgraph node removed inside a definition', () => {
