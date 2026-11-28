@@ -1,7 +1,10 @@
 import { isEqual } from 'es-toolkit'
 
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { canCaptureCanvas } from '@/platform/workflow/core/canvasTrackerOwnership'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -10,16 +13,24 @@ import { useApp } from '@/scripts/appInstance'
 
 import { isStorageAvailable, readOpenPaths } from './base/storageIO'
 import { getWorkspaceId } from './base/storageKeys'
+import { withWorkflowViewState } from './base/workflowViewState'
 import { useWorkflowTabState } from './composables/useWorkflowTabState'
 import { useWorkflowDraftStoreV2 } from './stores/workflowDraftStoreV2'
 
 export function checkpointWorkflowRecovery(): boolean {
-  if (!useSettingStore().get('Comfy.Workflow.Persist') || !isStorageAvailable())
+  const settings = useSettingStore()
+  if (
+    !settings.get('Comfy.Workflow.Persist') ||
+    !isStorageAvailable() ||
+    safeLocalStorage.backend !== 'localStorage'
+  )
     return false
 
   const workflowStore = useWorkflowStore()
-  const active = workflowStore.activeWorkflow
-  if (!active) return false
+  const active: ComfyWorkflow | null = workflowStore.activeWorkflow
+  const activeTracker = active?.changeTracker
+  if (!active || !activeTracker || !canCaptureCanvas(activeTracker))
+    return false
 
   const paths = workflowStore.openWorkflows
     .map((workflow) => workflow.path)
@@ -34,30 +45,49 @@ export function checkpointWorkflowRecovery(): boolean {
     return false
 
   const draftStore = useWorkflowDraftStoreV2()
+  if (draftStore.isPersistencePaused()) return false
   const tabState = useWorkflowTabState()
+  const restoreView = {
+    enabled: settings.get('Comfy.EnableWorkflowViewRestore')
+  }
 
   try {
+    const app = useApp()
+    if (active.graph && active.graph !== app.rootGraph) return false
     const snapshots = workflowStore.modifiedWorkflows.map((workflow) => {
-      const graph =
-        workflow.path === active.path && !active.changeTracker.hasPreview
-          ? useApp().rootGraph.serialize()
-          : workflow.activeState
-      return { workflow, data: graph ? JSON.stringify(graph) : null }
+      const isActive = workflow.path === active.path
+      const captureLive = isActive && !activeTracker.hasPreview
+      const graph = captureLive
+        ? (app.rootGraph.serialize() as unknown as ComfyWorkflowJSON)
+        : workflow.activeState
+      const view = captureLive
+        ? active.graph && app.hasPendingCamera(active.graph)
+          ? undefined
+          : app.canvasOrUndefined?.ds
+        : workflow.changeTracker?.ds
+      return {
+        workflow,
+        data: graph
+          ? JSON.stringify(withWorkflowViewState(graph, view, restoreView))
+          : null
+      }
     })
     const current = snapshots.find(
       ({ workflow }) => workflow.path === active.path
     )
     if (
-      current?.data &&
-      !draftStore.saveDraft(
-        active.path,
-        current.data,
-        {
-          name: active.key,
-          isTemporary: active.isTemporary
-        },
-        { evict: false, minUpdatedAt: active.lastModified }
-      )
+      current &&
+      (current.data === null ||
+        !draftStore.saveDraft(
+          active.path,
+          current.data,
+          {
+            name: active.key,
+            isTemporary: active.isTemporary,
+            isModified: active.isModified
+          },
+          { evict: false, minUpdatedAt: active.lastModified }
+        ))
     )
       return false
 
@@ -79,6 +109,7 @@ export function checkpointWorkflowRecovery(): boolean {
         draft?.data === data &&
         draft.name === workflow.key &&
         draft.isTemporary === workflow.isTemporary &&
+        draft.isModified !== false &&
         draft.updatedAt >= workflow.lastModified
       )
     })

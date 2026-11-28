@@ -6,6 +6,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { withGraphIntentSourceForRootGraph } from '@/lib/litegraph/src/graphIntents'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
+import { getValidWorkflowViewState } from '@/platform/workflow/persistence/base/workflowViewState'
 import type { UserFileSaveOptions } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
@@ -109,6 +110,7 @@ export interface ChangeTrackerConstructor {
 interface WorkflowDraft {
   data: string
   updatedAt: number
+  isModified?: boolean
 }
 
 /**
@@ -243,18 +245,47 @@ export function reportWorkflowStateAnomaly(
  * The saved draft to overlay on a freshly loaded workflow, if there is a usable
  * one. A stale or unparseable draft is removed.
  */
+interface DraftViewStateOverlay {
+  state: ComfyWorkflowJSON | null
+  content: string | null
+}
+
+function applySavedViewStateFallback(
+  initialState: ComfyWorkflowJSON,
+  draftState: ComfyWorkflowJSON | null,
+  draftContent: string | null
+): DraftViewStateOverlay {
+  if (!Array.isArray(draftState?.nodes)) {
+    return { state: draftState, content: draftContent }
+  }
+  const savedViewState = getValidWorkflowViewState(initialState.extra?.ds)
+  const draftViewState = getValidWorkflowViewState(draftState.extra?.ds)
+  if (draftViewState || !savedViewState) {
+    return { state: draftState, content: draftContent }
+  }
+  const state = {
+    ...draftState,
+    extra: { ...draftState.extra, ds: savedViewState }
+  }
+  return { state, content: JSON.stringify(state) }
+}
+
 function readUsableDraft(
   runtime: WorkflowRuntime,
   workflow: ComfyWorkflow
-): { state: ComfyWorkflowJSON; content: string } | null {
+): { state: ComfyWorkflowJSON; content: string; isModified?: boolean } | null {
   const draft = runtime.getDraft(workflow.path)
   if (!draft) return null
-  if (draft.updatedAt < workflow.lastModified) {
+  if (!workflow.isTemporary && draft.updatedAt < workflow.lastModified) {
     runtime.removeDraft(workflow.path)
     return null
   }
   try {
-    return { state: JSON.parse(draft.data), content: draft.data }
+    return {
+      state: JSON.parse(draft.data),
+      content: draft.data,
+      isModified: draft.isModified
+    }
   } catch (err) {
     console.warn('Failed to parse workflow draft, clearing it', err)
     runtime.removeDraft(workflow.path)
@@ -474,21 +505,28 @@ export class ComfyWorkflow extends UserFile {
       await super.load({ force })
 
       const initialState = parseStoredWorkflow(this)
+      const overlay = applySavedViewStateFallback(
+        initialState,
+        draft?.state ?? null,
+        draft?.content ?? null
+      )
       const previousTracker = this.changeTracker
       this.changeTracker = markRaw(
         runtime.createChangeTracker(this, initialState)
       )
       if (previousTracker && isCanvasOwner(previousTracker))
         bindCanvasTracker(this.changeTracker)
-      if (draft?.state && draft.content) {
-        const state = withTabId(draft.state, initialState)
-        const draftId: unknown = draft.state.id
-        if (state !== draft.state && typeof draftId === 'string')
+      if (overlay.state && overlay.content) {
+        const state = withTabId(overlay.state, initialState)
+        const draftId: unknown = overlay.state.id
+        if (state !== overlay.state && typeof draftId === 'string')
           this.legacyId ??= getLegacyWorkflowId(draftId)
         this.changeTracker.activeState = state
         this.content =
-          state === draft.state ? draft.content : JSON.stringify(state)
-        this._isModified = !draftMatchesSavedFile(runtime, initialState, state)
+          state === overlay.state ? overlay.content : JSON.stringify(state)
+        this._isModified =
+          draft?.isModified ??
+          !draftMatchesSavedFile(runtime, initialState, state)
         runtime.markDraftUsed(this.path)
       }
       return this as this & LoadedComfyWorkflow

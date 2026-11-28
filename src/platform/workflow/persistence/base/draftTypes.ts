@@ -17,6 +17,8 @@ export interface DraftEntryMeta {
   name: string
   /** Whether this is an unsaved temporary workflow */
   isTemporary: boolean
+  /** Legacy modification metadata; new writes store it with the payload. */
+  isModified?: boolean
   /**
    * Last metadata update timestamp.
    * Use DraftPayloadV2.updatedAt for content freshness checks.
@@ -52,6 +54,8 @@ export interface DraftPayloadV2 {
   /** Last workflow content write timestamp. */
   updatedAt: number
   lineage?: DraftLineage
+  /** Whether this exact graph content differs from the backing file. */
+  isModified?: boolean
 }
 
 export interface DraftLineage {

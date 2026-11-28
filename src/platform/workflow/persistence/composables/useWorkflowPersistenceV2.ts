@@ -22,6 +22,8 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { isCloud } from '@/platform/distribution/types'
 import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { canCaptureCanvas } from '@/platform/workflow/core/canvasTrackerOwnership'
+import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
 import { useLinkedWorkflowUrlLoader } from '@/platform/workflow/management/composables/useLinkedWorkflowUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -43,12 +45,19 @@ import {
 } from '@/platform/workflow/persistence/base/storageIO'
 import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import {
+  withWorkflowViewState,
+  workflowViewStateEqual
+} from '@/platform/workflow/persistence/base/workflowViewState'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useApp } from '@/scripts/appInstance'
+import { isValidUuid } from '@/utils/formatUtil'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
 
@@ -56,6 +65,22 @@ async function clearUnscopedDraftsAfterNewUserCheck(): Promise<void> {
   const newUserService = useNewUserService()
   await until(() => newUserService.isNewUser() !== null).toBe(true)
   clearUnscopedDraftStorage()
+}
+
+async function validateTemporaryDraftGraph(data: unknown) {
+  if (
+    typeof data !== 'object' ||
+    data === null ||
+    !('id' in data) ||
+    isValidUuid(data.id)
+  ) {
+    return validateComfyWorkflow(data)
+  }
+
+  const { id, ...graph } = data
+  const workflow = await validateComfyWorkflow(graph)
+  const legacyId = typeof id === 'string' ? getLegacyWorkflowId(id) : undefined
+  return workflow && legacyId ? { ...workflow, id: legacyId } : workflow
 }
 
 export function useWorkflowPersistenceV2() {
@@ -104,91 +129,182 @@ export function useWorkflowPersistenceV2() {
     settingStore.get('Comfy.Workflow.Persist')
   )
 
-  const lastSavedJsonByPath = ref<Record<string, string>>({})
+  const lastSavedJsonByPath = ref<
+    Record<
+      string,
+      {
+        instanceId: string
+        lastModified: number
+        isModified: boolean
+        json: string
+      }
+    >
+  >({})
   const persistenceRetryAfterByPath = new Map<string, number>()
-  const reportedPersistenceFailurePaths = new Set<string>()
+  let persistenceScope = draftStore.getScope()
+
+  function clearPersistenceTracking(): void {
+    lastSavedJsonByPath.value = {}
+    persistenceRetryAfterByPath.clear()
+  }
 
   watch(workflowPersistenceEnabled, (enabled) => {
     if (!enabled) {
       draftStore.reset()
-      lastSavedJsonByPath.value = {}
-      persistenceRetryAfterByPath.clear()
-      reportedPersistenceFailurePaths.clear()
+      clearPersistenceTracking()
     }
   })
 
-  function shouldBackOffPersistence(workflowPath: string): boolean {
-    const retryAfter = persistenceRetryAfterByPath.get(workflowPath)
-    return retryAfter !== undefined && Date.now() < retryAfter
+  const getCurrentWorkflowDraft = (
+    activeWorkflow: ComfyWorkflow
+  ): {
+    state: ComfyWorkflowJSON
+    json: string
+  } | null => {
+    const comfyApp = useApp()
+    const hasPreview = activeWorkflow.changeTracker?.hasPreview
+    const graphData = hasPreview
+      ? activeWorkflow.activeState
+      : (comfyApp.rootGraph.serialize() as unknown as ComfyWorkflowJSON)
+    if (!graphData) return null
+    const graph = activeWorkflow.graph
+    const view =
+      hasPreview
+        ? activeWorkflow.changeTracker?.ds
+        : graph && comfyApp.hasPendingCamera(graph)
+          ? undefined
+          : comfyApp.canvas.ds
+    const state = withWorkflowViewState(graphData, view, {
+      enabled: settingStore.get('Comfy.EnableWorkflowViewRestore')
+    })
+    return { state, json: JSON.stringify(state) }
   }
 
-  function recordPersistenceFailure(workflowPath: string): void {
-    persistenceRetryAfterByPath.set(
-      workflowPath,
-      Date.now() + PERSIST_RETRY_BACKOFF_MS
-    )
-    if (reportedPersistenceFailurePaths.has(workflowPath)) return
+  const saveWorkflowDraft = (
+    activeWorkflow: ComfyWorkflow,
+    workflowJson: string,
+    options: { evict: boolean }
+  ): boolean => {
+    try {
+      return draftStore.saveDraft(
+        activeWorkflow.path,
+        workflowJson,
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary,
+          isModified: activeWorkflow.isModified
+        },
+        { ...options, minUpdatedAt: activeWorkflow.lastModified }
+      )
+    } catch (error) {
+      console.error('Failed to persist workflow draft', error)
+      return false
+    }
+  }
 
-    reportedPersistenceFailurePaths.add(workflowPath)
+  const notifyDraftSaveFailure = () => {
+    if (!draftStore.shouldNotifySaveFailure()) return
     showDraftSaveFailedToast()
   }
 
-  function clearPersistenceFailure(workflowPath: string): void {
-    persistenceRetryAfterByPath.delete(workflowPath)
-    reportedPersistenceFailurePaths.delete(workflowPath)
-  }
-
-  const persistCurrentWorkflow = () => {
-    if (!workflowPersistenceEnabled.value) return
-    if (isWorkflowStorageTransitioning()) return
-    const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow) return
-
-    const workflowPath = activeWorkflow.path
-    if (shouldBackOffPersistence(workflowPath)) return
-
-    const graph = activeWorkflow.changeTracker.hasPreview
-      ? activeWorkflow.activeState
-      : useApp().rootGraph.serialize()
-    const workflowJson = JSON.stringify(graph)
-
-    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
-
-    const saved = draftStore.saveDraft(
-      workflowPath,
-      workflowJson,
-      { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary },
-      { minUpdatedAt: activeWorkflow.lastModified }
+  const shouldRemoveSavedDraft = (
+    activeWorkflow: ComfyWorkflow,
+    draftState: ComfyWorkflowJSON
+  ): boolean =>
+    !activeWorkflow.isTemporary &&
+    !activeWorkflow.isModified &&
+    workflowViewStateEqual(
+      activeWorkflow.initialState?.extra?.ds,
+      draftState.extra?.ds
     )
 
-    if (!saved) {
-      recordPersistenceFailure(workflowPath)
+  const persistCurrentWorkflow = ({ evict = true, force = false } = {}) => {
+    if (draftStore.isPersistencePaused() || !workflowPersistenceEnabled.value)
+      return
+    if (isWorkflowStorageTransitioning()) return
+    const activeWorkflow = workflowStore.activeWorkflow
+    const tracker = activeWorkflow?.changeTracker
+    if (!activeWorkflow || !tracker || !canCaptureCanvas(tracker)) return
+
+    if (activeWorkflow.graph && activeWorkflow.graph !== useApp().rootGraph)
+      return
+
+    const scope = draftStore.getScope()
+    if (scope !== persistenceScope) {
+      clearPersistenceTracking()
+      persistenceScope = scope
+    }
+    const workflowPath = activeWorkflow.path
+    const retryAfter = persistenceRetryAfterByPath.get(workflowPath)
+    if (!force && retryAfter !== undefined && Date.now() < retryAfter) return
+
+    const draft = getCurrentWorkflowDraft(activeWorkflow)
+    if (!draft) return
+    const { state: draftState, json: workflowJson } = draft
+    const saveKey = {
+      instanceId: activeWorkflow.instanceId,
+      lastModified: activeWorkflow.lastModified,
+      isModified: activeWorkflow.isModified,
+      json: workflowJson
+    }
+    const previous = lastSavedJsonByPath.value[workflowPath]
+
+    // Include modification metadata and workflow identity in the skip key.
+    // Explicit checkpoint flushes verify storage even after a previous save.
+    if (
+      !force &&
+      previous?.instanceId === saveKey.instanceId &&
+      previous.lastModified === saveKey.lastModified &&
+      previous.isModified === saveKey.isModified &&
+      previous.json === saveKey.json
+    )
+      return
+
+    if (!saveWorkflowDraft(activeWorkflow, workflowJson, { evict })) {
+      persistenceRetryAfterByPath.set(
+        workflowPath,
+        Date.now() + PERSIST_RETRY_BACKOFF_MS
+      )
+      notifyDraftSaveFailure()
       return
     }
 
-    clearPersistenceFailure(workflowPath)
+    persistenceRetryAfterByPath.delete(workflowPath)
+    draftStore.markSaveSucceeded()
+
+    // Update session pointer
     tabState.setActivePath(workflowPath)
 
-    lastSavedJsonByPath.value[workflowPath] = workflowJson
-
-    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
-      draftStore.removeDraft(workflowPath)
+    if (shouldRemoveSavedDraft(activeWorkflow, draftState)) {
+      if (!draftStore.removeDraft(workflowPath)) {
+        notifyDraftSaveFailure()
+        return
+      }
     }
+    lastSavedJsonByPath.value[workflowPath] = saveKey
   }
 
-  // Debounced version for graphChanged events
-  const debouncedPersist = debounce(persistCurrentWorkflow, PERSIST_DEBOUNCE_MS)
+  const debouncedPersist = debounce(
+    () => persistCurrentWorkflow(),
+    PERSIST_DEBOUNCE_MS
+  )
 
   function flushPendingPersistence() {
-    debouncedPersist.flush()
+    debouncedPersist.cancel()
+    persistCurrentWorkflow({ force: true })
+  }
+
+  function persistOnPageHide() {
+    debouncedPersist.cancel()
+    persistCurrentWorkflow({ evict: false, force: true })
   }
 
   const unregisterPersistence = registerWorkflowPersistence({
     flush: flushPendingPersistence,
     cancel: debouncedPersist.cancel,
-    resumeAfterAbort: persistCurrentWorkflow
+    resumeAfterAbort: () => persistCurrentWorkflow({ force: true })
   })
-  window.addEventListener('pagehide', flushPendingPersistence)
+  window.addEventListener('pagehide', persistOnPageHide)
 
   const isWorkspaceInitConcluded = () =>
     (teamWorkspaceStore.initState === 'ready' &&
@@ -229,9 +345,12 @@ export function useWorkflowPersistenceV2() {
     if (!isCloud) return
     authTransitionVersion++
     resolvedAuthSubject = null
-    draftStore.setAuthSubject(null)
-    stopPendingWorkspaceReadinessWatcher()
     fenceWorkflowStorageForAuthState()
+    draftStore.reset()
+    draftStore.setAuthSubject(null)
+    clearPersistenceTracking()
+    stopPendingWorkspaceReadinessWatcher()
+    debouncedPersist.cancel()
     clearAllWorkspaceStorage()
   })
   onUserResolved((user) => {
@@ -250,6 +369,9 @@ export function useWorkflowPersistenceV2() {
     const transitionVersion = ++authTransitionVersion
 
     const accountSwitchFence = prepareWorkflowLogoutTransition()
+    debouncedPersist.cancel()
+    draftStore.reset()
+    clearPersistenceTracking()
     clearWorkflowRestoreState()
     authTransition = authTransition
       .then(async () => {
@@ -263,9 +385,12 @@ export function useWorkflowPersistenceV2() {
           if (transitionVersion !== authTransitionVersion) return
           accountSwitchFence.release()
           releaseWorkflowStorageAuthFence()
-          await draftStore.loadPersistedWorkflow({
-            fallbackToLatestDraft: true
-          })
+          await runWithPersistencePaused(() =>
+            draftStore.loadPersistedWorkflow({
+              fallbackToLatestDraft: true,
+              isCurrent: () => transitionVersion === authTransitionVersion
+            })
+          )
         } catch (error) {
           if (transitionVersion === authTransitionVersion) {
             draftStore.setAuthSubject(user.id)
@@ -280,6 +405,20 @@ export function useWorkflowPersistenceV2() {
         console.error('Error switching workflow persistence identity', error)
       })
   })
+
+  const runWithPersistencePaused = async <T>(
+    operation: () => Promise<T>
+  ): Promise<T> => {
+    const resumePersistence = draftStore.pausePersistence()
+    try {
+      return await operation()
+    } finally {
+      // Graph loads emit graphChanged. Discard any startup-only trailing save
+      // before allowing user-driven persistence again.
+      debouncedPersist.cancel()
+      resumePersistence()
+    }
+  }
 
   const loadPreviousWorkflowFromStorage = async (isCurrent: () => boolean) => {
     const sessionPath = tabState.getActivePath()
@@ -310,9 +449,8 @@ export function useWorkflowPersistenceV2() {
   }
 
   /**
-   * The blank canvas startup opens for itself is not the user's work, but the
-   * active-workflow watcher has already saved it. Drop the draft and the
-   * pointer to it, or the next boot restores it and reports `restored`.
+   * The blank canvas startup opens for itself is not the user's work.
+   * Discard stale drafts and pointers from older startup persistence.
    */
   const discardStartupBlankDraft = () => {
     const blank = workflowStore.activeWorkflow
@@ -373,34 +511,43 @@ export function useWorkflowPersistenceV2() {
   }
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
-    const linkedWorkflow =
-      await linkedWorkflowUrlLoader.openLinkedWorkflowFromUrl()
-    const workflowLinkPending = linkedWorkflow === 'pending'
-    openedLinkedWorkflow = linkedWorkflow === 'opened'
-    if (openedLinkedWorkflow) return 'restored'
+    const outcome = await runWithPersistencePaused(async () => {
+      const linkedWorkflow =
+        await linkedWorkflowUrlLoader.openLinkedWorkflowFromUrl()
+      const workflowLinkPending = linkedWorkflow === 'pending'
+      openedLinkedWorkflow = linkedWorkflow === 'opened'
+      if (openedLinkedWorkflow) return 'restored' as const
 
-    if (!workflowPersistenceEnabled.value) {
-      return await resolveStartupOutcome(workflowLinkPending)
-    }
-
-    const isRestoreCurrent = await waitForRestoreIdentity()
-
-    try {
-      if (getRestorableTabState()) {
-        return 'restored'
+      if (!workflowPersistenceEnabled.value) {
+        return await resolveStartupOutcome(workflowLinkPending)
       }
 
-      await workflowStore.loadWorkflows()
-      if (!isRestoreCurrent()) return 'restored'
-      const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
-      if (!isRestoreCurrent()) return 'restored'
-      return restored
-        ? 'restored'
-        : await resolveStartupOutcome(workflowLinkPending)
-    } catch (err) {
-      console.error('Error loading previous workflow', err)
-      return await resolveStartupOutcome(workflowLinkPending)
+      const isRestoreCurrent = await waitForRestoreIdentity()
+      try {
+        if (getRestorableTabState()) return 'restored' as const
+        await workflowStore.loadWorkflows()
+        if (!isRestoreCurrent()) return 'restored' as const
+        const restored = await loadPreviousWorkflowFromStorage(isRestoreCurrent)
+        if (!isRestoreCurrent()) return 'restored' as const
+        return restored
+          ? ('restored' as const)
+          : await resolveStartupOutcome(workflowLinkPending)
+      } catch (err) {
+        console.error('Error loading previous workflow', err)
+        return await resolveStartupOutcome(workflowLinkPending)
+      }
+    })
+
+    const startupWorkflow = workflowStore.activeWorkflow
+    if (
+      workflowPersistenceEnabled.value &&
+      startupWorkflow?.isTemporary &&
+      startupWorkflow.isModified &&
+      !draftStore.getDraft(startupWorkflow.path)
+    ) {
+      persistCurrentWorkflow()
     }
+    return outcome
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
@@ -418,13 +565,30 @@ export function useWorkflowPersistenceV2() {
 
   // Setup watchers
   watch(
-    () => workflowStore.activeWorkflow?.key,
-    (activeWorkflowKey) => {
-      if (!activeWorkflowKey) return
-      // Flush any pending persistence from the previous workflow
-      debouncedPersist.flush()
-      // Persist the new workflow immediately
-      persistCurrentWorkflow()
+    [
+      () => workflowStore.activeWorkflow,
+      () => workflowStore.activeWorkflow?.path
+    ],
+    ([activeWorkflow]) => {
+      // beforeLoadNewGraph owns the outgoing synchronous draft save. A pending
+      // graphChanged callback belongs to the old graph, so cancel it rather
+      // than resolving it against the newly active workflow.
+      debouncedPersist.cancel()
+      if (
+        !activeWorkflow ||
+        draftStore.isPersistencePaused() ||
+        isWorkflowStorageTransitioning() ||
+        !workflowPersistenceEnabled.value
+      )
+        return
+
+      // Updating the active pointer is cheap and does not require serializing
+      // the newly opened graph. A new temporary workflow gets its first draft
+      // through the normal debounce, keeping workflow switching non-blocking.
+      tabState.setActivePath(activeWorkflow.path)
+      if (activeWorkflow.isTemporary) {
+        debouncedPersist()
+      }
     }
   )
 
@@ -434,7 +598,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
-    window.removeEventListener('pagehide', flushPendingPersistence)
+    window.removeEventListener('pagehide', persistOnPageHide)
     unregisterPersistence()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
@@ -495,67 +659,77 @@ export function useWorkflowPersistenceV2() {
     if (restored.path === draftPath) restored.lastModified = draftUpdatedAt
   }
 
-  const restoreSavedTabs = async () => {
-    if (!workflowPersistenceEnabled.value) {
-      tabStateRestored = true
-      return
-    }
+  const restoreSavedTabs = async () =>
+    await runWithPersistencePaused(async () => {
+      if (!workflowPersistenceEnabled.value) {
+        tabStateRestored = true
+        return
+      }
 
-    const isRestoreCurrent = await waitForRestoreIdentity()
+      const isRestoreCurrent = await waitForRestoreIdentity()
 
-    try {
-      await workflowStore.loadWorkflows()
-    } catch (err) {
-      console.error('Error loading workflows for tab restore', err)
-      await resolveStartupOutcome()
-      tabStateRestored = true
-      return
-    }
-
-    const restorableTabState = isRestoreCurrent()
-      ? getRestorableTabState()
-      : null
-    if (!restorableTabState) {
-      tabStateRestored = true
-      return
-    }
-    const { paths: storedWorkflows, activeIndex: storedActiveIndex } =
-      restorableTabState
-
-    storedWorkflows.forEach((path: string) => {
-      if (workflowStore.getWorkflowByPath(path)) return
-      const draft = draftStore.getDraft(path)
-      if (!draft?.isTemporary) return
       try {
-        const workflowData = JSON.parse(draft.data)
-        const restored = workflowStore.createTemporary(draft.name, workflowData)
-        stampWithDraftTime(restored, path, draft.updatedAt)
+        await workflowStore.loadWorkflows()
       } catch (err) {
-        console.warn(
-          'Failed to parse workflow draft, creating with default',
-          err
-        )
+        console.error('Error loading workflows for tab restore', err)
+        await resolveStartupOutcome()
+        tabStateRestored = true
+        return
+      }
+
+      const restorableTabState = isRestoreCurrent()
+        ? getRestorableTabState()
+        : null
+      if (!restorableTabState) {
+        tabStateRestored = true
+        return
+      }
+      const { paths: storedWorkflows, activeIndex: storedActiveIndex } =
+        restorableTabState
+
+      for (const path of storedWorkflows) {
+        if (!isRestoreCurrent()) return
+        if (workflowStore.getWorkflowByPath(path)) continue
+        const draft = draftStore.getDraft(path)
+        if (!draft?.isTemporary) continue
+        try {
+          const parsed: unknown = JSON.parse(draft.data)
+          const workflowData = await validateTemporaryDraftGraph(parsed)
+          if (!isRestoreCurrent()) return
+          if (workflowData) {
+            const restored = workflowStore.createTemporary(
+              draft.name,
+              workflowData
+            )
+            stampWithDraftTime(restored, path, draft.updatedAt)
+            continue
+          }
+        } catch (err) {
+          console.warn('Failed to restore temporary workflow draft', err)
+        }
+
+        if (!isRestoreCurrent()) return
         draftStore.removeDraft(path)
         workflowStore.createTemporary(draft.name)
       }
+
+      if (!isRestoreCurrent()) return
+      workflowStore.openWorkflowsInBackground({
+        left: storedWorkflows.slice(0, storedActiveIndex),
+        right: storedWorkflows.slice(storedActiveIndex)
+      })
+
+      tabStateRestored = true
+      if (openedLinkedWorkflow) return
+
+      const activePath = storedWorkflows[storedActiveIndex]
+      const workflow = activePath
+        ? workflowStore.getWorkflowByPath(activePath)
+        : null
+      if (workflow) {
+        await useWorkflowService().openWorkflow(workflow)
+      }
     })
-
-    workflowStore.openWorkflowsInBackground({
-      left: storedWorkflows.slice(0, storedActiveIndex),
-      right: storedWorkflows.slice(storedActiveIndex)
-    })
-
-    tabStateRestored = true
-    if (openedLinkedWorkflow) return
-
-    const activePath = storedWorkflows[storedActiveIndex]
-    const workflow = activePath
-      ? workflowStore.getWorkflowByPath(activePath)
-      : null
-    if (workflow) {
-      await useWorkflowService().openWorkflow(workflow)
-    }
-  }
 
   return {
     initializeWorkflow,
