@@ -109,7 +109,7 @@ describe('useSubgraphNavigationStore', () => {
     app.canvas.ds.offset = [0, 0]
     app.canvas.ds.state.scale = 1
     app.canvas.ds.state.offset = [0, 0]
-    app.graph.getNodeById = vi.fn()
+    app.rootGraph.getNodeById = vi.fn()
     routeHash.value = ''
     routerHistory.state = {}
     routerPush.mockReset().mockImplementation(async (target) => {
@@ -264,9 +264,12 @@ describe('useSubgraphNavigationStore', () => {
     const workflowStore = useWorkflowStore()
     const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
-    const unreachableSubgraph = createMockSubgraph('orphan-subgraph', app.graph)
+    const unreachableSubgraph = createMockSubgraph(
+      'orphan-subgraph',
+      app.rootGraph
+    )
 
-    app.graph.subgraphs.set(unreachableSubgraph.id, unreachableSubgraph)
+    app.rootGraph.subgraphs.set(unreachableSubgraph.id, unreachableSubgraph)
     vi.mocked(findSubgraphPathById).mockReturnValue(null)
 
     const mockWorkflow = fromPartial<ComfyWorkflow>({
@@ -291,10 +294,10 @@ describe('useSubgraphNavigationStore', () => {
     const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
     // Create mock subgraph and graph structure
-    const mockSubgraph = createMockSubgraph('subgraph-1', app.graph)
+    const mockSubgraph = createMockSubgraph('subgraph-1', app.rootGraph)
 
     // Add the subgraph to the graph's subgraphs map
-    app.graph.subgraphs.set('subgraph-1', mockSubgraph)
+    app.rootGraph.subgraphs.set('subgraph-1', mockSubgraph)
 
     // First set an active workflow
     const mockWorkflow = fromPartial<ComfyWorkflow>({

@@ -10,6 +10,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -85,6 +86,62 @@ describe('useLitegraphService().getCanvasCenter', () => {
       expect(useLitegraphService().getCanvasCenter()).toEqual(center)
     }
   )
+})
+
+describe('useLitegraphService().addNodeOnGraph', () => {
+  const nodeName = 'TestAddNodeOnGraph'
+
+  const nodeDef: ComfyNodeDefV1 = {
+    name: nodeName,
+    display_name: 'Test Add Node On Graph',
+    category: 'testing',
+    python_module: 'nodes',
+    description: '',
+    input: { required: {} },
+    output: ['LATENT'],
+    output_name: ['latent'],
+    output_node: false
+  }
+
+  let announced: string[]
+
+  beforeEach(async () => {
+    await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+    announced = []
+    useExtensionStore().registerExtension({
+      name: 'Test.AddNodeOnGraph',
+      nodeCreated: (node) => void announced.push(node.title)
+    })
+  })
+
+  it('adds the node to the root graph once it is assigned', () => {
+    const rootGraph = app.rootGraph
+
+    const node = useLitegraphService().addNodeOnGraph(nodeDef)
+
+    expect(node).not.toBeNull()
+    expect(rootGraph.nodes).toContain(node)
+  })
+
+  it('returns null instead of throwing when the root graph is not yet assigned', () => {
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
+
+    expect(useLitegraphService().addNodeOnGraph(nodeDef)).toBeNull()
+  })
+
+  it('announces nodeCreated for the node it adds', () => {
+    expect(useLitegraphService().addNodeOnGraph(nodeDef)).not.toBeNull()
+
+    expect(announced).toEqual([nodeDef.display_name])
+  })
+
+  it('announces nothing when there is no graph to add the node to', () => {
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
+
+    useLitegraphService().addNodeOnGraph(nodeDef)
+
+    expect(announced).toEqual([])
+  })
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {

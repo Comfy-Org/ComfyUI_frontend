@@ -880,13 +880,15 @@ export const useLitegraphService = () => {
       return node
     }
 
+    const graph =
+      useWorkflowStore().activeSubgraph ?? useApp().rootGraphOrUndefined
+    if (!graph) return null
+
     const node = LiteGraph.createNode(
       nodeDef.name,
       nodeDef.display_name,
       options
     )
-
-    const graph = useWorkflowStore().activeSubgraph ?? useApp().rootGraph
     if (!node) return null
 
     graph.add(node, addOptions)

@@ -44,10 +44,12 @@ export const saveImageExtraOutputExtension: ComfyExtension = {
 
         const widget = this.widgets?.find((w) => w.name === 'filename_prefix')
         if (!widget) return r
-        widget.serializeValue = () =>
-          typeof widget.value === 'string'
-            ? applyTextReplacements(useApp().rootGraph, widget.value)
-            : widget.value
+        widget.serializeValue = () => {
+          if (typeof widget.value !== 'string') return widget.value
+          const graph = useApp().rootGraphOrUndefined
+          if (!graph) return widget.value
+          return applyTextReplacements(graph, widget.value)
+        }
 
         return r
       }

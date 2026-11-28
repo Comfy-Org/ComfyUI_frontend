@@ -522,7 +522,11 @@ export class ComfyApp implements IComfyApp {
     this.rootGraphRef.value = graph
   }
 
-  /** @deprecated Use {@link rootGraph} instead */
+  /**
+   * The root graph.
+   * @deprecated Use {@link rootGraph}, or {@link rootGraphOrUndefined} when the
+   * call can run before setup
+   */
   get graph() {
     return this.rootGraphInternal!
   }
