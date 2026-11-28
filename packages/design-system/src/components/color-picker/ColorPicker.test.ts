@@ -5,6 +5,27 @@ import { describe, expect, it } from 'vitest'
 import ColorPicker from './ColorPicker.vue'
 
 describe('ColorPicker', () => {
+  it('does not overwrite an externally supplied color after converting it to HSVA', async () => {
+    const { emitted, rerender } = render(ColorPicker, {
+      props: {
+        modelValue: '#000000',
+        hexLabel: 'Hex',
+        rgbaLabel: 'RGBA',
+        hueLabel: 'Hue',
+        alphaLabel: 'Alpha',
+        redLabel: 'Red',
+        greenLabel: 'Green',
+        blueLabel: 'Blue',
+        saturationBrightnessLabel: 'Saturation and brightness',
+        formatLabel: 'Format'
+      }
+    })
+
+    await rerender({ modelValue: '#f3ebdd' })
+
+    expect(emitted('update:modelValue')).toBeUndefined()
+  })
+
   it('labels the trigger and panel controls with caller text', async () => {
     const user = userEvent.setup()
     const { rerender } = render(ColorPicker, {

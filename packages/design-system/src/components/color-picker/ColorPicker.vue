@@ -61,6 +61,7 @@ watch(
   hsva,
   (newHsva) => {
     const hex = hsvaToHex(newHsva)
+    if (hsvaToHex(readHsva(modelValue.value)) === hex) return
     if (hex !== modelValue.value) {
       modelValue.value = hex
     }
