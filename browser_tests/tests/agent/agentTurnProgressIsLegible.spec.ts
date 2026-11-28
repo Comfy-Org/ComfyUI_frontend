@@ -193,7 +193,6 @@ test.describe(
       await expect(agentPanel.sendButton).toBeVisible()
       await expect(agentPanel.workSummary).toHaveCount(1)
 
-      test.fail()
       await expect(agentPanel.workSummary).toHaveText(
         /Worked for (\d+ seconds|\d+m \d+s)/
       )

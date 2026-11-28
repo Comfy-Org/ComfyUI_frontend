@@ -9,8 +9,7 @@ notice window, direct Plans hand-off with an in-app pricing-table fallback,
 static auto top-up notice for members, and Activity without the member column.
 Turning it on selects the new dialog, served notice audience/start, refusal
 and blocked-tab explanations, same-tab Plans entry, member auto top-up status,
-and Activity member column. `pricing_table_fallback`
-continues to select the old Plans fallback while the new UX is enabled.
+and Activity member column.
 
 The locked-credit Subscribe to Run entry already shipped in Cloud 1.60 and stays
 independent of this flag. SDK payment-rail flags remain independent.

@@ -201,8 +201,52 @@ describe('Composer skill selection', () => {
     expect(composer.draft).toBe('/por')
   })
 
+  it('says skills are unavailable after a first-listing 404, then lists them again when / reopens', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('not found', 404)
+    )
+    const { skills } = mount()
+    skills.packs = []
+    skills.hasLoaded = false
+    skills.catalogConfirmed = false
+    await type('/')
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      "Skills aren't available right now."
+    )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+
+    await userEvent.keyboard('{Backspace}')
+    await type('/')
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'portrait' })
+    ).toBeVisible()
+    expect(listSkillPacks).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the local host instruction in the slash menu', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError(
+        'Open http://127.0.0.1:8188 to use the agent.',
+        403,
+        'agent_loopback_only'
+      )
+    )
+    const { skills } = mount()
+    skills.packs = []
+    skills.hasLoaded = false
+    skills.catalogConfirmed = false
+
+    await type('/')
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Open http://127.0.0.1:8188 to use the agent.'
+    )
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+  })
+
   it.for([404, 503])(
-    'shows loading, then a retryable error, after a %s response',
+    'shows loading, then a retryable error, after a %s response to a confirmed catalog',
     async (status) => {
       let reject: (reason: unknown) => void = () => {}
       vi.mocked(listSkillPacks).mockReturnValueOnce(
@@ -931,6 +975,25 @@ describe('Composer skill selection', () => {
       expect(screen.getByRole('menuitem', { name: 'Back' })).toBeVisible()
     })
 
+    it('shows why the local agent refused the page in the skills submenu', async () => {
+      vi.mocked(listSkillPacks).mockRejectedValueOnce(
+        new SkillPacksApiError(
+          'Open http://127.0.0.1:8188 to use the agent.',
+          403,
+          'agent_loopback_only'
+        )
+      )
+      const { skills } = mount()
+      forgetCatalog(skills)
+
+      await openSkillsSubmenu()
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'Open http://127.0.0.1:8188 to use the agent.'
+      )
+      expect(screen.getByRole('menuitem', { name: 'Retry' })).toBeVisible()
+    })
+
     it('says there are no skills yet for an empty list it already confirmed, including while it refreshes', async () => {
       const resolve = pendingListing()
       const { skills } = mount()
@@ -1074,7 +1137,7 @@ describe('Composer skill catalog preload', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 
-  it('asks a failed skills service again each time the composer reappears', async () => {
+  it('asks an unavailable skills service again each time the composer reappears', async () => {
     vi.mocked(api.getServerFeature).mockImplementation(
       <T>(name: string, fallback?: T) =>
         name === 'agent' ? { state: 'ready' } : fallback
@@ -1089,7 +1152,7 @@ describe('Composer skill catalog preload', () => {
     }
 
     const first = render(Composer, options)
-    await waitFor(() => expect(skills.loadFailed).toBe(true))
+    await waitFor(() => expect(skills.catalogUnavailable).toBe(true))
     first.unmount()
     render(Composer, options)
 
@@ -1111,7 +1174,7 @@ describe('Composer skill catalog preload', () => {
     }
 
     const first = render(Composer, options)
-    await waitFor(() => expect(skills.loadFailed).toBe(true))
+    await waitFor(() => expect(skills.catalogUnavailable).toBe(true))
     skills.markUnavailable()
     first.unmount()
     const second = render(Composer, options)

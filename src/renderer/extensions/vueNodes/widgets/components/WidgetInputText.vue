@@ -74,6 +74,7 @@ import Loader from '@/components/loader/Loader.vue'
 import Input from '@comfyorg/design-system/input/Input'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWidgetAugmentations } from '@/platform/extensions/useWidgetAugmentations'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import PathCompletionDialog from '@/renderer/extensions/PathCompletionDialog.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -156,6 +157,7 @@ function confirmPath(value: string) {
     value !== modelValue.value
   ) {
     modelValue.value = value
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
   session.value = undefined
 }

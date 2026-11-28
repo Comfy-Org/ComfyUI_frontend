@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "So ausrichten, dass Verbindungen gerade werden"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Vor dem Senden von Node- und Modellnamen zur Überprüfung der Comfy-Cloud-Kompatibilität fragen"
+  },
   "Comfy_ConfirmClear": {
     "name": "Bestätigung beim Leeren des Workflows anfordern"
   },

@@ -165,8 +165,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     pushEvent(ws, TOOL_CALL_EVENT)
     const summary = panel.getByRole('button', {
-      name: enMessages.agent.worked,
-      exact: true
+      name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
     })
     await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()

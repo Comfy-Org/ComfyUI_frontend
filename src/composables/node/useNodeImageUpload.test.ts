@@ -50,6 +50,12 @@ function createFile(name = 'test.png', type = 'image/png'): File {
   return new File(['data'], name, { type })
 }
 
+const TWO_AND_A_HALF_MIB = 2_621_440
+
+function createFileOfBytes(name: string, bytes: number): File {
+  return new File([new Uint8Array(bytes)], name, { type: 'image/png' })
+}
+
 function successResponse(name: string, subfolder?: string) {
   return Response.json({ name, subfolder })
 }
@@ -104,6 +110,15 @@ describe('useNodeImageUpload', () => {
     })
   })
 
+  it('budgets a single direct upload by its own size', async () => {
+    const { handleUpload } = useNodeImageUpload(node, { onUploadComplete })
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('a.png'))
+
+    await handleUpload(createFileOfBytes('a.png', TWO_AND_A_HALF_MIB))
+
+    expect(vi.mocked(api.fetchApi).mock.calls[0][1]?.timeoutMs).toBe(130_000)
+  })
+
   it.for([
     { mediaType: 'image', filename: 'test.png', mimeType: 'image/png' },
     { mediaType: 'video', filename: 'clip.mp4', mimeType: 'video/mp4' }
@@ -156,10 +171,54 @@ describe('useNodeImageUpload', () => {
     invalidateResolve()
     await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/upload/image',
-      expect.objectContaining({ timeoutMs: 120_000 })
+  })
+
+  it('gives each concurrent upload in a drop the response timeout of the whole batch', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () =>
+      successResponse('a.png')
     )
+
+    await capturedDragOnDrop([
+      createFileOfBytes('a.png', TWO_AND_A_HALF_MIB),
+      createFileOfBytes('b.png', TWO_AND_A_HALF_MIB)
+    ])
+
+    expect(
+      vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.timeoutMs)
+    ).toEqual([140_000, 140_000])
+  })
+
+  describe('when the server stalls', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.mocked(api.fetchApi).mockImplementation(
+        (_route, init) =>
+          new Promise((_resolve, reject) =>
+            setTimeout(
+              () => reject(new DOMException('Fetch timeout', 'TimeoutError')),
+              init?.timeoutMs ?? undefined
+            )
+          )
+      )
+    })
+
+    it('waits out the batch budget, then reports a timeout and frees the node', async () => {
+      const drop = capturedDragOnDrop([
+        createFileOfBytes('a.png', TWO_AND_A_HALF_MIB),
+        createFileOfBytes('b.png', TWO_AND_A_HALF_MIB)
+      ])
+
+      await vi.advanceTimersByTimeAsync(139_999)
+      expect(node.isUploading).toBe(true)
+      expect(useToast().warning).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(await drop).toEqual([])
+      expect(node.isUploading).toBe(false)
+      expect(useToast().warning).toHaveBeenCalledTimes(2)
+      expect(useToast().warning).toHaveBeenCalledWith('g.uploadTimedOut')
+      expect(onUploadError).toHaveBeenCalledOnce()
+    })
   })
 
   it('includes subfolder in returned path', async () => {

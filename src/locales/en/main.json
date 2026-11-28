@@ -1595,6 +1595,7 @@
     "downloadingModel": "Downloading {name}",
     "downloadingModelOf": "Downloading {name} ({index} of {count})",
     "downloadedOfTotal": "{downloaded} of {total}",
+    "onBuild": "{detail} · {build}",
     "jobMenu": {
       "openAsWorkflowNewTab": "Open as workflow in new tab",
       "openWorkflowNewTab": "Open workflow in new tab",
@@ -4572,7 +4573,14 @@
       "cancelled": "Upload cancelled.",
       "failed": "Upload failed. Try again."
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "checkFailure": {
+      "unreachable": "Could not reach Comfy Cloud. Check your internet connection, then try again.",
+      "busy": "Comfy Cloud is busy right now. Try again in a minute.",
+      "workspace": "Could not use your Comfy Cloud workspace. Try again in a minute, or sign out and back in.",
+      "tooBig": "This workflow is too big to check on Comfy Cloud. It can have up to 2,000 node types and 500 models.",
+      "outdated": "This version of ComfyUI can't read Comfy Cloud's answer. Update ComfyUI, then try again.",
+      "unreadable": "Could not read this workflow to check it. Reload ComfyUI, then try again."
+    },
     "emptyWorkflow": "This workflow has no nodes to run. Add nodes and save it, then try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
@@ -4611,6 +4619,11 @@
     "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
     "selectFolder": "Folder: {name}",
     "backFromFolder": "Back: {name}",
+    "lockFolder": "Lock folder: {name}",
+    "unlockFolder": "Unlock folder: {name}",
+    "folderLocked": "Locked to folder: {name}",
+    "browseToLockFolder": "Open a folder to lock it",
+    "allFolders": "All folders",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",
@@ -4662,9 +4675,14 @@
     "actionUnavailable": "The text could not be updated. Your text is unchanged; edit it manually instead.",
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
+    "focusView": "Expand to focus view",
     "importTags": "Import prompt tags",
     "importTagsError": "Could not load tags. Choose a TXT list or a tag CSV (name, category, count, aliases), up to 10 MB. Your previous catalog is unchanged.",
     "importTagsHint": "CSV or TXT · local to this session",
+    "noPrompt": "{node} has no prompt.",
+    "noPromptHint": "Select a node with a text input to edit its prompt here.",
+    "nodeSettings": "Node settings",
+    "prompt": "Prompt",
     "suggestionCount": "{count} suggestion available | {count} suggestions available",
     "suggestions": "Prompt suggestions",
     "tagsLoaded": "{count} tag loaded for this session | {count} tags loaded for this session",

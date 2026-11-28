@@ -281,6 +281,74 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
       initialSettings: { 'Comfy.Canvas.SelectionToolbox': true }
     })
 
+    test.describe('Narrow viewport', () => {
+      test.use({ viewport: { width: 320, height: 720 } })
+
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row', {
+          workflow: {
+            extra: { ds: { scale: 0.25, offset: [-150, 1200] } }
+          }
+        })
+      })
+
+      test('can reach and activate the last alignment action', async ({
+        comfyPage
+      }) => {
+        await comfyPage.keyboard.selectAll()
+        await openAlign(comfyPage)
+        const matchHeight = comfyPage.page.getByRole('button', {
+          name: 'Match height',
+          exact: true
+        })
+
+        const distribute = comfyPage.page.getByRole('button', {
+          name: 'Distribute horizontally',
+          exact: true
+        })
+
+        await expect(matchHeight).toBeInViewport({ ratio: 1 })
+        await expect(async () => {
+          const [distributeBox, matchHeightBox] = await Promise.all([
+            distribute.boundingBox(),
+            matchHeight.boundingBox()
+          ])
+          expect(distributeBox?.y).toBe(matchHeightBox?.y)
+        }).toPass({ timeout: 5000 })
+        const popover = comfyPage.page.getByRole('dialog')
+        await expect
+          .poll(async () => {
+            const bounds = await popover.evaluate((element) => {
+              const { left, right } = element.getBoundingClientRect()
+              return { left, right }
+            })
+            const buttons = await popover
+              .getByRole('button')
+              .evaluateAll((elements) =>
+                elements.map((element) => {
+                  const { left, right } = element.getBoundingClientRect()
+                  return { left, right }
+                })
+              )
+            const leftPadding =
+              Math.min(...buttons.map(({ left }) => left)) - bounds.left
+            const rightPadding =
+              bounds.right - Math.max(...buttons.map(({ right }) => right))
+            return Math.round(rightPadding - leftPadding)
+          })
+          .toBe(0)
+        await matchHeight.click()
+
+        await expect
+          .poll(async () =>
+            (await boundsOf(comfyPage, ROW_TITLES)).map((b) =>
+              Math.round(b.height)
+            )
+          )
+          .toEqual([190, 190, 190])
+      })
+    })
+
     test.describe('Aligning and matching sizes', () => {
       const cases: {
         action: string
@@ -355,14 +423,12 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
         ).toBeDisabled()
       })
 
-      test('distribute needs three movable nodes, so a pinned one disables it', async ({
+      test('a pinned node in the selection disables distribute', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
-        await comfyPage.nodeOps.selectNodes(['B'])
-        await comfyPage.command.executeCommand(
-          'Comfy.Canvas.ToggleSelectedNodes.Pin'
-        )
+        await comfyPage.workflow.loadWorkflow('smartGuides/four_notes_row', {
+          nodes: { 2: { flags: { pinned: true } } }
+        })
         await comfyPage.keyboard.selectAll()
 
         await openAlign(comfyPage)

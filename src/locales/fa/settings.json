@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "چفت شدن به‌گونه‌ای که سیم‌ها مستقیم شوند"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "پیش از ارسال نام‌های node و مدل برای بررسی سازگاری با Comfy Cloud سؤال شود"
+  },
   "Comfy_ConfirmClear": {
     "name": "نیاز به تأیید هنگام پاک‌سازی workflow"
   },

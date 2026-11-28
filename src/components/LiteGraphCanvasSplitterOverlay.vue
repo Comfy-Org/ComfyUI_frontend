@@ -38,7 +38,12 @@
               :class="
                 sidebarLocation === 'left'
                   ? 'side-bar-panel pointer-events-auto bg-background focus-visible:outline-hidden'
-                  : 'pointer-events-auto bg-background focus-visible:outline-hidden'
+                  : cn(
+                      'focus-visible:outline-hidden',
+                      floatPropertiesPanel
+                        ? 'pointer-events-none p-2'
+                        : 'pointer-events-auto bg-background'
+                    )
               "
               :min-size="
                 sidebarLocation === 'left'
@@ -72,7 +77,10 @@
                 cn(
                   'pointer-events-auto',
                   !firstPanelRendered && 'hidden',
-                  sidebarLocation === 'left' && 'bg-border/50'
+                  sidebarLocation === 'left' && 'bg-border/50',
+                  sidebarLocation === 'right' &&
+                    floatPropertiesPanel &&
+                    'bg-transparent'
                 )
               "
               @dragging="onResizeDragging($event, 'first-side-panel')"
@@ -142,7 +150,10 @@
                 cn(
                   'pointer-events-auto',
                   !lastPanelRendered && 'hidden',
-                  sidebarLocation === 'right' && 'bg-border/50'
+                  sidebarLocation === 'right' && 'bg-border/50',
+                  sidebarLocation === 'left' &&
+                    floatPropertiesPanel &&
+                    'bg-transparent'
                 )
               "
               @dragging="onResizeDragging($event, 'last-side-panel')"
@@ -157,7 +168,12 @@
               :class="
                 sidebarLocation === 'right'
                   ? 'side-bar-panel pointer-events-auto bg-background focus-visible:outline-hidden'
-                  : 'pointer-events-auto bg-background focus-visible:outline-hidden'
+                  : cn(
+                      'focus-visible:outline-hidden',
+                      floatPropertiesPanel
+                        ? 'pointer-events-none p-2'
+                        : 'pointer-events-auto bg-background'
+                    )
               "
               :min-size="
                 sidebarLocation === 'right'
@@ -220,7 +236,8 @@ import {
   SIDEBAR_MIN_SIZE,
   SIDEBAR_MIN_WIDTH,
   SIDE_PANEL_SIZE,
-  SIDE_TOOLBAR_WIDTH
+  SIDE_TOOLBAR_WIDTH,
+  PROMPT_PANEL_WIDTH
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { safeLocalStorage } from '@/base/storage/safeStorage'
@@ -228,6 +245,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   loadSplitterSizes,
@@ -286,6 +304,18 @@ const graphMeetsAgentPanel = computed(
 
 const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value
+)
+
+const promptPanelStore = usePromptPanelStore()
+watchEffect(() => {
+  promptPanelStore.isPanelHidden =
+    focusMode.value || agentNodeSelectionActive.value
+})
+const floatPropertiesPanel = computed(
+  () => promptPanelStore.isActive && !isBuilderMode.value
+)
+const showsPromptPanel = computed(
+  () => promptPanelStore.isPromptViewShown && !isBuilderMode.value
 )
 
 watchEffect(() => {
@@ -421,7 +451,15 @@ const sidebarWidthKey = computed(() => {
       : 'Comfy.Sidebar.RightWidth'
   return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
 })
+const propertiesPanelWidthKey = computed(() =>
+  showsPromptPanel.value
+    ? 'Comfy.RightSidePanel.PromptPanelWidth'
+    : 'Comfy.RightSidePanel.Width'
+)
 function defaultPanelWidth(isSidebarPanel: boolean) {
+  if (!isSidebarPanel && showsPromptPanel.value) {
+    return PROMPT_PANEL_WIDTH
+  }
   const plainStateKey =
     sidebarLocation.value === 'left'
       ? sidebarTabKey.value
@@ -458,7 +496,7 @@ const {
       storageKey: () =>
         sidebarLocation.value === 'left'
           ? sidebarWidthKey.value
-          : 'Comfy.RightSidePanel.Width',
+          : propertiesPanelWidthKey.value,
       visible: () => firstPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
         sidebarLocation.value === 'left'
@@ -471,7 +509,7 @@ const {
       storageKey: () =>
         sidebarLocation.value === 'right'
           ? sidebarWidthKey.value
-          : 'Comfy.RightSidePanel.Width',
+          : propertiesPanelWidthKey.value,
       visible: () => lastPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
         sidebarLocation.value === 'right'

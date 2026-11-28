@@ -17,6 +17,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import type { PropertiesPanelTab } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
+import ReturnToPromptButton from '@/renderer/extensions/textEditor/promptPanel/ReturnToPromptButton.vue'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -40,6 +42,14 @@ provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const propertiesPanelStore = usePropertiesPanelStore()
+const promptPanelStore = usePromptPanelStore()
+const panelClass = computed(() =>
+  cn(
+    'flex size-full flex-col bg-background',
+    promptPanelStore.isActive &&
+      'pointer-events-auto overflow-hidden rounded-xl border border-border shadow-lg'
+  )
+)
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
@@ -282,10 +292,7 @@ function handleTitleCancel() {
 </script>
 
 <template>
-  <div
-    data-testid="properties-panel"
-    class="flex size-full flex-col bg-background"
-  >
+  <div data-testid="properties-panel" :class="panelClass">
     <!-- Panel Header -->
     <section class="pt-1">
       <div class="flex items-center justify-between pr-3 pl-4">
@@ -317,6 +324,7 @@ function handleTitleCancel() {
         </h3>
 
         <div class="flex gap-2">
+          <ReturnToPromptButton />
           <Button
             v-if="isSingleSubgraphNode"
             variant="secondary"
