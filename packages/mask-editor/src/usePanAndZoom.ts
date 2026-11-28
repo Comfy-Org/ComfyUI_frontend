@@ -19,7 +19,7 @@ import {
   getWheelZoomFactor,
   interpolateView,
   isDoubleTap
-} from './panZoomUtils'
+} from '@comfyorg/shared-frontend-utils/panZoomUtils'
 
 export function usePanAndZoom() {
   const store = useMaskEditorStore()

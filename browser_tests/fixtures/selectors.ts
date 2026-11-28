@@ -358,6 +358,10 @@ export const TestIds = {
     batchNext: 'batch-next',
     batchPrev: 'batch-prev'
   },
+  mediaLightbox: {
+    zoomTarget: 'lightbox-zoom-target',
+    zoomPercentage: 'lightbox-zoom-percentage'
+  },
   searchBoxV2: {
     resultItem: 'result-item',
     filterOption: 'filter-option',

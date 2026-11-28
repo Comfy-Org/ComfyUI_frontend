@@ -405,4 +405,56 @@ describe('MediaLightbox', () => {
     })
   })
   /* oxlint-enable testing-library/no-node-access */
+
+  describe('image zoom', () => {
+    function wheelUp() {
+      const event = new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        deltaY: -1
+      })
+      Object.defineProperty(event, 'clientX', { value: 0 })
+      Object.defineProperty(event, 'clientY', { value: 0 })
+      return fireEvent(screen.getByTestId('lightbox-zoom-target'), event)
+    }
+
+    it('zooms the image in on wheel up', async () => {
+      renderGallery()
+      await nextTick()
+
+      await wheelUp()
+
+      expect(screen.getByTestId('lightbox-zoom-target').style.transform).toBe(
+        'translate(0px, 0px) scale(1.1)'
+      )
+    })
+
+    it('resets the zoom when navigating to another image', async () => {
+      const { rerender } = renderGallery()
+      await nextTick()
+      await wheelUp()
+
+      await rerender({ allGalleryItems: mockGalleryItems, activeIndex: 1 })
+      await nextTick()
+
+      expect(screen.getByTestId('lightbox-zoom-target').style.transform).toBe(
+        'translate(0px, 0px) scale(1)'
+      )
+    })
+
+    it('stays open when a pan drag ends over the background', async () => {
+      const { user, onUpdateActiveIndex } = renderGallery()
+      await nextTick()
+
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: screen.getByTestId('lightbox-zoom-target')
+        },
+        { keys: '[/MouseLeft]', target: screen.getByRole('dialog') }
+      ])
+
+      expect(onUpdateActiveIndex).not.toHaveBeenCalled()
+    })
+  })
 })

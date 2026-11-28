@@ -191,6 +191,7 @@
     "openManager": "Open Manager",
     "manageExtensions": "Manage extensions",
     "gallery": "Gallery",
+    "zoomPercent": "{percent}%",
     "graphNavigation": "Graph navigation",
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
