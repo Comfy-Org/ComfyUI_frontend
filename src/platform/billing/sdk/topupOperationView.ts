@@ -11,6 +11,7 @@ import type {
   BillingTelemetryFailure,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  TopupBalanceAfter,
   TopupFailure,
   TopupResult
 } from '@comfyorg/account-core/billing'
@@ -190,6 +191,7 @@ export function projectTopupResult(
 export interface TopupQuoteFacts {
   readonly credits: number
   readonly paymentConfigured: boolean
+  readonly balanceAfter?: TopupBalanceAfter
 }
 
 export type HostedCheckoutSession = Pick<

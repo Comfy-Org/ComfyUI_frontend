@@ -70,12 +70,12 @@
   }
 }
 
-/* Use 0.001ms instead of 0s so transitionend/animationend events still fire
-   and JS listeners aren't broken. */
 .disable-animations *,
 .disable-animations *::before,
 .disable-animations *::after {
+  /* stylelint-disable-next-line declaration-no-important */
   animation-duration: 0.001ms !important;
+  /* stylelint-disable-next-line declaration-no-important */
   transition-duration: 0.001ms !important;
 }
 

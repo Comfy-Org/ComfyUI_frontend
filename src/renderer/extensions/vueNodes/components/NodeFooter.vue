@@ -1,5 +1,4 @@
 <template>
-  <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
     v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
     data-part="node-footer"
@@ -18,10 +17,8 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('openErrors')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info]" />
-      </div>
+      <span class="truncate">{{ errorLabel }}</span>
+      <i class="icon-[lucide--info]" />
     </Button>
 
     <Button
@@ -38,14 +35,11 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('enterSubgraph')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.enter') }}</span>
-        <i class="icon-[comfy--workflow]" />
-      </div>
+      <span class="truncate">{{ t('g.enter') }}</span>
+      <i class="icon-[comfy--workflow]" />
     </Button>
   </div>
 
-  <!-- Case 1b: Advanced + Error (Dual Tabs, Regular Nodes) -->
   <div
     v-else-if="
       !isSubgraph &&
@@ -69,10 +63,8 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('openErrors')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info]" />
-      </div>
+      <span class="truncate">{{ errorLabel }}</span>
+      <i class="icon-[lucide--info]" />
     </Button>
 
     <Button
@@ -89,124 +81,97 @@
       @pointerup="snapshotDragOnPointerUp"
       @click.stop="emitIfNotDragged('toggleAdvanced')"
     >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{
+      <span class="truncate">{{
+        showAdvancedState
+          ? t('rightSidePanel.hideAdvancedShort')
+          : t('rightSidePanel.showAdvancedShort')
+      }}</span>
+      <i
+        :class="
           showAdvancedState
-            ? t('rightSidePanel.hideAdvancedShort')
-            : t('rightSidePanel.showAdvancedShort')
-        }}</span>
-        <i
-          :class="
-            showAdvancedState
-              ? 'icon-[lucide--chevron-up]'
-              : 'icon-[lucide--settings-2]'
-          "
-        />
-      </div>
+            ? 'icon-[lucide--chevron-up]'
+            : 'icon-[lucide--settings-2]'
+        "
+      />
     </Button>
   </div>
 
-  <!-- Case 2: Error Only (Full Width) -->
-  <div
+  <Button
     v-else-if="hasAnyError && showErrorsTabEnabled"
     data-part="node-footer"
-    :class="errorWrapperStyles"
+    variant="textonly"
+    :class="
+      cn(
+        footerWrapperBase,
+        '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        tabStyles,
+        'box-border rounded-none pt-9 pb-3',
+        errorColorClass,
+        footerRadiusClass
+      )
+    "
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('openErrors')"
   >
-    <Button
-      variant="textonly"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none pt-9 pb-3',
-          errorColorClass,
-          footerRadiusClass
-        )
-      "
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('openErrors')"
-    >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ errorLabel }}</span>
-        <i class="icon-[lucide--info]" />
-      </div>
-    </Button>
-  </div>
+    <span class="truncate">{{ errorLabel }}</span>
+    <i class="icon-[lucide--info]" />
+  </Button>
 
-  <!-- Case 3: Subgraph only (Full Width) -->
-  <div
+  <Button
     v-else-if="isSubgraph"
+    variant="textonly"
+    data-testid="subgraph-enter-button"
     data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
-        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+        tabStyles,
+        'box-border w-full rounded-none bg-node-header text-inherit',
+        hasAnyError && '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
+        footerRadiusClass
       )
     "
+    :style="headerColorStyle"
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('enterSubgraph')"
   >
-    <Button
-      variant="textonly"
-      data-testid="subgraph-enter-button"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none bg-node-header text-inherit',
-          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
-          footerRadiusClass
-        )
-      "
-      :style="headerColorStyle"
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('enterSubgraph')"
-    >
-      <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ t('g.enterSubgraph') }}</span>
-        <i class="icon-[comfy--workflow]" />
-      </div>
-    </Button>
-  </div>
+    <span class="truncate">{{ t('g.enterSubgraph') }}</span>
+    <i class="icon-[comfy--workflow]" />
+  </Button>
 
-  <!-- Case 4: Advanced Footer (Regular Nodes) -->
-  <div
+  <Button
     v-else-if="showAdvancedInputsButton || showAdvancedState"
+    variant="textonly"
+    data-testid="advanced-inputs-button"
     data-part="node-footer"
     :class="
       cn(
         footerWrapperBase,
-        hasAnyError ? '-mx-1 -mb-2 w-[calc(100%+8px)] pb-1' : 'w-full'
+        tabStyles,
+        'box-border w-full rounded-none bg-node-header text-inherit',
+        hasAnyError && '-mx-1 -mb-1 w-[calc(100%+8px)]',
+        hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
+        footerRadiusClass
       )
     "
+    :style="headerColorStyle"
+    @pointerup="snapshotDragOnPointerUp"
+    @click.stop="emitIfNotDragged('toggleAdvanced')"
   >
-    <Button
-      variant="textonly"
-      data-testid="advanced-inputs-button"
-      :class="
-        cn(
-          tabStyles,
-          'box-border w-full rounded-none bg-node-header text-inherit',
-          hasAnyError ? 'pt-9 pb-3' : 'pt-8 pb-3',
-          footerRadiusClass
-        )
-      "
-      :style="headerColorStyle"
-      @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('toggleAdvanced')"
-    >
-      <div class="flex size-full items-center justify-center gap-2">
-        <template v-if="showAdvancedState">
-          <span class="truncate">{{
-            t('rightSidePanel.hideAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--chevron-up]" />
-        </template>
-        <template v-else>
-          <span class="truncate">{{
-            t('rightSidePanel.showAdvancedInputsButton')
-          }}</span>
-          <i class="icon-[lucide--settings-2]" />
-        </template>
-      </div>
-    </Button>
-  </div>
+    <template v-if="showAdvancedState">
+      <span class="truncate">{{
+        t('rightSidePanel.hideAdvancedInputsButton')
+      }}</span>
+      <i class="icon-[lucide--chevron-up]" />
+    </template>
+    <template v-else>
+      <span class="truncate">{{
+        t('rightSidePanel.showAdvancedInputsButton')
+      }}</span>
+      <i class="icon-[lucide--settings-2]" />
+    </template>
+  </Button>
 </template>
 
 <script setup lang="ts">

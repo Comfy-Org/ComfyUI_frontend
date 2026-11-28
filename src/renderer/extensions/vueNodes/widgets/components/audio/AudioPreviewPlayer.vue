@@ -1,119 +1,104 @@
 <template>
-  <div class="relative" @pointerdown.stop>
-    <div
-      v-if="!hideWhenEmpty || modelValue"
-      class="relative flex h-16 w-full items-center gap-4 rounded-lg bg-input px-4 py-0"
+  <div
+    v-if="!hideWhenEmpty || modelValue"
+    class="relative flex h-16 w-full items-center gap-2 rounded-lg bg-input px-4 py-0"
+    @pointerdown.stop
+  >
+    <audio
+      ref="audioRef"
+      :src="modelValue"
+      data-testid="audio-preview"
+      @loadedmetadata="handleLoadedMetadata"
+      @timeupdate="handleTimeUpdate"
+      @ended="handleEnded"
+      @play="handlePlay"
+      @pause="handlePause"
+      @error="handleError"
+    />
+
+    <Button
+      variant="muted-textonly"
+      size="unset"
+      :aria-label="$t('g.playPause')"
+      :aria-pressed="isPlaying"
+      class="size-6 shrink-0 rounded-sm"
+      @click="togglePlayPause"
     >
-      <!-- Hidden audio element -->
-      <audio
-        ref="audioRef"
-        :src="modelValue"
-        data-testid="audio-preview"
-        @loadedmetadata="handleLoadedMetadata"
-        @timeupdate="handleTimeUpdate"
-        @ended="handleEnded"
-        @play="handlePlay"
-        @pause="handlePause"
-        @error="handleError"
-      />
+      <i v-if="!isPlaying" class="icon-[lucide--play]" />
+      <i v-else class="icon-[lucide--pause]" />
+    </Button>
 
-      <!-- Left Actions -->
-      <div class="relative flex shrink-0 items-center gap-2">
-        <!-- Play/Pause Button -->
-        <Button
-          variant="muted-textonly"
-          size="unset"
-          :aria-label="$t('g.playPause')"
-          :aria-pressed="isPlaying"
-          class="size-6 rounded-sm"
-          @click="togglePlayPause"
-        >
-          <i v-if="!isPlaying" class="icon-[lucide--play]" />
-          <i v-else class="icon-[lucide--pause]" />
-        </Button>
-
-        <!-- Time Display -->
-        <div class="text-sm font-normal text-nowrap text-foreground">
-          {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
-        </div>
-      </div>
-
-      <!-- Progress Bar -->
-      <div class="relative h-0.5 flex-1 rounded-full bg-border">
-        <div
-          class="absolute top-0 left-0 h-full rounded-full bg-muted-foreground transition-all"
-          :style="{ width: `${progressPercentage}%` }"
-        />
-        <input
-          type="range"
-          :value="progressPercentage"
-          min="0"
-          max="100"
-          step="0.1"
-          :aria-label="$t('g.audioProgress')"
-          class="absolute inset-0 w-full cursor-pointer opacity-0"
-          @input="handleSeek"
-        />
-      </div>
-
-      <!-- Right Actions -->
-      <div class="relative flex shrink-0 items-center gap-2">
-        <!-- Volume Button -->
-        <Button
-          variant="muted-textonly"
-          size="unset"
-          :aria-label="$t('g.volume')"
-          class="size-6 rounded-sm"
-          @click="toggleMute"
-        >
-          <i v-if="showVolumeTwo" class="icon-[lucide--volume-2]" />
-          <i v-else-if="showVolumeOne" class="icon-[lucide--volume-1]" />
-          <i v-else class="icon-[lucide--volume-x]" />
-        </Button>
-
-        <!-- Download Button -->
-        <Button
-          v-if="modelValue"
-          size="icon-sm"
-          variant="muted-textonly"
-          :aria-label="$t('g.downloadAudio')"
-          :title="$t('g.downloadAudio')"
-          class="size-6"
-          @click="handleDownload"
-        >
-          <i class="icon-[lucide--download]" />
-        </Button>
-
-        <!-- Options Button -->
-        <Menu v-if="showOptionsButton" :items="menuItems">
-          <template #trigger>
-            <Button
-              variant="muted-textonly"
-              size="unset"
-              :aria-label="$t('g.moreOptions')"
-              class="size-6 rounded-sm"
-            >
-              <i class="icon-[lucide--more-vertical]" />
-            </Button>
-          </template>
-          <template #item="{ item, hasSubmenu }">
-            <div v-if="item.key === 'volume'" class="w-48">
-              <label class="mb-2 block text-xs text-foreground">{{
-                item.label
-              }}</label>
-              <Slider
-                :model-value="[volume * 10]"
-                :min="0"
-                :max="10"
-                :step="1"
-                @update:model-value="handleVolumeChange"
-              />
-            </div>
-            <MenuItemContent v-else :item :has-submenu />
-          </template>
-        </Menu>
-      </div>
+    <div class="shrink-0 text-sm font-normal text-nowrap text-foreground">
+      {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
     </div>
+
+    <div
+      class="relative mx-2 h-0.5 flex-1 rounded-full bg-border before:absolute before:top-0 before:left-0 before:h-full before:w-(--audio-progress) before:rounded-full before:bg-muted-foreground before:transition-all"
+      :style="{ '--audio-progress': `${progressPercentage}%` }"
+    >
+      <input
+        type="range"
+        :value="progressPercentage"
+        min="0"
+        max="100"
+        step="0.1"
+        :aria-label="$t('g.audioProgress')"
+        class="absolute inset-0 w-full cursor-pointer opacity-0"
+        @input="handleSeek"
+      />
+    </div>
+
+    <Button
+      variant="muted-textonly"
+      size="unset"
+      :aria-label="$t('g.volume')"
+      class="size-6 shrink-0 rounded-sm"
+      @click="toggleMute"
+    >
+      <i v-if="showVolumeTwo" class="icon-[lucide--volume-2]" />
+      <i v-else-if="showVolumeOne" class="icon-[lucide--volume-1]" />
+      <i v-else class="icon-[lucide--volume-x]" />
+    </Button>
+
+    <Button
+      v-if="modelValue"
+      size="icon-sm"
+      variant="muted-textonly"
+      :aria-label="$t('g.downloadAudio')"
+      :title="$t('g.downloadAudio')"
+      class="size-6 shrink-0"
+      @click="handleDownload"
+    >
+      <i class="icon-[lucide--download]" />
+    </Button>
+
+    <Menu v-if="showOptionsButton" :items="menuItems">
+      <template #trigger>
+        <Button
+          variant="muted-textonly"
+          size="unset"
+          :aria-label="$t('g.moreOptions')"
+          class="size-6 shrink-0 rounded-sm"
+        >
+          <i class="icon-[lucide--more-vertical]" />
+        </Button>
+      </template>
+      <template #item="{ item, hasSubmenu }">
+        <div v-if="item.key === 'volume'" class="w-48">
+          <label class="mb-2 block text-xs text-foreground">{{
+            item.label
+          }}</label>
+          <Slider
+            :model-value="[volume * 10]"
+            :min="0"
+            :max="10"
+            :step="1"
+            @update:model-value="handleVolumeChange"
+          />
+        </div>
+        <MenuItemContent v-else :item :has-submenu />
+      </template>
+    </Menu>
   </div>
 </template>
 

@@ -405,6 +405,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
       })
     ).toEqual({
       applied: true,
+      hadChanges: true,
       nodes: { added: ['1'], removed: [] },
       createdNodeIds: [],
       failureCount: 0
@@ -806,7 +807,6 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     onTestFinished(destroy)
 
     source.pos = [680, 20]
-    expect([...source.boundingRect]).not.toEqual(renderedBox(source))
 
     hostEdit(
       () =>

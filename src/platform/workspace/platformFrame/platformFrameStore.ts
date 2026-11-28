@@ -77,12 +77,14 @@ interface PlatformFrameSession {
   nonce: string
   workflow: HandedWorkflow | null
   owner: BuildOwner
+  shownStep?: 'models'
 }
 
 export const usePlatformFrameStore = defineStore('platformFrame', () => {
   const session = shallowRef<PlatformFrameSession | null>(null)
   const isUnanswered = ref(false)
   const build = shallowRef<FollowedBuild | null>(null)
+  const contentHeight = ref<number | null>(null)
   const isHidden = ref(false)
   let buildNotice: ToastId | undefined
   const ownedNotices = new Set<ToastId>()
@@ -157,6 +159,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
     stopResumeCheck()
     isUnanswered.value = false
     session.value = null
+    contentHeight.value = null
     build.value = null
     isHidden.value = false
   }
@@ -184,6 +187,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       workflow: request.handsOverWorkflow ? captureOpenWorkflow() : null,
       owner
     }
+    contentHeight.value = null
     retriedSignIn = false
     waitForAnswer()
   }
@@ -299,6 +303,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
           )
         : undefined
     const isNew = build.value?.buildId !== message.buildId
+    contentHeight.value = null
     build.value = startFollowing(message, running, currentOwner())
     if (isNew) trackDeploymentCreateClicked(build.value)
     keepBuild(build.value)
@@ -459,7 +464,8 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
       if (!current) return
       stopBridge?.()
       stopBridge = undefined
-      session.value = { ...current, id: ++sessions }
+      session.value = { ...current, id: ++sessions, shownStep: undefined }
+      contentHeight.value = null
       waitForAnswer()
     }, PLATFORM_FRAME_SIGN_IN_RETRY_MS)
   }
@@ -471,13 +477,30 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
 
   function take(message: FrameMessage) {
     if (message.type === 'ready') {
+      contentHeight.value = null
+      if (session.value?.shownStep)
+        session.value = { ...session.value, shownStep: undefined }
       stopWaiting()
       isUnanswered.value = false
       if (message.signedIn) cancelRetry()
       else reloadForSignIn()
     }
-    if (message.type === 'build-started') startBuild(message)
+    if (message.type === 'step-shown') showStep(message.step)
+    else if (message.type === 'content-height')
+      contentHeight.value = message.height
+    else if (message.type === 'build-started') startBuild(message)
     else follow(message)
+  }
+
+  function showStep(step: 'models') {
+    const current = session.value
+    if (
+      !current ||
+      current.request.step !== 'preinstall' ||
+      current.shownStep === step
+    )
+      return
+    session.value = { ...current, shownStep: step }
   }
 
   function attach(frame: Window) {
@@ -508,6 +531,7 @@ export const usePlatformFrameStore = defineStore('platformFrame', () => {
 
   return {
     session,
+    contentHeight,
     isUnanswered,
     build,
     isHidden,

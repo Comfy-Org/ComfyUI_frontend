@@ -26,7 +26,8 @@ const {
   selectWorkflow,
   skillsEnabled,
   skills,
-  skillsStatus
+  skillsStatus,
+  skillsStatusMessage
 } = defineProps<{
   canAttach: boolean
   canOpenAssets: boolean
@@ -37,6 +38,7 @@ const {
   skillsEnabled: boolean
   skills: SkillReferenceMetadata[]
   skillsStatus?: SkillCatalogStatus
+  skillsStatusMessage?: string
 }>()
 const emit = defineEmits<{
   selectNodes: [event: Event]
@@ -163,6 +165,7 @@ function onCloseAutoFocus(event: Event): void {
         v-if="skillsEnabled"
         :skills
         :status="skillsStatus"
+        :status-message="skillsStatusMessage"
         @opened="emit('requestSkills')"
         @pick="pickSkill"
         @retry="emit('retrySkills')"

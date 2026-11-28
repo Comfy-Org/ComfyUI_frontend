@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { zJobDetail } from '@comfyorg/api-client/jobTypes'
+
 import {
   isCloudValidationError,
   tryExtractValidationError,
@@ -75,6 +77,245 @@ describe('executionErrorUtil', () => {
   })
 
   describe('classifyCloudValidationError', () => {
+    const relayedNodeErrors = {
+      '72': {
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: ['75'],
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Value not in list',
+            details: "ckpt_name: 'missing.safetensors' is not a valid value",
+            extra_info: {
+              input_name: 'ckpt_name',
+              received_value: 'missing.safetensors'
+            }
+          }
+        ]
+      }
+    }
+    const summaryOnlyMessage =
+      "Prompt outputs failed validation. node 72 (CheckpointLoaderSimple): ckpt_name — value_not_in_list: Value not in list (ckpt_name: 'missing.safetensors' is not a valid value)."
+    const embeddedNodeErrors = {
+      '9': {
+        class_type: 'SaveImage',
+        dependent_outputs: ['9'],
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Required input is missing',
+            details: 'images',
+            extra_info: { input_name: 'images' }
+          }
+        ]
+      }
+    }
+
+    const rejection = (message: string) => ({
+      kind: 'promptError',
+      promptError: {
+        type: 'prompt_outputs_failed_validation',
+        message,
+        details: message
+      }
+    })
+    const embeddedMessage = `400: ${JSON.stringify({ node_errors: embeddedNodeErrors })}`
+
+    it.for([
+      {
+        name: 'a bare-string relayed validation error',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: 'Node 72 was rejected.',
+          node_errors: {
+            '72': {
+              class_type: 'CheckpointLoaderSimple',
+              dependent_outputs: ['75'],
+              errors: ['Custom validator rejected the checkpoint']
+            }
+          }
+        },
+        expected: {
+          kind: 'nodeErrors',
+          nodeErrors: {
+            '72': {
+              class_type: 'CheckpointLoaderSimple',
+              dependent_outputs: ['75'],
+              errors: [
+                {
+                  type: 'error',
+                  message: 'Custom validator rejected the checkpoint',
+                  details: ''
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        name: 'the relayed node_errors of a validation error',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'the relayed node_errors, ignoring JSON embedded in the message',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: `${summaryOnlyMessage} ${JSON.stringify({ node_errors: embeddedNodeErrors })}`,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'the valid relayed nodes when a sibling node is malformed',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage,
+          node_errors: {
+            ...relayedNodeErrors,
+            '80': { class_type: 'LoadImage' }
+          }
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'the valid errors of a relayed node when one of its errors is malformed',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage,
+          node_errors: {
+            '72': {
+              ...relayedNodeErrors['72'],
+              errors: [...relayedNodeErrors['72'].errors, { type: 5 }]
+            }
+          }
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'a rejection with the summary when no relayed error is usable',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: embeddedMessage,
+          node_errors: { '72': { class_type: 'CheckpointLoaderSimple' } }
+        },
+        expected: rejection(embeddedMessage)
+      },
+      {
+        name: 'the embedded JSON when a non-validation error carries node_errors',
+        detail: {
+          exception_type: 'RuntimeError',
+          exception_message: embeddedMessage,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
+      },
+      {
+        name: 'the embedded JSON when no node_errors are relayed',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: embeddedMessage
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
+      },
+      {
+        name: 'only the usable embedded entries when a sibling is null',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: `400: ${JSON.stringify({ node_errors: { ...embeddedNodeErrors, '10': null } })}`
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
+      },
+      {
+        name: 'only the object errors of an embedded node',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: `400: ${JSON.stringify({
+            node_errors: {
+              '9': {
+                ...embeddedNodeErrors['9'],
+                errors: [...embeddedNodeErrors['9'].errors, null]
+              }
+            }
+          })}`
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
+      },
+      {
+        name: 'nothing for a summary-only message without node_errors',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage
+        },
+        expected: null
+      },
+      {
+        name: 'nothing for an empty node_errors map',
+        detail: {
+          exception_type: 'ValidationError',
+          exception_message: summaryOnlyMessage,
+          node_errors: {}
+        },
+        expected: null
+      }
+    ])('classifies from $name', ({ detail, expected }) => {
+      expect(classifyCloudValidationError(detail)).toEqual(expected)
+    })
+
+    const rawComfyNodeErrors = {
+      '72': {
+        ...relayedNodeErrors['72'],
+        errors: [
+          {
+            ...relayedNodeErrors['72'].errors[0],
+            extra_info: { input_name: 'image', received_value: ['a.png'] }
+          }
+        ]
+      }
+    }
+
+    it.for([
+      {
+        name: 'raw ComfyUI errors to the summary rejection',
+        nodeErrors: rawComfyNodeErrors,
+        expected: rejection(summaryOnlyMessage)
+      },
+      {
+        name: 'malformed node metadata to the summary rejection',
+        nodeErrors: { '72': { class_type: 'CheckpointLoaderSimple' } },
+        expected: rejection(summaryOnlyMessage)
+      },
+      {
+        name: 'contract nodes beside a raw node to those nodes',
+        nodeErrors: { ...relayedNodeErrors, '80': rawComfyNodeErrors['72'] },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      }
+    ])(
+      'classifies a job read back from the Jobs API from $name',
+      ({ nodeErrors, expected }) => {
+        const { execution_error } = zJobDetail.parse({
+          id: 'job',
+          status: 'failed',
+          create_time: 1,
+          execution_error: {
+            node_id: '72',
+            node_type: 'CheckpointLoaderSimple',
+            exception_type: 'ValidationError',
+            exception_message: summaryOnlyMessage,
+            node_errors: nodeErrors
+          }
+        })
+
+        expect(
+          execution_error && classifyCloudValidationError(execution_error)
+        ).toEqual(expected)
+      }
+    )
+
     it('retains node validation when a sibling entry lacks unused metadata', () => {
       const nodeErrors = {
         '3': {
@@ -101,9 +342,10 @@ describe('executionErrorUtil', () => {
       }
 
       expect(
-        classifyCloudValidationError(
-          `Failed: ${JSON.stringify({ node_errors: nodeErrors })}`
-        )
+        classifyCloudValidationError({
+          exception_type: 'ValidationError',
+          exception_message: `Failed: ${JSON.stringify({ node_errors: nodeErrors })}`
+        })
       ).toEqual({ kind: 'nodeErrors', nodeErrors })
     })
 
@@ -132,13 +374,12 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed to send prompt request: status 400: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
+        exception_message: message
+      })
 
-      expect(result).not.toBeNull()
-      expect(result?.kind).toBe('nodeErrors')
-      if (result?.kind === 'nodeErrors') {
-        expect(result.nodeErrors['11:1'].class_type).toBe('CLIPTextEncode')
-      }
+      expect(result).toEqual({ kind: 'nodeErrors', nodeErrors })
     })
 
     it('should classify prompt error when error is an object and no node_errors', () => {
@@ -151,44 +392,64 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
+        exception_message: message
+      })
 
-      expect(result).not.toBeNull()
-      expect(result?.kind).toBe('promptError')
-      if (result?.kind === 'promptError') {
-        expect(result.promptError.type).toBe('prompt_no_outputs')
-        expect(result.promptError.message).toBe('Prompt has no outputs')
-      }
+      expect(result).toMatchObject({
+        kind: 'promptError',
+        promptError: {
+          type: 'prompt_no_outputs',
+          message: 'Prompt has no outputs'
+        }
+      })
     })
 
     it('should classify prompt error when error is a string', () => {
       const embedded = JSON.stringify({ error: 'Something went wrong' })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
+        exception_message: message
+      })
 
-      expect(result).not.toBeNull()
-      expect(result?.kind).toBe('promptError')
-      if (result?.kind === 'promptError') {
-        expect(result.promptError.type).toBe('error')
-        expect(result.promptError.message).toBe('Something went wrong')
-      }
+      expect(result).toMatchObject({
+        kind: 'promptError',
+        promptError: { type: 'error', message: 'Something went wrong' }
+      })
     })
 
     it('should return null when message has no embedded JSON', () => {
-      expect(classifyCloudValidationError('plain error')).toBeNull()
+      expect(
+        classifyCloudValidationError({
+          exception_type: 'ValidationError',
+          exception_message: 'plain error'
+        })
+      ).toBeNull()
     })
 
     it('should return null when embedded JSON has no error or node_errors', () => {
       const message = 'error: {"foo": "bar"}'
-      expect(classifyCloudValidationError(message)).toBeNull()
+      expect(
+        classifyCloudValidationError({
+          exception_type: 'ValidationError',
+          exception_message: message
+        })
+      ).toBeNull()
     })
 
     it('should return null when error field is neither object nor string', () => {
       const embedded = JSON.stringify({ error: 123 })
       const message = `Failed: ${embedded}`
 
-      expect(classifyCloudValidationError(message)).toBeNull()
+      expect(
+        classifyCloudValidationError({
+          exception_type: 'ValidationError',
+          exception_message: message
+        })
+      ).toBeNull()
     })
 
     it('should prefer node_errors over error when both present', () => {
@@ -204,7 +465,10 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
+        exception_message: message
+      })
 
       expect(result?.kind).toBe('nodeErrors')
     })
@@ -216,7 +480,10 @@ describe('executionErrorUtil', () => {
       })
       const message = `Failed: ${embedded}`
 
-      const result = classifyCloudValidationError(message)
+      const result = classifyCloudValidationError({
+        exception_type: 'ValidationError',
+        exception_message: message
+      })
 
       expect(result?.kind).toBe('promptError')
     })

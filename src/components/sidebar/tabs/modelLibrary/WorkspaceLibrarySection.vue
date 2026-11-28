@@ -63,34 +63,14 @@
       <p v-else-if="!shelves.length" class="m-0 text-xs text-muted-foreground">
         {{ $t(emptyMessageKey) }}
       </p>
-      <div v-for="shelf in shelves" :key="shelf.folder">
-        <h3 class="m-0 text-xs font-medium text-muted-foreground">
-          {{ shelf.folder }}
-        </h3>
-        <ul class="m-0 list-none p-0">
-          <li
-            v-for="name in shelf.names"
-            :key="name"
-            class="flex items-center gap-1"
-          >
-            <Button
-              variant="textonly"
-              size="sm"
-              class="min-w-0 flex-1 justify-start font-normal"
-              :title="name"
-              @click="place(shelf.folder, name)"
-            >
-              <span class="min-w-0 truncate">{{ name }}</span>
-            </Button>
-            <i
-              role="img"
-              :aria-label="$t('sideToolbar.workspaceLibrary.fromWorkspace')"
-              :title="$t('sideToolbar.workspaceLibrary.fromWorkspace')"
-              class="icon-[lucide--cloud] size-3.5 text-muted-foreground"
-            />
-          </li>
-        </ul>
-      </div>
+      <WorkspaceLibraryShelf
+        v-for="shelf in shelves"
+        :key="shelf.folder"
+        :folder="shelf.folder"
+        :names="shelf.names"
+        :blocked="shelf.blocked"
+        @place="place(shelf.folder, $event)"
+      />
     </div>
   </section>
 </template>
@@ -101,6 +81,7 @@ import { computed, onScopeDispose, ref, useId, watch } from 'vue'
 
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
+import WorkspaceLibraryShelf from '@/components/sidebar/tabs/modelLibrary/WorkspaceLibraryShelf.vue'
 import { startModelLoaderDrag } from '@/composables/node/startModelLoaderDrag'
 import {
   WORKER_MODEL_FOLDERS,
@@ -122,19 +103,25 @@ const folders = computed(() =>
 
 const libraryShelves = computed(() =>
   folders.value
-    .map((folder) => ({ folder, names: library.namesIn(folder) }))
-    .filter((shelf) => shelf.names.length > 0)
+    .map((folder) => ({
+      folder,
+      names: library.namesIn(folder),
+      blocked: library.blockedIn(folder)
+    }))
+    .filter((shelf) => shelf.names.length + shelf.blocked.length > 0)
 )
 
 const shelves = computed(() => {
   const search = searchQuery.toLocaleLowerCase()
   if (!search) return libraryShelves.value
+  const matches = (name: string) => name.toLocaleLowerCase().includes(search)
   return libraryShelves.value
-    .map(({ folder, names }) => ({
+    .map(({ folder, names, blocked }) => ({
       folder,
-      names: names.filter((name) => name.toLocaleLowerCase().includes(search))
+      names: names.filter(matches),
+      blocked: blocked.filter(matches)
     }))
-    .filter((shelf) => shelf.names.length > 0)
+    .filter((shelf) => shelf.names.length + shelf.blocked.length > 0)
 })
 
 const emptyMessageKey = computed(() =>
