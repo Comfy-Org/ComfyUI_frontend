@@ -14,6 +14,7 @@ const props = defineProps<{
   hasError?: boolean
   multi?: boolean
   slotKey?: SlotId
+  connected?: boolean
 }>()
 
 const clipPath = computed(() => {
@@ -27,15 +28,29 @@ const clipPath = computed(() => {
   }
 })
 
+const isArrow = computed(() => props.slotData?.shape === RenderShape.ARROW)
+
+const slotColor = computed(() => {
+  const color = props.connected
+    ? props.slotData?.color_on
+    : props.slotData?.color_off
+  return typeof color === 'string' && color ? color : undefined
+})
+
 const types = computed(() => {
   if (props.hasError) return ['var(--destructive)']
   const fallback = 'var(--slot-fallback-color)'
   if (!props.slotData) return [getSlotColor(undefined, fallback)]
-  if (props.slotData.type === '*') return ['']
-  return `${props.slotData.type}`
-    .split(',')
-    .map((type) => getSlotColor(type, fallback))
-    .slice(0, MAX_MULTITYPE_SLICES)
+  const typeColors =
+    props.slotData.type === '*'
+      ? ['']
+      : `${props.slotData.type}`
+          .split(',')
+          .map((type) => getSlotColor(type, fallback))
+          .slice(0, MAX_MULTITYPE_SLICES)
+  if (slotColor.value && (typeColors.length === 1 || isArrow.value))
+    return [slotColor.value]
+  return typeColors
 })
 
 const isListShape = computed(() => props.slotData?.shape === RenderShape.GRID)
@@ -71,6 +86,20 @@ const slotClass = computed(() =>
       :class="slotClass"
       data-testid="slot-dot"
     />
+    <svg
+      v-else-if="isArrow"
+      :data-slot-key="slotKey"
+      class="slot-dot size-2 cursor-crosshair transition-all duration-150 group-hover/slot:scale-125"
+      data-testid="slot-dot"
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <polygon
+        data-testid="slot-arrow"
+        points="0,0 100,50 0,100"
+        :fill="types[0] || 'var(--color-ink-100)'"
+      />
+    </svg>
     <svg
       v-else
       :data-slot-key="slotKey"

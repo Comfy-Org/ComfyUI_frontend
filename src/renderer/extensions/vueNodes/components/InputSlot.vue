@@ -35,6 +35,7 @@
         )
       "
       :slot-data
+      :connected
       @click="onClick"
       @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"

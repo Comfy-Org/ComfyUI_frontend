@@ -22,6 +22,7 @@
       :slot-key
       class="w-3 translate-x-1/2"
       :slot-data
+      :connected
       @pointerdown="onPointerDown"
     />
   </div>

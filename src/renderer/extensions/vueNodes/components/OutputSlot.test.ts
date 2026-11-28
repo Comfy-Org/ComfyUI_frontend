@@ -144,4 +144,32 @@ describe('OutputSlot', () => {
 
     expect(screen.getByText('Output 2')).toBeInTheDocument()
   })
+
+  it.for([
+    { connected: true, fill: '#f00' },
+    { connected: false, fill: '#0f0' }
+  ])(
+    'fills the dot with the slot color when connected is $connected, as the canvas does',
+    ({ connected, fill }) => {
+      render(OutputSlot, {
+        props: {
+          slotData: {
+            name: 'samples',
+            type: 'LATENT',
+            color_on: '#f00',
+            color_off: '#0f0',
+            boundingRect: [0, 0, 0, 0]
+          },
+          index: 0,
+          nodeId: toNodeId('test-node'),
+          connected
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId('slot-dot')).toHaveStyle({
+        backgroundColor: fill
+      })
+    }
+  )
 })

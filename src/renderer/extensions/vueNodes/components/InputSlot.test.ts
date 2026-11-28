@@ -165,4 +165,31 @@ describe('InputSlot', () => {
       'Input: Localized Count'
     )
   })
+
+  it.for([
+    { connected: true, fill: '#f00' },
+    { connected: false, fill: '#0f0' }
+  ])(
+    'fills the dot with the slot color when connected is $connected, as the canvas does',
+    ({ connected, fill }) => {
+      render(InputSlot, {
+        props: {
+          slotData: {
+            name: 'raw_seed',
+            type: 'INT',
+            color_on: '#f00',
+            color_off: '#0f0',
+            boundingRect: [0, 0, 0, 0]
+          },
+          index: 0,
+          connected
+        },
+        global: { plugins: [i18n, getActivePinia()!] }
+      })
+
+      expect(screen.getByTestId('slot-dot')).toHaveStyle({
+        backgroundColor: fill
+      })
+    }
+  )
 })
