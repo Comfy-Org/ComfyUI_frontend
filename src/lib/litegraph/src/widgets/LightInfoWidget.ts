@@ -10,6 +10,6 @@ export class LightInfoWidget
     this.drawVueOnlyWarning(ctx, options, 'Light Info')
   }
 
-  // fallow-ignore-next-line unused-class-member
+  // fallow-ignore-next-line unused-class-member -- required by ILightInfoWidget; this widget only has a Vue implementation
   onClick(_options: WidgetEventOptions): void {}
 }
