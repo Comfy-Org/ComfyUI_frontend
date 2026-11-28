@@ -24,6 +24,12 @@ const HANDLE_CLASSES: Record<ResizeHandle, string> = {
     'inset-x-4 h-2 cursor-ns-resize group-data-[side=bottom]/dropdown:-bottom-1 group-data-[side=top]/dropdown:-top-1'
 }
 
+const CORNER_ICON_CLASSES: Partial<Record<ResizeHandle, string>> = {
+  'left-corner':
+    'group-data-[side=bottom]/dropdown:-scale-x-100 group-data-[side=top]/dropdown:-scale-100',
+  'right-corner': 'group-data-[side=top]/dropdown:-scale-y-100'
+}
+
 const CORNER_LABELS: Partial<Record<ResizeHandle, string>> = {
   'left-corner': 'widgets.uploadSelect.resizeLeftCorner',
   'right-corner': 'widgets.uploadSelect.resizeRightCorner'
@@ -157,7 +163,9 @@ function resetSize() {
   >
     <i
       v-if="cornerLabel"
-      class="icon-[lucide--grip] size-3"
+      :class="
+        cn('icon-[comfy--resize-corner] size-3', CORNER_ICON_CLASSES[handle])
+      "
       aria-hidden="true"
     />
   </div>
