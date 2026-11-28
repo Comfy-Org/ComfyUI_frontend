@@ -151,6 +151,7 @@ const RESIZE_HANDLES: ResizeHandle[] = [
 ]
 const alignOffset = ref(0)
 const panelSide = ref<PanelSide>()
+const isResizing = ref(false)
 whenever(
   () => !isOpen.value,
   () => {
@@ -421,7 +422,7 @@ const dropdownItems = computed(() =>
       align="end"
       :align-offset
       :side="panelSide"
-      :side-flip="!panelSide"
+      :side-flip="!isResizing"
       update-position-strategy="always"
       :side-offset="12"
       hide-when-detached
@@ -470,6 +471,7 @@ const dropdownItems = computed(() =>
         v-model:size="panelSize"
         v-model:align-offset="alignOffset"
         v-model:side="panelSide"
+        v-model:resizing="isResizing"
         :handle
         :anchor="triggerRef?.anchor"
       />

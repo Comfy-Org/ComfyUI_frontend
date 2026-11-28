@@ -212,7 +212,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         })
       })
 
-      test('keeps the image picker above its trigger while it shrinks', async ({
+      test('keeps the image picker above its trigger while it shrinks, then flips it when panned', async ({
         comfyPage
       }) => {
         await comfyPage.canvasOps.pan({ x: 300, y: 450 }, { x: 700, y: 300 })
@@ -243,6 +243,12 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
           opened.y + opened.height,
           0
         )
+
+        await test.step('panning the trigger up flips the picker below it', async () => {
+          await comfyPage.canvasOps.pan({ x: 0, y: -400 }, { x: 900, y: 700 })
+          await expect(dropdown.popover).toHaveAttribute('data-side', 'bottom')
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+        })
       })
     })
 

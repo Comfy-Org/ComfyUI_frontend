@@ -37,6 +37,7 @@ const cornerLabel = CORNER_LABELS[handle]
 const size = defineModel<PanelSize>('size')
 const alignOffset = defineModel<number>('alignOffset', { default: 0 })
 const side = defineModel<PanelSide>('side')
+const isResizing = defineModel<boolean>('resizing', { default: false })
 const handleRef = useTemplateRef<HTMLElement>('handleRef')
 
 type PanelMeasure = {
@@ -91,6 +92,7 @@ function onPointerDown(event: PointerEvent) {
   const panel = measurePanel()
   if (!panel) return
   pinSide(panel)
+  isResizing.value = true
   handleRef.value?.setPointerCapture(event.pointerId)
   drag = {
     pointerId: event.pointerId,
@@ -109,7 +111,9 @@ function onPointerMove(event: PointerEvent) {
 }
 
 function onPointerEnd(event: PointerEvent) {
-  if (drag?.pointerId === event.pointerId) drag = undefined
+  if (drag?.pointerId !== event.pointerId) return
+  drag = undefined
+  isResizing.value = false
 }
 
 function onKeydown(event: KeyboardEvent) {
