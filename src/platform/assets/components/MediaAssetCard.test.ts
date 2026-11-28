@@ -321,15 +321,14 @@ describe('MediaAssetCard', () => {
     '$modifier-clicks a video preview to select without starting playback',
     async ({ keyDown, keyUp }) => {
       const user = userEvent.setup()
-      const { container, emitted } = renderCard({
+      const { emitted } = renderCard({
         loading: false,
         asset: { ...asset, name: 'clip.mp4' }
       })
       const video = await vi.waitFor(() => {
-        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-        const element = container.querySelector('video')
+        const element = screen.getByTestId('media-asset-video')
         expect(element).toBeInTheDocument()
-        return element!
+        return element as HTMLVideoElement
       })
       const playSpy = vi
         .spyOn(video, 'play')
