@@ -95,15 +95,15 @@ export function usePanelResize({
       stopUp()
       stopCancel()
     }
-    const stopMove = useEventListener(handle, 'pointermove', (moveEvent) => {
+    const stopMove = useEventListener(window, 'pointermove', (moveEvent) => {
       if (moveEvent.pointerId !== pointerId) return
       resizeFrom(panel, direction, {
         x: moveEvent.clientX - event.clientX,
         y: moveEvent.clientY - event.clientY
       })
     })
-    const stopUp = useEventListener(handle, 'pointerup', end)
-    const stopCancel = useEventListener(handle, 'pointercancel', end)
+    const stopUp = useEventListener(window, 'pointerup', end)
+    const stopCancel = useEventListener(window, 'pointercancel', end)
   }
 
   function nudge(

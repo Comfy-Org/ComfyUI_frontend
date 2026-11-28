@@ -81,6 +81,24 @@ describe('usePanelResize', () => {
     expect(sizes.map((size) => size?.width)).toEqual([500, 600])
   })
 
+  it('ends a drag released away from its handle, so the next drag starts', async () => {
+    const { grip, sizes } = renderPanel('SW')
+    const user = userEvent.setup()
+
+    await user.pointer([
+      { keys: '[TouchA>]', target: grip, coords: { clientX: 0, clientY: 0 } },
+      { keys: '[/TouchA]', target: document.body },
+      { keys: '[TouchB>]', target: grip, coords: { clientX: 0, clientY: 0 } },
+      {
+        pointerName: 'TouchB',
+        target: grip,
+        coords: { clientX: -100, clientY: 0 }
+      }
+    ])
+
+    expect(sizes.map((size) => size?.width)).toEqual([500])
+  })
+
   it.for([
     { direction: 'SW', key: '{ArrowLeft}', width: 416, offsets: [] },
     { direction: 'SE', key: '{ArrowRight}', width: 416, offsets: [-16] }
