@@ -1,9 +1,15 @@
-import type { ActivityPart, PartState, ToolPart } from './agentMessageParts'
+import type {
+  ActivityPart,
+  PartState,
+  ThinkingPart,
+  ToolPart
+} from './agentMessageParts'
 
 interface ToolRow {
   kind: 'tool'
   name: string
   skill?: string
+  download?: string
   state: PartState
   ok?: boolean
   count: number
@@ -14,6 +20,7 @@ interface ThinkingRow {
   kind: 'thinking'
   text: string
   state: PartState
+  truncated?: boolean
 }
 
 export type ActivityRow = ToolRow | ThinkingRow
@@ -25,7 +32,8 @@ function matchingToolStep(
   if (
     previous?.kind !== 'tool' ||
     previous.name !== part.name ||
-    (part.name === 'load_skill' && previous.skill !== part.skill)
+    (part.name === 'load_skill' && previous.skill !== part.skill) ||
+    previous.download !== part.download
   )
     return undefined
   return previous
@@ -39,15 +47,21 @@ function foldCanvasConfirmed(
   return previous ?? next
 }
 
+function thinkingRow(part: ThinkingPart): ThinkingRow {
+  const row: ThinkingRow = {
+    kind: 'thinking',
+    text: part.text,
+    state: part.state
+  }
+  if (part.truncated) row.truncated = true
+  return row
+}
+
 export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
   const rows: ActivityRow[] = []
   for (const part of parts) {
     if (part.type === 'thinking') {
-      rows.push({
-        kind: 'thinking',
-        text: part.text,
-        state: part.state
-      })
+      rows.push(thinkingRow(part))
       continue
     }
     const previous = matchingToolStep(rows.at(-1), part)
@@ -65,6 +79,7 @@ export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
         kind: 'tool',
         name: part.name,
         skill: part.skill,
+        download: part.download,
         state: part.state,
         ok: part.ok,
         canvasConfirmed: part.canvasConfirmed,

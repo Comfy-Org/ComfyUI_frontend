@@ -25,6 +25,12 @@ const views: Record<BillingBannerKind, BillingBannerView> = {
     href: null,
     dismissKey: 'op-1:paymentReceived'
   },
+  planNotStarted: {
+    kind: 'planNotStarted',
+    ...text,
+    action: 'finishPayment',
+    href: null
+  },
   topupCheckout: {
     kind: 'topupCheckout',
     ...text,
@@ -183,6 +189,21 @@ describe('selectBillingBanners', () => {
       case: 'credit hidden behind a top-up checkout',
       shown: ['credit', 'topupCheckout'],
       stack: ['topupCheckout']
+    },
+    {
+      case: 'an unfinished first plan payment over credit and auto top-up',
+      shown: ['credit', 'autoTopUp', 'planNotStarted'],
+      stack: ['planNotStarted']
+    },
+    {
+      case: 'an unfinished first plan payment ahead of a top-up checkout',
+      shown: ['topupCheckout', 'planNotStarted'],
+      stack: ['planNotStarted', 'topupCheckout']
+    },
+    {
+      case: 'an unfinished first plan payment behind the plan checkout that asks for the same payment',
+      shown: ['planNotStarted', 'planCheckout'],
+      stack: ['planCheckout']
     },
     {
       case: 'auto top-up on its own',

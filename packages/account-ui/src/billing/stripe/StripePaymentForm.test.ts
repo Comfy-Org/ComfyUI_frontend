@@ -85,6 +85,7 @@ function renderForm(
     themeKey?: string
     pageLayout?: boolean
     payOnce?: boolean
+    savesCardOffSession?: boolean
     onConfirm?: (token: string) => void
     onSubmittingChange?: (submitting: boolean) => void
     container?: HTMLElement
@@ -446,6 +447,31 @@ describe('StripePaymentForm', () => {
     expect(stripeMocks.create).toHaveBeenCalledWith(
       'payment',
       expect.objectContaining({ wallets: { link: 'never' } })
+    )
+  })
+
+  it('saves the card for off-session charges while paying once when asked, and follows the ask as it changes', async () => {
+    const { rerender } = renderForm(2500, 'pmc_topup', {
+      payOnce: true,
+      savesCardOffSession: true
+    })
+
+    await waitFor(() =>
+      expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mode: 'payment',
+          paymentMethodTypes: ['card'],
+          setupFutureUsage: 'off_session'
+        })
+      )
+    )
+
+    await rerender({ savesCardOffSession: false })
+
+    await waitFor(() =>
+      expect(stripeMocks.update).toHaveBeenCalledWith({
+        setupFutureUsage: null
+      })
     )
   })
 

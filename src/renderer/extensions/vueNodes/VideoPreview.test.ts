@@ -60,6 +60,34 @@ describe('VideoPreview', () => {
   }
 
   describe('load failure telemetry', () => {
+    it('reports the media error code from the video element', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      renderVideoPreview({
+        imageUrls: ['/api/view?filename=prores.mov&type=output']
+      })
+      const video = screen.getByTestId('main-video')
+      Object.defineProperty(video, 'error', {
+        configurable: true,
+        get: () => ({ code: 4 })
+      })
+
+      await fireEvent.error(video)
+
+      await vi.waitFor(() =>
+        expect(
+          useTelemetry()?.trackImageLoadFailed
+        ).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            source: 'node_video_preview',
+            media_error_code: 4
+          })
+        )
+      )
+    })
+
     it('reports a failed video load once, attributed to the Vue node preview', async () => {
       resetImageFailureProbesForTest()
       vi.mocked(fetch).mockImplementation(
@@ -85,6 +113,160 @@ describe('VideoPreview', () => {
             page_age_ms: expect.any(Number)
           })
         )
+      )
+    })
+  })
+
+  describe('stalled load', () => {
+    const videoRegion = () =>
+      screen.getByRole('region', { name: /Video preview/ })
+
+    it('brings the loader down and reports a stall when neither loadeddata nor error arrives', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      renderVideoPreview({
+        imageUrls: ['/api/view?filename=stalled.mp4&type=output']
+      })
+
+      expect(videoRegion()).toHaveAttribute('aria-busy', 'true')
+
+      await vi.advanceTimersByTimeAsync(8192)
+      await nextTick()
+
+      expect(videoRegion()).toHaveAttribute('aria-busy', 'false')
+      expect(screen.getByTestId('main-video')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('error-loading-video')
+      ).not.toBeInTheDocument()
+
+      await vi.waitFor(() =>
+        expect(
+          useTelemetry()?.trackImageLoadFailed
+        ).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            source: 'node_video_preview',
+            timed_out: true,
+            attempts: 1,
+            resource_kind: 'output',
+            status: 200
+          })
+        )
+      )
+    })
+
+    it('does not report a load that completes before the timeout', async () => {
+      resetImageFailureProbesForTest()
+      renderVideoPreview({
+        imageUrls: ['/api/view?filename=fine.mp4&type=output']
+      })
+
+      await fireEvent.loadedData(screen.getByTestId('main-video'))
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(8192 * 2)
+
+      expect(videoRegion()).toHaveAttribute('aria-busy', 'false')
+      expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
+    })
+
+    it('reveals without reporting when the browser stopped after metadata', async () => {
+      resetImageFailureProbesForTest()
+      renderVideoPreview({
+        imageUrls: ['/api/view?filename=suspended.mp4&type=output']
+      })
+      const video = screen.getByTestId('main-video')
+      Object.defineProperty(video, 'readyState', {
+        configurable: true,
+        get: () => 1
+      })
+
+      await vi.advanceTimersByTimeAsync(8192)
+      await nextTick()
+
+      expect(videoRegion()).toHaveAttribute('aria-busy', 'false')
+      expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
+    })
+
+    it('gives a newly selected video its own full timeout', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      renderVideoPreview()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+      await vi.advanceTimersByTimeAsync(8000)
+      await user.click(
+        screen.getByRole('button', { name: 'View video 2 of 2' })
+      )
+      await vi.advanceTimersByTimeAsync(8000)
+      await nextTick()
+
+      expect(videoRegion()).toHaveAttribute('aria-busy', 'true')
+      expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(192)
+      await nextTick()
+
+      expect(videoRegion()).toHaveAttribute('aria-busy', 'false')
+      await vi.waitFor(() =>
+        expect(
+          useTelemetry()?.trackImageLoadFailed
+        ).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            timed_out: true,
+            resource_kind: 'output'
+          })
+        )
+      )
+    })
+
+    it('does not report the same load again when it errors after a stall', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      renderVideoPreview({
+        imageUrls: ['/api/view?filename=late-error.mp4&type=output']
+      })
+
+      await vi.advanceTimersByTimeAsync(8192)
+      await nextTick()
+      await vi.waitFor(() =>
+        expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledOnce()
+      )
+
+      await fireEvent.error(screen.getByTestId('main-video'))
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(screen.getByTestId('error-loading-video')).toBeInTheDocument()
+      expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledOnce()
+    })
+    it('reports an error from a recreated element for the same URL after a stall', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      const sameUrl = '/api/view?filename=twice.mp4&type=output'
+      renderVideoPreview({ imageUrls: [sameUrl, sameUrl] })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+      await vi.advanceTimersByTimeAsync(8192)
+      await nextTick()
+      await fireEvent.error(screen.getByTestId('main-video'))
+      await vi.waitFor(() =>
+        expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledOnce()
+      )
+
+      await user.click(
+        screen.getByRole('button', { name: 'View video 2 of 2' })
+      )
+      await fireEvent.error(screen.getByTestId('main-video'))
+
+      await vi.waitFor(() =>
+        expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledTimes(2)
       )
     })
   })

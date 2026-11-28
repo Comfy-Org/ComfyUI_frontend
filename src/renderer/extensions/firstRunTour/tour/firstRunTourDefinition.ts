@@ -11,7 +11,7 @@ import type {
   CoachStep,
   TourResolution
 } from '@/platform/onboarding/onboardingTours'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 import { resolveTourRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
 import type { ResolvedRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
@@ -130,7 +130,7 @@ export async function firstRunTourSteps(
   runState: Readonly<Ref<RunState>>
 ): Promise<TourResolution> {
   releaseFirstRunTargets()
-  const graph = app.rootGraphOrUndefined
+  const graph = useApp().rootGraphOrUndefined
   if (!graph) return { steps: [], reason: 'no_roles' }
   const roles = resolveTourRoles(graph, templateId)
   if (!roles) return { steps: [], reason: 'no_roles' }

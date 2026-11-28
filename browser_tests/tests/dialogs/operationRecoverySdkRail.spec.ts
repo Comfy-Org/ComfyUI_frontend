@@ -16,6 +16,7 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -30,9 +31,7 @@ import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
  * flag flip while an operation is pending.
  *
  * Both rails poll `GET /api/billing/ops/{id}`, so the request body cannot tell
- * them apart. The transport can: the SDK runs on `fetch`, the legacy workspace
- * client on axios' XHR adapter — the same discriminator `planChangeSdkRail`
- * and `cancelSubscriptionSdkRail` use.
+ * them apart. The client that polled can, through `billingClient`.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -200,11 +199,6 @@ async function setupRecovery(
   }
 }
 
-/** Which transport polled, and so which rail adopted the operation. */
-function transports(requests: Request[]): string[] {
-  return requests.map((request) => request.resourceType())
-}
-
 // sessionStorage must be seeded before any app code runs; attemptedAt is
 // stamped in the init script so the entry is always fresher than the 24h cap.
 async function seedPendingCheckout(
@@ -252,15 +246,9 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     await cloudAppExpect
       .poll(() => routes.pollRequests.length)
       .toBeGreaterThan(0)
-    // Exactly one adopter, and it is the SDK: the second assertion is only
-    // sound because the flag now arrives on a channel boot awaits.
-    expect(new Set(transports(routes.pollRequests)).size).toBe(1)
-    expect(transports(routes.pollRequests)).not.toContain('xhr')
+    expect(new Set(routes.pollRequests.map(billingClient)).size).toBe(1)
+    expect(routes.pollRequests.map(billingClient)).not.toContain('legacy')
 
-    // An operation reattached at boot is never offered unprompted: no click of
-    // this page started it, so the browser would block the tab and warn on
-    // every load. The step waits behind the checkout's own button instead,
-    // as on the legacy rail below.
     await cloudAppExpect
       .poll(() => routes.pollRequests.length)
       .toBeGreaterThan(1)

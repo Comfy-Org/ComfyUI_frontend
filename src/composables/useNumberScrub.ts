@@ -23,7 +23,6 @@ export function useNumberScrub(
   }
 ) {
   let startValue = 0
-  let unitsPerPixel = 0
   let dragged = false
   let blockedAtStart = true
   const swipe = usePointerSwipe(target, {
@@ -37,19 +36,10 @@ export function useNumberScrub(
       if (!dragged) {
         if (!['left', 'right'].includes(swipe.direction.value)) return
         startValue = toValue(value)
-        const width = toValue(target)?.getBoundingClientRect().width ?? 0
-        const span = Math.min(
-          toValue(max) - toValue(min),
-          Math.abs(startValue) * 2
-        )
-        unitsPerPixel = Math.max(toValue(step), width > 0 ? span / width : 0)
       }
       dragged = true
       if (!(Math.abs(startValue) <= Number.MAX_SAFE_INTEGER)) return
-      const increment = toValue(step)
-      const delta = -swipe.distanceX.value * unitsPerPixel
-      const offset =
-        increment > 0 ? Math.round(delta / increment) * increment : delta
+      const offset = Math.round(-swipe.distanceX.value) * toValue(step)
       const nextValue = Math.min(
         toValue(max),
         Math.max(toValue(min), startValue + offset)

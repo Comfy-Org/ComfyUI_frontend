@@ -2,7 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -66,7 +66,8 @@ function buildMediaUrl(
   appendCloudResParam(params, filename)
   const revision = previewRevision?.(filename)
   if (revision) params.set('template_input_revision', String(revision))
-  const previewParam = mediaType === 'image' ? app.getPreviewFormatParam() : ''
+  const previewParam =
+    mediaType === 'image' ? useApp().getPreviewFormatParam() : ''
   return api.apiURL(`/view?${params}${previewParam}`)
 }
 

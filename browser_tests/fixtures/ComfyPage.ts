@@ -31,6 +31,7 @@ import {
 import { trackVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { resolveSetupApiUrl } from '@e2e/utils/e2eConfig'
@@ -594,18 +595,12 @@ export const comfyPageFixture = base.extend<{
   comfyMouse: ComfyMouse
   comfyFiles: ComfyFiles
 }>({
-  // Allows configuring feature flags for tests with before initial setup:
-  // `test.use({ initialFeatureFlags: { my_flag: true } })`.
   initialFeatureFlags: [{}, { option: true }],
 
   initialLocalStorage: [{}, { option: true }],
-  // Allows seeding user settings before initial page load:
-  // `test.use({ initialSettings: { 'Comfy.Locale': 'zh' } })`. Merged on top of
-  // the fixture's defaults so per-test values win.
   initialSettings: [{}, { option: true }],
   initialUrl: [undefined, { option: true }],
   mockReleases: [true, { option: true }],
-  // Set `false` to open a cloud tab that holds no Firebase login.
   firebaseLogin: [true, { option: true }],
 
   page: async ({ page, browserName }, use) => {
@@ -615,7 +610,6 @@ export const comfyPageFixture = base.extend<{
 
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
-    // A closed page has no coverage to collect
     if (page.isClosed()) return
     const coverage = await page.coverage.stopJSCoverage()
 
@@ -675,9 +669,7 @@ export const comfyPageFixture = base.extend<{
       })
       if (testInfo.tags.includes('@cloud')) {
         const context = page.context()
-        await context.route('**/api/auth/session', (route) =>
-          route.fulfill({ status: 204 })
-        )
+        await mockWebSessionServer(context)
         await context.route('**/api/billing/status', (route) =>
           route.fulfill({
             json: {

@@ -179,22 +179,22 @@ describe('agentReplayCli', () => {
     expect(out).toHaveBeenCalledWith(AGENT_REPLAY_USAGE)
   })
 
-  it.for([['--case'], ['--spec'], ['--url'], ['--case', '--headed']])(
-    'refuses %s without a value before spawning',
-    async (argv) => {
-      const run = vi.fn(() => ({ status: 0 }))
-      const err = vi
-        .spyOn(process.stderr, 'write')
-        .mockImplementation(() => true)
-      await expect(
-        agentReplayCli(argv, { run, interactive: true })
-      ).resolves.toBe(1)
-      expect(run).not.toHaveBeenCalled()
-      expect(err).toHaveBeenCalledWith(
-        expect.stringContaining(`${argv[0]} needs a value`)
-      )
-    }
-  )
+  it.for([
+    { argv: ['--case'] },
+    { argv: ['--spec'] },
+    { argv: ['--url'] },
+    { argv: ['--case', '--headed'] }
+  ])('refuses $argv without a value before spawning', async ({ argv }) => {
+    const run = vi.fn(() => ({ status: 0 }))
+    const err = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    await expect(
+      agentReplayCli(argv, { run, interactive: true })
+    ).resolves.toBe(1)
+    expect(run).not.toHaveBeenCalled()
+    expect(err).toHaveBeenCalledWith(
+      expect.stringContaining(`${argv[0]} needs a value`)
+    )
+  })
 
   it.for([['--bogus'], ['stray'], ['--case', 'agent-rec-a', 'stray']])(
     'refuses the unknown argument in %s before spawning',

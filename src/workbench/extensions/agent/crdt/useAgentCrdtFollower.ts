@@ -16,6 +16,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -26,25 +27,24 @@ import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type {
+  AgentCanvasStaleCause,
   AgentCrdtOutcomeCounters,
   AgentCrdtTerminalState,
   AgentCrdtStatus
 } from './agentCrdtStatus'
-import {
-  AgentCrdtDocLifecycle,
-  STALE_AFTER_MS,
-  SUBSCRIBE_CATCHUP_GRACE_MS
-} from './agentCrdtDocLifecycle'
+import { AgentCrdtDocLifecycle } from './agentCrdtDocLifecycle'
+import { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS } from './lifecycleTiming'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import { createLoggedTransport } from './agentCrdtTransport'
 import type { AgentDocFrameTransport } from './agentDocFrameTransport'
-import { recordDevEvent } from './devPanelLog'
+import { recordDevEvent } from './crdtLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
 import {
   RESEED_CONFLICT,
+  SOCKET_CREDENTIAL_REFUSED,
   isPermanentSubscribeRefusalCode,
   isRetryableReseedCode
 } from './docFrameCodes'
@@ -64,6 +64,7 @@ import { createRejectedOpNotifier } from './rejectedOpNotice'
 import type { LostEdits } from './rejectedOpNotice'
 import {
   forgetUnsyncedAtLoad,
+  hasBlockingUnsyncedHumanOps,
   recordUnsyncedHumanOps,
   releaseUnsyncedHumanOpsRecorder
 } from './unsyncedHumanOps'
@@ -75,6 +76,8 @@ interface ProjectionFrameId {
   seq: number
   isLive?: boolean
 }
+
+type SyncStaleCause = Exclude<AgentCanvasStaleCause, 'projection_failed' | null>
 
 const NOTHING_APPLIED: FrameOutcome = {
   applied: false,
@@ -290,6 +293,7 @@ type AgentCrdtApplierDeps = Omit<
 
 export interface AgentCrdtFollowerOptions {
   transport: AgentDocFrameTransport
+  diagnosticsEnabled?: () => boolean
   userId?: () => string | null
   isTargetActive?: Ref<boolean>
   /**
@@ -308,6 +312,7 @@ export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled,
     userId = () => null,
     isTargetActive = ref(true),
     getGraph = () => null,
@@ -318,11 +323,13 @@ export function useAgentCrdtFollower(
   }: AgentCrdtFollowerOptions
 ) {
   const productGate = useAgentPanelStore()
+  const { flags } = useFeatureFlags()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
   const disabledStatus: AgentCrdtStatus = {
     enabled: false,
     connected: false,
     canvasMayBeStale: false,
+    canvasStaleCause: null,
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
@@ -358,6 +365,8 @@ export function useAgentCrdtFollower(
           events,
           applierDeps,
           canvasFor,
+          diagnosticsEnabled:
+            diagnosticsEnabled ?? (() => flags.agentCrdtDebugEnabled),
           knownLineageFor
         })
       )
@@ -388,11 +397,16 @@ export function useAgentCrdtFollower(
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    isPreMintBinding: () => follower.value?.isPreMintBinding() ?? false,
     docHasSubgraphDefinition: (definitionId: string) =>
       follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       follower.value?.notifyWidgetWriteRefused(nodeId, widgetName),
-    subscriptionSent: () => follower.value?.subscriptionSent() ?? false
+    subscriptionSent: () => follower.value?.subscriptionSent() ?? false,
+    holdsWorkflow: (workflowId: string) =>
+      follower.value?.holdsWorkflow(workflowId) ?? false,
+    canResumeHeldWorkflow: (workflowId: string) =>
+      follower.value?.canResumeHeldWorkflow(workflowId) ?? false
   }
 }
 
@@ -400,6 +414,7 @@ function startAgentCrdtFollower(
   workflowId: Ref<string | null>,
   {
     transport,
+    diagnosticsEnabled,
     userId,
     isTargetActive,
     getGraph,
@@ -413,8 +428,16 @@ function startAgentCrdtFollower(
   let catchUpAwaitingProjectionFor: string | null = null
   const syncCanvasMayBeStale = ref(false)
   const projectionFailureFor = ref<string | null>(null)
+  const syncStaleCause = ref<SyncStaleCause | null>(null)
   const canvasMayBeStale = computed(
     () => syncCanvasMayBeStale.value || projectionFailureFor.value !== null
+  )
+  const canvasStaleCause = computed<AgentCanvasStaleCause>(() =>
+    syncCanvasMayBeStale.value
+      ? syncStaleCause.value
+      : projectionFailureFor.value !== null
+        ? 'projection_failed'
+        : null
   )
   const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
@@ -431,7 +454,9 @@ function startAgentCrdtFollower(
     dropped: 0
   })
 
-  const client = new DocFrameClient(createLoggedTransport(transport))
+  const client = new DocFrameClient(
+    createLoggedTransport(transport, diagnosticsEnabled)
+  )
   const bridge = new LayoutFollowerBridge(client)
   const lifecycle = new AgentCrdtDocLifecycle(
     () => subscribedWorkflowId.value,
@@ -439,7 +464,8 @@ function startAgentCrdtFollower(
     (reason) => {
       connected.value = false
       terminal.value = reason
-    }
+    },
+    () => transport.reconnect()
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
@@ -458,8 +484,9 @@ function startAgentCrdtFollower(
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
 
-  function markCanvasStale(): void {
+  function markCanvasStale(cause: SyncStaleCause): void {
     syncCanvasMayBeStale.value = true
+    syncStaleCause.value = cause
     catchUpAwaitingProjectionFor = null
   }
 
@@ -474,6 +501,7 @@ function startAgentCrdtFollower(
 
   function clearSyncStaleness(): void {
     syncCanvasMayBeStale.value = false
+    syncStaleCause.value = null
     catchUpAwaitingProjectionFor = null
   }
 
@@ -486,6 +514,7 @@ function startAgentCrdtFollower(
 
   function clearCanvasStaleness(): void {
     syncCanvasMayBeStale.value = false
+    syncStaleCause.value = null
     projectionFailureFor.value = null
     catchUpAwaitingProjectionFor = null
   }
@@ -571,10 +600,15 @@ function startAgentCrdtFollower(
     const lost = classifyLostEdits(outcome)
     const anyLost = lost.overwritten.length + lost.unconfirmed.length > 0
     if (anyLost) rejectedOpNotifier.notifyLostEdits(result, lost)
-    const applied = new Set(result.applied)
+    const lostIds = new Set(
+      [...lost.overwritten, ...lost.unconfirmed].map((op) => op.op_id)
+    )
+    const accepted = new Set([...result.applied, ...result.skipped])
     const reverted = result.ok
       ? [...lost.overwritten, ...lost.unconfirmed]
-      : outcome.ops.filter((op) => !applied.has(op.op_id))
+      : outcome.ops.filter(
+          (op) => !accepted.has(op.op_id) || lostIds.has(op.op_id)
+        )
     const workflowId = result.workflowId ?? bridge.subscribedWorkflowId
     if (workflowId === null || (result.ok && !anyLost)) return
     revertRejectedOps(workflowId, reverted, result.seq)
@@ -583,9 +617,11 @@ function startAgentCrdtFollower(
 
   const workflowsWithUnsyncedOps = new Set<string>()
   const recordUnsynced = (): void => {
-    const unsynced = new Set(workflowsWithUnsyncedOps)
-    for (const { workflowId } of sender.pendingOps()) unsynced.add(workflowId)
-    recordUnsyncedHumanOps(tabId, unsynced)
+    recordUnsyncedHumanOps(
+      tabId,
+      workflowsWithUnsyncedOps,
+      sender.pendingOps().map(({ workflowId }) => workflowId)
+    )
   }
   const noteSettledHumanOps = (
     outcome: BatchOutcome,
@@ -814,6 +850,21 @@ function startAgentCrdtFollower(
     }
   }
 
+  let credentialReconnectSpent = false
+  function reconnectForCredential(code: unknown): boolean {
+    if (credentialReconnectSpent || code !== SOCKET_CREDENTIAL_REFUSED)
+      return false
+    credentialReconnectSpent = true
+    lifecycle.awaitReconnect()
+    recordDevEvent('subscribe_credential_reconnect', {
+      workflowId: subscribedWorkflowId.value
+    })
+    transport.reconnect()
+    sender.abortIfUnbound('subscribe_refused')
+    releaseHeldOps()
+    return true
+  }
+
   function handleRejectedSubscription(
     detail: {
       workflowId?: unknown
@@ -837,6 +888,13 @@ function startAgentCrdtFollower(
     releaseHeldOps()
     if (refusal.shouldNotify)
       events.onSyncError?.(refusal.message, refusal.code)
+  }
+
+  function answerRefusedSubscription(
+    detail: Parameters<typeof handleRejectedSubscription>[0]
+  ): void {
+    if (!reconnectForCredential(detail?.code))
+      handleRejectedSubscription(detail)
   }
 
   function subscribeBaselineIsIntegrated(seq: number | undefined): boolean {
@@ -889,12 +947,13 @@ function startAgentCrdtFollower(
         }
       }
       terminal.value = null
+      credentialReconnectSpent = false
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
       sender.retryTransport()
     } else {
-      handleRejectedSubscription(detail)
+      answerRefusedSubscription(detail)
     }
   }
   function settleCatchUpProjection(
@@ -984,7 +1043,7 @@ function startAgentCrdtFollower(
     recordUnsynced()
     events.onReset?.(detail.workflowId)
     connected.value = false
-    markCanvasStale()
+    markCanvasStale('doc_reset')
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -1018,7 +1077,7 @@ function startAgentCrdtFollower(
   const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     connected.value = false
-    markCanvasStale()
+    markCanvasStale('schema_error')
     terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -1061,7 +1120,7 @@ function startAgentCrdtFollower(
   }
   const onGap: EventListener = (event) => {
     connected.value = false
-    markCanvasStale()
+    markCanvasStale('doc_gap')
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
       'doc_gap',
@@ -1083,8 +1142,9 @@ function startAgentCrdtFollower(
   }
   function onSocketStatus(live: boolean): void {
     if (!live) {
-      if (connected.value) markCanvasStale()
+      if (connected.value) markCanvasStale('socket_closed')
       connected.value = false
+      lifecycle.onSocketClosed()
       return
     }
     connected.value = false
@@ -1135,10 +1195,10 @@ function startAgentCrdtFollower(
     subscribedWorkflowId.value = next
   }
   // The bound workflow whose tab went inactive while the sender still held
-  // batches for it. A tab switch pauses the subscription without rebinding
-  // the session, so those batches are held rather than aborted (see
-  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
-  // them into the normal abort path.
+  // batches for it. Leaving its tab—or detaching while unconfirmed edits
+  // remain—suspends the sender instead of aborting those batches (see
+  // ADR-CRDT-WRITE-0035); retargeting to another workflow releases them into
+  // the normal abort path.
   let heldForWorkflowId: string | null = null
   const releaseHeldOps = (): void => {
     heldForWorkflowId = null
@@ -1181,6 +1241,18 @@ function startAgentCrdtFollower(
     releaseHeldOps()
   }
 
+  const workflowToHold = (
+    next: string | null,
+    previousWorkflowId: string | null
+  ): string | null => {
+    if (previousWorkflowId === null) return null
+    if (next === previousWorkflowId) return previousWorkflowId
+    const hasUnsettledOps = sender
+      .pendingOps()
+      .some(({ workflowId }) => workflowId === previousWorkflowId)
+    return next === null && hasUnsettledOps ? previousWorkflowId : null
+  }
+
   // A tab switch keeps the projection bound: whatever the doc collects while
   // the tab is away is applied on return, instead of the live graph being
   // rebuilt from the whole doc over the human's edits.
@@ -1189,10 +1261,12 @@ function startAgentCrdtFollower(
     previousWorkflowId: string | null
   ): void => {
     if (next !== null) initialBind = false
-    if (next !== null && next === previousWorkflowId) {
-      if (connected.value || canvasMayBeStale.value) markCanvasStale()
+    const held = workflowToHold(next, previousWorkflowId)
+    if (held !== null) {
+      if (connected.value || canvasMayBeStale.value)
+        markCanvasStale('tab_inactive')
       connected.value = false
-      holdOpsForInactiveTab(next)
+      holdOpsForInactiveTab(held)
       return
     }
     connected.value = false
@@ -1294,6 +1368,7 @@ function startAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     canvasMayBeStale: canvasMayBeStale.value,
+    canvasStaleCause: canvasStaleCause.value,
     workflowId: subscribedWorkflowId.value,
     terminal: terminal.value,
     updatesApplied: updatesApplied.value,
@@ -1314,6 +1389,7 @@ function startAgentCrdtFollower(
     debugSnapshot,
     retrySubscription: () => {
       if (!lifecycle.retry()) return
+      credentialReconnectSpent = false
       connected.value = false
       terminal.value = null
     },
@@ -1339,13 +1415,18 @@ function startAgentCrdtFollower(
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    isPreMintBinding: () => bridge.isPreMintBaseline,
     docHasSubgraphDefinition: (definitionId: string) =>
       readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () =>
       bridge.subscribedWorkflowId !== null &&
-      bridge.subscribedWorkflowId === subscribedWorkflowId.value
+      bridge.subscribedWorkflowId === subscribedWorkflowId.value,
+    holdsWorkflow: (workflowId: string) => heldForWorkflowId === workflowId,
+    canResumeHeldWorkflow: (workflowId: string) =>
+      heldForWorkflowId === workflowId &&
+      !hasBlockingUnsyncedHumanOps(workflowId, tabId)
   }
 }
 

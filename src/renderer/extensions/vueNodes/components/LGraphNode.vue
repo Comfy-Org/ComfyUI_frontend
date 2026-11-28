@@ -4,11 +4,16 @@
   </div>
   <div
     v-else
+    ref="nodeRef"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
     :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
+    :data-node-type="nodeData.type"
+    :data-mode="stateAttributes.mode"
+    :data-executing="stateAttributes.executing"
+    :data-error="stateAttributes.error"
     :class="
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
@@ -16,7 +21,9 @@
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : compactHeader
+            ? 'w-max max-w-(--collapsed-node-max-width)'
+            : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -27,8 +34,9 @@
     "
     :style="{
       ...nodeSizeStyle,
-      '--min-node-width': `${MIN_NODE_WIDTH}px`,
-      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      '--min-node-width': `${minNodeWidth}px`,
+      '--collapsed-node-max-width': `${MIN_NODE_WIDTH}px`,
+      transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
@@ -71,18 +79,18 @@
       :class="
         cn(
           'relative flex flex-1 flex-col',
-          !isCollapsed &&
-            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
+          !isCollapsed && 'transform-[translate(0)] [clip-path:inset(-16px)]'
         )
       "
     >
       <div
         data-testid="node-inner-wrapper"
+        data-part="node-frame"
         :class="
           cn(
             'flex flex-1 flex-col bg-node-header',
             'w-(--node-width)',
-            !isRerouteNode && 'min-w-(--min-node-width)',
+            !isRerouteNode && !compactHeader && 'min-w-(--min-node-width)',
             shapeClass,
             hasAnyError && 'ring-4',
             errorSeverity === 'missing' && 'ring-warning',
@@ -93,9 +101,9 @@
           )
         "
         :style="{
-          '--node': applyLightThemeColor(nodeData.bgcolor),
+          '--node': themeStore.toNodeColor(nodeData.bgcolor),
           '--component-node-background': 'var(--node)',
-          backgroundColor: applyLightThemeColor(nodeData?.color)
+          backgroundColor: themeStore.toNodeColor(nodeData?.color)
         }"
       >
         <div
@@ -126,15 +134,10 @@
           />
         </div>
 
-        <div
+        <NodeProgressBar
           v-if="isCollapsed && executing && progress !== undefined"
-          :class="
-            cn(
-              'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
-              progressClasses
-            )
-          "
-          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+          :progress
+          collapsed
         />
 
         <template v-if="!isCollapsed && isRerouteNode">
@@ -143,16 +146,9 @@
 
         <template v-else-if="!isCollapsed">
           <div class="relative">
-            <div
+            <NodeProgressBar
               v-if="executing && progress !== undefined"
-              :class="
-                cn(
-                  'absolute inset-x-0 top-1/2 -translate-y-1/2',
-                  !!(progress < 1) && 'rounded-r-full',
-                  progressClasses
-                )
-              "
-              :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+              :progress
             />
           </div>
 
@@ -162,6 +158,7 @@
             "
             :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
             :data-testid="`node-body-${nodeData.id}`"
+            data-part="node-body"
           >
             <NodeSlots :node-data />
 
@@ -194,6 +191,14 @@
                   v-for="(region, index) in mediaRegions"
                   :key="region.name"
                   data-testid="node-preview-region"
+                  :data-media-region="region.name"
+                  :data-media-fills-node="
+                    mediaRegions.length === 1 &&
+                    region.fills &&
+                    !hasExpandingWidget
+                      ? ''
+                      : undefined
+                  "
                   :class="
                     cn(
                       'relative flex min-h-0 flex-col',
@@ -204,7 +209,9 @@
                         : region.fills
                           ? 'flex-1'
                           : 'shrink-0',
-                      region.growsIntoLeftover && 'grow'
+                      region.height === undefined &&
+                        region.growsIntoLeftover &&
+                        'grow'
                     )
                   "
                   :style="
@@ -261,7 +268,7 @@
         :show-errors-tab-enabled="showErrorsTabEnabled"
         :show-advanced-inputs-button="showAdvancedInputsButton"
         :show-advanced-state="!!nodeData.showAdvanced"
-        :header-color="applyLightThemeColor(nodeData?.color)"
+        :header-color="themeStore.toNodeColor(nodeData?.color)"
         :shape="nodeData.shape"
         @enter-subgraph="handleEnterSubgraph"
         @open-errors="handleOpenErrors"
@@ -275,42 +282,13 @@
           !isSelectMode
         "
       >
-        <div
+        <NodeResizeHandle
           v-for="handle in RESIZE_HANDLES"
           :key="handle.corner"
-          role="button"
-          :data-corner="handle.corner"
-          :aria-label="t(handle.i18nKey)"
-          :class="
-            cn(
-              baseResizeHandleClasses,
-              handle.positionClasses,
-              handle.cursorClass,
-              'group-hover/node:opacity-100'
-            )
-          "
-          @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-          @dblclick.stop="handleResizeDoubleClick"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 12 12"
-            :class="cn('absolute size-2/5', handle.svgPositionClasses)"
-            :style="
-              handle.svgTransform
-                ? { transform: handle.svgTransform }
-                : undefined
-            "
-          >
-            <path
-              d="M11 1L1 11M11 6L6 11"
-              stroke="var(--color-muted-foreground)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
+          :handle
+          @resize="handleResizePointerDown"
+          @fit="handleResizeDoubleClick"
+        />
       </template>
     </div>
   </div>
@@ -318,7 +296,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, provide, ref } from 'vue'
+import {
+  computed,
+  onErrorCaptured,
+  provide,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -332,11 +317,13 @@ import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
@@ -345,10 +332,11 @@ import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composables/useNodeMouseCallbacks'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useMountedNodeSize } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import {
   growableRegionsKey,
@@ -361,14 +349,14 @@ import {
   shouldHideLinkedCoreLoadAudioPlayer,
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
-import { nonWidgetedInputs } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import {
+  isAdvancedSocketInput,
+  nonWidgetedInputs
+} from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { getNodeErrorSeverity } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import {
-  applyLightThemeColor,
-  shapeVariantClass
-} from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { app } from '@/scripts/app'
+import { shapeVariantClass } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   stripGraphPrefix,
@@ -405,6 +393,8 @@ import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import NodePreviewParts from './NodePreviewParts.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
+import NodeResizeHandle from './NodeResizeHandle.vue'
+import NodeProgressBar from './NodeProgressBar.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
@@ -421,13 +411,12 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const themeStore = useThemeStore()
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 
 const nodeId = computed(() => nodeData.id)
-
-useVueElementTracking(nodeId.value, 'node')
 
 const canvasStore = useCanvasStore()
 
@@ -456,10 +445,24 @@ const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const compactHeader = computed(
+  () =>
+    isCollapsed.value &&
+    displayHeader.value &&
+    !isRerouteNode.value &&
+    !nodeData.showAdvanced &&
+    !(hasAnyError.value && showErrorsTabEnabled.value)
+)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
+
+const stateAttributes = computed(() => ({
+  mode: bypassed.value ? 'bypass' : muted.value ? 'muted' : undefined,
+  executing: executing.value ? '' : undefined,
+  error: hasAnyError.value ? errorSeverity.value : undefined
+}))
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
@@ -499,6 +502,26 @@ function previewRegionId(name: string) {
   return isWidgetId(id) ? id : undefined
 }
 
+const nodeRef = useTemplateRef<HTMLElement>('nodeRef')
+useMountedNodeSize(
+  nodeRef,
+  () => nodeId.value,
+  () => nodeData.type
+)
+const nodeTransform = computed(
+  () =>
+    `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`
+)
+const { setTransform: setDraggedTransform, releaseTransform } =
+  useCompositedTransform(nodeRef)
+
+watch(nodeTransform, (transform) => {
+  if (layoutStore.isDraggingVueNodes.value) setDraggedTransform(transform)
+})
+watch(layoutStore.isDraggingVueNodes, (isDragging) => {
+  if (!isDragging) releaseTransform()
+})
+
 const growable = useGrowableRegions({
   regionId: (name) =>
     name === soleGrowableWidget.value ? undefined : previewRegionId(name),
@@ -533,7 +556,10 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+const { pointerHandlers, isDragging } = useNodePointerInteractions(
+  () => nodeData
+)
+useNodeMouseCallbacks(() => nodeData.id, nodeRef)
 const badges = usePartitionedBadges(nodeData)
 
 // Handle right-click context menu
@@ -547,9 +573,6 @@ const handleContextMenu = (event: MouseEvent) => {
   // Show the node options menu at the cursor position
   showNodeOptions(event, { nodeId: nodeData.id })
 }
-
-const baseResizeHandleClasses =
-  'absolute z-30 h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 function resizeNodeTo(
   height: number,
@@ -594,7 +617,7 @@ const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   resizeNodeTo(
     result.size.height,
-    Math.max(result.size.width, MIN_NODE_WIDTH),
+    Math.max(result.size.width, minNodeWidth.value),
     result.position
   )
 })
@@ -604,7 +627,8 @@ const handleResizePointerDown = (
   corner: CompassCorners
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
-  startResize(event, corner)
+  const element = nodeRef.value
+  if (element) startResize(event, corner, { element, position: position.value })
 }
 
 const ownPreviewParts = computed((): NodePreviewPart[] =>
@@ -650,9 +674,6 @@ const mediaRegions = computed(() => [
     : [])
 ])
 
-// Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary transition-all duration-300'
-
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
   {
@@ -662,9 +683,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
-  return layoutStore.isDraggingVueNodes.value
-    ? 'cursor-grabbing'
-    : 'cursor-grab'
+  return isDragging.value ? 'cursor-grabbing' : 'cursor-grab'
 })
 
 const bodyRoundingClass = computed(() =>
@@ -756,7 +775,7 @@ const handleEnterSubgraph = () => {
     button_id: 'graph_node_open_subgraph_clicked',
     element_group: 'graph_node'
   })
-  const graph = app.rootGraph
+  const graph = useApp().rootGraph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
@@ -772,7 +791,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  const canvas = app.canvas
+  const canvas = useApp().canvas
   if (!canvas || typeof canvas.openSubgraph !== 'function') {
     console.warn('LGraphNode: Canvas or openSubgraph method not available')
     return
@@ -787,7 +806,7 @@ function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
 
-  return getNodeByLocatorId(app.rootGraph, locatorId)
+  return getNodeByLocatorId(useApp().rootGraph, locatorId)
 }
 
 const lgraphNode = computed(resolveLGraphNode)
@@ -842,13 +861,42 @@ const renderedWidgetIds = computed(() => {
   })
 })
 
-const hasRenderableWidgets = computed(() => renderedWidgetIds.value.length > 0)
-const { canSelectInputs, nodeType, processedWidgets } = useProcessedWidgets(
-  () => nodeData,
-  () => renderedWidgetIds.value
+const { canSelectInputs, gridRows, nodeType, processedWidgets } =
+  useProcessedWidgets(
+    () => nodeData,
+    () => renderedWidgetIds.value
+  )
+const measuredLabelsKey = computed(() =>
+  [
+    nodeData.title,
+    ...nodeData.inputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
+    ...nodeData.outputs.map(
+      (slot) => slot.label || slot.localized_name || slot.name
+    ),
+    ...processedWidgets.value
+      .filter(({ visible }) => visible)
+      .map(
+        ({ widgetId, simplified }) =>
+          `${widgetId}:${simplified.displayLabel ?? simplified.name}`
+      )
+  ].join('\n')
 )
+
+const minNodeWidth = ref(LiteGraph.NODE_WIDTH)
+watch(
+  [lgraphNode, measuredLabelsKey, isCollapsed],
+  ([node, , collapsed]) => {
+    if (node && !collapsed)
+      minNodeWidth.value = Math.ceil(node.computeSize()[0])
+  },
+  { immediate: true }
+)
+
+const hasRenderableWidgets = computed(() => gridRows.value.length > 0)
 const processedWidgetModel = computed(() => ({
-  processedWidgets: processedWidgets.value,
+  processedWidgets: gridRows.value,
   nodeType: nodeType.value,
   canSelectInputs: canSelectInputs.value
 }))
@@ -888,11 +936,12 @@ const showAdvancedInputsButton = computed(() => {
     return hasUnpromotedWidgets(node)
   }
 
-  const hasAdvancedWidgets = widgetIds.value.some((id) => {
-    const visibility = widgetValueStore.getWidgetVisibility(id)
-    if (visibility) return visibility.surfaces.vueNode === 'advanced'
-    return widgetValueStore.getWidget(id)?.options?.advanced
-  })
+  const hasAdvancedWidgets =
+    widgetIds.value.some((id) => {
+      const visibility = widgetValueStore.getWidgetVisibility(id)
+      if (visibility) return visibility.surfaces.vueNode === 'advanced'
+      return widgetValueStore.getWidget(id)?.options?.advanced
+    }) || nodeData.inputs.some((input) => isAdvancedSocketInput(node, input))
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )
@@ -909,7 +958,13 @@ const hasVideoPreviewWidget = computed(() =>
 
 const nodeMediaParts = computed((): NodeMediaPart[] => {
   const node = lgraphNode.value
-  if (!node || display.value === 'hidden' || hideExecutedOutput.value) return []
+  if (
+    !node ||
+    display.value === 'hidden' ||
+    node.hideOutputImages !== false ||
+    hideExecutedOutput.value
+  )
+    return []
   if (node instanceof SubgraphNode) return []
 
   const outputs = nodeOutputs.getNodeOutputs(node)
@@ -949,6 +1004,6 @@ function handleDragLeave() {
 
 function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
+  useApp().dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

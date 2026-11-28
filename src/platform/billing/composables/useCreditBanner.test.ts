@@ -89,6 +89,7 @@ function arrange(options: {
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       subscription: computed(() => subscription.value),
+      subscriptionState: computed(() => null),
       balance: computed(() => balance.value),
       isTeamPlan: computed(() => options.isTeamPlan ?? false),
       renewalDate: computed(() => '2026-12-15T00:00:00Z'),

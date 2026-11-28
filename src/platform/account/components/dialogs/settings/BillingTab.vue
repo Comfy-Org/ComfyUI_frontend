@@ -15,6 +15,27 @@
       @dismiss="planCheckout.dismiss"
     />
     <BillingBanner
+      v-if="planNotStarted"
+      :view="
+        planNotStartedView(planNotStarted, capabilities.canOpenPlans.value)
+      "
+      :copy="bannerCopy"
+    >
+      <template #action="{ action: shown, href, label, variant }">
+        <Button
+          v-bind="planNotStartedButton(shown, href)"
+          :variant
+          size="md"
+          class="shrink-0 no-underline"
+          :loading="signupPayment.isOpeningPayment.value"
+          @click="followPlanNotStartedAction(shown)"
+        >
+          {{ label }}
+          <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
+        </Button>
+      </template>
+    </BillingBanner>
+    <BillingBanner
       v-if="topupCheckout.banner.value"
       :view="
         topupCheckoutBannerView(
@@ -181,6 +202,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { isCloud } from '@/platform/distribution/types'
@@ -198,9 +220,11 @@ import {
   CONTACT_SALES_URL,
   deriveAutoTopUpSection,
   deriveBillingTabLoad,
+  planNotStartedBannerFor,
   planRowAction
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
+import type { BillingBannerAction } from '@comfyorg/account-ui/billing'
 import {
   BillingAutoTopUpCard,
   BillingAutoTopUpMemberBlock,
@@ -214,6 +238,7 @@ import {
 import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
+import { usePrefetchAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
@@ -228,6 +253,7 @@ import { useAutoTopUpMemberBlockCopy } from '@/platform/billing/composables/useA
 import { useBillingBannerCopy } from '@/platform/billing/composables/useBillingBannerCopy'
 import { useCreditBanner } from '@/platform/billing/composables/useCreditBanner'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
@@ -238,10 +264,22 @@ const planCheckout = usePlanCheckoutBanner()
 const topupCheckout = useTopupCheckoutBanner(
   () => capabilities.canManageBilling.value
 )
+const signupPayment = useSubscriptionPaymentRecovery('status')
+const planNotStarted = computed(() =>
+  planCheckout.banner.value
+    ? null
+    : planNotStartedBannerFor({
+        isCloud,
+        recovery: billing.statusPaymentRecovery.value,
+        planTier: signupPayment.recoveryPlanTier.value,
+        paymentPage: signupPayment.recoveryPaymentPage.value
+      })
+)
 const suppressCreditBanner = computed(() =>
   suppressesCreditBanners([
     ...(isPaused.value ? (['paused'] as const) : []),
     ...(planCheckout.banner.value ? (['planCheckout'] as const) : []),
+    ...(planNotStarted.value ? (['planNotStarted'] as const) : []),
     ...(topupCheckout.banner.value ? (['topupCheckout'] as const) : [])
   ])
 )
@@ -249,7 +287,8 @@ const {
   copy: bannerCopy,
   topupCopy: topupBannerCopy,
   pausedView,
-  parkedView
+  parkedView,
+  planNotStartedView
 } = useBillingBannerCopy()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const {
@@ -298,6 +337,7 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
+usePrefetchAddCreditsAutoTopUpOffer()
 const autoTopUpSection = computed(() =>
   deriveAutoTopUpSection({
     autoTopUpEnabled: capabilities.autoTopUpEnabled.value,
@@ -321,6 +361,10 @@ const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
 const autoTopUpMemberView = computed(
   () => capabilities.autoTopUpMemberView.value
 )
+const salesVariant = computed(() =>
+  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
+)
+
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
@@ -333,16 +377,14 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
+      action.value === 'subscribe' ||
+      (action.value === 'choosePlan' && isCloud) ||
+      (action.value === 'contactSales' && salesVariant.value === 'inverted')
   })
 )
 
 const creditBannerAddCreditsVariant = computed(() =>
   planRow.value.kind === 'ended' ? 'secondary' : addCreditsVariant.value
-)
-
-const salesVariant = computed(() =>
-  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
 const { button: plansButton, open: openPlans } = usePlatformPlansLink()
@@ -360,6 +402,20 @@ function planActionButton(shown: PlanRowAction) {
 
 function followPlanAction(shown: PlanRowAction) {
   if (shown !== 'contactSales') openPlans()
+}
+
+function planNotStartedButton(shown: BillingBannerAction, href: string | null) {
+  if (shown === 'viewPlans') return plansButton.value
+  return href
+    ? { as: 'a', href, target: '_blank', rel: 'noopener' }
+    : { as: 'button' }
+}
+
+function followPlanNotStartedAction(shown: BillingBannerAction) {
+  if (shown === 'finishPayment') void signupPayment.finishPayment()
+  else if (shown === 'verifyPayment')
+    signupPayment.refreshOnVerificationReturn()
+  else if (shown === 'viewPlans') openPlans()
 }
 
 async function retryBalance() {
@@ -381,11 +437,13 @@ async function retry() {
 }
 
 onMounted(() => {
-  if (!billing.isInitialized.value && !billing.isLoading.value) {
+  if (billing.isInitialized.value) {
+    void refreshBilling('account')
+  } else if (!billing.isLoading.value) {
     void billing.initialize().catch(() => undefined)
   }
   void capabilities.initialize()
 })
 
-useRefreshBillingOnReturn()
+useRefreshBillingOnReturn({ includeCloud: true })
 </script>

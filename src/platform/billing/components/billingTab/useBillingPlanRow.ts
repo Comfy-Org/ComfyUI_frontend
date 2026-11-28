@@ -31,7 +31,7 @@ export function useBillingPlanRow() {
 
   const scheduledChange = computed(() => {
     const change = scheduled.scheduledChange.value
-    const planName = scheduled.planName.value
+    const planName = scheduled.planNameWithPeriod.value
     return change && planName
       ? { planName, effectiveAt: change.effective_at }
       : null

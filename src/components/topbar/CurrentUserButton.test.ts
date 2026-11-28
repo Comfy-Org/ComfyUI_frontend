@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Component } from 'vue'
 import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -245,6 +245,53 @@ describe('CurrentUserButton', () => {
     renderComponent()
     expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
     expect(screen.queryByText('Avatar')).not.toBeInTheDocument()
+  })
+
+  it.for(['personal', 'team'] as const)(
+    'shows the workspace tile in a %s workspace with the new billing UX',
+    (workspaceType) => {
+      mockIsCloud.value = true
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      onTestFinished(() => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      })
+      useTeamWorkspaceStore().initState = 'ready'
+      Object.assign(useTeamWorkspaceStore(), {
+        isInPersonalWorkspace: workspaceType === 'personal',
+        workspaceName: 'My Team'
+      })
+
+      renderComponent()
+
+      expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('img', { name: 'User Avatar' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('sizes the workspace tile and its click target for the sidebar', () => {
+    mockIsCloud.value = true
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+    onTestFinished(() => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    })
+    useTeamWorkspaceStore().initState = 'ready'
+    Object.assign(useTeamWorkspaceStore(), {
+      isInPersonalWorkspace: false,
+      workspaceName: 'My Team'
+    })
+
+    renderComponent(CurrentUserPopoverWorkspaceStub, { side: 'right' })
+
+    expect(screen.getByText('WorkspaceProfilePic')).toHaveAttribute(
+      'small',
+      'true'
+    )
+    expect(screen.getByRole('button', { name: 'Current user' })).toHaveClass(
+      'h-10',
+      'w-full'
+    )
   })
 
   it('shows WorkspaceProfilePic for an active local team workspace', () => {

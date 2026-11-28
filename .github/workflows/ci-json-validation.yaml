@@ -15,4 +15,4 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Validate JSON syntax
-        run: ./scripts/cicd/check-json.sh
+        run: ./tools/ci/src/cicd/check-json.sh

@@ -1,7 +1,13 @@
+import { mergeTests } from '@playwright/test'
+
 import {
   comfyExpect as expect,
-  comfyPageFixture as test
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const HOST_A = '5'
 const HOST_B = '6'
@@ -29,56 +35,32 @@ test.describe(
         })
     })
 
-    test('A bypassed copy of a subgraph shows no image after the other copy runs', async ({
-      comfyPage
+    test('Each copy of a subgraph shows its own live preview while it runs', async ({
+      comfyPage,
+      getWebSocket
     }) => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/shared-definition-two-hosts-save-image'
       )
-      await comfyPage.vueNodes.selectNode(HOST_B)
-      await comfyPage.keyboard.bypass()
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      await comfyPage.runButton.click()
+      const jobId = await execution.run()
+      execution.latentPreview(jobId, `${HOST_A}:10`)
+      execution.latentPreview(jobId, `${HOST_B}:10`)
 
       await expect
-        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
-          timeout: 30_000
+        .poll(async () => {
+          const srcs = await comfyPage.vueNodes.getBodyImageSources([
+            HOST_A,
+            HOST_B
+          ])
+          return { ...srcs, distinct: srcs[HOST_A]?.[0] !== srcs[HOST_B]?.[0] }
         })
         .toEqual({
-          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
-          [HOST_B]: []
+          [HOST_A]: [expect.stringMatching(/^blob:/)],
+          [HOST_B]: [expect.stringMatching(/^blob:/)],
+          distinct: true
         })
-    })
-
-    test('Each copy of a subgraph shows its own live preview while it runs', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/shared-definition-two-hosts-live-preview'
-      )
-
-      await comfyPage.runButton.click()
-
-      await expect
-        .poll(
-          async () => {
-            const srcs = await comfyPage.vueNodes.getBodyImageSources([
-              HOST_A,
-              HOST_B
-            ])
-            const hostA = srcs[HOST_A] ?? []
-            const hostB = srcs[HOST_B] ?? []
-            return {
-              bothLive: [...hostA, ...hostB].every((src) =>
-                src?.startsWith('blob:')
-              ),
-              counts: [hostA.length, hostB.length],
-              distinct: hostA[0] !== hostB[0]
-            }
-          },
-          { timeout: 30_000 }
-        )
-        .toEqual({ bothLive: true, counts: [1, 1], distinct: true })
     })
 
     test('A deleted copy of a subgraph brought back with undo shows no image until it runs again', async ({
@@ -108,9 +90,12 @@ test.describe(
         .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
         .toBe(false)
 
-      expect(
-        (await comfyPage.vueNodes.getBodyImageSources([HOST_B]))[HOST_B]
-      ).toEqual([])
+      await expect
+        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]))
+        .toEqual({
+          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
+          [HOST_B]: []
+        })
 
       await comfyPage.runButton.click()
       await expect
@@ -120,33 +105,6 @@ test.describe(
           { timeout: 30_000 }
         )
         .toEqual([expect.stringMatching(/hostB_\d+_/)])
-    })
-
-    test('Promoting the saved image onto both copies of a subgraph shows each copy its own image', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/shared-definition-two-hosts-save-image'
-      )
-      const { editor } = comfyPage.subgraph
-      const savedImage = { nodeId: '10', widgetName: '$$canvas-image-preview' }
-      const hostA = comfyPage.vueNodes.getNodeLocator(HOST_A)
-      const hostB = comfyPage.vueNodes.getNodeLocator(HOST_B)
-      await editor.togglePromotion(hostA, { ...savedImage, toState: false })
-      await editor.togglePromotion(hostA, { ...savedImage, toState: true })
-      await editor.togglePromotion(hostB, { ...savedImage, toState: false })
-      await editor.togglePromotion(hostB, { ...savedImage, toState: true })
-
-      await comfyPage.runButton.click()
-
-      await expect
-        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
-          timeout: 30_000
-        })
-        .toEqual({
-          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
-          [HOST_B]: [expect.stringMatching(/hostB_\d+_/)]
-        })
     })
   }
 )

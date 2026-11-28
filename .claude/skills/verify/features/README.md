@@ -6,7 +6,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## Baseline preconditions
 
-- Launch at `http://localhost:5173` with `nvm use 26 && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
+- Launch at `http://localhost:5173` with `nvm use && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
 - Run all four Doctor checks.
 - Sign in with an **email-verified `@comfy.org`** account. Without it `?ff=` overrides are silently ignored. The human signs in; never type someone's password.
 - Have ready: an account with a saved card, one without, a declining card, a 3DS card, and both a personal and a team workspace.

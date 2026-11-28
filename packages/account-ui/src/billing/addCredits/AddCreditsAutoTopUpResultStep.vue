@@ -30,6 +30,13 @@
       </span>
     </div>
     <p
+      v-else-if="unconfirmed"
+      class="m-0 text-muted-foreground"
+      data-testid="add-credits-auto-top-up-unconfirmed"
+    >
+      {{ translate('autoTopUpUnconfirmed.body') }}
+    </p>
+    <p
       v-else
       class="m-0 text-muted-foreground"
       data-testid="add-credits-auto-top-up-failed"
@@ -50,7 +57,11 @@
       data-testid="add-credits-auto-top-up-link"
       @click="emit('openBilling')"
     >
-      {{ translate(settings ? 'autoTopUp.manage' : 'autoTopUpOffer.setUp') }}
+      {{
+        translate(
+          settings || unconfirmed ? 'autoTopUp.manage' : 'autoTopUpOffer.setUp'
+        )
+      }}
       <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
     </AddCreditsBillingLink>
     <button
@@ -80,8 +91,16 @@ import type {
 } from './addCreditsPresentation'
 import { footerBarClass, primaryActionClass } from './addCreditsPresentation'
 
-const { settings, linkUrl, translate, format, ui } = defineProps<{
+const {
+  settings,
+  unconfirmed = false,
+  linkUrl,
+  translate,
+  format,
+  ui
+} = defineProps<{
   settings?: AutoTopUpActivation
+  unconfirmed?: boolean
   linkUrl?: AddCreditsBillingLinkTarget
   translate: AddCreditsTranslate
   format: AddCreditsFormat

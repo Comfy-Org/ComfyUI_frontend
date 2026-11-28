@@ -53,7 +53,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   const outOfCreditsDismissed = ref(false)
   const lowCreditsDismissed = ref(false)
 
-  const { subscription, balance, isTeamPlan } = billing
+  const { subscription, subscriptionState, balance, isTeamPlan } = billing
 
   const autoTopUp = useAutoTopUpBannerKind()
   const { href, open } = usePlatformBillingLink('/profile/billing', {
@@ -69,6 +69,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
       unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
       isCloud,
       isActive: subscription.value?.isActive === true,
+      subscriptionState: subscriptionState.value,
       hasFunds: subscription.value?.hasFunds ?? null,
       lowBalance: balance.value?.lowBalance,
       outOfCreditsDismissed: outOfCreditsDismissed.value,
@@ -245,7 +246,9 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
       contactSupport: t(`${bs}.parked.contactSupport`),
       resumePlan: t(`${bs}.ending.reactivate`),
       choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
-      contactSales: t(`${bs}.ending.contactSales`)
+      contactSales: t(`${bs}.ending.contactSales`),
+      finishPayment: t('subscription.signupPaymentRecovery.finishPayment'),
+      viewPlans: t(`${bs}.planNotStarted.viewPlans`)
     }
   }))
 

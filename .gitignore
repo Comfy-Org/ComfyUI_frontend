@@ -64,6 +64,7 @@ coverage/
 /test-results/
 /playwright-report/
 /blob-report/
+/staging-smoke-report.json
 /playwright/.cache/
 browser_tests/**/*-win32.png
 browser_tests/**/*-darwin.png

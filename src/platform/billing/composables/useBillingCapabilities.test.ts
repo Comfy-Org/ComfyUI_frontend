@@ -20,7 +20,8 @@ import { billingApi } from '@/platform/billing/api/billingApi'
 import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { handleAxiosError } from '@/platform/remote/ingest/ingestApi'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
@@ -88,6 +89,7 @@ function capabilitiesResponse(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
       can_view_auto_top_up: false,
@@ -241,14 +243,14 @@ describe('useBillingCapabilities', () => {
     [
       'allowed',
       () => Promise.resolve(capabilitiesResponse(true)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'policy denied',
       () => Promise.resolve(capabilitiesResponse(false)),
-      'succeeded',
-      'success'
+      undefined,
+      undefined
     ],
     [
       'access denied',
@@ -264,9 +266,15 @@ describe('useBillingCapabilities', () => {
       () => Promise.reject(new Error('network failed')),
       'failed',
       'failure'
+    ],
+    [
+      'resolved for another workspace',
+      () => Promise.resolve(capabilitiesResponse(true, 'workspace-2')),
+      'failed',
+      'failure'
     ]
   ] as const)(
-    'records capability reads when %s',
+    'records only failed capability reads, here %s',
     async ([, response, stage, outcome]) => {
       const record = vi.fn()
       const registry = new TelemetryRegistry()
@@ -396,6 +404,25 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.deleteWorkspaceDenial.value).toBe(
       'plan_not_ended'
     )
+  })
+
+  it('exposes the reason the server named for refusing Plans', async () => {
+    const response = capabilitiesResponse(
+      true,
+      'workspace-1',
+      true,
+      {},
+      { can_open_plans: false }
+    )
+    response.denied_reasons = { can_open_plans: 'not_original_owner' }
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(response)
+
+    expect(billingCapabilities.openPlansDenial.value).toBeUndefined()
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canOpenPlans.value).toBe(false)
+    expect(billingCapabilities.openPlansDenial.value).toBe('not_original_owner')
   })
 
   it('exposes the top-up denial and billing management as the server sent them', async () => {
@@ -616,6 +643,40 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.isReady.value).toBe(true)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
   })
+
+  it.for([
+    {
+      name: 'a legacy-rail 401',
+      error: new WorkspaceApiError('authentication required', 401),
+      sentryMode: 'never'
+    },
+    {
+      name: 'a 403',
+      error: new WorkspaceApiError('Forbidden', 403),
+      sentryMode: 'always'
+    },
+    {
+      name: 'an outage',
+      error: new Error('unavailable'),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $name once, keeping only an ended session out of Sentry',
+    async ({ error, sentryMode }) => {
+      vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(error)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        error,
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure'
+        })
+      )
+      const [, options] = mockReportError.mock.calls[0]
+      expect(options.sentryMode).toBe(sentryMode)
+    }
+  )
 
   it('fails closed when the endpoint denies the current actor', async () => {
     vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
@@ -1205,7 +1266,6 @@ describe('useBillingCapabilities', () => {
 
     afterEach(() => {
       localStorage.removeItem(LAPSE_RECOVERY_FLAG)
-      remoteConfig.value = {}
     })
 
     it('stays denied after the session is restored with the flag off', async () => {
@@ -1228,10 +1288,14 @@ describe('useBillingCapabilities', () => {
       await denyThenRestoreSession()
       expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
-      remoteConfig.value = {
-        ...remoteConfig.value,
-        web_session_lapse_recovery_enabled: true
-      }
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
       await vi.advanceTimersByTimeAsync(0)
 
       expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
@@ -1280,10 +1344,14 @@ describe('useBillingCapabilities', () => {
         })
       )
       const initialized = billingCapabilities.initialize()
-      remoteConfig.value = {
-        ...remoteConfig.value,
-        web_session_lapse_recovery_enabled: true
-      }
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
       await vi.advanceTimersByTimeAsync(0)
 
       scope.stop()
@@ -1309,10 +1377,14 @@ describe('useBillingCapabilities', () => {
         .mockResolvedValueOnce(capabilitiesResponse(true))
       const initialized = billingCapabilities.initialize()
 
-      remoteConfig.value = {
-        ...remoteConfig.value,
-        web_session_lapse_recovery_enabled: true
-      }
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
       await vi.advanceTimersByTimeAsync(0)
       rejectRead(new WorkspaceApiError('authentication required', 401))
       await initialized
@@ -1743,6 +1815,47 @@ describe('useBillingCapabilities', () => {
     expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
+
+  it.for([
+    {
+      failure: 'a request aborted before any response',
+      error: new AxiosError('Request aborted', AxiosError.ECONNABORTED),
+      sentryMode: 'never'
+    },
+    {
+      failure: 'a 503 response',
+      error: new AxiosError(
+        'Request failed with status code 503',
+        AxiosError.ERR_BAD_RESPONSE,
+        undefined,
+        undefined,
+        fromPartial<AxiosResponse>({ status: 503, data: {}, headers: {} })
+      ),
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the legacy rail with Sentry mode $sentryMode',
+    async ({ error, sentryMode }) => {
+      vi.mocked(billingApi.getBillingCapabilities).mockImplementation(() => {
+        try {
+          handleAxiosError(error, 'getBillingCapabilities')
+        } catch (thrown) {
+          return Promise.reject(thrown)
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(WorkspaceApiError),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
+    }
+  )
 })
 
 describe('useBillingCapabilities on the SDK rail', () => {
@@ -1761,6 +1874,33 @@ describe('useBillingCapabilities on the SDK rail', () => {
     scope.stop()
     railState.rail = null
   })
+
+  it.for([
+    { name: 'with its 401', httpStatus: 401 },
+    { name: 'before any response', httpStatus: undefined }
+  ])(
+    'keeps a NOT_AUTHENTICATED read $name out of Sentry and publishes no capabilities',
+    async ({ httpStatus }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'error',
+        code: 'NOT_AUTHENTICATED',
+        ...(httpStatus === undefined ? {} : { httpStatus })
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(WorkspaceApiError),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode: 'never'
+        })
+      )
+    }
+  )
 
   it('applies the server capability read through the rail and leaves the legacy client alone', async () => {
     readCapabilities.mockResolvedValueOnce({
@@ -1799,6 +1939,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_top_up: true,
           can_view_pending_invites: true,
           can_view_team_usage: false,
+          can_view_workspace_usage: false,
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
           can_view_auto_top_up: false,
@@ -1884,6 +2025,40 @@ describe('useBillingCapabilities on the SDK rail', () => {
       await vi.advanceTimersByTimeAsync(600_000)
       expect(readCapabilities.mock.calls.length).toBeGreaterThanOrEqual(reads)
       if (reads === 1) expect(readCapabilities).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      failure: 'REQUEST_FAILED with no response',
+      result: { status: 'error', code: 'REQUEST_FAILED' },
+      sentryMode: 'never'
+    },
+    {
+      failure: 'REQUEST_FAILED at 503',
+      result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      sentryMode: 'always'
+    },
+    {
+      failure: 'MALFORMED_RESPONSE with no response status',
+      result: { status: 'error', code: 'MALFORMED_RESPONSE' },
+      sentryMode: 'always'
+    }
+  ])(
+    'reports $failure on the rail with Sentry mode $sentryMode',
+    async ({ result, sentryMode }) => {
+      readCapabilities.mockResolvedValue(result)
+
+      await billingCapabilities.initialize()
+
+      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.objectContaining({ code: result.code }),
+        expect.objectContaining({
+          errorType: 'billing_capabilities_read_failure',
+          sentryMode
+        })
+      )
     }
   )
 

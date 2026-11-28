@@ -146,6 +146,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) {
       this._name = value
+      if (graphId && this.node.widgets?.includes(this))
+        this.setNodeId(this.node.id)
       return
     }
 

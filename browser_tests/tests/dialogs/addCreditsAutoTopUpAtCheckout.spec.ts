@@ -61,6 +61,55 @@ test.describe('Add credits auto top-up at checkout', { tag: '@cloud' }, () => {
         ).toBeVisible()
       }
     )
+
+    test('keeps the amount buttons in place while auto top-up is toggled', async ({
+      page
+    }) => {
+      const dialog = new TopUpCreditsDialog(page)
+      await dialog.openFromTopupLink()
+      const consent = dialog.root.getByText(/^Top-ups are charged/)
+      await expect
+        .poll(
+          () =>
+            dialog.root.evaluate(
+              (root) => root.getAnimations({ subtree: true }).length
+            ),
+          { message: 'Add credits dialog never finished opening' }
+        )
+        .toBe(0)
+      const presetsWhenOpened = await dialog.presets.boundingBox()
+
+      await dialog.autoTopUpCheckbox.click()
+      await expect(consent).toBeVisible()
+      await expect
+        .poll(() => dialog.presets.boundingBox(), {
+          message: 'Ticking auto top-up moved the amount buttons'
+        })
+        .toEqual(presetsWhenOpened)
+
+      await dialog.autoTopUpCheckbox.click()
+      await expect(consent).toBeHidden()
+      await expect
+        .poll(() => dialog.presets.boundingBox(), {
+          message: 'Unticking auto top-up moved the amount buttons'
+        })
+        .toEqual(presetsWhenOpened)
+    })
+
+    test('keeps the dialog in view when the window shrinks after opening', async ({
+      page
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 1800 })
+      const dialog = new TopUpCreditsDialog(page)
+      await dialog.openFromTopupLink()
+      await expect(dialog.presets).toBeInViewport()
+
+      await page.setViewportSize({ width: 1280, height: 600 })
+
+      const panel = dialog.root.getByTestId('add-credits-dialog')
+      await expect(panel).toBeInViewport({ ratio: 1 })
+      await expect(dialog.presets).toBeInViewport()
+    })
   })
 
   test.describe('with billing_auto_top_up_at_checkout_enabled off', () => {

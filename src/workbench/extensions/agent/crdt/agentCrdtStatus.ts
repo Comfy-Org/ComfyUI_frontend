@@ -51,10 +51,25 @@ export type AgentCrdtTerminalState =
   | 'schema_error'
   | null
 
+/**
+ * The edge that most recently made the canvas stale; `projection_failed` is
+ * reported only when no sync edge holds.
+ */
+export type AgentCanvasStaleCause =
+  | 'doc_reset'
+  | 'schema_error'
+  | 'doc_gap'
+  | 'socket_closed'
+  | 'tab_inactive'
+  | 'projection_failed'
+  | null
+
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
   canvasMayBeStale: boolean
+  /** Null exactly when `canvasMayBeStale` is false. */
+  canvasStaleCause: AgentCanvasStaleCause
   workflowId: string | null
   terminal: AgentCrdtTerminalState
   /**

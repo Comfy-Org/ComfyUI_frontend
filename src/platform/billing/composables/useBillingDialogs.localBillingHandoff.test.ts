@@ -79,20 +79,20 @@ describe('Add credits on local ComfyUI', () => {
       component: TopUpCreditsDialogContentWorkspace
     },
     {
-      name: 'a Desktop build without the handoff bridge, flag on',
+      name: 'Desktop without handoff bridge, flag on',
       flag: true,
       isDesktop: true,
       component: TopUpCreditsDialogContentWorkspace
     },
     {
-      name: 'a Desktop build with the handoff bridge, flag on',
+      name: 'Desktop with handoff bridge, flag on',
       flag: true,
       isDesktop: true,
       bridge: true,
       component: AddCreditsDialogContent
     },
     {
-      name: 'a Desktop build with the handoff bridge, flag off',
+      name: 'Desktop with handoff bridge, flag off',
       flag: false,
       isDesktop: true,
       bridge: true,

@@ -43,7 +43,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 
 type Load3dReadyCallback = (load3d: Load3d) => void
@@ -157,7 +157,7 @@ const invokeReadyCallback = (
   }
 }
 
-export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
+export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | undefined>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
   let viewerContainer: HTMLElement | null = null
@@ -266,11 +266,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       height: dimensions?.height,
       getDimensions: dimensions ? () => dimensionsOf(shownNode()) : undefined,
       getZoomScale: () => {
-        return app.canvas.ds.scale
+        return useApp().canvas.ds.scale
       },
       onContextMenu: (event) => {
         const target = shownNode()
-        const menuOptions = app.canvas.getNodeMenuOptions(target)
+        const menuOptions = useApp().canvas.getNodeMenuOptions(target)
         new LiteGraph.ContextMenu(menuOptions, {
           event,
           title: target.type,

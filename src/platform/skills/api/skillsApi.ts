@@ -12,10 +12,6 @@ import type {
 } from '@/platform/skills/types'
 import { MAX_NAME_LENGTH, PACK_NAME_PATTERN } from '@/platform/skills/types'
 
-/**
- * 400 is corrective; 409 is capacity. List/publish 404 hides the feature,
- * while delete 404 can also mean the pack is already gone.
- */
 export class SkillPacksApiError extends Error {
   constructor(
     message: string,

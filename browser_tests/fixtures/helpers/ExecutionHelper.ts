@@ -16,6 +16,7 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
 type RunOptions = {
+  start?: boolean
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
   beforePromptResponse?: (jobId: string) => void | Promise<void>
@@ -73,16 +74,15 @@ export class ExecutionHelper {
     return this.ws
   }
 
-  /**
-   * Intercept POST /api/prompt, execute Comfy.QueuePrompt, and return
-   * the synthetic job ID.
-   *
-   * The app receives a valid PromptResponse so storeJob() fires
-   * and registers the job against the active workflow path.
-   */
+  /** Queues the active workflow against a mocked /api/prompt and returns its job id. */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
+    const {
+      start = this.ws !== undefined,
+      nodeErrors = {},
+      onPromptRequest,
+      beforePromptResponse
+    } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -109,6 +109,7 @@ export class ExecutionHelper {
 
     await this.command.executeCommand('Comfy.QueuePrompt')
     await prompted
+    if (start) this.executionStart(jobId)
 
     return jobId
   }

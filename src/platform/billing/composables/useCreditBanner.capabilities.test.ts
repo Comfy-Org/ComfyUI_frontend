@@ -91,7 +91,8 @@ function capabilitiesBody(
       can_top_up: false,
       can_upgrade: false,
       can_view_pending_invites: false,
-      can_view_team_usage: false
+      can_view_team_usage: false,
+      can_view_workspace_usage: false
     },
     denied_reasons: deniedReasons,
     expires_at: '2099-01-01T00:00:00Z',
@@ -138,6 +139,7 @@ beforeEach(() => {
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       subscription: computed(() => exhaustedSubscription),
+      subscriptionState: computed(() => null),
       balance: computed(() => null),
       isTeamPlan: computed(() => true),
       nextCreditRefillAt: computed(() => null),

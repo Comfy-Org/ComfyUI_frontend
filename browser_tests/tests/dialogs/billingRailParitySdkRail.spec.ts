@@ -24,6 +24,7 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
@@ -287,11 +288,6 @@ function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
 }
 
-/** Which transport issued the request, and so which rail served it. */
-function transport(request: Request): string {
-  return request.resourceType()
-}
-
 async function bootApp(page: Page) {
   await page.goto(APP_URL)
   await waitForCloudApp(page)
@@ -353,7 +349,7 @@ function creditsLabel(micros: number): string {
  * portal would, and comes back: the panel must re-read and show the change.
  */
 async function expectPortalReturnRefresh(page: Page) {
-  const expectedTransport = 'fetch'
+  const expectedTransport = 'sdk'
   const routes = await setupParity(page, {})
   await bootApp(page)
   const panel = await openPlanAndCredits(page)
@@ -361,7 +357,7 @@ async function expectPortalReturnRefresh(page: Page) {
 
   await panel.getByRole('button', { name: 'Billing & invoices' }).click()
   await expect.poll(() => routes.openedUrls()).toEqual([PORTAL_URL])
-  expect(routes.portalRequests.map(transport)).toEqual([expectedTransport])
+  expect(routes.portalRequests.map(billingClient)).toEqual([expectedTransport])
 
   routes.server.status = CANCELLED_STANDARD
   const readsBeforeReturn = routes.statusRequests.length
@@ -371,7 +367,7 @@ async function expectPortalReturnRefresh(page: Page) {
   await expect(panel.getByText(/Renews on/)).toBeHidden()
   const readsOnReturn = routes.statusRequests.slice(readsBeforeReturn)
   expect(readsOnReturn.length).toBeGreaterThan(0)
-  expect(new Set(readsOnReturn.map(transport))).toEqual(
+  expect(new Set(readsOnReturn.map(billingClient))).toEqual(
     new Set([expectedTransport])
   )
 }
@@ -424,14 +420,14 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       await expect(successSummary(page)).toContainText('$336')
       expect(routes.subscribeRequests).toHaveLength(1)
       const [subscribe] = routes.subscribeRequests
-      expect(transport(subscribe)).toBe('fetch')
+      expect(billingClient(subscribe)).toBe('sdk')
       expect(idempotencyKey(subscribe)).toBeTruthy()
       expect(subscribe.postDataJSON()).toMatchObject({
         plan_slug: 'creator-annual',
         idempotency_key: idempotencyKey(subscribe)
       })
       expect(routes.previewRequests.length).toBeGreaterThan(0)
-      expect(routes.previewRequests.map(transport)).not.toContain('xhr')
+      expect(routes.previewRequests.map(billingClient)).not.toContain('legacy')
       expect(routes.topupRequests).toHaveLength(0)
     })
 
@@ -441,8 +437,8 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       const routes = await setupParity(page, {})
       const panel = await topUpThenUpgrade(page, routes)
 
-      expect(routes.topupRequests.map(transport)).toEqual(['fetch'])
-      expect(routes.subscribeRequests.map(transport)).toEqual(['fetch'])
+      expect(routes.topupRequests.map(billingClient)).toEqual(['sdk'])
+      expect(routes.subscribeRequests.map(billingClient)).toEqual(['sdk'])
       await expect(
         panel.getByRole('heading', { name: 'Creator Yearly' })
       ).toBeVisible()
@@ -478,10 +474,10 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
 
     await expect(panel.getByText(/Renews on/)).toBeVisible()
     await expect(panel.getByText(/Ends on/)).toBeHidden()
-    expect(routes.cancelRequests.map(transport)).toEqual(['fetch'])
+    expect(routes.cancelRequests.map(billingClient)).toEqual(['sdk'])
     expect(routes.resubscribeRequests).toHaveLength(1)
     const [resume] = routes.resubscribeRequests
-    expect(transport(resume)).toBe('fetch')
+    expect(billingClient(resume)).toBe('sdk')
     expect(idempotencyKey(resume)).toBeTruthy()
     expect(routes.subscribeRequests).toHaveLength(0)
     expect(routes.topupRequests).toHaveLength(0)

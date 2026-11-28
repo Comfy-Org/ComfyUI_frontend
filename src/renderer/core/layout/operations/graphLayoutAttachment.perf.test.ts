@@ -65,23 +65,13 @@ describe('renderer geometry boundary complexity', () => {
       expect([...target.renderingSize]).toEqual([240, 100])
     })
 
-    expect(counts).toEqual({ contentLookups: 1, rectReads: 1 })
+    expect(counts).toEqual({ contentLookups: 0, rectReads: 1 })
   })
 
-  test('invalidates measured content only when dimensions change', () => {
+  test('regular node geometry does not consult subgraph I/O measurements', () => {
     const { nodes } = createRenderer(1)
     const node = nodes[0]
     const graphId = node.graph!.rootGraph.id
-
-    layoutStore.reportContentSize(graphId, node.id, {
-      width: 260,
-      height: 120
-    })
-    expect(countGeometryCalls(() => void node.renderingSize[0])).toEqual({
-      contentLookups: 1,
-      rectReads: 0
-    })
-    expect([...node.renderingSize]).toEqual([260, 120])
 
     layoutStore.reportContentSize(graphId, node.id, {
       width: 260,

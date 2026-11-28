@@ -4,22 +4,29 @@ import { assert } from 'vitest'
 import type { VNode } from 'vue'
 
 import type {
+  AutoReloadSettings,
+  AutoTopUpReader,
   BillingOperationReceipt,
   BillingOperationState,
   BillingResult,
   PendingBillingOperation,
   SavedPaymentMethod,
   SucceededBillingOperation,
+  TopupPurchaseResult,
   TopupQuoteResult,
   TopupResult
 } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
-import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  readBillingErrorCode
+} from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
 import { provideWebSessionCloudRead } from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
+import { AUTO_TOP_UP_SETTINGS_KEY } from '@/session/autoTopUpSettings'
 import { createBillingI18n } from '@/i18n'
 import type {
   FakeBillingClient,
@@ -37,7 +44,8 @@ import FullPageTopupView from '@/views/FullPageTopupView.vue'
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 const stripeKey = vi.hoisted(() => ({
@@ -55,6 +63,7 @@ vi.mock(import('@/config/stripeKey'), async () => {
 const form = vi.hoisted(() => ({
   mounts: 0,
   payOnce: undefined as boolean | undefined,
+  savesCardOffSession: (): boolean | undefined => undefined,
   configuration: undefined as string | undefined,
   emit: (() => {}) as (event: string, ...payload: unknown[]) => void
 }))
@@ -68,6 +77,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         canSubmit: { type: Boolean, default: true },
         isLoading: { type: Boolean, default: false },
         payOnce: { type: Boolean, default: false },
+        savesCardOffSession: { type: Boolean, default: false },
         paymentMethodConfigurationId: { type: String, default: '' }
       },
       emits: ['confirm', 'phase'],
@@ -76,6 +86,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
           canSubmit: boolean
           isLoading: boolean
           payOnce: boolean
+          savesCardOffSession: boolean
           paymentMethodConfigurationId: string
         },
         {
@@ -89,6 +100,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         form.mounts += 1
         form.emit = emit
         form.payOnce = props.payOnce
+        form.savesCardOffSession = () => props.savesCardOffSession
         form.configuration = props.paymentMethodConfigurationId
         return () =>
           h(
@@ -414,7 +426,7 @@ describe('FullPageTopupView', () => {
     { name: 'no amount', query: '' },
     { name: 'an unreadable amount', query: '&amount_cents=12.50' }
   ])(
-    '769-15773: a top-up link with $name is not valid and sends the customer to add credits in settings',
+    '769-15773: a top-up link with $name is not valid and sends the customer to add credits on Platform Billing',
     async ({ query }) => {
       const assign = vi
         .spyOn(window.location, 'assign')
@@ -443,7 +455,7 @@ describe('FullPageTopupView', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
       expect(assign).toHaveBeenCalledWith(
-        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+        'https://testplatform.comfy.org/settings/billing?workspace=ws-team'
       )
     }
   )
@@ -1115,6 +1127,625 @@ describe('FullPageTopupView paying once', () => {
         expect(fake.createTopupCheckout).toHaveBeenCalledOnce()
       )
       expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    }
+  )
+})
+
+const PURCHASE_PATH = `${TOPUP_PATH}&purchase=tpp_1`
+
+const purchaseRead = (
+  status: 'open' | 'processing' | 'paid' | 'superseded' | 'expired',
+  billingOpId?: string
+): TopupPurchaseResult => ({
+  status: 'ok',
+  value: {
+    purchaseId: 'tpp_1',
+    status,
+    ...(billingOpId === undefined ? {} : { billingOpId })
+  }
+})
+
+const purchaseRefused = (
+  code: string,
+  httpStatus: number
+): TopupPurchaseResult => ({
+  status: 'error',
+  code: 'REQUEST_FAILED',
+  httpStatus,
+  serverCode: readBillingErrorCode({ code, message: 'refused' })
+})
+
+function renderPurchase(
+  initial: TopupPurchaseResult,
+  options: FakeBillingClientOptions = {}
+) {
+  const purchase = { read: initial }
+  const readTopupPurchase = vi.fn<
+    FakeBillingClient['client']['topup']['readTopupPurchase']
+  >(async () => purchase.read)
+  const fake = renderTopup(
+    {
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] },
+      ...options
+    },
+    PURCHASE_PATH,
+    (built) => {
+      built.client.topup.readTopupPurchase = readTopupPurchase
+    }
+  )
+  return { fake, purchase, readTopupPurchase }
+}
+
+describe('FullPageTopupView paying a Cloud purchase', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('pays through the purchase the link names', async () => {
+    const { fake } = renderPurchase(purchaseRead('open'), {
+      topup: SUCCEEDED
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    expect(fake.createInteractiveTopup.mock.calls[0][0]).toMatchObject({
+      purchaseId: 'tpp_1',
+      payment: { savedPaymentMethodId: 'pm_visa' }
+    })
+  })
+
+  it.for<{ name: string; read: TopupPurchaseResult; heading: string }>([
+    {
+      name: 'a newer Continue replaced it',
+      read: purchaseRead('superseded'),
+      heading: 'Checkout not available'
+    },
+    {
+      name: 'it expired',
+      read: purchaseRead('expired'),
+      heading: 'Checkout not available'
+    },
+    {
+      name: 'it belongs to the account signed in before',
+      read: purchaseRefused('PURCHASE_NOT_FOUND', 404),
+      heading: 'Checkout not available'
+    },
+    {
+      name: 'it cannot be read, so money may still be moving',
+      read: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      heading: "Couldn't load your checkout"
+    }
+  ])('offers no Pay on arrival when $name', async ({ read, heading }) => {
+    const { fake } = renderPurchase(read)
+
+    expect(await screen.findByRole('heading', { name: heading })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Pay' })).toBeNull()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    expect(fake.recover).not.toHaveBeenCalled()
+  })
+
+  it.for<{ name: string; read: TopupPurchaseResult; heading: string }>([
+    {
+      name: 'a reload after the purchase was paid, though the page kept no pointer',
+      read: purchaseRead('paid', 'op_topup'),
+      heading: 'Already completed'
+    },
+    {
+      name: 'a reload while its attempt is still unresolved',
+      read: purchaseRead('processing', 'op_topup'),
+      heading: 'Payment in progress'
+    }
+  ])(
+    'follows the purchase’s own attempt on $name, and resends nothing',
+    async ({ read, heading }) => {
+      const operation =
+        heading === 'Already completed'
+          ? settledTopup({ amountChargedCents: 2500, creditsAdded: 5275 })
+          : topupInFlight({
+              authenticationState: 'processing',
+              serverPhase: 'in_progress'
+            })
+      const { fake } = renderPurchase(read, {
+        recover: { status: 'ok', value: operation }
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: heading })
+      ).toBeVisible()
+      expect(fake.recover).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: { id: 'op_topup', kind: 'topup' }
+        })
+      )
+      expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    }
+  )
+
+  it('after an unanswered Pay, a Pay with another card that Cloud refuses for the unresolved attempt follows that attempt instead of charging', async () => {
+    const { fake, purchase } = renderPurchase(purchaseRead('open'))
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce(NO_ANSWER)
+      .mockResolvedValueOnce({
+        status: 'error',
+        code: 'CONFLICT',
+        httpStatus: 409,
+        serverCode: readBillingErrorCode({
+          code: 'PURCHASE_ATTEMPT_IN_PROGRESS',
+          message: 'refused'
+        })
+      })
+    await screen.findByText('Add credits · Acme Team')
+    await userEvent.click(payButton())
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    purchase.read = purchaseRead('processing', 'op_topup')
+    fake.recover.mockResolvedValue({
+      status: 'ok',
+      value: topupInFlight({
+        authenticationState: 'processing',
+        serverPhase: 'in_progress'
+      })
+    })
+
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+
+    expect(
+      await screen.findByRole('heading', { name: 'Payment in progress' })
+    ).toBeVisible()
+    expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    expect(fake.recover).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operation: { id: 'op_topup', kind: 'topup' } })
+    )
+  })
+
+  it('after an unanswered Pay whose attempt the purchase reports failed, the same card pays again under a new key', async () => {
+    const { fake, purchase } = renderPurchase(purchaseRead('open'))
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce(NO_ANSWER)
+      .mockResolvedValueOnce(SUCCEEDED)
+    await screen.findByText('Add credits · Acme Team')
+    purchase.read = purchaseRead('open', 'op_topup')
+    fake.recover.mockResolvedValue({
+      status: 'ok',
+      value: {
+        ...failedOperation('card_declined', 'op_topup'),
+        phase: 'failed',
+        declineReason: 'card_declined',
+        retryable: true
+      }
+    })
+
+    await userEvent.click(payButton())
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    )
+    const [first, next] = fake.createInteractiveTopup.mock.calls.map(
+      ([request]) => request
+    )
+    expect(next.payment).toStrictEqual(first.payment)
+    expect(next.idempotencyKey).not.toBe(first.idempotencyKey)
+  })
+
+  it('says a newer purchase replaced this one when Cloud refuses a stale page’s Pay', async () => {
+    const { fake, purchase } = renderPurchase(purchaseRead('open'))
+    fake.createInteractiveTopup.mockResolvedValueOnce({
+      status: 'error',
+      code: 'CONFLICT',
+      httpStatus: 409,
+      serverCode: readBillingErrorCode({
+        code: 'PURCHASE_SUPERSEDED',
+        message: 'refused'
+      })
+    })
+    await screen.findByText('Add credits · Acme Team')
+    purchase.read = purchaseRead('superseded')
+
+    await userEvent.click(payButton())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'A newer purchase replaced this one'
+    )
+    expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+  })
+
+  it('offers no Pay and creates no unbound checkout when the quote names no payment configuration, so a stale page cannot pay beside its replacement', async () => {
+    const { fake } = renderPurchase(purchaseRead('open'), {
+      topupQuote: QUOTED
+    })
+    const hosted = vi.spyOn(fake.client.topup, 'createHostedTopupCheckout')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Checkout not available' })
+    ).toBeVisible()
+    expect(screen.getByText(/Start Add credits again in Comfy/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Pay' })).toBeNull()
+    expect(hosted).not.toHaveBeenCalled()
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('sends a new card’s bank check back to the same purchase, so the returned page recovers it without a stored pointer', async () => {
+    const { fake } = renderPurchase(purchaseRead('open'), {
+      paymentMethods: { status: 'ok', value: [] },
+      topup: SUCCEEDED
+    })
+    await screen.findByText('Add credits · Acme Team')
+    readyCardForm()
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    const { payment, purchaseId } = fake.createInteractiveTopup.mock.calls[0][0]
+    assert('returnUrl' in payment)
+    expect(purchaseId).toBe('tpp_1')
+    expect(new URL(payment.returnUrl).searchParams.get('purchase')).toBe(
+      'tpp_1'
+    )
+  })
+})
+
+const AUTO_TOP_UP_PATH = `${TOPUP_PATH}&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605`
+
+const SERVED_SETTINGS: AutoReloadSettings = {
+  auto_top_up_conflict: false,
+  card_expiry: null,
+  configured: false,
+  cycle_resets_at: null,
+  declined_payment_method: null,
+  disabled_reason: null,
+  enabled: false,
+  last_failure_at: null,
+  last_failure_reason: null,
+  max_monthly_budget_cents: 100000,
+  max_reload_credits: 100000,
+  min_reload_credits: 1000,
+  monthly_budget_cents: null,
+  monthly_budget_is_default: true,
+  paused_by_budget: false,
+  paused_by_budget_remainder: false,
+  paused_by_decline: false,
+  reload_amount_cents: null,
+  reload_credits: null,
+  spent_this_cycle_cents: 0,
+  status: 'off',
+  target_credits: null,
+  threshold_credits: null
+}
+
+function autoTopUpReader(): AutoTopUpReader {
+  return {
+    read: vi.fn<AutoTopUpReader['read']>(async () => ({
+      status: 'ok',
+      value: {
+        scope: { userId: 'uid-1', workspaceId: 'ws-team', role: 'owner' },
+        settings: SERVED_SETTINGS,
+        readAt: 0
+      }
+    })),
+    getSnapshot: () => undefined,
+    invalidate: () => {},
+    dispose: () => {}
+  }
+}
+
+function renderAutoTopUp(
+  path: string,
+  paymentMethods: BillingResult<readonly SavedPaymentMethod[]> = {
+    status: 'ok',
+    value: []
+  },
+  topupQuote: TopupQuoteResult = QUOTED,
+  purchase?: TopupPurchaseResult
+) {
+  recordBillingEntry(parseBillingEntry(path))
+  const fake = createFakeBillingClient({
+    capabilities: { can_top_up: true },
+    topupQuote,
+    topup: SUCCEEDED,
+    paymentMethods
+  })
+  if (purchase !== undefined)
+    fake.client.topup.readTopupPurchase = async () => purchase
+  const createHostedTopupCheckout = vi
+    .spyOn(fake.client.topup, 'createHostedTopupCheckout')
+    .mockResolvedValue({
+      status: 'ok',
+      url: 'https://checkout.stripe.com/c/pay/cs_test_1'
+    })
+  const { unmount } = render(FullPageTopupView, {
+    global: {
+      plugins: [createBillingI18n()],
+      provide: {
+        [BILLING_CLIENT_KEY]: fake.client,
+        [AUTO_TOP_UP_SETTINGS_KEY]: autoTopUpReader()
+      }
+    }
+  })
+  return { fake, createHostedTopupCheckout, unmount }
+}
+
+describe('FullPageTopupView with auto top-up from the link', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('shows the consent with the chosen monthly limit and pays on the hosted checkout with the settings', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+      { status: 'ok', value: [{ ...VISA, is_default: true }] }
+    )
+
+    expect(
+      await screen.findByTestId('checkout-auto-top-up-consent')
+    ).toHaveTextContent(
+      'Top-ups are charged to your default card, Visa ···· 3184, up to $50.00 a month.'
+    )
+    expect(screen.getByTestId('checkout-auto-top-up')).toHaveTextContent(
+      'When your balance drops below 1,055 credits, we buy enough to bring it back to 11,605 credits.'
+    )
+    expect(form.mounts).toBe(0)
+
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        'https://checkout.stripe.com/c/pay/cs_test_1'
+      )
+    )
+    expect(createHostedTopupCheckout).toHaveBeenCalledExactlyOnceWith({
+      amountCents: 2500,
+      returnUrl: `${window.location.origin}/return/topup`,
+      autoTopUp: {
+        threshold_credits: 1055,
+        target_credits: 11605,
+        monthly_budget_cents: 5000
+      }
+    })
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('names the served monthly maximum when the link sets no limit, and sends none', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const { createHostedTopupCheckout } = renderAutoTopUp(AUTO_TOP_UP_PATH)
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('checkout-auto-top-up-consent')
+      ).toHaveTextContent(
+        'Top-ups are charged to the card you pay with, up to $1,000.00 a month.'
+      )
+    )
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(createHostedTopupCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          autoTopUp: { threshold_credits: 1055, target_credits: 11605 }
+        })
+      )
+    )
+  })
+
+  it.for([
+    { payment: 'hosted', topupQuote: QUOTED },
+    { payment: 'in-page', topupQuote: PAYS_ONCE }
+  ])(
+    'names neither card as certain when the saved cards cannot be read on the $payment payment, since an existing default card is kept',
+    async ({ topupQuote }) => {
+      renderAutoTopUp(
+        `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+        { status: 'error', code: 'REQUEST_FAILED' },
+        topupQuote
+      )
+
+      expect(
+        await screen.findByTestId('checkout-auto-top-up-consent')
+      ).toHaveTextContent(
+        'Top-ups are charged to your default card, or to the card you pay with if you have none, up to $50.00 a month.'
+      )
+    }
+  )
+
+  it('does not leave for a hosted checkout that answers after the page is gone', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { createHostedTopupCheckout, unmount } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`
+    )
+    let resolve!: (
+      result: Awaited<ReturnType<typeof createHostedTopupCheckout>>
+    ) => void
+    const promise = new Promise<
+      Awaited<ReturnType<typeof createHostedTopupCheckout>>
+    >((settle) => {
+      resolve = settle
+    })
+    createHostedTopupCheckout.mockReturnValue(promise)
+    await screen.findByTestId('checkout-auto-top-up-consent')
+    await userEvent.click(payButton())
+    await waitFor(() => expect(createHostedTopupCheckout).toHaveBeenCalled())
+
+    unmount()
+    resolve({ status: 'ok', url: 'https://checkout.stripe.com/c/pay/cs_late' })
+    await promise
+
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('keeps the page and shows the refusal when the hosted checkout is refused', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`
+    )
+    createHostedTopupCheckout.mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      httpStatus: 400,
+      serverMessage: 'Auto top-up is not available for this workspace.'
+    })
+    await screen.findByTestId('checkout-auto-top-up-consent')
+
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(createHostedTopupCheckout).toHaveBeenCalledOnce()
+    expect(assign).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('pays a quote with a payment configuration in the page, the consent above Saved or Add new, and sends the settings with that payment', async () => {
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+      { status: 'ok', value: [{ ...VISA, is_default: true }, MASTERCARD] },
+      PAYS_ONCE
+    )
+
+    expect(
+      await screen.findByTestId('checkout-auto-top-up-consent')
+    ).toHaveTextContent(
+      'Top-ups are charged to your default card, Visa ···· 3184, up to $50.00 a month.'
+    )
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    expect(tab('Add new payment')).toBeInTheDocument()
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    expect(fake.createInteractiveTopup.mock.calls[0][0]).toMatchObject({
+      amountCents: 2500,
+      payment: { savedPaymentMethodId: 'pm_mc' },
+      autoTopUp: {
+        threshold_credits: 1055,
+        target_credits: 11605,
+        monthly_budget_cents: 5000
+      }
+    })
+    expect(createHostedTopupCheckout).not.toHaveBeenCalled()
+  })
+
+  it('pays a new card on the hosted checkout with the settings when the saved-card read failed, so the card is never confirmed under a guessed saving policy', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      AUTO_TOP_UP_PATH,
+      { status: 'error', code: 'REQUEST_FAILED' },
+      PAYS_ONCE
+    )
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    readyCardForm()
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() =>
+      expect(createHostedTopupCheckout).toHaveBeenCalledExactlyOnceWith({
+        amountCents: 2500,
+        returnUrl: `${window.location.origin}/return/topup`,
+        autoTopUp: { threshold_credits: 1055, target_credits: 11605 }
+      })
+    )
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('refuses a purchase’s new card instead of opening an unbound hosted checkout when the saved-card read failed', async () => {
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&purchase=tpp_1`,
+      { status: 'error', code: 'REQUEST_FAILED' },
+      PAYS_ONCE,
+      purchaseRead('open')
+    )
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    readyCardForm()
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This page can’t take this purchase’s payment'
+    )
+    expect(createHostedTopupCheckout).not.toHaveBeenCalled()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('finishes Turning on auto top-up from the operation the receipt names when the browser kept no pointer to it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const activating = settledTopup({
+      amountChargedCents: 2500,
+      creditsAdded: 5275,
+      autoTopUpActivation: 'pending'
+    })
+    renderTopup({}, TOPUP_PATH, (fake) => {
+      fake.recover.mockResolvedValueOnce({ status: 'ok', value: activating })
+      fake.recover.mockImplementation(async (options) => ({
+        status: 'ok',
+        value:
+          options?.operation?.id === activating.id
+            ? {
+                ...activating,
+                receipt: { ...activating.receipt, autoTopUpActivation: 'on' }
+              }
+            : undefined
+      }))
+    })
+
+    expect(
+      await screen.findByTestId('checkout-ending-auto-top-up')
+    ).toHaveTextContent('Turning on auto top-up…')
+
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('checkout-ending-auto-top-up')
+      ).not.toBeInTheDocument()
+    )
+  })
+
+  it.for([
+    { name: 'no default card', methods: [VISA], saves: true },
+    {
+      name: 'a default card',
+      methods: [{ ...VISA, is_default: true }],
+      saves: false
+    }
+  ])(
+    'a new card saves for off-session charges exactly when there is $name',
+    async ({ methods, saves }) => {
+      renderAutoTopUp(
+        AUTO_TOP_UP_PATH,
+        { status: 'ok', value: methods },
+        PAYS_ONCE
+      )
+
+      await userEvent.click(
+        await screen.findByRole('tab', { name: 'Add new payment' })
+      )
+
+      await waitFor(() => expect(form.savesCardOffSession()).toBe(saves))
     }
   )
 })

@@ -29,9 +29,9 @@ import {
   attachAgentWriteOverwriteWatch,
   describeWidgetValue
 } from './agentWriteOverwrites'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
-import { clearDevEvents, devEvents } from './devPanelLog'
-import type { DevEvent } from './devPanelLog'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { clearDevEvents, devEvents } from './crdtLog'
+import type { DevEvent } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
@@ -286,7 +286,7 @@ function setup({ enabled = true }: { enabled?: boolean } = {}) {
 
 beforeEach(() => {
   LiteGraph.registerNodeType(CLASS, TestSeedance)
-  setCrdtDebugEnabled(true)
+  useRemoteConfigStore().acceptConfig({ 'Comfy.Agent.CrdtDebug': true }, false)
   clearDevEvents()
   onTestFinished(() => {
     clearDevEvents()

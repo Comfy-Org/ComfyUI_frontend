@@ -17,7 +17,7 @@ import {
 } from '@/platform/openOnCloud/localHandoffProtocol'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { takeDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF
@@ -42,7 +42,7 @@ async function openHandedOffWorkflow(
     return
   }
   try {
-    const outcome = await app.loadGraphData(workflow, true, true, filename)
+    const outcome = await useApp().loadGraphData(workflow, true, true, filename)
     if (outcome === false || outcome === undefined) return
   } catch (error) {
     reportError(error, {

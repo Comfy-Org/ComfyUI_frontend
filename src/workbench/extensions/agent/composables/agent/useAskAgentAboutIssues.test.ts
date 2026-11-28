@@ -52,6 +52,19 @@ describe('useAskAgentAboutIssues', () => {
     expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
   })
 
+  it('leaves the skills screen so the attached context is visible', async () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.open('topbar_button')
+    panel.view = { screen: 'skills' }
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+
+    await askAgentAboutIssues(CONTEXT)
+
+    expect(panel.view).toEqual({ screen: 'chat' })
+    expect(panel.pendingErrorContext).toMatchObject(CONTEXT)
+  })
+
   it('does nothing when the agent is unavailable', async () => {
     const panel = useAgentPanelStore()
     const { askAgentAboutIssues } = useAskAgentAboutIssues()
@@ -76,7 +89,8 @@ describe('useAskAgentAboutIssues', () => {
 
     expect(consent.withConsent).toHaveBeenCalledWith(
       'button_click',
-      expect.any(Function)
+      expect.any(Function),
+      { errorContext: expect.objectContaining(CONTEXT) }
     )
     expect(panel.isOpen).toBe(false)
     expect(panel.pendingErrorContext).toBeNull()
@@ -167,6 +181,20 @@ describe('useAskAgentAboutIssues', () => {
     expect(panel.pendingErrorContext?.workflowPath).toBe(
       'workflows/broken.json'
     )
+  })
+
+  it('states that no workflow was open rather than leaving the path out', async () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    Object.defineProperty(useWorkflowStore(), 'activeWorkflow', {
+      configurable: true,
+      value: null
+    })
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+
+    await askAgentAboutIssues(CONTEXT)
+
+    expect(panel.pendingErrorContext?.workflowPath).toBeNull()
   })
 
   it('never leaves later clicks dead when an earlier consent request stays pending', async () => {

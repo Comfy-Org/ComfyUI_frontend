@@ -14,7 +14,7 @@ import {
 import type { LayerEditorSession } from '@comfyorg/layer-editor/vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 export async function loadCompositorSession(
   session: LayerEditorSession,
@@ -22,7 +22,7 @@ export async function loadCompositorSession(
   fallbackLayerName: (index: number) => string
 ): Promise<number> {
   const refs = getCompositorLayers(node) ?? []
-  const rand = app.getRandParam()
+  const rand = useApp().getRandParam()
   const urls = refs.map((fileRef) =>
     api.apiURL(`/view?${imageRefViewQuery(fileRef)}${rand}`)
   )

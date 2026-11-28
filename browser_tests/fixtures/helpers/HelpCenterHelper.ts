@@ -79,14 +79,11 @@ export class HelpCenterHelper {
     })
   }
 
-  /**
-   * Intercept the Zendesk support URL so it never actually loads in the
-   * new tab opened by the Contact Support command.
-   */
+  /** Keeps the support form opened by Contact Support from loading the real portal. */
   async stubSupportPage(): Promise<void> {
     await this.page
       .context()
-      .route('https://support.comfy.org/**', (route: Route) =>
+      .route('https://comfysupport.portal.usepylon.com/**', (route: Route) =>
         route.fulfill({
           status: 200,
           contentType: 'text/html',

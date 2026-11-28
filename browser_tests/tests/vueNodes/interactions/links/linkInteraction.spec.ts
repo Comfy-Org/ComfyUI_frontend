@@ -1231,8 +1231,12 @@ test(
   'Fast disconnection support',
   { tag: '@vue-nodes' },
   async ({ comfyMouse, comfyPage }) => {
-    async function performDisconnect(slot: Locator, isFast: boolean) {
-      await comfyMouse.dragElementBy(slot, { x: isFast ? -30 : -80 })
+    async function performDisconnect(
+      slot: Locator,
+      isFast: boolean,
+      slowOffset: { x: number; y?: number } = { x: -80 }
+    ) {
+      await comfyMouse.dragElementBy(slot, isFast ? { x: -30 } : slowOffset)
 
       if (!isFast) {
         await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
@@ -1260,7 +1264,10 @@ test(
 
     await test.step('Disconnection with subgraph IO', async () => {
       await performDisconnect(ksampler.getSlot('negative'), true)
-      await performDisconnect(ksampler.getSlot('latent_image'), false)
+      await performDisconnect(ksampler.getSlot('latent_image'), false, {
+        x: -80,
+        y: 300
+      })
     })
   }
 )

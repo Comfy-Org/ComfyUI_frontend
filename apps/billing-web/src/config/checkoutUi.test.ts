@@ -408,6 +408,20 @@ describe('settleCheckoutUi', () => {
   )
 })
 
+describe('awaitInPageTopup', () => {
+  it.for([true, false])(
+    'follows unified_billing_settings: %s outside a handoff tab',
+    async (on) => {
+      respondToFetch(FEATURES_URL, async () =>
+        answer({ unified_billing_settings: on })
+      )
+      const { awaitInPageTopup } = await freshCheckoutUi()
+
+      expect(await awaitInPageTopup()).toBe(on)
+    }
+  )
+})
+
 describe('in a billing handoff tab', () => {
   async function handoffCheckoutUi(
     read: () => Promise<'embedded' | 'full_page' | undefined>
@@ -464,6 +478,16 @@ describe('in a billing handoff tab', () => {
     )
 
     await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
+  })
+
+  it('pays top-ups in the page without asking Cloud', async () => {
+    const { awaitInPageTopup } = await handoffCheckoutUi(() =>
+      Promise.resolve('full_page')
+    )
+
+    await expect(awaitInPageTopup()).resolves.toBe(true)
+    expect(h.ensureFresh).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('reads unified billing settings as off without asking Cloud', async () => {

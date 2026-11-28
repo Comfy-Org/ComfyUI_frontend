@@ -35,6 +35,14 @@ const MEMBER_DECLARATION_TYPES = [
   'TSMethodSignature',
   'TSPropertySignature'
 ]
+const TRANSFORM_STYLE_PROPERTIES = new Set([
+  'transform',
+  'translate',
+  'scale',
+  'rotate'
+])
+const TRANSFORM_WRITE_MESSAGE =
+  'Do not write a transform straight to element.style on the graph canvas - Chrome recomposites the whole page on every change. Use useCompositedTransform from @/renderer/core/layout/transform/useCompositedTransform.'
 const TEST_APIS = new Set(['describe', 'it', 'suite', 'test'])
 const DISABLING_CONDITION = new Map([
   ['skipIf', true],
@@ -88,6 +96,17 @@ interface CallExpression extends Node {
   readonly type: 'CallExpression'
   readonly callee: Node
   readonly arguments: readonly Node[]
+}
+
+interface ObjectExpression extends Node {
+  readonly type: 'ObjectExpression'
+  readonly properties: readonly Node[]
+}
+
+interface Property extends Node {
+  readonly type: 'Property'
+  readonly computed: boolean
+  readonly key: Node
 }
 
 interface AssignmentExpression extends Node {
@@ -243,6 +262,88 @@ export const noUnsafeErrorAssertion = {
           return
         }
         context.report({ node, message: ERROR_ASSERTION_MESSAGE })
+      }
+    }
+  }
+}
+
+function isStyleObject(node: Node): boolean {
+  return (
+    node.type === 'MemberExpression' &&
+    staticPropertyName(node as MemberExpression) === 'style'
+  )
+}
+
+function setsTransformProperty(
+  callee: MemberExpression,
+  args: readonly Node[]
+): boolean {
+  const name = args.at(0)
+  const property = name && staticString(name)
+  return (
+    staticPropertyName(callee) === 'setProperty' &&
+    isStyleObject(callee.object) &&
+    !!property &&
+    TRANSFORM_STYLE_PROPERTIES.has(property)
+  )
+}
+
+function mayHoldTransformProperty(source: Node): boolean {
+  if (source.type !== 'ObjectExpression') return true
+  return (source as ObjectExpression).properties.some((entry) => {
+    if (entry.type !== 'Property') return true
+    const { computed, key } = entry as Property
+    const name = computed ? staticString(key) : propertyKeyName(key)
+    return !name || TRANSFORM_STYLE_PROPERTIES.has(name)
+  })
+}
+
+function propertyKeyName(key: Node): string | undefined {
+  return identifierName(key) ?? staticString(key)
+}
+
+function assignsTransformToStyle(
+  callee: MemberExpression,
+  args: readonly Node[]
+): boolean {
+  const target = args.at(0)
+  return (
+    staticPropertyName(callee) === 'assign' &&
+    identifierName(callee.object) === 'Object' &&
+    !!target &&
+    isStyleObject(target) &&
+    args.slice(1).some(mayHoldTransformProperty)
+  )
+}
+
+export const noDirectTransformWrite = {
+  create(context: RuleContext) {
+    function report(node: Node) {
+      context.report({ node, message: TRANSFORM_WRITE_MESSAGE })
+    }
+
+    return {
+      AssignmentExpression(node: AssignmentExpression) {
+        if (node.left.type !== 'MemberExpression') return
+        const member = node.left as MemberExpression
+        const property = staticPropertyName(member)
+        if (
+          property &&
+          TRANSFORM_STYLE_PROPERTIES.has(property) &&
+          isStyleObject(member.object)
+        ) {
+          report(node)
+        }
+      },
+      CallExpression(node: CallExpression) {
+        if (node.callee.type !== 'MemberExpression') return
+        const member = node.callee as MemberExpression
+        if (
+          setsTransformProperty(member, node.arguments) ||
+          assignsTransformToStyle(member, node.arguments)
+        ) {
+          report(node)
+        }
       }
     }
   }

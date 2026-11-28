@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
@@ -61,7 +61,7 @@ export function useFocusNode() {
 
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
-      : getNodeByExecutionId(app.rootGraph, nodeId)
+      : getNodeByExecutionId(useApp().rootGraph, nodeId)
     if (!graphNode?.graph) return
 
     await focusNodeInstance(graphNode)

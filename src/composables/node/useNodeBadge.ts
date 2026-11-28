@@ -3,7 +3,7 @@ import { computed, onMounted, watch } from 'vue'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { installNodeBadges } from '@/systems/badgeSystem'
 
@@ -49,7 +49,7 @@ export const useNodeBadge = () => {
       name: 'Comfy.NodeBadge',
       init() {
         installNodeBadges()
-        app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+        useApp().canvas.canvas.addEventListener<'litegraph:set-graph'>(
           'litegraph:set-graph',
           () => {
             canvasStore.canvas?.setDirty(true, true)

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { addCreditsEmphasis, deriveCreditsCard } from './creditsCard'
+import { deriveCreditsFlyout } from './creditsFlyout'
 import {
   deriveBillingTabLoad,
   derivePlanRow,
@@ -290,9 +292,77 @@ describe('derivePlanRow', () => {
         cadence: null,
         endedAt: null
       }
+    },
+    {
+      case: 'a served never_subscribed state on the free tier',
+      facts: {
+        subscriptionState: 'never_subscribed',
+        planName: 'Free',
+        renewalDate: null,
+        duration: null
+      },
+      expected: { kind: 'noPlan', freeRuns: null }
+    },
+    {
+      case: 'a served never_subscribed state with free runs left',
+      facts: {
+        subscriptionState: 'never_subscribed',
+        planName: 'Free',
+        freeRuns: { remaining: 3, total: 5 }
+      },
+      expected: { kind: 'noPlan', freeRuns: { remaining: 3, total: 5 } }
     }
   ])('maps $case', ({ facts, expected }) => {
     expect(derivePlanRow({ ...baseFacts, ...facts })).toEqual(expected)
+  })
+})
+
+describe('a never-subscribed free workspace with no credits', () => {
+  const planRow = derivePlanRow({
+    ...baseFacts,
+    subscriptionState: 'never_subscribed',
+    billingStatus: 'inactive',
+    planName: 'Free',
+    renewalDate: null,
+    duration: null,
+    freeRuns: { remaining: 3, total: 5 }
+  })
+  const action = planRowAction(planRow, {
+    canOpenPlans: true,
+    planKind: 'self_serve'
+  })
+  const creditFacts = {
+    balance: { amountMicros: 0, effectiveBalanceMicros: 0 },
+    planKind: planRow.kind,
+    billingStatus: 'inactive' as const,
+    periodCreditGrant: null,
+    nextCreditRefillAt: null,
+    endDate: null
+  }
+
+  it('offers Choose a plan as the plan action', () => {
+    expect(action).toBe('subscribe')
+  })
+
+  it('shows top-up credits only on the credits card and flyout', () => {
+    expect(
+      deriveCreditsCard({ ...creditFacts, planPoolCredits: null })
+    ).toEqual({ kind: 'noPlan', availableCents: 0 })
+    expect(deriveCreditsFlyout({ ...creditFacts, loading: false })).toEqual({
+      kind: 'noPlan',
+      topUpCents: 0
+    })
+  })
+
+  it('keeps Add credits grey so Choose a plan is the one white button', () => {
+    expect(
+      addCreditsEmphasis({
+        availableCents: 0,
+        canTopUp: true,
+        autoTopUpStatus: null,
+        planActionIsPrimary: action === 'subscribe'
+      })
+    ).toBe('secondary')
   })
 })
 

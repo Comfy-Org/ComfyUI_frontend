@@ -36,8 +36,12 @@ const spies = vi.hoisted(() => ({
   toggleAssets: vi.fn()
 }))
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false,
+  get isCloud() {
+    return distribution.isCloud
+  },
   isDesktop: false,
   isNightly: false
 }))
@@ -69,6 +73,10 @@ function renderToolbar(props: SideToolbarProps = {}) {
           props: ['side'],
           template:
             '<div data-testid="current-user-button" :data-side="side" />'
+        },
+        LoginButton: {
+          props: ['side'],
+          template: '<div data-testid="login-button" :data-side="side" />'
         },
         HelpCenterPopups: { template: '<div />' },
         SidebarBottomPanelToggleButton: {
@@ -104,6 +112,7 @@ const workflowsTab: SidebarTabExtension = {
 
 describe('SideToolbar', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     Object.assign(useUserStore(), { isMultiUserServer: false })
     useSidebarTabStore().sidebarTabs = [assetsTab, workflowsTab]
     useSidebarTabStore().activeSidebarTabId = null
@@ -203,14 +212,15 @@ describe('SideToolbar', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('rechecks overflow when the profile button mounts after sign-in', async () => {
+    it('rechecks overflow when the profile button mounts after sign-in on Cloud', async () => {
       vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      distribution.isCloud = true
       const loggedIn = ref(false)
       useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
       const itemHeight = 50
       const clientHeight = vi
         .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
-        .mockReturnValue(320)
+        .mockReturnValue(280)
       const scrollHeight = vi
         .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
         .mockImplementation(function (this: HTMLElement) {
@@ -241,6 +251,63 @@ describe('SideToolbar', () => {
         renderToolbar()
 
         expect(screen.getByTestId('current-user-button')).toHaveAttribute(
+          'data-side',
+          side
+        )
+      }
+    )
+  })
+
+  describe('sign-in button', () => {
+    beforeEach(() => {
+      useCurrentUser().isLoggedIn = computed(() => false)
+    })
+
+    it('mounts in the profile slot when signed out with billing_new_ux_enabled on', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      renderToolbar()
+
+      expect(screen.getByTestId('login-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('stays out of the sidebar while billing_new_ux_enabled is off', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      renderToolbar()
+
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+    })
+
+    it('gives way to the profile button once signed in', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      useCurrentUser().isLoggedIn = computed(() => true)
+      renderToolbar()
+
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+      expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+    })
+
+    it('stays out of the sidebar on Cloud', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      distribution.isCloud = true
+      renderToolbar()
+
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+    })
+
+    it.for([
+      { location: 'left', side: 'right' },
+      { location: 'right', side: 'left' }
+    ] as const)(
+      'shows its tooltip toward the canvas when the sidebar is on the $location',
+      ({ location, side }) => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+        useSettingStore().settingValues['Comfy.Sidebar.Location'] = location
+        renderToolbar()
+
+        expect(screen.getByTestId('login-button')).toHaveAttribute(
           'data-side',
           side
         )

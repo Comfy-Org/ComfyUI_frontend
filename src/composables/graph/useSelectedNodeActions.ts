@@ -1,7 +1,7 @@
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
@@ -22,7 +22,7 @@ export function useSelectedNodeActions() {
       node.setSize([optimalSize[0], optimalSize[1]])
     })
 
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
@@ -32,7 +32,7 @@ export function useSelectedNodeActions() {
       node.collapse()
     })
 
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
@@ -42,13 +42,13 @@ export function useSelectedNodeActions() {
       node.pin(!node.pinned)
     })
 
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const toggleNodeBypass = () => {
     toggleSelectedNodesMode(LGraphEventMode.BYPASS)
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
   }
 
   const runBranch = async () => {

@@ -15,7 +15,7 @@ import type { ComfyExtension } from '@/types/comfy'
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -56,7 +56,7 @@ export const saveMeshExtension: ComfyExtension = {
       const fileInfo = (output as SaveMeshOutput)['3d']?.[0]
       if (!fileInfo) continue
 
-      const node = getNodeByLocatorId(app.rootGraph, locatorId)
+      const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
       if (!node || node.constructor.comfyClass !== 'SaveGLB') continue
 
       applySaveGLBOutput(node, fileInfo)

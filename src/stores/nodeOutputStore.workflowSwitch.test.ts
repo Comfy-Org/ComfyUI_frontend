@@ -68,8 +68,6 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     revokeObjectURL = vi
       .spyOn(URL, 'revokeObjectURL')
       .mockImplementation(() => {})
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
     useWorkflowStore().activeWorkflow = fromPartial({ path: WORKFLOW_A })
     Object.assign(useWorkflowStore(), {
       openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }]
@@ -261,7 +259,6 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
   })
 
   it('keeps the restored workflow preview when a revoke scheduled before the switch fires', () => {
-    vi.useFakeTimers()
     const store = useNodeOutputStore()
     const node = createMockNode(5)
     switchToWorkflow(WORKFLOW_B)

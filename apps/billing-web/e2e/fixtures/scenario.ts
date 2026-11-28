@@ -25,6 +25,8 @@ export interface CloudScenario {
   checkoutUi?: string
   /** `billing_web_plan_change_card_choice`, answered alongside `checkoutUi`. */
   planChangeCardChoice?: boolean
+  /** `unified_billing_settings`, answered alongside `checkoutUi`. */
+  unifiedBillingSettings?: boolean
 }
 
 const HOUR_MS = 60 * 60 * 1000
@@ -57,6 +59,7 @@ export function capabilitiesWith(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_run_workflows: true,

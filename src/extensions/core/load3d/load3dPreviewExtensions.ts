@@ -19,7 +19,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -85,7 +85,7 @@ function createPreview3DExtension(
         const reported = readModel3DOutput(output)
         if (!reported) continue
 
-        const node = getNodeByLocatorId(app.rootGraph, locatorId)
+        const node = getNodeByLocatorId(useApp().rootGraph, locatorId)
         if (!node || node.constructor.comfyClass !== comfyClass) continue
 
         applyPreviewOutput(node, reported)

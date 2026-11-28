@@ -235,7 +235,13 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(
       node.graph.rootGraph.id,
       node.id,
-      [{ index: 0, type: 'input', position: { x: 0, y: 73 } }],
+      [
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: 0, y: 73, width: 0, height: 0 }
+        }
+      ],
       'expanded'
     )
 
@@ -278,7 +284,13 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(
       node.graph.rootGraph.id,
       node.id,
-      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      [
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: -6, y: 14, width: 0, height: 0 }
+        }
+      ],
       'expanded'
     )
     const graph = fromPartial<LGraph>({
@@ -297,7 +309,13 @@ describe('Vue slot geometry', () => {
     layoutStore.updateNodeSlotOffsets(
       node.graph.rootGraph.id,
       node.id,
-      [{ index: 0, type: 'input', position: { x: -6, y: 14 } }],
+      [
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: -6, y: 14, width: 0, height: 0 }
+        }
+      ],
       'expanded'
     )
     const overlappingNode = makeNode({ position: [280, 390] })
@@ -386,8 +404,16 @@ describe('Vue slot geometry', () => {
       node.graph.rootGraph.id,
       node.id,
       [
-        { index: 0, type: 'input', position: { x: 0, y: 73 } },
-        { index: 0, type: 'output', position: { x: 180, y: 73 } }
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: 0, y: 73, width: 0, height: 0 }
+        },
+        {
+          index: 0,
+          type: 'output',
+          bounds: { x: 180, y: 73, width: 0, height: 0 }
+        }
       ],
       'expanded'
     )
@@ -408,8 +434,16 @@ describe('Vue slot geometry', () => {
       node.graph.rootGraph.id,
       node.id,
       [
-        { index: 0, type: 'input', position: { x: 0, y: -15 } },
-        { index: 0, type: 'output', position: { x: 280, y: -15 } }
+        {
+          index: 0,
+          type: 'input',
+          bounds: { x: 0, y: -15, width: 0, height: 0 }
+        },
+        {
+          index: 0,
+          type: 'output',
+          bounds: { x: 280, y: -15, width: 0, height: 0 }
+        }
       ],
       'collapsed'
     )

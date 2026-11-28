@@ -75,3 +75,17 @@ describe('color palette setting', () => {
     expect(setting?.migrateDeprecatedValue?.(saved)).toBe(expected)
   })
 })
+
+describe('templates sort setting', () => {
+  it.for([
+    { saved: 'default', expected: 'newest' },
+    { saved: 'popular', expected: 'popular' },
+    { saved: 'alphabetical', expected: 'alphabetical' }
+  ])('migrates saved sort $saved to $expected', ({ saved, expected }) => {
+    const setting = CORE_SETTINGS.find(
+      ({ id }) => id === 'Comfy.Templates.SortBy'
+    )
+
+    expect(setting?.migrateDeprecatedValue?.(saved)).toBe(expected)
+  })
+})

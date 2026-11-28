@@ -1,5 +1,14 @@
 import * as THREE from 'three'
 
+import { createTupleSet } from './tupleSet'
+
+function throwIfSignalAborted(signal: AbortSignal | undefined): void {
+  if (!signal?.aborted) return
+  throw signal.reason === undefined
+    ? new DOMException('This operation was aborted', 'AbortError')
+    : signal.reason
+}
+
 export interface ModelStats {
   vertices: number
   edges: number
@@ -16,54 +25,54 @@ const CHUNK_SIZE = 50_000
 
 async function yieldToEventLoop(signal?: AbortSignal): Promise<void> {
   await new Promise<void>((resolve) => setTimeout(resolve, 0))
-  signal?.throwIfAborted()
+  throwIfSignalAborted(signal)
 }
 
 async function weldByPosition(
   position: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
   signal?: AbortSignal
 ): Promise<{ remap: Uint32Array; uniqueCount: number }> {
-  const ids = new Map<string, number>()
+  const positions = createTupleSet(3)
   const remap = new Uint32Array(position.count)
+  const coordinates = new Float32Array(3)
+  const coordinateBits = new Uint32Array(coordinates.buffer)
   for (let i = 0; i < position.count; i++) {
     if (i > 0 && i % CHUNK_SIZE === 0) await yieldToEventLoop(signal)
-    const key = `${position.getX(i)},${position.getY(i)},${position.getZ(i)}`
-    const existing = ids.get(key)
-    if (existing === undefined) {
-      remap[i] = ids.size
-      ids.set(key, ids.size)
-    } else {
-      remap[i] = existing
-    }
+    coordinates[0] = Math.fround(position.getX(i)) + 0
+    coordinates[1] = Math.fround(position.getY(i)) + 0
+    coordinates[2] = Math.fround(position.getZ(i)) + 0
+    remap[i] = positions.add(
+      coordinateBits[0],
+      coordinateBits[1],
+      coordinateBits[2]
+    )
   }
-  return { remap, uniqueCount: ids.size }
+  return { remap, uniqueCount: positions.size }
 }
 
 async function countTopology(
   cornerIndices: ArrayLike<number>,
   remap: Uint32Array,
-  vertexCount: number,
   signal?: AbortSignal
 ): Promise<{ edges: number; triangles: number }> {
-  const edges = new Set<number>()
-  const triangles = new Set<string>()
+  const edges = createTupleSet(2)
+  const triangles = createTupleSet(3)
   const cornerTriangles = Math.floor(cornerIndices.length / 3)
   for (let t = 0; t < cornerTriangles; t++) {
     if (t > 0 && t % CHUNK_SIZE === 0) await yieldToEventLoop(signal)
-    const corners = [
+    const [a, b, c] = [
       remap[cornerIndices[t * 3]],
       remap[cornerIndices[t * 3 + 1]],
       remap[cornerIndices[t * 3 + 2]]
     ].sort((a, b) => a - b)
-    const [a, b, c] = corners
     const isDegenerate = a === b || b === c
     if (isDegenerate) continue
-    const triangleKey = corners.join(',')
-    if (triangles.has(triangleKey)) continue
-    triangles.add(triangleKey)
-    edges.add(a * vertexCount + b)
-    edges.add(b * vertexCount + c)
-    edges.add(a * vertexCount + c)
+    const knownTriangles = triangles.size
+    triangles.add(a, b, c)
+    if (triangles.size === knownTriangles) continue
+    edges.add(a, b)
+    edges.add(b, c)
+    edges.add(a, c)
   }
   return { edges: edges.size, triangles: triangles.size }
 }
@@ -81,12 +90,7 @@ async function meshStats(
 
   const { remap, uniqueCount } = await weldByPosition(position, signal)
   const corners = mesh.geometry.index?.array ?? sequentialCorners(remap.length)
-  const { edges, triangles } = await countTopology(
-    corners,
-    remap,
-    uniqueCount,
-    signal
-  )
+  const { edges, triangles } = await countTopology(corners, remap, signal)
   const instances = mesh instanceof THREE.InstancedMesh ? mesh.count : 1
 
   return {
@@ -116,7 +120,7 @@ export async function computeModelStats(
   root: THREE.Object3D,
   signal?: AbortSignal
 ): Promise<ModelStats> {
-  signal?.throwIfAborted()
+  throwIfSignalAborted(signal)
   const meshes: THREE.Mesh[] = []
   let total = EMPTY_STATS
   root.traverse((child) => {
@@ -128,7 +132,7 @@ export async function computeModelStats(
   })
   for (const mesh of meshes) {
     const stats = await meshStats(mesh, signal)
-    signal?.throwIfAborted()
+    throwIfSignalAborted(signal)
     total = addStats(total, stats)
   }
   return total

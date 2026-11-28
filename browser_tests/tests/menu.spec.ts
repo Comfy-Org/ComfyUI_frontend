@@ -38,6 +38,17 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
         .toEqual([workflowName])
+
+      const { workflowActions } = comfyPage.appMode
+      await workflowActions.trigger.click()
+      await expect(
+        workflowActions.menu.getByRole('menuitem', {
+          name: 'Export (Workflow Image)',
+          exact: true
+        })
+      ).toBeVisible()
+      await comfyPage.page.keyboard.press('Escape')
+
       await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
       await expect
         .poll(() => comfyPage.menu.topbar.getTabNames())
@@ -106,14 +117,16 @@ test.describe('Menu', { tag: '@ui' }, () => {
     })
 
     test('Displays keybinding next to item', async ({ comfyPage }) => {
-      await comfyPage.menu.topbar.openTopbarMenu()
-      const workflowMenuItem = comfyPage.menu.topbar.getMenuItem('File')
-      await workflowMenuItem.hover()
-      const exportTag = comfyPage.menu.topbar
-        .getVisibleSubmenu()
-        .getByRole('menuitem', { name: 'Save', exact: true })
+      const { topbar } = comfyPage.menu
+      await topbar.openTopbarMenu()
+      const submenu = await topbar.openSubmenu('File')
+      const saveKeybinding = topbar
+        .getMenuItem('Save', submenu)
         .getByText('Ctrl + s', { exact: true })
-      await expect(exportTag).toHaveCount(1)
+      await expect(saveKeybinding).toHaveCount(1)
+      await expect(
+        topbar.getMenuItem('Export (Workflow Image)', submenu)
+      ).toBeVisible()
     })
 
     test('Can catch error when executing command', async ({ comfyPage }) => {

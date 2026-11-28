@@ -1,4 +1,6 @@
 import type { AutoTopUpBannerKind } from './autoTopUpBanner'
+import { cloudCreditBannersAllowed } from './cloudCreditBanners'
+import type { PlanRowFacts } from './planRow'
 
 export type LocalCreditBannerKind =
   | 'outOfCredits'
@@ -9,6 +11,7 @@ export interface LocalCreditBannerInput {
   unifiedBillingSettingsEnabled: boolean
   isCloud: boolean
   isActive: boolean
+  subscriptionState: PlanRowFacts['subscriptionState']
   hasFunds: boolean | null
   lowBalance: boolean | undefined
   outOfCreditsDismissed: boolean
@@ -22,7 +25,12 @@ export function deriveLocalCreditBanner(
 ): LocalCreditBannerKind | null {
   if (!input.unifiedBillingSettingsEnabled) return null
   if (input.autoTopUp) return input.autoTopUp
-  if (input.isCloud && !input.isActive) return null
+  if (
+    input.isCloud &&
+    !cloudCreditBannersAllowed(input.subscriptionState, input.isActive)
+  ) {
+    return null
+  }
   if (input.hasFunds === false && !input.outOfCreditsDismissed) {
     return 'outOfCredits'
   }

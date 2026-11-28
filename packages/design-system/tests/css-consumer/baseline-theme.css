@@ -1,0 +1,6 @@
+@import 'tailwindcss' source(none);
+@import '@comfyorg/design-system/css/baseline.css';
+
+:root {
+  --background: oklch(0.19 0.003 285);
+}

@@ -1,6 +1,6 @@
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 const reportedEntryPoints = new Set<string>()
 
@@ -8,7 +8,7 @@ function reportMissingCanvas(entryPoint: string, e: Event) {
   if (reportedEntryPoints.has(entryPoint)) return
   reportedEntryPoints.add(entryPoint)
 
-  const canvasEl = app.canvasElRef.value
+  const canvasEl = useApp().canvasElRef.value
   const pointer = e instanceof PointerEvent ? e : undefined
   reportError(new Error('Canvas unavailable while handling touch input'), {
     errorType: 'error_handling_touch_input_missing_canvas',
@@ -31,7 +31,7 @@ function reportMissingCanvas(entryPoint: string, e: Event) {
 }
 
 export function canvasOrReport(entryPoint: string, e: Event) {
-  const canvas = app.canvasOrUndefined
+  const canvas = useApp().canvasOrUndefined
   if (!canvas) reportMissingCanvas(entryPoint, e)
   return canvas
 }
