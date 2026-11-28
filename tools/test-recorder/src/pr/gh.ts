@@ -70,13 +70,13 @@ function explainCommitFailure(stderr: string, testFilePath: string): string {
 
   if (/expect-expect/.test(lintSummary)) {
     return [
-      'The pre-commit checks caught a test with no assertions.',
+      'An automatic check caught the test having no proof step.',
       '',
-      "Playwright can't tell your test passed unless it checks something",
-      'concrete on the page — text, a value, whether something is visible.',
+      "A test can't prove it passed unless it checks something concrete on",
+      'the page — text, a value, whether something is visible.',
       '',
-      'Add at least one `await expect(...)` call to the test before',
-      'committing. For example:',
+      'Add at least one check like this to the test, then run the command',
+      'again:',
       '',
       "  await expect(comfyPage.page.getByText('Queue')).toBeVisible()",
       '',
@@ -95,10 +95,10 @@ function explainCommitFailure(stderr: string, testFilePath: string): string {
     const isOtherFile = !testFilePath.endsWith(brokenFile.split('/').pop()!)
     const heading = isOtherFile
       ? [
-          'A DIFFERENT file has a type error and is blocking this commit —',
-          'not the test you just recorded:'
+          'A DIFFERENT file has a problem in its code and is blocking your',
+          'test from being submitted — not the test you just recorded:'
         ]
-      : ['Your recorded test has a type error:']
+      : ['Your recorded test has a problem in its code:']
     const fix = isOtherFile
       ? [
           'This looks like a leftover file from an earlier recording',
@@ -123,7 +123,7 @@ function explainCommitFailure(stderr: string, testFilePath: string): string {
   }
 
   return [
-    'The pre-commit checks (lint) failed on the generated test:',
+    'An automatic check failed on the generated test:',
     '',
     lintSummary
   ].join('\n')

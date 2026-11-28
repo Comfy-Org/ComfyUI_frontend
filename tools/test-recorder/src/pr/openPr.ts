@@ -76,7 +76,7 @@ export async function openPr(options: OpenPrOptions): Promise<void> {
     }
 
     const goBack = await confirm({
-      message: `Put your project back the way it was before recording? (switches back to ${created.originalBranch})`,
+      message: `Put your project back the way it was before recording?`,
       initialValue: true
     })
     if (!isCancel(goBack) && goBack) {
@@ -84,12 +84,11 @@ export async function openPr(options: OpenPrOptions): Promise<void> {
         cwd: options.projectRoot
       })
       if (!switched.success) {
-        warn(
-          `Could not switch back to ${created.originalBranch}`,
-          switched.error
-        )
+        warn(`Could not put your project back the way it was`, switched.error)
         info([
-          `You're still on ${created.currentBranch} — switch manually:`,
+          `Your project is still on the version used for recording.`,
+          '',
+          'To switch it back by hand, run:',
           '',
           `  git checkout ${created.originalBranch}`
         ])
