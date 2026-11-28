@@ -130,6 +130,336 @@ beforeEach(() => {
   resetSubgraphFixtureState()
 })
 
+describe('Hide input', () => {
+  function createTextSubgraph(targetCount = 1) {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'STRING' }]
+    })
+    const targets = Array.from({ length: targetCount }, (_, index) => {
+      const node = new LGraphNode(`Text source ${index}`)
+      node.comfyClass = 'TextSource'
+      node.serialize_widgets = true
+      subgraph.add(node)
+      const input = node.addInput('value', 'STRING')
+      const widget = node.addWidget('text', 'value', 'default-19', () => {})
+      input.widget = { name: widget.name }
+      subgraph.inputNode.slots[0].connect(input, node)
+      return { node, widget }
+    })
+    return { subgraph, targets }
+  }
+
+  function addHost(subgraph: Subgraph, value: string) {
+    const host = createTestSubgraphNode(subgraph)
+    host.comfyClass = 'Subgraph'
+    subgraph.rootGraph.add(host)
+    const hostInput = host.inputs[0]
+    assert.exists(hostInput.widgetId)
+    useWidgetValueStore().setValue(hostInput.widgetId, value)
+    return { host, hostInput, hostWidgetId: hostInput.widgetId }
+  }
+
+  function hostSurfaces(id: WidgetId) {
+    return useWidgetValueStore().getWidgetVisibility(id)?.surfaces
+  }
+
+  async function promptInputs(graph: Subgraph['rootGraph']) {
+    const prompt = await graphToPrompt(graph)
+    return Object.fromEntries(
+      Object.entries(prompt.output).map(([id, node]) => [id, node.inputs])
+    )
+  }
+
+  it('keeps an edited ordinary widget value in the execution prompt when advanced visibility changes', async () => {
+    const graph = createTestRootGraph()
+    const node = new LGraphNode('Text source')
+    node.comfyClass = 'TextSource'
+    node.serialize_widgets = true
+    graph.add(node)
+    const widget = node.addWidget('text', 'value', 'default-19', () => {})
+    widget.value = 'edited-73'
+
+    widget.advanced = true
+    const hiddenPrompt = await graphToPrompt(graph)
+    expect(hiddenPrompt.output[String(node.id)].inputs.value).toBe('edited-73')
+
+    widget.advanced = false
+    const shownPrompt = await graphToPrompt(graph)
+    expect(shownPrompt.output[String(node.id)].inputs.value).toBe('edited-73')
+  })
+
+  it('changes only the host widget visibility tier, keeping the prompt identical', async () => {
+    const { subgraph } = createTextSubgraph(2)
+    const a = addHost(subgraph, 'edited-73')
+    const b = addHost(subgraph, 'edited-91')
+    const before = await promptInputs(subgraph.rootGraph)
+    expect(Object.values(before).map((inputs) => inputs.value)).toEqual([
+      'edited-73',
+      'edited-73',
+      'edited-91',
+      'edited-91'
+    ])
+
+    a.host.hideInput('value')
+
+    expect(a.host.isInputHidden('value')).toBe(true)
+    expect(b.host.isInputHidden('value')).toBe(false)
+    // Hidden is a read-time override; the stored tiers are not written.
+    expect(hostSurfaces(a.hostWidgetId)).toEqual({
+      canvas: 'shown',
+      vueNode: 'shown',
+      panel: 'shown'
+    })
+    expect(hostSurfaces(b.hostWidgetId)).toEqual({
+      canvas: 'shown',
+      vueNode: 'shown',
+      panel: 'shown'
+    })
+    expect(a.host.inputs[0].widgetId).toBe(a.hostWidgetId)
+    expect(subgraph.inputs[0].linkIds).toHaveLength(2)
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+
+    a.host.showInput('value')
+
+    expect(hostSurfaces(a.hostWidgetId)).toEqual({
+      canvas: 'shown',
+      vueNode: 'shown',
+      panel: 'shown'
+    })
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+  })
+
+  it('keeps upstream cables on the hidden and the sibling instance', async () => {
+    const { subgraph } = createTextSubgraph()
+    const a = addHost(subgraph, 'edited-73')
+    const b = addHost(subgraph, 'edited-91')
+    const upstream = new LGraphNode('Upstream text')
+    upstream.comfyClass = 'UpstreamText'
+    upstream.addOutput('text', 'STRING')
+    subgraph.rootGraph.add(upstream)
+    upstream.connect(0, a.host, 0)
+    upstream.connect(0, b.host, 0)
+    const before = await promptInputs(subgraph.rootGraph)
+    expect(Object.values(before).filter((inputs) => 'value' in inputs)).toEqual(
+      [{ value: [String(upstream.id), 0] }, { value: [String(upstream.id), 0] }]
+    )
+
+    a.host.hideInput('value')
+
+    expect(a.host.isInputConnected(0)).toBe(true)
+    expect(b.host.isInputConnected(0)).toBe(true)
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+
+    a.host.showInput('value')
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+  })
+
+  it('keeps a mixed widget and socket fanout linked across Hide and Show', async () => {
+    const { subgraph } = createTextSubgraph()
+    const socketNode = new LGraphNode('Socket sink')
+    socketNode.comfyClass = 'SocketSink'
+    subgraph.add(socketNode)
+    const socketInput = socketNode.addInput('text', 'STRING')
+    subgraph.inputNode.slots[0].connect(socketInput, socketNode)
+    const a = addHost(subgraph, 'edited-73')
+    const before = await promptInputs(subgraph.rootGraph)
+
+    a.host.hideInput('value')
+    expect(subgraph.inputs[0].linkIds).toHaveLength(2)
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+
+    a.host.showInput('value')
+    expect(subgraph.inputs[0].linkIds).toHaveLength(2)
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+  })
+
+  it('keeps prompt values and combo options when hiding with two compatible targets whose widget type diverged', async () => {
+    const { subgraph, targets } = createTextSubgraph(2)
+    const a = addHost(subgraph, 'shared')
+    const before = await promptInputs(subgraph.rootGraph)
+    const store = useWidgetValueStore()
+    store.setOptions(a.hostWidgetId, { multiline: true })
+    targets[0].widget.type = 'combo'
+    targets[0].widget.value = 'first'
+
+    a.host.hideInput('value')
+
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+    expect(store.getWidget(a.hostWidgetId)?.value).toBe('shared')
+    expect(store.getWidget(a.hostWidgetId)?.options).toEqual({
+      multiline: true
+    })
+
+    a.host.showInput('value')
+    expect(await promptInputs(subgraph.rootGraph)).toEqual(before)
+    expect(store.getWidget(a.hostWidgetId)?.options).toEqual({
+      multiline: true
+    })
+  })
+
+  it('reports a hidden promoted widget and row as invisible to legacy canvas', () => {
+    const { subgraph } = createTextSubgraph()
+    const a = addHost(subgraph, 'edited-73')
+    const hostWidget = a.hostInput._widget
+    assert.exists(hostWidget)
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+
+    a.host.hideInput('value')
+
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(false)
+    expect(a.host.isWidgetRowVisible(hostWidget)).toBe(false)
+    expect(a.host.hasAdvancedWidgets()).toBe(true)
+
+    a.host.toggleAdvanced()
+
+    expect(a.host.showAdvanced).toBe(true)
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+
+    a.host.toggleAdvanced()
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(false)
+
+    a.host.showInput('value')
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+  })
+
+  it('does not hide an extension widget that shares a promoted input name', () => {
+    const { subgraph } = createTextSubgraph()
+    const a = addHost(subgraph, 'edited-73')
+    const hostWidget = a.hostInput._widget
+    assert.exists(hostWidget)
+    const extensionWidget = a.host.addCustomWidget(
+      fromAny<IBaseWidget, unknown>({
+        name: 'value',
+        type: 'text',
+        value: 'extension',
+        options: {}
+      })
+    )
+
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(true)
+    expect(a.host.isWidgetVisible(extensionWidget)).toBe(true)
+
+    a.host.hideInput('value')
+
+    expect(a.host.isWidgetVisible(hostWidget)).toBe(false)
+    expect(a.host.isWidgetVisible(extensionWidget)).toBe(true)
+    expect(a.host.isWidgetRowVisible(extensionWidget)).toBe(true)
+  })
+
+  it('saves hidden inputs per instance and restores them on load', () => {
+    const { subgraph } = createTextSubgraph()
+    const a = addHost(subgraph, 'edited-73')
+    const b = addHost(subgraph, 'edited-91')
+    a.host.hideInput('value')
+
+    const savedA = a.host.serialize()
+    const savedB = b.host.serialize()
+    expect(savedA.properties?.hiddenInputs).toEqual(['value'])
+    expect(savedB.properties).not.toHaveProperty('hiddenInputs')
+    expect(savedA.widgets_values).toEqual(['edited-73'])
+
+    const reloaded = createTestSubgraphNode(subgraph)
+    reloaded.configure(
+      fromAny<ExportedSubgraphInstance, unknown>({
+        ...savedA,
+        id: reloaded.id,
+        type: subgraph.id
+      })
+    )
+    subgraph.rootGraph.add(reloaded)
+
+    expect(reloaded.isInputHidden('value')).toBe(true)
+    expect(reloaded.properties).not.toHaveProperty('hiddenInputs')
+    const reloadedId = reloaded.inputs[0].widgetId
+    assert.exists(reloadedId)
+    expect(hostSurfaces(reloadedId)?.vueNode).toBe('shown')
+    const reloadedWidget = reloaded.inputs[0]._widget
+    assert.exists(reloadedWidget)
+    expect(reloaded.isWidgetVisible(reloadedWidget)).toBe(false)
+    expect(reloaded.serialize().properties?.hiddenInputs).toEqual(['value'])
+
+    reloaded.showInput('value')
+
+    expect(reloaded.isWidgetVisible(reloadedWidget)).toBe(true)
+    expect(reloadedWidget.value).toBe('edited-73')
+  })
+
+  it('updates the live promoted control when the persisted property changes', () => {
+    const { subgraph } = createTextSubgraph()
+    const { host, hostInput } = addHost(subgraph, 'edited-73')
+    const widget = hostInput._widget
+    assert.exists(widget)
+
+    host.setProperty('hiddenInputs', ['value'])
+
+    expect(host.isWidgetVisible(widget)).toBe(false)
+    host.setProperty('hiddenInputs', [])
+    expect(host.isWidgetVisible(widget)).toBe(true)
+  })
+
+  it('does not hide a new socket that reuses a name missing at load', () => {
+    const { subgraph } = createTextSubgraph()
+    const { host } = addHost(subgraph, 'edited-73')
+    const saved = host.serialize()
+    host.configure({
+      ...saved,
+      type: subgraph.id,
+      properties: { ...saved.properties, hiddenInputs: ['later'] }
+    })
+
+    subgraph.addInput('later', 'STRING')
+
+    expect(host.isInputHidden('later')).toBe(false)
+  })
+
+  it('returns a reloaded hidden input to its own advanced tier on Show', () => {
+    const { subgraph, targets } = createTextSubgraph()
+    targets[0].widget.options.advanced = true
+    targets[0].widget.advanced = true
+    const a = addHost(subgraph, 'edited-73')
+    expect(hostSurfaces(a.hostWidgetId)).toEqual({
+      canvas: 'advanced',
+      vueNode: 'advanced',
+      panel: 'advanced'
+    })
+    a.host.hideInput('value')
+
+    const reloaded = createTestSubgraphNode(subgraph)
+    reloaded.configure(
+      fromAny<ExportedSubgraphInstance, unknown>({
+        ...a.host.serialize(),
+        id: reloaded.id,
+        type: subgraph.id
+      })
+    )
+    subgraph.rootGraph.add(reloaded)
+    const reloadedId = reloaded.inputs[0].widgetId
+    assert.exists(reloadedId)
+
+    reloaded.showInput('value')
+
+    expect(hostSurfaces(reloadedId)).toEqual({
+      canvas: 'advanced',
+      vueNode: 'advanced',
+      panel: 'advanced'
+    })
+  })
+
+  it('keeps a host policy written while hidden after Show', () => {
+    const { subgraph } = createTextSubgraph()
+    const a = addHost(subgraph, 'edited-73')
+    a.host.hideInput('value')
+    const visibility = useWidgetValueStore().getWidgetVisibility(a.hostWidgetId)
+    assert.exists(visibility)
+    visibility.surfaces.panel = 'never'
+
+    a.host.showInput('value')
+
+    expect(hostSurfaces(a.hostWidgetId)?.panel).toBe('never')
+    expect(hostSurfaces(a.hostWidgetId)?.vueNode).toBe('shown')
+  })
+})
+
 describe('SubgraphWidgetPromotion', () => {
   describe('Widget Promotion Functionality', () => {
     it('should promote widgets when connecting node to subgraph input', () => {
@@ -1952,6 +2282,32 @@ describe('Promoted textarea dual-registration (PM-1328 duplication lead)', () =>
     subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
     expect(textRowCount(hostNode)).toBe(1)
     expect(domStoreEntryCount(hostNode)).toBe(1)
+  })
+
+  it('hides the multiline DOM host on the legacy canvas and shows it again', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    const textNode = makeTextareaInteriorNode('TextNode')
+    subgraph.add(textNode)
+    const hostNode = createSettledDomHostSubgraphNode(subgraph)
+    subgraph.inputNode.slots[0].connect(textNode.inputs[0], textNode)
+    const domHost = hostNode.widgets.find((widget) => widget.name === 'text')
+    assert.exists(domHost)
+    expect(domHost.type).toBe('customtext')
+    expect(hostNode.isWidgetVisible(domHost)).toBe(true)
+
+    hostNode.hideInput('text')
+
+    expect(hostNode.isWidgetVisible(domHost)).toBe(false)
+    expect(hostNode.isWidgetRowVisible(domHost)).toBe(false)
+    expect(hostNode.widgets.find((widget) => widget.name === 'text')).toBe(
+      domHost
+    )
+
+    hostNode.showInput('text')
+    expect(hostNode.isWidgetVisible(domHost)).toBe(true)
+    expect(hostNode.isWidgetRowVisible(domHost)).toBe(true)
   })
 
   it('keeps exactly one widget row and one DOM registration per input across a reconfigure', () => {

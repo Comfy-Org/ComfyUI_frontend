@@ -41,7 +41,10 @@ import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { invokeButtonWidgetCallback } from '@/renderer/extensions/vueNodes/widgets/utils/invokeButtonWidgetCallback'
 import { getControlWidget } from '@/types/simplifiedWidget'
-import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
+import {
+  isWidgetVisibleOnSurface,
+  withUserHiddenOverride
+} from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type {
   LinkedUpstreamInfo,
@@ -380,12 +383,16 @@ function resolveWidgetComponent(
 
 function resolveWidgetPresentation(
   widgetState: WidgetState,
-  visibility: WidgetVisibilityComponent | undefined,
+  storedVisibility: WidgetVisibilityComponent | undefined,
   slotInfo: WidgetSlotMetadata | undefined,
-  showAdvanced: boolean
+  view: { showAdvanced: boolean; hiddenByUser: boolean }
 ) {
   const { linked, promoted, originNodeId, originOutputName } = slotInfo ?? {}
   const options: IWidgetOptions = { ...widgetState.options }
+  const visibility =
+    view.hiddenByUser && storedVisibility
+      ? withUserHiddenOverride(storedVisibility)
+      : storedVisibility
   const advanced = visibility
     ? visibility.surfaces.vueNode === 'advanced'
     : (options.advanced ?? false)
@@ -396,7 +403,13 @@ function resolveWidgetPresentation(
       : undefined
 
   return {
-    visible: isWidgetVisible(visibility, showAdvanced, linked || promoted),
+    // A promoted widget is shown even when its source is advanced, unless
+    // the user hid it on this instance (Hide input).
+    visible: isWidgetVisible(
+      visibility,
+      view.showAdvanced,
+      linked || (promoted && !view.hiddenByUser)
+    ),
     advanced,
     widgetOptions: isDisabled ? { ...options, disabled: true } : options,
     linkedUpstream
@@ -452,13 +465,14 @@ function processWidget(
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
+  const host = ctx.hostNode
+  const hiddenByUser =
+    !!host && host.isSubgraphNode() && host.isInputHidden(widgetState.name)
   const { visible, advanced, widgetOptions, linkedUpstream } =
-    resolveWidgetPresentation(
-      widgetState,
-      visibility,
-      slotInfo,
-      ctx.showAdvanced
-    )
+    resolveWidgetPresentation(widgetState, visibility, slotInfo, {
+      showAdvanced: ctx.showAdvanced,
+      hiddenByUser
+    })
   const value = normalizeWidgetValue(widgetState.value)
   const bareWidgetId = stripGraphPrefix(widgetState.nodeId)
 

@@ -673,6 +673,47 @@ describe('promoted subgraph widgets', () => {
     }
   )
 
+  it('hides a promoted widget the user hid on this instance until advanced inputs are shown', () => {
+    const { graph, hostNode } = setupComplexPromotionFixture()
+    const inputName = hostNode.inputs[0]?.name
+    if (!inputName) throw new Error('Expected a promoted host input')
+    expect(processHostWidget(graph, hostNode).visible).toBe(true)
+
+    hostNode.hideInput(inputName)
+    const id = hostNode.inputs[0]?.widgetId
+    if (!id) throw new Error('Expected the promoted host widget to be keyed')
+    const processWithAdvanced = (showAdvanced: boolean) =>
+      computeProcessedWidgets({
+        nodeData: hostNode._state,
+        widgetIds: [id],
+        graphId: graph.id,
+        showAdvanced,
+        isGraphReady: true,
+        rootGraph: graph,
+        ui: noopUi
+      })[0]
+
+    expect(processWithAdvanced(false).visible).toBe(false)
+    expect(processWithAdvanced(true).visible).toBe(true)
+
+    hostNode.showInput(inputName)
+    expect(processWithAdvanced(false).visible).toBe(true)
+  })
+
+  it('re-evaluates a cached Vue node widget when the user hides it', () => {
+    const { graph, hostNode } = setupComplexPromotionFixture()
+    const inputName = hostNode.inputs[0]?.name
+    if (!inputName) throw new Error('Expected a promoted host input')
+    const visible = computed(() => processHostWidget(graph, hostNode).visible)
+    expect(visible.value).toBe(true)
+
+    hostNode.hideInput(inputName)
+    expect(visible.value).toBe(false)
+
+    hostNode.showInput(inputName)
+    expect(visible.value).toBe(true)
+  })
+
   it('surfaces raw interior errors on the host widget', () => {
     const { graph, hostNode } = setupComplexPromotionFixture()
     recordInteriorError()

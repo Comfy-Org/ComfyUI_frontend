@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -11,6 +12,7 @@ const {
   isDraggable = false,
   isPhysical = false,
   isShown = false,
+  toggleDisabled = false,
   class: className
 } = defineProps<{
   nodeTitle: string
@@ -18,9 +20,12 @@ const {
   isDraggable?: boolean
   isPhysical?: boolean
   isShown?: boolean
+  toggleDisabled?: boolean
   class?: ClassValue
 }>()
 defineEmits<{ toggleVisibility: [] }>()
+
+const { t } = useI18n()
 
 const icon = computed(() =>
   isPhysical
@@ -28,6 +33,10 @@ const icon = computed(() =>
     : isShown
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
+)
+
+const toggleLabel = computed(() =>
+  isShown ? t('rightSidePanel.hideInput') : t('rightSidePanel.showInput')
 )
 </script>
 
@@ -58,7 +67,8 @@ const icon = computed(() =>
       variant="muted-textonly"
       size="sm"
       data-testid="subgraph-widget-toggle"
-      :disabled="isPhysical"
+      :aria-label="toggleLabel"
+      :disabled="toggleDisabled"
       @click.stop="$emit('toggleVisibility')"
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />

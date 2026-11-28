@@ -53,6 +53,11 @@ export function createPromotedWidgetStoreProjection(
       store.setValue(id, next)
     }
   }
+  Object.defineProperty(widget, 'visibility', {
+    get: () => store.getWidgetVisibility(id),
+    enumerable: false,
+    configurable: true
+  })
   Object.defineProperty(widget, 'widgetId', {
     value: id,
     enumerable: false,

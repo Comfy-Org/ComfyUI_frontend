@@ -8,6 +8,7 @@ import type {
   Subgraph,
   SubgraphInput
 } from '@comfyorg/graph-model/entityRegistry'
+import { shallowReactive } from 'vue'
 import { once, uniqBy } from 'es-toolkit'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
@@ -60,7 +61,12 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface,
+  occupiesCanvasRow,
+  withUserHiddenOverride
+} from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import { hostInputOf } from './hostInput'
@@ -121,7 +127,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   declare widgets: IBaseWidget[]
 
-  /** Widgets added programmatically (e.g. addDOMWidget) outside the promotion system. */
   private readonly _extraWidgets: IBaseWidget[] = []
 
   /**
@@ -130,6 +135,124 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
    * invalidate.
    */
   invalidatePromotedViews(): void {}
+
+  /**
+   * Names of promoted inputs the user hid on this instance. Hiding moves the
+   * host widget to the advanced tier on every surface; the input, its links
+   * and its value are untouched. Serialized as `properties.hiddenInputs`.
+   * Reactive so Vue-rendered surfaces re-evaluate on Hide/Show.
+   */
+  private readonly _hiddenInputNames = shallowReactive(new Set<string>())
+
+  isInputHidden(name: string): boolean {
+    return this._hiddenInputNames.has(name)
+  }
+
+  /**
+   * Hides or shows one promoted input on this instance only. Changes the host
+   * widget's visibility tier and nothing else, so the execution prompt is the
+   * same before, while and after hidden.
+   */
+  hideInput(name: string): void {
+    if (this._hiddenInputNames.has(name)) return
+    this._hiddenInputNames.add(name)
+    this._reapplyInputVisibility(name)
+  }
+
+  /** Reverses {@link hideInput}: restores the host widget's own tiers. */
+  showInput(name: string): void {
+    if (!this._hiddenInputNames.delete(name)) return
+    this._reapplyInputVisibility(name)
+  }
+
+  /** Hidden is read at render time; stored tiers are never written. */
+  private _reapplyInputVisibility(name: string): void {
+    const input = this.inputs.find((candidate) => candidate.name === name)
+    const widget = input ? this._projectPromotedWidget(input) : undefined
+    if (widget) {
+      this.subgraph.events.dispatch('widget-promoted', {
+        widget,
+        subgraphNode: this
+      })
+    }
+    this.setDirtyCanvas(true, true)
+  }
+
+  private _isUserHiddenWidget(widget: IBaseWidget): boolean {
+    if (!this._hiddenInputNames.has(widget.name)) return false
+    const input = this.inputs.find(
+      (candidate) => candidate.name === widget.name
+    )
+    if (!input?.widgetId) return false
+    return input._widget === widget || input.widgetId === widget.widgetId
+  }
+
+  override hasAdvancedWidgets(): boolean {
+    return this.widgets.some((widget) => {
+      const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+      return (
+        (this._isUserHiddenWidget(widget)
+          ? withUserHiddenOverride(visibility)
+          : visibility
+        ).surfaces.canvas === 'advanced'
+      )
+    })
+  }
+
+  override isWidgetVisible(widget: IBaseWidget): boolean {
+    if (!this._isUserHiddenWidget(widget)) return super.isWidgetVisible(widget)
+    return (
+      !this.collapsed &&
+      isWidgetVisibleOnSurface(
+        withUserHiddenOverride(
+          widget.visibility ?? deriveWidgetVisibility(widget)
+        ),
+        'canvas',
+        { showAdvanced: this.showAdvanced ?? false }
+      )
+    )
+  }
+
+  override isWidgetRowVisible(widget: IBaseWidget): boolean {
+    if (!this._isUserHiddenWidget(widget))
+      return super.isWidgetRowVisible(widget)
+    return (
+      !this.collapsed &&
+      occupiesCanvasRow(
+        withUserHiddenOverride(
+          widget.visibility ?? deriveWidgetVisibility(widget)
+        ),
+        { showAdvanced: this.showAdvanced ?? false }
+      )
+    )
+  }
+
+  private _parseHiddenInputNames(property: unknown): Set<string> {
+    if (!Array.isArray(property)) return new Set()
+    const inputNames = new Set(this.inputs.map((input) => input.name))
+    return new Set(
+      property.filter(
+        (name): name is string =>
+          typeof name === 'string' && inputNames.has(name)
+      )
+    )
+  }
+
+  private _readHiddenInputNames(property: unknown): void {
+    this._hiddenInputNames.clear()
+    for (const name of this._parseHiddenInputNames(property))
+      this._hiddenInputNames.add(name)
+  }
+
+  override setProperty(name: string, value: TWidgetValue): void {
+    if (name !== 'hiddenInputs') return super.setProperty(name, value)
+    const next = this._parseHiddenInputNames(value)
+    for (const hidden of this._hiddenInputNames) {
+      if (!next.has(hidden)) this.showInput(hidden)
+    }
+    for (const hidden of next) this.hideInput(hidden)
+    delete this.properties.hiddenInputs
+  }
 
   private _eventAbortController = new AbortController()
 
@@ -208,6 +331,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const widget = e.detail.input._widget
         if (widget) this.ensureWidgetRemoved(widget)
+        this._hiddenInputNames.delete(e.detail.input.name)
 
         const input = hostInputOf(this, e.detail.input)
         if (input) this.unbindDynamicInput(input)
@@ -539,7 +663,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
+    this._readHiddenInputNames(info.properties?.hiddenInputs)
     super.configure(info)
+    delete this.properties.hiddenInputs
     if (!info.widgets_values_named || !LiteGraph.namedValuesRestore)
       this._applyPromotedWidgetValues(info.widgets_values)
   }
@@ -1148,6 +1274,15 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       serializedProperties.proxyWidgetErrorQuarantine = quarantine.map(
         (entry) => ({ ...entry })
       )
+    }
+
+    const hiddenInputs = this.inputs
+      .map((input) => input.name)
+      .filter((name) => this._hiddenInputNames.has(name))
+    if (hiddenInputs.length === 0) {
+      delete serializedProperties.hiddenInputs
+    } else {
+      serializedProperties.hiddenInputs = hiddenInputs
     }
 
     serialized.properties = serializedProperties

@@ -39,7 +39,8 @@ const {
   hiddenWidgetActions = false,
   showNodeName = false,
   parents = [],
-  isShownOnParents = false
+  isShownOnParents = false,
+  host
 } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
@@ -49,6 +50,7 @@ const {
   showNodeName?: boolean
   parents?: SubgraphNode[]
   isShownOnParents?: boolean
+  host?: SubgraphNode
 }>()
 
 const emit = defineEmits<{
@@ -162,6 +164,7 @@ const displayLabel = customRef((track, trigger) => {
     "
   >
     <div
+      data-testid="parameter-widget-row-header"
       :class="
         cn(
           'mb-1.5 flex min-h-8 min-w-0 items-center justify-between gap-1',
@@ -196,6 +199,7 @@ const displayLabel = customRef((track, trigger) => {
           :node
           :parents
           :is-shown-on-parents
+          :host
           @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>

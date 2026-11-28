@@ -1,7 +1,8 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import {
@@ -50,6 +51,21 @@ const i18n = createI18n({
 })
 
 describe('SubgraphEditor', () => {
+  function renderEditor(
+    draggableListStub: Component = {
+      template:
+        '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+    }
+  ) {
+    return render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: { DraggableList: draggableListStub }
+      }
+    })
+  }
+
   it('renders preview exposures after promoted inputs without drag handles', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
@@ -78,18 +94,7 @@ describe('SubgraphEditor', () => {
     )
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     const shown = screen.getByTestId('subgraph-editor-shown-section')
     expect(
@@ -143,13 +148,7 @@ describe('SubgraphEditor', () => {
         return () => slots.default?.({ dragClass: 'draggable-item' })
       }
     }
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: { DraggableList: draggableListStub }
-      }
-    })
+    renderEditor(draggableListStub)
     await nextTick()
 
     const shown = screen.getByTestId('subgraph-editor-shown-section')
@@ -194,18 +193,7 @@ describe('SubgraphEditor', () => {
     sourceInput.widget = { name: sourceWidget.name }
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     const hidden = screen.getByTestId('subgraph-editor-hidden-section')
     await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
@@ -264,18 +252,7 @@ describe('SubgraphEditor', () => {
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(2)
 
@@ -284,6 +261,111 @@ describe('SubgraphEditor', () => {
     await userEvent.click(hideAllLink)
 
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(0)
+  })
+
+  it('"Hide all" leaves inputs already in Hidden untouched', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const firstNode = new LGraphNode('FirstNode')
+    const secondNode = new LGraphNode('SecondNode')
+    subgraph.add(firstNode)
+    subgraph.add(secondNode)
+    const firstInput = firstNode.addInput('first', 'STRING')
+    const firstWidget = firstNode.addWidget('text', 'first', '', () => {})
+    firstInput.widget = { name: firstWidget.name }
+    const secondInput = secondNode.addInput('second', 'STRING')
+    const secondWidget = secondNode.addWidget('text', 'second', '', () => {})
+    secondInput.widget = { name: secondWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
+    promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
+    host.hideInput('first')
+    setCanvasSelection([host])
+
+    renderEditor()
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    await userEvent.click(within(shown).getByText('Hide all'))
+
+    const remaining = host.inputs.filter((input) => input.widgetId)
+    expect(remaining.map((input) => input.name)).toEqual(['first'])
+    expect(host.isInputHidden('first')).toBe(true)
+  })
+
+  it('restores a hidden promotion with Show all without discarding its edit', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    subgraph.rootGraph.add(host)
+    const source = new LGraphNode('Source')
+    subgraph.add(source)
+    const input = source.addInput('first', 'STRING')
+    const widget = source.addWidget('text', 'first', 'default', () => {})
+    input.widget = { name: widget.name }
+    promoteValueWidgetViaSubgraphInput(host, source, widget)
+    const promoted = promotedInputWidget(host.inputs[0])
+    assert.exists(promoted)
+    promoted.value = 'edited'
+    host.hideInput('first')
+    setCanvasSelection([host])
+    renderEditor()
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    await userEvent.click(within(hidden).getByText('Show all'))
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    expect(within(shown).getByText('first')).toBeInTheDocument()
+    expect(promotedInputWidget(host.inputs[0])?.value).toBe('edited')
+  })
+
+  it('hides a promoted input by visibility only and shows it again from the hidden section', async () => {
+    i18n.global.mergeLocaleMessage('en', {
+      rightSidePanel: { hideInput: 'Hide input', showInput: 'Show input' }
+    })
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+
+    const sourceInput = sourceNode.addInput('first', 'STRING')
+    const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
+    sourceInput.widget = { name: sourceWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
+    setCanvasSelection([host])
+
+    renderEditor()
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    await userEvent.click(
+      within(shown).getByRole('button', { name: 'Hide input' })
+    )
+    await nextTick()
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    expect(
+      within(hidden).getByRole('button', { name: 'Show input' })
+    ).toBeEnabled()
+    expect(
+      within(hidden)
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent.trim())
+    ).toEqual(['first'])
+    const hostInput = host.inputs.at(0)
+    if (!hostInput?.widgetId) throw new Error('Expected the input to remain')
+    expect(host.isInputHidden(hostInput.name)).toBe(true)
+
+    await userEvent.click(
+      within(hidden).getByRole('button', { name: 'Show input' })
+    )
+    await nextTick()
+
+    expect(host.isInputHidden(hostInput.name)).toBe(false)
+    expect(
+      within(screen.getByTestId('subgraph-editor-shown-section'))
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent.trim())
+    ).toEqual(['first'])
+    expect(
+      screen.queryByTestId('subgraph-editor-hidden-section')
+    ).not.toBeInTheDocument()
   })
 
   it('does not shrink a user-resized subgraph node merely by mounting the panel (FE-853)', () => {
@@ -297,18 +379,7 @@ describe('SubgraphEditor', () => {
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     expect(Array.from(host.size)).toEqual([640, 480])
   })
@@ -324,18 +395,7 @@ describe('SubgraphEditor', () => {
     sourceInput.widget = { name: sourceWidget.name }
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     const hidden = screen.getByTestId('subgraph-editor-hidden-section')
     await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
@@ -358,18 +418,7 @@ describe('SubgraphEditor', () => {
 
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     expect(
       previewStore.getExposures(subgraph.rootGraph.id, String(host.id))

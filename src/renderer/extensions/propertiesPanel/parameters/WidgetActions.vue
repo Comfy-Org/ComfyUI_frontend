@@ -7,7 +7,10 @@ import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { inputForWidget } from '@/core/graph/subgraph/promotedInputWidget'
-import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
+import {
+  promoteWidget,
+  refreshPromotedWidgetRendering
+} from '@/core/graph/subgraph/promotionUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -38,7 +41,21 @@ const isLinked = computed(() => {
   if (!node.isSubgraphNode()) return false
   return inputForWidget(node, widget)?.widgetId != null
 })
-const canShowInput = computed(() => host != null && !isLinked.value)
+const hostInput = computed(() =>
+  host != null && node === host && isLinked.value
+    ? inputForWidget(host, widget)
+    : undefined
+)
+const isHiddenHostInput = computed(() => {
+  const input = hostInput.value
+  return host != null && input != null && host.isInputHidden(input.name)
+})
+const canShowInput = computed(
+  () => (host != null && node !== host) || isHiddenHostInput.value
+)
+const canHideInput = computed(
+  () => hostInput.value != null && !isHiddenHostInput.value
+)
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(node, widget.name)
 )
@@ -69,7 +86,18 @@ async function handleRename() {
 
 function handleShowInput() {
   if (!host) return
+  if (hostInput.value) {
+    host.showInput(hostInput.value.name)
+    refreshPromotedWidgetRendering([host])
+    return
+  }
   promoteWidget(node, widget, [host])
+}
+
+function handleHideInput() {
+  if (!host || !hostInput.value) return
+  host.hideInput(hostInput.value.name)
+  refreshPromotedWidgetRendering([host])
 }
 
 function handleToggleFavorite() {
@@ -121,6 +149,16 @@ const menuItems = computed<MenuItem[]>(() => [
 </script>
 
 <template>
+  <Button
+    v-if="canHideInput"
+    size="icon"
+    variant="muted-textonly"
+    data-testid="widget-actions-hide-input-button"
+    icon="icon-[lucide--eye-off]"
+    :aria-label="t('rightSidePanel.hideInput')"
+    :title="t('rightSidePanel.hideInput')"
+    @click="handleHideInput"
+  />
   <Menu :items="menuItems" align="end">
     <template #trigger>
       <Button

@@ -6,13 +6,10 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-async function ensurePropertiesPanel(comfyPage: ComfyPage) {
-  const panel = comfyPage.menu.propertiesPanel.root
-  if (!(await panel.isVisible())) {
-    await comfyPage.actionbar.propertiesButton.click()
-  }
-  await expect(panel).toBeVisible()
-  return panel
+async function openPropertiesPanel(comfyPage: ComfyPage) {
+  const { propertiesPanel } = comfyPage.menu
+  await propertiesPanel.open(comfyPage.actionbar.propertiesButton)
+  return propertiesPanel.root
 }
 
 async function selectSubgraphAndOpenEditor(
@@ -23,7 +20,7 @@ async function selectSubgraphAndOpenEditor(
   expect(subgraphNodes.length).toBeGreaterThan(0)
   await subgraphNodes[0].click('title')
 
-  await ensurePropertiesPanel(comfyPage)
+  await openPropertiesPanel(comfyPage)
 
   const editorToggle = comfyPage.page.getByTestId(TestIds.subgraphEditor.toggle)
   await expect(editorToggle).toBeVisible()
@@ -47,7 +44,7 @@ test.describe(
   { tag: ['@node', '@widget'] },
   () => {
     test.describe('SubgraphEditor (Settings panel)', () => {
-      test('linked promoted widgets have hide toggle disabled', async ({
+      test('hide toggle hides a linked promoted widget, and it can be re-shown', async ({
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(
@@ -57,16 +54,53 @@ test.describe(
           comfyPage,
           'Sub 0'
         )
-
-        const toggleButtons = shownSection.getByTestId(
-          TestIds.subgraphEditor.widgetToggle
+        const hiddenSection = comfyPage.page.getByTestId(
+          TestIds.subgraphEditor.hiddenSection
         )
-        await expect(toggleButtons.first()).toBeVisible()
 
-        const count = await toggleButtons.count()
-        for (let i = 0; i < count; i++) {
-          await expect(toggleButtons.nth(i)).toBeDisabled()
-        }
+        const stringAItem = shownSection
+          .getByTestId(TestIds.subgraphEditor.widgetItem)
+          .filter({
+            has: comfyPage.page
+              .getByTestId(TestIds.subgraphEditor.widgetLabel)
+              .filter({ hasText: 'string_a' })
+          })
+        await expect(stringAItem).toBeVisible()
+
+        await test.step('Hide the linked input', async () => {
+          await stringAItem
+            .getByTestId(TestIds.subgraphEditor.widgetToggle)
+            .click()
+
+          await expect(stringAItem).toBeHidden()
+        })
+
+        const hiddenRow = hiddenSection
+          .getByTestId(TestIds.subgraphEditor.widgetItem)
+          .filter({
+            has: comfyPage.page
+              .getByTestId(TestIds.subgraphEditor.widgetLabel)
+              .filter({ hasText: 'string_a' })
+          })
+        await expect(
+          hiddenRow,
+          'hidden input is listed in the hidden section'
+        ).toBeVisible()
+
+        await test.step('Show the hidden input again', async () => {
+          await hiddenRow
+            .getByTestId(TestIds.subgraphEditor.widgetToggle)
+            .click()
+
+          await expect(
+            shownSection.getByTestId(TestIds.subgraphEditor.widgetItem).filter({
+              has: comfyPage.page
+                .getByTestId(TestIds.subgraphEditor.widgetLabel)
+                .filter({ hasText: 'string_a' })
+            }),
+            'showing restores the input to the shown list'
+          ).toBeVisible()
+        })
       })
 
       test('linked promoted widgets show link icon instead of eye icon', async ({
@@ -135,10 +169,8 @@ test.describe(
       )
     })
 
-    test.describe('Parameters tab (WidgetActions menu)', () => {
-      test('linked promoted widget menu should not show Hide/Show input', async ({
-        comfyPage
-      }) => {
+    test.describe('Parameters tab', () => {
+      test('Hide a linked row', async ({ comfyPage }) => {
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-nested-promotion'
         )
@@ -147,19 +179,45 @@ test.describe(
         expect(subgraphNodes.length).toBeGreaterThan(0)
         await subgraphNodes[0].click('title')
 
-        const panel = await ensurePropertiesPanel(comfyPage)
+        const panel = await openPropertiesPanel(comfyPage)
+        const hideInputButton = panel
+          .getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
+          .first()
+        await expect(hideInputButton).toBeVisible()
+        await expect(hideInputButton).toHaveAccessibleName('Hide input')
+
+        const rowHeader = panel
+          .getByTestId(TestIds.propertiesPanel.widgetRowHeader)
+          .filter({
+            has: comfyPage.page.getByTestId(
+              TestIds.subgraphEditor.widgetActionsHideInputButton
+            )
+          })
+          .first()
+        const hideBox = await rowHeader
+          .getByTestId(TestIds.subgraphEditor.widgetActionsHideInputButton)
+          .boundingBox()
+        const menuBox = await rowHeader
+          .getByTestId(TestIds.subgraphEditor.widgetActionsMenuButton)
+          .boundingBox()
+        if (!hideBox || !menuBox) throw new Error('row actions missing')
+        expect(hideBox.x, 'Hide input sits before the menu').toBeLessThan(
+          menuBox.x
+        )
 
         const moreButtons = panel.getByTestId(
           TestIds.subgraphEditor.widgetActionsMenuButton
         )
         await expect(moreButtons.first()).toBeVisible()
-        await moreButtons.first().click()
+        const widgetCountBeforeHide = await moreButtons.count()
 
-        const menu = comfyPage.page.getByRole('menu')
-        await expect(menu).toBeVisible()
-        await expect(menu.getByText('Hide input')).toHaveCount(0)
-        await expect(menu.getByText('Show input')).toHaveCount(0)
-        await expect(menu.getByText('Rename')).toBeVisible()
+        await test.step('Hide the linked input', async () => {
+          await hideInputButton.click()
+
+          await expect
+            .poll(() => moreButtons.count())
+            .toBeLessThan(widgetCountBeforeHide)
+        })
       })
     })
   }

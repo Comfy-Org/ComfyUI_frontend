@@ -46,6 +46,7 @@ type PromotedRow = {
   node: LGraphNode
   input: INodeInputSlot & Partial<ISubgraphInput>
   widget: IBaseWidget
+  hidden: boolean
 }
 type PreviewRow = {
   kind: 'preview'
@@ -75,7 +76,15 @@ function buildPromotedRows(node: SubgraphNode): PromotedRow[] {
     if (!source) return []
     const sourceNode = node.subgraph._nodes_by_id[source.nodeId]
     if (!sourceNode) return []
-    return [{ kind: 'promoted', node: sourceNode, input, widget }]
+    return [
+      {
+        kind: 'promoted',
+        node: sourceNode,
+        input,
+        widget,
+        hidden: node.isInputHidden(input.name)
+      }
+    ]
   })
 }
 function refreshPromotedRows() {
@@ -83,6 +92,8 @@ function refreshPromotedRows() {
   promotedRows.value = node ? buildPromotedRows(node) : []
 }
 watch(activeNode, refreshPromotedRows, { immediate: true })
+
+const promotionVersion = ref(0)
 useEventListener(
   () => activeNode.value?.subgraph.events,
   [
@@ -92,7 +103,10 @@ useEventListener(
     'removing-input',
     'inputs-reordered'
   ],
-  refreshPromotedRows
+  () => {
+    refreshPromotedRows()
+    promotionVersion.value++
+  }
 )
 
 function promotedRowSource(row: PromotedRow): PromotedSource | undefined {
@@ -108,7 +122,7 @@ const activeRows = computed<ActiveRow[]>(() => {
 
 const activePromotedRows = computed<PromotedRow[]>({
   get() {
-    return [...promotedRows.value]
+    return promotedRows.value.filter((row) => !row.hidden)
   },
   set(value: PromotedRow[]) {
     updateActivePromotedRows(value, activePromotedRows.value)
@@ -159,6 +173,7 @@ function updateActivePromotedRows(
 const interiorWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
+  void promotionVersion.value
   const { updatePreviews } = useLitegraphService()
   const interiorNodes = node.subgraph.nodes
   for (const node of interiorNodes) {
@@ -223,7 +238,13 @@ const filteredActive = computed<ActiveRow[]>(() => {
 
 const filteredActivePromoted = computed<PromotedRow[]>(() =>
   filteredActive.value.filter(
-    (row): row is PromotedRow => row.kind === 'promoted'
+    (row): row is PromotedRow => row.kind === 'promoted' && !row.hidden
+  )
+)
+
+const filteredHiddenPromoted = computed<PromotedRow[]>(() =>
+  filteredActive.value.filter(
+    (row): row is PromotedRow => row.kind === 'promoted' && row.hidden
   )
 )
 
@@ -231,6 +252,18 @@ const filteredActivePreviews = computed<PreviewRow[]>(() =>
   filteredActive.value.filter(
     (row): row is PreviewRow => row.kind === 'preview'
   )
+)
+
+const hasShownRows = computed(
+  () =>
+    filteredActivePromoted.value.length > 0 ||
+    filteredActivePreviews.value.length > 0
+)
+
+const hasHiddenSectionRows = computed(
+  () =>
+    filteredCandidates.value.length > 0 ||
+    filteredHiddenPromoted.value.length > 0
 )
 
 function refreshActiveNodeRendering() {
@@ -267,6 +300,24 @@ function rowKey(row: ActiveRow): string {
 
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
+}
+
+/**
+ * Grouped promotions (dynamic combo, autogrow) bind no single host widget, so
+ * Hide input does not apply to them; their toggle stays disabled as on main.
+ */
+function canToggleHidden(row: PromotedRow): boolean {
+  return row.hidden || row.input.widgetId != null
+}
+
+function togglePromotedRowHidden(row: PromotedRow) {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return
+  if (!canToggleHidden(row)) return
+  if (row.hidden) subgraphNode.showInput(row.input.name)
+  else subgraphNode.hideInput(row.input.name)
+  refreshPromotedRows()
+  refreshActiveNodeRendering()
 }
 
 function demoteRow(row: ActiveRow) {
@@ -308,12 +359,24 @@ function promoteCandidate([node, widget]: WidgetItem) {
 }
 
 function showAll() {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return
+  const hiddenRows = filteredHiddenPromoted.value
+  for (const row of hiddenRows) subgraphNode.showInput(row.input.name)
+  if (hiddenRows.length > 0) {
+    refreshPromotedRows()
+    refreshActiveNodeRendering()
+  }
   for (const item of filteredCandidates.value) {
     promoteCandidate(item)
   }
 }
 function hideAll() {
-  for (const row of filteredActive.value) {
+  const shownRows = [
+    ...filteredActivePromoted.value,
+    ...filteredActivePreviews.value
+  ]
+  for (const row of shownRows) {
     if (String(row.node.id) === '-1') continue
     demoteRow(row)
   }
@@ -353,7 +416,7 @@ onMounted(() => {
       </div>
 
       <div
-        v-if="filteredActive.length"
+        v-if="hasShownRows"
         data-testid="subgraph-editor-shown-section"
         class="flex flex-col border-b"
       >
@@ -381,7 +444,8 @@ onMounted(() => {
             :is-physical="isRowLinked(row)"
             :is-draggable="!searchQuery"
             is-shown
-            @toggle-visibility="demoteRow(row)"
+            :toggle-disabled="!canToggleHidden(row)"
+            @toggle-visibility="togglePromotedRowHidden(row)"
           />
         </DraggableList>
         <div class="mt-0.5 space-y-0.5 px-2 pb-2">
@@ -401,7 +465,7 @@ onMounted(() => {
       </div>
 
       <div
-        v-if="filteredCandidates.length"
+        v-if="hasHiddenSectionRows"
         data-testid="subgraph-editor-hidden-section"
         class="flex flex-col border-b"
       >
@@ -419,6 +483,15 @@ onMounted(() => {
           >
         </div>
         <div class="mt-0.5 space-y-0.5 px-2 pb-2">
+          <SubgraphNodeWidget
+            v-for="row in filteredHiddenPromoted"
+            :key="rowKey(row)"
+            :data-nodeid="row.node.id"
+            class="bg-background"
+            :node-title="row.node.title"
+            :widget-name="rowDisplayName(row)"
+            @toggle-visibility="togglePromotedRowHidden(row)"
+          />
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="`${node.id}:${widget.name}`"
