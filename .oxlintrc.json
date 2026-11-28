@@ -34,6 +34,14 @@
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts", "eslint-plugin-regexp"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "typescript/no-restricted-types": [
+      "error",
+      {
+        "types": {
+          "null": "Use undefined instead of null in new type signatures. Derive required nullable contracts from their existing types."
+        }
+      }
+    ],
     "regexp/no-dupe-characters-character-class": "error",
     "regexp/no-dupe-disjunctions": "error",
     "regexp/no-empty-alternative": "error",
