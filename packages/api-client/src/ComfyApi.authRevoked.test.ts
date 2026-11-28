@@ -9,6 +9,7 @@ import type { WebSessionRequests } from './webSessionFetch'
 
 const ports: ComfyApiPorts = {
   isCloud: true,
+  clientVersion: '1.0.0',
   featureFlagOverride: () => undefined,
   onFreeMemory: () => {}
 }

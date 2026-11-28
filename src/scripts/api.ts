@@ -44,6 +44,7 @@ export const api = new ComfyApi({
   get isCloud() {
     return isCloud
   },
+  clientVersion: __COMFYUI_FRONTEND_VERSION__,
   featureFlagOverride,
   onFreeMemory: notifyFreeMemory
 })

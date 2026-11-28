@@ -55,6 +55,7 @@ describe('API Feature Flags', () => {
     it("drops the previous account's agent feature when resetting the socket identity", async () => {
       const resettingApi = new ComfyApi({
         isCloud: false,
+        clientVersion: '1.0.0',
         featureFlagOverride: () => undefined,
         onFreeMemory: () => {}
       })
@@ -74,6 +75,7 @@ describe('API Feature Flags', () => {
     it('marks feature flags stale without clearing them when resetting the socket identity', async () => {
       const resettingApi = new ComfyApi({
         isCloud: false,
+        clientVersion: '1.0.0',
         featureFlagOverride: () => undefined,
         onFreeMemory: () => {}
       })
@@ -543,6 +545,7 @@ describe('API Feature Flags', () => {
   it('preserves server-pushed graph change signals', async () => {
     const socketApi = new ComfyApi({
       isCloud: false,
+      clientVersion: '1.0.0',
       featureFlagOverride: () => undefined,
       onFreeMemory: () => {}
     })

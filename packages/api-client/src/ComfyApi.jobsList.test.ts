@@ -5,6 +5,7 @@ import { ComfyApi } from './ComfyApi'
 function createApi(isCloud: boolean) {
   const api = new ComfyApi({
     isCloud,
+    clientVersion: '1.0.0',
     featureFlagOverride: () => undefined,
     onFreeMemory: () => {}
   })

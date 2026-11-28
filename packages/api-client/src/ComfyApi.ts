@@ -444,6 +444,7 @@ export type FreeMemoryResult =
 /** Host capabilities the composition root supplies to the client. */
 export interface ComfyApiPorts {
   readonly isCloud: boolean
+  readonly clientVersion: string
   /** A session or developer override for a server feature flag; undefined when none applies. */
   readonly featureFlagOverride: <T>(
     featureName: string & { readonly valueType?: T }
@@ -745,6 +746,11 @@ export class ComfyApi extends EventTarget {
         onAuthScheme?.('web-session')
         notifyAuthCredential(onAuthCredential, 'session-cookie')
       } else {
+        addHeaderEntry(
+          headers,
+          'X-Comfy-Client',
+          `comfyui-cloud-web/${this.ports.clientVersion}`
+        )
         const cloudAuth = await this.addCloudAuthHeader(
           headers,
           auth.authHeader,

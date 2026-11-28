@@ -10,6 +10,7 @@ import {
 } from 'vitest'
 
 import type { ApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -180,6 +181,50 @@ describe('api.fetchApi', () => {
             'Comfy-User': 'test-user'
           }
         })
+      )
+    })
+  })
+
+  describe('X-Comfy-Client header', () => {
+    const cloudWebClient = `comfyui-cloud-web/${__COMFYUI_FRONTEND_VERSION__}`
+
+    function sentClientHeader(init: RequestInit | undefined) {
+      return new Headers(init?.headers).get('X-Comfy-Client')
+    }
+
+    function signInOnCloud() {
+      mockDistribution.isCloud = true
+      vi.spyOn(firebaseIdentity, 'onUserChanged').mockReturnValue(() => {})
+      vi.spyOn(firebaseIdentity, 'onTokenChanged').mockReturnValue(() => {})
+      useAuthStore().isInitialized = true
+    }
+
+    afterEach(() => {
+      mockDistribution.isCloud = false
+    })
+
+    it('is absent off-cloud', async () => {
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+
+      await api.fetchApi('/prompt', { method: 'POST' })
+
+      expect(
+        sentClientHeader(vi.mocked(global.fetch).mock.calls[0][1])
+      ).toBeNull()
+    })
+
+    it.for<{ auth: string; header: AuthHeader | null }>([
+      { auth: 'a bearer token', header: { Authorization: 'Bearer tokenA' } },
+      { auth: 'no credential', header: null }
+    ])('names the cloud web client with $auth', async ({ header }) => {
+      signInOnCloud()
+      vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue(header)
+      vi.mocked(global.fetch).mockResolvedValue(new Response())
+
+      await api.fetchApi('/prompt', { method: 'POST' })
+
+      expect(sentClientHeader(vi.mocked(global.fetch).mock.calls[0][1])).toBe(
+        cloudWebClient
       )
     })
   })
