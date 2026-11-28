@@ -5,6 +5,7 @@
     </h3>
 
     <SliderControl
+      show-input
       :label="t('maskEditor.tolerance')"
       :min="0"
       :max="255"
@@ -14,6 +15,7 @@
     />
 
     <SliderControl
+      show-input
       :label="t('maskEditor.selectionOpacity')"
       :min="0"
       :max="100"
@@ -48,6 +50,7 @@
     />
 
     <SliderControl
+      show-input
       :label="t('maskEditor.maskTolerance')"
       :min="0"
       :max="255"
