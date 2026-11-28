@@ -114,15 +114,22 @@ export function useComboOptions(
         ? (fileParts(selected)?.slice(0, -1) ?? [])
         : []
   })
+  const searchIndex = computed(() =>
+    scoped.value.map((option) => ({
+      option,
+      text: `${option.value}\n${option.label}`.toLocaleLowerCase()
+    }))
+  )
   const browseOptions = computed(() => {
-    const query = searchQuery.value.trim().toLocaleLowerCase()
-    if (!hasFolders.value || query)
-      return query
-        ? scoped.value.filter(
-            (option) =>
-              option.value.toLocaleLowerCase().includes(query) ||
-              option.label.toLocaleLowerCase().includes(query)
-          )
+    const terms = searchQuery.value
+      .toLocaleLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+    if (!hasFolders.value || terms.length)
+      return terms.length
+        ? searchIndex.value
+            .filter(({ text }) => terms.every((term) => text.includes(term)))
+            .map(({ option }) => option)
         : scoped.value
     return getComboFolderRows(scoped.value, directory.value)
   })
