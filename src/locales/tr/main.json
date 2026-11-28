@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "Hedef iş akışı artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} indirildi",
+    "toolDownloadingModel": "{file} indiriliyor",
+    "toolFailedDownload": "{file} indirilemedi",
     "toolFailedSkill": "{skill} yüklenemedi",
     "toolForgettingPreference": "Bir tercih unutuluyor",
     "toolForgotPreference": "Bir tercih unutuldu",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "Kurulumunuzu Comfy Cloud'a dağıtın",
     "deploySetupDialog": {
-      "body": "Yerel kurulumunuzu Comfy Cloud'a dağıtın, ardından ComfyUI'de kullanın veya otomatik ölçeklenen bir API olarak çağırın.",
+      "body": "Yerel kurulumunuzu Comfy Cloud'a bir Derleme olarak dağıtın, ardından ComfyUI'de kullanın veya otomatik ölçeklenen bir API olarak çağırın.",
       "pointGpu": "Güçlü bulut GPU'larında çalıştırın",
       "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin",
-      "pointPricing": "Yalnızca işlerinizin kullandığı GPU saniyeleri ve derlemenizin depolaması için ödeme yapın",
+      "pointPricing": "Yalnızca GPU çalışanlarınız aktifken ve depolama için ödeme yapın",
       "title": "İş akışlarınızı Comfy Cloud'da çalıştırın"
     },
     "deployWithAgent": "Ajanınızla dağıtın",
     "desktopTransferFailed": "İş akışınız aktarılamadı. Desktop'ta Comfy Cloud'da Aç'a tekrar tıklayın.",
+    "desktopTransferRetry": "Bu aktarım doğrulanamadı. Yeniden denemek için bu sekmeyi yeniden yükleyin.",
+    "desktopTransferUnavailable": "Comfy Cloud'da Aç şu anda bu düzenleyici için kullanılamıyor.",
     "downloaded": "İş akışı indirildi",
     "downloadedDetail": "Orada açmak için tarayıcınızda Comfy Cloud'un üzerine sürükleyip bırakın.",
     "handoffFailed": "İş akışı bilgisayarınızdaki ComfyUI'den açılamadı",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "Comfy Cloud'da Aç",
       "ready": "Comfy Cloud, bu iş akışının kullandığı tüm düğümlere ve modellere sahip. Çalıştırmaya hazır şekilde yeni bir sekmede açılır.",
       "title": "Comfy Cloud'da çalıştır"
-    }
+    },
+    "verifyAccessFailed": "Comfy Cloud erişimi doğrulanamadı",
+    "verifyAccessFailedDetail": "Cloud düğmesi hâlâ kullanılabiliyorsa Comfy Cloud'da Aç'ı yeniden seçin."
   },
   "openSharedWorkflow": {
     "author": "Yazar:",
@@ -5936,6 +5945,7 @@
     "enterFilename": "Dosya adını girin",
     "enterFilenamePrompt": "Dosya adını girin:",
     "exportWorkflow": "İş Akışını Dışa Aktar",
+    "pathInUse": "\"{path}\" zaten kullanımda. Farklı bir ad seçin.",
     "saveWorkflow": "İş akışını kaydet",
     "savedAsApp": "Uygulama iş akışına dönüştürüldü",
     "savedAsWorkflow": "Yalnızca düğüm grafiği iş akışına dönüştürüldü",

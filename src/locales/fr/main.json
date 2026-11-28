@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "Le workflow cible n'est plus disponible.",
     "thinking": "Réflexion...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} téléchargé",
+    "toolDownloadingModel": "Téléchargement de {file}",
+    "toolFailedDownload": "Échec du téléchargement de {file}",
     "toolFailedSkill": "Échec du chargement de {skill}",
     "toolForgettingPreference": "Oubli d’une préférence",
     "toolForgotPreference": "A oublié une préférence",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "Déployez votre configuration sur Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Déployez votre configuration locale sur Comfy Cloud, puis utilisez-la dans ComfyUI ou appelez-la en tant qu’API à mise à l’échelle automatique.",
+      "body": "Déployez votre configuration locale sur Comfy Cloud en tant que Build, puis utilisez-la dans ComfyUI ou appelez-la en tant qu’API à mise à l’échelle automatique.",
       "pointGpu": "Exécutez sur de puissants GPU dans le cloud",
       "pointNodes": "Emportez vos nœuds et modèles personnalisés",
-      "pointPricing": "Ne payez que les secondes de GPU utilisées par vos tâches et le stockage de votre build",
+      "pointPricing": "Ne payez que lorsque vos workers GPU sont actifs, plus le stockage",
       "title": "Exécutez vos workflows sur Comfy Cloud"
     },
     "deployWithAgent": "Déployer avec votre agent",
     "desktopTransferFailed": "Votre workflow n’a pas pu être transféré. Cliquez de nouveau sur Ouvrir dans Comfy Cloud dans Desktop.",
+    "desktopTransferRetry": "Impossible de vérifier ce transfert. Rechargez cet onglet pour réessayer.",
+    "desktopTransferUnavailable": "Ouvrir sur Comfy Cloud est actuellement indisponible pour cet éditeur.",
     "downloaded": "Workflow téléchargé",
     "downloadedDetail": "Déposez-le sur Comfy Cloud dans votre navigateur pour l’y ouvrir.",
     "handoffFailed": "Impossible d’ouvrir le workflow depuis ComfyUI sur votre ordinateur",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "Ouvrir dans Comfy Cloud",
       "ready": "Comfy Cloud contient tous les nœuds et modèles utilisés par ce workflow. Il s’ouvre dans un nouvel onglet, prêt à être exécuté.",
       "title": "Exécuter sur Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Impossible de vérifier l’accès à Comfy Cloud",
+    "verifyAccessFailedDetail": "Si le bouton Cloud est toujours disponible, sélectionnez à nouveau Ouvrir sur Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Auteur :",
@@ -5936,6 +5945,7 @@
     "enterFilename": "Entrez le nom du fichier",
     "enterFilenamePrompt": "Entrez le nom du fichier :",
     "exportWorkflow": "Exporter le flux de travail",
+    "pathInUse": "« {path} » est déjà utilisé. Choisissez un autre nom.",
     "saveWorkflow": "Enregistrer le flux de travail",
     "savedAsApp": "Converti en workflow d'application",
     "savedAsWorkflow": "Converti en workflow graphique de nœuds uniquement",

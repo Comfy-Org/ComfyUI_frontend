@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: bir fotoğrafı ve bir konuşma veya şarkı klibini konuşan ya da şarkı söyleyen bir videoya dönüştürün. Video, ses kadar uzun olur ve sesi değiştirmez.",
+    "display_name": "Creatify Aurora 2.0 Avatar",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Konuşma veya şarkı, en fazla 60 saniye (2k'de 14 saniye). Başlanan her saniye için ücretlendirilir."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Her bir kenar en az 256 piksel olmalı, en boy oranı 1:4 ile 4:1 arasında olmalıdır. Video, fotoğrafın en boy oranını korur."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını belirler; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "İsteğe bağlı: sahne, kamera, ışıklandırma, ifade veya hareket."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3, video reklamları için oluşturulmuş, Creatify'nin sonradan eğitilmiş H3 modelidir. Referans görüntüler, videolar ve ses tarafından yönlendirilen, sesli video oluşturun.",
+    "display_name": "Creatify Boreal-H3 Referanstan Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto, ilk referans görüntüyü; aksi durumda ilk referans videoyu izler."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "2k'de en fazla 14 saniyedir."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Referanslara @Image1, @Video1, @Audio1 olarak başvurun."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto ve ads, istemi bir video reklamı için yeniden yazar ve konuşulan satırlar ekleyebilir; general, istemi diğer tüm videolar için yeniden yazar; none, istemi yazıldığı gibi işler."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "@Audio1..@Audio3 olarak belirtilen en fazla 3 klip. Konuşma, kelimeleri değil sesi yönlendirir; enstrümantal müzik film müziğine dönüşebilir."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Bağlantı sırasına göre istemde @Image1..@Image9 olarak belirtilen en fazla 9 görüntü. En az bir görüntü veya video gereklidir; toplamda en fazla 12 referans kullanılabilir."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "En az 1 saniyelik, @Video1..@Video3 olarak belirtilen en fazla 3 video. Toplamda en fazla 15 saniyelik video için ücretlendirilir. İstem devam ettirilmesini istediğinde sesleri yeniden kullanılır; istemdeki yeni bir satır bunun yerini alır."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını belirler. Creatify kendi rastgeleliğini seçer: prompt_enhancement none iken aynı girdiler aynı videoyu verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3, video reklamları için oluşturulmuş, Creatify'nin sonradan eğitilmiş H3 modelidir. Metinden sesli video oluşturun; isteğe bağlı olarak ilk kareyle başlayıp son kareyle bitirebilirsiniz.",
+    "display_name": "Creatify Boreal-H3 Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "İlk kare olmadan kullanılır. İlk kareyle birlikte auto seçeneğini koruyun: video, karenin oranını izler."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "2k'de en fazla 14 saniyedir."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Bir ilk kare gerektirir."
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto ve ads, istemi bir video reklamı için yeniden yazar ve konuşma satırları ekleyebilir; general, diğer tüm videolar için yeniden yazar; none, istemi yazıldığı gibi işler."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder. Creatify kendi rastlantısallığını seçer: prompt_enhancement none olduğunda aynı girdiler aynı videoyu verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "Sağlanan sınırlayıcı kutulara göre giriş görüntü grubundan bölgeleri kırp ve yeniden boyutlandır.",
     "display_name": "CropByBBoxes",
@@ -5444,7 +5569,7 @@
       },
       "text": {
         "name": "metin",
-        "tooltip": "Oluşturulacak ses efektinin metin açıklaması."
+        "tooltip": "Sesi İngilizce olarak, en fazla 450 karakterle açıklayın. Diğer dillerdeki istemler, sese dönüştürülmek yerine genellikle sesli olarak okunur."
       }
     },
     "outputs": {
@@ -7350,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "Metin, görüntü, ses veya video için seçeneklerinizden birini seçin. `choice` öğesini girdileri seçenek adlarını taşıyan bir Branch düğümüne bağlayın ya da `option_index` kullanın.",
+    "display_name": "Google Gemini Karar (Seçim)",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı ses klibi."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görüntü(ler). En fazla 16 görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "seçenekler",
+        "tooltip": "Satır başına bir seçenek; tam olarak yazıldığı şekilde kullanılır. Hiçbirine uymayan girdiler için `other` gibi bir seçenek ekleyin."
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Seçeneklerin yanıtladığı soru. Birden çok girdi olduğunda, örneğin 'image_1 içinde hangi mevsim gösteriliyor?' için soket adlarını kullanın."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı video klibi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Seçilen seçeneğin, 0'dan başlayan seçenekler listesindeki konumu."
+      },
+      "2": {
+        "name": "güven",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "Bir toplu işten bir görüntü seçin. Seçilen görüntüyü korumak için `index` öğesini Get Image from Batch'e bağlayın.",
+    "display_name": "Google Gemini Karar (Görüntü Seç)",
+    "inputs": {
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Aralarından seçim yapılacak görüntüler, 2 ila 64."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Hangi görüntünün seçileceği. Onunla en iyi eşleşen görüntüyü seçmek için istemi `text` öğesine bağlayın."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin görüntülerin oluşturulduğu istem."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": null
+      },
+      "1": {
+        "name": "güven",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "Metni, görüntüleri, sesi veya videoyu 1'den 10'a kadar derecelendirin. Puana göre işlem yapmak için `result` çıktısını bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "Google Gemini Karar (Puan)",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı ses klibi."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görüntü(ler). En fazla 16 görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "1'den 10'a kadar bir ölçekte neyin derecelendirileceği. Örnekteki gibi, 1'in ve 10'un ne anlama geldiğini belirtin."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun hakkında olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Puan en az bu değer olduğunda `result` doğrudur. Temiz, net görüntüler yaklaşık 7 ila 8; ağır hasarlı olanlarsa yaklaşık 3 ila 5 puan alır."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı video klibi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puan",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "Metin, görüntüler, ses veya video hakkında evet/hayır sorusu sorun. İki yol arasında seçim yapmak için `result` çıktısını bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "Google Gemini Karar (Evet/Hayır)",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı ses klibi."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görüntü(ler). En fazla 16 görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Bağlı olan şey hakkında evet ya da hayır yanıtı olan bir soru. Soruyu, işlem yapacağınız durum evet olacak şekilde sorun. Birden fazla girdiyle, örneğin 'image_2, image_1 ile aynı kişiyi mi gösteriyor?' gibi soket adlarını kullanın."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun hakkında olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Evet olasılığı en az bu değer olduğunda yanıt evettir. Kesin evet yanıtları yaklaşık 0.85 ila 0.92 puan alır; bu nedenle 0.9 veya üzeri, bunların çoğunu reddeder."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı video klibi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yanıt",
+        "tooltip": null
+      },
+      "2": {
+        "name": "olasılık",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API üzerinden senkron olarak görsel oluşturun veya düzenleyin.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8632,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "Metin, görüntüler, ses veya video için seçeneklerinizden birini seçin. `choice` çıktısını, girdileri seçenek adlarını taşıyan bir Branch düğümüne bağlayın veya `option_index` kullanın.",
+    "display_name": "HeyGen Karar (Seçim)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "En fazla 30 dakikalık ses."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Bir toplu işin her karesi sayılmak üzere, toplam en fazla 4 görüntü. Soketler genelinde sırayla image_1 ile image_4 arasında numaralandırılırlar; dolayısıyla ilk soketteki 2'lik bir toplu iş image_1 ve image_2 olur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "seçenekler",
+        "tooltip": "Her satıra tam yazıldığı şekliyle kullanılacak bir seçenek girin. Hiçbirine uymayan girdiler için `other` gibi bir seçenek ekleyin."
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Seçeneklerin yanıtladığı soru. Birden fazla girdiyle, örneğin 'image_1 içinde hangi mevsim gösteriliyor?' gibi, bunlara image_1, image_2, audio_1 veya video_1 olarak başvurun."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "En fazla 60 saniyelik video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "seçim",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Seçilen seçeneğin seçenekler listesindeki, 0'dan başlayan konumu."
+      },
+      "2": {
+        "name": "güven",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "Metni, görüntüleri, sesi veya videoyu 1'den 10'a kadar puanlayın. Puana göre işlem yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "HeyGen Karar (Puan)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "En fazla 30 dakikalık ses."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Bir toplu işin her karesi sayılmak üzere, toplam en fazla 4 görüntü. Soketler genelinde sırayla image_1 ile image_4 arasında numaralandırılırlar; dolayısıyla ilk soketteki 2'lik bir toplu iş image_1 ve image_2 olur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "1'den 10'a kadar bir ölçekte neyin puanlanacağı. Örnekteki gibi 1 ve 10'un ne anlama geldiğini belirtin."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Puan en az bu değer olduğunda `result` true olur. Temiz, net görüntüler yaklaşık 7; ciddi biçimde hasarlı olanlar yaklaşık 3 ila 5 puan alır."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "En fazla 60 saniyelik video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puan",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "Metin, görüntüler, ses veya video hakkında evet/hayır sorusu sorun. İki yol arasında seçim yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "HeyGen Karar (Evet/Hayır)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "30 dakikaya kadar ses."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Bir toplu işin her karesi sayılmak üzere, toplam en fazla 4 görüntü. Soketler genelinde sırayla image_1 ile image_4 arasında numaralandırılırlar; dolayısıyla ilk soketteki 2'lik bir toplu iş image_1 ve image_2 olur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Bağlı olanlarla ilgili, yanıtı evet veya hayır olan bir soru. Soruyu, işlem yapacağınız durum evet olacak şekilde sorun. Birden fazla girdiyle, örneğin image_1, image_2, audio_1 veya video_1 olarak bunlara atıfta bulunun: \"image_2, image_1 ile aynı kişiyi mi gösteriyor?\""
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Evet olasılığı en az bu değer olduğunda yanıt evettir. Net yanıtlar 0'a veya 1'e yakındır."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "60 saniyeye kadar video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yanıt",
+        "tooltip": null
+      },
+      "2": {
+        "name": "olasılık",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "HeyGen Video 1.0 kullanarak senkronize diyalog ve ses içeren bir görüntüyü videoya dönüştürün. Görüntü ilk kare olarak kullanılır.",
     "display_name": "HeyGen Video 1.0 Görüntüden Videoya",
@@ -8859,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "Tek bir konuşmacının kaydından bir sesi klonlayın ve HeyGen Voice 1.0 ile bu sesle metin okutun.",
+    "display_name": "HeyGen Voice 1.0 Anında Klon Metinden Sese",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_expressiveness_boost": {
+        "name": "ifade_güçlendirmesi"
+      },
+      "model_language": {
+        "name": "dil"
+      },
+      "model_recording_language": {
+        "name": "kayıt_dili"
+      },
+      "model_remove_background_noise": {
+        "name": "arka_plan_gürültüsünü_kaldır"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_similarity": {
+        "name": "benzerlik"
+      },
+      "model_text": {
+        "name": "metin"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "HeyGen Voice 1.0 Anında Klonlama ile klonlanmış bir sesle metni seslendirin.",
+    "description": "HeyGen Voice 1.0 ile bir HeyGen sesine metin okutun. Kayıttan klonlanmış bir sesle konuşturmak için HeyGen Voice 1.0 Anında Klon Metinden Sese'yi kullanın.",
     "display_name": "HeyGen Voice 1.0 Metinden Konuşmaya",
     "inputs": {
       "model": {
@@ -9400,8 +9868,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Ideogram 4.5 kullanarak bir metin istemiyle yönlendirilen en fazla 5 görüntüyü düzenler veya birleştirir. Görüntünün tamamını yeniden işler ve boyutunu veya en-boy oranını değiştirebilir; dokunulmamış pikselleri değiştirmemek için Ideogram 4.5 Hassas Düzenleme'yi kullanın.",
-    "display_name": "Ideogram 4.5 Düzenleme",
+    "description": "Ideogram 4.6 veya 4.5 kullanarak metin istemi yönlendirmesiyle en fazla 5 görüntüyü düzenler ya da birleştirir. Tüm görüntüyü yeniden işler ve boyutunu veya en boy oranını değiştirebilir; dokunulmamış pikselleri değiştirmemek için Ideogram Hassas Düzenleme'yi kullanın.",
+    "display_name": "Ideogram Düzenleme",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturma sonrası kontrol"
@@ -9409,6 +9877,9 @@
       "model": {
         "name": "model",
         "tooltip": "Kullanılacak model."
+      },
+      "model_background": {
+        "name": "arka plan"
       },
       "model_height": {
         "name": "yükseklik"
@@ -9478,8 +9949,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Ideogram 4.5 hassas düzenlemeyi kullanarak bir görüntüyü metin isteminin yönlendirmesiyle düzenler: yalnızca istemin istediği şey değişir, dokunulmayan pikseller aynı kalır ve çıktı görüntü 1'in boyutunu korur (yaklaşık 4 MP üzerindeki görüntüler önce küçültülür). Ayrıca mask veya sınırlayıcı kutularla belirlenen tek bir bölgeyi düzenleyebilir ve görüntüyü tam boyutta döndürebilir. En fazla 4 referans görüntüsünü (context_window_mask ile 3) kabul eder.",
-    "display_name": "Ideogram 4.5 Hassas Düzenleme",
+    "description": "Ideogram 4.6 veya 4.5 hassas düzenlemeyi kullanarak bir görüntüyü metin istemi yönlendirmesiyle düzenler: yalnızca istemin istediği şey değişir, dokunulmamış pikseller aynı kalır ve çıktı görüntü 1'in boyutunu korur (büyük görüntüler önce küçültülür). Ayrıca mask veya sınırlayıcı kutularla belirlenen tek bir bölgeyi düzenleyebilir ve görüntüyü tam boyutta döndürebilir. En fazla 4 referans görüntüsünü (mask ile 3) kabul eder.",
+    "display_name": "Ideogram Hassas Düzenleme",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturma sonrası kontrol"
@@ -9508,8 +9979,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Ideogram 4.5 kullanarak bir metin isteminden görüntüler oluşturur.",
-    "display_name": "Ideogram 4.5 Metinden Görüntüye",
+    "description": "Ideogram 4.6 veya 4.5 kullanarak metin isteminden görüntüler oluşturur.",
+    "display_name": "Ideogram Metinden Görüntü",
     "inputs": {
       "control_after_generate": {
         "name": "oluşturma sonrası kontrol"
@@ -9517,6 +9988,12 @@
       "model": {
         "name": "model",
         "tooltip": "Kullanılacak model."
+      },
+      "model_background": {
+        "name": "arka plan"
+      },
+      "model_height": {
+        "name": "yükseklik"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +10009,9 @@
       },
       "model_size": {
         "name": "boyut"
+      },
+      "model_width": {
+        "name": "genişlik"
       }
     },
     "outputs": {
@@ -14990,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Bir fotoğrafı 3D baskı, lazer kazıma ve CNC oyma için bir alçak kabartma modeline ve 16 bitlik derinlik haritasına dönüştürün. Yalnızca bağlı çıktılar oluşturulur ve indirilir; model çıktısı bağlı değilse görev yalnızca derinlik haritasını döndürür.",
+    "display_name": "Meshy: Görüntüden Rölyefe",
+    "inputs": {
+      "base": {
+        "name": "taban",
+        "tooltip": "none arka planı kesip çıkarır ve plaka oluşturmaz."
+      },
+      "base_base_thickness_mm": {
+        "name": "taban kalınlığı (mm)"
+      },
+      "bend": {
+        "name": "büküm",
+        "tooltip": "convex ön tarafı dışa doğru kabartır, concave ise içe doğru kıvırır."
+      },
+      "carving_mode": {
+        "name": "oyma_modu",
+        "tooltip": "emboss, fotoğrafın daha yakın kısımlarını yükseltir; engrave ise onları içeri doğru oyar."
+      },
+      "color_mapping": {
+        "name": "renk eşleme",
+        "tooltip": "GLB, OBJ, FBX ve USDZ dosyalarını fotoğrafla renklendirin. STL ve 3MF beyaz kalır."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Açık renkli arka plan üzerindeki koyu çizimler kabartılır. Yüklemeden önce saydamlık kaldırılır; bu nedenle saydam bir logoyu önce beyaz bir arka plan üzerinde düzleştirin."
+      },
+      "mesh_resolution": {
+        "name": "mesh çözünürlüğü",
+        "tooltip": "Fotoğrafın uzun kenarı boyunca mesh noktaları. 1024'te GLB yaklaşık 50 MB, STL yaklaşık 105 MB; 2048'te yaklaşık 200 MB ve 420 MB'tır; büküm bunları iki katına çıkarır."
+      },
+      "relief_type": {
+        "name": "rölyef_türü",
+        "tooltip": "low: lazer kazıma, CNC ve plakalar için sığ oyma. high: 3D baskılı parçalar için daha derin oyma."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "oyma derinliği (mm)"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir. Son çalıştırmadan sonra bağlanan bir çıktı istemek için bunu değiştirin."
+      },
+      "size_mm": {
+        "name": "boyut_mm",
+        "tooltip": "Fotoğrafın uzun kenarının model üzerindeki uzunluğu; herhangi bir bükme işleminden önce düz olarak ölçülür."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "derinlik haritası",
+        "tooltip": "Tam 16 bit aralığına sahip derinlik haritası; Save Image (Advanced) bunu 16 bit PNG olarak yazar."
+      },
+      "7": {
+        "name": "ön izleme",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Çoklu Görüntüden Modele",
     "inputs": {
@@ -15285,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Önceden oluşturulmuş bir modeli, aynı nesnenin 1 ila 4 referans görünümünü kullanarak Meshy N1 ile dokulayın.",
+    "display_name": "Meshy: Model Dokulama (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "orijinal UV'yi etkinleştir",
+        "tooltip": "Yeni UV'ler oluşturmak yerine modelin orijinal UV'sini kullanın. Etkinleştirildiğinde Meshy, yüklenen modeldeki mevcut dokuları korur. Modelin orijinal UV'si yoksa çıktı kalitesi o kadar iyi olmayabilir."
+      },
+      "extra_views": {
+        "name": "ek görünümler",
+        "tooltip": "Aynı nesnenin herhangi bir sıradaki ek görünümleri. front_view ile birlikte en fazla 4 görüntü."
+      },
+      "front_view": {
+        "name": "ön görünüm",
+        "tooltip": "Meshy'nin ön olarak kabul ettiği görünüm. Tek bir görüntü ön tarafı dokular ve arka tarafı düz bırakır; gerçeğe uygun bir arka taraf için extra_views bölümüne arka ve yan görünümler ekleyin."
+      },
+      "meshy_task_id": {
+        "name": "meshy görev kimliği"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy görev kimliği",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -16318,6 +16921,9 @@
       "model": {
         "name": "model",
         "tooltip": "Kullanılacak model."
+      },
+      "model_auto_downscale": {
+        "name": "otomatik küçültme"
       },
       "model_negative_prompt": {
         "name": "negative_prompt"
@@ -17790,6 +18396,206 @@
       },
       "video_head_modulation_": {
         "name": "video_head_modulation."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "Uyumlu iki MiniMax H3 modelini bileşen bazında birleştirin. Her oran, model1'in payıdır. Arabellekler model1'den korunur.",
+    "display_name": "Model Birleştirme MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "blocks.11."
+      },
+      "blocks_12_": {
+        "name": "blocks.12."
+      },
+      "blocks_13_": {
+        "name": "blocks.13."
+      },
+      "blocks_14_": {
+        "name": "blocks.14."
+      },
+      "blocks_15_": {
+        "name": "blocks.15."
+      },
+      "blocks_16_": {
+        "name": "blocks.16."
+      },
+      "blocks_17_": {
+        "name": "blocks.17."
+      },
+      "blocks_18_": {
+        "name": "blocks.18."
+      },
+      "blocks_19_": {
+        "name": "blocks.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "blocks.20."
+      },
+      "blocks_21_": {
+        "name": "blocks.21."
+      },
+      "blocks_22_": {
+        "name": "blocks.22."
+      },
+      "blocks_23_": {
+        "name": "blocks.23."
+      },
+      "blocks_24_": {
+        "name": "blocks.24."
+      },
+      "blocks_25_": {
+        "name": "blocks.25."
+      },
+      "blocks_26_": {
+        "name": "blocks.26."
+      },
+      "blocks_27_": {
+        "name": "blocks.27."
+      },
+      "blocks_28_": {
+        "name": "blocks.28."
+      },
+      "blocks_29_": {
+        "name": "blocks.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "blocks.30."
+      },
+      "blocks_31_": {
+        "name": "blocks.31."
+      },
+      "blocks_32_": {
+        "name": "blocks.32."
+      },
+      "blocks_33_": {
+        "name": "blocks.33."
+      },
+      "blocks_34_": {
+        "name": "blocks.34."
+      },
+      "blocks_35_": {
+        "name": "blocks.35."
+      },
+      "blocks_36_": {
+        "name": "blocks.36."
+      },
+      "blocks_37_": {
+        "name": "blocks.37."
+      },
+      "blocks_38_": {
+        "name": "blocks.38."
+      },
+      "blocks_39_": {
+        "name": "blocks.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "blocks.40."
+      },
+      "blocks_41_": {
+        "name": "blocks.41."
+      },
+      "blocks_42_": {
+        "name": "blocks.42."
+      },
+      "blocks_43_": {
+        "name": "blocks.43."
+      },
+      "blocks_44_": {
+        "name": "blocks.44."
+      },
+      "blocks_45_": {
+        "name": "blocks.45."
+      },
+      "blocks_46_": {
+        "name": "blocks.46."
+      },
+      "blocks_47_": {
+        "name": "blocks.47."
+      },
+      "blocks_48_": {
+        "name": "blocks.48."
+      },
+      "blocks_49_": {
+        "name": "blocks.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "final_layer.norm."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -21214,6 +22020,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Pruna P-Video-2 Pro Avatar kullanarak bir portreden ve konuşmadan konuşan bir video oluşturur: kendi sesiniz veya metinden sese ile seslendirilen bir senaryo.",
+    "display_name": "Pruna P-Video-2 Pro Avatar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "enhance_prompt": {
+        "name": "istemi geliştir",
+        "tooltip": "Arka plan, ışıklar ve vücut hareketi gibi portrede görülen hareketi isteme ekleyin. İstemi yazıldığı gibi kullanmak ve aynı seed ile bir sonucu tam olarak yeniden oluşturmak için bunu kapatın."
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "Videonun başladığı portre. Video, 1:2 ile 4:1 arasındaki en boy oranını korur; 1:5 gibi daha uç görüntüler 9:16 veya 16:9 olarak kırpılır."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Videonun ne gösterdiğini açıklar. En fazla 5000 karakter."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "1080p, 2k ve 4k, 768p videoyu yükseltir. 2k 150 saniye, 4k ise 60 saniye ile sınırlıdır."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Oluşturma için seed. Aynı seed, bir sonucu yalnızca enhance_prompt kapalıyken tam olarak yeniden oluşturur."
+      },
+      "speech": {
+        "name": "konuşma",
+        "tooltip": "Videoyu metinden sese senaryosuyla veya kendi sesinizle yönlendirin."
+      },
+      "speech_language": {
+        "name": "dil"
+      },
+      "speech_script": {
+        "name": "senaryo"
+      },
+      "speech_voice": {
+        "name": "ses"
+      },
+      "speech_voice_prompt": {
+        "name": "ses istemi"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "İsteğe bağlı son kare, oluşturulmuş ses veya ses parçasıyla Pruna video modellerini kullanarak bir görüntüyü videoya dönüştürür.",
     "display_name": "Pruna P-Video-2 Görüntüden Videoya",
@@ -21275,6 +22131,48 @@
       "video": {
         "name": "video",
         "tooltip": "Yükseltilecek video, en fazla 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Pruna video modellerini kullanarak referans görüntüler, videolar ve ses tarafından yönlendirilen bir istemden video oluşturur.",
+    "display_name": "Pruna P-Video-2 Pro Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_enhance_prompt": {
+        "name": "istemi_geliştir"
+      },
+      "model_keep_audio": {
+        "name": "sesi_koru"
+      },
+      "model_mode": {
+        "name": "mod"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
       }
     },
     "outputs": {
@@ -23152,15 +24050,15 @@
       },
       "bbox_height": {
         "name": "bbox_yüksekliği",
-        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+        "tooltip": "Sınırlayıcı kutu yüksekliği (dikey)."
       },
       "bbox_length": {
         "name": "bbox_uzunluğu",
-        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+        "tooltip": "Sınırlayıcı kutu uzunluğu (önden arkaya)."
       },
       "bbox_width": {
         "name": "bbox_genişliği",
-        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+        "tooltip": "Sınırlayıcı kutu genişliği (yandan yana). bbox'ı atlamak için diğerleriyle birlikte 0 olarak ayarlayın."
       },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -23233,15 +24131,15 @@
       },
       "bbox_height": {
         "name": "bbox_yükseklik",
-        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+        "tooltip": "Sınırlayıcı kutu yüksekliği (dikey)."
       },
       "bbox_length": {
         "name": "bbox_uzunluk",
-        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+        "tooltip": "Sınırlayıcı kutu uzunluğu (önden arkaya)."
       },
       "bbox_width": {
         "name": "bbox_genişlik",
-        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+        "tooltip": "Sınırlayıcı kutu genişliği (yandan yana). bbox'ı atlamak için diğerleriyle birlikte 0 olarak ayarlayın."
       },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -29215,6 +30113,37 @@
       }
     }
   },
+  "TripoSmartUVNode": {
+    "description": "Bir modelin UV'lerini yeniden açar ve dokularını, rig'ini ve animasyonunu yeni düzene yeniden eşler. Girdi 80.000 üçgeni aşmamalıdır (bir dörtgen iki sayılır); daha büyük modelleri önce Tripo: Retopology veya bir face_limit ile küçültün.",
+    "display_name": "Tripo: Akıllı UV",
+    "inputs": {
+      "bake": {
+        "name": "işle",
+        "tooltip": "Mevcut dokuları yeni UV düzenine işler. Kapalı olduğunda işleme atlanır ve model renk dokuları olmadan döndürülür."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model görev_kimliği",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Kaynak model FBX olduğunda boştur."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Yalnızca kaynak model FBX olduğunda, örneğin dörtgen bir mesh olduğunda doldurulur."
+      },
+      "3": {
+        "name": "UV atlası",
+        "tooltip": null
+      }
+    }
+  },
   "TripoSplatConditioning": {
     "description": "Görseli DINOv3 ve Flux2 VAE ile kodlayarak TripoSplat pozitif/negatif koşullandırma oluşturur ve KSampler için sabit boyutlu gürültü hedefini (latent + kamera) üretir.",
     "display_name": "TripoSplat Koşullandırma",
@@ -29593,6 +30522,150 @@
       "0": {
         "name": "texts",
         "tooltip": "İşlenmiş metinler"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Metin veya görüntüler için seçeneklerinizden birini seçin. `choice` öğesini girdileri seçenek adlarını taşıyan bir Branch düğümüne bağlayın ya da `option_index` kullanın.",
+    "display_name": "TypeSafe Jev (Seçim)",
+    "inputs": {
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Sorunun ilgili olduğu görüntüler. Toplamda en fazla 32 görüntü; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "seçenekler",
+        "tooltip": "Her satıra bir seçenek. Hiçbirine uymayan girdiler için `other` gibi bir seçenek ekleyin."
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Seçeneklerin yanıtladığı soru. Birden fazla girdiyle, örneğin 'image_1 içinde hangi mevsim gösteriliyor?' gibi soket adlarını kullanın."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir prompt veya LLM yanıtı."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Seçilen seçeneğin seçenekler listesindeki, 0'dan başlayan konumu."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": "Jev'in ne kadar emin olduğu: 0 (net bir kazanan yok) ile 1 (kesin) arasında."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Bir toplu işten bir görüntü seçin. Seçilen görüntüyü korumak için `index` öğesini Get Image from Batch'e bağlayın.",
+    "display_name": "TypeSafe Jev (Görüntü Seç)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Aralarından seçim yapılacak, 2 ila 32 görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Hangi görüntünün seçileceği. En iyi eşleşen görüntüyü seçmek için prompt'u `text` öğesine bağlayın."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin görüntülerin oluşturulduğu prompt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": "Seçilen görüntünün toplu iş içindeki, 0'dan başlayan konumu."
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": "Jev'in ne kadar emin olduğu: 0 (net bir kazanan yok) ile 1 (kesin) arasında."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Metni veya görüntüleri 1'den 10'a kadar puanlayın. Puana göre işlem yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "TypeSafe Jev (Puan)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Sorunun ilgili olduğu görüntüler. Toplamda en fazla 32 görüntü; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "1'den 10'a kadar bir ölçekte neyin puanlanacağı. Örnekteki gibi 1 ve 10'un ne anlama geldiğini belirtin."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir prompt veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Puan en az bu değer olduğunda `result` true olur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "result",
+        "tooltip": null
+      },
+      "1": {
+        "name": "score",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Metin veya görüntüler hakkında evet/hayır sorusu sorun. İki yol arasında seçim yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "TypeSafe Jev (Evet/Hayır)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Sorunun hakkında olduğu görseller. Toplamda en fazla 32 görsel; 4'ten fazlası daha küçük boyutta gönderilir."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Bağlı olanla ilgili, cevabı evet veya hayır olan bir soru. Soruyu, işlem yapacağınız durum evet olacak şekilde sorun. Birden çok girdiyle soket adlarını kullanın; örneğin, 'image_2, image_1 ile aynı kişiyi mi gösteriyor?'"
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun hakkında olduğu metin; örneğin bir istem veya bir LLM yanıtı."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Evet olasılığı en az bu değer olduğunda yanıt evettir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yanıt",
+        "tooltip": null
+      },
+      "2": {
+        "name": "olasılık",
+        "tooltip": null
       }
     }
   },

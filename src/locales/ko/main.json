@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "대상 워크플로를 더 이상 사용할 수 없습니다.",
     "thinking": "생각 중...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} 다운로드 완료",
+    "toolDownloadingModel": "{file} 다운로드 중",
+    "toolFailedDownload": "{file} 다운로드에 실패했습니다",
     "toolFailedSkill": "{skill}을(를) 로드하지 못했습니다",
     "toolForgettingPreference": "환경설정 삭제 중",
     "toolForgotPreference": "환경설정을 잊었습니다",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "설정을 Comfy Cloud에 배포",
     "deploySetupDialog": {
-      "body": "로컬 설정을 Comfy Cloud에 배포한 다음 ComfyUI에서 사용하거나 자동 확장 API로 호출하세요.",
+      "body": "로컬 설정을 빌드로 Comfy Cloud에 배포한 다음 ComfyUI에서 사용하거나 자동 확장 API로 호출하세요.",
       "pointGpu": "강력한 클라우드 GPU에서 실행",
       "pointNodes": "사용자 지정 노드와 모델 가져오기",
-      "pointPricing": "작업에서 사용한 GPU 시간(초)과 빌드 스토리지에 대해서만 비용 지불",
+      "pointPricing": "GPU 워커가 실행 중인 동안에만 비용을 지불하며, 스토리지 비용이 추가됩니다",
       "title": "Comfy Cloud에서 워크플로 실행"
     },
     "deployWithAgent": "에이전트로 배포",
     "desktopTransferFailed": "워크플로를 전송할 수 없습니다. Desktop에서 Comfy Cloud에서 열기를 다시 클릭하세요.",
+    "desktopTransferRetry": "이 전송을 확인할 수 없습니다. 다시 시도하려면 이 탭을 새로고침하세요.",
+    "desktopTransferUnavailable": "현재 이 에디터에서는 Open on Comfy Cloud를 사용할 수 없습니다.",
     "downloaded": "워크플로가 다운로드됨",
     "downloadedDetail": "브라우저의 Comfy Cloud에 끌어다 놓아 այնտեղ에서 여세요.",
     "handoffFailed": "컴퓨터의 ComfyUI에서 워크플로를 열 수 없습니다",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "Comfy Cloud에서 열기",
       "ready": "Comfy Cloud에 이 워크플로에서 사용하는 모든 노드와 모델이 있습니다. 새 탭에서 열리며 바로 실행할 수 있습니다.",
       "title": "Comfy Cloud에서 실행"
-    }
+    },
+    "verifyAccessFailed": "Comfy Cloud에 대한 액세스를 확인할 수 없습니다",
+    "verifyAccessFailedDetail": "Cloud 버튼이 계속 표시되면 Open on Comfy Cloud를 다시 선택하세요."
   },
   "openSharedWorkflow": {
     "author": "작성자:",
@@ -5936,6 +5945,7 @@
     "enterFilename": "파일 이름 입력",
     "enterFilenamePrompt": "파일 이름을 입력하세요:",
     "exportWorkflow": "워크플로 내보내기",
+    "pathInUse": "\"{path}\"은(는) 이미 사용 중입니다. 다른 이름을 선택하세요.",
     "saveWorkflow": "워크플로 저장",
     "savedAsApp": "앱 워크플로우로 변환됨",
     "savedAsWorkflow": "노드 그래프 전용 워크플로우로 변환됨",

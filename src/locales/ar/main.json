@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "لم يعد سير العمل المستهدف متاحًا.",
     "thinking": "جارٍ التفكير...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "تم تنزيل {file}",
+    "toolDownloadingModel": "جارٍ تنزيل {file}",
+    "toolFailedDownload": "فشل تنزيل {file}",
     "toolFailedSkill": "فشل تحميل {skill}",
     "toolForgettingPreference": "إزالة تفضيل",
     "toolForgotPreference": "نسي تفضيلًا",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "جيميني",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "تريبو",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "فيدو",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "انشر إعدادك على Comfy Cloud",
     "deploySetupDialog": {
-      "body": "انشر إعدادك المحلي على Comfy Cloud، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
+      "body": "انشر إعدادك المحلي على Comfy Cloud كإصدار Build، ثم استخدمه في ComfyUI أو استدعه كواجهة API ذات تحجيم تلقائي.",
       "pointGpu": "شغّل على وحدات GPU سحابية قوية",
       "pointNodes": "أحضر العُقد والنماذج المخصصة لديك",
-      "pointPricing": "ادفع فقط مقابل ثواني GPU التي تستخدمها مهامك ومساحة تخزين إصدارك",
+      "pointPricing": "ادفع فقط أثناء تشغيل عاملي GPU، بالإضافة إلى التخزين",
       "title": "شغّل مهام سير العمل الخاصة بك على Comfy Cloud"
     },
     "deployWithAgent": "انشر باستخدام وكيلك",
     "desktopTransferFailed": "تعذّر نقل سير العمل الخاص بك. انقر «فتح على Comfy Cloud» في تطبيق سطح المكتب مرة أخرى.",
+    "desktopTransferRetry": "تعذر التحقق من هذا النقل. أعد تحميل علامة التبويب هذه للمحاولة مرة أخرى.",
+    "desktopTransferUnavailable": "ميزة Open on Comfy Cloud غير متاحة حاليًا لهذا المحرر.",
     "downloaded": "تم تنزيل سير العمل",
     "downloadedDetail": "أفلته على Comfy Cloud في متصفحك لفتحه هناك.",
     "handoffFailed": "تعذّر فتح سير العمل من ComfyUI على جهاز الكمبيوتر لديك",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "فتح على Comfy Cloud",
       "ready": "يحتوي Comfy Cloud على كل عقدة ونموذج يستخدمهما سير العمل هذا. سيفتح في علامة تبويب جديدة، جاهزًا للتشغيل.",
       "title": "شغّل على Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "تعذر التحقق من الوصول إلى Comfy Cloud",
+    "verifyAccessFailedDetail": "إذا كان زر Cloud لا يزال متاحًا، فاختر Open on Comfy Cloud مرة أخرى."
   },
   "openSharedWorkflow": {
     "author": "المؤلف:",
@@ -5936,6 +5945,7 @@
     "enterFilename": "أدخل اسم الملف",
     "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
+    "pathInUse": "\"{path}\" قيد الاستخدام بالفعل. اختر اسمًا مختلفًا.",
     "saveWorkflow": "حفظ سير العمل",
     "savedAsApp": "تم التحويل إلى سير عمل تطبيق",
     "savedAsWorkflow": "تم التحويل إلى سير عمل مخطط العقد فقط",

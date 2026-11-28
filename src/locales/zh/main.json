@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "目标工作流已不可用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "已下载 {file}",
+    "toolDownloadingModel": "正在下载 {file}",
+    "toolFailedDownload": "下载 {file} 失败",
     "toolFailedSkill": "加载 {skill} 失败",
     "toolForgettingPreference": "正在删除偏好设置",
     "toolForgotPreference": "已忘记偏好设置",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "将你的配置部署到 Comfy Cloud",
     "deploySetupDialog": {
-      "body": "将你的本地配置部署到 Comfy Cloud，然后在 ComfyUI 中使用，或将其作为自动扩缩容 API 调用。",
+      "body": "将您的本地配置部署到 Comfy Cloud 作为构建版本，然后可在 ComfyUI 中使用，或将其作为自动扩缩容 API 调用。",
       "pointGpu": "在强大的云端 GPU 上运行",
       "pointNodes": "携带你的自定义节点和模型",
-      "pointPricing": "仅需为任务使用的 GPU 秒数和构建的存储空间付费",
+      "pointPricing": "仅在 GPU 工作器运行期间付费，另加存储费用",
       "title": "在 Comfy Cloud 上运行你的工作流"
     },
     "deployWithAgent": "使用你的智能体部署",
     "desktopTransferFailed": "无法传输你的工作流。请再次在桌面版中点击“在 Comfy Cloud 上打开”。",
+    "desktopTransferRetry": "无法验证此次传输。请重新加载此标签页后重试。",
+    "desktopTransferUnavailable": "此编辑器当前无法使用“在 Comfy Cloud 上打开”。",
     "downloaded": "工作流已下载",
     "downloadedDetail": "将其拖放到浏览器中的 Comfy Cloud 上，即可在其中打开。",
     "handoffFailed": "无法从你电脑上的 ComfyUI 打开工作流",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "在 Comfy Cloud 上打开",
       "ready": "Comfy Cloud 拥有此工作流使用的所有节点和模型。它将在新标签页中打开，并已准备好运行。",
       "title": "在 Comfy Cloud 上运行"
-    }
+    },
+    "verifyAccessFailed": "无法验证对 Comfy Cloud 的访问权限",
+    "verifyAccessFailedDetail": "如果“Cloud”按钮仍然可用，请再次选择“在 Comfy Cloud 上打开”。"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -5936,6 +5945,7 @@
     "enterFilename": "输入文件名",
     "enterFilenamePrompt": "输入文件名：",
     "exportWorkflow": "导出工作流",
+    "pathInUse": "\"{path}\" 已被占用。请选择其他名称。",
     "saveWorkflow": "保存工作流",
     "savedAsApp": "已转换为应用工作流",
     "savedAsWorkflow": "已转换为节点图工作流",

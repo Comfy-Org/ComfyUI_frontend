@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "תהליך העבודה המבוקש אינו זמין עוד.",
     "thinking": "חושב...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "ההורדה של {file} הושלמה",
+    "toolDownloadingModel": "מוריד את {file}",
+    "toolFailedDownload": "ההורדה של {file} נכשלה",
     "toolFailedSkill": "טעינת {skill} נכשלה",
     "toolForgettingPreference": "שכחת העדפה",
     "toolForgotPreference": "נשכחה העדפה",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "פרסו את ההגדרה שלכם ב-Comfy Cloud",
     "deploySetupDialog": {
-      "body": "פרסו את ההגדרה המקומית שלכם ל-Comfy Cloud, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API עם התאמה אוטומטית לעומס.",
+      "body": "פרסמו את ההגדרה המקומית שלכם ל-Comfy Cloud כ-Build, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API עם התאמה אוטומטית לעומס.",
       "pointGpu": "הפעילו על מעבדי GPU חזקים בענן",
       "pointNodes": "הביאו את הצמתים והמודלים המותאמים אישית שלכם",
-      "pointPricing": "שלמו רק עבור שניות ה-GPU שבהן משתמשות המשימות שלכם ועבור האחסון של ה-build שלכם",
+      "pointPricing": "שלמו רק בזמן שעובדי ה-GPU שלכם פעילים, בתוספת אחסון",
       "title": "הפעילו את תהליכי העבודה שלכם ב-Comfy Cloud"
     },
     "deployWithAgent": "פרסו באמצעות הסוכן שלכם",
     "desktopTransferFailed": "לא ניתן היה להעביר את תהליך העבודה שלכם. לחצו שוב על \"פתח ב-Comfy Cloud\" ב-Desktop.",
+    "desktopTransferRetry": "לא ניתן היה לאמת את ההעברה הזו. טענו מחדש כרטיסייה זו כדי לנסות שוב.",
+    "desktopTransferUnavailable": "האפשרות Open on Comfy Cloud אינה זמינה כעת עבור עורך זה.",
     "downloaded": "תהליך העבודה הורד",
     "downloadedDetail": "גררו ושחררו אותו אל Comfy Cloud בדפדפן שלכם כדי לפתוח אותו שם.",
     "handoffFailed": "לא ניתן היה לפתוח את תהליך העבודה מתוך ComfyUI במחשב שלכם",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "פתחו ב-Comfy Cloud",
       "ready": "ל-Comfy Cloud יש כל צומת ומודל שבהם תהליך העבודה הזה משתמש. הוא ייפתח בלשונית חדשה, מוכן להפעלה.",
       "title": "הפעלה ב-Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "לא ניתן היה לאמת את הגישה ל-Comfy Cloud",
+    "verifyAccessFailedDetail": "אם הלחצן Cloud עדיין זמין, בחרו שוב באפשרות Open on Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "יוצר:",
@@ -5936,6 +5945,7 @@
     "enterFilename": "הזן את שם הקובץ",
     "enterFilenamePrompt": "הזן את שם הקובץ:",
     "exportWorkflow": "ייצוא תהליך העבודה",
+    "pathInUse": "\"{path}\" כבר נמצא בשימוש. בחרו שם אחר.",
     "saveWorkflow": "שמירת תהליך העבודה",
     "savedAsApp": "הומר לתהליך עבודה מסוג יישום",
     "savedAsWorkflow": "הומר לתהליך עבודה מסוג גרף צמתים בלבד",

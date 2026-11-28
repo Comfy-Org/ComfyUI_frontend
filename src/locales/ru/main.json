@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "Целевой рабочий процесс больше недоступен.",
     "thinking": "Думаю...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "Загружено: {file}",
+    "toolDownloadingModel": "Загрузка {file}",
+    "toolFailedDownload": "Не удалось загрузить {file}",
     "toolFailedSkill": "Не удалось загрузить {skill}",
     "toolForgettingPreference": "Удаление настройки",
     "toolForgotPreference": "Настройка забыта",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "Разверните свою конфигурацию в Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Разверните локальную конфигурацию в Comfy Cloud, а затем используйте её в ComfyUI или вызывайте через API с автомасштабированием.",
+      "body": "Разверните локальную конфигурацию в Comfy Cloud как сборку, затем используйте её в ComfyUI или вызывайте как автомасштабируемый API.",
       "pointGpu": "Запускайте на мощных облачных GPU",
       "pointNodes": "Добавьте свои пользовательские ноды и модели",
-      "pointPricing": "Платите только за секунды GPU, использованные вашими заданиями, и за хранилище вашей сборки",
+      "pointPricing": "Платите только за время работы ваших GPU-воркеров, а также за хранилище",
       "title": "Запускайте рабочие процессы в Comfy Cloud"
     },
     "deployWithAgent": "Разверните с помощью своего агента",
     "desktopTransferFailed": "Не удалось передать ваш рабочий процесс. Снова нажмите «Открыть в Comfy Cloud» в Desktop.",
+    "desktopTransferRetry": "Не удалось проверить эту передачу. Перезагрузите эту вкладку, чтобы повторить попытку.",
+    "desktopTransferUnavailable": "Функция «Open on Comfy Cloud» сейчас недоступна для этого редактора.",
     "downloaded": "Рабочий процесс скачан",
     "downloadedDetail": "Перетащите его в Comfy Cloud в браузере, чтобы открыть его там.",
     "handoffFailed": "Не удалось открыть рабочий процесс из ComfyUI на вашем компьютере",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "Открыть в Comfy Cloud",
       "ready": "В Comfy Cloud есть все ноды и модели, используемые этим рабочим процессом. Он откроется в новой вкладке и будет готов к запуску.",
       "title": "Запустить в Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "Не удалось проверить доступ к Comfy Cloud",
+    "verifyAccessFailedDetail": "Если кнопка Cloud всё ещё доступна, снова выберите «Open on Comfy Cloud»."
   },
   "openSharedWorkflow": {
     "author": "Автор:",
@@ -5936,6 +5945,7 @@
     "enterFilename": "Введите название файла",
     "enterFilenamePrompt": "Введите имя файла:",
     "exportWorkflow": "Экспорт рабочего процесса",
+    "pathInUse": "\"{path}\" уже используется. Выберите другое имя.",
     "saveWorkflow": "Сохранить рабочий процесс",
     "savedAsApp": "Преобразовано в рабочий процесс приложения",
     "savedAsWorkflow": "Преобразовано только в рабочий процесс графа узлов",

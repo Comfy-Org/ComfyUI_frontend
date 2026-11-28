@@ -299,6 +299,9 @@
     "targetWorkflowUnavailable": "目標工作流程已無法使用。",
     "thinking": "思考中...",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "已下載 {file}",
+    "toolDownloadingModel": "正在下載 {file}",
+    "toolFailedDownload": "下載 {file} 失敗",
     "toolFailedSkill": "載入 {skill} 失敗",
     "toolForgettingPreference": "正在移除偏好設定",
     "toolForgotPreference": "已忘記偏好設定",
@@ -3735,6 +3738,7 @@
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "雙子星",
@@ -3767,6 +3771,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "三重奏",
+    "TypeSafe": "TypeSafe",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "維度",
@@ -4129,14 +4134,16 @@
     },
     "deploySetup": "將您的設定部署至 Comfy Cloud",
     "deploySetupDialog": {
-      "body": "將您的本機設定部署至 Comfy Cloud，然後在 ComfyUI 中使用，或將其作為可自動擴展的 API 呼叫。",
+      "body": "將您的本機設定部署至 Comfy Cloud 作為 Build，然後在 ComfyUI 中使用，或將其作為可自動擴展的 API 呼叫。",
       "pointGpu": "在高效能雲端 GPU 上執行",
       "pointNodes": "帶入您的自訂節點和模型",
-      "pointPricing": "僅需支付工作所使用的 GPU 秒數及建置項目的儲存空間費用",
+      "pointPricing": "僅在您的 GPU 工作程序運作期間及儲存空間付費",
       "title": "在 Comfy Cloud 上執行您的工作流程"
     },
     "deployWithAgent": "使用您的代理程式部署",
     "desktopTransferFailed": "無法傳輸您的工作流程。請再次在桌面版中點擊「在 Comfy Cloud 上開啟」。",
+    "desktopTransferRetry": "無法驗證此次傳輸。請重新載入此分頁後再試一次。",
+    "desktopTransferUnavailable": "此編輯器目前無法使用「在 Comfy Cloud 上開啟」。",
     "downloaded": "工作流程已下載",
     "downloadedDetail": "將它拖放到瀏覽器中的 Comfy Cloud 以在該處開啟。",
     "handoffFailed": "無法從您電腦上的 ComfyUI 開啟工作流程",
@@ -4157,7 +4164,9 @@
       "openOnCloud": "在 Comfy Cloud 上開啟",
       "ready": "Comfy Cloud 擁有此工作流程使用的所有節點和模型。它會在新分頁中開啟，並可立即執行。",
       "title": "在 Comfy Cloud 上執行"
-    }
+    },
+    "verifyAccessFailed": "無法驗證 Comfy Cloud 的存取權",
+    "verifyAccessFailedDetail": "如果 Cloud 按鈕仍可使用，請再次選取「在 Comfy Cloud 上開啟」。"
   },
   "openSharedWorkflow": {
     "author": "作者：",
@@ -5936,6 +5945,7 @@
     "enterFilename": "輸入檔案名稱",
     "enterFilenamePrompt": "請輸入檔案名稱：",
     "exportWorkflow": "匯出工作流程",
+    "pathInUse": "「{path}」已在使用中。請選擇其他名稱。",
     "saveWorkflow": "儲存工作流程",
     "savedAsApp": "已轉換為應用程式工作流程",
     "savedAsWorkflow": "已轉換為僅節點圖工作流程",
