@@ -23126,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stille tutarlı oluşturma için geliştirilmiştir ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash en hızlı ve en ucuz modeldir ve hiçbir stili desteklemez."
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stil açısından tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash, en hızlı ve en ucuz model olan Recraft V4.1 Flash V2'yi çalıştırır ve hiçbir stili desteklemez."
       },
       "model_size": {
         "name": "boyut"
@@ -23237,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "görüntü"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical, şekilleri üst üste hiyerarşik katmanlar hâlinde yerleştirir; cut_out ise çiziciler, vinil kesiciler ve serigrafi için asla üst üste binmeyen şekiller oluşturur."
+      },
+      "version": {
+        "name": "sürüm",
+        "tooltip": "v1_pro (Vectorizer Pro), yumuşak eğriler, düz çizgiler ve keskin köşelere sahip daha temiz SVG'ler sunar; yazılar ve karmaşık şekiller için en uygunudur."
       }
     },
     "outputs": {
