@@ -190,9 +190,8 @@ describe('AssetsSidebarListView', () => {
     } satisfies AssetItem
 
     function renderDraggableRow() {
-      const { container } = renderListView([buildOutputItem(dragAsset)])
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the draggable row intentionally has no interactive role
-      const row = container.querySelector('[data-testid="assets-list-item"]')!
+      renderListView([buildOutputItem(dragAsset)])
+      const row = screen.getByTestId('assets-list-item')
       return row
     }
 

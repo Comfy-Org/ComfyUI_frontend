@@ -19,6 +19,7 @@ import {
 } from '@/utils/__tests__/canvasTestUtils'
 
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { restoreGeometryBeforeVueNodes } from '@/renderer/extensions/vueNodes/widgets/utils/legacyWidgetCanvasGeometry'
 
 import WidgetLegacy from './WidgetLegacy.vue'
 
@@ -171,6 +172,10 @@ describe('WidgetLegacy canvas sizing', () => {
 
 describe('WidgetLegacy canvas width', () => {
   it('uses the untransformed layout width when the canvas is zoomed', async () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
     const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
@@ -205,6 +210,154 @@ describe('WidgetLegacy canvas width', () => {
 
     expect(widget.width).toBe(layoutWidth)
     expect(canvases.at(-1)?.width).toBe(layoutWidth * 2)
+  })
+})
+
+describe('WidgetLegacy in the properties panel beside the LiteGraph canvas', () => {
+  const canvasGeometry = { width: 150, y: 40, last_y: 37, canvasHeight: 90 }
+  const panelRowGeometry = { width: 318, y: 0, last_y: 0, canvasHeight: 20 }
+
+  function readGeometry(widget: IBaseWidget, node: LGraphNode) {
+    return {
+      width: widget.width,
+      y: widget.y,
+      last_y: widget.last_y,
+      canvasHeight: node.canvasHeight
+    }
+  }
+
+  async function renderInPanel(widgetOverrides: Partial<IBaseWidget> = {}) {
+    const graph = app.rootGraph
+    const node = new LGraphNode('Legacy')
+    node.size = [210, 120]
+    node.pos = [100, 200]
+    const widget = node.addCustomWidget(
+      fromPartial<IBaseWidget>({
+        name: 'loras',
+        type: 'custom',
+        value: undefined,
+        y: 0,
+        options: {},
+        draw: () => {},
+        ...widgetOverrides
+      })
+    )
+    graph.add(node)
+    widget.width = canvasGeometry.width
+    widget.y = canvasGeometry.y
+    widget.last_y = canvasGeometry.last_y
+    node.canvasHeight = canvasGeometry.canvasHeight
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    useCanvasStore().canvas = new LGraphCanvas(canvasElement, graph, {
+      skip_render: true,
+      skip_events: true
+    })
+    await nextTick()
+
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
+      panelRowGeometry.width
+    )
+    stubCanvasGetContext()
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widgetId: widgetId(graph.id, node.id, 'loras')
+      }
+    })
+    return { node, widget }
+  }
+
+  it('draws with the panel row geometry and restores the canvas geometry afterward', async () => {
+    const geometryInDraw: ReturnType<typeof readGeometry>[] = []
+    const { node, widget } = await renderInPanel({
+      draw(this: IBaseWidget, _ctx, host) {
+        geometryInDraw.push(readGeometry(this, host))
+      }
+    })
+
+    expect(geometryInDraw.at(-1)).toEqual(panelRowGeometry)
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+  })
+
+  it('gives a panel pointer gesture the row geometry and restores the canvas geometry after each event', async () => {
+    const geometryInMouse: ReturnType<typeof readGeometry>[] = []
+    const { node, widget } = await renderInPanel({
+      mouse(this: IBaseWidget, _event, _pos, host) {
+        geometryInMouse.push(readGeometry(this, host))
+        return true
+      }
+    })
+    const target = screen.getByTestId('legacy-widget-canvas')
+    const user = userEvent.setup()
+
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target,
+      coords: { offsetX: 28, offsetY: 11 }
+    })
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+    await user.pointer({ target, coords: { offsetX: 60, offsetY: 11 } })
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+    await user.pointer({
+      keys: '[/MouseLeft]',
+      target,
+      coords: { offsetX: 60, offsetY: 11 }
+    })
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+
+    expect(geometryInMouse.length).toBeGreaterThanOrEqual(2)
+    for (const geometry of geometryInMouse)
+      expect(geometry).toEqual(panelRowGeometry)
+  })
+
+  it('restores the canvas geometry when a custom draw throws', async () => {
+    const { node, widget } = await renderInPanel()
+    const drawFailure = new Error('custom draw failed')
+    widget.draw = () => {
+      throw drawFailure
+    }
+
+    expect(() => widget.triggerDraw?.()).toThrow(drawFailure)
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+  })
+
+  it('restores the canvas geometry from before Vue nodes when the first Vue draw redraws itself', async () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+    let redrawn = false
+    const { node, widget } = await renderInPanel({
+      draw(this: IBaseWidget) {
+        if (redrawn) return
+        redrawn = true
+        this.triggerDraw?.()
+      }
+    })
+    expect(redrawn).toBe(true)
+
+    LiteGraph.vueNodesMode = false
+    restoreGeometryBeforeVueNodes(node)
+
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+  })
+
+  it('restores the canvas geometry from before Vue nodes when the renderer switches back to LiteGraph', async () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+    const { node, widget } = await renderInPanel()
+    widget.triggerDraw?.()
+    expect(readGeometry(widget, node)).toEqual(panelRowGeometry)
+
+    LiteGraph.vueNodesMode = false
+    restoreGeometryBeforeVueNodes(node)
+
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
   })
 })
 

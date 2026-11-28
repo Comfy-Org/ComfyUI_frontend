@@ -57,7 +57,7 @@ function showPicker() {
   }
 }
 
-defineExpose({ focus, showPicker })
+defineExpose({ focus, showPicker, anchor: buttonRef })
 </script>
 
 <template>

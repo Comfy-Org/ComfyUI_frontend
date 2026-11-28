@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -83,6 +84,58 @@ function groupScene() {
   group.recomputeInsideNodes()
   return { graph, group, child, dragged, outside, canvas: canvasFor(graph) }
 }
+
+function subgraphScene(side: 'input' | 'output') {
+  const slot = [{ name: 'io', type: 'STRING' }]
+  const subgraph = createTestSubgraph(
+    side === 'input' ? { inputs: slot } : { outputs: slot }
+  )
+  const bar = side === 'input' ? subgraph.inputNode : subgraph.outputNode
+  bar.pos = [0, 0]
+  bar.arrange()
+
+  const wired = new LGraphNode('Wired')
+  wired.size = [150, 60]
+  subgraph.add(wired)
+  if (side === 'input') {
+    wired.addInput('in', 'STRING')
+    subgraph.inputNode.slots[0].connect(wired.inputs[0], wired)
+  } else {
+    wired.addOutput('out', 'STRING')
+    subgraph.outputNode.slots[0].connect(wired.outputs[0], wired)
+  }
+  const wiredSlotY = () =>
+    (side === 'input' ? wired.getInputPos(0) : wired.getOutputPos(0))[1]
+
+  const neighbour = new LGraphNode('Neighbour')
+  neighbour.pos = [-400, bar.boundingRect[1] + 3]
+  neighbour.size = [150, 60]
+  subgraph.add(neighbour)
+
+  function placeWired(slotOffset: number) {
+    wired.pos = [600, 0]
+    wired.updateArea()
+    wired.pos = [600, bar.slots[0].pos[1] - wiredSlotY() + slotOffset]
+    wired.updateArea()
+  }
+  return { bar, placeWired, canvas: canvasFor(subgraph) }
+}
+
+describe.for(['input', 'output'] as const)('a subgraph %s bar', (side) => {
+  it('snaps to straighten its wire', () => {
+    const { canvas, bar, placeWired } = subgraphScene(side)
+    placeWired(250)
+    const snap = providerWith(defaults).move(canvas, [bar])
+    expect(snap?.offset({ x: 0, y: 246 }, free).y).toBe(250)
+  })
+
+  it('does not snap to node edges', () => {
+    const { canvas, bar, placeWired } = subgraphScene(side)
+    placeWired(500)
+    const snap = providerWith(defaults).move(canvas, [bar])
+    expect(snap?.offset({ x: 0, y: 0 }, free).y).toBe(0)
+  })
+})
 
 describe('createSmartGuidesProvider move', () => {
   it('snaps a node to straighten its wire to a fixed reroute', () => {

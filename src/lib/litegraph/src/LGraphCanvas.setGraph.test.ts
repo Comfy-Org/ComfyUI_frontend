@@ -12,6 +12,7 @@ import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapt
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
@@ -98,27 +99,6 @@ describe('LGraphCanvas graph replacement', () => {
     }
   )
 
-  it.for([
-    { name: 'another graph', target: () => new LGraph() },
-    { name: 'the same graph', target: (graph: LGraph) => graph }
-  ])('stops a running camera animation when set to $name', ({ target }) => {
-    let pendingFrame: FrameRequestCallback | undefined
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-      pendingFrame = callback
-      return 1
-    })
-    vi.stubGlobal('cancelAnimationFrame', () => {
-      pendingFrame = undefined
-    })
-    const { canvas, graph } = createCanvasWithSelectedNode()
-    canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
-
-    canvas.setGraph(target(graph))
-    pendingFrame?.(performance.now() + 1000)
-
-    expect([...canvas.ds.offset]).toEqual([0, 0])
-  })
-
   it('records the opened subgraph on the canvas', () => {
     const { canvas, graph } = createCanvasWithSelectedNode()
     const subgraph = createTestSubgraph({ rootGraph: graph })
@@ -160,4 +140,52 @@ describe('LGraphCanvas graph replacement', () => {
       expect([...canvas.selectedItems]).toEqual([incoming])
     }
   )
+})
+
+describe('LGraphCanvas camera animation', () => {
+  it.for([
+    {
+      name: 'setting another graph',
+      act: (canvas: LGraphCanvas) => canvas.setGraph(new LGraph())
+    },
+    {
+      name: 'setting the same graph',
+      act: (canvas: LGraphCanvas, graph: LGraph) => canvas.setGraph(graph)
+    },
+    {
+      name: 'unbinding its events',
+      act: (canvas: LGraphCanvas) => canvas.unbindEvents()
+    }
+  ])('stops a running camera animation on $name', ({ act }) => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
+    const { canvas, graph } = createCanvasWithSelectedNode()
+    canvas.animateToBounds([3000, 3000, 100, 100], { zoom: 0 })
+
+    act(canvas, graph)
+    now.mockReturnValue(2000)
+    runCanvasFramePhase(canvas, 'update')
+
+    expect([...canvas.ds.offset]).toEqual([0, 0])
+  })
+
+  it('moves and redraws the camera on its update frames until it lands', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
+    const { canvas } = createCanvasWithSelectedNode()
+    canvas.animateToBounds([3000, 3000, 100, 100], {
+      zoom: 0,
+      viewport: [0, 0, 800, 600]
+    })
+
+    canvas.dirty_canvas = false
+    now.mockReturnValue(1100)
+    runCanvasFramePhase(canvas, 'update')
+    const midway = [...canvas.ds.offset]
+    const redrawn = canvas.dirty_canvas
+    now.mockReturnValue(2000)
+    runCanvasFramePhase(canvas, 'update')
+
+    expect(midway).not.toEqual([0, 0])
+    expect(redrawn).toBe(true)
+    expect([...canvas.ds.offset]).toEqual([-2650, -2750])
+  })
 })
