@@ -1,26 +1,16 @@
 import { assert, describe, expect, it } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import { readSsoError } from '@comfyorg/account-core/sso'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { SSO_ERROR_MESSAGE_KEY } from '@/platform/cloud/onboarding/sso/ssoErrorMessages'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
-const { t } = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global
-
-const render = (key: string) => t(key as Parameters<typeof t>[0])
+const { t } = testI18n.global
 
 describe('SSO error copy', () => {
   it('renders the message a person reads for every code', () => {
     const rendered = Object.fromEntries(
-      Object.entries(SSO_ERROR_MESSAGE_KEY).map(([code, key]) => [
-        code,
-        render(key)
-      ])
+      Object.entries(SSO_ERROR_MESSAGE_KEY).map(([code, key]) => [code, t(key)])
     )
 
     expect(rendered).toMatchInlineSnapshot(`
@@ -52,7 +42,7 @@ describe('SSO error copy', () => {
     const code = readSsoError('SSO_SOMETHING_INGEST_ADDED_LATER')
     assert.exists(code)
 
-    expect(render(SSO_ERROR_MESSAGE_KEY[code])).toBe(
+    expect(t(SSO_ERROR_MESSAGE_KEY[code])).toBe(
       "We couldn't sign you in with single sign-on. Try again."
     )
   })
