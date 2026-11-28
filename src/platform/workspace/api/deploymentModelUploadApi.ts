@@ -3,13 +3,17 @@ import { sum } from 'es-toolkit'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { fileSha256 } from '@/platform/workspace/api/fileSha256'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { DeploymentModelUploadPart } from '@/platform/workspace/api/workspaceApi'
+import type {
+  DeploymentModelEntry,
+  DeploymentModelUploadPart
+} from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceId } from '@/platform/workspace/workspaceTypes'
 
 const PARALLEL_PUTS = 8
 const PUT_ATTEMPTS = 3
 const LINK_RENEW_MARGIN_MS = 60_000
 const LIST_POLL_MS = 3_000
+const JOIN_ATTEMPTS = 2
 
 export interface DeploymentModelTarget {
   workspaceId: WorkspaceId
@@ -23,7 +27,11 @@ export type DeploymentModelUploadResult =
       reason: 'notOn' | 'refused' | 'cancelled' | 'failed'
       message?: string
       cause?: unknown
+      modelId?: string
+      stillListed?: true
     }
+
+type UploadStopped = Extract<DeploymentModelUploadResult, { ok: false }>
 
 export type DeploymentModelOutcome = 'ready' | 'failed' | 'gone'
 
@@ -144,75 +152,90 @@ async function putPieces(
   return stopped
 }
 
-function removeQuietly(
+function removeModel(
   { workspaceId, deploymentId }: DeploymentModelTarget,
   modelId: string
-) {
-  void workspaceApi
+): Promise<boolean> {
+  return workspaceApi
     .removeDeploymentModel(workspaceId, deploymentId, modelId)
-    .catch(() => undefined)
+    .then(
+      () => true,
+      () => false
+    )
 }
 
-async function sendAddedFile(
-  file: File,
-  target: DeploymentModelTarget,
+function isRefusal(cause: unknown): cause is WorkspaceApiError {
+  return cause instanceof WorkspaceApiError && cause.status === 409
+}
+
+function stoppedBy(cause: unknown, signal: AbortSignal): UploadStopped {
+  if (signal.aborted) return { ok: false, reason: 'cancelled' }
+  if (isRefusal(cause)) {
+    return { ok: false, reason: 'refused', message: cause.message }
+  }
+  return { ok: false, reason: 'failed', cause }
+}
+
+async function joinPieces(
+  { workspaceId, deploymentId }: DeploymentModelTarget,
   blobId: string,
-  parts: readonly DeploymentModelUploadPart[],
-  options: DeploymentModelUploadOptions
-): Promise<string | undefined> {
-  const { workspaceId, deploymentId } = target
-  const { signal } = options
-  options.onSending()
-  const stopped = await putPieces(
-    file,
-    parts,
-    () =>
-      workspaceApi.refreshDeploymentModelUploadParts(
+  signal: AbortSignal
+): Promise<UploadStopped | undefined> {
+  for (let attempt = 0; attempt < JOIN_ATTEMPTS && !signal.aborted; attempt++) {
+    try {
+      await workspaceApi.completeDeploymentModelUpload(
         workspaceId,
         deploymentId,
         blobId,
         signal
-      ),
-    options
-  )
-  if (stopped || signal.aborted) return stopped
-  await workspaceApi.completeDeploymentModelUpload(
-    workspaceId,
-    deploymentId,
-    blobId,
-    signal
-  )
-  return undefined
+      )
+      return undefined
+    } catch (cause) {
+      if (isRefusal(cause)) return stoppedBy(cause, signal)
+    }
+  }
+  return signal.aborted ? { ok: false, reason: 'cancelled' } : undefined
 }
 
-async function sendOrRemove(
+async function sendPieces(
   file: File,
   target: DeploymentModelTarget,
   upload: { blobId: string; parts: readonly DeploymentModelUploadPart[] },
-  modelId: string,
   options: DeploymentModelUploadOptions
-): Promise<DeploymentModelUploadResult> {
+): Promise<UploadStopped | undefined> {
+  const { workspaceId, deploymentId } = target
+  const { signal } = options
+  options.onSending()
   try {
-    const stopped = await sendAddedFile(
+    const stopped = await putPieces(
       file,
-      target,
-      upload.blobId,
       upload.parts,
+      () =>
+        workspaceApi.refreshDeploymentModelUploadParts(
+          workspaceId,
+          deploymentId,
+          upload.blobId,
+          signal
+        ),
       options
     )
-    if (options.signal.aborted) {
-      removeQuietly(target, modelId)
-      return { ok: false, reason: 'cancelled' }
-    }
-    if (stopped) {
-      removeQuietly(target, modelId)
-      return { ok: false, reason: 'failed', cause: stopped }
-    }
+    if (signal.aborted) return { ok: false, reason: 'cancelled' }
+    if (stopped) return { ok: false, reason: 'failed', cause: stopped }
   } catch (cause) {
-    removeQuietly(target, modelId)
-    throw cause
+    return stoppedBy(cause, signal)
   }
-  return { ok: true, modelId }
+  return joinPieces(target, upload.blobId, signal)
+}
+
+async function removeAfter(
+  target: DeploymentModelTarget,
+  modelId: string,
+  stopped: UploadStopped
+): Promise<DeploymentModelUploadResult> {
+  const removed = await removeModel(target, modelId)
+  return removed
+    ? { ...stopped, modelId }
+    : { ...stopped, modelId, stillListed: true }
 }
 
 async function addToDeployment(
@@ -237,12 +260,17 @@ async function addToDeployment(
   const added = await workspaceApi.addDeploymentModel(
     workspaceId,
     deploymentId,
-    { blobId, type: options.type },
-    signal
+    { blobId, type: options.type }
   )
   if (added === 'notOn') return { ok: false, reason: 'notOn' }
+  if (signal.aborted) {
+    return removeAfter(target, added.id, { ok: false, reason: 'cancelled' })
+  }
   if (deduplicated || !parts) return { ok: true, modelId: added.id }
-  return sendOrRemove(file, target, { blobId, parts }, added.id, options)
+  const stopped = await sendPieces(file, target, { blobId, parts }, options)
+  return stopped
+    ? removeAfter(target, added.id, stopped)
+    : { ok: true, modelId: added.id }
 }
 
 async function uploadModelToDeployment(
@@ -253,11 +281,7 @@ async function uploadModelToDeployment(
   try {
     return await addToDeployment(file, target, options)
   } catch (cause) {
-    if (options.signal.aborted) return { ok: false, reason: 'cancelled' }
-    if (cause instanceof WorkspaceApiError && cause.status === 409) {
-      return { ok: false, reason: 'refused', message: cause.message }
-    }
-    return { ok: false, reason: 'failed', cause }
+    return stoppedBy(cause, options.signal)
   }
 }
 
@@ -273,29 +297,58 @@ function pause(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-async function waitForDeploymentModel(
+async function readModel<T>(
   { workspaceId, deploymentId }: DeploymentModelTarget,
   modelId: string,
-  signal: AbortSignal
-): Promise<DeploymentModelOutcome | undefined> {
-  const stopped = () => signal.aborted
-  while (!stopped()) {
+  signal: AbortSignal,
+  answer: (entry: DeploymentModelEntry | undefined) => T | undefined
+): Promise<T | undefined> {
+  while (!signal.aborted) {
     const models = await workspaceApi
       .listDeploymentModels(workspaceId, deploymentId, signal)
       .catch(() => undefined)
-    if (stopped()) break
-    if (models) {
-      const entry = models.find((model) => model.id === modelId)
-      if (!entry || entry.status === 'removing') return 'gone'
-      if (entry.status === 'ready') return 'ready'
-      if (entry.status === 'failed') return 'failed'
-    }
+    if (signal.aborted) break
+    const settled = models
+      ? answer(models.find((model) => model.id === modelId))
+      : undefined
+    if (settled !== undefined) return settled
     await pause(LIST_POLL_MS, signal)
   }
   return undefined
 }
 
+function readiness(
+  entry: DeploymentModelEntry | undefined
+): DeploymentModelOutcome | undefined {
+  if (!entry || entry.status === 'removing') return 'gone'
+  if (entry.status === 'ready') return 'ready'
+  if (entry.status === 'failed') return 'failed'
+  return undefined
+}
+
+function waitForDeploymentModel(
+  target: DeploymentModelTarget,
+  modelId: string,
+  signal: AbortSignal
+): Promise<DeploymentModelOutcome | undefined> {
+  return readModel(target, modelId, signal, readiness)
+}
+
+async function clearDeploymentModel(
+  target: DeploymentModelTarget,
+  modelId: string,
+  signal: AbortSignal
+): Promise<boolean> {
+  const removed = await removeModel(target, modelId)
+  const cleared = await readModel(target, modelId, signal, (entry) => {
+    if (!entry) return true
+    return removed ? undefined : false
+  })
+  return cleared === true
+}
+
 export const deploymentModelUploadApi = {
   uploadModelToDeployment,
-  waitForDeploymentModel
+  waitForDeploymentModel,
+  clearDeploymentModel
 }

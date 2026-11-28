@@ -88,7 +88,7 @@ const zDeploymentModelEntry = z.object({
   status: z.string()
 })
 
-type DeploymentModelEntry = z.infer<typeof zDeploymentModelEntry>
+export type DeploymentModelEntry = z.infer<typeof zDeploymentModelEntry>
 
 const zDeploymentModelList = z.object({
   models: z.array(zDeploymentModelEntry)

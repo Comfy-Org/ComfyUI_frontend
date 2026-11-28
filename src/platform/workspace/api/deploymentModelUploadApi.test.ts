@@ -171,12 +171,10 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
       },
       expect.any(AbortSignal)
     )
-    expect(ingest.add).toHaveBeenCalledWith(
-      'ws-1',
-      'dep-1',
-      { blobId: BLOB_ID, type: 'loras' },
-      expect.any(AbortSignal)
-    )
+    expect(ingest.add).toHaveBeenCalledWith('ws-1', 'dep-1', {
+      blobId: BLOB_ID,
+      type: 'loras'
+    })
     expect(ingest.calls).toEqual([
       'create',
       'add after 0 pieces',
@@ -273,12 +271,10 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
       ok: true,
       modelId: MODEL_ID
     })
-    expect(ingest.add).toHaveBeenCalledWith(
-      'ws-1',
-      'dep-1',
-      { blobId: BLOB_ID, type: 'loras' },
-      expect.any(AbortSignal)
-    )
+    expect(ingest.add).toHaveBeenCalledWith('ws-1', 'dep-1', {
+      blobId: BLOB_ID,
+      type: 'loras'
+    })
     expect(StorageRequest.sent).toHaveLength(0)
     expect(ingest.complete).not.toHaveBeenCalled()
   })
@@ -335,7 +331,11 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
     await vi.waitFor(() => expect(StorageRequest.sent).toHaveLength(2))
     controller.abort()
 
-    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'cancelled',
+      modelId: MODEL_ID
+    })
     expect(StorageRequest.inFlight()).toHaveLength(0)
     expect(ingest.complete).not.toHaveBeenCalled()
     expect(ingest.remove).toHaveBeenCalledWith('ws-1', 'dep-1', MODEL_ID)
@@ -355,7 +355,8 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
     await expect(result).resolves.toEqual({
       ok: false,
       reason: 'failed',
-      cause: 'storage 503'
+      cause: 'storage 503',
+      modelId: MODEL_ID
     })
     expect(ingest.renew).toHaveBeenCalledTimes(2)
     expect(StorageRequest.sent[1].done).toBe(true)
@@ -376,9 +377,86 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
     await expect(result).resolves.toEqual({
       ok: false,
       reason: 'refused',
-      message
+      message,
+      modelId: MODEL_ID
+    })
+    expect(ingest.complete).toHaveBeenCalledOnce()
+    expect(ingest.remove).toHaveBeenCalledWith('ws-1', 'dep-1', MODEL_ID)
+  })
+
+  it('joins again after an unclear answer and keeps the entry once joined', async () => {
+    const ingest = ingestAnswers([piece(1)])
+    ingest.complete
+      .mockRejectedValueOnce(new WorkspaceApiError('Bad gateway', 502))
+      .mockResolvedValueOnce(undefined)
+
+    const { result } = upload(modelFile(1))
+    await finishNext()
+
+    await expect(result).resolves.toEqual({ ok: true, modelId: MODEL_ID })
+    expect(ingest.complete).toHaveBeenCalledTimes(2)
+    expect(ingest.remove).not.toHaveBeenCalled()
+  })
+
+  it('keeps the entry while the join stays unclear, for the list to settle', async () => {
+    const ingest = ingestAnswers([piece(1)])
+    ingest.complete.mockRejectedValue(new Error('network'))
+
+    const { result } = upload(modelFile(1))
+    await finishNext()
+
+    await expect(result).resolves.toEqual({ ok: true, modelId: MODEL_ID })
+    expect(ingest.remove).not.toHaveBeenCalled()
+  })
+
+  it('lets an add finish after a cancel, then removes the entry it made', async () => {
+    const ingest = ingestAnswers([piece(1)])
+    const controller = new AbortController()
+    let answerAdd!: () => void
+    ingest.add.mockImplementation(
+      (_workspaceId, _deploymentId, _payload, signal) =>
+        new Promise((resolve, reject) => {
+          signal?.addEventListener('abort', () =>
+            reject(new DOMException('canceled', 'AbortError'))
+          )
+          answerAdd = () =>
+            resolve({
+              id: MODEL_ID,
+              filename: 'my_style_v2.safetensors',
+              status: 'adding'
+            })
+        })
+    )
+
+    const { result } = upload(modelFile(1), controller.signal)
+    await vi.waitFor(() => expect(ingest.add).toHaveBeenCalledOnce())
+    controller.abort()
+    answerAdd()
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'cancelled',
+      modelId: MODEL_ID
     })
     expect(ingest.remove).toHaveBeenCalledWith('ws-1', 'dep-1', MODEL_ID)
+    expect(StorageRequest.sent).toHaveLength(0)
+  })
+
+  it('says the entry is still listed when its removal after a cancel fails', async () => {
+    const ingest = ingestAnswers([piece(1)])
+    ingest.remove.mockRejectedValue(new WorkspaceApiError('Busy', 409))
+    const controller = new AbortController()
+
+    const { result } = upload(modelFile(1), controller.signal)
+    await vi.waitFor(() => expect(StorageRequest.sent).toHaveLength(1))
+    controller.abort()
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'cancelled',
+      modelId: MODEL_ID,
+      stillListed: true
+    })
   })
 
   it('reads no piece and adds nothing once canceled while the file is read', async () => {
@@ -462,4 +540,54 @@ describe('deploymentModelUploadApi.waitForDeploymentModel', () => {
     await expect(answer).resolves.toBeUndefined()
     expect(list).toHaveBeenCalledOnce()
   })
+})
+
+describe('deploymentModelUploadApi.clearDeploymentModel', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  function entry(status: string) {
+    return { id: MODEL_ID, filename: 'my_style_v2.safetensors', status }
+  }
+
+  it('removes the entry and answers once the list no longer has it', async () => {
+    const remove = vi
+      .spyOn(workspaceApi, 'removeDeploymentModel')
+      .mockResolvedValue(undefined)
+    vi.spyOn(workspaceApi, 'listDeploymentModels')
+      .mockResolvedValueOnce([entry('removing')])
+      .mockResolvedValueOnce([])
+
+    const cleared = deploymentModelUploadApi.clearDeploymentModel(
+      target,
+      MODEL_ID,
+      new AbortController().signal
+    )
+    await vi.advanceTimersByTimeAsync(3_000)
+
+    await expect(cleared).resolves.toBe(true)
+    expect(remove).toHaveBeenCalledWith('ws-1', 'dep-1', MODEL_ID)
+  })
+
+  it.for([
+    { list: 'still has it', listed: [entry('failed')], cleared: false },
+    { list: 'no longer has it', listed: [], cleared: true }
+  ])(
+    'answers $cleared when the removal fails and the list $list',
+    async ({ listed, cleared }) => {
+      vi.spyOn(workspaceApi, 'removeDeploymentModel').mockRejectedValue(
+        new WorkspaceApiError('Busy', 409)
+      )
+      vi.spyOn(workspaceApi, 'listDeploymentModels').mockResolvedValue(listed)
+
+      await expect(
+        deploymentModelUploadApi.clearDeploymentModel(
+          target,
+          MODEL_ID,
+          new AbortController().signal
+        )
+      ).resolves.toBe(cleared)
+    }
+  )
 })
