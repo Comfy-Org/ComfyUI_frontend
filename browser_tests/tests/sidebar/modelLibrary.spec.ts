@@ -233,7 +233,7 @@ test.describe('Model library sidebar - empty state', () => {
       const ghost = comfyPage.page.locator(
         '[data-node-id="preview-CheckpointLoaderSimple"]'
       )
-      await expect(ghost).toContainText('sd_xl_base_1.0.safetensors')
+      await expect(ghost).toContainText('sd_xl_base_1.0')
     })
   })
 })
@@ -265,7 +265,7 @@ test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
       .getLeafByLabel('dreamshaper_8')
       .dragTo(node)
     await comfyPage.nextFrame()
-    await expect(node).toContainText('dreamshaper_8.safetensors')
+    await expect(node).toContainText('dreamshaper_8')
     await expect
       .poll(() => filename.getValue())
       .toBe('dreamshaper_8.safetensors')

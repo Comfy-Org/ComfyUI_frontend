@@ -157,7 +157,7 @@ test.describe('Vue combo folders', { tag: ['@vue-nodes', '@widget'] }, () => {
         .click()
       await expect(modelCombo.menu).toBeHidden()
       await expect(modelCombo.trigger).toBeFocused()
-      await expect(modelCombo.trigger).toHaveText('portrait.safetensors')
+      await expect(modelCombo.trigger).toHaveText('portrait')
       await expect
         .poll(() => widget.getValue())
         .toBe('archive/portrait.safetensors')
