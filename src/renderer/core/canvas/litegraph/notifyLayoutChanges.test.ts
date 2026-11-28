@@ -190,42 +190,24 @@ describe('notifyLayoutChanges', () => {
     using context = setup()
     const { graph, node, setDirty } = context
     const offsets = [
-      { index: 0, type: 'input' as const, position: { x: 0, y: 10 } }
+      {
+        index: 0,
+        type: 'input' as const,
+        bounds: { x: 0, y: 10, width: 0, height: 0 }
+      }
     ]
 
-    layoutStore.updateNodeSlotOffsets(
-      graph.rootGraph.id,
-      node.id,
-      offsets,
-      'expanded'
-    )
+    layoutStore.updateNodeSlotOffsets(graph.rootGraph.id, node.id, offsets)
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
     setDirty.mockClear()
 
-    layoutStore.updateNodeSlotOffsets(
-      graph.rootGraph.id,
-      node.id,
-      offsets,
-      'expanded'
-    )
+    layoutStore.updateNodeSlotOffsets(graph.rootGraph.id, node.id, offsets)
     await Promise.resolve()
     expect(setDirty).not.toHaveBeenCalled()
 
-    layoutStore.updateNodeSlotOffsets(
-      graph.rootGraph.id,
-      node.id,
-      [],
-      'collapsed'
-    )
-    await Promise.resolve()
-    expect(setDirty).not.toHaveBeenCalled()
-
-    layoutStore.updateNodeSlotOffsets(
-      graph.rootGraph.id,
-      node.id,
-      [{ ...offsets[0], position: { x: 0, y: 20 } }],
-      'expanded'
-    )
+    layoutStore.updateNodeSlotOffsets(graph.rootGraph.id, node.id, [
+      { ...offsets[0], bounds: { x: 0, y: 20, width: 0, height: 0 } }
+    ])
     await vi.waitFor(() => expect(setDirty).toHaveBeenCalledWith(true, true))
   })
 

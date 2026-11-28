@@ -82,6 +82,7 @@ vi.mock<unknown>(
         () => state.canAccessSubscriptionFeatures
       ),
       isTeamPlan: computed(() => state.isTeamPlan),
+      subscriptionState: computed(() => null),
       billingStatus: computed(
         () => state.billingStatus as BillingStatus | null
       ),
@@ -1330,9 +1331,9 @@ describe('BillingStatusBanner', () => {
       expect(screen.getByRole('status')).toHaveTextContent(
         'Your Enterprise plan ended on September 12, 2026'
       )
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Contact sales' })
-      )
+      const contactSales = screen.getByRole('button', { name: 'Contact sales' })
+      expect(contactSales).toHaveAttribute('data-variant', 'inverted')
+      await userEvent.click(contactSales)
       expect(open).toHaveBeenCalledWith(
         'https://comfy.org/cloud/enterprise/',
         '_blank',
@@ -1429,9 +1430,9 @@ describe('BillingStatusBanner', () => {
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       renderBanner()
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Contact sales' })
-      )
+      const contactSales = screen.getByRole('button', { name: 'Contact sales' })
+      expect(contactSales).toHaveAttribute('data-variant', 'secondary')
+      await userEvent.click(contactSales)
 
       expect(open).toHaveBeenCalledWith(
         'https://comfy.org/cloud/enterprise/',

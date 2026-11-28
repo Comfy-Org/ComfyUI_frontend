@@ -7,7 +7,7 @@ import {
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -88,7 +88,8 @@ function resolveMediaMissingState(
   const options = resolveComboValues(widget)
   const { filepath, rootFolder } = parseAnnotatedPath(value)
   if (rootFolder !== 'input') return options.includes(value) ? false : undefined
-  return !options.includes(value) && !options.includes(filepath)
+  if (options.includes(value) || options.includes(filepath)) return false
+  return filepath.includes('/') ? undefined : true
 }
 
 /** Scan media; includeTemp is only for known deletions, not verification. */

@@ -6,11 +6,10 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/billing/utils/paymentIntentSource'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 
-/** Opens support through Comfy.ContactSupport, tracks the click, and reports a failure to open it. */
+/** Opens the billing support form, tracks the click, and reports a failure to open it. */
 export function useMessageSupport() {
-  const commandStore = useCommandStore()
   const telemetry = useTelemetry()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
@@ -32,7 +31,7 @@ export function useMessageSupport() {
         is_external: true,
         source: 'subscription'
       })
-      await commandStore.execute('Comfy.ContactSupport')
+      openSupportForm('billing')
     },
     reportSupportFailure,
     () => {

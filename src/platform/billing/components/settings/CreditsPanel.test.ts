@@ -1,6 +1,9 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -44,6 +47,12 @@ vi.mock(
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+beforeEach(() => {
+  provideCurrentUser(useCurrentUser)
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -106,6 +115,21 @@ describe('CreditsPanel', () => {
     await user.click(screen.getByRole('button', { name: /Invoice History/ }))
 
     expect(billing.manageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('opens the Billing / Refund Issue form from Message Support', async () => {
+    mockBillingContext()
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: /Message Support/ }))
+
+    expect(openSpy).toHaveBeenCalledExactlyOnceWith(
+      'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue',
+      '_blank',
+      'noopener,noreferrer'
+    )
   })
 
   it('refreshes activity on a balance change but not on first hydration', async () => {

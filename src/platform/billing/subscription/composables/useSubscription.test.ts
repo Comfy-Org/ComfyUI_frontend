@@ -2373,7 +2373,7 @@ describe('useSubscription', () => {
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://stagingplatform.comfy.org/profile/usage?workspace=ws-team-1',
+        'https://stagingplatform.comfy.org/profile/usage?utm_source=comfy_cloud&utm_medium=app&workspace=ws-team-1',
         '_blank'
       )
 

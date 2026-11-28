@@ -20,6 +20,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
@@ -76,6 +77,26 @@ describe('Dynamic Combos', () => {
     expect(node.widgets.length).toBe(2)
     node.widgets[1].value = '1'
     expect(node.widgets.length).toBe(3)
+  })
+  test('a nested combo removed by switching options is not rebuilt after configure', () => {
+    const node = testNode()
+    addDynamicCombo(node, [[[[], ['STRING']]], ['INT']])
+    node.widgets[0].value = '1'
+    const widgetNames = node.widgets.map((w) => w.name)
+
+    expect(() => node.onAfterGraphConfigured?.()).not.toThrow()
+    expect(node.widgets.map((w) => w.name)).toEqual(widgetNames)
+  })
+  test('rejects a link to the combo input from a node output', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addDynamicCombo(node, [['INT'], ['STRING']])
+
+    const comboSlot = node.inputs.findIndex((i) => i.name === '0')
+
+    expect(() => connectInput(node, comboSlot, graph)).toThrow()
+    expect(node.isInputConnected(comboSlot)).toBe(false)
   })
   test('Can add input', () => {
     const node = testNode()
@@ -269,24 +290,24 @@ describe('Autogrow', () => {
     const node = testNode()
     graph.add(node)
     addAutogrow(node, { input: inputsSpec, prefix: 'test' })
-    connectInput(node, 0, graph)
     connectInput(node, 1, graph)
     connectInput(node, 2, graph)
-    expect(node.inputs.length).toBe(4)
-    expect(node.inputs[0].name).toBe('0.test0')
-    expect(node.inputs[2].name).toBe('0.test2')
+    connectInput(node, 3, graph)
+    expect(node.inputs.length).toBe(5)
+    expect(node.inputs[1].name).toBe('0.test0')
+    expect(node.inputs[3].name).toBe('0.test2')
   })
   test('Can name by list of names', () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
     addAutogrow(node, { input: inputsSpec, names: ['a', 'b', 'c'] })
-    connectInput(node, 0, graph)
     connectInput(node, 1, graph)
     connectInput(node, 2, graph)
-    expect(node.inputs.length).toBe(3)
-    expect(node.inputs[0].name).toBe('0.a')
-    expect(node.inputs[2].name).toBe('0.c')
+    connectInput(node, 3, graph)
+    expect(node.inputs.length).toBe(4)
+    expect(node.inputs[1].name).toBe('0.a')
+    expect(node.inputs[3].name).toBe('0.c')
   })
   test('liveAutogrowGroupOf recognizes an explicit-names member even though it does not end in a digit', () => {
     // `0.b` does not end in an ordinal digit, so
@@ -297,53 +318,78 @@ describe('Autogrow', () => {
     const node = testNode()
     graph.add(node)
     addAutogrow(node, { input: inputsSpec, names: ['a', 'b', 'c'] })
-    connectInput(node, 0, graph)
     connectInput(node, 1, graph)
-    expect(node.inputs[1].name).toBe('0.b')
+    connectInput(node, 2, graph)
+    expect(node.inputs[2].name).toBe('0.b')
     expect(liveAutogrowGroupOf(node, '0.b')).toBe('0')
     expect(liveAutogrowGroupOf(node, 'unrelated.b')).toBeUndefined()
   })
   test('Can add autogrow with min input count', () => {
     const node = testNode()
     addAutogrow(node, { min: 4, input: inputsSpec })
-    expect(node.inputs.length).toBe(5)
+    expect(node.inputs.length).toBe(6)
   })
   test('Adding connections will cause growth up to max', () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test', max: 3 })
-    expect(node.inputs.length).toBe(2)
+    expect(node.inputs.length).toBe(3)
 
-    connectInput(node, 0, graph)
-    expect(node.inputs.length).toBe(2)
     connectInput(node, 1, graph)
     expect(node.inputs.length).toBe(3)
     connectInput(node, 2, graph)
-    expect(node.inputs.length).toBe(3)
+    expect(node.inputs.length).toBe(4)
+    connectInput(node, 3, graph)
+    expect(node.inputs.length).toBe(4)
   })
   test('Removing connections decreases to min + 1', async () => {
     const graph = new LGraph()
     const node = testNode()
     graph.add(node)
     addAutogrow(node, { min: 4, input: inputsSpec, prefix: 'test' })
-    connectInput(node, 3, graph)
     connectInput(node, 4, graph)
     connectInput(node, 5, graph)
-    expect(node.inputs.length).toBe(7)
+    connectInput(node, 6, graph)
+    expect(node.inputs.length).toBe(8)
 
+    node.disconnectInput(5)
+    await nextTick()
+    expect(node.inputs.length).toBe(7)
     node.disconnectInput(4)
     await nextTick()
     expect(node.inputs.length).toBe(6)
-    node.disconnectInput(3)
-    await nextTick()
-    expect(node.inputs.length).toBe(5)
 
-    connectInput(node, 0, graph)
-    expect(node.inputs.length).toBe(5)
-    node.disconnectInput(0)
+    connectInput(node, 1, graph)
+    expect(node.inputs.length).toBe(6)
+    node.disconnectInput(1)
     await nextTick()
-    expect(node.inputs.length).toBe(5)
+    expect(node.inputs.length).toBe(6)
+  })
+  test('rejects a link to the group input from a node output', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addAutogrow(node, { input: inputsSpec, prefix: 'test' })
+
+    expect(() => connectInput(node, 0, graph)).toThrow()
+    expect(node.isInputConnected(0)).toBe(false)
+  })
+  test('a subgraph input link to the group input replaces the group members until it is removed', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'images', type: 'COMFY_AUTOGROW_V3' }]
+    })
+    const node = testNode()
+    subgraph.add(node)
+    addAutogrow(node, { min: 2, input: inputsSpec, prefix: 'test' })
+    const members = ['0', '0.test0', '0.test1', '0.test2']
+    expect(node.inputs.map((input) => input.name)).toEqual(members)
+
+    assert.exists(subgraph.inputs[0].connect(node.inputs[0], node))
+    expect(node.inputs.map((input) => input.name)).toEqual(['0'])
+
+    subgraph.inputs[0].disconnect()
+    expect(node.inputs.map((input) => input.name)).toEqual(members)
   })
   test(
     'Disconnecting a just-connected slot still compacts to one spare slot ' +
@@ -358,18 +404,22 @@ describe('Autogrow', () => {
         names: ['image_1', 'image_2', 'image_3', 'image_4']
       })
 
-      connectInput(node, 0, graph)
-      await nextTick()
       connectInput(node, 1, graph)
+      await nextTick()
+      connectInput(node, 2, graph)
 
-      node.disconnectInput(1)
+      node.disconnectInput(2)
       await nextTick()
       await nextTick()
 
-      expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
-      expect(node.isInputConnected(0)).toBe(true)
-      expect(node.isInputConnected(1)).toBe(false)
-      expect(node.getInputLink(0)?.target_slot).toBe(0)
+      expect(node.inputs.map((i) => i.name)).toEqual([
+        '0',
+        '0.image_1',
+        '0.image_2'
+      ])
+      expect(node.isInputConnected(1)).toBe(true)
+      expect(node.isInputConnected(2)).toBe(false)
+      expect(node.getInputLink(1)?.target_slot).toBe(1)
     }
   )
   test(
@@ -385,15 +435,15 @@ describe('Autogrow', () => {
         names: ['image_1', 'image_2', 'image_3', 'image_4']
       })
 
-      connectInput(node, 0, graph)
+      connectInput(node, 1, graph)
       await nextTick()
 
-      const oldLink = node.getInputLink(0)
+      const oldLink = node.getInputLink(1)
       const swapSource = testNode()
       swapSource.addOutput('out', '*')
       graph.add(swapSource)
       node.onConnectInput?.(
-        0,
+        1,
         swapSource.outputs[0].type,
         swapSource.outputs[0],
         swapSource,
@@ -401,16 +451,17 @@ describe('Autogrow', () => {
       )
       node.onConnectionsChange?.(
         LiteGraph.INPUT,
-        0,
+        1,
         false,
         oldLink,
-        node.inputs[0]
+        node.inputs[1]
       )
 
-      connectInput(node, 1, graph)
+      connectInput(node, 2, graph)
       await nextTick()
 
       expect(node.inputs.map((i) => i.name)).toEqual([
+        '0',
         '0.image_1',
         '0.image_2',
         '0.image_3'
@@ -430,44 +481,46 @@ describe('Autogrow', () => {
         names: ['image_1', 'image_2', 'image_3', 'image_4']
       })
 
-      connectInput(node, 0, graph)
+      connectInput(node, 1, graph)
       await nextTick()
-      expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
+      expect(node.inputs.map((i) => i.name)).toEqual([
+        '0',
+        '0.image_1',
+        '0.image_2'
+      ])
 
-      const oldLink = node.getInputLink(0)
+      const oldLink = node.getInputLink(1)
       assert.exists(oldLink)
       const oldSource = graph.getNodeById(oldLink.origin_id)
 
-      //connectSlots (LGraphNode.ts) fires slot 0's disconnect (the swap's
-      //tail) and its matching connect synchronously, back to back, while
-      //replacing slot 0's link below. Chaining onto onConnectionsChange -
-      //the same public extension point real custom nodes use - lets a
-      //second, genuine connect land on a different slot in that exact
-      //window, without faking either connection.
       let sawSwapTail = false
       node.onConnectionsChange = useChainCallback(
         node.onConnectionsChange,
         (contype, slot, iscon) => {
-          if (contype !== LiteGraph.INPUT || slot !== 0 || iscon) return
+          if (contype !== LiteGraph.INPUT || slot !== 1 || iscon) return
           sawSwapTail = true
-          connectInput(node, 1, graph)
+          connectInput(node, 2, graph)
         }
       )
 
       const replacement = testNode()
       replacement.addOutput('out', '*')
       graph.add(replacement)
-      const newLink = replacement.connect(0, node, 0)
+      const newLink = replacement.connect(0, node, 1)
       assert.exists(newLink)
 
-      expect(sawSwapTail).toBe(true)
-      expect(node.getInputLink(0)).toBe(newLink)
+      expect(
+        sawSwapTail,
+        'a connect on slot 2 lands between the disconnect and connect that connectSlots fires while replacing slot 1'
+      ).toBe(true)
+      expect(node.getInputLink(1)).toBe(newLink)
       expect(oldSource?.isOutputConnected(0)).toBe(false)
 
       await nextTick()
       await nextTick()
 
       expect(node.inputs.map((i) => i.name)).toEqual([
+        '0',
         '0.image_1',
         '0.image_2',
         '0.image_3'
@@ -487,18 +540,18 @@ describe('Autogrow', () => {
         names: ['image_1', 'image_2', 'image_3', 'image_4']
       })
 
-      connectInput(node, 0, graph)
-      await nextTick()
-
       connectInput(node, 1, graph)
-      node.disconnectInput(1)
-      const reconnectLink = connectInput(node, 1, graph)
+      await nextTick()
+
+      connectInput(node, 2, graph)
+      node.disconnectInput(2)
+      const reconnectLink = connectInput(node, 2, graph)
 
       await nextTick()
       await nextTick()
 
-      expect(node.getInputLink(1)).toBe(reconnectLink)
-      expect(node.isInputConnected(1)).toBe(true)
+      expect(node.getInputLink(2)).toBe(reconnectLink)
+      expect(node.isInputConnected(2)).toBe(true)
       expect(graph.getLink(reconnectLink.id)).toBe(reconnectLink)
       const sourceNode = graph.getNodeById(reconnectLink.origin_id)
       expect(sourceNode?.isOutputConnected(0)).toBe(true)
@@ -532,9 +585,9 @@ describe('Autogrow', () => {
     node.onConnectionsChange = onConnectionsChange
     graph.add(node)
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'test' })
-    connectInput(node, 0, graph)
     connectInput(node, 1, graph)
     connectInput(node, 2, graph)
+    connectInput(node, 3, graph)
     const updateEndpoints = vi
       .spyOn(useLinkStore(), 'updateEndpoints')
       .mockReturnValue({
@@ -542,7 +595,7 @@ describe('Autogrow', () => {
         error: { code: 'occupied-target', message: 'Target is occupied' }
       })
 
-    node.disconnectInput(1)
+    node.disconnectInput(2)
     const inputNames = node.inputs.map(({ name }) => name)
     const widgetNames = node.widgets.map(({ name }) => name)
     onConnectionsChange.mockClear()
@@ -570,12 +623,12 @@ describe('Autogrow', () => {
       })
 
     try {
-      connectInput(node, 0, graph)
-      expect(node.inputs.length).toBe(2)
+      connectInput(node, 1, graph)
+      expect(node.inputs.length).toBe(3)
 
       rafCallbacks.shift()?.(0)
 
-      node.disconnectInput(0)
+      node.disconnectInput(1)
 
       const staleDisconnectCallback = rafCallbacks.shift()
       expect(staleDisconnectCallback).toBeDefined()
@@ -603,23 +656,27 @@ describe('Autogrow', () => {
     addAutogrow(node, { min: 1, input: videoSpec, prefix: 'vid' })
 
     expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0',
       '0.img0',
       '0.img1',
-      '2.vid0',
-      '2.vid1'
+      '3',
+      '3.vid0',
+      '3.vid1'
     ])
 
-    connectInput(node, 1, graph)
+    connectInput(node, 2, graph)
     expect(node.inputs.map((i) => i.name)).toStrictEqual([
+      '0',
       '0.img0',
       '0.img1',
       '0.img2',
-      '2.vid0',
-      '2.vid1'
+      '3',
+      '3.vid0',
+      '3.vid1'
     ])
 
-    const vid0Index = node.inputs.findIndex((i) => i.name === '2.vid0')
-    expect(vid0Index).toBe(3)
+    const vid0Index = node.inputs.findIndex((i) => i.name === '3.vid0')
+    expect(vid0Index).toBe(5)
 
     connectInput(node, vid0Index, graph)
     const vid0Link = node.inputs[vid0Index].link
@@ -634,10 +691,10 @@ describe('Autogrow', () => {
     addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'b' })
     addNodeInput(node, { name: 'aa', isOptional: false, type: 'IMAGE' })
 
-    connectInput(node, 0, graph)
     connectInput(node, 1, graph)
-    connectInput(node, 3, graph)
-    connectInput(node, 4, graph)
+    connectInput(node, 2, graph)
+    connectInput(node, 5, graph)
+    connectInput(node, 6, graph)
 
     const serialized = graph.serialize()
     graph.clear()
@@ -645,21 +702,33 @@ describe('Autogrow', () => {
     const newNode = graph.nodes[0]
 
     expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
+      '0',
       '0.a0',
       '0.a1',
       '0.a2',
-      '2.b0',
-      '2.b1',
-      '2.b2',
+      '3',
+      '3.b0',
+      '3.b1',
+      '3.b2',
       'aa'
     ])
-    for (const slot of [0, 1, 3, 4]) {
-      expect.soft(newNode.isInputConnected(slot)).toBe(true)
-      expect.soft(newNode.getInputLink(slot)?.target_slot).toBe(slot)
-    }
-    for (const slot of [2, 5, 6]) {
-      expect.soft(newNode.isInputConnected(slot)).toBe(false)
-    }
+    const slots = newNode.inputs.map((_, slot) => slot)
+    expect(slots.filter((slot) => newNode.isInputConnected(slot))).toEqual([
+      1, 2, 5, 6
+    ])
+    expect(
+      slots.map((slot) => newNode.getInputLink(slot)?.target_slot)
+    ).toEqual([
+      undefined,
+      1,
+      2,
+      undefined,
+      undefined,
+      5,
+      6,
+      undefined,
+      undefined
+    ])
   })
 })
 

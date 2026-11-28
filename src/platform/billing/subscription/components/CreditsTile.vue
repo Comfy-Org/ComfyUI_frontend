@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="credits-tile"
     :class="
       cn(
         '@container relative flex flex-col gap-6 rounded-2xl border bg-card px-6 py-5',
@@ -23,6 +24,27 @@
         {{ $t('subscription.totalCredits') }}
       </div>
       <Skeleton v-if="isLoadingBalance" class="h-8 w-32" />
+      <template v-else-if="isBalanceUnavailable">
+        <span
+          class="text-2xl leading-none font-bold text-muted-foreground"
+          data-testid="credits-total-unavailable"
+          >—</span
+        >
+        <span class="flex flex-wrap items-center gap-1 text-sm">
+          <span class="text-muted-foreground">{{
+            $t('profileMenu.balanceUnavailable')
+          }}</span>
+          <Button
+            variant="link"
+            size="link"
+            class="py-0 text-foreground underline"
+            :loading="isRetryingBalance"
+            @click="retryBalance"
+          >
+            {{ $t('workspacePanel.billingTab.tryAgain') }}
+          </Button>
+        </span>
+      </template>
       <div v-else class="flex items-baseline gap-2">
         <i
           :class="
@@ -151,7 +173,7 @@
       </div>
     </template>
 
-    <template v-else-if="showsInactivePlanState">
+    <template v-else-if="showsInactivePlanState && !isBalanceUnavailable">
       <div class="h-px w-full bg-border" />
       <div class="flex flex-col gap-2 text-sm">
         <div class="flex items-center justify-between gap-2">
@@ -229,7 +251,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted, useId, watch } from 'vue'
+import { computed, onMounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -260,6 +282,7 @@ import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readW
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { usePrefetchAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 
 const { zeroState = false, inactivePlan } = defineProps<{
   /** Hides the plan breakdown. The total stays the server balance. */
@@ -272,6 +295,7 @@ const { locale, t } = useI18n()
 const {
   subscription,
   balance,
+  balanceReadFailed,
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   subscriptionStatus,
@@ -307,6 +331,7 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { shouldUseWorkspaceBilling } = useBillingRouting()
 const workspaceStore = useWorkspaceIdentity()
 const { showTopUpCreditsDialog } = useBillingDialogs()
+usePrefetchAddCreditsAutoTopUpOffer()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
 
@@ -455,11 +480,26 @@ const monthlyUsageLabel = computed(() =>
   )
 )
 
+const isBalanceUnavailable = computed(
+  () =>
+    balanceReadFailed.value && !isLoadingBalance.value && balance.value == null
+)
+const isRetryingBalance = ref(false)
+async function retryBalance() {
+  isRetryingBalance.value = true
+  try {
+    await handleRefresh()
+  } finally {
+    isRetryingBalance.value = false
+  }
+}
+
 const showBreakdown = computed(
   () =>
     canAccessSubscriptionFeatures.value &&
     !zeroState &&
-    !showsInactivePlanState.value
+    !showsInactivePlanState.value &&
+    !isBalanceUnavailable.value
 )
 // The monthly allowance bar is a Cloud-only presentation; Local/Desktop shows
 // only the total and additional-credit balances.

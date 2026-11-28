@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import type {
   BillingCapabilitiesResponse,
   HostedTopupCheckout,
+  SubscriptionPaymentRecovery,
   SubscriptionState
 } from '@comfyorg/ingest-types'
 import { selectBillingBanners } from '@comfyorg/account-ui/billing'
@@ -28,13 +29,13 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import {
   servedBillingNoticeAudience,
   servedEndingNoticeStartsAt
 } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -46,6 +47,7 @@ import { useMessageSupport } from '@/platform/billing/subscription/composables/u
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -66,7 +68,6 @@ vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
-vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/localBillingHandoff'))
@@ -120,6 +121,8 @@ interface Scenario {
   hasParkedBillingOperation?: boolean
   renewalDate?: string | null
   nextCreditRefillAt?: string | null
+  freeRuns?: { available: number; max: number }
+  statusPaymentRecovery?: SubscriptionPaymentRecovery | null
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -178,6 +181,10 @@ function arrange(scenario: Scenario = {}) {
       currentTeamCreditStop: computed(() => null),
       periodCreditGrant: computed(() => null),
       nextCreditRefillAt: computed(() => scenario.nextCreditRefillAt ?? null),
+      subscriptionPaymentRecovery: computed(() => null),
+      statusPaymentRecovery: computed(
+        () => scenario.statusPaymentRecovery ?? null
+      ),
       initialize,
       fetchStatus,
       resubscribe
@@ -283,13 +290,19 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
-  vi.mocked(useFreeTierQuota).mockReturnValue(
-    fromPartial({
-      quotaEnabled: computed(() => false),
-      available: ref(0),
-      maxAvailable: ref(0)
-    })
-  )
+  if (scenario.freeRuns) {
+    const { available, max } = scenario.freeRuns
+    useRemoteConfigStore().acceptConfig(
+      {
+        free_tier_balance: {
+          allowance: max,
+          remaining: available,
+          used: max - available
+        }
+      },
+      false
+    )
+  }
 
   const { unmount } = mountBillingTab()
 
@@ -438,6 +451,65 @@ describe('BillingTab', () => {
     ).not.toBeInTheDocument()
     expect(banner).not.toHaveTextContent('Subscription paused')
     expect(banner).not.toHaveTextContent('plan ends')
+  })
+
+  it.for([
+    { amountMicros: 0, hasFunds: false },
+    { amountMicros: 500, hasFunds: true }
+  ])(
+    'shows free runs and hides credit warnings for a never-subscribed workspace with $amountMicros cents',
+    ({ amountMicros, hasFunds }) => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+      arrange({
+        subscription: {
+          ...activeSubscription,
+          tier: 'FREE',
+          planSlug: null,
+          renewalDate: null,
+          hasFunds
+        },
+        subscriptionState: 'never_subscribed',
+        freeRuns: { available: 5, max: 5 },
+        balance: { amountMicros, currency: 'usd', lowBalance: true }
+      })
+
+      expect(screen.getByTestId('billing-plan-row')).toHaveTextContent(
+        'You have 5 of 5 free runs left.'
+      )
+      expect(screen.getByRole('link', { name: 'Subscribe' })).toHaveAttribute(
+        'data-variant',
+        'inverted'
+      )
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
+    }
+  )
+
+  it('warns a subscribed Cloud workspace when its credit balance is low', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    arrange({
+      balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
+    })
+
+    const banner = screen.getByTestId('billing-banner-credit')
+    expect(banner).toHaveTextContent('Credits are low')
+    expect(banner).toHaveTextContent('1,055')
+    expect(
+      within(banner).getByRole('button', { name: 'Dismiss' })
+    ).toBeVisible()
+    expect(
+      within(banner).getByRole('button', { name: 'Add credits' })
+    ).toBeVisible()
   })
 
   it('hides local credit banners when unified billing settings is off', () => {
@@ -1720,6 +1792,21 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['secondary'])
     })
 
+    it('keeps Contact sales the one white plan action on an ended Enterprise plan at 0', () => {
+      arrange({
+        planKind: 'sales_managed',
+        canTopUp: true,
+        balance: zeroBalance,
+        subscriptionStatus: 'ended',
+        subscription: { ...activeSubscription, isActive: false }
+      })
+
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', 'inverted')
+      expect(addCreditsVariants()).not.toContain('inverted')
+    })
+
     it.for([
       {
         surface: 'Cloud',
@@ -2318,6 +2405,14 @@ describe('BillingTab', () => {
       ])
     })
 
+    it('reads the saved cards for the Add credits checkbox before Add credits is clicked', () => {
+      vi.mocked(useFeatureFlags().flags).billingAutoTopUpAtCheckoutEnabled =
+        true
+      arrange({})
+
+      expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledOnce()
+    })
+
     it('reads the auto top-up settings once for the card and the banner', async () => {
       arrange({})
       await screen.findByTestId('billing-auto-top-up-status')
@@ -2331,6 +2426,7 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
   const BANNER_KINDS: Record<string, BillingBannerKind> = {
     'billing-banner-paused': 'paused',
     'billing-banner-planCheckout': 'planCheckout',
+    'billing-banner-planNotStarted': 'planNotStarted',
     'billing-banner-topupCheckout': 'topupCheckout',
     'billing-banner-parked': 'parked',
     'billing-banner-autoTopUp': 'autoTopUp',
@@ -2347,6 +2443,12 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
       action: null,
       href: null,
       dismissKey: null
+    },
+    planNotStarted: {
+      kind: 'planNotStarted',
+      ...text,
+      action: 'finishPayment',
+      href: null
     },
     topupCheckout: {
       kind: 'topupCheckout',
@@ -2402,6 +2504,25 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
     })
   }
 
+  it('stacks an unfinished first plan payment while out of credits like the tab on Cloud', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    arrange({
+      subscription: { ...activeSubscription, hasFunds: false },
+      statusPaymentRecovery: SIGNUP_RECOVERY
+    })
+    await screen.findByTestId('billing-banner-planNotStarted')
+
+    expect(shownStack()).toEqual(
+      selectBillingBanners([VIEWS.planNotStarted, VIEWS.credit]).map(
+        ({ kind }) => kind
+      )
+    )
+  })
+
   it.for<{
     case: string
     scenario: Scenario
@@ -2454,6 +2575,137 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
       )
     }
   )
+})
+
+const SIGNUP_RECOVERY: SubscriptionPaymentRecovery = {
+  billing_op_id: 'op-signup',
+  reason: 'payment_required'
+}
+
+describe('BillingTab plan not started banner', () => {
+  function serveSignupOperation(
+    paymentAction: Pick<
+      Awaited<ReturnType<typeof billingApi.getBillingOpStatus>>,
+      'action_url' | 'payment_intent_client_secret'
+    > = { action_url: 'https://invoice.stripe.example/i/signup' }
+  ) {
+    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+      id: 'op-signup',
+      started_at: '2026-11-05T17:15:54Z',
+      status: 'pending',
+      plan: { slug: 'creator-monthly', duration: 'MONTHLY', tier: 'CREATOR' },
+      ...paymentAction
+    })
+  }
+
+  it('names the plan whose first payment billing status says is unfinished on Cloud', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    serveSignupOperation()
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    await screen.findByText('Your Creator plan hasn’t started')
+    const banner = screen.getByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    expect(
+      within(banner).getByRole('button', { name: 'Finish payment' })
+    ).toBeVisible()
+  })
+
+  it('links Complete verification to billing-web checkout for the served plan when the operation serves only a client secret', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'billing_web'
+    useRemoteConfigStore().acceptConfig(
+      { billing_web_url: 'https://billing.comfy.org' },
+      false
+    )
+    serveSignupOperation({ payment_intent_client_secret: 'pi_signup_secret' })
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    await screen.findByText('Your Creator plan hasn’t started')
+    const banner = screen.getByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    expect(
+      within(banner).getByRole('link', { name: 'Complete verification' })
+    ).toHaveAttribute(
+      'href',
+      'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=workspace-a&operation=op-signup'
+    )
+    expect(
+      within(banner).queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows no banner while the operation read is in flight', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(billingApi.getBillingOpStatus).mockReturnValue(
+      new Promise(() => {})
+    )
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+    await nextTick()
+
+    expect(billingApi.getBillingOpStatus).toHaveBeenCalledWith('op-signup')
+    expect(
+      screen.queryByTestId('billing-banner-planNotStarted')
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers View on Plans with no payment link when reading the operation fails', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(billingApi.getBillingOpStatus).mockRejectedValue(
+      new Error('network down')
+    )
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    const banner = await screen.findByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Your plan hasn’t started')
+    expect(banner).toHaveTextContent(
+      'Your plan starts once the payment goes through.'
+    )
+    expect(
+      within(banner).getByRole('link', { name: 'View on Plans' })
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining(
+        'https://platform.test/profile/billing/plans?workspace=ws_1'
+      )
+    )
+    expect(
+      within(banner).queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows nothing on local ComfyUI even when the fact is served', () => {
+    serveSignupOperation()
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    expect(
+      screen.queryByTestId('billing-banner-planNotStarted')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows nothing on Cloud when billing status serves no recovery', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    arrange()
+
+    expect(
+      screen.queryByTestId('billing-banner-planNotStarted')
+    ).not.toBeInTheDocument()
+  })
 })
 
 describe('BillingTab refresh on return', () => {

@@ -23,7 +23,8 @@ const funded: BillingStatusBannerFacts = {
   topUpDeniedPastDue: false,
   runDeniedPastDue: false,
   unifiedBillingSettingsEnabled: false,
-  isActive: true
+  isActive: true,
+  subscriptionState: null
 }
 
 function derive(overrides: Partial<BillingStatusBannerFacts>) {
@@ -200,6 +201,32 @@ describe('deriveBillingStatusBanner', () => {
       })
     ).toBe('outOfCredits')
   })
+
+  it.for([
+    { subscriptionState: 'never_subscribed', isActive: true, open: false },
+    { subscriptionState: 'paused', isActive: true, open: false },
+    { subscriptionState: 'past_due', isActive: true, open: false },
+    { subscriptionState: 'ended', isActive: true, open: false },
+    { subscriptionState: 'activating', isActive: true, open: false },
+    { subscriptionState: 'active', isActive: false, open: true },
+    { subscriptionState: 'cancel_scheduled', isActive: false, open: true },
+    { subscriptionState: null, isActive: true, open: true },
+    { subscriptionState: null, isActive: false, open: false }
+  ] as const)(
+    'opens cloud credit banners for served state $subscriptionState with is_active $isActive: $open',
+    ({ subscriptionState, isActive, open }) => {
+      const facts = {
+        audience: 'personal' as const,
+        unifiedBillingSettingsEnabled: true,
+        isActive,
+        subscriptionState,
+        hasFunds: false
+      }
+      const expected = open ? 'outOfCredits' : null
+      expect(derive(facts)).toBe(expected)
+      expect(derive({ ...facts, topUpDeniedPastDue: true })).toBe(expected)
+    }
+  )
 
   it('shows out of credits to members too', () => {
     expect(derive({ hasFunds: false, canManage: false })).toBe('outOfCredits')

@@ -71,7 +71,7 @@ test.describe(
           .poll(() => node.getProperty('properties'))
           .toMatchObject({
             registeredMaskPath: expect.stringMatching(
-              /clipspace-painted-masked-\d+\.png \[input\]$/
+              /clipspace-painted-masked-\d+\.png$/
             )
           })
       })

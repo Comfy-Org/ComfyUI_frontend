@@ -1,3 +1,4 @@
+import type { BillingBalanceResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
@@ -7,9 +8,32 @@ import {
   OWNER_ONLY,
   OWNER_ONLY_MESSAGE,
   WORKSPACE_ID,
-  localWebBillingHandoffTest as test
+  localWebBillingHandoffTest as test,
+  taggedEntryUrl
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
+const checkoutReturnTest = test.extend<{
+  completeCheckout: () => void
+}>({
+  completeCheckout: async ({ page }, use) => {
+    const paidBalance = {
+      amount_micros: 2500,
+      effective_balance_micros: 2500,
+      currency: 'usd'
+    } satisfies BillingBalanceResponse
+    let checkoutCompleted = false
+    await page.route('**/api/billing/balance', (route) =>
+      checkoutCompleted
+        ? route.fulfill(jsonRoute(paidBalance))
+        : route.fallback()
+    )
+    await use(() => {
+      checkoutCompleted = true
+    })
+  }
+})
 
 test.describe('Local web billing handoff', () => {
   test.describe.configure({ timeout: 60_000 })
@@ -81,6 +105,75 @@ test.describe('Local web billing handoff', () => {
       )
     })
 
+    checkoutReturnTest(
+      'refreshes the local Billing balance after returning from checkout',
+      async ({ completeCheckout, comfyPage, openSettings }) => {
+        const page = comfyPage.page
+        const settings = await openSettings()
+        await settings.category('Billing', { exact: true }).click()
+        const credits = page.getByTestId('billing-credits-section')
+        await expect(credits).toBeVisible()
+        await credits.getByRole('button', { name: 'Add credits' }).click()
+        const dialog = new TopUpCreditsDialog(page)
+        await dialog.preset25.click()
+
+        const popupOpened = page.waitForEvent('popup')
+        await dialog.continueButton.click()
+        const popup = await popupOpened
+        await expect(popup).toHaveURL(ENTRY_URL)
+
+        completeCheckout()
+        const refreshed = page.waitForResponse(
+          (response) =>
+            new URL(response.url()).pathname === '/api/billing/balance' &&
+            response.ok()
+        )
+        await popup.close()
+        await page.evaluate(() => {
+          window.dispatchEvent(new Event('blur'))
+          window.dispatchEvent(new Event('focus'))
+        })
+
+        expect(await (await refreshed).json()).toMatchObject({
+          amount_micros: 2500
+        })
+      }
+    )
+
+    test.describe('with auto top-up at checkout served to the local account', () => {
+      test.use({ autoTopUpOffered: true, cloudAutoTopUpAtCheckout: true })
+
+      test('Continue carries the ticked auto top-up to billing-web through the handoff', async ({
+        comfyPage,
+        handoffRequests,
+        openAddCredits
+      }) => {
+        const page = comfyPage.page
+        const dialog = new TopUpCreditsDialog(page)
+        await openAddCredits()
+        await dialog.preset50.click()
+        await dialog.autoTopUpCheckbox.check()
+
+        const popupOpened = page.waitForEvent('popup')
+        await dialog.continueButton.click()
+        await expect(await popupOpened).toHaveURL(ENTRY_URL)
+
+        expect(handoffRequests).toHaveLength(1)
+        expect(handoffRequests[0].postDataJSON()).toEqual(
+          expect.objectContaining({
+            receiver: 'billing_web',
+            intent: 'top-up',
+            amount_cents: 5000,
+            auto_top_up: {
+              threshold_credits: 1000,
+              target_credits: 11_550,
+              monthly_budget_cents: null
+            }
+          })
+        )
+      })
+    })
+
     test('shows the Billing tab with no plain Platform link instead of Plan & Credits', async ({
       comfyPage,
       openSettings
@@ -114,9 +207,7 @@ test.describe('Local web billing handoff', () => {
       await planAction.click()
       const popup = await popupOpened
 
-      const plansEntry = new URL(ENTRY_URL)
-      plansEntry.searchParams.set('view', 'plans')
-      await expect(popup).toHaveURL(plansEntry.href)
+      await expect(popup).toHaveURL(taggedEntryUrl('plans'))
       expect(handoffRequests).toHaveLength(1)
       const body = handoffRequests[0].postDataJSON()
       expect(body).toEqual(
@@ -152,7 +243,7 @@ test.describe('Local web billing handoff', () => {
         await turnOn.click()
         const popup = await popupOpened
 
-        await expect(popup).toHaveURL(ENTRY_URL)
+        await expect(popup).toHaveURL(taggedEntryUrl())
         expect(handoffRequests).toHaveLength(1)
         const body = handoffRequests[0].postDataJSON()
         expect(body).toEqual(

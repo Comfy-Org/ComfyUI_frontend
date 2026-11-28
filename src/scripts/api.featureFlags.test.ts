@@ -171,6 +171,32 @@ describe('API Feature Flags', () => {
       expect(api.getServerFeature('api_version')).toBe('1.0.0')
     })
 
+    it('passes Cloud billing_status pushes on without logging an unknown type', () => {
+      void api.init()
+      const data = {
+        billing_status: { has_funds: true, scoped_has_funds: { agent: true } }
+      }
+
+      wsEventHandlers['message']({
+        data: JSON.stringify({ type: 'billing_status', data })
+      })
+      const onBillingStatus = vi.fn()
+      api.addEventListener('billing_status', onBillingStatus)
+      onTestFinished(() =>
+        api.removeEventListener('billing_status', onBillingStatus)
+      )
+      wsEventHandlers['message']({
+        data: JSON.stringify({ type: 'billing_status', data })
+      })
+
+      expect(console.error).not.toHaveBeenCalledWith(
+        'Unknown message type billing_status'
+      )
+      expect(onBillingStatus).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ detail: data })
+      )
+    })
+
     it('takes the agent feature from a handshake reply that follows an earlier agent_status push', () => {
       void api.init()
       const send = (type: string, data: unknown) =>

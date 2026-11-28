@@ -10,6 +10,7 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type {
   AgentWsEvent,
+  PersistedThinkingEntry,
   PersistedToolCallSummary
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -26,8 +27,9 @@ const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 // the stricter wire `ToolCallSummary` generated type.
 type MockAgentMessageContent = Omit<
   NonNullable<AgentMessage['content']>,
-  'tool_calls'
+  'thinking' | 'tool_calls'
 > & {
+  thinking?: PersistedThinkingEntry[]
   tool_calls?: PersistedToolCallSummary[]
 }
 type MockAgentMessage = Omit<AgentMessage, 'content'> & {
@@ -35,6 +37,7 @@ type MockAgentMessage = Omit<AgentMessage, 'content'> & {
 }
 
 export const promptHistoryTest = base.extend<{
+  serverTurnIds: 'collapsed' | 'distinct'
   agentPanel: AgentPanel
   promptHistory: {
     requests: AgentPostMessageRequest[]
@@ -49,10 +52,14 @@ export const promptHistoryTest = base.extend<{
     finishLatestTurn: (reply: string, chargeMicroUsd: number) => Promise<void>
   }
 }>({
+  serverTurnIds: ['collapsed', { option: true }],
   agentPanel: async ({ page }, use) => {
     await use(new AgentPanel(page))
   },
-  promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
+  promptHistory: async (
+    { page, workflowSelection, getAgentSocket, serverTurnIds },
+    use
+  ) => {
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
     const messages: MockAgentMessage[] = []
@@ -99,11 +106,15 @@ export const promptHistoryTest = base.extend<{
       requests.push(request)
       threadId = new URL(route.request().url()).pathname.split('/').at(-2)!
       const messageId = `1dda6c2a-fdc5-45c3-b499-${String(requests.length).padStart(12, '0')}`
+      const turnId =
+        serverTurnIds === 'distinct'
+          ? `6b0f41d7-1c58-4d2e-8a37-${String(requests.length).padStart(12, '0')}`
+          : messageId
       messages.push(
         {
           id: `user-${requests.length}`,
           thread_id: threadId,
-          turn_id: messageId,
+          turn_id: turnId,
           seq: messages.length + 1,
           role: 'user',
           status: 'complete',
@@ -116,7 +127,7 @@ export const promptHistoryTest = base.extend<{
         {
           id: messageId,
           thread_id: threadId,
-          turn_id: messageId,
+          turn_id: turnId,
           seq: messages.length + 2,
           role: 'assistant',
           status: 'streaming'

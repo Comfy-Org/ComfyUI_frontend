@@ -1,0 +1,32 @@
+name: 'PR: Close Retired Cloud Targets'
+
+on:
+  pull_request_target:
+    types: [opened, reopened, edited]
+    branches: ['cloud/**']
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: close-retired-cloud-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  close:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number
+            })
+            if (pr.state !== 'open' || !/^cloud\/1\.(?:3[1-9]|[45][0-9]|60)$/.test(pr.base.ref)) return
+            await github.rest.pulls.update({
+              ...context.repo,
+              pull_number: context.issue.number,
+              state: 'closed'
+            })

@@ -1,5 +1,7 @@
 import type { CreateTopupResponse } from '@comfyorg/ingest-types'
 
+import type { AddCreditsPlanLine } from '#/core/billing/addCredits/addCreditsCopy'
+
 import type {
   BillingCheckoutReceived,
   BillingFailed,
@@ -29,6 +31,8 @@ type TopupStarted = BillingStarted & {
   /** The amount being bought, in whole cents. */
   amount_cents?: number
   amount_preset?: TopupAmountPreset
+  /** The plan line shown before paying, or `none` when the dialog showed none. */
+  plan_line?: AddCreditsPlanLine | 'none'
 }
 
 export type TopupBillingEvent = {

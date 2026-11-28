@@ -173,16 +173,20 @@ export const useSubscriptionDialog = () => {
       trackPaywallShown(paymentIntentSourceOf(options))
       return
     }
-    await showPlansLinkDialog({
-      title: t('subscription.plansLink.blockedTitle'),
-      body: t('subscription.plansLink.blockedBody'),
-      linkLabel: t('subscription.plansLink.openPlansPage')
-    })
+    await showPlansLinkDialog(
+      options?.resumingCheckout
+        ? {
+            title: t('subscription.plansLink.checkoutUnfinishedTitle'),
+            body: t('subscription.plansLink.checkoutUnfinishedBody'),
+            linkLabel: t('subscription.plansLink.openPlansPage')
+          }
+        : {
+            title: t('subscription.plansLink.blockedTitle'),
+            body: t('subscription.plansLink.blockedBody'),
+            linkLabel: t('subscription.plansLink.openPlansPage')
+          }
+    )
     trackEntry()
-  }
-
-  function usesPlansLinkDialog(): boolean {
-    return flags.billingNewUxEnabled && !flags.pricingTableFallback
   }
 
   async function showPricingTable(
@@ -210,7 +214,7 @@ export const useSubscriptionDialog = () => {
       const trackEntry = () =>
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
 
-      if (usesPlansLinkDialog()) {
+      if (flags.billingNewUxEnabled) {
         await handOffToPlatformPlans(options, trackEntry)
         return true
       }

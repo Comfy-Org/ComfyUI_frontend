@@ -1,0 +1,28 @@
+name: Telemetry Cost Contract
+
+on:
+  workflow_run:
+    workflows: ['Telemetry Cost Contract Signal']
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  validate:
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+      statuses: write
+    uses: Comfy-Org/github-workflows/.github/workflows/telemetry-cost-contract.yml@15deef69ae4a2233bf0cca9f7c90ecaa03934ff7
+    with:
+      workflows_ref: 15deef69ae4a2233bf0cca9f7c90ecaa03934ff7
+      patterns: |
+        \breportError\(
+        \b(?:useTelemetry\(\)|telemetry)\??\.trackUiButtonClicked\(
+        \b(?:datadogRum|getDatadogRum\(\))\??\.(?:addAction|addError|addTiming|startView)\(
+        \b(?:posthog|mixpanel|analytics)\??\.(?:capture|track)\(
+        \bwindow\.__comfyDesktop2\?\.Telemetry\?\.capture\(
+      exempt-label: cost-exempt
+      enforce: false

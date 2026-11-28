@@ -2,12 +2,13 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IWidgetVideoConcatOptions,
   VideoConcatValue
 } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -52,7 +53,7 @@ const widget: SimplifiedWidget<VideoConcatValue, IWidgetVideoConcatOptions> = {
 }
 
 function buildConcat(files: string[]) {
-  const graph = new LGraph()
+  const graph = app.rootGraph
   const concat = new LGraphNode('ConcatenateVideo')
   for (const slot of files.keys())
     concat.addInput(`videos.video${slot}`, 'VIDEO')
@@ -88,7 +89,7 @@ describe('WidgetVideoConcat', () => {
 
   function mountWith(modelValue: VideoConcatValue) {
     const concat = buildConcat(['red.mp4', 'green.mp4', 'blue.mp4'])
-    vi.spyOn(app.canvas.graph!, 'getNodeById').mockReturnValue(concat)
+    useCanvasStore().currentGraph = app.rootGraph
     return renderWidget(concat, modelValue)
   }
 

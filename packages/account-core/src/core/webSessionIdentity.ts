@@ -190,8 +190,8 @@ function leaveAccount(
   return {
     state: { phase: 'signed_out', outcome },
     effects: [
-      ...effects,
-      { type: 'account_changed', change: { reason: 'signed_out', outcome } }
+      { type: 'account_changed', change: { reason: 'signed_out', outcome } },
+      ...effects
     ]
   }
 }
@@ -405,6 +405,11 @@ export interface WebSessionIdentityOptions {
   /** The host drops pending actions and user-scoped state here. */
   readonly onAccountChanged?: (
     change: WebSessionAccountChange & { readonly epoch: number }
+  ) => void
+  /** Reports a remembered-login sign-out that failed after an account change. */
+  readonly onLocalSignOutFailed?: (
+    error: unknown,
+    context: { readonly epoch: number }
   ) => void
   readonly heartbeat?: WebSessionHeartbeatOptions
   readonly schedule?: ScheduleRetry
@@ -729,7 +734,13 @@ function createAccountIdentity(
         )
         return
       case 'sign_out_locally':
-        login.signOutLocally().catch(reportLocalSignOutFailure)
+        {
+          const signOutEpoch = epoch
+          login.signOutLocally().catch((error: unknown) => {
+            reportLocalSignOutFailure(error)
+            options.onLocalSignOutFailed?.(error, { epoch: signOutEpoch })
+          })
+        }
         return
       default:
         notify(effect)

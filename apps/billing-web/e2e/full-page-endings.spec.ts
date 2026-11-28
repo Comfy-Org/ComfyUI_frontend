@@ -15,7 +15,7 @@ import {
   pendingOperation,
   succeededOperation
 } from './fixtures/scenario'
-import { expectStraightToPricingTable } from './fixtures/planless'
+import { expectStraightToPlatformPlans } from './fixtures/planless'
 import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
@@ -703,7 +703,7 @@ test.describe('on a phone', () => {
   })
 })
 
-test('433-6840: a link to a plan the catalog lacks renders Plan not available with PLAN_NOT_FOUND, and View plans opens the cloud pricing table', async ({
+test('433-6840: a link to a plan the catalog lacks renders Plan not available with PLAN_NOT_FOUND, and View plans opens Platform Plans', async ({
   page,
   cloud,
   signIn
@@ -721,11 +721,11 @@ test('433-6840: a link to a plan the catalog lacks renders Plan not available wi
 
   await expect(heading(page, 'Host app')).toBeVisible()
   await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?pricing=1&workspace=ws_e2e'
+    'https://testplatform.comfy.org/settings/billing/plans?workspace=ws_e2e'
   )
 })
 
-test('433-6840: a retired team plan whose link carries its commit stop opens the pricing table on the Team tab', async ({
+test('433-6840: a retired team plan whose link carries its commit stop opens Platform Plans on the Team tab', async ({
   page,
   cloud,
   signIn
@@ -748,11 +748,11 @@ test('433-6840: a retired team plan whose link carries its commit stop opens the
 
   await expect(heading(page, 'Host app')).toBeVisible()
   await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+    'https://testplatform.comfy.org/settings/billing/plans?pricing=team&stop=stop_1&workspace=ws_e2e'
   )
 })
 
-test('433-6840: a team link without its commit stop is an invalid link, and View plans opens the pricing table on the Team tab', async ({
+test('433-6840: a team link without its commit stop is an invalid link, and View plans opens Platform Plans on the Team tab', async ({
   page,
   cloud,
   signIn
@@ -772,7 +772,7 @@ test('433-6840: a team link without its commit stop is an invalid link, and View
 
   await expect(heading(page, 'Host app')).toBeVisible()
   await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+    'https://testplatform.comfy.org/settings/billing/plans?pricing=team&workspace=ws_e2e'
   )
 })
 
@@ -803,11 +803,11 @@ test('G7: a catalog team plan linked without its commit stop, which the quote re
 
   await expect(heading(page, 'Host app')).toBeVisible()
   await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?pricing=team&workspace=ws_e2e'
+    'https://testplatform.comfy.org/settings/billing/plans?pricing=team&workspace=ws_e2e'
   )
 })
 
-test('433-6840: a checkout link that names no plan, routed once the tab is signed in on the flag, is Plan not available, and View plans opens the pricing table', async ({
+test('433-6840: a checkout link that names no plan, routed once the tab is signed in on the flag, is Plan not available, and View plans opens Platform Plans', async ({
   page,
   signIn
 }) => {
@@ -826,14 +826,14 @@ test('433-6840: a checkout link that names no plan, routed once the tab is signe
 
   await expect(heading(page, 'Host app')).toBeVisible()
   await expect(page).toHaveURL(
-    'https://testcloud.comfy.org/?pricing=1&workspace=ws_e2e'
+    'https://testplatform.comfy.org/settings/billing/plans?workspace=ws_e2e'
   )
 })
 
 test('a signed-out visitor on the flag still goes back to the host for a checkout link that names no plan', async ({
   page
 }) => {
-  await expectStraightToPricingTable(page, 'ws_team_e2e')
+  await expectStraightToPlatformPlans(page, 'ws_team_e2e')
 })
 
 test('a checkout link that names no plan, opened by the host in a new tab, goes back to the host even for a signed-in customer on the flag', async ({
@@ -842,7 +842,7 @@ test('a checkout link that names no plan, opened by the host in a new tab, goes 
 }) => {
   await signIn(CHECKOUT)
 
-  await expectStraightToPricingTable(await context.newPage(), 'ws_e2e')
+  await expectStraightToPlatformPlans(await context.newPage(), 'ws_e2e')
 })
 
 test("433-6840: a checkout link the contract cannot read is the checkout's 404 on the full page, and still the entry error on the embedded one", async ({

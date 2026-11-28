@@ -4,6 +4,7 @@ import {
   isMediaPreviewWidgetName,
   previewSourceName
 } from '@/core/graph/subgraph/preview/mediaPreviewName'
+import { PRIMITIVE_NODE_TYPE } from '@/constants/primitiveNodeConstants'
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
@@ -166,7 +167,6 @@ interface PendingEntry {
   plan: Plan
 }
 
-const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 const QUARANTINE_PROPERTY = 'proxyWidgetErrorQuarantine'
 const QUARANTINE_VERSION = 1
 const PROXY_BYPASS_MARKER_PROPERTY = 'proxyBypassedToSubgraphInput'

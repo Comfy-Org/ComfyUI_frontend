@@ -14,7 +14,7 @@ import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import type { IBaseWidget, IWidgetLocator } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
-import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import { createAssetWidget } from '@/platform/assets/integration/createAssetWidget'
 import {
   getComboSpecComboOptions,
   isComboInputSpec
@@ -33,6 +33,18 @@ import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import type { ComfyExtension } from '@/types/comfy'
 
 const replacePropertyName = 'Run widget replace on values'
+
+const HOST_BOUND_WIDGET_TYPES: ReadonlySet<string> = new Set([
+  'AUDIOUPLOAD',
+  'IMAGEUPLOAD',
+  'WEBCAM'
+])
+
+function canDriveFromPrimitive(input: INodeInputSlot): boolean {
+  const type = input.widget?.[GET_CONFIG]?.()?.[0] ?? input.type
+  return !(typeof type === 'string' && HOST_BOUND_WIDGET_TYPES.has(type))
+}
+
 const isPrimitiveNode = (
   node: LGraphNode
 ): node is PrimitiveNode & LGraphNode => node.type === 'PrimitiveNode'
@@ -195,6 +207,7 @@ export class PrimitiveNode extends LGraphNode {
     target_slot: number
   ) {
     // Fires before the link is made allowing us to reject it if it isn't valid
+    if (!canDriveFromPrimitive(input)) return false
     // No widget, we can't connect
     if (
       !input.widget &&
@@ -216,11 +229,20 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   private _onFirstConnection(recreating = false) {
-    // First connection can fire before the graph is ready on initial load so random things can be missing
     if (!this.graph) {
       this.onLastDisconnect()
       return
     }
+    for (const link of outputLinks(this.graph, this.id, 0)) {
+      const targetNode = this.graph.getNodeById(link.target_id)
+      const input = targetNode?.inputs.at(link.target_slot)
+      if (input && !canDriveFromPrimitive(input)) {
+        this.graph.removeLink(link.id)
+      }
+    }
+
+    if (this.widgets?.length) return
+
     const link = outputLinks(this.graph, this.id, 0).at(0)
     if (!link) {
       if (outputHasLinks(this.graph, this.id, 0)) {
@@ -237,12 +259,11 @@ export class PrimitiveNode extends LGraphNode {
 
     const input = theirNode.inputs.at(link.target_slot)
     if (!input) return
-
     let widget: IWidgetLocator
     if (!input.widget) {
       const inputType = input.type
       if (typeof inputType !== 'string' || !(inputType in ComfyWidgets)) return
-      widget = { name: input.name, [GET_CONFIG]: () => [inputType, {}] } //fake widget
+      widget = { name: input.name, [GET_CONFIG]: () => [inputType, {}] }
     } else {
       widget = input.widget
     }
@@ -253,7 +274,6 @@ export class PrimitiveNode extends LGraphNode {
     const { type } = getWidgetType(config)
     if (recreating || this.outputs[0].type !== type)
       this._clearWidgetRestoration()
-    // Update our output to restrict to the widget type
     this.outputs[0].type = type
     this.outputs[0].name = type
     this.outputs[0].widget = widget
@@ -322,6 +342,8 @@ export class PrimitiveNode extends LGraphNode {
         addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
         if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
       }
+      for (const [index, control] of this.widgets?.slice(1).entries() ?? [])
+        this._restoreSavedValue(control, index + 1)
 
       const controlValues = this.controlValues
       if (
@@ -340,13 +362,13 @@ export class PrimitiveNode extends LGraphNode {
     }
   }
 
-  private _restoreSavedValue(widget: IBaseWidget) {
+  private _restoreSavedValue(widget: IBaseWidget, positionalIndex = 0) {
     if (!this.graph) return
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph.rootGraph.id,
       this.id,
       widget,
-      0
+      positionalIndex
     )
     if (restored) widget.value = restored.value
   }
@@ -635,6 +657,7 @@ export const widgetInputsExtension: ComfyExtension = {
       const r = origOnInputDblClick?.apply(this, [slot, ...args])
 
       const input = this.inputs[slot]
+      if (!canDriveFromPrimitive(input)) return r
       if (!input.widget) {
         // Not a widget input or already handled input
         if (typeof input.type !== 'string' || !(input.type in ComfyWidgets)) {

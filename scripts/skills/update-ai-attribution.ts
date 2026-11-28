@@ -16,7 +16,7 @@ import { parseArgs } from 'node:util'
 
 import { applyEdits, modify, parse } from 'jsonc-parser'
 import type { FormattingOptions, ParseError } from 'jsonc-parser'
-import { isMainModule } from '../isMainModule'
+import { isMainModule } from '@comfyorg/ci/isMainModule'
 
 type SettingValue = boolean | string
 type Tool = 'amp' | 'claude' | 'codex'

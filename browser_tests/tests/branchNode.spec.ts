@@ -42,8 +42,8 @@ test('Branch Node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
 
   await test.step('Rename input', async () => {
     await branchNode.root.getByText('branch0').dblclick()
-    await branchNode.root.locator('.editable-text input').fill(userLabel)
-    await branchNode.root.locator('.editable-text input').press('Enter')
+    await branchNode.root.locator('input.editable-text').fill(userLabel)
+    await branchNode.root.locator('input.editable-text').press('Enter')
 
     await choiceWidget.open()
     await expect(options.getByText(userLabel)).toBeVisible()

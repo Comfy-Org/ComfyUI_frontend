@@ -12,14 +12,13 @@ import type {
 } from '@/platform/skills/types'
 import { MAX_NAME_LENGTH, PACK_NAME_PATTERN } from '@/platform/skills/types'
 
-/**
- * 400 is corrective; 409 is capacity. List/publish 404 hides the feature,
- * while delete 404 can also mean the pack is already gone.
- */
+const LOOPBACK_ONLY_CODE = 'agent_loopback_only'
+
 export class SkillPacksApiError extends Error {
   constructor(
     message: string,
-    public readonly status: number
+    public readonly status: number,
+    public readonly code?: string
   ) {
     super(message)
     this.name = 'SkillPacksApiError'
@@ -42,10 +41,22 @@ async function toApiError(response: Response): Promise<SkillPacksApiError> {
     'error' in body &&
     typeof body.error === 'string'
   ) {
-    return new SkillPacksApiError(body.error, response.status)
+    const code =
+      'code' in body && typeof body.code === 'string' ? body.code : undefined
+    return new SkillPacksApiError(body.error, response.status, code)
   }
   const errorData = await parseErrorResponse(response)
   return new SkillPacksApiError(errorData.message, response.status)
+}
+
+export function isLoopbackOnlyRefusal(
+  error: unknown
+): error is SkillPacksApiError {
+  return (
+    error instanceof SkillPacksApiError &&
+    error.status === 403 &&
+    error.code === LOOPBACK_ONLY_CODE
+  )
 }
 
 export async function listSkillPacks(): Promise<SkillPack[]> {

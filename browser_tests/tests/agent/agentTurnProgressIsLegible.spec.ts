@@ -30,7 +30,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Open a new tab for the upscale graph')
@@ -71,7 +70,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Run the workflow')
@@ -98,7 +96,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Remember this and prepare another tab')
@@ -147,7 +144,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Plan the upscale pass before you edit')
@@ -184,7 +180,6 @@ test.describe(
       postedMessages
     }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('Set the prompt to a red fox in the snow')
@@ -198,7 +193,6 @@ test.describe(
       await expect(agentPanel.sendButton).toBeVisible()
       await expect(agentPanel.workSummary).toHaveCount(1)
 
-      test.fail()
       await expect(agentPanel.workSummary).toHaveText(
         /Worked for (\d+ seconds|\d+m \d+s)/
       )

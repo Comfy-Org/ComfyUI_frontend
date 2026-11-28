@@ -60,7 +60,7 @@
         </Button>
         <Button
           v-else-if="banner.action === 'contactSales'"
-          variant="secondary"
+          :variant="contactSalesVariant"
           size="lg"
           @click="handleContactSales"
         >
@@ -168,6 +168,9 @@ const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
+const contactSalesVariant = computed(() =>
+  kind.value === 'planEnded' ? 'inverted' : 'secondary'
+)
 // Strictly ENTERPRISE: an unrecognized tier must not borrow Enterprise copy
 // (isUnknownTier's contract) nor lose its Reactivate path.
 const isEnterprisePlan = computed(

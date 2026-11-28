@@ -46,11 +46,13 @@ export type AddCreditsState =
       readonly settings: AutoTopUpActivation
     }
   | { readonly step: 'auto_top_up_failed'; readonly setupUrl?: string }
+  | { readonly step: 'auto_top_up_unconfirmed' }
   | { readonly step: 'landed' }
 
 export type AutoTopUpActivationOutcome =
   | { readonly status: 'on'; readonly settings: AutoTopUpActivation }
   | { readonly status: 'failed' }
+  | { readonly status: 'unconfirmed' }
 
 export type AddCreditsEvent =
   | { readonly type: 'preset_picked'; readonly cents: number }
@@ -115,6 +117,9 @@ function landedState({
 }: EventOf<'payment_landed'>): AddCreditsState {
   if (activation?.status === 'on') {
     return { step: 'auto_top_up_on', settings: activation.settings }
+  }
+  if (activation?.status === 'unconfirmed') {
+    return { step: 'auto_top_up_unconfirmed' }
   }
   if (activation?.status === 'failed') {
     return autoTopUpSetupUrl === undefined

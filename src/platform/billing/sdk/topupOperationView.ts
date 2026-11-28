@@ -11,6 +11,7 @@ import type {
   BillingTelemetryFailure,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
+  TopupBalanceAfter,
   TopupFailure,
   TopupResult
 } from '@comfyorg/account-core/billing'
@@ -184,6 +185,13 @@ export function projectTopupResult(
     case 'error':
       throw topupFailureError(result)
   }
+}
+
+/** A quote's credits, and whether Cloud named a payment configuration for paying it in the page. */
+export interface TopupQuoteFacts {
+  readonly credits: number
+  readonly paymentConfigured: boolean
+  readonly balanceAfter?: TopupBalanceAfter
 }
 
 export type HostedCheckoutSession = Pick<

@@ -5,11 +5,11 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 
 import { confirmUnsavedWorkBeforeSwitch } from './confirmUnsavedWorkBeforeSwitch'
 
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 function unsaved(filename: string, isLoaded = true) {
@@ -42,7 +42,7 @@ describe('confirmUnsavedWorkBeforeSwitch', () => {
     Object.assign(useWorkflowStore(), { modifiedWorkflows: [] })
 
     expect(await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')).toBe(true)
-    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -60,9 +60,8 @@ describe('confirmUnsavedWorkBeforeSwitch', () => {
 
       await confirmUnsavedWorkBeforeSwitch("Studio's Build · R&D")
 
-      expect(useDialogService().confirm).toHaveBeenCalledWith(
+      expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: 'dirtyClose',
           title: 'Save your workflows before switching?',
           message:
             "Switching to Studio's Build · R&D reloads the tab. These workflows have changes that aren't saved yet.",
@@ -74,6 +73,21 @@ describe('confirmUnsavedWorkBeforeSwitch', () => {
       )
     }
   )
+
+  it('names a reload, not a switch, when it asks before a reload', async () => {
+    await confirmUnsavedWorkBeforeSwitch('lora-stack-demo', { reload: true })
+
+    expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Save your workflows before reloading?',
+        message:
+          "Reloading the tab runs it on lora-stack-demo. These workflows have changes that aren't saved yet.",
+        itemList: ['workflows/portrait.json', 'workflows/upscale.json'],
+        denyLabel: 'Reload without saving',
+        confirmLabel: 'Save and reload'
+      })
+    )
+  })
 
   it.for([
     { choice: 'Cancel', answer: null, goesOn: false, saved: [] },
@@ -95,7 +109,7 @@ describe('confirmUnsavedWorkBeforeSwitch', () => {
     goesOn: boolean
     saved: ComfyWorkflow[]
   }[])('on $choice goes on: $goesOn', async ({ answer, goesOn, saved }) => {
-    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+    vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(answer)
 
     expect(await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')).toBe(goesOn)
     expect(savedWorkflows()).toEqual(saved)
@@ -108,10 +122,57 @@ describe('confirmUnsavedWorkBeforeSwitch', () => {
       save: () => Promise.reject(new Error('Disk full'))
     }
   ])('stays put and stops saving when a save $failure', async ({ save }) => {
-    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+    vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(true)
     vi.mocked(useWorkflowService().saveWorkflow).mockImplementationOnce(save)
 
     expect(await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')).toBe(false)
     expect(savedWorkflows()).toEqual([portrait])
+  })
+
+  it('stays put on a second ask while the first is still asking', async () => {
+    let answer: (result: boolean) => void = () => {}
+    vi.mocked(showUnsavedWorkDialog).mockReturnValueOnce(
+      new Promise((resolve) => {
+        answer = resolve
+      })
+    )
+
+    const first = confirmUnsavedWorkBeforeSwitch('Comfy Cloud')
+    const second = confirmUnsavedWorkBeforeSwitch('Comfy Cloud')
+    answer(true)
+
+    expect(await second).toBe(false)
+    expect(await first).toBe(true)
+    expect(showUnsavedWorkDialog).toHaveBeenCalledOnce()
+    expect(savedWorkflows()).toEqual([portrait, upscale])
+  })
+
+  it('stays put on a second ask while the first is still saving', async () => {
+    vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(true)
+    let finishSave: (saved: boolean) => void = () => {}
+    vi.mocked(useWorkflowService().saveWorkflow).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishSave = resolve
+      })
+    )
+
+    const first = confirmUnsavedWorkBeforeSwitch('Comfy Cloud')
+    await vi.waitFor(() => expect(savedWorkflows()).toEqual([portrait]))
+
+    expect(await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')).toBe(false)
+    expect(showUnsavedWorkDialog).toHaveBeenCalledOnce()
+
+    finishSave(true)
+    expect(await first).toBe(true)
+    expect(savedWorkflows()).toEqual([portrait, upscale])
+  })
+
+  it('asks again once the first ask has settled', async () => {
+    vi.mocked(showUnsavedWorkDialog).mockResolvedValue(null)
+
+    await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')
+    await confirmUnsavedWorkBeforeSwitch('Comfy Cloud')
+
+    expect(showUnsavedWorkDialog).toHaveBeenCalledTimes(2)
   })
 })

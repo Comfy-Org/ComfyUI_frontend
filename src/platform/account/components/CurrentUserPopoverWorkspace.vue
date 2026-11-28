@@ -81,6 +81,15 @@
     <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoadingBalance" class="h-5 w-16" />
+      <span
+        v-else-if="isBalanceUnavailable"
+        class="text-base font-semibold text-muted-foreground"
+        data-testid="credits-balance-unavailable"
+        :title="$t('profileMenu.balanceUnavailable')"
+        >—<span class="sr-only">{{
+          $t('profileMenu.balanceUnavailable')
+        }}</span></span
+      >
       <span v-else class="text-base font-semibold text-foreground">{{
         displayedCredits
       }}</span>
@@ -354,9 +363,13 @@ const {
   canAccessSubscriptionFeatures,
   subscription,
   balance,
+  balanceReadFailed,
   isLoading,
   fetchBalance
 } = useBillingContext()
+const isBalanceUnavailable = computed(
+  () => balanceReadFailed.value && !isLoading.value && !balance.value
+)
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()

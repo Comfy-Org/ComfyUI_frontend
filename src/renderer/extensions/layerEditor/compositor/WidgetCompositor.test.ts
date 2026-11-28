@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -49,7 +50,13 @@ const i18n = createI18n({
 })
 
 const nodeId = toNodeId(9)
-const graphNode = { id: nodeId, graph: null } as unknown as LGraphNode
+
+function addCompositorNode(): LGraphNode {
+  const node = new LGraphNode('Compositor')
+  node.id = nodeId
+  app.rootGraph.add(node)
+  return node
+}
 
 function renderWidget() {
   return render(WidgetCompositor, {
@@ -62,10 +69,8 @@ function renderWidget() {
 
 describe('WidgetCompositor', () => {
   beforeEach(() => {
-    const graph = app.canvas.graph
-    if (!graph) throw new Error('Expected the app mock to provide a graph')
-    vi.spyOn(graph, 'getNodeById').mockReturnValue(null)
-    clearCompositorLayers(graphNode)
+    useCanvasStore().currentGraph = app.rootGraph
+    clearCompositorLayers({ id: nodeId, graph: app.rootGraph })
   })
 
   it('renders the empty state when the node is not in the graph (search preview)', () => {
@@ -80,10 +85,7 @@ describe('WidgetCompositor', () => {
   })
 
   it('enables opening once the graph node exists with cached layers', () => {
-    const graph = app.canvas.graph
-    if (!graph) throw new Error('Expected the app mock to provide a graph')
-    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
-    setCompositorLayers(graphNode, [
+    setCompositorLayers(addCompositorNode(), [
       { filename: 'a.png', subfolder: '', type: 'temp' }
     ])
 
@@ -94,15 +96,13 @@ describe('WidgetCompositor', () => {
   })
 
   it('opens the editor for the node a reloaded graph holds', async () => {
-    const graph = app.canvas.graph
-    if (!graph) throw new Error('Expected the app mock to provide a graph')
-    vi.mocked(graph.getNodeById).mockReturnValue(graphNode)
-    setCompositorLayers(graphNode, [
+    const staleNode = addCompositorNode()
+    setCompositorLayers(staleNode, [
       { filename: 'a.png', subfolder: '', type: 'temp' }
     ])
     renderWidget()
-    const reloadedNode = structuredClone(graphNode)
-    vi.mocked(graph.getNodeById).mockReturnValue(reloadedNode)
+    app.rootGraph.remove(staleNode)
+    const reloadedNode = addCompositorNode()
 
     app.rootGraph.events.dispatch('configured')
     await userEvent.click(screen.getByTestId('compositor-open-button'))

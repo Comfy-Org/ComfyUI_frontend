@@ -4,6 +4,9 @@ import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 interface ViewportInstance {
   ctorArgs: unknown[]
@@ -11,6 +14,7 @@ interface ViewportInstance {
   setGizmosVisible: ReturnType<typeof vi.fn>
   setTransformGizmoMode: ReturnType<typeof vi.fn>
   setLookThrough: ReturnType<typeof vi.fn>
+  showSubjectModel: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
   viewport: {
     updateStatusMouseOnScene: ReturnType<typeof vi.fn>
@@ -28,6 +32,7 @@ const { ViewportMock, instances } = vi.hoisted(() => {
       setGizmosVisible: vi.fn(),
       setTransformGizmoMode: vi.fn(),
       setLookThrough: vi.fn(),
+      showSubjectModel: vi.fn(async () => {}),
       remove: vi.fn(),
       viewport: {
         updateStatusMouseOnScene: vi.fn(),
@@ -75,7 +80,7 @@ function widget(node: FakeNode, name: string): FakeWidget {
 }
 
 function nodeRef(node: FakeNode) {
-  return ref(node) as unknown as Ref<LGraphNode | null>
+  return ref(node) as unknown as Ref<LGraphNode | undefined>
 }
 
 beforeEach(() => {
@@ -103,7 +108,7 @@ describe('useCameraInfo', () => {
   })
 
   it('does nothing when the node is null', () => {
-    const camera = useCameraInfo(ref(null))
+    const camera = useCameraInfo(ref())
     camera.initialize(document.createElement('div'))
 
     expect(ViewportMock).not.toHaveBeenCalled()
@@ -233,5 +238,80 @@ describe('useCameraInfo', () => {
 
     expect(instances).toHaveLength(2)
     expect(instances[1].applyState).toHaveBeenCalled()
+  })
+
+  it('shows the model file in the viewport', async () => {
+    const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
+    camera.initialize(document.createElement('div'))
+
+    await camera.showSubjectModel('3d/frog.obj [output]')
+
+    expect(instances[0].showSubjectModel).toHaveBeenCalledWith(
+      expect.anything(),
+      { rootFolder: 'output', subfolder: '3d', filename: 'frog.obj' }
+    )
+  })
+
+  it('clears the viewport model when there is no model file', async () => {
+    const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
+    camera.initialize(document.createElement('div'))
+
+    await camera.showSubjectModel(undefined)
+
+    expect(instances[0].showSubjectModel).toHaveBeenCalledWith(
+      expect.anything(),
+      null
+    )
+  })
+
+  it('reports a failed model load once and warns the user', async () => {
+    const cause = new Error('Failed to fetch model: 500')
+    const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
+    camera.initialize(document.createElement('div'))
+    instances[0].showSubjectModel.mockResolvedValue({ status: 'failed', cause })
+
+    await camera.showSubjectModel('3d/frog.obj')
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(cause, {
+      errorType: 'error_loading_camera_info_model',
+      surface: 'graph'
+    })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'warning', title: 'Error loading model' })
+    ])
+  })
+
+  it('warns without a report when the model is too large to preview', async () => {
+    const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
+    camera.initialize(document.createElement('div'))
+    instances[0].showSubjectModel.mockResolvedValue({ status: 'too-large' })
+
+    await camera.showSubjectModel('3d/frog.obj')
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: expect.stringContaining('too large to preview')
+      })
+    ])
+  })
+
+  it.for([
+    'shown',
+    'cleared',
+    'cancelled',
+    'unsupported',
+    'empty',
+    'not-found'
+  ])('stays quiet when the outcome is %s', async (status) => {
+    const camera = useCameraInfo(nodeRef(makeNode({ mode: 'orbit' })))
+    camera.initialize(document.createElement('div'))
+    instances[0].showSubjectModel.mockResolvedValue({ status })
+
+    await camera.showSubjectModel('3d/frog.obj')
+
+    expect(reportError).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 })

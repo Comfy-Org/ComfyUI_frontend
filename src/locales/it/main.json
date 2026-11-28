@@ -58,6 +58,11 @@
       "summary": "Sotto {threshold} crediti, ricarica fino a {target}.",
       "title": "La ricarica automatica è attiva"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "Apri Fatturazione per verificare che la ricarica automatica sia attiva.",
+      "title": "Crediti aggiunti"
+    },
+    "balanceAfter": "Dopo questa ricarica: {credits} crediti.",
     "blocked": {
       "action": "Apri il checkout",
       "body": "Il browser ha bloccato la nuova scheda. Apri il checkout per completare il pagamento.",
@@ -80,7 +85,7 @@
       "title": "Il tuo pagamento di {amount} richiede una verifica",
       "titleNoAmount": "Il tuo pagamento richiede una verifica"
     },
-    "negativeBalance": "Il tuo saldo è di −{credits} crediti. Questa ricarica copre prima questo importo.",
+    "negativeBalance": "Il tuo saldo è di −{credits} crediti.",
     "notAllowed": {
       "body": "Controlla le impostazioni di fatturazione per scoprirne il motivo.",
       "title": "Al momento non puoi aggiungere crediti"
@@ -105,6 +110,7 @@
     "paidAtCheckout": "{amount}, pagati al checkout",
     "planLine": {
       "ended": "L'acquisto di crediti non riattiva il tuo piano Cloud. Rinnova l'abbonamento per eseguire workflow sul Cloud.",
+      "ended_sales_managed": "L'acquisto di crediti non riattiva il tuo piano Cloud. Contatta il reparto vendite per rinnovarlo.",
       "free_runs": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per continuare a eseguire workflow una volta esaurite le esecuzioni gratuite.",
       "no_plan": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per eseguire workflow sul Cloud."
     },
@@ -122,6 +128,7 @@
       "bodyNoWait": "Riprova più tardi oppure {support}.",
       "title": "Per ora hai raggiunto il limite di ricarica"
     },
+    "stillNegativeAfter": "Ancora negativo dopo questa ricarica: −{credits} crediti.",
     "title": "Aggiungi crediti",
     "wait": {
       "day": "un giorno",
@@ -135,7 +142,10 @@
   "agent": {
     "addFromAssets": "Trascina una risorsa dal pannello delle risorse",
     "addNodesFromGraph": "Menziona nodi dal grafo",
+    "addSkill": "Aggiungi skill",
     "addToPrompt": "Aggiungi al prompt",
+    "agentCostNotice": "Comfy Agent utilizza i crediti del tuo spazio di lavoro. I costi variano in base al modello e alla richiesta.",
+    "agentCostNoticeLabel": "Avviso sui costi dell'agente",
     "askUnavailable": "L'agente è in attesa di un passaggio che questo pannello non può mostrare.",
     "askUser": {
       "answerRejected": "L'agente non ha potuto accettare quella risposta. Modifica le tue scelte o interrompi il turno.",
@@ -155,10 +165,12 @@
       "unconfirmed": "Non siamo riusciti a confermare che la tua risposta abbia raggiunto l'agente."
     },
     "assetFetchFailed": "Impossibile recuperare {name}",
+    "assetLoadFailed": "Impossibile caricare {name}",
     "assetNotAttachable": "È possibile allegare immagini, video, audio, modelli 3D e file di testo",
     "attach": "Allega un file",
     "attachFiles": "Carica immagini o file",
     "attachmentCountExceeded": "A un messaggio possono essere allegati solo {count} file",
+    "attachmentEmpty": "{name} è vuoto e non è stato possibile allegarlo",
     "attachmentInvalidVideo": "{name} non è un file video valido. Rimuovilo e prova con un altro file.",
     "attachmentNamesOverflow": "{names} e altri {count}",
     "attachmentTooLarge": "{name} è più grande di {limit}",
@@ -166,14 +178,14 @@
     "attachmentUnsupportedType": "{name} non è un tipo di file accettato dall'agente. Rimuovilo e prova con un altro file.",
     "attachmentUploadFailed": "Non è stato possibile caricare {name}",
     "attachmentsAlreadyAdded": "{name} è già nel vassoio delle risorse | Ignorate {count} risorse duplicate",
+    "backToChat": "Torna alla chat",
     "backToPreviousChat": "Torna alla chat precedente",
+    "backToSkills": "Torna alle skill",
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Questo canvas è vuoto: non è stato aggiunto nulla. Non c'è ancora nulla da eseguire, salvare o esportare.",
     "canvasNotReadyForSend": "Il canvas di questa scheda non è ancora pronto, quindi il messaggio non è stato inviato. Riprova tra un momento.",
-    "changeWorkflowForChat": "Cambia il flusso di lavoro che l'agente può modificare",
     "chatOptions": "Opzioni chat",
     "chooseWorkflow": "Scegli un flusso di lavoro",
-    "chooseWorkflowForChat": "Scegli un flusso di lavoro per questa chat",
     "close": "Chiudi",
     "coachBody": "Descrivi le tue idee, chiedigli di creare ed eseguire workflow. Può vedere la tua area di lavoro e i file.",
     "coachHistoryBody": "Le chat precedenti sono salvate qui. Aprine una per rivederla o continua a lavorare con l'agente.",
@@ -181,7 +193,7 @@
     "coachHoldNotice": "Il tuo messaggio verrà inviato quando terminerai o salterai il tour.",
     "coachProgress": "{current} di {total}",
     "coachTitle": "Conosci il tuo Comfy Agent",
-    "coachWorkflowBody": "Il nome di quel workflow è riportato nella parte superiore della casella del messaggio. Fai clic sul nome per selezionarne un altro. Facendo clic su una scheda del workflow puoi aprire la relativa chat più recente, a meno che la casella del messaggio non contenga una bozza.",
+    "coachWorkflowBody": "Ogni scheda del workflow ha le proprie chat. Passando da una scheda all'altra si passa alla chat di quella scheda.",
     "coachWorkflowTitle": "L'agente modifica un workflow alla volta",
     "consent": {
       "accept": "Inizia a usare Comfy Agent",
@@ -208,7 +220,6 @@
     "copyUnavailable": "In questa versione è possibile copiare solo la conversazione corrente",
     "creditTransitionNotice": "Hai usato i tuoi crediti gratuiti dell'agente. Le ulteriori attività dell'agente usano i crediti del tuo workspace, che potrebbero includere crediti a pagamento.",
     "creditsUsed": "L'agente ha usato {credits} credito | L'agente ha usato {credits} crediti",
-    "currentTab": "Scheda corrente",
     "delete": "Elimina",
     "deleteApproval": {
       "answered": "Risposta inviata",
@@ -223,6 +234,8 @@
       "retired": "Questa richiesta non è più aperta qui.",
       "unconfirmed": "Non siamo riusciti a confermare la tua risposta. Controlla il canvas prima di riprovare."
     },
+    "deleteSkillMessage": "Vuoi davvero eliminare \"{name}\"? Questa azione non può essere annullata.",
+    "deleteSkillTitle": "Elimina skill",
     "diagnosticReport": {
       "clipboardFailed": "Accesso agli appunti non riuscito. Seleziona e copia il report qui sotto oppure riprova.",
       "collectionFailed": "Impossibile raccogliere il report. Riprova oppure disattiva le fonti opzionali e riprova.",
@@ -230,6 +243,10 @@
       "manualCopy": "Report da copiare",
       "retry": "Riprova a copiare il report"
     },
+    "discardDraft": "Elimina bozza",
+    "discardDraftChanges": "Elimina modifiche alla bozza",
+    "discardDraftMessage": "Il testo digitato verrà eliminato da questo dispositivo.",
+    "discardDraftTitle": "Eliminare la bozza?",
     "dismiss": "Ignora",
     "downloadAssets": "Scarica risorse",
     "dragAndDropAssets": "Trascina qui le risorse",
@@ -250,6 +267,7 @@
       "withReasonCode": "{notice} Motivo: {code}",
       "withReasonTarget": "{notice} Rifiutato: {target}"
     },
+    "editSkill": "Modifica skill",
     "editWhileWorking": "Puoi continuare a modificare mentre lavora",
     "entryButton": "Agente",
     "entryFailed": "Agente non disponibile",
@@ -259,6 +277,7 @@
     "errorContext": {
       "allLabel": "Tutti i problemi",
       "draftBlocked": "Prima invia o cancella il messaggio corrente, quindi chiedi all'agente informazioni su questi errori.",
+      "noOriginWorkflow": "Questi errori non provengono dal workflow aperto, quindi non è stato allegato nulla.",
       "problemCount": "{count} problema | {count} problemi",
       "remove": "Rimuovi il problema allegato",
       "workflowChanged": "Il workflow con questi errori non è più aperto, quindi non è stato allegato nulla."
@@ -270,10 +289,10 @@
       "restartHint": "La modifica avrà effetto dopo il riavvio di ComfyUI. Ricarica questa pagina dopo il riavvio."
     },
     "feedbackCaption": "Condividi feedback",
+    "firstChatFreeNotice": "Prova gratuitamente la tua prima chat!",
     "focusNode": "Mostra sul canvas",
     "focusNodeLabel": "Mostra {node} sul canvas",
     "followedChatOpenFailed": "Impossibile aprire la chat per {workflowName}.",
-    "freeUseNotice": "Prova gratuitamente la tua prima chat!",
     "freeUseNoticeLabel": "Avviso di utilizzo gratuito",
     "friend": "amico",
     "gotIt": "Ho capito",
@@ -290,7 +309,9 @@
     "historyYesterday": "Ieri",
     "latest": "Più recente",
     "loadFailed": "Impossibile caricare il pannello dell'agente.",
+    "loadingWorkflowChats": "Caricamento delle chat per {workflowName}",
     "malformedEvent": "L'agente ha inviato un evento che questo pannello non ha potuto leggere",
+    "manageSkills": "Gestisci le skill",
     "maximize": "Massimizza pannello",
     "mention": "Menziona un nodo",
     "minimize": "Riduci pannello",
@@ -300,6 +321,8 @@
     "noNodesToMention": "Nessun nodo in questo flusso di lavoro",
     "noNodesToReference": "Nessun nodo disponibile come riferimento",
     "noSkillsFound": "Nessuna skill trovata",
+    "noSkillsHint": "Aggiungine una per insegnare all'agente una preferenza che continui a ripetere.",
+    "noSkillsYet": "Ancora nessuna skill",
     "noWorkflowsToReference": "Nessun workflow disponibile come riferimento",
     "nodeSelection": {
       "bannerSubtitle": "Seleziona uno o più nodi da aggiungere come riferimento",
@@ -314,7 +337,6 @@
     "openWorkflowTab": "Apri {name}",
     "openingChat": "Apertura della chat…",
     "openingWorkflowChat": "Apertura della chat per {workflowName}…",
-    "otherOpenWorkflows": "Altri workflow aperti",
     "paused": {
       "recheck": "Riproverà automaticamente tra circa {seconds} secondo. | Riproverà automaticamente tra circa {seconds} secondi.",
       "resume": "Riprendi",
@@ -337,6 +359,44 @@
     "placeholder": "Descrivi cosa vuoi creare",
     "placeholderWithoutSkills": "Descrivi cosa vuoi creare",
     "previewAsset": "Anteprima di {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "Dì a Comfy Agent cosa vuoi creare.",
+        "title": "Hai qualcosa in mente?"
+      },
+      "firstOpen": {
+        "description": "Non sai da dove iniziare? Invia la domanda qui sotto oppure scrivine una tua.",
+        "prompt": "In cosa puoi aiutarmi?",
+        "title": "Un piccolo aiuto per iniziare!"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent ti mostra cosa intende fare prima di modificare qualsiasi elemento del tuo workflow.",
+        "prompt": "Aiutami a migliorare questo workflow",
+        "title": "Fai una domanda o descrivi una modifica."
+      }
+    },
+    "queue": {
+      "cancelEdit": "Annulla",
+      "collapse": "Nascondi i messaggi in coda",
+      "delete": "Elimina il messaggio in coda",
+      "edit": "Modifica il messaggio in coda",
+      "expand": "Mostra i messaggi in coda",
+      "queued": "{count} in coda"
+    },
     "recoveredTurnFailed": "L'agente non è riuscito a completare questa risposta.",
     "reference": "Riferimento",
     "remove": "Rimuovi",
@@ -352,6 +412,7 @@
       "answerSuperseded": "La domanda ha già ricevuto risposta altrove, quindi è stata usata quella risposta anziché la tua.",
       "answerUncertain": "Impossibile confermare che la tua risposta abbia raggiunto l'agente. Potrebbe comunque essere stata applicata: ricarica la pagina per vedere a che punto è la situazione.",
       "cancel": "Annulla",
+      "estimateAtLeast": "Costo stimato: almeno {credits} crediti",
       "lead": "Comfy Agent vuole eseguire il workflow:",
       "leadBound": "Comfy Agent vuole eseguire questo workflow.",
       "question": "Approvi?",
@@ -376,8 +437,6 @@
     "runPermissions": "Autorizzazioni di esecuzione",
     "runPermissionsDescription": "Scegli quando l'agente necessita del tuo consenso",
     "savingWorkflow": "Salvataggio del workflow",
-    "searchWorkflows": "Cerca flussi di lavoro",
-    "selectWorkflowForAgent": "Seleziona un workflow su cui l'agente possa lavorare",
     "selectWorkflowForNodes": "Seleziona prima un workflow",
     "selectWorkflowToGenerate": "Seleziona un flusso di lavoro in cui generare",
     "send": "Invia",
@@ -386,17 +445,42 @@
     "sendBlockedByUnsupportedType": "{name} non è un tipo di file accettato dall'agente. Rimuovilo per inviare.",
     "sendBusy": "È già in corso l'invio di un messaggio",
     "sendFailed": "Invio del messaggio non riuscito",
+    "sendFailedDisownedWorkflow": "Questo workflow non è più disponibile.",
+    "sendFailedNetwork": "Il messaggio non ha raggiunto il server. Controlla la connessione e riprova.",
+    "sendFailedOffscreen": "Impossibile inviare il messaggio",
+    "sendFailedOffscreenShow": "Mostra",
+    "sendFailedTurnInProgress": "In questa chat era ancora in corso una risposta.",
+    "sendFailedUncertain": "Impossibile confermare se il server ha ricevuto il messaggio. Controlla la chat prima di inviarlo di nuovo.",
     "sendTurnInProgress": "Questa chat ha ancora una risposta in corso. Attendi che termini oppure interrompila, quindi invia di nuovo.",
+    "sendingMessage": "Invio in corso…",
     "showChatHistory": "Mostra la cronologia chat",
     "showLess": "Mostra meno",
     "showMore": "Mostra altro",
     "showTarget": "Mostra destinazione",
     "showTargetWorkflow": "Mostra workflow di destinazione: {workflowName}",
+    "skillDraftChanges": "Modifiche alla bozza",
+    "skillDraftNote": "Bozza · salvata solo su questo dispositivo",
+    "skillDrafts": "Bozze",
+    "skillInstructions": "Istruzioni",
+    "skillInstructionsPlaceholder": "Le istruzioni che l'agente segue una volta caricata questa skill.",
+    "skillLimitHint": "Rimuovi una skill per fare spazio a questa.",
+    "skillLimitTitle": "Hai raggiunto il limite",
+    "skillName": "Nome",
+    "skillNameHint": "Lettere, cifre, '.', '_' e '-'. Questo è il nome con cui l'agente carica la skill.",
+    "skillNameLocked": "Il nome non può essere modificato. Per rinominarla, elimina questa skill e aggiungila di nuovo.",
+    "skillNamePlaceholder": "ad es., mie-impostazioni-predefinite-rendering",
     "skillNotAvailable": "Non disponibile",
+    "skillOptions": "Opzioni per {name}",
+    "skillSize": "{bytes} byte",
+    "skillWhenToUse": "Quando usare",
+    "skillWhenToUseHint": "Una riga che indica quando caricare questa skill. Viene inclusa in ogni prompt, che la skill venga usata o meno, quindi mantienila breve.",
+    "skillWhenToUsePlaceholder": "Caricami quando l'utente chiede dell'upscaling",
     "skills": "Skill",
     "skillsLoadError": "Impossibile caricare le skill. Riprova.",
     "skillsLoading": "Caricamento delle skill…",
+    "skillsUnavailable": "Le skill non sono disponibili al momento.",
     "skip": "Salta",
+    "startNewChat": "Avvia una nuova chat",
     "stop": "Interrompi",
     "stopShortcut": "Esc",
     "suggestedPrompts": {
@@ -424,17 +508,18 @@
         ]
       }
     },
-    "switchWorkflow": "Cambia flusso di lavoro",
     "switchWorkflowForNodes": "Passa a {workflowName} per aggiungere nodi.",
     "takeTour": "Fai il tour",
-    "targetFollowsVisibleWorkflow": "Il workflow di destinazione segue la scheda visibile finché non scegli una destinazione, aggiungi riferimenti a nodi o invii un messaggio.",
-    "targetForThisChat": "Destinazione dell'agente per questa chat",
     "targetNavigationUnavailable": "Questa destinazione del workflow non è più disponibile.",
     "targetWorkflowOpenFailed": "Non è stato possibile aprire il workflow di destinazione.",
     "targetWorkflowUnavailable": "Il workflow di destinazione non è più disponibile.",
     "thinking": "Elaborazione in corso...",
+    "thinkingShortened": "Ragionamento abbreviato: il resto era troppo lungo da salvare.",
     "title": "Comfy Agent",
+    "toolDownloadedModel": "{file} scaricato",
+    "toolDownloadingModel": "Download di {file}",
     "toolFailed": "{tool} non riuscito",
+    "toolFailedDownload": "Impossibile scaricare {file}",
     "toolFailedSkill": "Impossibile caricare {skill}",
     "toolForgettingPreference": "Rimozione di una preferenza",
     "toolForgotPreference": "Ha dimenticato una preferenza",
@@ -456,6 +541,7 @@
     "unavailableWorkflowReference": "{name} (non disponibile)",
     "unsavedWorkflow": "Non salvato",
     "untitledChat": "Senza titolo",
+    "untitledSkill": "Skill senza titolo",
     "updatingGraph": "L'agente sta aggiornando il grafo",
     "uploading": "Caricamento in corso",
     "uploadingAttachments": "Caricamento di {count} allegato | Caricamento di {count} allegati",
@@ -465,7 +551,7 @@
     "workedForMinutes": "Ha lavorato per {minutes}m {seconds}s",
     "workedForSeconds": "Ha lavorato per {seconds} secondi",
     "workedNotConfirmedOnCanvas": "Modifiche non confermate nell'area di lavoro",
-    "workflowEditNotice": "L'agente può ora modificare {workflow}. Funziona su 1 workflow alla volta e puoi cambiare workflow durante la chat.",
+    "workflowEditNotice": "L'agente ora può modificare {workflow}. Funziona su 1 workflow alla volta.",
     "workflowReferenceUnavailableReason": "Questo workflow di riferimento non è più disponibile oppure non hai accesso a esso.",
     "workflowSyncFailedDetail": "Questo workflow è stato creato con una versione del documento incompatibile. La tua tela non è stata modificata.",
     "workflowSyncFailedDetailCatalogMismatch": "Un nodo in questo workflow è cambiato da quando l'agente lo ha visto l'ultima volta. L'area di lavoro non è stata modificata. Il tuo prossimo messaggio invierà la tua area di lavoro affinché l'agente possa ricostruire la propria copia del workflow.",
@@ -567,10 +653,12 @@
     "fileName": "Nome file",
     "fileSize": "Dimensione file",
     "fileUpload": {
+      "accessDenied": "La sessione corrente non può caricare modelli in questo workspace.",
       "cancelled": "Caricamento annullato.",
       "choose": "Scegli un file",
       "drop": "Oppure trascina qui un file .safetensors",
       "failed": "Caricamento non riuscito. Riprova.",
+      "featureDisabled": "Il caricamento dei modelli non è attualmente disponibile.",
       "notSafetensors": "È possibile caricare solo file .safetensors.",
       "notStopped": "Non è stato possibile confermare che il caricamento precedente fosse stato interrotto, quindi il file non è stato inviato di nuovo.",
       "planUnavailable": "Non è stato possibile verificare il tuo piano. Riprova.",
@@ -644,6 +732,7 @@
     },
     "modelName": "Nome modello",
     "modelNamePlaceholder": "Inserisci un nome per questo modello",
+    "modelTypeNotAddable": "Questo tipo di modello non può essere aggiunto al canvas dalla Libreria modelli. Aggiungi un nodo che lo carichi, quindi seleziona il modello lì.",
     "modelTypeSelectorLabel": "Che tipo di modello è?",
     "modelTypeSelectorPlaceholder": "Seleziona tipo di modello",
     "modelUploaded": "Modello importato con successo.",
@@ -697,7 +786,8 @@
     "uploadModelHelpVideo": "Video di aiuto per l'importazione del modello",
     "uploadModelHowDoIFindThis": "Come trovo questo?",
     "uploadSuccess": "Modello importato con successo!",
-    "uploadingModel": "Importazione modello in corso..."
+    "uploadingModel": "Importazione modello in corso...",
+    "useDisabledNoProvider": "Questo tipo di modello non è ancora supportato"
   },
   "auth": {
     "accountChanged": {
@@ -1417,7 +1507,8 @@
       "apiNodeUsage": "Utilizzo nodo partner",
       "apiUsage": "Utilizzo API",
       "creditAdded": "Crediti aggiunti",
-      "gpuUsage": "Utilizzo GPU"
+      "gpuUsage": "Utilizzo GPU",
+      "routerUsage": "Utilizzo del Router"
     },
     "faqs": "FAQ",
     "formerMember": "{name} (ex membro)",
@@ -1434,6 +1525,15 @@
     "member": "Membro",
     "messageSupport": "Contatta il supporto",
     "model": "Modello",
+    "personalWallet": {
+      "addCredits": "Aggiungi crediti personali",
+      "apiKeyDescription": "Questa chiave viene fatturata al tuo account personale. Crea una chiave API del team o aggiungi crediti personali.",
+      "createTeamApiKey": "Crea una chiave API del team",
+      "sessionDescription": "Questa sessione viene fatturata al tuo account personale. Per fatturare invece a un team, passa al suo spazio di lavoro.",
+      "sessionNoTeamsDescription": "Questa sessione viene fatturata al tuo account personale. Aggiungi crediti personali per continuare.",
+      "switchTo": "Passa a {workspaceName}",
+      "title": "Il tuo account personale ha esaurito i crediti"
+    },
     "purchaseCredits": "Acquista crediti",
     "refreshes": "Si aggiorna il {date}",
     "time": "Ora",
@@ -1446,6 +1546,7 @@
         "setUp": "Configura"
       },
       "awaitingBankApprovalBody": "La tua banca deve approvare questo pagamento prima che i crediti vengano aggiunti. Puoi completarlo dall'app della tua banca o dal link di pagamento per questo acquisto. Non puoi avviare una nuova ricarica finché questa non viene completata o scade.",
+      "balanceAfterTopup": "Dopo questa ricarica: {credits} credito. | Dopo questa ricarica: {credits} crediti.",
       "buy": "Acquista",
       "buyCredits": "Continua al pagamento",
       "buyNow": "Acquista ora",
@@ -1476,7 +1577,7 @@
       "minRequired": "Minimo {credits} crediti",
       "minimumPurchase": "Minimo ${amount} ({credits} crediti)",
       "needMore": "Hai bisogno di più?",
-      "negativeBalanceNotice": "Il tuo saldo è di −{credits} credito. Questa ricarica lo copre prima. | Il tuo saldo è di −{credits} crediti. Questa ricarica lo copre prima.",
+      "negativeBalanceNotice": "Il tuo saldo è di −{credits} credito. | Il tuo saldo è di −{credits} crediti.",
       "noPaymentMethodCheckoutHint": "Questo spazio di lavoro non ha una carta salvata per ricariche con un clic. Paga invece nella pagina di checkout oppure imposta una carta predefinita affinché le ricariche future vengano addebitate direttamente su di essa.",
       "openCheckout": "Apri il checkout",
       "openPaymentPage": "Apri la pagina di pagamento",
@@ -1485,6 +1586,7 @@
       "paymentProcessingFlyout": "Pagamento in elaborazione. Non devi pagare di nuovo.",
       "paymentProcessingTitle": "Un pagamento di {amount} è ancora in elaborazione",
       "paymentProcessingTitleNoAmount": "Un pagamento è ancora in elaborazione",
+      "planRequiredContactSales": "L'acquisto di crediti non riattiva il tuo piano Cloud. Contatta il reparto vendite per rinnovarlo.",
       "planRequiredFreeRuns": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per continuare a eseguire i workflow una volta esaurite le esecuzioni gratuite.",
       "planRequiredResubscribe": "L'acquisto di crediti non riattiva il tuo piano Cloud. Riabbonati per eseguire i workflow su Cloud.",
       "planRequiredSubscribe": "L'acquisto di crediti non avvia un piano Cloud. Abbonati per eseguire i workflow su Cloud.",
@@ -1498,6 +1600,7 @@
       "setDefaultCard": "Imposta una carta predefinita",
       "setDefaultCardError": "Impossibile aprire le impostazioni della carta",
       "startOver": "Ricomincia",
+      "stillNegativeAfterTopup": "Ancora negativo dopo questa ricarica: −{credits} credito. | Ancora negativo dopo questa ricarica: −{credits} crediti.",
       "templateNote": "*Generato con il template Wan 2.2 Immagine-a-Video",
       "topUp": "Ricarica",
       "unknownError": "Si è verificato un errore sconosciuto",
@@ -1662,21 +1765,21 @@
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
     "compatibleEnvironments": "Ambienti compatibili",
-    "createCustomDeployment": "Crea una distribuzione personalizzata",
+    "createCustomDeployment": "Crea una build personalizzata",
     "currentTooltip": "In esecuzione su {deployment}",
     "customDeployment": {
-      "body": "Un deployment personalizzato aggiunge i nodi e i modelli personalizzati che Comfy Cloud non offre. Lo configuri su Platform e viene visualizzato in Esegui su per il tuo spazio di lavoro.",
+      "body": "Una build personalizzata aggiunge i nodi personalizzati e i modelli che Comfy Cloud non dispone. La configuri su Platform e viene visualizzata in \"Esegui su\" per il tuo spazio di lavoro.",
       "createOnPlatform": "Crea su Platform",
       "pointApi": "Richiamalo dal tuo prodotto come API con scalabilità automatica",
       "pointGpu": "Lavora in ComfyUI sulla GPU che scegli",
       "pointNodes": "Usa nodi e modelli personalizzati non disponibili su Comfy Cloud",
-      "title": "Crea un deployment personalizzato"
+      "title": "Crea una build personalizzata"
     },
     "defaultDeleted": "Eliminata",
     "defaultGone": "L'impostazione predefinita dell'area di lavoro è stata eliminata, quindi i membri iniziano su Comfy Cloud.",
     "defaultGoneOwner": "L'impostazione predefinita dell'area di lavoro è stata eliminata, quindi i membri iniziano su Comfy Cloud. Scegline una nuova in Predefinita dell'area di lavoro.",
     "deployCustomNodes": {
-      "body": "Crea un deployment personalizzato che esegue i tuoi nodi e modelli personalizzati su Comfy Cloud e viene visualizzato in Esegui su per il tuo spazio di lavoro.",
+      "body": "Crea una build personalizzata che esegue i tuoi nodi personalizzati e modelli su Comfy Cloud e viene visualizzata in \"Esegui su\" per il tuo spazio di lavoro.",
       "pointNodes": "Distribuisci i pacchetti di nodi personalizzati o privati richiesti dai tuoi workflow",
       "title": "Distribuisci nodi personalizzati su Comfy Cloud"
     },
@@ -1689,18 +1792,20 @@
     "incompatibleEnvironments": "Ambienti incompatibili",
     "labelWithDetail": "{label} · {detail}",
     "landed": "In esecuzione su {deployment}",
+    "later": "Più tardi",
     "linkRefused": "Impossibile aprire questa distribuzione",
     "linkTimedOut": "L'apertura di questa distribuzione ha richiesto troppo tempo. Riprova il link.",
     "linkWorkspaceRefused": "Impossibile passare a quell'area di lavoro. Sei ancora in {workspaceName}.",
     "lookupUnavailable": "Impossibile verificare su quale distribuzione è in esecuzione questo editor.",
     "lookupUnavailableDetail": "I modelli mostrati sono quelli di Comfy Cloud. Ricarica per riprovare.",
-    "manageDeployments": "Gestisci i deployment",
+    "manageBuilds": "Gestisci build",
     "manageDeploymentsTooltip": "Gestisci le tue build e i relativi deployment sulla Developer Platform.",
     "membersStartOn": "I membri senza una propria selezione iniziano su",
     "missingNodes": "Nodo mancante {count} | Nodi mancanti {count}",
     "missingNodesAfterReason": "Non può eseguire questo workflow. Mancano {nodes}.",
     "missingNodesNamed": "{deployment} non può eseguire questo workflow. Mancano {nodes}.",
     "namedDeployment": "{name}",
+    "newDeploymentName": "Nuovo deployment",
     "noDeployments": "Questa area di lavoro non ha ancora distribuzioni.",
     "notChecked": "Non verificato",
     "notCheckedAfterReason": "Non è stato possibile verificare se può eseguire questo workflow.",
@@ -1718,9 +1823,19 @@
       "stopped": "{deployment} è arrestato. Avvialo per eseguire job su di esso."
     },
     "releaseChanged": "Questa distribuzione ora esegue una Release diversa. Ricarica per ottenere i relativi nodi.",
+    "releaseChangedRun": "{deployment} ora esegue la v{version}. Ricarica per eseguirlo su questa versione.",
+    "releaseChangedRunNoVersion": "{deployment} ora esegue una versione diversa. Ricarica per eseguirlo su questa versione.",
+    "releaseChangedRunUnknown": "Le esecuzioni ora vengono indirizzate a una versione diversa. Ricarica per eseguirle su questa versione.",
+    "releaseChangedRunUnknownTarget": "la nuova versione",
     "reload": "Ricarica",
     "retry": "Riprova",
     "retryLabel": "Riprova ad avviare {deployment}",
+    "runBlocked": {
+      "failed": "Questa distribuzione non è riuscita. Fai clic per cambiarla.",
+      "notReady": "Questa distribuzione non è pronta. Fai clic per cambiarla.",
+      "starting": "Questa distribuzione è in avvio. Fai clic per cambiarla.",
+      "stopped": "Questa distribuzione è arrestata. Fai clic per cambiarla."
+    },
     "runOn": "Esegui su",
     "runningOn": "In esecuzione su",
     "runsThisWorkflow": "Esegue questo workflow",
@@ -1735,6 +1850,7 @@
     "startLabel": "Avvia {deployment}",
     "startOnPlatformLabel": "Avvia {deployment} sulla Developer Platform",
     "status": {
+      "building": "In compilazione",
       "failed": "Non riuscito",
       "notReady": "Non pronto",
       "provisioning": "Avvio in corso",
@@ -1753,32 +1869,48 @@
     "unnamedDeployment": "Deployment {id}",
     "unsaved": {
       "message": "Passare a {deployment} ricarica la scheda. Questi workflow contengono modifiche non ancora salvate.",
+      "reloadMessage": "Ricaricando la scheda, verrà eseguita su {deployment}. Questi workflow contengono modifiche non ancora salvate.",
+      "reloadTitle": "Salvare i workflow prima di ricaricare?",
+      "reloadWithoutSaving": "Ricarica senza salvare",
+      "saveAndReload": "Salva e ricarica",
       "saveAndSwitch": "Salva e cambia",
       "switchWithoutSaving": "Cambia senza salvare",
       "tabsReturn": "Le schede aperte torneranno dopo il ricaricamento in entrambi i casi.",
       "title": "Salvare i workflow prima di cambiare?"
     },
     "version": "v{version}",
+    "versionChanged": "{deployment} ora esegue la v{version}. Ricarica per usare i suoi nodi.",
+    "versionChangedNoVersion": "{deployment} ora esegue una versione diversa. Ricarica per usare i suoi nodi.",
     "workflowNeedsDeployment": {
-      "andMore": "{names} e altri {count}",
+      "createBody": "Una Build personalizzata aggiunge ciò che manca a Comfy Cloud, così questo workflow funziona senza problemi.",
+      "createCustomBuild": "Crea una Custom Build",
+      "createTitle": "Crea una Build personalizzata per eseguire questo workflow",
       "missingModels": "{count} modello mancante | {count} modelli mancanti",
       "missingNodes": "{count} nodo mancante | {count} nodi mancanti",
       "missingPacks": "{count} pacchetto di nodi mancante | {count} pacchetti di nodi mancanti",
-      "noneRunIt": "Nessun deployment in questo spazio di lavoro dispone di tutti questi nodi.",
+      "more": "+{count} altri",
+      "pointBilling": "Paga solo mentre la GPU è in esecuzione, più lo spazio di archiviazione",
+      "showLess": "Mostra meno",
       "switch": "Passa",
       "switchBody": "A Comfy Cloud mancano questi elementi. Passa a un deployment che li contiene e continua a lavorare da lì.",
-      "title": "Esegui questo workflow su un deployment personalizzato",
-      "titleNoneRunIt": "Crea un deployment per eseguire questo workflow su Comfy Cloud"
+      "title": "Esegui questo workflow su una build personalizzata"
     },
     "workspaceDefault": "Predefinita dell'area di lavoro"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Una finestra di conferma chiederà se connettere l'app desktop ComfyUI al tuo account. Approvala solo se hai appena avviato l'accesso dall'app desktop ComfyUI; altrimenti annullala.",
+    "approvalPendingSummary": "Richiesta di accesso desktop",
     "confirmMessage": "L'app desktop ComfyUI è in attesa di accedere con il tuo account. Continua solo se hai appena avviato l'accesso dall'app desktop ComfyUI.",
     "confirmSummary": "Approva l'accesso desktop?",
+    "continueToCloud": "Continua invece su Comfy Cloud",
+    "declinedDetail": "L'app desktop ComfyUI non è stata connessa al tuo account. Se intendevi approvarla, avvia di nuovo l'accesso dall'app desktop.",
+    "declinedSummary": "Accesso desktop annullato",
     "expiredDetail": "La richiesta di accesso è scaduta o è già stata utilizzata. Avvia nuovamente l'accesso dall'app desktop ComfyUI.",
     "expiredSummary": "Accesso desktop non riuscito",
     "failedDetail": "Si è verificato un errore durante il completamento dell'accesso desktop. Avvia nuovamente l'accesso dall'app desktop ComfyUI.",
     "failedSummary": "Accesso desktop non riuscito",
+    "redeemingDetail": "Connessione dell'app desktop ComfyUI al tuo account.",
+    "redeemingSummary": "Completamento dell'accesso desktop",
     "ssoUnavailableDetail": "Il tuo account accede tramite l'SSO della tua organizzazione, che l'app desktop ComfyUI non può ancora utilizzare. Chiedi al tuo amministratore un altro modo per accedere all'app desktop.",
     "ssoUnavailableSummary": "L'accesso desktop non è ancora disponibile per gli account SSO",
     "successDetail": "Puoi tornare all'app desktop ComfyUI.",
@@ -2010,6 +2142,13 @@
         "title": "Generazione fallita",
         "toastMessage": "Memoria GPU insufficiente. Prova a ridurre la risoluzione dell'immagine o la dimensione del batch e riprova.",
         "toastTitle": "Generazione fallita"
+      },
+      "personal_wallet_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Questa esecuzione è stata addebitata al tuo account personale, che non ha più crediti.",
+        "title": "Crediti insufficienti",
+        "toastMessage": "Questa esecuzione è stata addebitata al tuo account personale, che non ha più crediti.",
+        "toastTitle": "Crediti insufficienti"
       },
       "preprocessing_failed": {
         "itemLabel": "{nodeName}",
@@ -2263,16 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "Chiedi all'agente",
+    "createCustomBuild": "Crea una Build personalizzata",
     "missingMedia": "Alcuni nodi non hanno gli input richiesti",
     "missingModels": "{count} modello richiesto mancante | {count} modelli richiesti mancanti",
     "missingNodes": "Alcuni nodi sono mancanti e devono essere installati",
-    "moreDeployments": "altri {count}",
+    "missingNodesOnCloud": "I nodi personalizzati richiesti non sono supportati su Cloud.",
     "multipleIssueCount": "{count} problema rilevato | {count} problemi rilevati",
     "multipleIssuesMessage": "Risolvi questi problemi prima di eseguire il workflow.",
-    "runOnCustomDeployment": "Eseguilo su un deployment personalizzato",
-    "runsOn": "Viene eseguito su {deployment}",
-    "setUpCustomDeployment": "Configura",
-    "switchDeployment": "Cambia",
+    "switchBuild": "Cambia build",
+    "switchBuildTo": "Passa a {build}",
     "viewDetails": "Visualizza dettagli"
   },
   "errorPanelSurvey": {
@@ -2344,20 +2482,24 @@
     "agentCreated": "Creato dall'agente",
     "agentExtensionAdded": "Il tuo agente ha aggiunto {name}",
     "agentExtensionDisableFailed": "Impossibile disabilitare l'estensione. Riprova.",
+    "agentFinishedUnseen": "L'agente ha risposto",
     "agentInputNeededShort": "Input necessario",
     "agentModified": "L'agente ha aggiornato questo workflow",
     "agentNeedsApproval": "L'agente è in attesa della tua risposta",
     "agentWorking": "L'agente sta lavorando su questo workflow",
+    "agentWorkingAndWorkflowRunning": "L'agente sta lavorando e il workflow è in esecuzione",
+    "align": "Allinea",
+    "alignBottom": "Allinea i bordi inferiori",
+    "alignHorizontalCenters": "Allinea i centri orizzontali",
+    "alignLeft": "Allinea i bordi sinistri",
+    "alignRight": "Allinea i bordi destri",
+    "alignTop": "Allinea i bordi superiori",
+    "alignVerticalCenters": "Allinea i centri verticali",
     "all": "Tutti",
     "allKeybindingsReset": "Tutte le scorciatoie reimpostate ai valori predefiniti",
     "amount": "Quantità",
     "apply": "Applica",
     "architecture": "Architettura",
-    "arrange": "Disponi",
-    "arrangeAsGrid": "Disponi come griglia",
-    "arrangeHorizontally": "Disponi orizzontalmente",
-    "arrangeSpacing": "Spaziatura disposizione",
-    "arrangeVertically": "Disponi verticalmente",
     "asset": "{count} risorsa | {count} risorse",
     "audioFailedToLoad": "Impossibile caricare l'audio",
     "audioPlaybackFailed": "Impossibile riprodurre questo audio. Riprova oppure scaricalo per riprodurlo in un'altra app.",
@@ -2436,6 +2578,9 @@
     "disabling": "Disabilitazione di {id}",
     "disconnectedFromBackend": "Disconnesso dal backend. Verifica che il server sia attivo.",
     "dismiss": "Ignora",
+    "distributeGap": "Spazio tra i nodi distribuiti",
+    "distributeHorizontally": "Distribuisci orizzontalmente",
+    "distributeVertically": "Distribuisci verticalmente",
     "download": "Scarica",
     "downloadAudio": "Scarica audio",
     "downloadImage": "Scarica immagine",
@@ -2497,6 +2642,8 @@
     "galleryImagePosition": "Immagine della galleria {index} di {total}",
     "galleryThumbnail": "Miniatura galleria",
     "galleryThumbnailPosition": "Miniatura della galleria {index} di {total}",
+    "gapHandle": "Spazio tra i nodi",
+    "gapValue": "{value} unità della tela | {value} unità della tela",
     "getHelpAction": "Ottieni aiuto",
     "goToNode": "Vai al nodo",
     "graphNavigation": "Navigazione grafo",
@@ -2570,12 +2717,15 @@
     "logs": "Log",
     "manageExtensions": "Gestisci estensioni",
     "markdown": "markdown",
+    "matchHeight": "Uniforma l'altezza",
+    "matchWidth": "Uniforma la larghezza",
     "maximizeDialog": "Massimizza finestra",
     "megapixelsValue": "{count} MP",
     "micPermissionDenied": "Permesso microfono negato",
     "migrate": "Migra",
     "missing": "Mancante",
     "missingNodeTypesInGroup": "mancanti: {types}",
+    "mixedGaps": "Misto",
     "modifyKeybinding": "Modifica scorciatoia",
     "more": "Altro",
     "moreOptions": "Altre opzioni",
@@ -2618,6 +2768,7 @@
     "openLayerEditor": "Apri editor livelli",
     "openManager": "Apri gestore",
     "openNewIssue": "Apri nuova segnalazione",
+    "openWorkflows": "Apri workflow",
     "or": "o",
     "output": "Output",
     "overwrite": "Sovrascrivi",
@@ -2679,12 +2830,20 @@
     "resizeFromBottomRight": "Ridimensiona dall'angolo in basso a destra",
     "resizeFromTopLeft": "Ridimensiona dall'angolo in alto a sinistra",
     "resizeFromTopRight": "Ridimensiona dall'angolo in alto a destra",
+    "resizeNumberedPreviewHeight": "Ridimensiona l'altezza dell'anteprima {index}",
+    "resizePreviewHeight": "Ridimensiona l'altezza dell'anteprima",
+    "resizeWidgetHeight": "Ridimensiona l'altezza di {name}",
     "restart": "Riavvia",
     "restore": "Ripristina",
     "restoreDialog": "Ripristina finestra",
     "resultsCount": "Trovati {count} risultati",
     "retry": "Riprova",
     "running": "In esecuzione",
+    "safeExtensionBoot": {
+      "description": "Solo questo avvio le ignora. Ricarica per riattivarle.",
+      "reload": "Ricarica con le estensioni",
+      "title": "Modalità sicura: le estensioni personalizzate sono disattivate"
+    },
     "save": "Salva",
     "saveAnyway": "Salva comunque",
     "saving": "Salvataggio in corso",
@@ -2708,6 +2867,7 @@
     "selectItemsToRename": "Seleziona elementi da rinominare",
     "selected": "Selezionato",
     "selectedFile": "File selezionato",
+    "sessionRevoked": "Il tuo accesso a questo spazio di lavoro è terminato. Accedi di nuovo per riconnetterti.",
     "setAKeybindingForTheFollowing": "Imposta una scorciatoia per:",
     "setAsBackground": "Imposta come sfondo",
     "settings": "Impostazioni",
@@ -2743,6 +2903,8 @@
     "systemStatsTemplatesVersion": "Versione Template",
     "terminal": "Terminale",
     "textFailedToLoad": "Impossibile caricare il testo",
+    "tidyUp": "Riordina",
+    "tidyUpTooltip": "Allinea i nodi in righe e colonne e uniforma gli spazi",
     "title": "Titolo",
     "triggerPhrase": "Frase di attivazione",
     "unknownError": "Errore sconosciuto",
@@ -3349,6 +3511,27 @@
     "newerVersionRequiredGeneric": "Alcuni nodi richiedono una versione più recente di ComfyUI. Aggiorna per usare tutti i nodi.",
     "unknownVersion": "sconosciuto"
   },
+  "localMcp": {
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "connected": "Connesso: un agente ha eseguito qui un workflow tramite Comfy MCP.",
+    "copyConfig": "Copia",
+    "description": "Consenti a un agente AI come Claude o Cursor di eseguire workflow su questo ComfyUI tramite Comfy MCP. Viene eseguito sul tuo computer.",
+    "label": "Agente",
+    "locations": {
+      "claudeDesktop": "Aggiungi a claude_desktop_config.json (Impostazioni > Sviluppatore > Modifica configurazione), quindi riavvia Claude Desktop.",
+      "cursor": "Aggiungi a ~/.cursor/mcp.json oppure a .cursor/mcp.json in un progetto."
+    },
+    "openDocs": "Guida completa alla configurazione",
+    "step1": "1. Installa Comfy MCP",
+    "step2": "2. Aggiungilo al tuo client",
+    "step3": "3. Chiedi al tuo agente di eseguire un workflow",
+    "step3Hint": "Riavvia il client, quindi chiedigli di confermare che il tuo ComfyUI locale è in esecuzione e di eseguire un workflow. Questo pannello mostrerà Connesso dopo la prima esecuzione.",
+    "title": "Connetti il tuo agente AI"
+  },
   "logsTerminal": {
     "loadError": "Impossibile caricare i log, assicurati di aver aggiornato il backend di ComfyUI.",
     "resyncError": "Impossibile risincronizzare i log dopo la riconnessione del backend. Riapri la console per riprovare."
@@ -3746,6 +3929,7 @@
     "Experimental: Enable Nodes 2_0": "Sperimentale: Abilita Nodes 2.0",
     "Export": "Esporta",
     "Export (API)": "Esporta (API)",
+    "Export (Workflow Image)": "Esporta (immagine del workflow)",
     "File": "File",
     "Fit Group To Contents": "Adatta gruppo ai contenuti",
     "Focus Mode": "Modalità focus",
@@ -3904,6 +4088,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -3936,6 +4121,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "Sicuro per i tipi",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4095,6 +4281,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternative compatibili",
+    "deprecatedNodesLabel": "I nodi deprecati possono essere sostituiti",
+    "deprecatedNodesMessage": "Questi nodi continuano a funzionare, ma esistono sostituti più recenti. Sostituirli aggiorna il workflow.",
+    "deprecatedNodesTitle": "Nodi deprecati",
     "installMissingNodes": "Installa nodi mancanti",
     "installationRequired": "Installazione richiesta",
     "instructionMessage": "Devi installare questi nodi o sostituirli con alternative già installate per eseguire il workflow. I nodi mancanti sono evidenziati in {red} sulla canvas. Alcuni nodi non possono essere sostituiti e devono essere installati tramite Node Manager.",
@@ -4170,6 +4359,18 @@
       "workspaceLabel": "I tuoi workspace"
     },
     "scopes": {
+      "comfy-mcp:tools:call": {
+        "label": "Esegui workflow e modelli partner per tuo conto, usando i tuoi crediti"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "Visualizza gli strumenti di workflow a tua disposizione"
+      },
+      "comfy-router:models:invoke": {
+        "label": "Esegui modelli partner tramite Comfy Router, usando i tuoi crediti"
+      },
+      "comfy-router:models:read": {
+        "label": "Visualizza il catalogo di modelli di Comfy Router"
+      },
       "mcp:tools:call": {
         "label": "Esegui workflow per tuo conto"
       },
@@ -4294,17 +4495,22 @@
       "copyPrompt": "Copia prompt",
       "openInClaude": "Apri in Claude desktop",
       "openInCodex": "Apri in Codex",
+      "promptCopiedForSignIn": "Prompt copiato. Se l'app ti chiede prima di accedere, incollalo dopo aver effettuato l'accesso.",
       "saveFirst": "Salva questo workflow prima di inviarlo a un agente.",
       "useLocalAgent": "Usa agente locale"
     },
     "checkFailed": "Impossibile verificare questo workflow su Comfy Cloud. Riprova.",
     "cloudButton": {
       "checking": "Verifica di Comfy Cloud in corso…",
-      "tooltip": "Esegui su Comfy Cloud"
+      "resumeUpload": "Riprendi il caricamento del modello",
+      "tooltip": "Esegui questo workflow su Comfy Cloud",
+      "uploading": "Caricamento dei modelli su Comfy Cloud, {percent}%"
     },
     "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
     "deploySetupDialog": {
       "body": "Distribuisci la tua configurazione locale su Comfy Cloud come Build, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
+      "missingNodesBody": "Comfy Cloud non dispone di alcuni nodi usati da questo workflow. Distribuisci la tua configurazione locale su Comfy Cloud come Build, quindi usala in ComfyUI o chiamala come API con scalabilità automatica.",
+      "platformTabBlocked": "Workflow salvato. Fai di nuovo clic su Distribuisci sulla piattaforma per continuare.",
       "pointGpu": "Esegui su potenti GPU cloud",
       "pointNodes": "Porta i tuoi nodi e modelli personalizzati",
       "pointPricing": "Paga solo mentre i tuoi worker GPU sono attivi, più lo spazio di archiviazione",
@@ -4312,14 +4518,48 @@
     },
     "deployWithAgent": "Distribuisci con il tuo agente",
     "desktopTransferFailed": "Impossibile trasferire il tuo workflow. Fai di nuovo clic su Apri su Comfy Cloud in Desktop.",
+    "desktopTransferRetry": "Impossibile verificare questo trasferimento. Ricarica questa scheda per riprovare.",
+    "desktopTransferUnavailable": "Apri su Comfy Cloud non è attualmente disponibile per questo editor.",
     "downloaded": "Workflow scaricato",
     "downloadedDetail": "Trascinalo su Comfy Cloud nel browser per aprirlo lì.",
+    "emptyWorkflow": "Questo workflow non ha nodi da eseguire. Aggiungi nodi e salvalo, quindi riprova.",
     "handoffFailed": "Impossibile aprire il workflow da ComfyUI sul tuo computer",
     "handoffMissing": "Il tuo workflow non è arrivato",
     "handoffMissingDetail": "ComfyUI smette di attendere dopo 10 minuti. Fai di nuovo clic su Apri su Comfy Cloud in ComfyUI.",
+    "missingLocalModelLoader": "Impossibile leggere le impostazioni del modello per {nodeType}. Installa il pacchetto di nodi che lo fornisce, quindi riprova.",
     "missingModels": {
+      "accountChanged": "Caricamento interrotto perché l'account o il workspace è cambiato. Riprova.",
+      "cancelUpload": "Annulla caricamento",
+      "cancelled": "Caricamento annullato.",
+      "checkAgain": "Verifica di nuovo",
+      "chooseAgain": "Scegli di nuovo",
+      "chooseFile": "Scegli file",
+      "chooseFileFor": "Scegli file per {name}",
+      "chooseFiles": "Comfy Cloud necessita di questi modelli per eseguire questo workflow. Seleziona ciascun file dalla cartella dei modelli per caricarlo nel tuo workspace.",
+      "chooseMissingFilesAgain": "Seleziona di nuovo i file mancanti",
+      "chosen": "File selezionato",
+      "confirmUploads": "Conferma i caricamenti",
+      "confirmationDescription": "Verifica se Comfy Cloud può usare questi file nel tuo workspace.",
+      "confirmationPending": "Comfy Cloud non ha ancora confermato questi modelli.",
+      "confirmationTitle": "Conferma i modelli caricati",
+      "confirming": "Verifica dei modelli caricati…",
+      "failed": "Caricamento non riuscito. Riprova.",
+      "folderUnsupported": "Comfy Cloud non supporta ancora i caricamenti in questa cartella.",
+      "hide": "Nascondi",
+      "preparing": "Verifica dei modelli che possono essere caricati…",
+      "progress": "{sent} di {total}",
+      "signInToUpload": "Accedi per caricare",
+      "signedOut": "Comfy Cloud necessita di questi modelli per eseguire questo workflow. Accedi per caricarli nel tuo workspace.",
+      "sizeUnavailable": "Impossibile verificare la dimensione del file. Aggiungi questo modello dall'editor Cloud.",
+      "storagePending": "Comfy Cloud sta ancora confermando questo modello. Riprova per verificare il caricamento esistente.",
+      "subfolderUnsupported": "I caricamenti da qui non possono ancora mantenere la sottocartella di questo modello. Aggiungilo a Comfy Cloud dall'editor Cloud.",
       "title": "Manca {count} modello | Mancano {count} modelli",
-      "unavailable": "Aggiungi questi modelli a Comfy Cloud per eseguire questo workflow. I caricamenti da questo ComfyUI non sono attualmente disponibili."
+      "total": "Totale {size}",
+      "unavailable": "Aggiungi questi modelli a Comfy Cloud per eseguire questo workflow. I caricamenti da questo ComfyUI non sono attualmente disponibili.",
+      "upload": "Carica",
+      "uploadTitle": "Carica {count} modello | Carica {count} modelli",
+      "uploaded": "Caricato",
+      "wrongFile": "Seleziona {name} dalla cartella dei modelli."
     },
     "openedFromLocal": "Aperto da ComfyUI sul tuo computer",
     "openedFromLocalDetail": "Comfy Cloud dispone di ogni nodo e modello usato da questo workflow. Premi Esegui quando sei pronto.",
@@ -4327,11 +4567,21 @@
     "prepareFailed": "Impossibile preparare questo workflow per Comfy Cloud",
     "prepareFailedDetail": "Controlla che il workflow non contenga errori, salvalo e riprova.",
     "runDialog": {
-      "asksToSignIn": "Comfy Cloud ti chiederà di accedere.",
+      "askAgainNotSaved": "Comfy Cloud chiederà prima di ogni controllo finché non ricarichi, ma potrebbe smettere di chiedere dopo.",
+      "body": "Apri questo workflow su Comfy Cloud oppure distribuisci la tua configurazione locale come Build se richiede nodi personalizzati.",
+      "checkCompatibility": "Verifica la compatibilità",
+      "consentNotSaved": "Impossibile salvare la tua scelta relativa al controllo di Comfy Cloud",
+      "dontAskAgain": "Non chiedere più",
+      "dontAskAgainNotSaved": "Comfy Cloud potrebbe chiedertelo di nuovo la prossima volta che apri ComfyUI.",
       "openOnCloud": "Apri su Comfy Cloud",
+      "pointApi": "Usalo in ComfyUI o chiamalo come API",
       "ready": "Comfy Cloud dispone di ogni nodo e modello usato da questo workflow. Si apre in una nuova scheda, pronto per l'esecuzione.",
-      "title": "Esegui su Comfy Cloud"
-    }
+      "readyWithUncheckedInputs": "Comfy Cloud dispone di ogni nodo e modello che ha potuto verificare. Non ha potuto verificare i modelli per questi input: {inputs}. Si apre in una nuova scheda.",
+      "sends": "La verifica invierà a Comfy Cloud i nomi dei nodi e dei modelli di questo workflow.",
+      "uncheckedInput": "{input} su {nodeType}"
+    },
+    "verifyAccessFailed": "Impossibile verificare l'accesso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Se il pulsante Cloud è ancora disponibile, seleziona di nuovo Apri su Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "Autore:",
@@ -4385,6 +4635,33 @@
     "tooltip": "I nodi partner eseguono modelli closed-source come Kling o Veo sull'hardware del fornitore, tramite Comfy. Usano crediti; il resto di Comfy rimane gratuito.",
     "unmuteOpen": "Attiva audio clip a pesi aperti",
     "unmutePartner": "Attiva audio clip del nodo partner"
+  },
+  "platformFrame": {
+    "buildFailed": "Creazione non riuscita. {deployment} non è stato distribuito.",
+    "buildStep": "Passaggio {step} di {of}",
+    "buildTakesMinutes": "L'operazione richiede alcuni minuti. Puoi continuare a lavorare.",
+    "building": "Creazione di {deployment}",
+    "deployFailed": "Distribuzione non riuscita. {deployment} è stato creato ma non distribuito.",
+    "deploying": "Distribuzione di {deployment}",
+    "finishingOnPrevious": "Completamento del tuo processo su v{version}. | Completamento di {count} dei tuoi processi su v{version}.",
+    "getStarted": "Inizia",
+    "later": "Più tardi",
+    "nothingChanged": "Nessuna modifica: {deployment} esegue ancora v{version}.",
+    "nothingChangedNoVersion": "Nessuna modifica: {deployment} continua a funzionare come prima.",
+    "openOnPlatform": "Apri su Platform",
+    "preinstallTitle": "Preinstalla i modelli per eseguire questo workflow",
+    "readyNew": "{deployment} è pronto",
+    "readyUpdate": "{deployment} ora esegue v{version}.",
+    "readyUpdateReload": "{deployment} ora esegue v{version}. Ricarica per usare i relativi nodi.",
+    "reload": "Ricarica",
+    "switch": "Cambia",
+    "switchListingUnavailable": "I tuoi deployment non sono stati caricati. Riprova da Esegui su.",
+    "title": "Build personalizzata",
+    "unanswered": "Platform non si è aperta qui.",
+    "updateDeployment": "Aggiorna {deployment}",
+    "updateShortcut": "Premi E per aggiornarlo.",
+    "updateUnfinished": "{deployment} non ha completato l'aggiornamento a v{version}.",
+    "viewDetails": "Visualizza dettagli"
   },
   "profileMenu": {
     "balanceUnavailable": "Impossibile caricare il tuo saldo.",
@@ -4484,13 +4761,16 @@
   },
   "rightSidePanel": {
     "addFavorite": "Preferito",
-    "addToDeploymentBuild": "Aggiungi questi elementi alla build di {deployment} su Platform, quindi esegui il deployment di una nuova release.",
+    "addMissingItems": "Aggiungi gli elementi mancanti alla Build",
+    "addMissingModelsToBuild": "Aggiungi i modelli mancanti alla build",
+    "addToDeploymentBuild": "Aggiungi questi elementi alla build di {deployment} su Platform, quindi distribuisci una nuova versione.",
     "advancedInputs": "INPUT AVANZATI",
     "askAgent": "Chiedi all'agente",
     "askAgentAbout": "Chiedi all'agente informazioni su {title}",
     "askAgentAboutAll": "Chiedi all'agente informazioni sul problema {count} | Chiedi all'agente informazioni su tutti i {count} problemi",
     "blockedLastRun": "Bloccato nell'ultima esecuzione",
     "bypass": "Bypass",
+    "cloudLacksCustomNodes": "Comfy Cloud non dispone di questi nodi personalizzati",
     "collapse": "Comprimi",
     "color": "Colore nodo",
     "editBuildOnPlatform": "Modifica la build su Platform",
@@ -4632,6 +4912,7 @@
     "seeError": "Vedi errore",
     "selectedNodeErrors": "{node} — {count} problema | {node} — {count} problemi",
     "selectedNodesErrors": "{nodes} nodi selezionati — {count} problema | {nodes} nodi selezionati — {count} problemi",
+    "setUpCustomDeployment": "Configura una Build personalizzata",
     "settings": "Impostazioni",
     "setupFilter": "{count} configurazioni richieste",
     "setupNodeSummary": "{nodes} nodo — {count} elemento | {nodes} nodo — {count} elementi",
@@ -4698,6 +4979,12 @@
     "executeButton": {
       "disabledTooltip": "Nessun nodo di output selezionato",
       "tooltip": "Esegui sui nodi di output selezionati (evidenziati con bordo arancione)"
+    },
+    "linkDestinations": {
+      "goTo": "Vai a {node}",
+      "goToLinkedNode": "Vai a un nodo collegato",
+      "subgraphInputs": "Input del sottografo",
+      "subgraphOutputs": "Output del sottografo"
     }
   },
   "serverConfig": {
@@ -4874,6 +5161,7 @@
     "Canvas Navigation": "Navigazione Canvas",
     "ColorPalette": "Palette Colori",
     "Comfy": "Comfy",
+    "Comfy Cloud": "Comfy Cloud",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "Menu Contestuale",
     "Credits": "Crediti",
@@ -4919,7 +5207,7 @@
     "Server-Config": "Configurazione Server",
     "Settings": "Impostazioni",
     "Sidebar": "Barra Laterale",
-    "SkillPacks": "Pacchetti di competenze",
+    "Smart Guides": "Guide intelligenti",
     "Tree Explorer": "Esplora Struttura",
     "UV": "UV",
     "User": "Utente",
@@ -4995,6 +5283,7 @@
     "viewControls": "Controlli di visualizzazione"
   },
   "sideToolbar": {
+    "addModelsToDeployment": "Aggiungi modelli a questo deployment",
     "assets": "Risorse",
     "backToAssets": "Torna a tutte le risorse",
     "browseTemplates": "Sfoglia template di esempio",
@@ -5161,6 +5450,7 @@
     "templates": "Template",
     "themeToggle": "Cambia tema",
     "workflowTab": {
+      "bookmarkSaveFailed": "La modifica al segnalibro non è stata salvata. Controlla la connessione e riprova.",
       "confirmDelete": "Sei sicuro di voler eliminare questo workflow?",
       "confirmDeleteTitle": "Eliminare il workflow?",
       "confirmOverwrite": "Il file sottostante esiste già. Vuoi sovrascriverlo?",
@@ -5168,51 +5458,62 @@
       "deleteFailed": "Tentativo di eliminazione del workflow fallito.",
       "deleteFailedTitle": "Eliminazione fallita",
       "deleted": "Workflow eliminato",
+      "deletedButBookmarksNotUpdated": "Workflow eliminato, ma non è stato possibile aggiornare i segnalibri",
       "dirtyClose": "I file sottostanti sono stati modificati. Vuoi salvarli prima di chiudere?",
       "dirtyCloseAnyway": "Chiudi comunque",
       "dirtyCloseHint": "Tieni premuto Shift per chiudere senza richiesta",
       "dirtyCloseTitle": "Salvare le modifiche?",
+      "renamedButBookmarksNotUpdated": "Workflow rinominato, ma non è stato possibile aggiornare i segnalibri",
+      "status": {
+        "agentReplied": "L'agente ha risposto",
+        "agentWorking": "Agente al lavoro",
+        "runFailed": "Esecuzione non riuscita",
+        "runFinished": "Esecuzione completata",
+        "unsavedChanges": "Modifiche non salvate",
+        "waitingForAnswer": "L'agente è in attesa della tua risposta",
+        "workflowRunning": "Workflow in esecuzione"
+      },
       "workflowTreeType": {
         "bookmarks": "Preferiti",
         "browse": "Sfoglia",
         "open": "Apri"
       }
     },
-    "workflows": "Workflow"
+    "workflows": "Workflow",
+    "workspaceLibrary": {
+      "blockedByModelRules": "Bloccato dalle regole del modello di questa Build",
+      "empty": "Nessun modello nella libreria del tuo spazio di lavoro.",
+      "explainer": "Modelli nel tuo spazio di lavoro. Quelli non inclusi in questa build vengono scaricati quando un processo ne ha bisogno.",
+      "fromWorkspace": "Dal tuo spazio di lavoro",
+      "loadFailed": "Impossibile caricare la libreria del tuo spazio di lavoro.",
+      "modelCount": "{count} modello | {count} modelli",
+      "title": "Libreria dello spazio di lavoro"
+    }
   },
   "skillPacks": {
-    "addPack": "Aggiungi pacchetto di competenze",
-    "atLimitHint": "Rimuovi un pacchetto per fare spazio a questo.",
-    "atLimitTitle": "Hai raggiunto il limite",
-    "body": "Istruzioni",
-    "bodyPlaceholder": "Le istruzioni che l'agente segue una volta caricato questo pacchetto.",
-    "bodySize": "{bytes} byte",
-    "deleteConfirmMessage": "Vuoi davvero eliminare \"{name}\"? Questa azione non può essere annullata.",
-    "deleteConfirmTitle": "Elimina pacchetto di competenze",
-    "editPack": "Modifica pacchetto di competenze",
     "errors": {
       "bodyRequired": "Le istruzioni sono obbligatorie",
-      "descriptionRequired": "La riga di attivazione è obbligatoria",
-      "descriptionSingleLine": "La riga di attivazione deve essere una singola riga senza caratteri di controllo",
-      "descriptionTooLong": "La riga di attivazione deve contenere al massimo {max} caratteri",
-      "nameAlreadyExists": "Esiste già un pacchetto di competenze denominato \"{name}\". Modifica invece quel pacchetto.",
+      "descriptionRequired": "Il campo \"Quando usare\" è obbligatorio",
+      "descriptionSingleLine": "\"Quando usare\" deve essere una sola riga senza caratteri di controllo",
+      "descriptionTooLong": "\"Quando usare\" deve contenere al massimo {max} caratteri",
+      "nameAlreadyExists": "Esiste già una skill denominata \"{name}\". Modifica invece quella skill.",
       "nameCharset": "Il nome può contenere solo lettere, cifre, '.', '_' e '-' e deve includere almeno un carattere che non sia un punto",
       "nameRequired": "Il nome è obbligatorio",
-      "nameReserved": "\"{name}\" è il nome di un pacchetto integrato e non può essere utilizzato",
+      "nameReserved": "\"{name}\" è il nome di una skill integrata e non può essere usato",
       "nameTooLong": "Il nome deve contenere al massimo {max} caratteri"
-    },
-    "name": "Nome",
-    "nameHint": "Lettere, cifre, '.', '_' e '-'. Questo è il nome con cui l'agente carica il pacchetto.",
-    "namePlaceholder": "ad es., predefiniti-del-mio-rendering",
-    "noPacks": "Non ci sono ancora pacchetti di competenze. Aggiungine uno per insegnare all'agente una preferenza che continui a ripetere.",
-    "packSize": "{bytes} byte",
-    "panelDescription": "Salva una preferenza una sola volta e l'agente la caricherà quando la riga di attivazione corrisponde. I pacchetti sono privati.",
-    "publish": "Pubblica",
-    "title": "Pacchetti di competenze dell'agente",
-    "triggerLine": "Riga di attivazione",
-    "triggerLineHint": "Una riga che indica quando caricare questo pacchetto. Viene inclusa in ogni prompt, indipendentemente dall'uso del pacchetto, quindi mantienila breve.",
-    "triggerLinePlaceholder": "Caricami quando l'utente chiede dell'upscaling",
-    "yourPacks": "I tuoi pacchetti"
+    }
+  },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Accedi a questo sottografo tramite un nodo sottografo per modificarne i valori.",
+    "fromSource": "← {title} n. {id}",
+    "instance": "{title} · n. {id}",
+    "linked": "Valore collegato · sola lettura",
+    "locateSource": "Individua il nodo sorgente",
+    "reorderHint": "Trascina o premi Alt + i tasti freccia per riordinare",
+    "reorderPort": "Riordina {name}",
+    "sharedSource": "Sorgente condivisa",
+    "sourceHint": "La modifica di questa sorgente modifica anche gli altri input collegati a essa.",
+    "unavailable": "Valore non disponibile"
   },
   "subgraphStore": {
     "blueprintName": "Nome Subgraph",
@@ -5463,18 +5764,28 @@
       "subscriptionChangeInProgress": "Hai già una modifica al piano pianificata. Potrai scegliere un altro piano dopo che avrà effetto.",
       "subscriptionChangeScheduled": "La modifica pianificata del tuo piano avrà effetto il {date}. Dopo potrai scegliere un altro piano."
     },
+    "planWithPeriod": {
+      "annual": "{plan} annuale",
+      "monthly": "{plan} mensile"
+    },
     "plansAndCredits": "Piani e crediti",
     "plansAndPricing": "Piani e prezzi",
     "plansForWorkspace": "Piani per {workspace}",
     "plansLink": {
       "blockedBody": "Il browser ha bloccato la nuova scheda. Apri la pagina dei piani per scegliere un piano.",
       "blockedTitle": "La pagina dei piani non si è aperta",
+      "checkoutUnfinishedBody": "Apri la pagina Piani per riprovare. Il browser ne ha bloccato l'apertura automatica.",
+      "checkoutUnfinishedTitle": "Il tuo checkout non è stato completato",
       "choosePlan": "Scegli un piano",
       "openPlansPage": "Apri la pagina dei piani",
       "runRefusedEnded": "Il tuo piano è terminato. Rinnova l'abbonamento per continuare a eseguire workflow su Cloud.",
       "runRefusedFreeRunsUsed": "Hai utilizzato tutte le {total} esecuzioni gratuite. Abbonati per continuare a eseguire workflow su Cloud.",
+      "runRefusedManualBlock": "Questo spazio di lavoro è stato bloccato. Contatta l'assistenza.",
       "runRefusedNoPlan": "Per eseguire workflow su Cloud è necessario un piano.",
-      "runRefusedTitle": "Il workflow non è stato eseguito"
+      "runRefusedProjectCap": "Questo progetto ha raggiunto il limite di spesa.",
+      "runRefusedTitle": "Il workflow non è stato eseguito",
+      "runRefusedUserCap": "Hai raggiunto il limite di spesa in questo spazio di lavoro.",
+      "runRefusedWorkspaceCap": "Questo spazio di lavoro ha raggiunto il limite di spesa."
     },
     "plansLoadFailed": "Impossibile caricare i piani",
     "prepaidCreditsInfo": "I crediti prepagati scadono dopo 1 anno dalla data di acquisto.",
@@ -5871,7 +6182,6 @@
     "searchPlaceholder": "Cerca modelli...",
     "sort": {
       "alphabetical": "A → Z",
-      "default": "Predefinito",
       "modelSizeLowToHigh": "Dimensione modello (dal più piccolo al più grande)",
       "newest": "Più recente",
       "popular": "Popolare",
@@ -5896,6 +6206,7 @@
     "a1111CoreNodesUnavailable": "Impossibile caricare il workflow perché questa installazione di ComfyUI non ha i nodi core. Verifica che il backend sia stato avviato correttamente.",
     "a1111EmbeddingsUnavailable": "Non è stato possibile caricare gli embedding dal server. Il workflow è stato importato, ma i nomi degli embedding sono stati lasciati come testo normale.",
     "assetDropFailed": "Impossibile caricare la risorsa trascinata",
+    "batchStoppedOnWorkflowChange": "Accodati {queued} di {requested}. Operazione interrotta perché hai cambiato workflow, quindi gli altri avrebbero eseguito quello sbagliato.",
     "cannotCreateSubgraph": "Impossibile creare il subgraph",
     "couldNotDetermineFileType": "Impossibile determinare il tipo di file",
     "dropFileError": "Impossibile elaborare l'elemento trascinato: {error}",
@@ -5912,6 +6223,7 @@
     "failedToConvertToSubgraph": "Impossibile convertire gli elementi in subgraph",
     "failedToCreateCustomer": "Impossibile creare il cliente: {error}",
     "failedToExportModel": "Impossibile esportare il modello come {format}",
+    "failedToExportWorkflowImage": "Impossibile esportare l'immagine del workflow",
     "failedToFetchLogs": "Impossibile recuperare i log del server",
     "failedToFetchSubscription": "Impossibile recuperare lo stato dell'abbonamento: {error}",
     "failedToInitializeCameraAngleViewer": "Impossibile inizializzare il visualizzatore dell'angolo della fotocamera. Prova a ricaricare la pagina.",
@@ -5951,6 +6263,7 @@
     "missingMediaVerificationFailed": "Impossibile verificare i contenuti multimediali mancanti. Alcuni input potrebbero non essere visualizzati nella scheda Problemi.",
     "missingModelVerificationFailed": "Impossibile verificare i modelli mancanti. Alcuni modelli potrebbero non essere visualizzati nella scheda Problemi.",
     "modelLoadedSuccessfully": "Modello 3D caricato con successo",
+    "modelTooLargeToPreview": "Il modello è troppo grande per l'anteprima (max {maxSize} MB)",
     "modelsAndCacheCleared": "I modelli e la cache di esecuzione sono stati svuotati.",
     "modelsUnloaded": "I modelli sono stati scaricati.",
     "no3dScene": "Nessuna scena 3D su cui applicare la texture",
@@ -5966,6 +6279,8 @@
     "nothingToQueue": "Niente da mettere in coda",
     "notificationsLabel": "Notifica",
     "notificationsViewportLabel": "Notifiche ({hotkey})",
+    "outdatedVideoHelperSuite": "Aggiorna ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "Questa versione di Video Helper Suite può scollegare i collegamenti nel workflow visualizzato sullo schermo quando un nodo Unbatch in un altro workflow aperto cambia tipo. Aggiornala dal Manager.",
     "pendingTasksDeleted": "Attività in sospeso eliminate",
     "pleaseSelectNodesToGroup": "Seleziona i nodi (o altri gruppi) per creare un gruppo",
     "pleaseSelectOutputNodes": "Seleziona i nodi di output",
@@ -6103,12 +6418,14 @@
     "undo": "Annulla"
   },
   "widgets": {
+    "backFromFolder": "Indietro: {name}",
     "boolean": {
       "false": "falso",
       "true": "vero"
     },
     "node2only": "Solo Node 2.0",
     "precisionLimit": "Incremento/decremento disabilitato: il valore supera il limite di precisione di JavaScript (±2^53)",
+    "selectFolder": "Cartella: {name}",
     "selectModel": "Seleziona modello",
     "uploadSelect": {
       "maxSelectionReached": "Limite massimo di selezione raggiunto",
@@ -6119,6 +6436,12 @@
       "placeholderModel": "Seleziona modello...",
       "placeholderUnknown": "Seleziona media...",
       "placeholderVideo": "Seleziona video...",
+      "thumbnailSize": "Dimensioni miniatura",
+      "thumbnailSizes": {
+        "compact": "Compatta",
+        "large": "Grande",
+        "standard": "Standard"
+      },
       "topResult": "Risultato principale: {result}"
     },
     "valueControl": {
@@ -6156,6 +6479,7 @@
     "enterFilename": "Inserisci il nome del file",
     "enterFilenamePrompt": "Inserisci il nome del file:",
     "exportWorkflow": "Esporta workflow",
+    "pathInUse": "\"{path}\" è già in uso. Scegli un nome diverso.",
     "saveWorkflow": "Salva workflow",
     "savedAsApp": "Convertito in workflow app",
     "savedAsWorkflow": "Convertito in workflow solo grafo nodi",
@@ -6166,7 +6490,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "Sei stato aggiunto a {workspaceName}",
+    "deepLinkPricingRefused": "Questo link è per uno spazio di lavoro a cui non puoi accedere, quindi i piani non sono stati aperti.",
     "deepLinkStayed": "Non è stato possibile aprire quell'area di lavoro. Sei ancora in {workspaceName}.",
+    "deepLinkTopUpRefused": "Questo link è per uno spazio di lavoro a cui non puoi accedere, quindi la ricarica non è stata aperta.",
     "inviteAccepted": "Invito accettato",
     "inviteDirectoryManaged": "L'amministratore della tua organizzazione gestisce l'iscrizione",
     "inviteDirectoryManagedDetail": "I membri di questo workspace sono gestiti tramite la directory della tua organizzazione, quindi non puoi usare i link di invito per accedervi. Chiedi all'amministratore della tua organizzazione di aggiungerti.",
@@ -6281,7 +6607,15 @@
         "salesMemberBody": "Chiedi al proprietario dello spazio di lavoro di contattare le vendite.",
         "teamBody": "Abbonati di nuovo per eseguire workflow e ottenere nuovamente crediti condivisi.",
         "teamMemberBody": "Chiedi al proprietario dello spazio di lavoro di abbonarsi di nuovo.",
+        "teamNotCreatorBody": "Il piano di questo spazio di lavoro è terminato. Chiedi al creatore dello spazio di lavoro di riabbonarsi.",
         "teamTitle": "Il tuo piano Team è terminato il {date}"
+      },
+      "planNotStarted": {
+        "body": "Completa il pagamento per avviarlo.",
+        "bodyUnavailable": "Il tuo piano inizierà una volta elaborato il pagamento.",
+        "title": "Il tuo piano {plan} non è iniziato",
+        "titleNoPlan": "Il tuo piano non è iniziato",
+        "viewPlans": "Visualizza nei piani"
       },
       "updatePayment": "Aggiorna pagamento"
     },
@@ -6337,7 +6671,7 @@
         "available": "Disponibili",
         "availableUntil": "Disponibile fino al {date}",
         "inUse": "Attualmente in uso",
-        "overdrawn": "Le tue esecuzioni hanno utilizzato {count} credito in più di quelli disponibili. | Le tue esecuzioni hanno utilizzato {count} crediti in più di quelli disponibili.",
+        "overdrawn": "Hai usato {count} credito in più di quanti ne avevi. Aggiungi crediti per continuare a eseguire. | Hai usato {count} crediti in più di quanti ne avevi. Aggiungi crediti per continuare a eseguire.",
         "plan": "Piano",
         "planOfPool": "{remaining} di {total}",
         "planTooltip": "I crediti del piano vengono utilizzati prima dei crediti ricaricati.",

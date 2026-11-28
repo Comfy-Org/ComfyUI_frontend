@@ -200,6 +200,26 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
     expect(billing.error.value).toBeNull()
   })
 
+  it('asks the SDK readers for a read that does not join an earlier request when fresh', async () => {
+    flagState.billingSdkRailEnabled = true
+    sdkStatus({ subscription_tier: 'PRO' })
+    vi.mocked(harness.sdk.credits.read).mockResolvedValue({
+      status: 'ok',
+      value: {
+        balance: { amount_micros: 5_000_000, currency: 'USD' },
+        scope: SCOPE,
+        readAt: READ_AT
+      }
+    })
+    const billing = setupBilling()
+
+    await billing.fetchStatus({ fresh: true })
+    await billing.fetchBalance({ fresh: true })
+
+    expect(harness.sdk.status.read).toHaveBeenLastCalledWith({ fresh: true })
+    expect(harness.sdk.credits.read).toHaveBeenLastCalledWith({ fresh: true })
+  })
+
   it('reports a status the host cannot hold exactly as a malformed read', async () => {
     flagState.billingSdkRailEnabled = true
     sdkStatus({

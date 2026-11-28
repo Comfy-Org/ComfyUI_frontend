@@ -12,6 +12,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
@@ -79,6 +80,7 @@ interface MockSettingParams {
   type: string
   defaultValue: unknown
   category?: string[]
+  deprecated?: boolean
 }
 
 const i18n = createI18n({
@@ -213,6 +215,35 @@ describe('useSettingUI', () => {
       )
     }
   )
+
+  it('omits groups whose only settings are hidden or deprecated', () => {
+    Object.assign(useSettingStore(), {
+      settingsById: {
+        ...mockSettings,
+        'Comfy.Graph.Old': {
+          id: 'Comfy.Graph.Old',
+          name: 'Old',
+          type: 'boolean',
+          defaultValue: true,
+          deprecated: true
+        },
+        'Comfy.Secret.Value': {
+          id: 'Comfy.Secret.Value',
+          name: 'Value',
+          type: 'hidden',
+          defaultValue: ''
+        }
+      }
+    })
+
+    const { settingCategories } = useSettingUI()
+
+    const comfyGroups = findCategory(
+      settingCategories.value,
+      'Comfy'
+    )?.children?.map((group) => group.label)
+    expect(comfyGroups).toEqual(['Locale'])
+  })
 
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
@@ -420,6 +451,16 @@ describe('useSettingUI', () => {
         key: 'credits',
         label: 'Credits'
       })
+    })
+
+    it('lists no skills category even when skills are enabled for a signed-in user', () => {
+      useSkillPacksStore().flagsEnabled = true
+      const { findPanelByKey, navGroups } = useSettingUI()
+
+      expect(
+        navGroups.value.flatMap((group) => group.items.map(({ id }) => id))
+      ).not.toContain('skill-packs')
+      expect(findPanelByKey('skill-packs')).toBeNull()
     })
   })
 

@@ -11,7 +11,6 @@ import type { ArchitectureException, DomainRecord } from './schema'
 const DOMAINS_DIRECTORY = 'docs/architecture/domains'
 const RECORDS_DIRECTORY = `${DOMAINS_DIRECTORY}/records`
 const LEDGER_PATH = `${DOMAINS_DIRECTORY}/exceptions.json`
-const PACKAGES_DIRECTORY = 'packages'
 const SOURCE_FILE = /\.(ts|tsx|vue)$/
 
 export interface ArchitectureWarning {
@@ -29,16 +28,26 @@ export interface ArchitectureConfiguration {
 }
 
 function sourceRoots(repositoryRoot: string): Outcome<string[]> {
-  if (!existsSync(join(repositoryRoot, PACKAGES_DIRECTORY)))
-    return { ok: true, value: ['src'] }
-  const packages = listDirectory(repositoryRoot, PACKAGES_DIRECTORY, false)
-  if (!packages.ok) return packages
+  const workspaces = ['packages', 'tools']
+    .filter((directory) => existsSync(join(repositoryRoot, directory)))
+    .map((directory) => ({
+      directory,
+      entries: listDirectory(repositoryRoot, directory, false)
+    }))
+  const errors = workspaces.flatMap(({ entries }) =>
+    entries.ok ? [] : entries.errors
+  )
+  if (errors.length) return { ok: false, errors }
   return {
     ok: true,
     value: [
       'src',
-      ...packages.value
-        .map((name) => `${PACKAGES_DIRECTORY}/${name}/src`)
+      ...workspaces
+        .flatMap(({ directory, entries }) =>
+          entries.ok
+            ? entries.value.map((name) => `${directory}/${name}/src`)
+            : []
+        )
         .filter((root) => existsSync(join(repositoryRoot, root)))
     ]
   }

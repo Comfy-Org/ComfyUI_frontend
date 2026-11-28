@@ -59,6 +59,28 @@
     "name": "顯示選取工具箱",
     "tooltip": "當選取節點時顯示浮動工具列，快速存取常用操作。"
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "拖曳及調整大小時，吸附至附近的節點、群組與連線",
+    "tooltip": "顯示輔助線，並吸附至對齊的邊緣、等距間隔及筆直連線。按住 Shift 可改為吸附至格線。"
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "吸附至另一個節點旁時的間距"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "吸附距離（螢幕像素）"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "吸附至其他節點與群組的邊緣"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "吸附至節點之間的等距間隔"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "吸附使連線變為筆直"
+  },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "在傳送節點和模型名稱以檢查 Comfy Cloud 相容性前先詢問"
+  },
   "Comfy_ConfirmClear": {
     "name": "清除工作流程時需要確認"
   },
@@ -69,8 +91,8 @@
     "name": "啟用開發者模式選項（API 儲存等）"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "停用預設浮點數元件四捨五入。",
-    "tooltip": "（需重新載入頁面）當後端節點已設定四捨五入時，無法停用四捨五入。"
+    "name": "停用預設浮點數元件四捨五入（已淘汰）。",
+    "tooltip": "（需要重新載入頁面）此功能已淘汰且預設為啟用。將其關閉後，編輯過的浮點數值會四捨五入至元件步進值的小數位數。節點宣告的四捨五入規則一律會套用。"
   },
   "Comfy_DisableSliders": {
     "name": "停用節點元件滑桿"
@@ -87,6 +109,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "在問題分頁中顯示缺少的模型",
     "tooltip": "停用時，找不到的模型檔案不會列在問題分頁中，其節點也不會醒目顯示。"
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "在問題分頁中顯示缺少的節點",
+    "tooltip": "停用後，問題分頁中不會列出缺少的節點套件，其節點也不會被醒目標示。在安裝這些套件之前，工作流程仍無法執行。"
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "即時預覽方式",
@@ -468,10 +494,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "在問題分頁中顯示缺少的媒體",
     "tooltip": "停用時，找不到的輸入影像、影片和音訊不會列在問題分頁中，其節點也不會醒目顯示。"
-  },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "在問題分頁中顯示缺少的節點",
-    "tooltip": "停用時，缺少的節點套件不會列在問題分頁中，其節點也不會醒目顯示。在安裝前，工作流程仍無法執行。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"

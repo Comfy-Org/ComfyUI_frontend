@@ -79,17 +79,17 @@ test.describe(
       await expect(after).toBeVisible()
     })
 
-    // PM-916 / PM-938. The composer remains editable while a turn is active,
-    // but Enter must preserve the next draft instead of becoming a hidden Stop.
-    test('preserves a new draft when Enter is pressed during an active turn', async ({
+    test('queues a follow-up draft when Enter is pressed during an active turn without posting a second request', async ({
       turnLock
     }) => {
       const nextDraft = 'make the output warmer'
       await turnLock.composer.fill(nextDraft)
       await turnLock.composer.press('Enter')
 
-      await expect(turnLock.composer).toHaveText(nextDraft)
+      await expect(turnLock.promptQueue).toContainText(nextDraft)
+      await expect(turnLock.composer).toHaveText('')
       await expect(turnLock.stopButton).toBeVisible()
+      await expect(turnLock.sendButton).toHaveCount(0)
       expect(turnLock.postAttempts()).toBe(1)
     })
 

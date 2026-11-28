@@ -149,6 +149,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "ייצוא תהליך העבודה (פורמט API)"
   },
+  "Comfy_ExportWorkflowImage": {
+    "label": "ייצוא תמונת תהליך העבודה"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "המרת הבחירה לתת-גרף"
   },

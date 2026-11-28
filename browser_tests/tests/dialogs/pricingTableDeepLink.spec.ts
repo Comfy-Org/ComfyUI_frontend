@@ -1080,7 +1080,7 @@ test.describe('Recovered 3DS subscription', { tag: '@cloud' }, () => {
     await page.goto(APP_URL)
     await waitForCloudApp(page)
     await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('credits-menu-item').click()
+    await page.getByTestId('workspace-settings-menu-item').click()
     await expect.poll(() => statusRequests.length).toBeGreaterThan(0)
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
 

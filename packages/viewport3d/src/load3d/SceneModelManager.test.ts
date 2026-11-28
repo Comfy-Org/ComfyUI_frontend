@@ -167,6 +167,34 @@ describe('line resource ownership', () => {
   })
 })
 
+describe('disposeObject3D', () => {
+  it('releases the bone texture of a skinned mesh', () => {
+    const bone = new THREE.Bone()
+    const skinned = new THREE.SkinnedMesh(new THREE.BoxGeometry())
+    skinned.add(bone)
+    skinned.bind(new THREE.Skeleton([bone]))
+    skinned.skeleton.computeBoneTexture()
+
+    disposeObject3D(skinned, new Set())
+
+    expect(skinned.skeleton.boneTexture).toBeNull()
+  })
+
+  it('releases the instance buffers of an instanced mesh', () => {
+    const instanced = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(),
+      new THREE.MeshBasicMaterial(),
+      2
+    )
+    const disposed = vi.fn()
+    instanced.addEventListener('dispose', disposed)
+
+    disposeObject3D(instanced, new Set())
+
+    expect(disposed).toHaveBeenCalledOnce()
+  })
+})
+
 describe('cloneObject3DResources', () => {
   it('keeps n-gon face sizes on cloned mesh geometry', () => {
     const sourceGeometry = new THREE.BoxGeometry()

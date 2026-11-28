@@ -18,6 +18,8 @@ const FLYOUT_GAP_PX = 8
 const FLYOUT_WIDTH_PX = 256
 const FLYOUT_ROW_HEIGHT_PX = 40
 const FLYOUT_ROW_LABEL_INSET_PX = 32
+const MENU_ROW_HEIGHT_PX = 40
+const SWITCHER_VISIBLE_ROW_LIMIT = 6
 
 function profileMenuOf(page: Page) {
   return page.locator('[data-slot="popover-content"]', {
@@ -29,6 +31,25 @@ async function boxOf(locator: Locator) {
   const box = await locator.boundingBox()
   if (!box) throw new Error('Expected a laid-out element')
   return box
+}
+
+async function switcherListLayout(list: Locator) {
+  const rows = list.getByRole('button')
+  const rowCount = await rows.count()
+  const [listBox, ...rowBoxes] = await Promise.all([
+    boxOf(list),
+    ...Array.from({ length: rowCount }, (_, i) => boxOf(rows.nth(i)))
+  ])
+  const listBottom = listBox.y + listBox.height
+  return {
+    visibleRows: rowBoxes.filter(
+      (row) => row.y + row.height > listBox.y + 0.5 && row.y < listBottom - 0.5
+    ).length,
+    fullyVisibleRows: rowBoxes.filter(
+      (row) =>
+        row.y >= listBox.y - 0.5 && row.y + row.height <= listBottom + 0.5
+    ).length
+  }
 }
 
 async function creditsFlyoutLayout(page: Page) {
@@ -114,6 +135,73 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await expect(panel).toBeInViewport({ ratio: 1 })
   })
 
+  test('lays out the single-line menu rows 40px tall', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const rowTestIds = [
+      'credits-menu-item',
+      'workspace-settings-menu-item',
+      'user-settings-menu-item',
+      'logout-menu-item'
+    ]
+    await expect(page.getByTestId('logout-menu-item')).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const boxes = await Promise.all(
+          rowTestIds.map((testId) => boxOf(page.getByTestId(testId)))
+        )
+        return boxes.map((box) => Math.round(box.height))
+      })
+      .toEqual(rowTestIds.map(() => MENU_ROW_HEIGHT_PX))
+  })
+
+  test('shows six workspace rows and scrolls to the seventh', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await mockWorkspaceList(page, createManyWorkspacesResponse())
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+
+    const list = page.getByTestId('workspace-switcher-list')
+    await expect(
+      list.getByRole('button').nth(SWITCHER_VISIBLE_ROW_LIMIT)
+    ).toBeAttached()
+
+    await expect
+      .poll(() => switcherListLayout(list))
+      .toEqual({
+        visibleRows: SWITCHER_VISIBLE_ROW_LIMIT,
+        fullyVisibleRows: SWITCHER_VISIBLE_ROW_LIMIT
+      })
+
+    const seventhRow = list.getByRole('button').nth(SWITCHER_VISIBLE_ROW_LIMIT)
+    await list.hover()
+    await page.mouse.wheel(0, 100)
+
+    await expect
+      .poll(async () => {
+        const [listBox, rowBox] = await Promise.all([
+          boxOf(list),
+          boxOf(seventhRow)
+        ])
+        return (
+          rowBox.y >= listBox.y - 0.5 &&
+          rowBox.y + rowBox.height <= listBox.y + listBox.height + 0.5
+        )
+      })
+      .toBe(true)
+  })
+
   test.describe('credits flyout', () => {
     test('opens 8px right of the menu, 256px wide, its first line level with the Credits row', async ({
       comfyPage
@@ -180,6 +268,123 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       }
     })
 
+    test('closes the Credits flyout when the workspace switcher opens', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const credits = page.getByTestId('credits-menu-item')
+      const flyout = page.getByTestId('credits-flyout')
+      await credits.click()
+      await expect(flyout).toBeVisible()
+
+      await page.getByTestId('workspace-switcher-trigger').click()
+
+      await expect(page.getByTestId('workspace-switcher-panel')).toBeVisible()
+      await expect(flyout).toBeHidden()
+      await expect(credits).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    test('keeps a clicked flyout open after the pointer leaves until Escape, without opening Settings', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const credits = page.getByTestId('credits-menu-item')
+      const flyout = page.getByTestId('credits-flyout')
+      await credits.click()
+      await expect(flyout).toBeVisible()
+      await expect(credits).toHaveAttribute('aria-expanded', 'true')
+
+      await test.step('the flyout stays after the pointer leaves', async () => {
+        await page.getByTestId('logout-menu-item').hover()
+        await page.mouse.move(1, 1)
+        await expect(flyout).toBeVisible()
+        await expect(comfyPage.settingDialog.root).toBeHidden()
+      })
+
+      await test.step('Escape closes the flyout only', async () => {
+        await page.keyboard.press('Escape')
+        await expect(flyout).toBeHidden()
+        await expect(credits).toHaveAttribute('aria-expanded', 'false')
+        await expect(page.getByTestId('current-user-popover')).toBeVisible()
+      })
+    })
+
+    test('moves focus into a flyout opened with Enter, tabs through its actions, and returns to Credits on Escape', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const credits = page.getByTestId('credits-menu-item')
+      const flyout = page.getByTestId('credits-flyout')
+      const addCredits = flyout.getByRole('button', { name: 'Add credits' })
+      const billingSettings = flyout.getByRole('button', {
+        name: 'Billing settings'
+      })
+
+      await test.step('the hover preview offers an enabled Add credits', async () => {
+        await credits.hover()
+        await expect(addCredits).toBeEnabled()
+        await page.mouse.move(1, 1)
+        await expect(flyout).toBeHidden()
+      })
+
+      await test.step('Enter moves focus to Add credits', async () => {
+        await credits.focus()
+        await page.keyboard.press('Enter')
+        await expect(addCredits).toBeFocused()
+      })
+
+      await test.step('the pinned flyout sits where the preview sits', async () => {
+        await expect
+          .poll(() => creditsFlyoutLayout(page))
+          .toEqual({
+            width: FLYOUT_WIDTH_PX,
+            gap: FLYOUT_GAP_PX,
+            firstLineBelowCreditsLabel: 0,
+            runsPastMenuBottom: false,
+            startsAboveMenuTop: false,
+            opensBesideCreditsRow: true
+          })
+      })
+
+      await test.step('Tab reaches Billing settings', async () => {
+        await page.keyboard.press('Tab')
+        await expect(billingSettings).toBeFocused()
+      })
+
+      await test.step('Escape closes the flyout and focuses Credits', async () => {
+        await page.clock.install()
+        await page.keyboard.press('Escape')
+        await page.clock.runFor(1000)
+        await expect(flyout).toBeHidden()
+        await expect(credits).toBeFocused()
+        await expect(page.getByTestId('current-user-popover')).toBeVisible()
+      })
+    })
+
+    test('closes a clicked flyout on a click elsewhere in the menu', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('credits-menu-item').click()
+      const flyout = page.getByTestId('credits-flyout')
+      await expect(flyout).toBeVisible()
+
+      await page.getByTestId('current-user-identity').click()
+
+      await expect(flyout).toBeHidden()
+    })
+
     test('keeps a flyout taller than the space below the Credits row inside the menu', async ({
       comfyPage
     }) => {
@@ -187,7 +392,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
       await comfyPage.toast.closeToasts()
       await page.addStyleTag({
-        content: '[data-testid="credits-flyout"] { min-height: 240px; }'
+        content: '[data-testid="credits-flyout"] { min-height: 260px; }'
       })
       await page.getByRole('button', { name: 'Current user' }).click()
       await page.getByTestId('credits-menu-item').hover()

@@ -7,6 +7,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -100,7 +101,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' })
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const ws = await getAgentSocket()
     await agentPanel.sendMessage('Set the positive prompt to a red fox scene.')
     // The turn has to be registered before the socket can narrate it; pushing
@@ -133,12 +133,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.open()
     const panel = agentPanel.root
 
+    await expect(panel.getByRole('note')).toHaveCount(1)
     await expect(
-      panel.getByRole('note').filter({
-        hasText: enMessages.agent.targetFollowsVisibleWorkflow
-      })
+      panel.getByRole('note', { name: 'Free use notice' })
     ).toBeVisible()
-    await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
     const firstPrompt = enMessages.agent.suggestedPrompts.treatment.cloud[0]
@@ -167,8 +165,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     pushEvent(ws, TOOL_CALL_EVENT)
     const summary = panel.getByRole('button', {
-      name: enMessages.agent.worked,
-      exact: true
+      name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
     })
     await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()
@@ -207,7 +204,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await expect(summary).toHaveCount(0)
 
-    const activityRows = panel.getByRole('listitem')
+    const activityRows = panel
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
     await expect(activityRows).toHaveCount(5)
     await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
     await expect(panel.getByText('0.5s', { exact: true })).toHaveCount(0)
@@ -265,7 +264,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await comfyPage.settingDialog.close()
 
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       const ws = await getAgentSocket()
       await agentPanel.sendMessage('How do I bypass the selected node?')
       await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
@@ -294,7 +292,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     await comfyPage.page.mouse.move(0, 0)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
 
     await test.step('Receive a reply with an image and a video', async () => {
       await agentPanel.sendMessage('Generate a short video')
@@ -376,6 +373,45 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
   })
 
+  test.describe('reply media whose file is missing', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page.route(/\/api\/view\?.*missing_clip/, (route) =>
+        route.fulfill({ status: 404, body: '' })
+      )
+    })
+
+    test(
+      'says a generated video could not be loaded',
+      { tag: '@screenshot' },
+      async ({ agentPanel, comfyPage, getAgentSocket, postedMessages }) => {
+        await comfyPage.page.mouse.move(0, 0)
+        await agentPanel.open()
+
+        await agentPanel.sendMessage('Generate a short video')
+        await expect.poll(() => postedMessages.length).toBe(1)
+        pushEvent(
+          await getAgentSocket(),
+          agentMessageDeltaEvent(
+            '![your video](/api/view?filename=missing_clip_00001_.mp4&type=output)'
+          )
+        )
+        pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
+
+        const tile = agentPanel.root.getByRole('button', {
+          name: enMessages.agent.assetLoadFailed.replace(
+            '{name}',
+            'your video'
+          ),
+          exact: true
+        })
+        await expect(tile).toBeDisabled()
+        await expect(tile.getByTestId('reply-video-preview')).toHaveCount(0)
+        await expect(tile.getByTestId('reply-video-affordance')).toHaveCount(0)
+        await expectElementScreenshot(tile, 'agent-reply-missing-video.png')
+      }
+    )
+  })
+
   test('shows an admission paywall without losing the rejected prompt', async ({
     agentPanel,
     comfyPage
@@ -400,7 +436,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('open the agent panel on a workflow', async () => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
     })
 
     await test.step('send a prompt the server will reject', async () => {
@@ -408,12 +443,17 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await panel.getByRole('button', { name: 'Send' }).click()
     })
 
-    await test.step('keep the rejected prompt and surface the paywall', async () => {
+    await test.step('keep the failed message in the chat and surface the paywall', async () => {
       await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
-      await expect(composer).toHaveText(prompt)
-      const paywall = panel.getByRole('alert')
-      await expect(paywall).toContainText(enMessages.agent.paywall.title)
-      await expect(paywall).toContainText('Add credits to continue.')
+      await expect(composer).toHaveText('')
+      await expect(agentPanel.inlinePaywallCard).toContainText(
+        enMessages.agent.paywall.title
+      )
+      await expect(agentPanel.inlinePaywallCard).toContainText(
+        'Add credits to continue.'
+      )
+      await expect(agentPanel.retryPendingButton).toBeEnabled()
+      await expect(agentPanel.deletePendingButton).toBeEnabled()
     })
   })
 
@@ -431,7 +471,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('show the standing paywall after an accepted turn exhausts credits', async () => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       agentBilling.setFundingState('exhausted')
       await agentPanel.sendMessage('Complete this workflow without a refusal')
       await expect.poll(() => postedMessages.length).toBe(1)
@@ -553,7 +592,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       }
     )
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
 
     const prompt = 'Build a product photo workflow'
     await agentPanel.composer.fill(prompt)
@@ -562,11 +600,12 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(agentPanel.root.getByTestId('user-message-bubble')).toHaveText(
       prompt
     )
-    await expect(
-      agentPanel.root.getByText(enMessages.agent.sendFailed)
-    ).toBeVisible()
-    await expect(agentPanel.composer).toHaveText(prompt)
-    await expect(agentPanel.sendButton).toBeEnabled()
+    await expect(agentPanel.pendingSendError).toContainText(
+      enMessages.agent.sendFailed
+    )
+    await expect(agentPanel.composer).toHaveText('')
+    await expect(agentPanel.retryPendingButton).toBeEnabled()
+    await expect(agentPanel.deletePendingButton).toBeEnabled()
   })
 
   test('shows a privacy-safe failure without retrying an unreadable accepted response', async ({
@@ -588,17 +627,15 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       }
     )
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
 
     await agentPanel.sendMessage('Build a product photo workflow')
 
-    await expect(
-      agentPanel.root.getByText(
-        `${enMessages.agent.sendFailed}: Unreadable agent response body`,
-        { exact: true }
-      )
-    ).toBeVisible()
-    await expect(agentPanel.sendButton).toBeEnabled()
+    await expect(agentPanel.pendingSendError).toHaveText(
+      `${enMessages.agent.sendFailed}: Unreadable agent response body`
+    )
+    await expect(agentPanel.composer).toHaveText('')
+    await expect(agentPanel.retryPendingButton).toHaveCount(0)
+    await expect(agentPanel.deletePendingButton).toBeEnabled()
     expect(postCount).toBe(1)
   })
 
@@ -620,7 +657,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       })
 
       await test.step('retain tool metadata without conversation content', async () => {
-        await agentPanel.selectWorkflow()
         const composer = agentPanel.composer
         await composer.fill('private diagnostic prompt')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
@@ -630,6 +666,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText('private diagnostic prompt')
+        await expect(agentPanel.sendingSpinner).toHaveCount(0)
         const ws = await getAgentSocket()
         pushEvent(ws, THINKING_EVENT)
         await expect(
@@ -882,7 +919,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
 
     const panel = agentPanel.root
     await panel
@@ -903,7 +939,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     getAgentSocket
   }) => {
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
 
     const panel = agentPanel.root
     const composer = agentPanel.composer
@@ -915,15 +950,18 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect.poll(() => postedMessages.length).toBe(1)
 
     await expect(
-      panel.getByRole('button', { name: enMessages.g.edit })
+      panel.getByRole('button', { name: enMessages.g.edit, exact: true })
     ).toHaveCount(0)
     await panel.getByRole('button', { name: enMessages.agent.stop }).click()
     await expect(
-      panel.getByRole('button', { name: enMessages.g.edit })
+      panel.getByRole('button', { name: enMessages.g.edit, exact: true })
     ).toHaveCount(0)
 
     pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
-    const editButton = panel.getByRole('button', { name: enMessages.g.edit })
+    const editButton = panel.getByRole('button', {
+      name: enMessages.g.edit,
+      exact: true
+    })
     await expect(editButton).toHaveCount(1)
     await expect(editButton).toHaveCSS('pointer-events', 'none')
 

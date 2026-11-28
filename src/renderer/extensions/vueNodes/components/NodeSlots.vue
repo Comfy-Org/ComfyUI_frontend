@@ -4,7 +4,7 @@
   </div>
   <div
     v-else
-    ref="slots"
+    data-part="node-slots"
     :class="
       cn(
         'flex min-w-0 justify-between',
@@ -21,6 +21,7 @@
         v-for="(input, index) in filteredInputs"
         :key="`input-${input.name}-${getActualInputIndex(input, index)}`"
         :slot-data="input"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :has-error="inputHasError(input)"
@@ -37,6 +38,7 @@
         v-for="(output, index) in nodeData.outputs"
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
+        :dot-only="unified"
         :node-type="nodeData?.type || ''"
         :node-id="nodeData.id"
         :index="index"
@@ -47,18 +49,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onErrorCaptured, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import { st } from '@/i18n'
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
+  isAdvancedSocketInput,
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import type { BodyItem } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import { vueNodeBodyKey } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
@@ -67,7 +74,7 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { locatorIdFromState } from '@/utils/graphTraversalUtil'
+import { getNodeByState, locatorIdFromState } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -83,7 +90,6 @@ const {
   syncLayout?: boolean
 }>()
 const canvasStore = useCanvasStore()
-const slots = useTemplateRef<HTMLElement>('slots')
 const executionErrorStore = useExecutionErrorStore()
 const linkStore = useLinkStore()
 const nodeLocatorId = computed(() =>
@@ -117,37 +123,45 @@ function isOutputConnected(index: number): boolean {
   return linkStore.isOutputSlotConnected(scope, nodeData.id, index)
 }
 
-const filteredInputs = computed(() => [
-  ...nonWidgetedInputs(nodeData.inputs),
-  ...linkedWidgetInputs.value
-])
+const settingStore = useSettingStore()
 
-const layoutKey = computed(() =>
-  [
-    ...filteredInputs.value.map((input, index) =>
-      getActualInputIndex(input, index)
-    ),
-    '|',
-    ...nodeData.outputs.keys(),
-    unified
-  ].join(':')
-)
+function isListedInput(node: LGraphNode, input: INodeInputSlot, index: number) {
+  if (autogrowInputRole(node, input)) return false
+  return (
+    !!nodeData.showAdvanced ||
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets') ||
+    isInputConnected(index) ||
+    !isAdvancedSocketInput(node, input)
+  )
+}
 
-watch(
-  [
-    layoutKey,
-    slots,
-    () => canvasStore.rootGraphId,
-    () => layoutStore.slotOffsetVersion
-  ],
-  () => {
-    const rootGraphId = canvasStore.rootGraphId
-    if (syncLayout && slots.value && rootGraphId) {
-      syncSlotOffsets(slots.value, rootGraphId, nodeData.id)
+const filteredInputs = computed(() => {
+  const app = useApp()
+  const node = app.isGraphReady ? getNodeByState(app.rootGraph, nodeData) : null
+  const inputs =
+    unified || !node
+      ? nodeData.inputs
+      : nodeData.inputs.filter((input, i) => isListedInput(node, input, i))
+  return [...nonWidgetedInputs(inputs), ...linkedWidgetInputs.value]
+})
+
+const body =
+  syncLayout && !unified ? inject(vueNodeBodyKey, undefined) : undefined
+function slotItems(): BodyItem[] {
+  return [
+    {
+      kind: 'slots',
+      inputs: filteredInputs.value.map((input, index) =>
+        getActualInputIndex(input, index)
+      ),
+      outputs: [...nodeData.outputs.keys()]
     }
-  },
-  { flush: 'post' }
-)
+  ]
+}
+if (body) body.slotItems.value = slotItems
+onBeforeUnmount(() => {
+  if (body?.slotItems.value === slotItems) body.slotItems.value = undefined
+})
 
 function inputHasError(input: INodeSlot): boolean {
   const locatorId = nodeLocatorId.value
