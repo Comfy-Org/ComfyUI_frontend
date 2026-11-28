@@ -203,7 +203,7 @@ export function migrateWidgetsValues<TWidgetValue>(
   )
   const compactedWidgetValues = filter(
     widgetsValues,
-    (value, index) => !(value == null && savedSlotIsSkipped[index])
+    (_, index) => !savedSlotIsSkipped[index]
   )
   const alignedWidgetValues =
     compactedWidgetValues.length === widgetIndexHasForceInput.length
