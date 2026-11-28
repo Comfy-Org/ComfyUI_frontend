@@ -55,7 +55,7 @@ vi.mock(import('@/scripts/app'), () => ({
 vi.mock(import('@/utils/graphTraversalUtil'))
 function mount() {
   return render(AgentGraphActivityBar, {
-    props: { canvas },
+    props: { canvas, currentGraph: graph },
     global: { plugins: [i18n] }
   })
 }
@@ -87,7 +87,8 @@ describe('AgentGraphActivityBar', () => {
     mountGraphCanvasPanel()
     setPanelRect(UNCOVERED_PANEL_RECT)
     vi.useFakeTimers()
-    vi.mocked(canvas.animateToBounds).mockClear()
+    canvas.graph = graph
+    graph.nodes.splice(0, graph.nodes.length, node, secondNode)
     node.pos = [10, 20]
     secondNode.pos = [7400, 6500]
   })
@@ -128,11 +129,14 @@ describe('AgentGraphActivityBar', () => {
 
   it('frames the combined batch when its nodes arrive in separate materializations', async () => {
     node.pos = [7000, 6500]
+    graph.nodes.splice(0, graph.nodes.length, node)
     const view = mount()
     const activity = useAgentGraphActivityStore()
     activity.startTurn()
     activity.recordMaterialized(TARGET, [toNodeId(1)])
     await nextTick()
+    await vi.advanceTimersByTimeAsync(BATCH_SETTLED_MS / 2)
+    graph.nodes.push(secondNode)
     activity.recordMaterialized(TARGET, [toNodeId(2)])
     await settle()
 
@@ -141,7 +145,62 @@ describe('AgentGraphActivityBar', () => {
       Array.from(vi.mocked(canvas.animateToBounds).mock.calls[0][0]),
       'the camera must fit every node of the batch, not only the first to arrive'
     ).toEqual([6960, 6460, 580, 160])
+    graph.nodes.splice(0, graph.nodes.length, node, secondNode)
     view.unmount()
+  })
+
+  it('does not reframe an initially visible batch when its turn completes', async () => {
+    secondNode.pos = [120, 20]
+    const view = mount()
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn()
+    activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
+    await settle()
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
+
+    node.pos = [7000, 6500]
+    secondNode.pos = [7400, 6500]
+    activity.finishTurn()
+    await vi.advanceTimersByTimeAsync(1_200)
+
+    expect(
+      canvas.animateToBounds,
+      'a presentation-only phase change must preserve a user pan'
+    ).not.toHaveBeenCalled()
+    view.unmount()
+  })
+
+  it('does not frame a cached root batch after navigating to another graph', async () => {
+    node.pos = [7000, 6500]
+    const view = mount()
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn()
+    activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
+    await nextTick()
+
+    const subgraph = fromPartial<LGraph>({ id: 'subgraph-1', nodes: [node] })
+    canvas.graph = subgraph
+    await view.rerender({ canvas, currentGraph: subgraph })
+    await vi.advanceTimersByTimeAsync(BATCH_SETTLED_MS)
+
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
+    canvas.graph = graph
+    await view.rerender({ canvas, currentGraph: graph })
+    await settle()
+    expect(canvas.animateToBounds).toHaveBeenCalledTimes(1)
+    view.unmount()
+  })
+
+  it('does not move the camera after unmounting with a pending batch', async () => {
+    node.pos = [7000, 6500]
+    const view = mount()
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn()
+    activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
+    await nextTick()
+    view.unmount()
+    await vi.advanceTimersByTimeAsync(BATCH_SETTLED_MS)
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
   })
 
   it('frames a later turn on the same target after the first one framed', async () => {

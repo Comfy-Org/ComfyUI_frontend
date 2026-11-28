@@ -3600,7 +3600,10 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
 </script>
 
 <template>
-  <AgentGraphActivityBar :canvas="canvasStore.canvas" />
+  <AgentGraphActivityBar
+    :canvas="canvasStore.canvas"
+    :current-graph="canvasStore.currentGraph"
+  />
   <div
     id="agent-panel-root"
     class="relative size-full"

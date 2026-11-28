@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@comfyorg/design-system/button/Button'
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
@@ -15,7 +16,10 @@ import { shouldFrameAgentBatch } from '@/workbench/extensions/agent/crdt/batchFr
 import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
 
 const { t } = useI18n()
-const { canvas } = defineProps<{ canvas: LGraphCanvas | null }>()
+const { canvas, currentGraph } = defineProps<{
+  canvas: LGraphCanvas | null
+  currentGraph: LGraph | null
+}>()
 const activity = useAgentGraphActivityStore()
 const teleportTarget = ref<HTMLElement | null>(null)
 onMounted(() => {
@@ -27,7 +31,8 @@ const visibleState = computed(() => {
   if (
     state.phase === 'idle' ||
     !canvas?.graph ||
-    String(canvas.graph.id) !== state.rootGraphId
+    !currentGraph ||
+    String(currentGraph.id) !== state.rootGraphId
   )
     return null
   return state
@@ -100,7 +105,14 @@ let settleTimer: ReturnType<typeof setTimeout> | undefined
 function frameBatchIfUnseen(): void {
   settleTimer = undefined
   const nodes = liveNodes.value
-  if (!visibleState.value || !canvas?.graph || nodes.length === 0) return
+  if (
+    !visibleState.value ||
+    !canvas?.graph ||
+    !currentGraph ||
+    String(currentGraph.id) !== visibleState.value.rootGraphId ||
+    nodes.length === 0
+  )
+    return
   if (activity.currentTurnFramed) return
   const batchIds = new Set(nodes.map((node) => node.id))
   const frame = shouldFrameAgentBatch({
@@ -114,7 +126,11 @@ function frameBatchIfUnseen(): void {
 }
 
 watch(
-  () => [visibleState.value, liveNodes.value] as const,
+  [
+    () => visibleState.value?.rootGraphId,
+    () => visibleState.value?.nodeIds,
+    () => currentGraph
+  ],
   () => {
     if (settleTimer !== undefined) clearTimeout(settleTimer)
     settleTimer = setTimeout(frameBatchIfUnseen, BATCH_SETTLE_MS)

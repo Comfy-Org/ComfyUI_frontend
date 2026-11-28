@@ -4,9 +4,11 @@ import type { Page } from '@playwright/test'
 import type {
   AgentCancelAccepted,
   AgentMessages,
+  AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
@@ -197,14 +199,15 @@ class AgentEmptyCanvasFramingHarness {
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'POST') {
+        const accepted: AgentTurnAccepted = {
+          thread_id: THREAD_ID,
+          message_id: MESSAGE_ID,
+          workflow_id: WORKFLOW_ID
+        }
         return route.fulfill({
           status: 202,
           contentType: 'application/json',
-          body: JSON.stringify({
-            thread_id: THREAD_ID,
-            message_id: MESSAGE_ID,
-            workflow_id: WORKFLOW_ID
-          })
+          body: JSON.stringify(accepted)
         })
       }
       const history: AgentMessages = []
@@ -214,13 +217,12 @@ class AgentEmptyCanvasFramingHarness {
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }
       return route.fulfill(jsonRoute(cancelled))
     })
+    const workflows: WorkflowListResponse = {
+      data: [],
+      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+    }
     await page.route('**/api/workflows**', (route) =>
-      route.fulfill(
-        jsonRoute({
-          data: [],
-          pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-        })
-      )
+      route.fulfill(jsonRoute(workflows))
     )
   }
 

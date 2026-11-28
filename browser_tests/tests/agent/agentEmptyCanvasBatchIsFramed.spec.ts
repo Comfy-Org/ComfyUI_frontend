@@ -58,6 +58,20 @@ test.describe(
             )
           )
 
+        await expect
+          .poll(async () => nodePositions(page, TEMPLATE_NODE_IDS), {
+            message: 'framing must not relocate the template nodes',
+            timeout: 10_000
+          })
+          .toEqual(
+            Object.fromEntries(
+              TEMPLATE_NODE_IDS.map((id) => [
+                String(id),
+                TEMPLATE_NODE_POSITIONS[id]
+              ])
+            )
+          )
+
         await testInfo.attach('framed-batch.png', {
           body: await page.screenshot(),
           contentType: 'image/png'
