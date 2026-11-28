@@ -423,7 +423,8 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       const page = comfyPage.page
       const panel = agentPanel.root
       const composer = panel.getByRole('textbox', {
-        name: /^Décrivez vos idées/
+        name: frMessages.agent.placeholder,
+        exact: true
       })
       const prompt = 'Build a product photo workflow'
 

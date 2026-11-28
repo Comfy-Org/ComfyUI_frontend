@@ -76,7 +76,8 @@ const AGENT_PAYWALL_REMEDIATIONS = {
   subscriptionRequired: 'subscribe',
   member: undefined,
   salesManaged: undefined,
-  unavailable: undefined
+  unavailable: undefined,
+  unresolved: undefined
 } satisfies Record<
   AgentPaywallPresentation['kind'],
   AgentPaywallRemediation | undefined
