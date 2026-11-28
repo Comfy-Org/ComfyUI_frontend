@@ -93,9 +93,8 @@ interface FollowedTask {
 }
 
 /**
- * One model file chosen from the computer and uploaded into the workspace
- * library, or onto the deployment this page booted on: choose it, pick its
- * type and where it goes, upload with progress or cancel.
+ * Uploads one model file into the workspace library or onto the booted
+ * deployment, with its type, destination, progress and cancel.
  */
 export function useUploadModelFile(
   initialDestination: UploadDestination = 'library'

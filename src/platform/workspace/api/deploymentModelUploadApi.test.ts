@@ -170,7 +170,8 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
         filename: 'my_style_v2.safetensors',
         sizeBytes: 100,
         sha256: await sha256Hex(file),
-        parts: true
+        parts: true,
+        reuse: true
       },
       expect.any(AbortSignal)
     )
@@ -268,7 +269,11 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
 
   it('adds bytes the workspace already stored without sending a piece', async () => {
     const ingest = ingestAnswers([])
-    ingest.create.mockResolvedValue({ blobId: BLOB_ID, deduplicated: true })
+    ingest.create.mockImplementation(async (_workspace, _deployment, request) =>
+      request.reuse === true
+        ? { blobId: BLOB_ID, deduplicated: true }
+        : { blobId: BLOB_ID, deduplicated: false, parts: [] }
+    )
 
     await expect(upload(modelFile(2)).result).resolves.toEqual({
       ok: true,

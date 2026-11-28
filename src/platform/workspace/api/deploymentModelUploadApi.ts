@@ -253,7 +253,13 @@ async function createUpload(
     await workspaceApi.createDeploymentModelUpload(
       workspaceId,
       deploymentId,
-      { filename: file.name, sizeBytes: file.size, sha256, parts: true },
+      {
+        filename: file.name,
+        sizeBytes: file.size,
+        sha256,
+        parts: true,
+        reuse: true
+      },
       signal
     )
   if (deduplicated) return { ok: true, blobId }
