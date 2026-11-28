@@ -207,6 +207,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
+      video.setAttribute('aria-label', t('g.videoPlayer'))
 
       video.onloadeddata = () => {
         setMinDimensions(video)

@@ -1,6 +1,7 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { partition } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { DraggedAssetInfo } from '@/platform/assets/integration/assetDrop'
 import { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { withHdrImageType } from '@/utils/eventUtils'
@@ -33,7 +34,7 @@ type DropHandler<T> = (files: File[]) => Promise<T[]>
 interface DragAndDropOptions<T> {
   onDragOver?: DragHandler
   onDrop: DropHandler<T>
-  onResultItemDrop?: (item: ResultItem) => void
+  onResultItemDrop?: (item: DraggedAssetInfo) => void
   fileFilter?: (file: File) => boolean
   onReject?: (files: File[]) => boolean
 }

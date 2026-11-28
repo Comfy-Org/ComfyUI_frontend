@@ -6,6 +6,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import type { BaseDOMWidget } from '@/types/domWidget'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -7620,6 +7622,76 @@ describe('ComfyApp', () => {
       expect(preventDefault).toHaveBeenCalled()
       expect(app.dragOverNode).toBeNull()
       expect(onDragDrop).not.toHaveBeenCalled()
+    })
+
+    describe('onto a canvas DOM widget', () => {
+      function dropOnDomWidget(widgetNode: LGraphNode, { active = true } = {}) {
+        app.canvas = fromPartial<LGraphCanvas>({
+          ...createMockCanvas(),
+          graph_mouse: [0, 0],
+          adjustMouseEvent: vi.fn()
+        })
+        vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
+        const hoveredDrop = vi.fn()
+        app.dragOverNode = fromPartial({ onDragDrop: hoveredDrop })
+        const domWidgetStore = useDomWidgetStore()
+        domWidgetStore.registerWidget(
+          fromPartial<BaseDOMWidget>({
+            id: 'video-player',
+            node: widgetNode
+          })
+        )
+        if (!active) domWidgetStore.deactivateWidget('video-player')
+        const host = document.createElement('div')
+        host.dataset.widgetId = 'video-player'
+        const player = host.appendChild(document.createElement('video'))
+        document.body.append(host)
+        onTestFinished(() => host.remove())
+        addScopedDropHandler()
+
+        const event = new DragEvent('drop', { bubbles: true, cancelable: true })
+        player.dispatchEvent(event)
+        return { event, hoveredDrop }
+      }
+
+      it('hands the drop to the widget node rather than the node last hovered', async () => {
+        const onDragDrop = vi.fn().mockResolvedValue(true)
+
+        const { event, hoveredDrop } = dropOnDomWidget(
+          createMockNode({ onDragOver: () => true, onDragDrop })
+        )
+
+        await vi.waitFor(() => expect(onDragDrop).toHaveBeenCalledWith(event))
+        expect(hoveredDrop).not.toHaveBeenCalled()
+        expect(extractFilesFromDragEvent).not.toHaveBeenCalled()
+        expect(app.dragOverNode).toBeNull()
+      })
+
+      it.for([
+        { label: 'rejects the drag', onDragOver: () => false, active: true },
+        { label: 'cannot take drops', onDragOver: undefined, active: true },
+        {
+          label: 'belongs to another graph',
+          onDragOver: () => true,
+          active: false
+        }
+      ])(
+        'loads the dropped files itself when the widget node $label',
+        async ({ onDragOver, active }) => {
+          const onDragDrop = vi.fn().mockResolvedValue(true)
+
+          const { event, hoveredDrop } = dropOnDomWidget(
+            createMockNode({ onDragOver, onDragDrop }),
+            { active }
+          )
+
+          await vi.waitFor(() =>
+            expect(extractFilesFromDragEvent).toHaveBeenCalledWith(event)
+          )
+          expect(onDragDrop).not.toHaveBeenCalled()
+          expect(hoveredDrop).not.toHaveBeenCalled()
+        }
+      )
     })
 
     it.for([

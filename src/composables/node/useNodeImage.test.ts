@@ -73,6 +73,12 @@ describe('useNodeVideo', () => {
     expect(useCanvasInteractions().handlePointerDown).toHaveBeenCalledTimes(1)
   })
 
+  it('names the player it shows', async () => {
+    const { video } = await setup()
+
+    expect(video).toHaveAccessibleName('Video player')
+  })
+
   it('detaches every listener when the widget is removed', async () => {
     const { node, video } = await setup()
 

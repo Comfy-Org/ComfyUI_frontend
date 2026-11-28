@@ -10,6 +10,7 @@ import './testUtils/mockTanstackVirtualizer'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
 
 import JobAssetsList from './JobAssetsList.vue'
 
@@ -50,6 +51,8 @@ const AssetsListItemStub = defineComponent({
   },
   template: `
     <div class="assets-list-item-stub"
+         role="group"
+         :aria-label="primaryText"
          :data-preview-url="previewUrl"
          :data-is-video="isVideoPreview">
       <span>{{ primaryText }}</span>
@@ -499,5 +502,54 @@ describe('JobAssetsList', () => {
 
     expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('dragging a job output out of the list', () => {
+  function startDrag(row: Element) {
+    const dataTransfer = new DataTransfer()
+    const event = new DragEvent('dragstart', {
+      bubbles: true,
+      cancelable: true
+    })
+    Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+    row.dispatchEvent(event)
+    return dataTransfer
+  }
+
+  it('carries a completed output to the canvas or a loader node', () => {
+    renderJobAssetsList({ jobs: [buildJob()] })
+    const row = screen.getByRole('group', { name: 'Job 1' })
+
+    expect(row).toHaveAttribute('draggable', 'true')
+    expect(getDroppedAsset(startDrag(row))).toMatchObject({
+      name: 'job-1.png',
+      kind: 'image',
+      uri: 'http://localhost:3000/api/view/job-1.png'
+    })
+  })
+
+  it.for([
+    ['a running job', { state: 'running' }],
+    ['a completed job with no output', { taskRef: createTaskRef() }]
+  ] as const)('keeps %s from starting a drag', ([, overrides]) => {
+    renderJobAssetsList({ jobs: [buildJob(overrides)] })
+    const row = screen.getByRole('group', { name: 'Job 1' })
+
+    expect(row).toHaveAttribute('draggable', 'false')
+    expect(startDrag(row).types).toEqual([])
+  })
+
+  it('closes the job details popover so it does not cover the drop target', async () => {
+    const { user } = renderJobAssetsList({ jobs: [buildJob()] })
+    const row = screen.getByRole('group', { name: 'Job 1' })
+
+    await user.hover(row)
+    expect(await screen.findByTestId('job-details')).toBeInTheDocument()
+
+    startDrag(row)
+    await nextTick()
+
+    expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
   })
 })

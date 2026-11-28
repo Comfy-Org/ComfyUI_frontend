@@ -358,6 +358,18 @@ function isOwnedByWorkflow(graph: LGraph): boolean {
   )
 }
 
+function findDomWidgetId(target: EventTarget | null) {
+  return target instanceof Element
+    ? target.closest<HTMLElement>('[data-widget-id]')?.dataset.widgetId
+    : undefined
+}
+
+function findAcceptingDomWidgetNode(widgetId: string, event: DragEvent) {
+  const state = useDomWidgetStore().widgetStates.get(widgetId)
+  const node = state?.active ? state.widget.node : undefined
+  return node?.onDragOver?.(event) ? node : null
+}
+
 function hasQueueingGraphReloadedInPlace(
   graph: LGraph,
   queueingGraphGeneration: number
@@ -735,33 +747,27 @@ export class ComfyApp implements IComfyApp {
     clipspace.returnNode = null
   }
 
-  /**
-   * Adds a handler allowing drag+drop of files onto the window to load workflows
-   */
   private addDropHandler() {
-    // Get prompt from dropped PNG or json
     useEventListener(document, 'drop', async (event: DragEvent) => {
       try {
-        // Skip if already handled (e.g. file drop onto publish dialog tiles)
         if (event.defaultPrevented) return
 
         event.preventDefault()
         event.stopPropagation()
 
-        // graph_mouse is only updated on mousemove, so when files are dragged
-        // in from another window the canvas-space cursor is stale. Sync it
-        // from the drop event so nodes created below land at the cursor.
         const canvas: LGraphCanvas = this.canvas
         canvas.adjustMouseEvent(event)
         canvas.graph_mouse[0] = event.canvasX
         canvas.graph_mouse[1] = event.canvasY
 
-        const n = this.dragOverNode
+        const hoveredNode = this.dragOverNode
         this.dragOverNode = null
         if (isSelectOnly(canvas)) return
-        // Node handles file drop, we dont use the built in onDropFile handler as its buggy
-        // If you drag multiple files it will call it multiple times with the same file
-        if (await n?.onDragDrop?.(event)) return
+        const domWidgetId = findDomWidgetId(event.target)
+        const receiver = domWidgetId
+          ? findAcceptingDomWidgetNode(domWidgetId, event)
+          : hoveredNode
+        if (await receiver?.onDragDrop?.(event)) return
 
         const files = await extractFilesFromDragEvent(event)
         if (files.length === 0) {
@@ -833,7 +839,6 @@ export class ComfyApp implements IComfyApp {
       }
     })
 
-    // Always clear over node on drag leave
     useEventListener(this.canvasElRef, 'dragleave', async () => {
       if (!this.dragOverNode) return
       this.dragOverNode = null
@@ -841,7 +846,6 @@ export class ComfyApp implements IComfyApp {
     })
 
     useEventListener(document, 'dragover', (e) => e.preventDefault())
-    // Add handler for dropping onto a specific node
     useEventListener(
       this.canvasElRef,
       'dragover',
@@ -857,7 +861,6 @@ export class ComfyApp implements IComfyApp {
 
         this.dragOverNode = node
 
-        // dragover event is fired very frequently, run this on an animation frame
         requestAnimationFrame(() => {
           this.canvas.setDirty(false, true)
         })

@@ -20,6 +20,8 @@ const zDraggedAssetInfo = zResultItem.and(
   })
 )
 
+export type DraggedAssetInfo = z.infer<typeof zDraggedAssetInfo>
+
 export function parseAssetInfo(dataTransfer: DataTransfer) {
   const assetString = dataTransfer.getData(MIME_ASSET_INFO)
   try {

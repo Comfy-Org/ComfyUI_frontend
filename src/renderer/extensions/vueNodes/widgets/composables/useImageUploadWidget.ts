@@ -4,6 +4,7 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
+import type { DraggedAssetInfo } from '@/platform/assets/integration/assetDrop'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { InputSpec } from '@comfyorg/object-info-parser'
@@ -13,6 +14,7 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
@@ -63,6 +65,11 @@ export const useImageUploadWidget = () => {
     }
 
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
+    const loadableKind = isVideo ? 'video' : 'image'
+    function isLoadableOutput({ filename, media_kind }: DraggedAssetInfo) {
+      const kind = media_kind ?? getMediaTypeFromFilename(filename)
+      return kind === 'other' || kind === loadableKind
+    }
     function alertExtensionlessVideo(files: File[]) {
       if (!files.some(isUntypedOrVideoWithoutExtension)) return false
       useToast().warning(t('g.videoFilenameExtensionRequired'))
@@ -78,11 +85,11 @@ export const useImageUploadWidget = () => {
         : createAnnotatedPath(value)
     }
 
-    // Setup file upload handling
     let rollback: (() => void) | undefined
     const { openFileSelection } = useNodeImageUpload(node, {
       allow_batch,
       fileFilter,
+      resultItemFilter: isLoadableOutput,
       accept,
       folder,
       onReject: isVideo ? alertExtensionlessVideo : undefined,
@@ -121,7 +128,6 @@ export const useImageUploadWidget = () => {
       }
     })
 
-    // Create the button widget for selecting the files
     const uploadWidget = node.addWidget(
       'button',
       inputName,
@@ -135,7 +141,6 @@ export const useImageUploadWidget = () => {
     )
     uploadWidget.label = t('g.choose_file_to_upload')
 
-    // Add our own callback to the combo widget to render an image when it changes
     fileComboWidget.callback = function () {
       node.imgs = undefined
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
@@ -145,9 +150,6 @@ export const useImageUploadWidget = () => {
       node.graph?.setDirtyCanvas(true)
     }
 
-    // On load if we have a value then render the image
-    // The value isn't set immediately so we need to wait a moment
-    // No change callbacks seem to be fired on initial setting of the value
     requestAnimationFrame(() => {
       const fileValue = fileComboWidget.value as
         | string

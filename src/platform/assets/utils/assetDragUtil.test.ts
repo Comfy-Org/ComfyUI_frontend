@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
@@ -8,8 +8,13 @@ import {
 } from '@/platform/assets/integration/assetDrop'
 import { api } from '@/scripts/api'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
-import { startAssetDrag } from './assetDragUtil'
+import {
+  isDraggableResultItem,
+  startAssetDrag,
+  startResultItemDrag
+} from './assetDragUtil'
 
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -223,5 +228,144 @@ describe('asset drag on browsers without URL.parse or URL.canParse', () => {
         'http://localhost:8188/api/assets/video-id/content?disposition=inline',
       previewUrl: 'http://localhost:8188/api/view?filename=poster.png'
     })
+  })
+})
+
+describe('job output drag', () => {
+  beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (path) => `http://localhost:8188/api${path}`
+    )
+  })
+
+  function buildOutput(
+    overrides: Partial<AugmentedResultItem>
+  ): AugmentedResultItem {
+    return {
+      filename: 'frame_00002_.png',
+      subfolder: '',
+      type: 'output',
+      mediaType: 'images',
+      nodeId: '9',
+      ...overrides
+    }
+  }
+
+  function dragOutput(output: AugmentedResultItem) {
+    const dataTransfer = new DataTransfer()
+    const event = new DragEvent('dragstart', { cancelable: true })
+    Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+    startResultItemDrag(event, output)
+    return dataTransfer
+  }
+
+  it.for([
+    [
+      'a saved output at the output root',
+      { filename: 'frame_00002_.png', subfolder: '', type: 'output' },
+      'frame_00002_.png [output]'
+    ],
+    [
+      'a preview in a temp subfolder',
+      { filename: 'ComfyUI_temp_x.png', subfolder: 'previews', type: 'temp' },
+      'previews/ComfyUI_temp_x.png [temp]'
+    ]
+  ] as const)(
+    'drops %s on a loader node as a reference to that same file',
+    ([, location, written]) => {
+      const dropped = parseAssetInfo(dragOutput(buildOutput(location)))
+
+      assert.exists(dropped)
+      expect(createAnnotatedPath(dropped)).toBe(written)
+    }
+  )
+
+  it.for([
+    {
+      label: 'an image',
+      output: { filename: 'frame_00002_.png', mediaType: 'images' },
+      expected: {
+        name: 'frame_00002_.png',
+        ref: 'frame_00002_.png',
+        kind: 'image',
+        uri: 'http://localhost:8188/api/view?filename=frame_00002_.png&type=output&subfolder=',
+        previewUrl:
+          'http://localhost:8188/api/view?filename=frame_00002_.png&type=output&subfolder=',
+        mediaUrl: undefined
+      }
+    },
+    {
+      label: 'a hash-named video',
+      output: {
+        filename: 'a1b2c3.mp4',
+        hash: 'blake3:abcdef0123456789',
+        display_name: 'clip_00001_.mp4',
+        mediaType: 'video'
+      },
+      expected: {
+        name: 'clip_00001_.mp4',
+        ref: 'blake3:abcdef0123456789',
+        kind: 'video',
+        uri: 'http://localhost:8188/api/view?filename=a1b2c3.mp4&type=output&subfolder=',
+        previewUrl: undefined,
+        mediaUrl:
+          'http://localhost:8188/api/view?filename=a1b2c3.mp4&type=output&subfolder='
+      }
+    },
+    {
+      label: 'a video whose suffix only its media type identifies',
+      output: { filename: 'clip.mpeg', mediaType: 'video' },
+      expected: {
+        name: 'clip.mpeg',
+        ref: 'clip.mpeg',
+        kind: 'video',
+        uri: 'http://localhost:8188/api/view?filename=clip.mpeg&type=output&subfolder=',
+        previewUrl: undefined,
+        mediaUrl:
+          'http://localhost:8188/api/view?filename=clip.mpeg&type=output&subfolder='
+      }
+    },
+    {
+      label: 'audio',
+      output: { filename: 'voice.wav', mediaType: 'audio' },
+      expected: {
+        name: 'voice.wav',
+        ref: 'voice.wav',
+        kind: 'audio',
+        uri: 'http://localhost:8188/api/view?filename=voice.wav&type=output&subfolder=',
+        previewUrl: undefined,
+        mediaUrl:
+          'http://localhost:8188/api/view?filename=voice.wav&type=output&subfolder='
+      }
+    },
+    {
+      label: 'a 3D model',
+      output: { filename: 'mesh.glb', mediaType: 'model' },
+      expected: {
+        name: 'mesh.glb',
+        ref: 'mesh.glb',
+        kind: '3D',
+        uri: 'http://localhost:8188/api/view?filename=mesh.glb&type=output&subfolder=',
+        previewUrl: undefined,
+        mediaUrl: undefined
+      }
+    }
+  ])(
+    'hands the canvas and agent composer the file of $label',
+    ({ output, expected }) => {
+      expect(getDroppedAsset(dragOutput(buildOutput(output)))).toMatchObject(
+        expected
+      )
+    }
+  )
+
+  it.for([
+    ['a text result', { filename: '', mediaType: 'text', content: 'hello' }],
+    ['a saved text file', { filename: 'notes.txt', mediaType: 'text' }]
+  ] as const)('leaves %s undraggable and carrying nothing', ([, output]) => {
+    const item = buildOutput(output)
+
+    expect(isDraggableResultItem(item)).toBe(false)
+    expect(dragOutput(item).types).toEqual([])
   })
 })

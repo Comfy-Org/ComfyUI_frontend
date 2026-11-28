@@ -1787,6 +1787,7 @@
           "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.ts",
+          "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.outputDrop.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget.test.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useIntWidget.test.ts",

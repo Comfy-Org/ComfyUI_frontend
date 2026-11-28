@@ -16,9 +16,19 @@ import {
   isGeneratedTempOutput
 } from '@/platform/assets/adapters/outputAssetMappers'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
+import type { MediaKind } from '@comfyorg/assets-core/media'
+import type { DraggedAssetInfo } from '@/platform/assets/integration/assetDrop'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { getOutputSubfolder } from '@comfyorg/assets-core/metadata'
 import { getStoredOutputIdentity } from '@/platform/assets/adapters/outputAssetResolver'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import {
+  is3DResult,
+  isAudioResult,
+  isImageResult,
+  isVideoResult
+} from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { getAssetStoredFilename } from './assetStoragePolicy'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
@@ -78,7 +88,7 @@ export function startAssetDrag(
   if (!dataTransfer) return
 
   const storedHash = asset.hash ?? getStoredOutputIdentity(asset)?.hash
-  const assetInfo = {
+  const assetInfo: DraggedAssetInfo = {
     filename: getAssetStoredFilename(asset, storedHash),
     subfolder: getOutputSubfolder(asset),
     type: isGeneratedTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
@@ -86,10 +96,61 @@ export function startAssetDrag(
     attachment_ref: storedHash ?? asset.name,
     ...assetMediaSources(asset)
   }
-  dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
+  writeAssetDrag(
+    dataTransfer,
+    assetInfo,
+    parseUrl(getAssetFileUrl(asset), location.href)
+  )
+}
 
-  const fileUrl = parseUrl(getAssetFileUrl(asset), location.href)
-  if (!fileUrl) return
+function writeAssetDrag(
+  dataTransfer: DataTransfer,
+  info: DraggedAssetInfo,
+  fileUrl: URL | null
+): void {
+  dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(info))
+  if (fileUrl) dataTransfer.setData('text/uri-list', fileUrl.toString())
+}
 
-  dataTransfer.setData('text/uri-list', fileUrl.toString())
+function resultItemMediaKind(item: AugmentedResultItem): MediaKind | undefined {
+  if (!item.filename) return undefined
+  if (isImageResult(item)) return 'image'
+  if (isVideoResult(item)) return 'video'
+  if (isAudioResult(item)) return 'audio'
+  if (is3DResult(item)) return '3D'
+  return undefined
+}
+
+/** Whether {@link startResultItemDrag} can carry `item`: a stored image, video, audio or 3D file. */
+export function isDraggableResultItem(item: AugmentedResultItem): boolean {
+  return resultItemMediaKind(item) !== undefined
+}
+
+export function startResultItemDrag(
+  event: DragEvent,
+  item: AugmentedResultItem
+): void {
+  const { dataTransfer } = event
+  const mediaKind = resultItemMediaKind(item)
+  const fileUrl = parseUrl(resultItemUrl(item), location.href)
+  if (!dataTransfer || !mediaKind || !fileUrl) return
+
+  const playable = mediaKind === 'video' || mediaKind === 'audio'
+  writeAssetDrag(
+    dataTransfer,
+    {
+      filename: item.filename,
+      subfolder: item.subfolder,
+      type: item.type,
+      display_name: item.display_name ?? item.filename,
+      attachment_ref: item.hash ?? item.filename,
+      media_kind: mediaKind,
+      preview_url:
+        mediaKind === 'image'
+          ? parseUrl(resultItemPreviewUrl(item), location.href)?.toString()
+          : undefined,
+      media_url: playable ? fileUrl.toString() : undefined
+    },
+    fileUrl
+  )
 }

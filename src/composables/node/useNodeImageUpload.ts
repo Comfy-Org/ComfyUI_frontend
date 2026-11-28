@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { DraggedAssetInfo } from '@/platform/assets/integration/assetDrop'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
@@ -71,6 +72,7 @@ const uploadFile = async (
 
 interface ImageUploadOptions {
   fileFilter?: (file: File) => boolean
+  resultItemFilter?: (item: DraggedAssetInfo) => boolean
   onUploadComplete: (paths: (string | ResultItem)[]) => void
   allow_batch?: boolean
   /**
@@ -95,7 +97,13 @@ export const useNodeImageUpload = (
   node: LGraphNode,
   options: ImageUploadOptions
 ) => {
-  const { fileFilter, onUploadComplete, allow_batch, accept } = options
+  const {
+    fileFilter,
+    resultItemFilter = () => true,
+    onUploadComplete,
+    allow_batch,
+    accept
+  } = options
 
   const handleUpload = async (
     file: File,
@@ -149,15 +157,16 @@ export const useNodeImageUpload = (
     }
   }
 
-  // Handle drag & drop
   useNodeDragAndDrop(node, {
     fileFilter,
     onReject: options.onReject,
     onDrop: handleUploadBatch,
-    onResultItemDrop: (item) => onUploadComplete([item])
+    onResultItemDrop: (item) => {
+      if (resultItemFilter(item)) onUploadComplete([item])
+      else useToast().warning(t('mediaAsset.unsupportedFileType'))
+    }
   })
 
-  // Handle paste
   useNodePaste(node, {
     fileFilter,
     onReject: options.onReject,
@@ -165,7 +174,6 @@ export const useNodeImageUpload = (
     onPaste: handleUploadBatch
   })
 
-  // Handle file input
   const { openFileSelection } = useNodeFileInput(node, {
     fileFilter,
     onReject: options.onReject,
