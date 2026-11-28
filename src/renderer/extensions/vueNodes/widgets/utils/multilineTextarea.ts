@@ -71,7 +71,6 @@ export function bindMultilineTextareaWidget(
     'input',
     () => {
       widget.value = element.value
-      widget.callback?.(widget.value)
     },
     { signal }
   )
@@ -90,7 +89,6 @@ export function bindMultilineTextareaWidget(
       const canScrollY = element.scrollHeight > element.clientHeight
       const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY)
 
-      // Prevent pinch zoom from zooming the page
       if (event.ctrlKey) {
         event.preventDefault()
         event.stopPropagation()
@@ -98,13 +96,9 @@ export function bindMultilineTextareaWidget(
         return
       }
 
-      // Detect if this is likely a trackpad gesture vs mouse wheel
-      // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
-      // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
       const isLikelyTrackpad =
         Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
 
-      // Trackpad gestures: when enabled, trackpad panning goes to canvas
       if (gesturesEnabled && isLikelyTrackpad) {
         event.preventDefault()
         event.stopPropagation()
@@ -112,7 +106,6 @@ export function bindMultilineTextareaWidget(
         return
       }
 
-      // When gestures disabled: horizontal always goes to canvas (no horizontal scroll in textarea)
       if (isHorizontal) {
         event.preventDefault()
         event.stopPropagation()
@@ -120,13 +113,11 @@ export function bindMultilineTextareaWidget(
         return
       }
 
-      // Vertical scrolling when gestures disabled: let textarea scroll if scrollable
       if (canScrollY) {
         event.stopPropagation()
         return
       }
 
-      // If textarea can't scroll vertically, pass to canvas
       event.preventDefault()
       useApp().canvas.processMouseWheel(event)
     },
