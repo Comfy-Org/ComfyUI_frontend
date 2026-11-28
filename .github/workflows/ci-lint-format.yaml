@@ -78,6 +78,11 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: pnpm lint:server-facts --base "$BASE_SHA"
 
+      - name: Check markdown references
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: pnpm markdown-references:check --base "$BASE_SHA"
+
       - name: Check for changes
         id: verify-changed-files
         run: |
