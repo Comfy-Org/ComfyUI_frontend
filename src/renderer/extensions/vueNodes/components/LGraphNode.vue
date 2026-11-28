@@ -36,7 +36,6 @@
       ...nodeSizeStyle,
       '--min-node-width': `${minNodeWidth}px`,
       '--collapsed-node-max-width': `${MIN_NODE_WIDTH}px`,
-      '--node-header-height': `${VUE_NODE_BODY.headerHeight}px`,
       transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
@@ -405,9 +404,10 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+const nodeGeometry = computed(() => themeStore.activeTheme.nodeGeometry)
 const bodyTop = computed(
   () =>
-    (displayHeader.value ? VUE_NODE_BODY.headerHeight : 0) -
+    (displayHeader.value ? nodeGeometry.value.headerHeight : 0) -
     LiteGraph.NODE_TITLE_HEIGHT
 )
 
@@ -1007,7 +1007,12 @@ const bodyLayout = computed<VueNodeBodyLayout | undefined>((previous) => {
       ? { ...item, contentHeight: contentHeights.get(item.key) }
       : item
   )
-  const next = layoutVueNodeBody(bodyWidth.value, bodyHeight.value, items)
+  const next = layoutVueNodeBody(
+    bodyWidth.value,
+    bodyHeight.value,
+    items,
+    nodeGeometry.value
+  )
   return previous && isEqual(previous, next) ? previous : next
 })
 

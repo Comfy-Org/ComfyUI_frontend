@@ -1,9 +1,6 @@
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 
-/** Rendered height of a Vue node header; a collapsed node is exactly this tall. */
-export const VUE_NODE_HEADER_HEIGHT = 28
-
 type SlotDirection = 'input' | 'output'
 
 /** A node's expanded slot anchors relative to `node.pos`. */

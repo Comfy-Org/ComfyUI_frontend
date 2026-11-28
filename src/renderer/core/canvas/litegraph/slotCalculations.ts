@@ -19,10 +19,8 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import {
-  getVueSlotAnchor,
-  VUE_NODE_HEADER_HEIGHT
-} from '@/renderer/core/layout/slots/derivedSlotAnchors'
+import { getVueSlotAnchor } from '@/renderer/core/layout/slots/derivedSlotAnchors'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
 
@@ -200,6 +198,10 @@ function getVueSlotPosition(
   )
 }
 
+function nodeGeometry() {
+  return useThemeStore().activeTheme.nodeGeometry
+}
+
 function getDerivedSlotAnchor(
   node: LGraphNode,
   slotIndex: number,
@@ -208,7 +210,7 @@ function getDerivedSlotAnchor(
   if (node.flags.collapsed)
     return {
       x: isInput ? 0 : node.renderingSize[0],
-      y: VUE_NODE_HEADER_HEIGHT / 2 - litegraph().NODE_TITLE_HEIGHT
+      y: nodeGeometry().headerHeight / 2 - litegraph().NODE_TITLE_HEIGHT
     }
   if (!node.graph) return undefined
   return getVueSlotAnchor(
@@ -300,9 +302,9 @@ function getVueSlotY(node: LGraphNode, slotIndex: number): number {
 }
 
 function getVueNodeContentY(node: LGraphNode, nodeY: number): number {
-  return node.title_mode === TitleMode.NO_TITLE
-    ? nodeY - litegraph().NODE_TITLE_HEIGHT
-    : nodeY + VUE_NODE_HEADER_HEIGHT - litegraph().NODE_TITLE_HEIGHT
+  const header =
+    node.title_mode === TitleMode.NO_TITLE ? 0 : nodeGeometry().headerHeight
+  return nodeY + header - litegraph().NODE_TITLE_HEIGHT
 }
 
 export function getSlotLayout(

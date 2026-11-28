@@ -4,6 +4,7 @@ import {
   DEFAULT_DARK_THEME_PRESET,
   DEFAULT_LIGHT_THEME_PRESET
 } from './builtInThemePresets'
+import { nodeGeometryOf } from './nodeGeometry'
 import type {
   Colors,
   CompletedThemePreset,
@@ -98,11 +99,13 @@ export function resolveTheme(preset: ThemePreset) {
     ? {}
     : deriveLegacyTheme(completedPreset.colors)
   const canvas = completedPreset.colors.litegraph_base
+  const stylesheet = resolveStylesheet(preset)
   return {
     id: preset.id,
     name: preset.name,
     colorScheme: preset.light_theme ? ('light' as const) : ('dark' as const),
-    stylesheet: resolveStylesheet(preset),
+    stylesheet,
+    nodeGeometry: nodeGeometryOf(stylesheet),
     preset: completedPreset,
     cssTokens: {
       ...DERIVED_THEME_DEFAULTS,

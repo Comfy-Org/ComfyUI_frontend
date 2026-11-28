@@ -1,18 +1,16 @@
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { WidgetSizing } from '@comfyorg/graph-model/widgets'
+import type { NodeGeometry } from '@comfyorg/theme-core/nodeGeometry'
 
 import { layoutNodeBody } from '@/lib/litegraph/src/utils/nodeBodyLayout'
 import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
-import { VUE_NODE_HEADER_HEIGHT } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 
 /** Vue node body constants; the CSS custom properties of the same names are set from these. */
 export const VUE_NODE_BODY = {
-  headerHeight: VUE_NODE_HEADER_HEIGHT,
   paddingTop: 4,
   paddingBottom: 12,
   gap: 4,
   slotRowHeight: 20,
-  socketRowOverlap: 2,
   widgetRowHeight: 24
 } as const
 
@@ -111,46 +109,61 @@ function isWidgetRow(item: BodyItem | undefined): item is WidgetRow {
   return item?.kind === 'socket' || item?.kind === 'control'
 }
 
-function overlap(item: BodyItem, neighbour: BodyItem | undefined) {
+function overlap(
+  item: BodyItem,
+  neighbour: BodyItem | undefined,
+  geometry: NodeGeometry
+) {
   return item.kind === 'socket' && isWidgetRow(neighbour)
-    ? VUE_NODE_BODY.socketRowOverlap
+    ? geometry.socketRowOverlap
     : 0
 }
 
-function gapBetween(above: BodyItem, below: BodyItem) {
-  return VUE_NODE_BODY.gap - overlap(above, below) - overlap(below, above)
+function gapBetween(above: BodyItem, below: BodyItem, geometry: NodeGeometry) {
+  return (
+    VUE_NODE_BODY.gap +
+    (above.kind === 'slots' ? geometry.slotBlockMarginBottom : 0) -
+    overlap(above, below, geometry) -
+    overlap(below, above, geometry)
+  )
 }
 
-function anchorsOf(item: BodyItem, row: PlacedBodyRow, width: number) {
+function anchorsOf(
+  item: BodyItem,
+  row: PlacedBodyRow,
+  width: number,
+  { slotInset }: NodeGeometry
+) {
   const inputs: [number, Point2D][] = []
   const outputs: [number, Point2D][] = []
   if (item.kind === 'slots') {
     const centre = (index: number) =>
       row.y + (index + 0.5) * VUE_NODE_BODY.slotRowHeight
     item.inputs.forEach((slot, i) =>
-      inputs.push([slot, { x: 0, y: centre(i) }])
+      inputs.push([slot, { x: slotInset, y: centre(i) }])
     )
     item.outputs.forEach((slot, i) =>
-      outputs.push([slot, { x: width, y: centre(i) }])
+      outputs.push([slot, { x: width - slotInset, y: centre(i) }])
     )
   } else if (item.kind !== 'media' && item.input !== undefined) {
-    inputs.push([item.input, { x: 0, y: row.y + row.height / 2 }])
+    inputs.push([item.input, { x: slotInset, y: row.y + row.height / 2 }])
   }
   return { inputs, outputs }
 }
 
-/** Places a Vue node's body rows in a body `width` × `bodyHeight` and anchors every rendered slot, relative to the body's top-left corner. */
+/** Places a Vue node's body rows in a body `width` × `bodyHeight` and anchors every rendered slot, relative to the body's top-left corner, for the theme's node `geometry`. */
 export function layoutVueNodeBody(
   width: number,
   bodyHeight: number,
-  items: readonly BodyItem[]
+  items: readonly BodyItem[],
+  geometry: NodeGeometry
 ): VueNodeBodyLayout {
   const sizings: WidgetSizing[] = []
   items.forEach((item, index) => {
     if (index > 0)
       sizings.push({
         kind: 'fixed',
-        height: gapBetween(items[index - 1], item)
+        height: gapBetween(items[index - 1], item, geometry)
       })
     sizings.push(itemSizing(item))
   })
@@ -172,7 +185,7 @@ export function layoutVueNodeBody(
     if (item.kind === 'media' && item.userHeight === undefined)
       mediaGrowth += row.height
     if (item.kind !== 'slots') rows.set(item.key, row)
-    const anchors = anchorsOf(item, row, width)
+    const anchors = anchorsOf(item, row, width, geometry)
     for (const [slot, point] of anchors.inputs) inputs.set(slot, point)
     for (const [slot, point] of anchors.outputs) outputs.set(slot, point)
   })
