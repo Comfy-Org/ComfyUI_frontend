@@ -482,6 +482,7 @@ const dropdownItems = computed(() =>
         v-for="direction in PANEL_RESIZE_DIRECTIONS"
         :key="direction"
         :direction
+        focusable
         :title="$t('widgets.uploadSelect.resizeHint')"
         :class="
           cn(

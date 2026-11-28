@@ -32,6 +32,7 @@ function renderPanel(
       h('div', [
         h(ResizeHandle, {
           direction,
+          focusable: true,
           onResize: panel.startResize,
           onNudge: panel.nudge,
           onFit: panel.reset

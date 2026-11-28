@@ -189,7 +189,7 @@ function isDimmed(port: TNode['allSlots'][number]) {
 }
 
 const panel = useTemplateRef('panel')
-const { style, startResize, nudgeSize } = useSubgraphIoLayout(
+const { style, startResize } = useSubgraphIoLayout(
   () => ioNode,
   panel,
   () => slots.value
@@ -380,9 +380,8 @@ function forwardUnlessOnButton(event: PointerEvent) {
     <ResizeHandle
       v-if="isInputNode"
       direction="SE"
-      class="pointer-events-auto z-30 -m-1 size-5 opacity-0 group-hover/node:opacity-100 focus-visible:opacity-100"
+      class="pointer-events-auto z-30 -m-1 size-5 opacity-0 group-hover/node:opacity-100"
       @resize="startResize"
-      @nudge="nudgeSize"
     />
   </div>
 </template>

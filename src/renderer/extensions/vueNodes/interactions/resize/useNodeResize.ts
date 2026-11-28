@@ -1,5 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 import { attempt } from 'es-toolkit'
+import { ref } from 'vue'
 
 import type {
   Bounds,
@@ -31,20 +32,33 @@ export interface ResizeCallbackPayload {
 }
 
 /**
- * Resizes a Vue node from any corner, by pointer drag or by a keyboard step,
- * within the layout system's size constraints and grid snapping.
+ * Composable for node resizing functionality from any corner.
+ *
+ * Provides resize handle interaction that integrates with the layout system.
+ * Handles pointer capture, coordinate calculations, size constraints,
+ * and position adjustments for non-SE corners.
  */
 export function useNodeResize(
   resizeCallback: (payload: ResizeCallbackPayload, element: HTMLElement) => void
 ) {
   const transformState = useTransformState()
+
+  const isResizing = ref(false)
+  const resizeStartPointer = ref<Point | null>(null)
+  const resizeStartSize = ref<Size | null>(null)
+  const resizeStartPosition = ref<Point | null>(null)
+  const resizeCorner = ref<CompassCorners>('SE')
+
   const { shouldSnap, gridSize } = useNodeSnap()
+
   const { trackShiftKey } = useShiftKeySync()
+
   const canvasStore = useCanvasStore()
 
   let endActiveResize: (() => void) | undefined
 
-  function beginResize(
+  const startResize = (
+    event: PointerEvent,
     corner: CompassCorners,
     {
       element: nodeElement,
@@ -52,15 +66,20 @@ export function useNodeResize(
       rowSlack = () => 0,
       snapItem
     }: ResizeOrigin
-  ) {
+  ) => {
+    event.stopPropagation()
+
+    const target = event.currentTarget
+    if (!(target instanceof HTMLElement)) return
+
     endActiveResize?.()
 
     const rect = nodeElement.getBoundingClientRect()
-    const startScale = transformState.camera.z
-    const start: Bounds = {
-      ...position,
-      width: rect.width / startScale,
-      height: rect.height / startScale
+    const scale = transformState.camera.z
+
+    const startSize: Size = {
+      width: rect.width / scale,
+      height: rect.height / scale
     }
 
     const measureMinContentHeight = (candidateWidth: number) => {
@@ -78,11 +97,37 @@ export function useNodeResize(
     const { canvas } = canvasStore
     const resizeSnap =
       canvas && snapItem ? startResizeSnap(canvas, snapItem) : undefined
+    const startPosition: Point = { ...position }
+
+    const stopShiftSync = trackShiftKey(event.shiftKey)
+
+    target.setPointerCapture(event.pointerId)
 
     layoutStore.isResizingVueNodes.value = true
+    isResizing.value = true
+    resizeStartPointer.value = { x: event.clientX, y: event.clientY }
+    resizeStartSize.value = startSize
+    resizeStartPosition.value = startPosition
+    resizeCorner.value = corner
 
-    function resizeBy(pointer: Point, snapToGrid: boolean) {
-      const scale = transformState.camera.z || 1
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (
+        !isResizing.value ||
+        !resizeStartPointer.value ||
+        !resizeStartSize.value ||
+        !resizeStartPosition.value
+      ) {
+        return
+      }
+
+      const scale = transformState.camera.z
+      const deltaX =
+        (moveEvent.clientX - resizeStartPointer.value.x) / (scale || 1)
+      const deltaY =
+        (moveEvent.clientY - resizeStartPointer.value.y) / (scale || 1)
+
+      const activeCorner = resizeCorner.value
+      const snapToGrid = shouldSnap(moveEvent)
       const minWidth =
         parseFloat(
           nodeElement.style.getPropertyValue('--min-node-width') || '0'
@@ -92,101 +137,68 @@ export function useNodeResize(
         const titleBand = box.height - removeNodeTitleHeight(box.height)
         const snapped = resizeSnap.resize(
           { ...box, height: box.height - titleBand },
-          corner,
+          activeCorner,
           { snapToGrid, min: { ...min, height: min.height - titleBand } }
         )
         return { ...snapped, height: snapped.height + titleBand }
       }
-      const { x, y, width, height } = resizeBox(
-        start,
-        corner,
-        { x: pointer.x / scale, y: pointer.y / scale },
+      const {
+        x: newX,
+        y: newY,
+        width: newWidth,
+        height: newHeight
+      } = resizeBox(
+        { ...resizeStartPosition.value, ...resizeStartSize.value },
+        activeCorner,
+        { x: deltaX, y: deltaY },
         {
           grid: snapToGrid ? gridSize.value : 0,
           sizeRounding: 'ceil',
-          minAt: (candidateWidth) => ({
+          minAt: (width) => ({
             width: minWidth,
-            height: measureMinContentHeight(Math.max(candidateWidth, minWidth))
+            height: measureMinContentHeight(Math.max(width, minWidth))
           }),
           snap: snapBody
         }
       )
-      resizeCallback(
-        {
-          size: { width, height },
-          ...(corner !== 'SE' && { position: { x, y } })
-        },
-        nodeElement
-      )
+
+      const payload: ResizeCallbackPayload = {
+        size: { width: newWidth, height: newHeight }
+      }
+
+      if (activeCorner !== 'SE') {
+        payload.position = { x: newX, y: newY }
+      }
+
+      resizeCallback(payload, nodeElement)
     }
-
-    function end() {
-      layoutStore.isResizingVueNodes.value = false
-      resizeSnap?.stop()
-    }
-
-    return { resizeBy, end }
-  }
-
-  const startResize = (
-    event: PointerEvent,
-    corner: CompassCorners,
-    origin: ResizeOrigin
-  ) => {
-    event.stopPropagation()
-
-    const target = event.currentTarget
-    if (!(target instanceof HTMLElement)) return
-
-    const resize = beginResize(corner, origin)
-    const startPointer: Point = { x: event.clientX, y: event.clientY }
-    const stopShiftSync = trackShiftKey(event.shiftKey)
-    target.setPointerCapture(event.pointerId)
 
     const cleanup = () => {
       if (endActiveResize !== cleanup) return
       endActiveResize = undefined
       attempt(() => target.releasePointerCapture(event.pointerId))
-      resize.end()
+      isResizing.value = false
+      layoutStore.isResizingVueNodes.value = false
+      resizeStartPointer.value = null
+      resizeStartSize.value = null
+      resizeStartPosition.value = null
+      resizeSnap?.stop()
+
       stopShiftSync()
+
       stopMoveListen()
       stopUpListen()
       stopCancelListen()
     }
 
-    const stopMoveListen = useEventListener(
-      'pointermove',
-      (moveEvent: PointerEvent) =>
-        resize.resizeBy(
-          {
-            x: moveEvent.clientX - startPointer.x,
-            y: moveEvent.clientY - startPointer.y
-          },
-          shouldSnap(moveEvent)
-        )
-    )
+    const stopMoveListen = useEventListener('pointermove', handlePointerMove)
     const stopUpListen = useEventListener('pointerup', cleanup)
     const stopCancelListen = useEventListener('pointercancel', cleanup)
     endActiveResize = cleanup
   }
 
-  /** Resizes once from `corner` as if its handle were dragged by `delta` screen pixels, or by at least one grid cell when snapping. */
-  function nudgeResize(
-    event: KeyboardEvent,
-    corner: CompassCorners,
-    delta: Point,
-    origin: ResizeOrigin
-  ) {
-    const snapToGrid = shouldSnap(event)
-    const minStep = snapToGrid
-      ? gridSize.value * (transformState.camera.z || 1)
-      : 0
-    const step = (pixels: number) =>
-      Math.sign(pixels) * Math.max(Math.abs(pixels), minStep)
-    const resize = beginResize(corner, origin)
-    resize.resizeBy({ x: step(delta.x), y: step(delta.y) }, snapToGrid)
-    resize.end()
+  return {
+    startResize,
+    isResizing
   }
-
-  return { startResize, nudgeResize }
 }

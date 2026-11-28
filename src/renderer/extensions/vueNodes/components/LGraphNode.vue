@@ -244,9 +244,8 @@
           v-for="corner in NODE_RESIZE_CORNERS"
           :key="corner"
           :direction="corner"
-          class="pointer-events-auto z-30 -m-1 size-5 opacity-0 group-hover/node:opacity-100 focus-visible:opacity-100"
+          class="pointer-events-auto z-30 -m-1 size-5 opacity-0 group-hover/node:opacity-100"
           @resize="handleResizePointerDown"
-          @nudge="handleResizeNudge"
           @fit="handleResizeFit"
         />
       </template>
@@ -275,10 +274,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
-import type {
-  CompassCorners,
-  Point2D
-} from '@comfyorg/shared-frontend-utils/geometry'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
@@ -599,7 +595,7 @@ function fillsWithUnsizedRow() {
   )
 }
 
-const { startResize, nudgeResize } = useNodeResize((result) => {
+const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   resizeNodeTo(
     result.size.height,
@@ -608,33 +604,16 @@ const { startResize, nudgeResize } = useNodeResize((result) => {
   )
 })
 
-function resizeOrigin() {
+function handleResizePointerDown(event: PointerEvent, corner: CompassCorners) {
+  if (event.button !== 0 || !canResizeNode.value) return
   const element = nodeRef.value
-  return (
-    element && {
+  if (element)
+    startResize(event, corner, {
       element,
       position: position.value,
       rowSlack: () => bodyLayout.value?.slack ?? 0,
       snapItem: resolveLGraphNode() ?? undefined
-    }
-  )
-}
-
-function handleResizePointerDown(event: PointerEvent, corner: CompassCorners) {
-  const origin = resizeOrigin()
-  if (event.button === 0 && canResizeNode.value && origin)
-    startResize(event, corner, origin)
-}
-
-function handleResizeNudge(
-  event: KeyboardEvent,
-  corner: CompassCorners,
-  delta: Point2D
-) {
-  const origin = resizeOrigin()
-  if (!canResizeNode.value || !origin) return
-  nudgeResize(event, corner, delta, origin)
-  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+    })
 }
 
 const mediaRegions = computed(() => [

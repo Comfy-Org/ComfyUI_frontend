@@ -28,8 +28,13 @@ const CORNER_LABELS: Record<CompassCorners, string> = {
   NW: 'g.resizeFromTopLeft'
 }
 
-const { direction, class: className } = defineProps<{
+const {
+  direction,
+  focusable = false,
+  class: className
+} = defineProps<{
   direction: D
+  focusable?: boolean
   class?: HTMLAttributes['class']
 }>()
 const emit = defineEmits<{
@@ -65,7 +70,7 @@ function onKeydown(event: KeyboardEvent) {
 <template>
   <div
     :role="label && 'button'"
-    :tabindex="label && 0"
+    :tabindex="focusable && label ? 0 : undefined"
     :aria-label="label && $t(label)"
     :aria-hidden="!label"
     :data-resize-direction="direction"
