@@ -2462,10 +2462,15 @@ describe('ChangeTracker', () => {
       const tracker = createTracker(createState(1))
       const changed = createState(2)
       mockCanvasState(changed)
+      app.canvas.ds.scale = 0.55
+      app.canvas.ds.offset = [4, 5]
 
       tracker.deactivate()
 
-      expect(tracker.activeState).toEqual(changed)
+      expect(tracker.activeState).toEqual({
+        ...changed,
+        extra: { ds: { scale: 0.55, offset: [4, 5] } }
+      })
       expect(useNodeOutputStore().snapshotOutputs).toHaveBeenCalled()
       expect(useSubgraphNavigationStore().exportState).toHaveBeenCalled()
     })

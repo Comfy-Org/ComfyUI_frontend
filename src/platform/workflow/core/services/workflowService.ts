@@ -46,7 +46,7 @@ import {
   isCanvasOwner
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { ChangeTracker, keepsUnmodifiedViewport } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -332,7 +332,8 @@ export const useWorkflowService = () => {
         activeWorkflow.isPersisted &&
         !activeWorkflow.isModified &&
         savedState &&
-        ChangeTracker.graphEqual(savedState, activeState)
+        ChangeTracker.graphEqual(savedState, activeState) &&
+        !keepsUnmodifiedViewport(savedState, activeState)
       ) {
         workflowDraftStore.removeDraft(activeWorkflow.path)
         return

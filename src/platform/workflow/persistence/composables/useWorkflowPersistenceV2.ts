@@ -49,6 +49,7 @@ import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/
 import { api } from '@/scripts/api'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useApp } from '@/scripts/appInstance'
+import { keepsUnmodifiedViewport } from '@/scripts/changeTracker'
 
 const PERSIST_RETRY_BACKOFF_MS = 5_000
 
@@ -171,7 +172,14 @@ export function useWorkflowPersistenceV2() {
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
+    if (
+      !activeWorkflow.isTemporary &&
+      !activeWorkflow.isModified &&
+      !keepsUnmodifiedViewport(
+        activeWorkflow.changeTracker.initialState,
+        graph
+      )
+    ) {
       draftStore.removeDraft(workflowPath)
     }
   }
@@ -183,12 +191,17 @@ export function useWorkflowPersistenceV2() {
     debouncedPersist.flush()
   }
 
+  function persistBeforePageHide() {
+    flushPendingPersistence()
+    persistCurrentWorkflow()
+  }
+
   const unregisterPersistence = registerWorkflowPersistence({
     flush: flushPendingPersistence,
     cancel: debouncedPersist.cancel,
     resumeAfterAbort: persistCurrentWorkflow
   })
-  window.addEventListener('pagehide', flushPendingPersistence)
+  window.addEventListener('pagehide', persistBeforePageHide)
 
   const isWorkspaceInitConcluded = () =>
     (teamWorkspaceStore.initState === 'ready' &&
@@ -434,7 +447,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
-    window.removeEventListener('pagehide', flushPendingPersistence)
+    window.removeEventListener('pagehide', persistBeforePageHide)
     unregisterPersistence()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()

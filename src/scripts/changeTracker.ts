@@ -52,6 +52,51 @@ function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
+type WorkflowViewport = NonNullable<
+  NonNullable<ComfyWorkflowJSON['extra']>['ds']
+>
+
+function sameViewport(
+  a: WorkflowViewport | undefined,
+  b: WorkflowViewport | undefined
+): boolean {
+  if (!a || !b) return a === b
+  return (
+    a.scale === b.scale &&
+    a.offset[0] === b.offset[0] &&
+    a.offset[1] === b.offset[1]
+  )
+}
+
+export function keepsUnmodifiedViewport(
+  baseline: { extra?: ComfyWorkflowJSON['extra'] } | null | undefined,
+  next: { extra?: ComfyWorkflowJSON['extra'] } | null | undefined
+): boolean {
+  return (
+    LiteGraph.saveViewportWithGraph &&
+    !sameViewport(baseline?.extra?.ds, next?.extra?.ds)
+  )
+}
+
+function rememberViewport(tracker: ChangeTracker): void {
+  const { ds } = tracker
+  if (!ds || !LiteGraph.saveViewportWithGraph || !canCaptureCanvas(tracker))
+    return
+  const canvasGraph = useApp().canvas.graph
+  const root = tracker.workflow.graph
+  if (canvasGraph && root && canvasGraph !== root) return
+  if (tracker.activeState === tracker.initialState) {
+    tracker.activeState = clone(tracker.activeState)
+  }
+  tracker.activeState.extra = {
+    ...tracker.activeState.extra,
+    ds: {
+      scale: ds.scale,
+      offset: [ds.offset[0], ds.offset[1]]
+    }
+  }
+}
+
 function withoutExecutionOrder(nodes: ComfyWorkflowJSON['nodes']) {
   return nodes.map((node) => _.omit(node, ['order']))
 }
@@ -435,8 +480,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
         : { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
     this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
-    // Always store the navigation state, even if empty (root level)
     this.subgraphState = { navigation }
+    rememberViewport(this)
   }
 
   /**

@@ -631,6 +631,78 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('saves each tab viewport when leaving it', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const leave = (
+        path: string,
+        scale: number,
+        offset: [number, number]
+      ) => {
+        const workflow = createModeTestWorkflow({ path })
+        const tracker = new ChangeTracker(workflow, makeWorkflowData())
+        tracker.reset(makeWorkflowData())
+        workflow.changeTracker = tracker
+        workflowStore.activeWorkflow = workflow
+        app.canvas = fromAny({
+          ds: { scale, offset: [...offset] }
+        })
+        useWorkflowService().beforeLoadNewGraph()
+        expect(workflow.isModified).toBe(false)
+      }
+
+      leave('workflows/a.json', 0.15, [1, 2])
+      leave('workflows/b.json', 1.55, [3, 4])
+
+      expect(
+        vi.mocked(useWorkflowDraftStoreV2().saveDraft).mock.calls.map(
+          ([path, data]) => ({
+            path,
+            ds: JSON.parse(data).extra?.ds
+          })
+        )
+      ).toEqual([
+        { path: 'workflows/a.json', ds: { scale: 0.15, offset: [1, 2] } },
+        { path: 'workflows/b.json', ds: { scale: 1.55, offset: [3, 4] } }
+      ])
+      expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
+    })
+
+    it('keeps the tab viewport that was saved before a subgraph was opened', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/nested.json'
+      })
+      const saved = makeWorkflowData({
+        ds: { scale: 0.15, offset: [1, 2] }
+      })
+      const tracker = new ChangeTracker(workflow, saved)
+      tracker.reset(saved)
+      workflow.adoptGraph(app.rootGraph)
+      vi.spyOn(app.rootGraph, 'serialize').mockReturnValue(saved as never)
+      workflow.changeTracker = tracker
+      workflowStore.activeWorkflow = workflow
+      app.canvas = fromAny({
+        ds: { scale: 4, offset: [9, 9] },
+        graph: {}
+      })
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(workflow.activeState.extra?.ds).toEqual({
+        scale: 0.15,
+        offset: [1, 2]
+      })
+      expect(workflow.isModified).toBe(false)
+      expect(useWorkflowDraftStoreV2().saveDraft).not.toHaveBeenCalled()
+      expect(useWorkflowDraftStoreV2().removeDraft).toHaveBeenCalledWith(
+        workflow.path
+      )
+    })
+
     it('keeps the draft of a modified saved workflow whose baseline is its draft', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string) => key === 'Comfy.Workflow.Persist'
