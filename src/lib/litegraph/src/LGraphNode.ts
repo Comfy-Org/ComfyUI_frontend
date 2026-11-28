@@ -69,6 +69,7 @@ import {
   serializeNodeId
 } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { isNodeResizeAllowed } from '@comfyorg/graph-model/nodeState'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import {
@@ -1400,8 +1401,6 @@ export class LGraphNode
           if (restored) widget.value = restored.value
         }
       }
-      if (this.pinned) this.resizable = false
-
       if (this.widgets_up) {
         console.warn(
           `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
@@ -2328,12 +2327,11 @@ export class LGraphNode
     canvasX: number,
     canvasY: number
   ): CompassCorners | undefined {
-    if (this.resizable === false) return
+    if (!isNodeResizeAllowed(this)) return
 
     const { boundingRect } = this
     if (!boundingRect.containsXy(canvasX, canvasY)) return
 
-    // Check corners first (they take priority over edges)
     return boundingRect.findContainingCorner(
       canvasX,
       canvasY,
@@ -3499,7 +3497,6 @@ export class LGraphNode
 
     this.graph.incrementVersion()
     this.flags.pinned = v ?? !this.flags.pinned
-    this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
     emitNodeFieldWrite(this, {
       field: 'flags.pinned',

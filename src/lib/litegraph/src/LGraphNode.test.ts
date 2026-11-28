@@ -1038,6 +1038,48 @@ describe('snapToGrid', () => {
   })
 })
 
+describe('pin', () => {
+  test('keeps a resizable node resizable after loading it pinned and unpinning', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.resizable = true
+
+    node.configure(getMockISerialisedNode({ flags: { pinned: true } }))
+    expect(node.resizable).toBe(true)
+
+    node.pin(false)
+
+    expect(node.resizable).toBe(true)
+  })
+
+  test('keeps a node that is not resizable unresizable after unpinning', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.resizable = false
+
+    node.pin(true)
+    node.pin(false)
+
+    expect(node.pinned).toBe(false)
+    expect(node.resizable).toBe(false)
+  })
+
+  test('leaves resizable unchanged while pinned and after unpinning', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const original = node.resizable
+
+    node.pin(true)
+    expect(node.resizable).toBe(original)
+
+    node.pin(false)
+    expect(node.resizable).toBe(original)
+  })
+})
+
 describe('LGraphNode renderingColor', () => {
   test.for([{ color: 0xff0000 }, { color: { r: 255 } }])(
     'uses the default color when the node color is $color',

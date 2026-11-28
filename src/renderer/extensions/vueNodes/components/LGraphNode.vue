@@ -236,7 +236,7 @@
         v-if="
           !isCollapsed &&
           !isRerouteNode &&
-          nodeData.resizable !== false &&
+          isNodeResizeAllowed(nodeData) &&
           !isSelectMode
         "
       >
@@ -267,6 +267,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isNodeResizeAllowed } from '@comfyorg/graph-model/nodeState'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
@@ -557,8 +558,7 @@ const canResizeNode = computed(
   () =>
     !isCollapsed.value &&
     !isRerouteNode.value &&
-    nodeData.resizable !== false &&
-    !nodeData.flags?.pinned &&
+    isNodeResizeAllowed(nodeData) &&
     !isSelectMode.value &&
     shouldHandleNodePointerEvents.value
 )

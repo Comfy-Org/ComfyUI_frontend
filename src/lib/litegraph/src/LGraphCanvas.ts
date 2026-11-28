@@ -106,6 +106,7 @@ import { LGraphNode } from './LGraphNode'
 import { markNodeMenuCallback } from './types/nodeMenu'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { isNodeResizeAllowed } from '@comfyorg/graph-model/nodeState'
 import { LLink, slotFloatingLinks } from './LLink'
 import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
 import { Reroute } from './Reroute'
@@ -1839,6 +1840,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     node: LGraphNode
   ): void {
     const fApplyMultiNode = function (node: LGraphNode) {
+      if (!isNodeResizeAllowed(node)) return
       node.setSize(node.computeSize())
     }
 
@@ -8488,7 +8490,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           callback: LGraphCanvas.onMenuNodeMode
         }
       ]
-      if (node.resizable !== false) {
+      if (isNodeResizeAllowed(node)) {
         options.push({
           content: 'Resize',
           callback: LGraphCanvas.onMenuResizeNode

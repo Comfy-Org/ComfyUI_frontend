@@ -2433,26 +2433,23 @@ describe('LiveGraphApplier', () => {
       flags: {},
       collapsed: false,
       pinned: false,
-      resizable: true,
       renderedSize: [210, 100]
     },
     {
       flags: { pinned: true },
       collapsed: false,
       pinned: true,
-      resizable: false,
       renderedSize: [210, 100]
     },
     {
       flags: { collapsed: true },
       collapsed: true,
       pinned: false,
-      resizable: true,
       renderedSize: [LiteGraph.NODE_COLLAPSED_WIDTH, 0]
     }
   ])(
     'updates pinned, collapsed and custom flags to $flags',
-    ({ flags, collapsed, pinned, resizable, renderedSize }) => {
+    ({ flags, collapsed, pinned, renderedSize }) => {
       const { graph, doc, applyCollected, applyEdit } = setup({
         nodes: [
           sourceNode(1, {
@@ -2469,7 +2466,6 @@ describe('LiveGraphApplier', () => {
 
       expect(node.collapsed).toBe(collapsed)
       expect(node.pinned).toBe(pinned)
-      expect(node.resizable).toBe(resizable)
       expect(node.flags.allow_interaction).toBeUndefined()
       expect([...node.renderingSize]).toEqual(renderedSize)
     }

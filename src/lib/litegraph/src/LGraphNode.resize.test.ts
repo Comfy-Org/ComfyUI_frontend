@@ -88,6 +88,12 @@ describe('LGraphNode resize functionality', () => {
         expect(node.findResizeDirection(300, 250)).toBeUndefined()
         expect(node.findResizeDirection(150, 100)).toBeUndefined()
       })
+
+      test('should return undefined when node is pinned', () => {
+        node.flags.pinned = true
+        expect(node.findResizeDirection(100, 80)).toBeUndefined()
+        expect(node.findResizeDirection(290, 240)).toBeUndefined()
+      })
     })
 
     describe('edge cases', () => {

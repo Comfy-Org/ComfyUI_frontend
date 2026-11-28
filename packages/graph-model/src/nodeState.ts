@@ -28,3 +28,9 @@ export interface NodeState {
   showAdvanced?: boolean
   titleMode?: TitleMode
 }
+
+export function isNodeResizeAllowed(
+  node: Pick<NodeState, 'resizable' | 'flags'>
+): boolean {
+  return node.resizable !== false && !node.flags.pinned
+}

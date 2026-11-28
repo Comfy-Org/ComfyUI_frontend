@@ -1030,6 +1030,7 @@
           "src/lib/litegraph/src/LGraphCanvas.linkDragAutoPan.test.ts",
           "src/lib/litegraph/src/LGraphCanvas.linkVisibility.test.ts",
           "src/lib/litegraph/src/LGraphCanvas.onMenuAdd.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.onMenuResizeNode.test.ts",
           "src/lib/litegraph/src/LGraphCanvas.prompt.test.ts",
           "src/lib/litegraph/src/LGraphCanvas.renderInfo.test.ts",
           "src/lib/litegraph/src/LGraphCanvas.resize.test.ts",
