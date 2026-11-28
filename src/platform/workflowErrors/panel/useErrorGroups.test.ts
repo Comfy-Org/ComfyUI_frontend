@@ -1,7 +1,10 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { render, screen } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { getActivePinia } from 'pinia'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -17,8 +20,10 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import '@/scripts/changeTracker'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { normalizePromptError } from '@/utils/executionErrorUtil'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -864,6 +869,42 @@ describe('useErrorGroups', () => {
           g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
+    })
+
+    it("shows ingest's model_not_ready run refusal unchanged as the overlay title and text", async () => {
+      mockIsCloud.value = true
+      const message =
+        'my_style_v2.safetensors is still being added to this deployment. Try again when it shows Ready.'
+      const promptError = normalizePromptError({
+        type: 'model_not_ready',
+        message,
+        details: ''
+      })
+      assert(promptError)
+      useExecutionErrorStore().recordPromptError(promptError)
+      const pinia = getActivePinia()
+      assert(pinia)
+      render(
+        defineComponent({
+          setup: () => useErrorOverlayState(),
+          template: `
+            <span data-testid="title">{{ overlayTitle }}</span>
+            <span data-testid="message">{{ overlayMessage }}</span>
+          `
+        }),
+        {
+          global: {
+            plugins: [
+              pinia,
+              createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+            ]
+          }
+        }
+      )
+      await nextTick()
+
+      expect(screen.getByTestId('title').textContent).toBe(message)
+      expect(screen.getByTestId('message').textContent).toBe(message)
     })
 
     it('carries prompt error details onto the card item', async () => {

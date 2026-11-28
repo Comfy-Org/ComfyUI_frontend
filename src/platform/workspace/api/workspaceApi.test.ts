@@ -558,6 +558,189 @@ describe('workspaceApi', () => {
       })
     })
 
+    it('createDeploymentModelUpload() sends POST /workspaces/:id/deployments/:deployment/model-uploads with the file', async () => {
+      const data = {
+        blobId: 'blob-1',
+        deduplicated: false,
+        parts: [
+          {
+            partNumber: 1,
+            offsetBytes: 0,
+            sizeBytes: 12,
+            uploadUrl: 'https://storage.example.com/blob-1/1?sig=a',
+            expiresAt: '2026-11-20T12:15:00Z'
+          }
+        ]
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+      const payload = {
+        filename: 'my_style_v2.safetensors',
+        sizeBytes: 12,
+        sha256: 'a'.repeat(64),
+        parts: true as const
+      }
+
+      await expect(
+        workspaceApi.createDeploymentModelUpload('ws-1', 'dep-1/x', payload)
+      ).resolves.toEqual(data)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/dep-1%2Fx/model-uploads',
+        payload,
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('refreshDeploymentModelUploadParts() and completeDeploymentModelUpload() POST no body to the upload', async () => {
+      const fresh = {
+        partNumber: 2,
+        offsetBytes: 12,
+        sizeBytes: 12,
+        uploadUrl: 'https://storage.example.com/blob-1/2?sig=b',
+        expiresAt: '2026-11-20T12:30:00Z'
+      }
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: { blobId: 'blob/1', parts: [fresh] }
+      })
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: { blobId: 'blob/1', sizeBytes: 24 }
+      })
+      const controller = new AbortController()
+
+      await expect(
+        workspaceApi.refreshDeploymentModelUploadParts(
+          'ws-1',
+          'dep-1',
+          'blob/1',
+          controller.signal
+        )
+      ).resolves.toEqual([fresh])
+      await workspaceApi.completeDeploymentModelUpload(
+        'ws-1',
+        'dep-1',
+        'blob/1',
+        controller.signal
+      )
+
+      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
+        1,
+        '/api/workspaces/ws-1/deployments/dep-1/model-uploads/blob%2F1/parts',
+        undefined,
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+      expect(mockAxiosInstance.post).toHaveBeenNthCalledWith(
+        2,
+        '/api/workspaces/ws-1/deployments/dep-1/model-uploads/blob%2F1/complete',
+        undefined,
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
+    it('addDeploymentModel() sends POST /workspaces/:id/deployments/:deployment/models with the upload and its folder', async () => {
+      const entry = {
+        id: 'model-1',
+        filename: 'my_style_v2.safetensors',
+        status: 'adding'
+      }
+      mockAxiosInstance.post.mockResolvedValue({ data: entry })
+      const payload = { blobId: 'blob-1', type: 'loras' }
+
+      await expect(
+        workspaceApi.addDeploymentModel('ws-1', 'dep-1', payload)
+      ).resolves.toEqual(entry)
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/dep-1/models',
+        payload,
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('addDeploymentModel() reads a 404 without a code as the models switch being off', async () => {
+      mockAxiosInstance.post.mockRejectedValue(
+        axiosRejection(404, { message: 'Not Found' })
+      )
+
+      await expect(
+        workspaceApi.addDeploymentModel('ws-1', 'dep-1', {
+          blobId: 'blob-1',
+          type: 'loras'
+        })
+      ).resolves.toBe('notOn')
+    })
+
+    it.for([
+      {
+        body: { code: 'NOT_FOUND', message: 'Workspace not found.' },
+        code: 'NOT_FOUND'
+      },
+      {
+        body: { error: 'UPLOAD_NOT_FOUND', message: 'No such upload.' },
+        code: 'UPLOAD_NOT_FOUND'
+      }
+    ])(
+      'addDeploymentModel() refuses a 404 naming $code instead of reading it as the switch',
+      async ({ body, code }) => {
+        mockAxiosInstance.post.mockRejectedValue(axiosRejection(404, body))
+
+        await expect(
+          workspaceApi.addDeploymentModel('ws-1', 'dep-1', {
+            blobId: 'blob-1',
+            type: 'loras'
+          })
+        ).rejects.toMatchObject({
+          name: 'WorkspaceApiError',
+          status: 404,
+          code,
+          message: body.message,
+          operation: 'addDeploymentModel'
+        })
+      }
+    )
+
+    it("addDeploymentModel() turns comfy-deploy's 409 into a WorkspaceApiError with its sentence", async () => {
+      const message = 'Model storage for this deployment is full.'
+      mockAxiosInstance.post.mockRejectedValue(
+        axiosRejection(409, { error: 'MODEL_STORAGE_EXCEEDED', message })
+      )
+
+      await expect(
+        workspaceApi.addDeploymentModel('ws-1', 'dep-1', {
+          blobId: 'blob-1',
+          type: 'loras'
+        })
+      ).rejects.toMatchObject({ status: 409, message })
+    })
+
+    it('listDeploymentModels() reads GET /workspaces/:id/deployments/:deployment/models', async () => {
+      const entry = {
+        id: 'model-1',
+        filename: 'my_style_v2.safetensors',
+        status: 'ready'
+      }
+      mockAxiosInstance.get.mockResolvedValue({
+        data: { addEnabled: true, models: [entry] }
+      })
+      const controller = new AbortController()
+
+      await expect(
+        workspaceApi.listDeploymentModels('ws-1', 'dep-1', controller.signal)
+      ).resolves.toEqual([entry])
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/dep-1/models',
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
+    it('removeDeploymentModel() sends DELETE for the entry', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({ data: {} })
+
+      await workspaceApi.removeDeploymentModel('ws-1', 'dep-1', 'model/1')
+
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/dep-1/models/model%2F1',
+        { headers: AUTH_HEADER }
+      )
+    })
+
     it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {
       let finishAuth!: (headers: typeof AUTH_HEADER) => void
       const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {

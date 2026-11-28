@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import UploadModelDialog from '@/platform/assets/components/UploadModelDialog.vue'
 import UploadModelDialogHeader from '@/platform/assets/components/UploadModelDialogHeader.vue'
+import type { UploadDestination } from '@/platform/assets/composables/useUploadModelFile'
 import type {
   UploadModelDialogContext,
   UploadModelSuccess
@@ -30,6 +31,22 @@ export function useModelUpload(
     return typeof uploadContext === 'function' ? uploadContext() : uploadContext
   }
 
+  function openUploadDialog(initialDestination?: UploadDestination) {
+    dialogStore.showDialog({
+      key: 'upload-model',
+      headerComponent: UploadModelDialogHeader,
+      component: UploadModelDialog,
+      props: {
+        uploadContext: resolveUploadContext(),
+        initialDestination,
+        onUploadSuccess: async (result: UploadModelSuccess) => {
+          await onUploadSuccess?.(result)
+        }
+      },
+      dialogComponentProps: uploadDialogComponentProps
+    })
+  }
+
   function showUploadDialog() {
     if (!flags.privateModelsEnabled) {
       dialogStore.showDialog({
@@ -39,19 +56,13 @@ export function useModelUpload(
         dialogComponentProps: uploadDialogComponentProps
       })
     } else {
-      dialogStore.showDialog({
-        key: 'upload-model',
-        headerComponent: UploadModelDialogHeader,
-        component: UploadModelDialog,
-        props: {
-          uploadContext: resolveUploadContext(),
-          onUploadSuccess: async (result: UploadModelSuccess) => {
-            await onUploadSuccess?.(result)
-          }
-        },
-        dialogComponentProps: uploadDialogComponentProps
-      })
+      openUploadDialog()
     }
   }
-  return { isUploadButtonEnabled, showUploadDialog }
+
+  function showDeploymentUploadDialog() {
+    openUploadDialog('deployment')
+  }
+
+  return { isUploadButtonEnabled, showUploadDialog, showDeploymentUploadDialog }
 }
