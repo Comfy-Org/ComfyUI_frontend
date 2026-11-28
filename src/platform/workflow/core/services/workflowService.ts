@@ -4,6 +4,7 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import { cancelGhostPlacement } from '@/lib/litegraph/src/canvas/ghostPlacement'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
@@ -916,6 +917,8 @@ export const useWorkflowService = () => {
     // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
+    const canvas = useApp().canvasOrUndefined
+    if (canvas) cancelGhostPlacement(canvas)
     if (activeWorkflow) {
       // Typed as `ComfyWorkflow`: the active workflow's tracker can be absent
       // despite `LoadedComfyWorkflow`'s declared type.

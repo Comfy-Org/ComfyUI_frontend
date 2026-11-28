@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -11,6 +12,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const allowed = {
   open_on_cloud_enabled: true,
@@ -282,5 +284,69 @@ it('revalidates a signed-out handoff using the anonymous Cloud rollout', async (
   expect(fetch).toHaveBeenLastCalledWith(
     new URL('/api/features', getBuildTimeComfyCloudBaseUrl()),
     expect.objectContaining({ credentials: 'omit', headers: undefined })
+  )
+})
+
+it.for([
+  {
+    name: 'a fetch that never reached Cloud',
+    cause: new TypeError('Failed to fetch')
+  },
+  {
+    name: 'a request timeout',
+    cause: new DOMException('signal timed out', 'TimeoutError')
+  }
+])(
+  'reports $name once per page, scoped to the network kind',
+  async ({ cause }) => {
+    vi.mocked(fetch).mockRejectedValue(cause)
+    start()
+
+    await vi.advanceTimersByTimeAsync(2_000)
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      cause,
+      expect.objectContaining({
+        errorType: 'error_loading_open_on_cloud_rollout_network',
+        sentryMode: 'once_per_page',
+        tags: { outcome: 'degraded', failureKind: 'network' }
+      })
+    )
+  }
+)
+
+it('sends a Cloud server failure to Sentry once per page, scoped to its status', async () => {
+  vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 503 }))
+  start()
+
+  await vi.advanceTimersByTimeAsync(2_000)
+
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    expect.objectContaining({ message: 'Cloud features HTTP 503' }),
+    expect.objectContaining({
+      errorType: 'error_loading_open_on_cloud_rollout_http_503',
+      sentryMode: 'once_per_page',
+      tags: { outcome: 'degraded', failureKind: 'http', httpStatus: 503 }
+    })
+  )
+})
+
+it('still sends a credential failure to Sentry, in its own kind', async () => {
+  const cause = new TypeError('token provider broke')
+  const { userId } = start(() => Promise.reject(cause))
+  vi.mocked(fetch).mockResolvedValue(Response.json(denied))
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+  vi.mocked(reportError).mockClear()
+  userId.value = 'employee'
+
+  await vi.advanceTimersByTimeAsync(2_000)
+
+  expect(reportError).toHaveBeenCalledExactlyOnceWith(
+    cause,
+    expect.objectContaining({
+      errorType: 'error_loading_open_on_cloud_rollout_unknown',
+      sentryMode: 'once_per_page',
+      tags: { outcome: 'degraded', failureKind: 'unknown' }
+    })
   )
 })
