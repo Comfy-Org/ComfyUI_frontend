@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   THUMBNAIL_SIZE,
+  thumbnailSizeSerializer,
   wheelZoomFactor,
   zoomThumbnail
 } from './useThumbnailZoom'
@@ -37,5 +38,16 @@ describe('zoomThumbnail', () => {
     expect(zoomThumbnail(100, 1.5)).toBe(150)
     expect(zoomThumbnail(100, 0.1)).toBe(THUMBNAIL_SIZE.min)
     expect(zoomThumbnail(300, 2)).toBe(THUMBNAIL_SIZE.max)
+  })
+})
+
+describe('thumbnailSizeSerializer', () => {
+  it.for([
+    { stored: '180', size: 180 },
+    { stored: 'standard', size: THUMBNAIL_SIZE.default },
+    { stored: '9000', size: THUMBNAIL_SIZE.max },
+    { stored: '10', size: THUMBNAIL_SIZE.min }
+  ])('loads $stored as $size', ({ stored, size }) => {
+    expect(thumbnailSizeSerializer.read(stored)).toBe(size)
   })
 })

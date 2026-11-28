@@ -1,5 +1,6 @@
 import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
+import type { Serializer } from '@vueuse/core'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 /** Thumbnail tile width range in CSS pixels. */
@@ -13,6 +14,17 @@ const WHEEL_PX_PER_E_FOLD = 200
 /** `size` scaled by `factor`, kept within {@link THUMBNAIL_SIZE}. */
 export function zoomThumbnail(size: number, factor: number): number {
   return clamp(size * factor, THUMBNAIL_SIZE.min, THUMBNAIL_SIZE.max)
+}
+
+/** Stored thumbnail size; unreadable values load as the default and out-of-range values are clamped. */
+export const thumbnailSizeSerializer: Serializer<number> = {
+  read: (raw) => {
+    const size = Number.parseFloat(raw)
+    return Number.isFinite(size)
+      ? zoomThumbnail(size, 1)
+      : THUMBNAIL_SIZE.default
+  },
+  write: String
 }
 
 /** Scale factor for one Ctrl/Cmd + wheel event: trackpad pinches zoom smoothly, mouse notches by about a fifth. */

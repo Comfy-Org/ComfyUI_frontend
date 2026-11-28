@@ -38,7 +38,7 @@ import {
 } from './shared'
 import { AssetKindKey } from './types'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
-import { THUMBNAIL_SIZE } from './useThumbnailZoom'
+import { THUMBNAIL_SIZE, thumbnailSizeSerializer } from './useThumbnailZoom'
 
 interface Props {
   inputId?: string
@@ -125,7 +125,8 @@ const hasThumbnailSizes = computed(
 )
 const thumbnailSize = useSafeSessionStorage(
   'Comfy.FormDropdown.ThumbnailSize',
-  THUMBNAIL_SIZE.default
+  THUMBNAIL_SIZE.default,
+  { serializer: thumbnailSizeSerializer }
 )
 let canvasPointerId: number | undefined
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
