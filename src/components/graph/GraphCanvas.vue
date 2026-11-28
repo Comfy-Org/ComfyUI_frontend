@@ -199,6 +199,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { restoreGeometryBeforeVueNodes } from '@/renderer/extensions/vueNodes/widgets/utils/legacyWidgetCanvasGeometry'
 import SharedNodeTooltip from '@/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
@@ -335,6 +336,7 @@ watch(
       for (const rootGraph of rootGraphs) {
         if (!rootGraph) continue
         forEachNode(rootGraph, (node) => {
+          if (!enabled) restoreGeometryBeforeVueNodes(node)
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
             widget.syncLiveDisabled?.()

@@ -18,6 +18,8 @@ import {
   stubCanvasGetContext
 } from '@/utils/__tests__/canvasTestUtils'
 
+import { restoreGeometryBeforeVueNodes } from '@/renderer/extensions/vueNodes/widgets/utils/legacyWidgetCanvasGeometry'
+
 import WidgetLegacy from './WidgetLegacy.vue'
 
 vi.mock(import('@/scripts/app'))
@@ -318,6 +320,21 @@ describe('WidgetLegacy in the properties panel beside the LiteGraph canvas', () 
     }
 
     expect(() => widget.triggerDraw?.()).toThrow(drawFailure)
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+  })
+
+  it('restores the canvas geometry from before Vue nodes when the renderer switches back to LiteGraph', async () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+    const { node, widget } = await renderInPanel()
+    widget.triggerDraw?.()
+    expect(readGeometry(widget, node)).toEqual(panelRowGeometry)
+
+    LiteGraph.vueNodesMode = false
+    restoreGeometryBeforeVueNodes(node)
+
     expect(readGeometry(widget, node)).toEqual(canvasGeometry)
   })
 })

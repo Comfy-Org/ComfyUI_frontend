@@ -18,6 +18,11 @@ import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/util
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
+import {
+  readLegacyWidgetGeometry,
+  rememberGeometryBeforeVueNodes,
+  writeLegacyWidgetGeometry
+} from '@/renderer/extensions/vueNodes/widgets/utils/legacyWidgetCanvasGeometry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -115,25 +120,19 @@ function withRowGeometry(run: () => void) {
   if (!widgetInstance || !node || !rowGeometry) return run()
   const widget = widgetInstance
   const host = node
-  const canvasGeometry = {
-    y: widget.y,
-    last_y: widget.last_y,
-    width: widget.width,
-    canvasHeight: host.canvasHeight
-  }
-  widget.y = rowGeometry.y
-  widget.last_y = rowGeometry.y
-  widget.width = rowGeometry.width
-  host.canvasHeight = rowGeometry.canvasHeight
+  const canvasGeometry = readLegacyWidgetGeometry(widget, host)
+  writeLegacyWidgetGeometry(widget, host, {
+    y: rowGeometry.y,
+    last_y: rowGeometry.y,
+    width: rowGeometry.width,
+    canvasHeight: rowGeometry.canvasHeight
+  })
   try {
     run()
   } finally {
-    if (!LiteGraph.vueNodesMode) {
-      widget.y = canvasGeometry.y
-      widget.last_y = canvasGeometry.last_y
-      widget.width = canvasGeometry.width
-      host.canvasHeight = canvasGeometry.canvasHeight
-    }
+    if (LiteGraph.vueNodesMode)
+      rememberGeometryBeforeVueNodes(widget, host, canvasGeometry)
+    else writeLegacyWidgetGeometry(widget, host, canvasGeometry)
   }
 }
 
