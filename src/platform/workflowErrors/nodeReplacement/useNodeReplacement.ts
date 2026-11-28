@@ -498,7 +498,8 @@ function removeReplacedServerTypes(
   useDeprecatedNodesStore().removeByType(types)
 }
 
-function replacePlaceholder(
+/** Swaps a node for a new node of the replacement's type in place, keeping its id and links; returns whether it did. */
+export function replacePlaceholder(
   node: LGraphNode,
   replacement: NodeReplacement
 ): boolean {

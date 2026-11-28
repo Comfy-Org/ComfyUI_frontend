@@ -7,6 +7,10 @@ import type {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 import {
+  canvasPrimitiveRepair,
+  nodePrimitiveRepair
+} from '@/platform/graphRepair/primitiveNodeRepair'
+import {
   canvasRerouteRepair,
   nodeRerouteRepair
 } from '@/platform/graphRepair/rerouteNodeRepair'
@@ -33,14 +37,18 @@ export function getNodeRepairItems(
   const nodes = canvas.selectedItems.has(node)
     ? [...canvas.selectedItems].filter((item) => item instanceof LGraphNode)
     : [node]
-  return compact([coreEquivalentRepair(nodes), nodeRerouteRepair(graph, nodes)])
+  return compact([
+    coreEquivalentRepair(nodes),
+    nodePrimitiveRepair(graph, nodes),
+    nodeRerouteRepair(graph, nodes)
+  ])
 }
 
 /** Repairs for the canvas menu, scoped to the graph the canvas shows. */
 export function getCanvasRepairItems(canvas: LGraphCanvas): RepairMenuItem[] {
   const graph = canvas.graph
   if (!graph || canvas.state.readOnly) return []
-  return compact([canvasRerouteRepair(graph)])
+  return compact([canvasPrimitiveRepair(graph), canvasRerouteRepair(graph)])
 }
 
 /** A divider, a Repair heading and the items for a LiteGraph menu; empty when there is nothing to repair. */

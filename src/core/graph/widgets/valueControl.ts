@@ -134,15 +134,23 @@ function computeNextComboValue(
   return values[currentIndex]
 }
 
+/** The bounds and step that increment, decrement and randomize use for a number widget. */
+export function numberControlRange(target: IBaseWidget) {
+  const { min = 0, max = 1, step2 = 1 } = target.options
+  return {
+    min: Math.max(SAFE_INTEGER_MIN, min),
+    max: Math.min(SAFE_INTEGER_MAX, max),
+    step2
+  }
+}
+
 function computeNextNumberValue(
   target: IBaseWidget,
   mode: ValueControlMode
 ): number | undefined {
   if (typeof target.value !== 'number') return undefined
 
-  const { min: rawMin = 0, max: rawMax = 1, step2 = 1 } = target.options
-  const max = Math.min(SAFE_INTEGER_MAX, rawMax)
-  const min = Math.max(SAFE_INTEGER_MIN, rawMin)
+  const { min, max, step2 } = numberControlRange(target)
   const range = (max - min) / step2
 
   let next = target.value

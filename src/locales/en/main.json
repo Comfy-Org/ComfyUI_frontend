@@ -5488,6 +5488,27 @@
       "failed": "could not be converted"
     }
   },
+  "primitiveConversion": {
+    "title": "Primitive nodes",
+    "convertSelected": "Convert to Typed Core Primitive | Convert {count} Primitive Nodes to Typed Core Primitives",
+    "convertAll": "Convert All Primitive Nodes to Typed Core Primitives",
+    "converted": "Converted {count} Primitive node to a core primitive | Converted {count} Primitive nodes to core primitives",
+    "leftUnchanged": "Left {count} Primitive node unchanged: {reasons} | Left {count} Primitive nodes unchanged: {reasons}",
+    "reasons": {
+      "bypassed": "bypassed or muted",
+      "locked": "cannot be removed",
+      "noOutput": "not connected to a widget",
+      "combo": "drives a combo, which has no core primitive yet",
+      "unsupportedType": "drives an unsupported type",
+      "subgraphIO": "connects to a subgraph output",
+      "unsupportedTarget": "drives an input the core primitive cannot",
+      "textReplacement": "uses text replacement",
+      "dynamicPrompts": "value would lose dynamic prompt expansion",
+      "controlMode": "control mode range differs from the core primitive",
+      "valueChanged": "value would change in the core primitive",
+      "failed": "could not be converted"
+    }
+  },
   "nodeReplacement": {
     "quickFixAvailable": "Quick Fix Available",
     "installationRequired": "Installation Required",
