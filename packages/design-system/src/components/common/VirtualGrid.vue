@@ -66,6 +66,9 @@ const {
 
 const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
+const rowGap = ref(0)
+const rowTop = ref(0)
+const rowPitch = computed(() => itemHeight.value + rowGap.value)
 const container = ref<HTMLElement | null>(null)
 const grid = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
@@ -90,7 +93,9 @@ const mergedGridStyle = computed<CSSProperties>(() => {
 })
 
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
+const offsetRows = computed(() =>
+  Math.floor(Math.max(0, scrollY.value - rowTop.value) / rowPitch.value)
+)
 const isValidGrid = computed(() => height.value && width.value && items?.length)
 
 const state = computed<GridState>(() => {
@@ -118,7 +123,7 @@ const renderedItems = computed(() =>
 
 function rowsToHeight(itemsCount: number): string {
   const rows = Math.ceil(itemsCount / cols.value)
-  return `${rows * itemHeight.value}px`
+  return `${rows * rowPitch.value}px`
 }
 const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
@@ -148,6 +153,11 @@ function updateItemSize(): void {
     if (itemWidth.value !== firstItem.clientWidth) {
       itemWidth.value = firstItem.clientWidth
     }
+    if (grid.value) {
+      const style = getComputedStyle(grid.value)
+      rowGap.value = pixels(style.rowGap)
+      rowTop.value = pixels(style.paddingTop)
+    }
   }
 }
 let pointer: { clientX: number; clientY: number } | undefined
@@ -169,6 +179,11 @@ function focusPoint(el: HTMLElement): { x: number; y: number } {
   return { x: pointer.clientX - rect.left, y: pointer.clientY - rect.top }
 }
 
+function pixels(length: string): number {
+  const value = Number.parseFloat(length)
+  return Number.isFinite(value) ? value : 0
+}
+
 function trackGeometry(
   el: HTMLElement,
   trackCols: number
@@ -178,10 +193,9 @@ function trackGeometry(
     return { trackLeft: 0, stride: width.value / trackCols }
   }
   const itemRect = firstItem.getBoundingClientRect()
-  const columnGap = Number.parseFloat(getComputedStyle(grid.value).columnGap)
   return {
     trackLeft: itemRect.left - el.getBoundingClientRect().left,
-    stride: itemRect.width + (Number.isFinite(columnGap) ? columnGap : 0)
+    stride: itemRect.width + pixels(getComputedStyle(grid.value).columnGap)
   }
 }
 
@@ -190,13 +204,17 @@ watch([cols, () => maxItemWidth], async ([nextCols], [prevCols]) => {
   if (!el || !isValidGrid.value) return
   const anchor = anchorAt(focusPoint(el), {
     scrollTop: el.scrollTop,
-    rowHeight: itemHeight.value,
+    rowTop: rowTop.value,
+    rowPitch: rowPitch.value,
     cols: prevCols,
     ...trackGeometry(el, prevCols)
   })
   await nextTick()
   updateItemSize()
-  el.scrollTop = scrollTopFor(anchor, nextCols, itemHeight.value)
+  el.scrollTop = scrollTopFor(anchor, nextCols, {
+    rowTop: rowTop.value,
+    rowPitch: rowPitch.value
+  })
 })
 
 const onResize = debounce(updateItemSize, resizeDebounce)
