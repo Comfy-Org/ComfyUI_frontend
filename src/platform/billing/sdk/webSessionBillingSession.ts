@@ -54,6 +54,34 @@ function sessionResult(result: SessionTokenResult): SessionResult | undefined {
   }
 }
 
+function observeUntilAborted<T>(
+  promise: Promise<T>,
+  signal: AbortSignal | undefined
+): Promise<T> {
+  if (!signal) return promise
+  if (signal.aborted) {
+    void promise.catch(() => undefined)
+    return Promise.reject(signal.reason)
+  }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      signal.removeEventListener('abort', onAbort)
+      reject(signal.reason)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort)
+        resolve(value)
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', onAbort)
+        reject(error)
+      }
+    )
+  })
+}
+
 /**
  * The billing SDK's session on a tab signed in on the web session: tokens
  * come from the session mint, and the scope from the session user and the
@@ -92,10 +120,16 @@ export function createWebSessionBillingSession(
       _user: unknown,
       options?: SessionRequestOptions
     ): Promise<SessionResult | undefined> => {
-      const scope = await requests.scope()
+      const signal = options?.signal
+      signal?.throwIfAborted()
+      const scope = await observeUntilAborted(requests.scope(), signal)
       if (!scope) return undefined
+      signal?.throwIfAborted()
       return sessionResult(
-        await mint({ ...scope, workspaceId: options?.workspaceId })
+        await observeUntilAborted(
+          mint({ ...scope, workspaceId: options?.workspaceId }),
+          signal
+        )
       )
     }
 
