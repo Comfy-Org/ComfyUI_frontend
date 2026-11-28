@@ -148,7 +148,10 @@ function widget(node: LGraphNode, name: string) {
 function toWorkflow({ nodes, ...serialized }: ISerialisedGraph): WorkflowJSON {
   return {
     ...serialized,
-    nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
+    nodes: nodes.map(({ flags, ...node }) => ({
+      ...node,
+      flags: { ...flags }
+    }))
   }
 }
 
@@ -271,6 +274,19 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
 
     expect(promoted.map(({ input }) => input.name)).toEqual(['prompt'])
     expect(promoted.map(({ readValue }) => readValue())).toEqual([7])
+  })
+
+  it('keeps prompt-only host positions aligned with serialized values', () => {
+    const { host } = buildHost('two speakers', 2)
+    const mode = widget(host, 'mode')
+    mode.serialize = false
+    mode.options.serialize = true
+
+    const promoted = promotedHostInputs(host)
+
+    expect(promoted.map(({ readValue }) => readValue())).toEqual(
+      host.serialize().widgets_values
+    )
   })
 
   it('counts the combo option widgets the host owns after the combo', () => {

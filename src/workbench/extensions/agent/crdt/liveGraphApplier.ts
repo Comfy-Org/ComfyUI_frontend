@@ -1062,10 +1062,17 @@ function mountedWidgetValues(
   deferred: ReadonlySet<string>
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
+  const promptOnlyControllers = (node.widgets ?? [])
+    .filter((widget) => isReplicatedValueWidget(widget))
+    .map(({ name }) => name)
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
     return index === null
-      ? !constructedNames.has(name) || deferred.has(name)
+      ? !constructedNames.has(name) ||
+          deferred.has(name) ||
+          promptOnlyControllers.some((controller) =>
+            name.startsWith(`${controller}.`)
+          )
       : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
@@ -2491,7 +2498,7 @@ const MOUNTED_LAST = Number.MAX_SAFE_INTEGER
  * depth.
  */
 function widgetEntryRank(node: LGraphNode, name: string): number {
-  const live = serializableWidgets(node)
+  const live = node.widgets ?? []
   const liveIndex = live.findIndex((widget) => widget.name === name)
   if (liveIndex !== -1) return liveIndex
   const index = overflowWidgetIndex(name)

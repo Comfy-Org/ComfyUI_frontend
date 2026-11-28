@@ -25,8 +25,10 @@ test.describe(
           return await rig.addPromptOnlySampler()
         })
 
-      await test.step('edit the prompt-only value through the live widget API', async () => {
-        await rig.editSeedOnNode(nodeId, PROMPT_ONLY_EDITED_SEED)
+      await test.step('edit the prompt-only value through the spinbutton', async () => {
+        const seed = rig.seedField(nodeId)
+        await seed.fill(String(PROMPT_ONLY_EDITED_SEED))
+        await seed.press('Tab')
       })
 
       await test.step('the host applies the semantic write', async () => {
