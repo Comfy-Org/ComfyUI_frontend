@@ -1,9 +1,10 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import '@/scripts/changeTracker'
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
@@ -11,14 +12,16 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getExecutionIdByNode: vi.fn()
 }))
 
-vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), () => ({
-  getCnrIdFromNode: vi.fn(() => undefined)
-}))
+vi.mock(import('@/platform/workflowErrors/nodeReplacement/cnrIdUtil'), {
+  spy: true
+})
 
 vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false
+  isCloud: false,
+  isDesktop: false,
+  isNightly: false
 }))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
@@ -65,6 +68,45 @@ beforeEach(() => {
 })
 
 describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
+  it('restores a missing-node offer after enabling suggestions without rescanning', async () => {
+    const settingId = 'Comfy.NodeReplacement.Enabled'
+    const settings = useSettingStore()
+    const setting = CORE_SETTINGS.find(({ id }) => id === settingId)
+    if (!setting) throw new Error(`Missing setting ${settingId}`)
+    vi.mocked(settings.get).mockImplementation((id) =>
+      id === settingId ? settings.settingValues[settingId] : true
+    )
+    settings.settingValues[settingId] = false
+    LiteGraph.registerNodeType('PrimitiveBoolean', class extends LGraphNode {})
+    vi.mocked(collectAllNodes).mockReturnValue([
+      mockNode(1, 'BooleanBasic', {
+        last_serialization: {
+          type: 'BooleanBasic',
+          properties: { cnr_id: 'controlaltai-nodes' },
+          outputs: [{ type: 'BOOLEAN' }],
+          widgets_values: [false]
+        }
+      })
+    ])
+    rescanAndSurfaceMissingNodes(mockGraph())
+    const warnings = useMissingNodesErrorStore()
+    expect(warnings.missingNodesError?.nodeTypes).toMatchObject([
+      { type: 'BooleanBasic', isReplaceable: false }
+    ])
+
+    settings.settingValues[settingId] = true
+    await setting.onChange?.(true, false)
+    expect(warnings.missingNodesError?.nodeTypes).toMatchObject([
+      { type: 'BooleanBasic', replacement: { new_node_id: 'PrimitiveBoolean' } }
+    ])
+
+    settings.settingValues[settingId] = false
+    await setting.onChange?.(false, true)
+    expect(warnings.missingNodesError?.nodeTypes).toMatchObject([
+      { type: 'BooleanBasic', isReplaceable: false, replacement: undefined }
+    ])
+  })
+
   it('returns empty when all nodes are registered', () => {
     const reg = LiteGraph.registered_node_types as Record<string, unknown>
     reg['KSampler'] = {}

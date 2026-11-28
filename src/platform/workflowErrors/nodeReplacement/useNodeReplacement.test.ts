@@ -1,11 +1,21 @@
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { st, t } from '@/i18n'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import {
   canTransferReplacementOwnership,
@@ -42,14 +52,13 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   sanitizeNodeName: (name: string) => name.replace(/[&<>"'`=]/g, '')
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  collectAllNodes: vi.fn()
-}))
+vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
 vi.mock(import('@/i18n'))
 
 import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from './nodeReplacementStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
@@ -284,7 +293,179 @@ function seedMissingNodeTypes(types: MissingNodeType[]): void {
   useMissingNodesErrorStore().setMissingNodeTypes(types)
 }
 
+function registerStringFixture(type: string, module: string, widget: string) {
+  class StringNode extends LGraphNode {
+    static override nodeData = new ComfyNodeDefImpl({
+      name: type,
+      display_name: type,
+      description: '',
+      category: 'utils',
+      python_module: module,
+      input: { required: { [widget]: ['STRING', {}] } },
+      output: ['STRING'],
+      output_is_list: [false],
+      output_name: ['STRING'],
+      output_node: false
+    })
+
+    constructor() {
+      super(type, type)
+      this.serialize_widgets = true
+      this.addWidget('text', widget, '', () => {})
+      this.addOutput('STRING', 'STRING')
+    }
+  }
+  LiteGraph.registered_node_types[type] = StringNode
+  onTestFinished(() => {
+    delete LiteGraph.registered_node_types[type]
+  })
+  return StringNode
+}
+
 describe('useNodeReplacement', () => {
+  it.for([
+    { readOnly: false, type: 'PrimitiveString', widget: 'value' },
+    { readOnly: true, type: 'JWString', widget: 'text' }
+  ])(
+    'preserves the installed node value and link when readOnly is $readOnly',
+    ({ readOnly, type, widget }) => {
+      useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+      const SourceNode = registerStringFixture(
+        'JWString',
+        'custom_nodes.comfyui-various',
+        'text'
+      )
+      const TargetNode = registerStringFixture(
+        'PrimitiveString',
+        'comfy_extras.nodes_primitive',
+        'value'
+      )
+      const graph = createReplacementGraph()
+      const previousCanvas = app.canvas
+      Object.assign(app, {
+        canvas: { graph, state: { readOnly }, selectedItems: new Set() }
+      })
+      onTestFinished(() => {
+        Object.assign(app, { canvas: previousCanvas })
+      })
+      const source = new SourceNode()
+      const savedWidget = source.widgets?.[0]
+      assert.exists(savedWidget)
+      savedWidget.value = '  keep me  '
+      graph.add(source)
+      const consumer = new LGraphNode('Consumer')
+      consumer.addInput('text', 'STRING')
+      graph.add(consumer)
+      const link = source.connect(0, consumer, 0)
+      assert.exists(link)
+      vi.mocked(LiteGraph.createNode).mockReturnValue(new TargetNode())
+
+      useNodeReplacement().replaceInstalledNodes([source])
+
+      expect(graph.getNodeById(source.id)?.serialize()).toMatchObject({
+        type,
+        widgets_values_named: { [widget]: '  keep me  ' }
+      })
+      expect(inputLink(graph, consumer.id, 0)).toBe(link)
+    }
+  )
+
+  it('replaces two eligible installed nodes and leaves an ineligible node alone', () => {
+    useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+    const SourceNode = registerStringFixture(
+      'JWString',
+      'custom_nodes.comfyui-various',
+      'text'
+    )
+    const TargetNode = registerStringFixture(
+      'PrimitiveString',
+      'comfy_extras.nodes_primitive',
+      'value'
+    )
+    const graph = createReplacementGraph()
+    const previousCanvas = app.canvas
+    Object.assign(app, {
+      canvas: { graph, state: { readOnly: false }, selectedItems: new Set() }
+    })
+    onTestFinished(() => {
+      Object.assign(app, { canvas: previousCanvas })
+    })
+    const first = new SourceNode()
+    const second = new SourceNode()
+    const other = new LGraphNode('Other')
+    graph.add(first)
+    graph.add(other)
+    graph.add(second)
+    vi.mocked(LiteGraph.createNode).mockImplementation(() => new TargetNode())
+
+    useNodeReplacement().replaceInstalledNodes([first, other, second])
+
+    expect(graph.getNodeById(first.id)?.type).toBe('PrimitiveString')
+    expect(graph.getNodeById(second.id)?.type).toBe('PrimitiveString')
+    expect(graph.getNodeById(other.id)).toBe(other)
+  })
+
+  it('keeps the other pack’s missing-node warning when its node type is the same', () => {
+    useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+    useSettingStore().settingValues['Comfy.Workflow.ShowMissingNodesWarning'] =
+      true
+    const TargetNode = registerStringFixture(
+      'PrimitiveString',
+      'comfy_extras.nodes_primitive',
+      'value'
+    )
+    const graph = createReplacementGraph()
+    const known = new LGraphNode('JWString', 'JWString')
+    known.addOutput('STRING', 'STRING')
+    known.properties.aux_id = 'jameswalker55/comfyui-various'
+    graph.add(known)
+    markPlaceholder(known)
+    assert.exists(known.last_serialization)
+    known.last_serialization.widgets_values = ['known value']
+    const other = new LGraphNode('JWString', 'JWString')
+    other.addOutput('STRING', 'STRING')
+    other.properties.aux_id = 'other-pack'
+    graph.add(other)
+    markPlaceholder(other)
+    assert.exists(other.last_serialization)
+    other.last_serialization.widgets_values = ['other value']
+    vi.mocked(collectAllNodes).mockReturnValue([other, known])
+
+    const replacement = useNodeReplacementStore().getMissingNodeReplacement(
+      known.last_serialization
+    )
+    assert.exists(replacement)
+    const knownWarning = {
+      type: 'JWString',
+      nodeId: String(known.id),
+      isReplaceable: true,
+      replacement
+    }
+    const otherWarning = {
+      type: 'JWString',
+      nodeId: String(other.id),
+      cnrId: 'other-pack'
+    }
+    seedMissingNodeTypes([otherWarning, knownWarning])
+    vi.mocked(LiteGraph.createNode).mockReturnValue(new TargetNode())
+
+    useNodeReplacement().replaceAllGroups([
+      { type: 'JWString', nodeTypes: [otherWarning, knownWarning] }
+    ])
+
+    expect(graph.getNodeById(known.id)?.serialize()).toMatchObject({
+      type: 'PrimitiveString',
+      widgets_values_named: { value: 'known value' }
+    })
+    expect(graph.getNodeById(other.id)).toBe(other)
+    expect(getActiveWorkflowMock().pendingWarnings?.missingNodeTypes).toEqual([
+      otherWarning
+    ])
+    expect(
+      useMissingNodesErrorStore().visibleMissingNodesError?.nodeTypes
+    ).toEqual([otherWarning])
+  })
+
   describe('replaceNodesInPlace', () => {
     it('should return empty array when no placeholders exist', () => {
       const graph = createMockGraph([])

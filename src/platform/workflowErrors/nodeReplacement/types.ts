@@ -21,6 +21,7 @@ export interface NodeReplacement {
   old_widget_ids: string[] | null
   input_mapping: InputMap[] | null
   output_mapping: OutputMap[] | null
+  editorOnly?: true
 }
 
 export type NodeReplacementResponse = Record<string, NodeReplacement[]>
@@ -39,6 +40,7 @@ export type MissingNodeType =
       }
       isReplaceable?: boolean
       replacement?: NodeReplacement
+      editorReplacementCandidate?: NodeReplacement
     }
 
 /** How the workflow with missing nodes came to be open: brought in by a drop, import or paste, or reopened as Comfy starts or a tab opens. */

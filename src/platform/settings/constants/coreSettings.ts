@@ -1389,7 +1389,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true,
     experimental: false,
     versionAdded: '1.40.0',
-    versionModified: '1.44.5'
+    versionModified: '1.44.5',
+    onChange: async (_value, oldValue) => {
+      if (oldValue === undefined) return
+      const { reloadMissingNodeReplacements } =
+        await import('@/platform/workflowErrors/nodeReplacement/missingNodeScan')
+      await reloadMissingNodeReplacements()
+    }
   },
   {
     id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',

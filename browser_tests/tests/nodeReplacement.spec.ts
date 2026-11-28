@@ -20,6 +20,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getInputNames } from '@e2e/fixtures/utils/nodeInputLinks'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 const renderModes = [
   { name: 'vue nodes', vueNodesEnabled: true },
@@ -29,6 +30,146 @@ const renderModes = [
 test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
   test.use({
     initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+  })
+
+  test.describe('Core equivalents', { tag: ['@vue-nodes', '@oss'] }, () => {
+    const workflow = 'missing/core_equivalents'
+    const replaceOne = 'Replace with Core Equivalent'
+    const replaceSelection = 'Replace Eligible Selection with Core Nodes'
+
+    test.describe('Installed nodes', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        const definitions = [false, true].map((multiline): ComfyNodeDef => {
+          const name = multiline ? 'JWStringMultiline' : 'JWString'
+          return {
+            name,
+            display_name: name,
+            description: '',
+            category: 'utils',
+            output_node: false,
+            python_module: 'custom_nodes.comfyui-various',
+            input: { required: { text: ['STRING', { multiline }] } },
+            output: ['STRING']
+          }
+        })
+        await comfyPage.page.evaluate(async (defs) => {
+          for (const def of defs)
+            await window.app!.registerNodeDef(def.name, def)
+        }, definitions)
+        await comfyPage.workflow.loadWorkflow(workflow)
+      })
+
+      test('Replaces one installed node outside the selection and keeps its text and connection', async ({
+        comfyPage
+      }) => {
+        const { header } =
+          await comfyPage.vueNodes.getFixtureByTitle(/^JWString$/)
+        await comfyPage.vueNodes.selectNodes(['2', '3'])
+        await comfyPage.contextMenu.openFor(header)
+        await comfyPage.contextMenu.clickMenuItemExact(replaceOne)
+
+        const saved = await comfyPage.workflow.getExportedWorkflow()
+        expect(saved.nodes).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: 1,
+              type: 'PrimitiveString',
+              widgets_values: ['A quiet forest']
+            }),
+            expect.objectContaining({ id: 2, type: 'JWString' })
+          ])
+        )
+        expect(saved.links).toEqual([[1, 1, 0, 4, 0, 'STRING']])
+      })
+
+      test('Replaces only eligible selected nodes and undoes the batch in one step', async ({
+        comfyPage
+      }) => {
+        const { header } =
+          await comfyPage.vueNodes.getFixtureByTitle('Concatenate Text')
+        await comfyPage.vueNodes.selectNodes(['1', '2', '4'])
+        await comfyPage.contextMenu.openFor(header)
+        await comfyPage.contextMenu.clickMenuItemExact(replaceSelection)
+
+        const swapped = await comfyPage.workflow.getExportedWorkflow()
+        expect(swapped.nodes).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              id: 1,
+              type: 'PrimitiveString',
+              widgets_values: ['A quiet forest']
+            }),
+            expect.objectContaining({
+              id: 2,
+              type: 'PrimitiveString',
+              widgets_values: ['Warm afternoon light']
+            }),
+            expect.objectContaining({ id: 3, type: 'JWStringMultiline' }),
+            expect.objectContaining({ id: 4, type: 'StringConcatenate' })
+          ])
+        )
+
+        await comfyPage.keyboard.undo()
+        await expect(
+          comfyPage.vueNodes.getNodeByTitle(/^JWString$/)
+        ).toHaveCount(2)
+        await comfyPage.contextMenu.openForVueNode(header)
+        await expect(
+          comfyPage.contextMenu.menuItem(replaceSelection)
+        ).toBeHidden()
+        await expect(comfyPage.contextMenu.menuItem(replaceOne)).toBeHidden()
+      })
+    })
+
+    test.describe('Missing nodes', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(comfyPage, workflow)
+      })
+
+      for (const { title, action, remainingType } of [
+        {
+          title: 'Replaces one missing type without changing the other',
+          action: 'Replace Node',
+          remainingType: 'JWStringMultiline'
+        },
+        {
+          title: 'Replaces all eligible missing types',
+          action: 'Replace All',
+          remainingType: 'PrimitiveStringMultiline'
+        }
+      ]) {
+        test(title, async ({ comfyPage }) => {
+          const swapGroup = getSwapNodesGroup(comfyPage.page)
+          await expect(swapGroup).toContainText('JWStringMultiline')
+          await swapGroup
+            .getByRole('button', { name: action, exact: true })
+            .first()
+            .click()
+
+          const saved = await comfyPage.workflow.getExportedWorkflow()
+          expect(saved.nodes).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id: 1,
+                type: 'PrimitiveString',
+                widgets_values: ['A quiet forest']
+              }),
+              expect.objectContaining({
+                id: 2,
+                type: 'PrimitiveString',
+                widgets_values: ['Warm afternoon light']
+              }),
+              expect.objectContaining({
+                id: 3,
+                type: remainingType,
+                widgets_values: ['Layered hills\nSoft shadows']
+              })
+            ])
+          )
+          expect(saved.links).toEqual([[1, 1, 0, 4, 0, 'STRING']])
+        })
+      }
+    })
   })
 
   test.describe('API workflow replacement', () => {

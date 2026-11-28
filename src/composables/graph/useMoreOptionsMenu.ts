@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { getCoreReplacementMenuOption } from '@/composables/useContextMenuTranslation'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -210,6 +211,13 @@ export function useMoreOptionsMenu() {
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
       options.push(...getAlignmentOptions(node))
+      if (selectedNodes.value.length > 1 && node && canvasStore.canvas) {
+        const replacement = getCoreReplacementMenuOption(
+          canvasStore.canvas,
+          node
+        )
+        if (replacement) options.push(replacement)
+      }
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))
