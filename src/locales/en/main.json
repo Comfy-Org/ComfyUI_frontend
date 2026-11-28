@@ -4625,8 +4625,6 @@
     "allFolders": "All folders",
     "uploadSelect": {
       "placeholder": "Select...",
-      "resizeLeftCorner": "Resize from left corner",
-      "resizeRightCorner": "Resize from right corner",
       "resizeHint": "Drag to resize, double-click to reset",
       "placeholderImage": "Select image...",
       "placeholderAudio": "Select audio...",

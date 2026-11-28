@@ -6,7 +6,7 @@ import {
   hasNorthEdge,
   hasWestEdge
 } from '@comfyorg/graph-model/arrange/cornerResize'
-import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { NODE_RESIZE_CORNERS } from '@/renderer/extensions/vueNodes/interactions/resize/resizeDirection'
 
 test.describe(
   'Vue Node Resizing',
@@ -30,10 +30,10 @@ test.describe(
       const getWidth = async () => (await node.boundingBox())?.width ?? -1
       const getHeight = async () => (await node.boundingBox())?.height ?? -1
 
-      const cornerCases = RESIZE_HANDLES.map((h) => ({
-        corner: h.corner,
-        dragX: hasWestEdge(h.corner) ? -50 : 50,
-        dragY: hasNorthEdge(h.corner) ? -40 : 40
+      const cornerCases = NODE_RESIZE_CORNERS.map((corner) => ({
+        corner,
+        dragX: hasWestEdge(corner) ? -50 : 50,
+        dragY: hasNorthEdge(corner) ? -40 : 40
       }))
 
       for (const { corner, dragX, dragY } of cornerCases) {

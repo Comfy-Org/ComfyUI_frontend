@@ -202,7 +202,7 @@ export function useGrowableRegions({
     )
   }
 
-  function fitNode(event: MouseEvent) {
+  function fitNode(event: Event) {
     const target = closestNodeElement(event)
     if (!target) return
     const { nodeElement } = target
@@ -349,7 +349,7 @@ export function useGrowableRegions({
     if (target) resetRegion(target)
   }
 
-  function resetWidget(event: MouseEvent, name: string, minHeight?: number) {
+  function resetWidget(event: Event, name: string, minHeight?: number) {
     const nodeElement = closestNodeElement(event)?.nodeElement
     const region = nodeElement?.querySelector<HTMLElement>(
       `[data-widget-name="${CSS.escape(name)}"]`
