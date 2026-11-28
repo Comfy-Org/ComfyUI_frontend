@@ -742,6 +742,30 @@ describe('ComfyApp', () => {
       )
     })
 
+    it.for([
+      {
+        name: 'no nodes key',
+        workflow: { '1': { class_type: 'KSampler', inputs: {} } }
+      },
+      {
+        name: 'a node whose id is "nodes"',
+        workflow: { nodes: { class_type: 'KSampler', inputs: {} } }
+      }
+    ])(
+      'loads an API-format workflow with $name without raising the load error dialog',
+      async ({ workflow }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+        await expect(
+          app.loadGraphData(fromAny<ComfyWorkflowJSON, unknown>(workflow))
+        ).resolves.toBe(true)
+
+        expect(showDialog).not.toHaveBeenCalled()
+      }
+    )
+
     it('resolves false, not rejects, when graph configure fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
