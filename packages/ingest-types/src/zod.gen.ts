@@ -323,6 +323,7 @@ export const zAgentPausedContext = z.object({
 export const zAgentPendingAskBase = z.object({
   allow_other: z.boolean(),
   ask_id: z.string(),
+  expires_at: z.iso.datetime().optional(),
   kind: zAgentAskKind,
   max_selections: z.int(),
   message_id: z.string(),
@@ -397,6 +398,16 @@ export const zAgentPostMessageRequest = z.object({
       })
     )
     .optional()
+})
+
+/**
+ * User-by-workspace assignment for the proactive greeting experiment.
+ */
+export const zAgentProactiveGreetingAssignment = z.object({
+  group_key: z.string().min(1),
+  user_id: z.string().min(1),
+  variant: z.enum(['control', 'generic', 'canvas-prefill', 'canvas-only']),
+  workspace_id: z.string().min(1)
 })
 
 /**
@@ -747,7 +758,8 @@ export const zAgentMessageDoneFrame = z.object({
 })
 
 export const zAgentUsageStatusResponse = z.object({
-  has_used_agent: z.boolean()
+  has_used_agent: z.boolean(),
+  scope: z.enum(['local_installation']).optional()
 })
 
 /**
@@ -832,6 +844,7 @@ export const zAgentAttachmentError = z.discriminatedUnion('type', [
  * Represents a user-owned asset (image, video, or other generated output).
  */
 export const zAsset = z.object({
+  blocked_by_model_policy: z.boolean().optional(),
   created_at: z.iso.datetime(),
   display_name: z.string().nullish(),
   file_path: z.string().nullish(),
@@ -1735,6 +1748,22 @@ export const zBillingOpCancelResponse = z.object({
  */
 export const zBillingOpOutcomeResponse = z.object({
   status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
+})
+
+/**
+ * Answers "should this client show and apply a promotion right now?". Non-null means yes: show the offer, put `promotion_code` on plan links and follow `auto_apply` at checkout. Null means no promotion is running, and clients show and apply nothing. It is not a statement about the caller: it does not say this visitor or workspace qualifies, and a code restricted to first-time customers is still refused at checkout for anyone else.
+ */
+export const zBillingPromotion = z
+  .object({
+    auto_apply: z.boolean(),
+    ends_at: z.iso.datetime().nullable(),
+    percent_off: z.number().nullable(),
+    promotion_code: z.string()
+  })
+  .nullable()
+
+export const zBillingPromotionResponse = z.object({
+  promotion: zBillingPromotion
 })
 
 /**
@@ -2952,6 +2981,7 @@ export const zBillingBalanceResponse = z.object({
   pending_charges_micros: z.number().optional(),
   prepaid_balance_cents: z.number().optional(),
   prepaid_balance_micros: z.number().optional(),
+  scoped_balance_cents: z.record(z.string(), z.number()).optional(),
   suggested_topup_amount_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3164,6 +3194,13 @@ export const zDesktopLoginCodeRedeemResponse = z.object({
 })
 
 /**
+ * A one-time Firebase custom token for the Desktop grant's user.
+ */
+export const zDesktopWebSessionResponse = z.object({
+  custom_token: z.string()
+})
+
+/**
  * First rejected op in an abort-remainder batch.
  */
 export const zDocOpFailure = z.object({
@@ -3317,19 +3354,6 @@ export const zDocUpdateFrame = z.object({
 export const zExchangeTokenRequest = z.object({
   resource: z.enum(['partner-node']).optional(),
   workspace_id: z.string().optional()
-})
-
-/**
- * Detailed execution error information from ComfyUI
- */
-export const zExecutionError = z.object({
-  current_inputs: z.record(z.string(), z.unknown()),
-  current_outputs: z.record(z.string(), z.unknown()),
-  exception_message: z.string(),
-  exception_type: z.string(),
-  node_id: z.string(),
-  node_type: z.string(),
-  traceback: z.array(z.string())
 })
 
 /**
@@ -3758,55 +3782,6 @@ export const zJobDeployment = z.object({
 })
 
 /**
- * Lightweight job data for list views (workflow and full outputs excluded)
- */
-export const zJobEntry = z.object({
-  create_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  deployment: zJobDeployment.optional(),
-  execution_end_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  execution_error: zExecutionError.optional(),
-  execution_start_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
-  id: z.uuid(),
-  outputs_count: z.int().optional(),
-  preview_output: z.record(z.string(), z.unknown()).optional(),
-  previewable_outputs_count: z.int().optional(),
-  project_id: z.string().optional(),
-  status: z.enum([
-    'pending',
-    'in_progress',
-    'completed',
-    'failed',
-    'cancelled',
-    'held_budget'
-  ]),
-  workflow_id: z.string().optional()
-})
-
-/**
  * Where one executed node ran and where its output is shown, as ComfyUI
  * records it in the history `meta`. Live `executed` messages carry the
  * same `display_node`.
@@ -3817,72 +3792,6 @@ export const zJobExecutionMetaEntry = z.object({
   node_id: z.string().optional(),
   parent_node: z.string().nullish(),
   real_node_id: z.string().optional()
-})
-
-/**
- * Full job details including workflow and outputs
- */
-export const zJobDetailResponse = z.object({
-  create_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  deployment: zJobDeployment.optional(),
-  execution_end_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  execution_error: zExecutionError.optional(),
-  execution_meta: z.record(z.string(), zJobExecutionMetaEntry).optional(),
-  execution_start_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  execution_status: z.record(z.string(), z.unknown()).optional(),
-  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
-  id: z.uuid(),
-  outputs: z.record(z.string(), z.unknown()).optional(),
-  outputs_count: z.int().optional(),
-  preview_output: z.record(z.string(), z.unknown()).optional(),
-  previewable_outputs_count: z.int().optional(),
-  project_id: z.string().optional(),
-  queue_position: z.int().gte(1).nullish(),
-  queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
-  status: z.enum([
-    'pending',
-    'in_progress',
-    'completed',
-    'failed',
-    'cancelled',
-    'held_budget'
-  ]),
-  update_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  user_id: z.string().optional(),
-  workflow: z.record(z.string(), z.unknown()).optional(),
-  workflow_id: z.string().optional(),
-  workflow_version_id: z.string().optional(),
-  workspace_id: z.string().optional()
 })
 
 /**
@@ -4400,14 +4309,6 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Paginated list of jobs for the authenticated user.
- */
-export const zJobsListResponse = z.object({
-  jobs: z.array(zJobEntry),
-  pagination: zPaginationInfo
-})
-
-/**
  * Request body for generating a payment portal session URL.
  */
 export const zPaymentPortalRequest = z.object({
@@ -4729,6 +4630,143 @@ export const zPromptOutputsSkippedNodeError = z.object({
 })
 
 /**
+ * Detailed execution error information from ComfyUI
+ */
+export const zExecutionError = z.object({
+  current_inputs: z.record(z.string(), z.unknown()),
+  current_outputs: z.record(z.string(), z.unknown()),
+  exception_message: z.string(),
+  exception_type: z.string(),
+  node_errors: z.record(z.string(), zPromptOutputsSkippedNodeError).optional(),
+  node_id: z.string(),
+  node_type: z.string(),
+  traceback: z.array(z.string())
+})
+
+/**
+ * Full job details including workflow and outputs
+ */
+export const zJobDetailResponse = z.object({
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  deployment: zJobDeployment.optional(),
+  execution_end_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_error: zExecutionError.optional(),
+  execution_meta: z.record(z.string(), zJobExecutionMetaEntry).optional(),
+  execution_start_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_status: z.record(z.string(), z.unknown()).optional(),
+  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
+  id: z.uuid(),
+  outputs: z.record(z.string(), z.unknown()).optional(),
+  outputs_count: z.int().optional(),
+  preview_output: z.record(z.string(), z.unknown()).optional(),
+  previewable_outputs_count: z.int().optional(),
+  project_id: z.string().optional(),
+  queue_position: z.int().gte(1).nullish(),
+  queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled',
+    'held_budget'
+  ]),
+  update_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  user_id: z.string().optional(),
+  workflow: z.record(z.string(), z.unknown()).optional(),
+  workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional(),
+  workspace_id: z.string().optional()
+})
+
+/**
+ * Lightweight job data for list views (workflow and full outputs excluded)
+ */
+export const zJobEntry = z.object({
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  deployment: zJobDeployment.optional(),
+  execution_end_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_error: zExecutionError.optional(),
+  execution_start_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
+  id: z.uuid(),
+  outputs_count: z.int().optional(),
+  preview_output: z.record(z.string(), z.unknown()).optional(),
+  previewable_outputs_count: z.int().optional(),
+  project_id: z.string().optional(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled',
+    'held_budget'
+  ]),
+  workflow_id: z.string().optional()
+})
+
+/**
+ * Paginated list of jobs for the authenticated user.
+ */
+export const zJobsListResponse = z.object({
+  jobs: z.array(zJobEntry),
+  pagination: zPaginationInfo
+})
+
+/**
  * The `data` of a prompt_outputs_skipped WebSocket event. Sent when ComfyUI accepts a Cloud job's prompt but rejects some nodes: ComfyUI skips the outputs that depend on them and runs the rest, and the job keeps running. The inference server sends it to the user's channel (services/inference/server/services/joborchestrator/prompt_validation.go). Every string taken from ComfyUI has its lists of allowed values or file names replaced ("is not a valid value", "[list omitted]") and is capped at 512 characters.
  */
 export const zPromptOutputsSkippedData = z.object({
@@ -4787,6 +4825,27 @@ export const zProviderPolicyEntry = z.object({
 export const zProviderPolicy = z.object({
   enforcement_enabled: z.boolean(),
   providers: z.array(zProviderPolicyEntry)
+})
+
+export const zPublicModel = z.object({
+  file_path: z.string().optional(),
+  id: z.uuid(),
+  name: z.string(),
+  size: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  source_url: z.string().optional(),
+  tags: z.array(z.string())
+})
+
+export const zPublicModelsResponse = z.object({
+  models: z.array(zPublicModel)
 })
 
 /**
@@ -6700,6 +6759,7 @@ export const zListWorkspacesResponse = z.object({
  * Represents a user-owned asset (image, video, or other generated output).
  */
 export const zAssetWritable = z.object({
+  blocked_by_model_policy: z.boolean().optional(),
   created_at: z.iso.datetime(),
   display_name: z.string().nullish(),
   file_path: z.string().nullish(),
@@ -7418,6 +7478,11 @@ export const zRedeemDesktopLoginCodeBody = zDesktopLoginCodeRedeemRequest
  */
 export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
 
+/**
+ * Custom token minted
+ */
+export const zCreateDesktopWebSessionResponse = zDesktopWebSessionResponse
+
 export const zCreateBillingHandoffBody = zBillingHandoffCreateRequest
 
 /**
@@ -7663,6 +7728,11 @@ export const zPreviewSubscribeBody = zPreviewSubscribeRequest
  */
 export const zPreviewSubscribeResponse2 = zPreviewSubscribeResponse
 
+/**
+ * The promotion running right now, or null
+ */
+export const zGetBillingPromotionResponse = zBillingPromotionResponse
+
 export const zAcceptRetentionOfferBody = zRetentionAcceptRequest
 
 /**
@@ -7889,11 +7959,9 @@ export const zGetFeaturesResponse = z.object({
     ])
     .optional()
     .default('control'),
-  'agent-starter-prompt-set': z
-    .enum(['control', 'test'])
-    .optional()
-    .default('control'),
   agent_gratis_local_arm: z.enum(['control', 'treatment']).optional(),
+  agent_proactive_greeting_assignment:
+    zAgentProactiveGreetingAssignment.optional(),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
   deploy_to_cloud: z.boolean().optional(),
@@ -7917,6 +7985,7 @@ export const zGetFeaturesResponse = z.object({
   open_on_cloud_model_upload_enabled: z.boolean().optional(),
   open_on_cloud_use_local_agent_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
+  'prompt-editor-surface': z.enum(['control', 'panel']).optional(),
   server_boot_id: z.string().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
@@ -8355,6 +8424,11 @@ export const zGetLegacyPromptByIdPath = z.object({
  * The provider catalog
  */
 export const zGetProvidersResponse = zProviderCatalogResponse
+
+/**
+ * The public model catalog
+ */
+export const zListPublicModelsResponse = zPublicModelsResponse
 
 /**
  * Success

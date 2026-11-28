@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "使用 OpenAI 的 GPT 模型生成文本回复。提供文本提示词，并可选择提供图像或文件作为上下文。",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "通过 OpenAI 的 GPT Image 2 端点同步生成图像。",
     "display_name": "OpenAI GPT Image 2",
@@ -22118,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "输出帧率。“source”会保持视频帧率，最高 60。更高帧率将通过插帧生成。输出超过 30 fps 的费用为两倍。"
+        "tooltip": "输出帧率。“source”会保持视频的帧率，最高为 60。更高的帧率将通过插帧生成。除 turbo 外，输出超过 30 fps 的费用会加倍。"
       },
       "target": {
         "name": "目标",
@@ -22126,7 +22159,7 @@
       },
       "turbo": {
         "name": "极速",
-        "tooltip": "以相同价格更快地放大，但细节会更柔和。"
+        "tooltip": "以更低的价格更快地放大，但细节会更柔和。"
       },
       "video": {
         "name": "视频",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而构建，并且始终需要 style_id 或 style_references；recraftv4_1_flash 是最快且最便宜的模型，完全不支持任何风格。"
+        "tooltip": "用于生成的模型。recraftv4_styles 模型专为风格一致的生成而构建，且始终需要 style_id 或 style_references；recraftv4_1_flash 运行 Recraft V4.1 Flash V2，这是速度最快且成本最低的模型，并且完全不支持任何风格。"
       },
       "model_size": {
         "name": "size"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "图像"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical 会将形状分层叠放；cut_out 会生成永不重叠的形状，适用于绘图仪、乙烯基切割机和丝网印刷。"
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro（Vectorizer Pro）可生成更干净的 SVG，具有平滑曲线、直线和锐利的角，最适合文字和复杂形状。"
       }
     },
     "outputs": {
@@ -29256,7 +29297,7 @@
       },
       "face_limit": {
         "name": "面数限制",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -29333,7 +29374,7 @@
       },
       "face_limit": {
         "name": "面数上限",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，详细模式约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -29476,7 +29517,7 @@
       },
       "face_limit": {
         "name": "面数限制",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -30248,7 +30289,7 @@
       },
       "face_limit": {
         "name": "面数限制",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x standard 约 140 万面，detailed 约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "几何质量"
@@ -30325,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准版约 140 万面，详细版约 200 万面）。Tripo 会静默限制：v2.5 为 500,000，四边形网格为 150,000。"
+        "tooltip": "最大面数。-1 让 Tripo 自适应选择（v3.x 标准模式约 140 万面，精细模式约 200 万面）。Tripo 会将四边形网格的面数静默限制为 150,000。"
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30392,8 +30433,7 @@
         "name": "模型任务ID"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "纹理模型：v3.0 用于由 v3.x 生成的网格，v2.5 用于由 v2.5 生成的网格。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30456,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "纹理模型：v3.0 用于由 v3.x 生成的网格，v2.5 用于由 v2.5 生成的网格。"
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

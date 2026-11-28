@@ -59,6 +59,28 @@
     "name": "選択ツールボックスを表示",
     "tooltip": "ノードが選択されているときにフローティングツールバーを表示し、よく使う操作に素早くアクセスできます。"
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "ドラッグおよびサイズ変更時に、近くのノード、グループ、ワイヤーにスナップ",
+    "tooltip": "ガイド線を表示し、整列した辺、均等な間隔、直線のワイヤーにスナップします。代わりにグリッドにスナップするには Shift を押し続けます。"
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "別のノードの隣にスナップする際の間隔"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "スナップ距離（画面ピクセル）"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "他のノードやグループの辺にスナップ"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "ノード間の均等な間隔にスナップ"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "ワイヤーが直線になるようにスナップ"
+  },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "ノード名とモデル名を送信してComfy Cloudとの互換性を確認する前に確認する"
+  },
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
   },
@@ -87,6 +109,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "問題タブに不足しているモデルを表示",
     "tooltip": "無効にすると、見つからないモデルファイルは問題タブに表示されず、該当ノードも強調表示されません。"
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "問題タブに不足しているノードを表示",
+    "tooltip": "無効にすると、不足しているノードパックは問題タブに一覧表示されず、それらのノードも強調表示されません。インストールされるまで、ワークフローは実行できません。"
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "ライブプレビューメソッド",
@@ -468,10 +494,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "問題タブに不足しているメディアを表示",
     "tooltip": "無効にすると、見つからない入力画像、動画、音声は問題タブに表示されず、該当ノードも強調表示されません。"
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "問題タブに不足しているノードを表示",
-    "tooltip": "無効にすると、不足しているノードパックは問題タブに表示されず、該当ノードも強調表示されません。インストールされるまで、ワークフローは実行できません。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ワークフローを保存する際にノードIDをソート"

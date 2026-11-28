@@ -73,7 +73,7 @@ type LayoutConfig = {
 
 const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   grid: {
-    maxColumns: 4,
+    maxColumns: 8,
     itemHeight: 120,
     minItemWidth: 96,
     gap: 'var(--spacing-4) var(--spacing-2)'
@@ -91,7 +91,7 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
 }
 
 const thumbnailLayouts = {
-  compact: { maxColumns: 5, itemHeight: 104, minItemWidth: 76 },
+  compact: { maxColumns: 10, itemHeight: 104, minItemWidth: 76 },
   standard: LAYOUT_CONFIGS.grid,
   large: { maxColumns: 1, itemHeight: 412 }
 } satisfies Record<
@@ -131,7 +131,7 @@ const onWheel = (event: WheelEvent) => {
 
 <template>
   <div
-    class="flex min-h-0 flex-1 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
+    class="flex min-h-0 flex-1 flex-col rounded-lg bg-node py-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
     @wheel="onWheel"

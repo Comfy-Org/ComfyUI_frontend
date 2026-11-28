@@ -542,6 +542,16 @@ describe('useBoundingBoxes inline editor', () => {
     expect(c.inlineEditor.value).toBeNull()
   })
 
+  it.for([{ regions: [] }, { regions: [box()] }])(
+    'ignores a double click that hits no box with $regions.length regions',
+    async ({ regions }) => {
+      const c = setup(regions)
+      expect(() => c.onDoubleClick(pe(90, 90))).not.toThrow()
+      await flush()
+      expect(c.inlineEditor.value).toBeNull()
+    }
+  )
+
   it('closes the inline editor on Escape', async () => {
     const c = setup([box()])
     c.onDoubleClick(pe(30, 30))

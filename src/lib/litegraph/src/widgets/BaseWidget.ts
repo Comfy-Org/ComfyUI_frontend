@@ -636,10 +636,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   /**
    * Draws only the widget's name for a row whose control is suppressed by an
    * upstream connection. The connected input slot dot is drawn separately by
-   * slot rendering. Called from LGraphNode via toConcreteWidget, which fallow
-   * cannot resolve.
+   * slot rendering. Called from LGraphNode via toConcreteWidget.
    */
-  // fallow-ignore-next-line unused-class-member
   drawSuppressedRowLabel(
     ctx: CanvasRenderingContext2D,
     { width }: DrawWidgetOptions

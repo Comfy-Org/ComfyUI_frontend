@@ -58,6 +58,9 @@ import type {
   LinkDedupDropMetadata,
   NamedValuesShadowDiffMismatchMetadata,
   NamedValuesShadowDiffSummaryMetadata,
+  PromptEditorClosedMetadata,
+  PromptEditorExposureMetadata,
+  PromptEditorOpenedMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
@@ -542,6 +545,18 @@ export class HostTelemetrySink implements TelemetryProvider {
     metadata: VersionUpdateSurfaceResolvedMetadata
   ): void {
     this.capture(TelemetryEvents.VERSION_UPDATE_SURFACE_RESOLVED, metadata)
+  }
+
+  trackPromptEditorExposure(metadata: PromptEditorExposureMetadata): void {
+    this.capture(TelemetryEvents.PROMPT_EDITOR_EXPOSURE, metadata)
+  }
+
+  trackPromptEditorOpened(metadata: PromptEditorOpenedMetadata): void {
+    this.capture(TelemetryEvents.PROMPT_EDITOR_OPENED, metadata)
+  }
+
+  trackPromptEditorClosed(metadata: PromptEditorClosedMetadata): void {
+    this.capture(TelemetryEvents.PROMPT_EDITOR_CLOSED, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

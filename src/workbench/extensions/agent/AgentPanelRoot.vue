@@ -47,7 +47,7 @@ import {
 } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
@@ -66,8 +66,6 @@ import type { AgentAttachVerdict } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { MinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
-import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorationRegistry'
 // The composition root injects the renderer-owned layout port; follower core
 // stays independent of renderer and LiteGraph runtime values.
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -85,13 +83,9 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  toOwningGraphId,
-  toRootGraphId
-} from '@comfyorg/graph-model/graphScopeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
@@ -194,6 +188,7 @@ import {
   useAgentChatDrafts
 } from './composables/agent/useAgentChatDrafts'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
+import { useAgentGraphActivityPresentation } from './composables/agent/useAgentGraphActivityPresentation'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
@@ -224,7 +219,10 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
-import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
+import {
+  isCreditTransitionNoticeShown,
+  isInitialNoGrant
+} from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
@@ -544,9 +542,25 @@ const showCreditTransitionNotice = computed(
     agentHasFunds.value === true
 )
 
+const showAgentCostNotice = computed(
+  () =>
+    isInitialNoGrant(
+      agentPanelStore.creditTransitionNotice,
+      billingIdentity.value
+    ) &&
+    consentAccepted.value &&
+    capabilityReadSettled.value &&
+    subscription.value?.agentScopedHasFundsAuthoritative === true &&
+    agentScopedHasFunds.value === false &&
+    agentHasFunds.value !== undefined &&
+    !unresolvedPaywallPending.value &&
+    !showStandingPaywall.value
+)
+
 function onDismissCreditTransitionNotice(): void {
+  if (!agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value))
+    return
   useTelemetry()?.trackAgentCreditTransitionNotice({ action: 'dismissed' })
-  agentPanelStore.dismissCreditTransitionNotice(billingIdentity.value)
 }
 
 function onCreditTransitionNoticeShown(): void {
@@ -669,6 +683,9 @@ const agentTabGraph: ComfyWorkflowJSON = {
 
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
+useAgentGraphActivityPresentation({
+  graph: () => canvasStore.canvas?.graph
+})
 const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
@@ -691,51 +708,6 @@ const crdtLogLevel = computed({
   }
 })
 const dialogStore = useDialogStore()
-watch(
-  () => canvasStore.canvas?.graph,
-  (graph, _previous, onCleanup) => {
-    if (!graph?.events) return
-    const events = graph.events as EventTarget
-    const onNodeRemoved: EventListener = (event) => {
-      if (!(event instanceof CustomEvent)) return
-      const nodeId = parseNodeId(String(event.detail.node?.id))
-      if (nodeId) graphActivity.removeNodes([nodeId])
-    }
-    events.addEventListener('node:removed', onNodeRemoved)
-    onCleanup(() => events.removeEventListener('node:removed', onNodeRemoved))
-  },
-  { immediate: true }
-)
-// Claimed on mount rather than in setup so a setup failure cannot leave the id
-// registered with no unmount to release it.
-let agentMinimapLayer: MinimapDecorationLayer | undefined
-function syncAgentMinimapLayer(activity: typeof graphActivity.state): void {
-  if (activity.phase === 'idle') {
-    agentMinimapLayer?.replace([])
-    return
-  }
-  const rootGraphId = toRootGraphId(activity.rootGraphId)
-  agentMinimapLayer?.replace(
-    activity.nodeIds.map((nodeId) => ({
-      target: {
-        rootGraphId,
-        owningGraphId: toOwningGraphId(activity.rootGraphId),
-        nodeId
-      },
-      enter: 'pop'
-    }))
-  )
-  if (
-    activity.phase === 'running' &&
-    !settingStore.get('Comfy.Minimap.Visible')
-  )
-    void settingStore.set('Comfy.Minimap.Visible', true)
-}
-watch(() => graphActivity.state, syncAgentMinimapLayer, { immediate: true })
-onMounted(() => {
-  agentMinimapLayer = registerMinimapDecorationLayer('agent.graph-activity')
-  syncAgentMinimapLayer(graphActivity.state)
-})
 // Teardown must be total. Nothing is re-thrown: an error escaping an unmount
 // hook reaches Vue's logError, which re-throws outside production builds (this
 // app registers no app.config.errorHandler) and aborts both the steps after it
@@ -767,13 +739,6 @@ function runPanelTeardown(
     }
   }
 }
-onBeforeUnmount(() =>
-  runPanelTeardown({
-    disposeMinimapLayer: () => {
-      agentMinimapLayer?.dispose()
-    }
-  })
-)
 const { withConsent } = useAgentConsent()
 const workspaceStore = teamWorkspaceStore
 const onboardingKey = computed(() =>
@@ -944,6 +909,28 @@ const {
   }
 })
 
+let suppressPickTelemetry = false
+let pendingPickCount = 0
+function reportPlusMenuPicks(count: number): void {
+  if (pendingPickCount === 0)
+    queueMicrotask(() => {
+      const nodeCount = pendingPickCount
+      pendingPickCount = 0
+      useTelemetry()?.trackAgentNodeTagged({
+        source: 'plus_menu',
+        node_count: nodeCount
+      })
+    })
+  pendingPickCount += count
+}
+function withoutPickTelemetry(stage: () => void): void {
+  suppressPickTelemetry = true
+  try {
+    stage()
+  } finally {
+    suppressPickTelemetry = false
+  }
+}
 watch(
   selectionTags,
   (tags, previousTags) => {
@@ -956,10 +943,16 @@ watch(
     if (canvasStore.isPickingNodes) {
       const previousKeys = new Set(previousTags.map(selectedNodeKey))
       const selectedKeys = new Set(selectedNodes.value.map(selectedNodeKey))
+      let pickedCount = 0
       for (const tag of tags) {
         const key = selectedNodeKey(tag)
-        if (!previousKeys.has(key) && selectedKeys.has(key)) nextKeys.add(key)
+        if (!previousKeys.has(key) && selectedKeys.has(key)) {
+          nextKeys.add(key)
+          pickedCount++
+        }
       }
+      if (pickedCount && !suppressPickTelemetry)
+        reportPlusMenuPicks(pickedCount)
     }
     composerStore.setSelectionModeNodeKeys(nextKeys)
   },
@@ -1246,6 +1239,7 @@ const {
   threadId,
   loadThread,
   isThreadDeleted,
+  forgetChat,
   boundWorkflowId,
   bindWorkflow,
   reportWorkflowBound,
@@ -1483,11 +1477,8 @@ function boundRootGraphId(): RootGraphId | null {
 function followerCanDeliver(): boolean {
   return isFollowerActive.value && subscriptionSent()
 }
-function noteUnboundVisibleIntent(): void {
-  const visible = workflowStore.activeWorkflow
-  const workflowId = visible
-    ? bindingStore.workflowIdFor(visible.path)
-    : undefined
+function noteUnboundVisibleIntent(rootGraph: LGraph): void {
+  const workflowId = bindingStore.workflowIdForGraph(rootGraph)
   if (workflowId !== undefined) noteUnboundLocalIntent(workflowId)
 }
 const docOpMinter = attachDocOpMinter({
@@ -2723,7 +2714,7 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
     staged: selectionTags,
     workflow: () => nodeReferenceWorkflow,
     consume: consumeSelection,
-    replace: replaceSelectionTags,
+    replace: (nodes) => withoutPickTelemetry(() => replaceSelectionTags(nodes)),
     exit: canvasStore.stopNodePicking
   },
   send: (
@@ -3000,6 +2991,7 @@ function onDeleteHistory(id: string): void {
     id === history.activeId ||
     (history.activeId === null && id === threadId.value)
   history.remove(id)
+  forgetChat(id)
   openChats.forget(id)
   chatDrafts.discardChatDraft(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
@@ -3416,9 +3408,12 @@ function onOpenAssets(): void {
 function onMentionPick(node: SelectedNode): void {
   if (!canReferenceNodes.value) return
   const stagedBefore = selectionTags.value.length
-  addSelectionTag(node)
+  withoutPickTelemetry(() => addSelectionTag(node))
   if (selectionTags.value.length > stagedBefore)
-    useTelemetry()?.trackAgentNodeTagged({ source: 'mention_picker' })
+    useTelemetry()?.trackAgentNodeTagged({
+      source: 'mention_picker',
+      node_count: 1
+    })
 }
 
 function onRemoveSelectionTag(id: string): void {
@@ -3572,7 +3567,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    class="relative size-full"
+    class="agent-scope relative size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -3641,6 +3636,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       "
       :retry-blocked="savingReferenceForCurrentDraft"
       :free-use-placement="freeUsePlacement"
+      :show-agent-cost-notice="showAgentCostNotice"
       @free-use-notice="onFreeUseNotice"
       @send="handleComposerSend"
       @stop="onStop"

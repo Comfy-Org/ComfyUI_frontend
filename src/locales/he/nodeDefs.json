@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "יצירת תגובות טקסט באמצעות מודלי GPT של OpenAI. ספקו פרומפט טקסט, ובאופן אופציונלי תמונות או קבצים כהקשר.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "המודל המשמש ליצירת התגובה."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "יוצר תמונות באופן סינכרוני דרך נקודת הקצה של OpenAI GPT Image.",
     "display_name": "OpenAI GPT Image 2",
@@ -22118,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "קצב הפריימים של הפלט. 'source' שומר על קצב הווידאו, עד 60. קצב גבוה יותר מחושב באמצעות אינטרפולציה. פלט מעל 30 fps עולה פי שניים."
+        "tooltip": "קצב פריימים בפלט. 'source' שומר על קצב הווידאו, עד 60. קצב גבוה יותר עובר אינטרפולציה. פלט מעל 30 fps עולה פי שניים, למעט במצב turbo."
       },
       "target": {
         "name": "יעד",
@@ -22126,7 +22159,7 @@
       },
       "turbo": {
         "name": "טורבו",
-        "tooltip": "הגדלת רזולוציה מהירה יותר עם פרטים רכים יותר, באותו מחיר."
+        "tooltip": "הגדלת רזולוציה מהירה יותר עם פרטים רכים יותר, במחיר נמוך יותר."
       },
       "video": {
         "name": "וידאו",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד מחייבים style_id או style_references; ‏recraftv4_1_flash הוא המודל המהיר והזול ביותר ואינו תומך בסגנונות כלל."
+        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles בנויים ליצירה עקבית בסגנון ותמיד דורשים style_id או style_references; ‏recraftv4_1_flash מפעיל את Recraft V4.1 Flash V2, המודל המהיר והזול ביותר, ואינו תומך בסגנונות כלל."
       },
       "model_size": {
         "name": "גודל"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "תמונה"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "שכבות היררכיות מציבות צורות זו מעל זו; cut_out יוצר צורות שאינן חופפות לעולם, עבור פלוטרים, חותכי ויניל והדפסת משי."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) מספק קובצי SVG נקיים יותר עם עקומות חלקות, קווים ישרים ופינות חדות, ומתאים במיוחד לכיתוב ולצורות מורכבות."
       }
     },
     "outputs": {
@@ -29256,7 +29297,7 @@
       },
       "face_limit": {
         "name": "מגבלת פאות",
-        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4 מיליון פאות ב-v3.x standard,‏ 2 מיליון ב-detailed).‏ Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ־1.4 מיליון פאות ב-v3.x standard, ו-2 מיליון ב-detailed). Tripo מגביל בשקט רשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -29333,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן הסתגלותי (כ-1.4 מיליון פאות ב-v3.x standard, 2 מיליון ב-detailed). ‏Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ־1.4 מיליון פאות ב-v3.x standard, ו-2 מיליון ב-detailed). Tripo מגביל בשקט רשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29476,7 +29517,7 @@
       },
       "face_limit": {
         "name": "מגבלת פאות",
-        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4 מיליון פאות ב-v3.x standard,‏ 2 מיליון ב-detailed).‏ Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ־1.4 מיליון פאות ב-v3.x standard, ו-2 מיליון ב-detailed). Tripo מגביל בשקט רשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -30248,7 +30289,7 @@
       },
       "face_limit": {
         "name": "מגבלת פאות",
-        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4M פאות ב-v3.x standard, ‏2M ב-detailed). Tripo מגביל בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ־1.4 מיליון פאות ב-v3.x standard, ו-2 מיליון ב-detailed). Tripo מגביל בשקט רשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גיאומטריה"
@@ -30325,7 +30366,7 @@
       },
       "face_limit": {
         "name": "מגבלת פאות",
-        "tooltip": "מספר הפאות המרבי. הערך -1 מאפשר ל-Tripo לבחור באופן מסתגל (כ-1.4M פאות ב-v3.x standard, ו-2M ב-detailed). Tripo מגבילה בשקט: v2.5 ל-500,000, ורשתות quad ל-150,000."
+        "tooltip": "מספר הפאות המרבי. ‎-1 מאפשר ל-Tripo לבחור באופן מסתגל (כ־1.4 מיליון פאות ב-v3.x standard, ו-2 מיליון ב-detailed). Tripo מגביל בשקט רשתות quad ל-150,000."
       },
       "geometry_quality": {
         "name": "איכות גאומטריה"
@@ -30392,8 +30433,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "מודל מרקם: v3.0 עבור רשתות שנוצרו עם v3.x, ‏v2.5 עבור רשתות שנוצרו עם v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30456,8 +30496,7 @@
         "name": "מזהה משימת מודל"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "מודל מרקמים: v3.0 לרשתות שנוצרו באמצעות v3.x, v2.5 לרשתות שנוצרו באמצעות v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

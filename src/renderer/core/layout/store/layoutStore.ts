@@ -38,8 +38,7 @@ import type {
   NodeBoundsUpdate,
   NodeLayout,
   RerouteLayout,
-  SlotOffset,
-  SlotOffsetMode
+  SlotOffset
 } from '@comfyorg/graph-model/layout'
 import type {
   Bounds,
@@ -48,6 +47,7 @@ import type {
   RectTuple as StoredRect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
+import type { DerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import {
   isBoundsEqual,
   isPointEqual
@@ -145,20 +145,15 @@ interface BatchUpdateBoundsOptions {
   source: LayoutSource
 }
 
-interface SlotOffsetSnapshot {
-  mode: SlotOffsetMode
-  byDirection: Record<SlotDirection, Map<SlotIndex, Bounds>>
-}
+type SlotOffsetSnapshot = Record<SlotDirection, Map<SlotIndex, Bounds>>
 
 function isSlotOffsetSnapshotEqual(
   current: SlotOffsetSnapshot,
   next: SlotOffsetSnapshot
 ): boolean {
-  if (current.mode !== next.mode) return false
-
   for (const direction of ['input', 'output'] as const) {
-    const currentOffsets = current.byDirection[direction]
-    const nextOffsets = next.byDirection[direction]
+    const currentOffsets = current[direction]
+    const nextOffsets = next[direction]
     if (currentOffsets.size !== nextOffsets.size) return false
     for (const [index, bounds] of nextOffsets) {
       const currentBounds = currentOffsets.get(index)
@@ -188,7 +183,6 @@ class LayoutStoreImpl {
   // Vue reactivity layer
   private version = ref(0)
   private _nodeGeometryVersion = 0
-  private _slotOffsetVersion = ref(0)
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -220,6 +214,7 @@ class LayoutStoreImpl {
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
+  private derivedSlotAnchors = new Map<UUID, Map<NodeId, DerivedSlotAnchors>>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
@@ -276,15 +271,6 @@ class LayoutStoreImpl {
    */
   get nodeGeometryVersion(): number {
     return this._nodeGeometryVersion
-  }
-
-  /**
-   * Reactive counter bumped when measured slot offsets are dropped in bulk.
-   * A Vue node that stays mounted through a graph reload has nothing else to
-   * tell it that its measurements are gone, so it re-measures on this.
-   */
-  get slotOffsetVersion(): number {
-    return this._slotOffsetVersion.value
   }
 
   constructor() {
@@ -503,23 +489,18 @@ class LayoutStoreImpl {
   updateNodeSlotOffsets(
     graphId: UUID,
     nodeId: NodeId,
-    offsets: readonly SlotOffset[],
-    mode: SlotOffsetMode
+    offsets: readonly SlotOffset[]
   ): void {
     const key = makeScopedLayoutKey(graphId, nodeId)
-    const byDirection: Record<SlotDirection, Map<SlotIndex, Bounds>> = {
-      input: new Map(),
-      output: new Map()
-    }
+    const next: SlotOffsetSnapshot = { input: new Map(), output: new Map() }
     for (const offset of offsets) {
-      byDirection[offset.type].set(offset.index, offset.bounds)
+      next[offset.type].set(offset.index, offset.bounds)
     }
-    const next = { mode, byDirection }
     const current = this.slotOffsets.get(key)
     if (current && isSlotOffsetSnapshotEqual(current, next)) return
 
     this.slotOffsets.set(key, next)
-    if (current?.mode === mode || offsets.length > 0) {
+    if (current || offsets.length > 0) {
       this.queueGeometryChange(new Set([graphId]))
     }
   }
@@ -528,27 +509,43 @@ class LayoutStoreImpl {
     graphId: UUID,
     nodeId: NodeId,
     index: SlotIndex,
-    type: SlotDirection,
-    mode: SlotOffsetMode
+    type: SlotDirection
   ): Bounds | null {
-    const offsets = this.slotOffsets.get(makeScopedLayoutKey(graphId, nodeId))
-    return offsets?.mode === mode
-      ? (offsets.byDirection[type].get(index) ?? null)
-      : null
+    return (
+      this.slotOffsets
+        .get(makeScopedLayoutKey(graphId, nodeId))
+        ?.[type].get(index) ?? null
+    )
   }
 
-  /** The link anchor of a slot: the centre of its measured bounds. */
-  getSlotOffset(
-    graphId: UUID,
+  /** Publishes a node's derived slot anchors for link endpoints, or forgets them when `anchors` is undefined. The rendering node owns them, so graph clears leave them alone. */
+  setDerivedSlotAnchors(
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    anchors: DerivedSlotAnchors | undefined
+  ): void {
+    const graphAnchors = this.derivedSlotAnchors.get(rootGraphId)
+    if (anchors) {
+      if (graphAnchors) graphAnchors.set(nodeId, anchors)
+      else
+        this.derivedSlotAnchors.set(rootGraphId, new Map([[nodeId, anchors]]))
+      return
+    }
+    graphAnchors?.delete(nodeId)
+    if (graphAnchors?.size === 0) this.derivedSlotAnchors.delete(rootGraphId)
+  }
+
+  /** An expanded slot's anchor relative to `node.pos`, from the node's derived body layout. */
+  derivedSlotAnchorOf(
+    rootGraphId: UUID,
     nodeId: NodeId,
     index: SlotIndex,
-    type: SlotDirection,
-    mode: SlotOffsetMode
-  ): Point | null {
-    const bounds = this.getSlotBounds(graphId, nodeId, index, type, mode)
-    return bounds
-      ? { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 }
-      : null
+    direction: SlotDirection
+  ): Point | undefined {
+    return this.derivedSlotAnchors
+      .get(rootGraphId)
+      ?.get(nodeId)
+      ?.[direction].get(index)
   }
 
   /** Forgets everything the DOM measured for an entity. */
@@ -880,13 +877,10 @@ class LayoutStoreImpl {
       if (!key.startsWith(prefix)) continue
       this.contentSizes.delete(key)
     }
-    let slotOffsetsDropped = false
     for (const key of this.slotOffsets.keys()) {
       if (!key.startsWith(prefix)) continue
       this.slotOffsets.delete(key)
-      slotOffsetsDropped = true
     }
-    if (slotOffsetsDropped) this._slotOffsetVersion.value++
     for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
@@ -986,6 +980,7 @@ class LayoutStoreImpl {
       this.rerouteLayouts.clear()
       this.rerouteSpatialIndex.clear()
       this.slotOffsets.clear()
+      this.derivedSlotAnchors.clear()
     }, 'initialization')
     this.clearViewGeometry()
   }
@@ -1001,10 +996,7 @@ class LayoutStoreImpl {
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
       this.contentSizes.clear()
-      if (this.slotOffsets.size > 0) {
-        this.slotOffsets.clear()
-        this._slotOffsetVersion.value++
-      }
+      this.slotOffsets.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false

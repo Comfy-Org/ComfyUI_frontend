@@ -124,6 +124,9 @@ import type {
   VersionUpdateSurfaceResolvedMetadata,
   VersionUpdateSurfaceShownMetadata,
   WidgetFavoriteToggledMetadata,
+  PromptEditorClosedMetadata,
+  PromptEditorExposureMetadata,
+  PromptEditorOpenedMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowLinkOpenedMetadata,
@@ -1053,6 +1056,22 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWidgetFavoriteToggled(metadata: WidgetFavoriteToggledMetadata): void {
     this.trackEvent(TelemetryEvents.WIDGET_FAVORITE_TOGGLED, metadata)
+  }
+
+  trackPromptEditorExposure(metadata: PromptEditorExposureMetadata): void {
+    this.trackEvent(TelemetryEvents.PROMPT_EDITOR_EXPOSURE, metadata)
+  }
+
+  trackPromptEditorOpened(metadata: PromptEditorOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.PROMPT_EDITOR_OPENED, metadata)
+  }
+
+  trackPromptEditorClosed(metadata: PromptEditorClosedMetadata): void {
+    if (metadata.end_reason === 'pagehide') {
+      this.captureOnTeardown(TelemetryEvents.PROMPT_EDITOR_CLOSED, metadata)
+      return
+    }
+    this.trackEvent(TelemetryEvents.PROMPT_EDITOR_CLOSED, metadata)
   }
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {

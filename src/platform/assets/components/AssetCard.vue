@@ -16,7 +16,7 @@
     "
     @click.stop="interactive && $emit('focus', asset)"
     @focus="interactive && $emit('focus', asset)"
-    @keydown.enter.self="interactive && $emit('select', asset)"
+    @keydown.enter.self="interactive && handleKeyboardSelect()"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
@@ -118,9 +118,15 @@
         </div>
         <Button
           v-if="interactive"
+          :tooltip="useDisabledReason"
+          tooltip-side="top"
           variant="secondary"
           size="lg"
-          class="shrink-0"
+          :aria-disabled="!canUseAsset"
+          :aria-label="useButtonLabel"
+          :class="
+            cn('shrink-0', !canUseAsset && 'cursor-not-allowed opacity-50')
+          "
           @click.stop="handleSelect"
         >
           {{ $t('g.use') }}
@@ -154,15 +160,22 @@ import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
 import { getAssetCardTitle } from '@comfyorg/assets-core/metadata'
+import { canCreateNodeForAsset } from '@/platform/assets/integration/resolveModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { asset, interactive, focused } = defineProps<{
+const {
+  asset,
+  interactive,
+  focused,
+  requireNodeProvider = false
+} = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
   focused?: boolean
+  requireNodeProvider?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -202,6 +215,17 @@ const formattedDate = computed(() =>
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 
 const showAssetOptions = computed(() => !(asset.is_immutable ?? true))
+const canUseAsset = computed(
+  () => !requireNodeProvider || canCreateNodeForAsset(asset)
+)
+const useDisabledReason = computed(() =>
+  canUseAsset.value ? undefined : t('assetBrowser.useDisabledNoProvider')
+)
+const useButtonLabel = computed(() =>
+  canUseAsset.value
+    ? t('g.use')
+    : `${t('g.use')}: ${t('assetBrowser.useDisabledNoProvider')}`
+)
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
@@ -213,7 +237,16 @@ const { isLoading, error } = useImageQuiet({
 })
 
 function handleSelect() {
+  if (!canUseAsset.value) {
+    emit('focus', asset)
+    return
+  }
   acknowledgeAsset(asset.id)
+  emit('select', asset)
+}
+
+function handleKeyboardSelect() {
+  if (!canUseAsset.value) return
   emit('select', asset)
 }
 

@@ -18,6 +18,9 @@ export const SIDEBAR_MIN_WIDTH = 312
 
 export const PROPERTIES_PANEL_MIN_WIDTH = 240
 
+/** Default properties panel width (px) while it shows the prompt panel. */
+export const PROMPT_PANEL_WIDTH = 560
+
 /**
  * Width (px) of the side toolbar rail: `--sidebar-default-floating-width` plus
  * `--sidebar-padding` on each side, which is the wider connected variant.

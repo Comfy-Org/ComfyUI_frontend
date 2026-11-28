@@ -88,11 +88,9 @@ function renderNode({
   }
 
   function drag(deltaY: number) {
-    growable.handle.start(
-      handleEvent('pointerdown', 200),
-      regionName,
+    growable.handle.start(handleEvent('pointerdown', 200), regionName, {
       maxHeight
-    )
+    })
     handle.dispatchEvent(
       new PointerEvent('pointermove', { clientY: 200 + deltaY })
     )

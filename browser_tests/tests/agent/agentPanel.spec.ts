@@ -133,7 +133,10 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.open()
     const panel = agentPanel.root
 
-    await expect(panel.getByRole('note')).toHaveCount(0)
+    await expect(panel.getByRole('note')).toHaveCount(1)
+    await expect(
+      panel.getByRole('note', { name: 'Free use notice' })
+    ).toBeVisible()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
     const firstPrompt = enMessages.agent.suggestedPrompts.treatment.cloud[0]
@@ -162,8 +165,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     pushEvent(ws, TOOL_CALL_EVENT)
     const summary = panel.getByRole('button', {
-      name: enMessages.agent.worked,
-      exact: true
+      name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
     })
     await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()

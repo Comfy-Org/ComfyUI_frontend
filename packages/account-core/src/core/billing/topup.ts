@@ -68,8 +68,15 @@ const INVALID_AMOUNT_SERVER_CODE = 'INVALID_AMOUNT'
 
 const TopupQuoteSchema = zTopupQuoteResponse.extend({
   amount_cents: wireCents,
-  credits: wireCents
+  credits: wireCents,
+  balance_after_credits: wireCents.optional()
 })
+
+/** The server's balance once this top-up lands, and whether runs stay paused at it. */
+export interface TopupBalanceAfter {
+  readonly credits: number
+  readonly runsPaused: boolean
+}
 
 /**
  * What the server says an amount buys. `credits` is the server's display
@@ -82,6 +89,8 @@ export interface TopupQuote {
   readonly expiresAt: string
   /** The provider configuration a pay-once card form mounts with; absent when the server configured none. */
   readonly paymentMethodConfigurationId?: string
+  /** Absent when the server could not read the balance. */
+  readonly balanceAfter?: TopupBalanceAfter
 }
 
 export type TopupQuoteResult =
@@ -634,6 +643,15 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
           : {
               paymentMethodConfigurationId:
                 quote.payment_method_configuration_id
+            }),
+        ...(quote.balance_after_credits === undefined ||
+        quote.runs_paused_after === undefined
+          ? {}
+          : {
+              balanceAfter: {
+                credits: quote.balance_after_credits,
+                runsPaused: quote.runs_paused_after
+              }
             })
       }
     }

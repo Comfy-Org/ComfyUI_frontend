@@ -4,7 +4,8 @@ import { MeshModelAdapter } from './MeshModelAdapter'
 import {
   ModelTooLargeError,
   createAdapterRef,
-  fetchModelData
+  fetchModelData,
+  isNotFoundError
 } from './ModelAdapter'
 import type {
   AdapterRef,
@@ -24,20 +25,6 @@ import type {
   LoaderManagerInterface,
   ModelManagerInterface
 } from './interfaces'
-
-function isNotFoundError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
-  if (
-    'response' in error &&
-    typeof error.response === 'object' &&
-    error.response !== null &&
-    'status' in error.response &&
-    error.response.status === 404
-  ) {
-    return true
-  }
-  return /\b404\b/.test(error.message)
-}
 
 /**
  * Default adapter set: mesh + splat + pointCloud. Each adapter declares the

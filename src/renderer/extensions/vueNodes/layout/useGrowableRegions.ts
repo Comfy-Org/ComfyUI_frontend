@@ -4,6 +4,7 @@ import type { ComputedRef, InjectionKey } from 'vue'
 
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { fitImageGridHeight } from '@/renderer/extensions/vueNodes/components/imagePreviewLayout'
 import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 
 const USER_HEIGHT_PROBE = '--user-height-probe'
@@ -42,18 +43,63 @@ function withCollapsedHeights<T>(
   return result
 }
 
-function soleMediaAspectRatio(region: HTMLElement) {
-  if (region.querySelector('[data-image-preview-grid]')) return undefined
-  const media = region.querySelectorAll<HTMLImageElement | HTMLVideoElement>(
-    'img, video'
-  )
-  if (media.length !== 1) return undefined
-  const [element] = media
+interface MediaFit {
+  element: HTMLElement
+  aspectRatioAt: (minHeight: number) => number
+}
+
+function mediaAspectRatio(element: HTMLImageElement | HTMLVideoElement) {
   const [width, height] =
     element instanceof HTMLVideoElement
       ? [element.videoWidth, element.videoHeight]
       : [element.naturalWidth, element.naturalHeight]
-  return width && height ? { element, aspectRatio: width / height } : undefined
+  return width && height ? width / height : undefined
+}
+
+function soleMediaFit(region: HTMLElement): MediaFit | undefined {
+  if (region.querySelector('[data-image-preview-grid]')) return undefined
+  const overlay = region.querySelector<HTMLElement>('[data-media-overlay]')
+  const media = (overlay ?? region).querySelectorAll<
+    HTMLImageElement | HTMLVideoElement
+  >('img, video')
+  if (overlay) {
+    const ratios = Array.from(media, mediaAspectRatio).filter(
+      (ratio) => ratio !== undefined
+    )
+    return ratios.length
+      ? { element: overlay, aspectRatioAt: () => Math.min(...ratios) }
+      : undefined
+  }
+  if (media.length !== 1) return undefined
+  const [element] = media
+  const ratio = mediaAspectRatio(element)
+  return ratio ? { element, aspectRatioAt: () => ratio } : undefined
+}
+
+function px(value: string) {
+  return Number.parseFloat(value) || 0
+}
+
+function imageGridFit(region: HTMLElement): MediaFit | undefined {
+  const element = region.querySelector<HTMLElement>('[data-image-preview-grid]')
+  if (!element) return undefined
+  return {
+    element,
+    aspectRatioAt(minHeight) {
+      const style = getComputedStyle(element)
+      const paddingX = px(style.paddingLeft) + px(style.paddingRight)
+      const paddingY = px(style.paddingTop) + px(style.paddingBottom)
+      const height = fitImageGridHeight({
+        count: Number(element.dataset.count),
+        columns: Number(element.dataset.columns),
+        aspectRatio: Number(element.dataset.thumbnailAspectRatio),
+        width: element.clientWidth - paddingX,
+        gap: px(style.rowGap),
+        minHeight: minHeight - paddingY
+      })
+      return element.offsetWidth / (height + paddingY)
+    }
+  }
 }
 
 const TEXT_FIT_MIN_LINES = 3
@@ -61,7 +107,6 @@ const TEXT_FIT_MAX_LINES = 30
 
 function boundedTextHeight(element: HTMLElement) {
   const style = getComputedStyle(element)
-  const px = (value: string) => Number.parseFloat(value) || 0
   const borders = px(style.borderTopWidth) + px(style.borderBottomWidth)
   const padding = px(style.paddingTop) + px(style.paddingBottom)
   const lineHeight =
@@ -102,15 +147,22 @@ interface RegionTarget {
   nodeElement: HTMLElement
   region: HTMLElement
   key: string
+  declaredMinHeight?: number
 }
 
-type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> &
-  NonNullable<ReturnType<typeof soleMediaAspectRatio>>
+interface RegionBounds {
+  minHeight?: number
+  maxHeight?: number
+}
 
-function regionAt(event: Event, key: string) {
+type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> & MediaFit
+
+function regionAt(event: Event, key: string, declaredMinHeight?: number) {
   const target = closestNodeElement(event)
   const region = target?.handle.parentElement
-  return target && region ? { ...target, region, key } : undefined
+  return target && region
+    ? { ...target, region, key, declaredMinHeight }
+    : undefined
 }
 
 /** Sizes a Vue node's growable regions, each named by its widget or preview and holding the user's height in {@link useWidgetHeightStore}. */
@@ -158,7 +210,7 @@ export function useGrowableRegions({
       nodeElement.querySelectorAll<HTMLElement>('[data-media-region]')
     ).flatMap((region) => {
       const key = region.dataset.mediaRegion
-      const media = soleMediaAspectRatio(region)
+      const media = soleMediaFit(region) ?? imageGridFit(region)
       return key && media ? [{ key, region, ...media }] : []
     })
     if (mediaRegions.length) fitMedia(nodeElement, mediaRegions, NODE_FLOOR)
@@ -166,18 +218,20 @@ export function useGrowableRegions({
     onCommit()
   }
 
-  function start(event: PointerEvent, name: string, maxHeight = Infinity) {
+  function start(
+    event: PointerEvent,
+    name: string,
+    { minHeight: declaredMinHeight, maxHeight = Infinity }: RegionBounds = {}
+  ) {
     if (event.button !== 0) return
-    const target = regionAt(event, name)
+    const target = regionAt(event, name, declaredMinHeight)
     if (!target) return
     const { handle, nodeElement, region, key } = target
 
     const startHeight = region.offsetHeight
-    const minHeight = withCollapsedHeights(
-      nodeElement,
-      REGION_FLOOR,
-      () => region.offsetHeight
-    )
+    const minHeight =
+      declaredMinHeight ??
+      withCollapsedHeights(nodeElement, REGION_FLOOR, () => region.offsetHeight)
     const startNodeHeight = nodeElement.offsetHeight
     const startY = event.clientY
 
@@ -205,10 +259,14 @@ export function useGrowableRegions({
       REGION_FLOOR,
       () => ({
         minNodeHeight: nodeElement.offsetHeight,
-        media: regions.map((region) => ({
-          ...region,
-          minHeight: region.element.offsetHeight
-        }))
+        media: regions.map((region) => {
+          const minHeight = region.element.offsetHeight
+          return {
+            ...region,
+            minHeight,
+            aspectRatio: region.aspectRatioAt(minHeight)
+          }
+        })
       })
     )
     const widthGrowth = Math.max(
@@ -252,14 +310,14 @@ export function useGrowableRegions({
   }
 
   function fitText(
-    { nodeElement, region, key }: RegionTarget,
+    { nodeElement, region, key, declaredMinHeight }: RegionTarget,
     text: HTMLElement
   ) {
     const { minHeight, textHeight } = withCollapsedHeights(
       nodeElement,
       REGION_FLOOR,
       () => ({
-        minHeight: region.offsetHeight,
+        minHeight: declaredMinHeight ?? region.offsetHeight,
         textHeight:
           text instanceof HTMLTextAreaElement
             ? textFitHeight(text)
@@ -278,7 +336,7 @@ export function useGrowableRegions({
     const text =
       target.region.querySelector<HTMLElement>('[data-markdown-preview]') ??
       target.region.querySelector('textarea')
-    const media = text ? undefined : soleMediaAspectRatio(target.region)
+    const media = text ? undefined : soleMediaFit(target.region)
     if (text) fitText(target, text)
     else if (media) fitMedia(target.nodeElement, [{ ...target, ...media }])
     else if (regionId(target.key)) setHeight(target.key, undefined)
@@ -286,17 +344,23 @@ export function useGrowableRegions({
     onCommit()
   }
 
-  function reset(event: MouseEvent, name: string) {
-    const target = regionAt(event, name)
+  function reset(event: MouseEvent, name: string, minHeight?: number) {
+    const target = regionAt(event, name, minHeight)
     if (target) resetRegion(target)
   }
 
-  function resetWidget(event: MouseEvent, name: string) {
+  function resetWidget(event: MouseEvent, name: string, minHeight?: number) {
     const nodeElement = closestNodeElement(event)?.nodeElement
     const region = nodeElement?.querySelector<HTMLElement>(
       `[data-widget-name="${CSS.escape(name)}"]`
     )
-    if (nodeElement && region) resetRegion({ nodeElement, region, key: name })
+    if (nodeElement && region)
+      resetRegion({
+        nodeElement,
+        region,
+        key: name,
+        declaredMinHeight: minHeight
+      })
   }
 
   return { heightOf, fitNode, resetWidget, handle: { start, reset } }

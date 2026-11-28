@@ -42,6 +42,8 @@
       :delay-duration="settingStore.get('LiteGraph.Node.TooltipDelay')"
     />
     <SelectionRectangle v-if="comfyAppReady" />
+    <SmartGuidesOverlay v-if="comfyAppReady && shouldRenderVueNodes" />
+    <DistributeGapHandles v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
     <NodeDragPreview />
@@ -87,6 +89,7 @@
     </template>
     <template v-if="betaMenuEnabled" #right-side-panel>
       <AppBuilder v-if="isBuilderMode" />
+      <PromptPanel v-else-if="promptPanelStore.isPromptViewShown" />
       <PropertiesPanel v-else />
     </template>
     <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
@@ -158,6 +161,8 @@ import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import PropertiesPanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
+import PromptPanel from '@/renderer/extensions/textEditor/promptPanel/PromptPanel.vue'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
@@ -194,6 +199,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayoutChanges'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { restoreGeometryBeforeVueNodes } from '@/renderer/extensions/vueNodes/widgets/utils/legacyWidgetCanvasGeometry'
 import SharedNodeTooltip from '@/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
@@ -225,6 +231,9 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
+import SmartGuidesOverlay from './SmartGuidesOverlay.vue'
+import DistributeGapHandles from './DistributeGapHandles.vue'
+import { useSmartGuides } from '@/renderer/core/canvas/smartGuides/useSmartGuides'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
 
 const { t } = useI18n()
@@ -251,6 +260,7 @@ const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()
 const canvasStore = useCanvasStore()
+const promptPanelStore = usePromptPanelStore()
 const workflowStore = useWorkflowStore()
 const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId
@@ -326,6 +336,7 @@ watch(
       for (const rootGraph of rootGraphs) {
         if (!rootGraph) continue
         forEachNode(rootGraph, (node) => {
+          if (!enabled) restoreGeometryBeforeVueNodes(node)
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
             widget.syncLiveDisabled?.()
@@ -518,6 +529,7 @@ useCanvasDrop(canvasRef)
 useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
+useSmartGuides()
 useNodeEmphasis()
 useTextPreviewSystem()
 

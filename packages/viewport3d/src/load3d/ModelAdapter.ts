@@ -155,6 +155,20 @@ export class ModelTooLargeError extends Error {
   }
 }
 
+export function isNotFoundError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  if (
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'status' in error.response &&
+    error.response.status === 404
+  ) {
+    return true
+  }
+  return /\b404\b/.test(error.message)
+}
+
 export async function fetchModelData(
   fetchApi: Load3dHost['fetchApi'],
   path: string,

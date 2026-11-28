@@ -60,7 +60,6 @@ import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
-import { usePreinstallOffer } from '@/platform/workspace/platformFrame/usePreinstallOffer'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
@@ -142,7 +141,8 @@ if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
   onBeforeUnmount(
     setMissingNodesNotice(
-      (nodeTypes) => void noticeMissingNodes(nodeTypes, markFor)
+      (nodeTypes, opening) =>
+        void noticeMissingNodes(nodeTypes, markFor, opening)
     )
   )
 }
@@ -244,7 +244,6 @@ let hasTrackedLogin = false
 
 // Learn which developer-platform deployment this page booted on (FE-2434).
 if (isCloud) void useDeploymentPickAtBoot()
-if (isCloud) usePreinstallOffer()
 
 watch(
   () => themeStore.activeTheme,

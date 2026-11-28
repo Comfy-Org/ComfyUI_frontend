@@ -64,6 +64,20 @@ function expectZoomSteps(
   )
 }
 
+async function nudgeAxes(comfyPage: ComfyPage, scale: number) {
+  const gridSpacing = await comfyPage.settings.getSetting<number>(
+    'Comfy.SnapToGrid.GridSize'
+  )
+  const slotSpacing = await comfyPage.page.evaluate(
+    () => window.LiteGraph!.NODE_SLOT_HEIGHT
+  )
+  const travel = (NUDGE_STEPS * NUDGE_DISTANCE) / scale
+  return [
+    { name: 'x', index: 0, travel, snapAllowance: gridSpacing },
+    { name: 'y', index: 1, travel: travel / 2, snapAllowance: slotSpacing }
+  ]
+}
+
 async function findEmptyPoint(comfyPage: ComfyPage) {
   const point = await comfyPage.page.evaluate((margin) => {
     const canvas = window.app!.canvas
@@ -198,15 +212,14 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
   const grip = await findCenterNodeGrip(comfyPage)
   const position = () => nodeGraphPosition(comfyPage, grip.id)
   const { scale } = await readView(comfyPage)
-  const positions = [(await position())[0]]
-  const travel = (NUDGE_STEPS * NUDGE_DISTANCE) / scale
-  const steps: number[] = []
+  const positions = [await position()]
+  const directions: number[] = []
 
   await comfyPage.perf.startMeasuring()
   for (let nudge = 0; nudge < GESTURES; nudge++) {
     const direction = nudge % 2 === 0 ? 1 : -1
     const from = nudge % 2 === 0 ? 0 : NUDGE_STEPS
-    steps.push(direction * travel)
+    directions.push(direction)
     await mouse.move(
       grip.x + from * NUDGE_DISTANCE,
       grip.y + (from * NUDGE_DISTANCE) / 2
@@ -219,10 +232,22 @@ export async function measureNodeNudges(comfyPage: ComfyPage, name: string) {
     }
     await mouse.up()
     await wait(comfyPage, PAUSE_MS)
-    positions.push((await position())[0])
+    positions.push(await position())
   }
   const measurement = await comfyPage.perf.stopMeasuring(name)
 
-  expectSteps(positions, steps, 1)
+  const axes = await nudgeAxes(comfyPage, scale)
+  expect(positions).toHaveLength(directions.length + 1)
+  directions.forEach((direction, nudge) =>
+    axes.forEach((axis) => {
+      const moved =
+        positions[nudge + 1][axis.index] - positions[nudge][axis.index]
+      const travelled = direction * axis.travel
+      expect(
+        Math.abs(moved - travelled),
+        `nudge ${nudge} moved ${moved} on ${axis.name}, pointer travelled ${travelled}`
+      ).toBeLessThan(axis.snapAllowance)
+    })
+  )
   return measurement
 }

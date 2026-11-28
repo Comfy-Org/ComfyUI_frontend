@@ -35,6 +35,7 @@ import {
   nodePositionView,
   nodeSizeBuffer,
   nodeSizeView,
+  readNodePosition,
   readNodeRenderingSize,
   refreshNodeGeometry,
   setNodePosition,
@@ -881,22 +882,31 @@ export class LGraphNode
 
   /** @inheritdoc {@link boundingRect} */
   private _boundingRect: Rectangle = new Rectangle()
+  private _measuredPos: Point | undefined
   /**
    * Cached node position & area as `x, y, width, height`.  Includes changes made by {@link onBounding}, if present.
    *
-   * Determines the node hitbox and other rendering effects.  Calculated once at the start of every frame.
+   * Determines the node hitbox and other rendering effects.  Measured once at the start of every frame, and moved with the node until the next measure.
    */
   get boundingRect(): ReadOnlyRectangle {
-    return this._boundingRect
+    const bounds = this._boundingRect
+    const measured = this._measuredPos
+    if (!measured) return bounds
+    const pos = readNodePosition(this)
+    const x = pos[0]
+    const y = pos[1]
+    bounds[0] += x - measured[0]
+    bounds[1] += y - measured[1]
+    measured[0] = x
+    measured[1] = y
+    return bounds
   }
 
   /** The offset from {@link pos} to the top-left of {@link boundingRect}. */
   get boundingOffset(): Readonly<Point> {
-    const {
-      pos: [posX, posY],
-      boundingRect: [bX, bY]
-    } = this
-    return [posX - bX, posY - bY]
+    const { boundingRect } = this
+    const pos = readNodePosition(this)
+    return [pos[0] - boundingRect[0], pos[1] - boundingRect[1]]
   }
 
   get _posSize(): Rectangle {
@@ -1408,8 +1418,7 @@ export class LGraphNode
         )
         reportNamedValuesShadowDiff(
           this,
-          diffNamedValuesShadow(namedValues, legacyShadow),
-          Boolean(info.widgets_values_named)
+          diffNamedValuesShadow(namedValues, legacyShadow)
         )
       }
     } finally {
@@ -2570,6 +2579,7 @@ export class LGraphNode
   updateArea(ctx?: CanvasRenderingContext2D): void {
     const bounds = this._boundingRect
     this.measure(bounds, ctx)
+    this._measuredPos = [this.pos[0], this.pos[1]]
     this.onBounding?.(bounds)
 
     const renderArea = this._renderArea

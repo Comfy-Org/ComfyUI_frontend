@@ -16,14 +16,17 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 const FLAG = 'agent-free-use-message-placement'
 
 function billingStatus({
-  grantHeld
+  grantHeld,
+  agentHasFunds = true
 }: {
   grantHeld: boolean
+  agentHasFunds?: boolean
 }): BillingStatusResponse {
   return {
     ...DEFAULT_BILLING_STATUS,
     billing_rail: 'stripe',
-    scoped_effective_has_funds: { agent: true },
+    has_funds: agentHasFunds,
+    scoped_effective_has_funds: { agent: agentHasFunds },
     scoped_has_funds: { agent: grantHeld }
   }
 }
@@ -36,7 +39,7 @@ test.describe(
     tag: ['@cloud', '@agent', '@ui']
   },
   () => {
-    test('ignores the retired placement flag and shows no notice', async ({
+    test('keeps the selected near-composer notice without reading the retired flag', async ({
       hostTelemetry,
       page
     }) => {
@@ -47,14 +50,14 @@ test.describe(
       const agentPanel = new AgentPanel(page)
 
       await agentPanel.open()
-      await expect(
-        agentPanel.root.getByRole('note', { name: 'Free use notice' })
-      ).toBeHidden()
+      const notice = agentPanel.root.getByRole('note', {
+        name: 'Free use notice'
+      })
+      await expect(notice).toBeVisible()
+      await expect(notice).toHaveAttribute('data-placement', 'near-composer')
       expect(
         hostTelemetry.filter(
-          ({ event }) =>
-            event === 'app:agent_free_use_exposure' ||
-            event === 'app:agent_free_use_notice'
+          ({ event }) => event === 'app:agent_free_use_exposure'
         )
       ).toEqual([])
     })
@@ -82,6 +85,35 @@ test.describe(
       await expect(notice).toBeVisible()
       await expect(notice).toContainText('Try your first chat for free!')
       await expect(notice).toHaveAttribute('data-placement', 'near-composer')
+      await expect(
+        notice.getByRole('link', { name: 'Learn more' })
+      ).toHaveAttribute(
+        'href',
+        'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
+      )
+    })
+
+    test('explains workspace-credit use when Local starts without an Agent grant', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true, {
+        features: { enable_telemetry: true },
+        billingStatus: billingStatus({
+          grantHeld: false,
+          agentHasFunds: false
+        })
+      })
+      const agentPanel = new AgentPanel(page)
+
+      await agentPanel.open()
+
+      const notice = agentPanel.root.getByRole('note', {
+        name: 'Agent cost notice'
+      })
+      await expect(notice).toBeVisible()
+      await expect(notice).toContainText(
+        'Comfy Agent uses your workspace credits'
+      )
       await expect(
         notice.getByRole('link', { name: 'Learn more' })
       ).toHaveAttribute(
