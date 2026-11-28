@@ -1330,12 +1330,16 @@ export class ComfyApp implements IComfyApp {
   async registerNodesFromDefs(defs: Record<string, ComfyNodeDefV1>) {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
-    // Register a node for each definition
-    await Promise.all(
-      Object.keys(defs).map((nodeId) =>
-        this.registerNodeDef(nodeId, defs[nodeId])
-      )
-    )
+    const registrations: Promise<void>[] = []
+    for (const nodeId of Object.keys(defs)) {
+      const registration = this.registerNodeDef(nodeId, defs[nodeId])
+      registrations.push(registration)
+      void registration.catch(() => undefined)
+      if (registrations.length % 50 === 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      }
+    }
+    await Promise.all(registrations)
   }
 
   loadTemplateData(templateData: {

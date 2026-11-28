@@ -487,6 +487,85 @@ describe('ComfyApp', () => {
     expect(useApp()).toBe(singletonApp)
   })
 
+  it('keeps startup responsive without blocking later registrations on earlier hooks', async () => {
+    const template: ComfyNodeDef = {
+      name: 'Template',
+      display_name: 'Template',
+      category: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      python_module: 'test'
+    }
+    const defs = Object.fromEntries(
+      Array.from({ length: 100 }, (_, index) => [
+        'Node' + index,
+        { ...template, name: 'Node' + index }
+      ])
+    )
+    mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
+      async (_method: string, nodeDefs: Record<string, ComfyNodeDef>) => {
+        nodeDefs.Custom = { ...template, name: 'Custom' }
+      }
+    )
+    const registered: string[] = []
+    let release = () => {}
+    const barrier = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    vi.spyOn(app, 'registerNodeDef').mockImplementation(async (nodeId) => {
+      if (nodeId === 'Node0') await barrier
+      if (nodeId === 'Custom') release()
+      registered.push(nodeId)
+    })
+    const heartbeat = new Promise<number>((resolve) => {
+      setTimeout(() => resolve(registered.length), 0)
+    })
+
+    const registration = app.registerNodesFromDefs(defs)
+    onTestFinished(async () => {
+      release()
+      await registration
+    })
+    const progressAtHeartbeat = await heartbeat
+    expect(progressAtHeartbeat).toBeGreaterThan(0)
+    expect(progressAtHeartbeat).toBeLessThan(101)
+    await registration
+
+    expect(registered).toHaveLength(101)
+    expect(registered).toEqual(expect.arrayContaining(Object.keys(defs)))
+  })
+
+  it('reports registration failures across yields without abandoning later launches', async () => {
+    const template: ComfyNodeDef = {
+      name: 'Template',
+      display_name: 'Template',
+      category: 'test',
+      description: '',
+      input: {},
+      output: [],
+      output_node: false,
+      python_module: 'test'
+    }
+    const defs = Object.fromEntries(
+      Array.from({ length: 101 }, (_, index) => [
+        'Node' + index,
+        { ...template, name: 'Node' + index }
+      ])
+    )
+    const error = new Error('registration failed')
+    const started: string[] = []
+    vi.spyOn(app, 'registerNodeDef').mockImplementation(async (nodeId) => {
+      started.push(nodeId)
+      if (nodeId === 'Node0') throw error
+    })
+
+    await expect(app.registerNodesFromDefs(defs)).rejects.toBe(error)
+
+    expect(started).toEqual(Object.keys(defs))
+  })
+
   describe('loadGraphData', () => {
     function prepareResourceReload() {
       app.canvasElRef.value = document.createElement('canvas')
