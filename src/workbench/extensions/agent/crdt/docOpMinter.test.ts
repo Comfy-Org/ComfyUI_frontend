@@ -2256,6 +2256,21 @@ describe('attachDocOpMinter', () => {
     return { host, doc }
   }
 
+  it('keeps a prompt-only legacy host input local without a refusal', async () => {
+    const { host } = seedPromotedHost()
+    const input = host.addInput('prompt', 'INT')
+    input.widget = { name: 'prompt' }
+    const prompt = host.addWidget('number', 'prompt', 7, () => {})
+    prompt.serialize = false
+    prompt.options.serialize = true
+
+    prompt.value = 8
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(refusals).toEqual([])
+  })
+
   it('does not grow a promoted input the subgraph host doc lacks, reporting it instead', async () => {
     const { host, doc } = seedPromotedHost()
     expect(host.inputs[1].widget).toEqual({ name: 'text' })
@@ -3337,13 +3352,12 @@ describe('attachDocOpMinter', () => {
 
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
     const { source } = seedGraph(graph)
-    // Built the way useNodeProgressText builds it: `serialize: false` and
-    // absent from the pinned catalog.
     const preview = source.addWidget(
       'text',
       '$$node-text-preview',
       '',
-      () => {}
+      () => {},
+      { serialize: false }
     )
     preview.serialize = false
     const doc = mintDocFrom(graph)
@@ -3369,9 +3383,10 @@ describe('attachDocOpMinter', () => {
 
   it.for([
     {
-      name: 'serialize false (live setter)',
+      name: 'prompt serialize false (live setter)',
       setup: () => {
         const { source } = seedGraph(graph)
+        source.widgets![0].options.serialize = false
         source.widgets![0].serialize = false
         source.widgets![0].value = 21
       }
@@ -3384,7 +3399,7 @@ describe('attachDocOpMinter', () => {
       }
     },
     {
-      name: 'serialize false (reachable subgraph)',
+      name: 'prompt serialize false (reachable subgraph)',
       setup: () => {
         const subgraph = createTestSubgraph({ rootGraph: graph })
         const host = createTestSubgraphNode(subgraph)
@@ -3393,6 +3408,7 @@ describe('attachDocOpMinter', () => {
           graph.add(host)
           subgraph.add(source)
         })
+        source.widgets![0].options.serialize = false
         source.widgets![0].serialize = false
         emitGraphIntent({
           type: 'set_widget',
@@ -3447,9 +3463,11 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('uses the live serialize flag for direct store-path intents', async () => {
+  it('mints a prompt value that workflow persistence omits', async () => {
     const { source } = seedGraph(graph)
-    source.widgets![0].serialize = false
+    const widget = source.widgets![0]
+    widget.options.serialize = true
+    widget.serialize = false
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3461,10 +3479,17 @@ describe('attachDocOpMinter', () => {
     })
     await afterFlush()
 
-    expect(minted).toEqual([])
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 21
+      }
+    ])
   })
 
-  it('lets an explicit live serialize flag override stale store metadata', async () => {
+  it('lets an explicit live prompt flag override stale store metadata', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
     const stored = useWidgetValueStore().getWidget(
@@ -3472,7 +3497,9 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
-    widget.serialize = true
+    stored.options = { ...stored.options, serialize: false }
+    widget.serialize = false
+    widget.options.serialize = true
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3552,7 +3579,7 @@ describe('attachDocOpMinter', () => {
     }
   )
 
-  it('uses the store serialize flag when a projected widget omits it', async () => {
+  it('uses the store prompt flag when a projected widget omits it', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
     const stored = useWidgetValueStore().getWidget(
@@ -3560,7 +3587,9 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
-    delete widget.serialize
+    stored.options = { ...stored.options, serialize: false }
+    widget.serialize = false
+    delete widget.options.serialize
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3575,7 +3604,7 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('uses the store serialize flag when a projected widget leaves it undefined', async () => {
+  it('uses the store prompt flag when a projected widget leaves it undefined', async () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
     const stored = useWidgetValueStore().getWidget(
@@ -3583,7 +3612,9 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
-    widget.serialize = undefined
+    stored.options = { ...stored.options, serialize: false }
+    widget.serialize = false
+    widget.options.serialize = undefined
 
     emitGraphIntent({
       type: 'set_widget',
@@ -3626,6 +3657,31 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('accepts a legacy live widget with no options object', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    Object.assign(widget, { options: undefined })
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 21
+      }
+    ])
+  })
+
   it('uses the same store fallback when filtering an add-node snapshot', () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
@@ -3634,6 +3690,7 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
+    stored.options = { ...stored.options, serialize: false }
     delete widget.serialize
 
     expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
@@ -3711,6 +3768,7 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
+    stored.options = { ...stored.options, serialize: false }
     rootGraphId = toRootGraphId(previousGraph.id)
 
     emitGraphIntent({
@@ -4380,6 +4438,57 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
       order: ['seed', 'control_after_generate', 'sampler_name']
     })
+  })
+
+  it('declares and applies a prompt-only value present before node creation', () => {
+    const node = nodeWith('Prompt Only', (n) => {
+      const prompt = n.addWidget('number', 'prompt', 7, () => {})
+      prompt.serialize = false
+      prompt.options.serialize = true
+      n.addWidget('number', 'saved', 11, () => {})
+    })
+    const snapshot = wireNodeSnapshot(node)!
+    const catalog: WidgetCatalog = { types: {} }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+
+    expect(snapshot).toMatchObject({
+      widgets_values: { prompt: 7, saved: 11 },
+      widgets_values_form: { order: ['prompt', 'saved'] }
+    })
+    expect(
+      applyOps(
+        doc,
+        mintWireOps(
+          [
+            {
+              op: 'add_node',
+              node_id: snapshot.id,
+              class_type: snapshot.type,
+              pos: [0, 0],
+              node: snapshot
+            },
+            {
+              op: 'set_widget',
+              node_id: snapshot.id,
+              widget: 'prompt',
+              value: 8
+            }
+          ],
+          { actor: 'human:user:tab', baseVersion: 1 }
+        ),
+        catalog
+      ).outcomes
+    ).toEqual([
+      expect.objectContaining({ outcome: 'applied' }),
+      expect.objectContaining({ outcome: 'applied' })
+    ])
+    expect(project(doc, catalog).nodes).toEqual([
+      expect.objectContaining({
+        widgets_values: { prompt: 8, saved: 11 },
+        widgets_values_form: { order: ['prompt', 'saved'] }
+      })
+    ])
+    doc.destroy()
   })
 
   it('replaces a form the node carried in from a loaded projection with its live order', () => {

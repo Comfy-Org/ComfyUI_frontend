@@ -11,6 +11,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   classifyWidgetValuesForm,
   provenWidgetValuesForm,
+  replicatedWidgetValues,
   resetWidgetFormSuppressionTally,
   valueWidgetsOnly,
   widgetFormSuppressionTally,
@@ -128,6 +129,7 @@ describe('invariant 3 — the wire values still fit the live widgets', () => {
       n.addWidget('text', 'filename', 'clip', () => {})
       const hidden = n.addWidget('text', 'vhslatentpreview', 'x', () => {})
       hidden.serialize = false
+      hidden.options.serialize = false
       n.onSerialize = (data: ISerialisedNode) => {
         data.widgets_values_named = {
           ...data.widgets_values_named,
@@ -266,6 +268,7 @@ describe('guards on the value filter', () => {
       n.addWidget('text', 'prompt', 'a', () => {})
       const hidden = n.addWidget('text', 'hidden', 'b', () => {})
       hidden.serialize = false
+      hidden.options.serialize = false
     })
 
     expect(
@@ -302,6 +305,20 @@ describe('guards on the value filter', () => {
       reason: 'declared_keys_disagree',
       detail: { unvalued: ['residue'] }
     })
+  })
+
+  it('adds a prompt-only value to the semantic widget snapshot', () => {
+    const node = nodeWith('PromptOnly', (n) => {
+      const prompt = n.addWidget('number', 'prompt', 7, () => {})
+      prompt.serialize = false
+      prompt.options.serialize = true
+      n.addWidget('number', 'saved', 11, () => {})
+    })
+    const serialized = serializedOf(node)
+
+    expect(
+      replicatedWidgetValues(node, serialized.widgets_values_named!)
+    ).toEqual({ prompt: 7, saved: 11 })
   })
 })
 

@@ -15,12 +15,12 @@ import {
   unbindPromotedDynamicInput
 } from '@/core/graph/widgets/dynamicWidgets'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
-import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  LGraph,
+import {
   LGraphNode,
-  Positionable
+  LiteGraph,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Positionable } from '@/lib/litegraph/src/litegraph'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
@@ -148,7 +148,10 @@ function widget(node: LGraphNode, name: string) {
 function toWorkflow({ nodes, ...serialized }: ISerialisedGraph): WorkflowJSON {
   return {
     ...serialized,
-    nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
+    nodes: nodes.map(({ flags, ...node }) => ({
+      ...node,
+      flags: { ...flags }
+    }))
   }
 }
 
@@ -254,6 +257,33 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
       'value',
       'value_1'
     ])
+    expect(promoted.map(({ readValue }) => readValue())).toEqual(
+      host.serialize().widgets_values
+    )
+  })
+
+  it('keeps prompt-only legacy inputs out of workflow positions', () => {
+    const host = new LGraphNode('Prompt-only host')
+    const input = host.addInput('prompt', 'INT')
+    input.widget = { name: 'prompt' }
+    const prompt = host.addWidget('number', 'prompt', 7, () => {})
+    prompt.serialize = false
+    prompt.options.serialize = true
+
+    const promoted = promotedHostInputs(host)
+
+    expect(promoted).toEqual([])
+    expect(host.serialize().widgets_values).toBeUndefined()
+  })
+
+  it('keeps later host positions aligned when a controller is prompt-only', () => {
+    const { host } = buildHost('two speakers', 2)
+    const mode = widget(host, 'mode')
+    mode.serialize = false
+    mode.options.serialize = true
+
+    const promoted = promotedHostInputs(host)
+
     expect(promoted.map(({ readValue }) => readValue())).toEqual(
       host.serialize().widgets_values
     )
