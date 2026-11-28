@@ -4,6 +4,7 @@ import type { ComputedRef, InjectionKey } from 'vue'
 
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { fitImageGridHeight } from '@/renderer/extensions/vueNodes/components/imagePreviewLayout'
 import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 
 const USER_HEIGHT_PROBE = '--user-height-probe'
@@ -42,7 +43,12 @@ function withCollapsedHeights<T>(
   return result
 }
 
-function soleMediaAspectRatio(region: HTMLElement) {
+interface MediaFit {
+  element: HTMLElement
+  aspectRatioAt: (minHeight: number) => number
+}
+
+function soleMediaFit(region: HTMLElement): MediaFit | undefined {
   if (region.querySelector('[data-image-preview-grid]')) return undefined
   const media = region.querySelectorAll<HTMLImageElement | HTMLVideoElement>(
     'img, video'
@@ -53,7 +59,35 @@ function soleMediaAspectRatio(region: HTMLElement) {
     element instanceof HTMLVideoElement
       ? [element.videoWidth, element.videoHeight]
       : [element.naturalWidth, element.naturalHeight]
-  return width && height ? { element, aspectRatio: width / height } : undefined
+  return width && height
+    ? { element, aspectRatioAt: () => width / height }
+    : undefined
+}
+
+function px(value: string) {
+  return Number.parseFloat(value) || 0
+}
+
+function imageGridFit(region: HTMLElement): MediaFit | undefined {
+  const element = region.querySelector<HTMLElement>('[data-image-preview-grid]')
+  if (!element) return undefined
+  return {
+    element,
+    aspectRatioAt(minHeight) {
+      const style = getComputedStyle(element)
+      const paddingX = px(style.paddingLeft) + px(style.paddingRight)
+      const paddingY = px(style.paddingTop) + px(style.paddingBottom)
+      const height = fitImageGridHeight({
+        count: Number(element.dataset.count),
+        columns: Number(element.dataset.columns),
+        aspectRatio: Number(element.dataset.thumbnailAspectRatio),
+        width: element.clientWidth - paddingX,
+        gap: px(style.rowGap),
+        minHeight: minHeight - paddingY
+      })
+      return element.offsetWidth / (height + paddingY)
+    }
+  }
 }
 
 const TEXT_FIT_MIN_LINES = 3
@@ -61,7 +95,6 @@ const TEXT_FIT_MAX_LINES = 30
 
 function boundedTextHeight(element: HTMLElement) {
   const style = getComputedStyle(element)
-  const px = (value: string) => Number.parseFloat(value) || 0
   const borders = px(style.borderTopWidth) + px(style.borderBottomWidth)
   const padding = px(style.paddingTop) + px(style.paddingBottom)
   const lineHeight =
@@ -110,8 +143,7 @@ interface RegionBounds {
   maxHeight?: number
 }
 
-type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> &
-  NonNullable<ReturnType<typeof soleMediaAspectRatio>>
+type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> & MediaFit
 
 function regionAt(event: Event, key: string, declaredMinHeight?: number) {
   const target = closestNodeElement(event)
@@ -166,7 +198,7 @@ export function useGrowableRegions({
       nodeElement.querySelectorAll<HTMLElement>('[data-media-region]')
     ).flatMap((region) => {
       const key = region.dataset.mediaRegion
-      const media = soleMediaAspectRatio(region)
+      const media = soleMediaFit(region) ?? imageGridFit(region)
       return key && media ? [{ key, region, ...media }] : []
     })
     if (mediaRegions.length) fitMedia(nodeElement, mediaRegions, NODE_FLOOR)
@@ -215,10 +247,14 @@ export function useGrowableRegions({
       REGION_FLOOR,
       () => ({
         minNodeHeight: nodeElement.offsetHeight,
-        media: regions.map((region) => ({
-          ...region,
-          minHeight: region.element.offsetHeight
-        }))
+        media: regions.map((region) => {
+          const minHeight = region.element.offsetHeight
+          return {
+            ...region,
+            minHeight,
+            aspectRatio: region.aspectRatioAt(minHeight)
+          }
+        })
       })
     )
     const widthGrowth = Math.max(
@@ -288,7 +324,7 @@ export function useGrowableRegions({
     const text =
       target.region.querySelector<HTMLElement>('[data-markdown-preview]') ??
       target.region.querySelector('textarea')
-    const media = text ? undefined : soleMediaAspectRatio(target.region)
+    const media = text ? undefined : soleMediaFit(target.region)
     if (text) fitText(target, text)
     else if (media) fitMedia(target.nodeElement, [{ ...target, ...media }])
     else if (regionId(target.key)) setHeight(target.key, undefined)
