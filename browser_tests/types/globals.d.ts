@@ -26,6 +26,12 @@ export interface TabSwitchLens {
   removed: string[]
 }
 
+export interface HeldGraphLoad {
+  reached: boolean
+  release: () => void
+  abortedLoads: string[]
+}
+
 export interface LegacyGraphInstancePatches {
   bootOnNodeAdded: string[]
   overwriteOnNodeRemoved: string[]
@@ -128,6 +134,11 @@ declare global {
      * @see browser_tests/tests/agent/agentHumanAddTabSwitch.spec.ts
      */
     __tabSwitchLens?: TabSwitchLens
+    /**
+     * Gate installed by `holdNextGraphLoad`.
+     * @see browser_tests/fixtures/agentTabChatTransitionsFixture.ts
+     */
+    __heldGraphLoad?: HeldGraphLoad
     /**
      * Every `data-node-id` the DOM has mounted since the recorder was
      * installed, so a test can tell "the node was rendered and then removed"
