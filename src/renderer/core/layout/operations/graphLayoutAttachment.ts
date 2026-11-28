@@ -5,7 +5,10 @@ import type {
   Reroute
 } from '@comfyorg/graph-model/entityRegistry'
 
-import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
+import {
+  createMutationView,
+  isTypedArrayMutationMethod
+} from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   PointTuple as LegacyPoint,
@@ -94,6 +97,7 @@ function nodeGeometryProjection(node: LayoutNode): NodeGeometryProjection {
     position,
     positionView: createMutationView(position, {
       commit: () => commitNodePosition(node),
+      shouldCommitMethod: isTypedArrayMutationMethod,
       synchronize: () => refreshNodeGeometry(node)
     }),
     renderedSize: [0, 0],
@@ -101,6 +105,7 @@ function nodeGeometryProjection(node: LayoutNode): NodeGeometryProjection {
     size,
     sizeView: createMutationView(size, {
       commit: () => commitNodeSize(node),
+      shouldCommitMethod: isTypedArrayMutationMethod,
       synchronize: () => refreshNodeGeometry(node)
     })
   }
@@ -124,6 +129,14 @@ export function nodePositionView(node: LayoutNode): LegacyPoint {
   const projection = nodeGeometryProjection(node)
   void projection.layoutRef?.value
   return projection.positionView
+}
+
+/** The node's current position for reading only: writes to it are not committed. */
+export function readNodePosition(node: LayoutNode): Readonly<LegacyPoint> {
+  const projection = nodeGeometryProjection(node)
+  void projection.layoutRef?.value
+  refreshNodeGeometry(node)
+  return projection.position
 }
 
 export function nodeSizeView(node: LayoutNode): LegacySize {

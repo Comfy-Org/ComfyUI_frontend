@@ -33,7 +33,7 @@ const textMap: Record<ControlOptions, string | null> = {
     :class="
       cn(
         'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none',
-        'h-5 w-9 rounded-full',
+        'h-full max-h-5 w-9 rounded-full',
         mode !== 'fixed'
           ? 'bg-foreground/10 hover:bg-foreground/20'
           : 'bg-transparent'

@@ -1,5 +1,4 @@
-import type { MaybeRefOrGetter } from 'vue'
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
@@ -22,22 +21,5 @@ export function useWorkflowNeedsDeployment() {
       nodesNeedingDeployment(
         missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
       ).length > 0
-  )
-}
-
-/**
- * Whether Comfy Cloud offers a custom deployment for the open workflow's
- * missing nodes, given whether Cloud and each deployment were found lacking.
- */
-export function useCustomDeploymentOffered(
-  noneRunIt: MaybeRefOrGetter<boolean>
-) {
-  const pickStore = useDeploymentPickStore()
-  const needsDeployment = useWorkflowNeedsDeployment()
-
-  return computed(
-    () =>
-      needsDeployment.value &&
-      (pickStore.deployments.length === 0 || toValue(noneRunIt))
   )
 }

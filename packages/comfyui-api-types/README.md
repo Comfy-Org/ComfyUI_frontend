@@ -16,9 +16,12 @@ changed value type fail as well. Both failure modes are checked below.
 ## Scope
 
 `openapi-ts.config.ts` generates contracts for prompt submission
-(`POST /api/prompt`) and the local model list
-(`GET /api/experiment/models/{folder}`). The model-list response schema
-validates filenames, path indexes, and file sizes in bytes.
+(`POST /api/prompt`), the local model list
+(`GET /api/experiment/models/{folder}`) and the server features
+(`GET /api/features`). The model-list response schema validates filenames,
+path indexes, and file sizes in bytes. `ComfyAgentFeature` indexes the
+features response's `agent` member, which the app reads to gate the local
+agent surfaces.
 
 `packages/api-client` uses the prompt contract where `ComfyApi` builds the
 request body. Two members derive from `PromptWorkflowMetadata`: `workflow_metadata` on
@@ -45,9 +48,9 @@ the question of how the frontend's own additions (`client_id`, and the narrower
 
 |        |                                                                    |
 | ------ | ------------------------------------------------------------------ |
-| commit | `1db208ddea785de81156ea31f3c6c818879e3e86`                         |
-| dated  | 2026-11-20                                                         |
-| sha256 | `65ba51363e65dfd3d1883673124bf81d6bb9fb59810d33db919385a43b623732` |
+| commit | `0072b8680dd2db0b6d68c06f718fa33bd92a728c`                         |
+| dated  | 2026-11-21                                                         |
+| sha256 | `15f016c6d75f4bf1bf547f85d559839e9b37f4e41aa6133bd3d6a21db3a9c234` |
 
 The full spec is vendored rather than a hand-trimmed excerpt, so widening the
 operation filter later needs no new fetch and no second source of truth.

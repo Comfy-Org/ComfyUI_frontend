@@ -75,76 +75,20 @@ function runValidate(state: string, labels: string[]) {
 
 describe('pr-backport manual dispatch validation', () => {
   it('accepts a merged PR whose needs-backport label the bot already removed', () => {
-    const result = runValidate('MERGED', ['core/1.57', 'cloud/1.57'])
+    const result = runValidate('MERGED', [])
 
     expect(result.stdout).not.toContain('::error::')
     expect(result.status).toBe(0)
   })
 
   it('accepts a merged PR that still has needs-backport', () => {
-    expect(runValidate('MERGED', ['needs-backport', 'core/1.57']).status).toBe(
-      0
-    )
+    expect(runValidate('MERGED', ['needs-backport']).status).toBe(0)
   })
 
   it('rejects a PR that has not merged', () => {
-    const result = runValidate('OPEN', ['needs-backport', 'core/1.57'])
+    const result = runValidate('OPEN', ['needs-backport'])
 
     expect(result.status).toBe(1)
     expect(result.stdout).toContain('is not merged')
   })
-
-  it.for([
-    {
-      labels: ['core/1.57', 'cloud/1.57'],
-      status: 0,
-      targets: 'targets=core/1.57\n'
-    },
-    { labels: ['cloud/1.57'], status: 1, targets: '' },
-    { labels: ['core/1.56'], status: 1, targets: '' },
-    { labels: ['branch:core/1.56'], status: 1, targets: '' },
-    { labels: ['backport:core/1.56'], status: 1, targets: '' },
-    { labels: ['branch:cloud/1.57'], status: 1, targets: '' },
-    { labels: ['branch:main'], status: 1, targets: '' },
-    {
-      labels: ['1.57', 'branch:core/1.58', 'backport:core/1.58', 'core/1.57'],
-      status: 0,
-      targets: 'targets=core/1.57 core/1.58\n'
-    }
-  ])(
-    'collects only supported targets from $labels',
-    ({ labels, status, targets }) => {
-      const workflow = workflowSchema.parse(
-        parse(readFileSync('.github/workflows/pr-backport.yaml', 'utf8'))
-      )
-      const step = workflow.jobs.backport.steps.find(
-        (step) => step.name === 'Collect backport targets'
-      )
-      if (!step?.run) throw new Error('Missing backport target collection')
-      const script = step.run
-        .replaceAll('${{ github.event_name }}', 'workflow_dispatch')
-        .replaceAll('${{ inputs.pr_number }}', PR_NUMBER)
-      const output = join(dir, 'output')
-      writeFileSync(output, '')
-
-      const result = spawnSync(
-        'bash',
-        ['--noprofile', '--norc', '-c', script],
-        {
-          env: {
-            PATH: `${dir}:${process.env.PATH}`,
-            ACTIVE_CORE_TARGETS: 'core/1.57 core/1.58',
-            STUB_STATE: 'MERGED',
-            STUB_LABELS: JSON.stringify(labels),
-            GITHUB_OUTPUT: output
-          },
-          encoding: 'utf8'
-        }
-      )
-
-      expect(result.stderr).toBe('')
-      expect(result.status).toBe(status)
-      expect(readFileSync(output, 'utf8')).toBe(targets)
-    }
-  )
 })

@@ -109,7 +109,9 @@ describe('ReplyAudioCard', () => {
 
     await waitFor(() => expect(anchorClick).toHaveBeenCalledOnce())
     expect(anchorClick.mock.instances[0].download).toBe('song.mp3')
-    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3', {
+      onAuthCredential: expect.any(Function)
+    })
   })
 
   it('downloads under the resolved display name instead of the hash', async () => {

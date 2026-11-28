@@ -1,8 +1,12 @@
-import { markRaw } from 'vue'
+import { markRaw, toRaw } from 'vue'
+import type { Raw } from 'vue'
 
 import { assert } from '@/base/assert'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { withGraphIntentSourceForRootGraph } from '@/lib/litegraph/src/graphIntents'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
+import type { UserFileSaveOptions } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
@@ -17,6 +21,22 @@ import {
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
 import { generateUUID, isValidUuid } from '@/utils/formatUtil'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+const ownedGraph = Symbol('ownedGraph')
+const pendingLoads = new WeakMap<ComfyWorkflow, Promise<LoadedComfyWorkflow>>()
+
+function clearReleasedGraph(graph: LGraph | null): void {
+  if (!graph) return
+  try {
+    withGraphIntentSourceForRootGraph('load', graph, () => graph.clear())
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'failure_disposing_workflow_graph'
+    })
+  }
+}
 
 export interface InputWidgetConfig {
   height?: number
@@ -50,6 +70,7 @@ export interface WorkflowChangeTracker {
   undoQueue: ComfyWorkflowJSON[]
   redoQueue: ComfyWorkflowJSON[]
   changeCount: number
+  readonly hasPreview: boolean
   _restoringState: boolean
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -61,6 +82,7 @@ export interface WorkflowChangeTracker {
   updateModified(previousState?: ComfyWorkflowJSON): void
   captureCanvasState(): void
   markModified(): void
+  beginPreview(interrupt: () => void, rollback?: () => void): () => void
   checkState(): void
   updateState(
     source: ComfyWorkflowJSON[],
@@ -71,6 +93,17 @@ export interface WorkflowChangeTracker {
   undoRedo(e: KeyboardEvent, selectOnly?: boolean): Promise<true | undefined>
   beforeChange(): void
   afterChange(): void
+}
+
+export interface ChangeTrackerConstructor {
+  new (
+    workflow: ComfyWorkflow,
+    initialState: ComfyWorkflowJSON
+  ): WorkflowChangeTracker
+  graphEqual(
+    a: ComfyWorkflowJSON | null | undefined,
+    b: ComfyWorkflowJSON | null | undefined
+  ): boolean
 }
 
 interface WorkflowDraft {
@@ -109,7 +142,7 @@ export function registerWorkflowRuntime(runtime: WorkflowRuntime): void {
 function workflowRuntime(): WorkflowRuntime {
   assert(
     registeredRuntime,
-    'Workflow runtime not registered; import the workflow store first'
+    'Workflow runtime not registered; create workflows through the workflow store'
   )
   return registeredRuntime
 }
@@ -341,6 +374,8 @@ function requireActiveStateForSave(
 }
 
 export class ComfyWorkflow extends UserFile {
+  [ownedGraph]: Raw<LGraph> | null = null
+
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
   /** Unique, stable identity for this workflow instance in the current session. */
@@ -350,6 +385,10 @@ export class ComfyWorkflow extends UserFile {
    * The change tracker for the workflow. Non-reactive raw object.
    */
   changeTracker: WorkflowChangeTracker | null = null
+
+  get graph(): Raw<LGraph> | null {
+    return this[ownedGraph]
+  }
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
@@ -415,51 +454,84 @@ export class ComfyWorkflow extends UserFile {
    * @param force Whether to force loading the content even if it is already loaded.
    * @returns this
    */
-  override async load({ force = false }: { force?: boolean } = {}): Promise<
+  override load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
-    if (!force && this.isLoaded && this.changeTracker) {
+    const key = toRaw(this)
+    const pending = force ? undefined : pendingLoads.get(key)
+    if (pending) return pending as Promise<this & LoadedComfyWorkflow>
+    const loading = (async () => {
+      if (!force && this.isLoaded && this.changeTracker) {
+        return this as this & LoadedComfyWorkflow
+      }
+
+      const runtime = workflowRuntime()
+      const draft =
+        !force && runtime.isDraftPersistenceEnabled()
+          ? readUsableDraft(runtime, this)
+          : null
+
+      await super.load({ force })
+
+      const initialState = parseStoredWorkflow(this)
+      const previousTracker = this.changeTracker
+      this.changeTracker = markRaw(
+        runtime.createChangeTracker(this, initialState)
+      )
+      if (previousTracker && isCanvasOwner(previousTracker))
+        bindCanvasTracker(this.changeTracker)
+      if (draft?.state && draft.content) {
+        const state = withTabId(draft.state, initialState)
+        const draftId: unknown = draft.state.id
+        if (state !== draft.state && typeof draftId === 'string')
+          this.legacyId ??= getLegacyWorkflowId(draftId)
+        this.changeTracker.activeState = state
+        this.content =
+          state === draft.state ? draft.content : JSON.stringify(state)
+        this._isModified = !draftMatchesSavedFile(runtime, initialState, state)
+        runtime.markDraftUsed(this.path)
+      }
       return this as this & LoadedComfyWorkflow
-    }
+    })()
+    if (force) return loading
+    const shared = loading.finally(() => {
+      if (pendingLoads.get(key) === shared) pendingLoads.delete(key)
+    })
+    pendingLoads.set(key, shared)
+    return shared
+  }
 
-    const runtime = workflowRuntime()
-    const draft =
-      !force && runtime.isDraftPersistenceEnabled()
-        ? readUsableDraft(runtime, this)
-        : null
+  /** Take ownership of `graph`, disposing any previously owned instance. */
+  adoptGraph(graph: LGraph): void {
+    if (this[ownedGraph] === graph) return
+    const previous = this[ownedGraph]
+    this[ownedGraph] = markRaw(graph)
+    clearReleasedGraph(previous)
+  }
 
-    await super.load({ force })
-
-    const initialState = parseStoredWorkflow(this)
-    const previousTracker = this.changeTracker
-    this.changeTracker = markRaw(
-      runtime.createChangeTracker(this, initialState)
-    )
-    if (previousTracker && isCanvasOwner(previousTracker))
-      bindCanvasTracker(this.changeTracker)
-    if (draft?.state && draft.content) {
-      const state = withTabId(draft.state, initialState)
-      const draftId: unknown = draft.state.id
-      if (state !== draft.state && typeof draftId === 'string')
-        this.legacyId ??= getLegacyWorkflowId(draftId)
-      this.changeTracker.activeState = state
-      this.content =
-        state === draft.state ? draft.content : JSON.stringify(state)
-      this._isModified = !draftMatchesSavedFile(runtime, initialState, state)
-      runtime.markDraftUsed(this.path)
-    }
-    return this as this & LoadedComfyWorkflow
+  /** Dispose the owned graph instance and its per-root store state. */
+  releaseGraph(): void {
+    const graph = this[ownedGraph]
+    this[ownedGraph] = null
+    clearReleasedGraph(graph)
   }
 
   override unload(): void {
+    pendingLoads.delete(toRaw(this))
     const rootGraphId = this.changeTracker?.activeState.id
     if (rootGraphId) workflowRuntime().forgetNodeHistories(rootGraphId)
-    this.changeTracker = null
-    this.activeMode = null
-    super.unload()
+    try {
+      this.releaseGraph()
+    } finally {
+      this.changeTracker = null
+      this.activeMode = null
+      super.unload()
+    }
   }
 
-  override async save() {
+  override async save({
+    overwrite
+  }: Pick<UserFileSaveOptions, 'overwrite'> = {}) {
     const tracker = this.changeTracker
     const content = JSON.stringify(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
@@ -468,10 +540,10 @@ export class ComfyWorkflow extends UserFile {
     const runtime = workflowRuntime()
     const draftScope = runtime.getDraftScope()
     this.content = content
-    const savedFile = await super.save({ force: true })
+    const savedFile = await super.save({ force: true, overwrite })
     if (!tracker || this.changeTracker !== tracker) return savedFile
 
-    tracker.prepareForSave()
+    if (isCanvasOwner(tracker)) tracker.captureCanvasState()
     tracker.initialState = savedState
     this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
     if (draftScope === runtime.getDraftScope()) {

@@ -32,6 +32,9 @@
       "path": "./packages/shared-frontend-utils/tsconfig.declarations.json"
     },
     {
+      "path": "./packages/assets-core/tsconfig.declarations.json"
+    },
+    {
       "path": "./packages/billing-contract/tsconfig.declarations.json"
     },
     {

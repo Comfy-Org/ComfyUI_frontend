@@ -1,7 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { until, useStorage } from '@vueuse/core'
+import { until } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -17,7 +18,8 @@ const { mockDismissalStorage } = await vi.hoisted(async () => {
   return { mockDismissalStorage: ref({} as Record<string, number>) }
 })
 vi.mock(import('@vueuse/core'), { spy: true })
-vi.mocked(useStorage).mockReturnValue(mockDismissalStorage)
+vi.mock(import('@/platform/storage/useSafeStorage'), { spy: true })
+vi.mocked(useSafeLocalStorage).mockReturnValue(mockDismissalStorage)
 
 describe('useVersionCompatibilityStore', () => {
   let store: ReturnType<typeof useVersionCompatibilityStore>
@@ -25,7 +27,7 @@ describe('useVersionCompatibilityStore', () => {
   let mockSettingStore: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
-    vi.mocked(useStorage).mockReturnValue(mockDismissalStorage)
+    vi.mocked(useSafeLocalStorage).mockReturnValue(mockDismissalStorage)
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
 

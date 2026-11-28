@@ -15,7 +15,7 @@
         muted
         loop
         plays-inline
-        playback-control
+        :playback-labels="{ play: $t('g.play'), pause: $t('g.pause') }"
         class="aspect-video w-full rounded-lg object-cover"
       >
         <template #fallback>
@@ -50,18 +50,7 @@
           data-testid="custom-deployment-missing"
           :rows="pitch.missing"
         />
-        <p
-          v-if="pitch.note"
-          data-testid="custom-deployment-note"
-          class="my-0 flex items-start gap-2 text-sm/5 text-foreground/75"
-        >
-          <i
-            class="mt-0.75 icon-[lucide--info] size-3.5 text-muted-foreground"
-            aria-hidden="true"
-          />
-          {{ pitch.note }}
-        </p>
-        <p class="my-0 text-sm/5 text-muted-foreground">
+        <p v-if="pitch.body" class="my-0 text-sm/5 text-muted-foreground">
           {{ pitch.body }}
         </p>
         <ul class="my-0 flex list-none flex-col gap-2 p-0">
@@ -85,6 +74,7 @@
       >
         <DeploymentDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
         <AgentMenu
+          v-if="offersAgent"
           variant="secondary"
           data-testid="custom-deployment-agent"
           :copy-brief="copyBrief"
@@ -108,6 +98,7 @@
         >
           {{ pitch.platformLabel }}
           <i
+            v-if="!opensInEditor"
             class="icon-[lucide--square-arrow-out-up-right]"
             aria-hidden="true"
           />
@@ -119,6 +110,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -133,6 +125,9 @@ import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable
 import { useDeploymentBriefHandoff } from '@/platform/workspace/composables/useDeploymentBriefHandoff'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
+import type { PlatformFrameRequest } from '@/platform/workspace/platformFrame/platformFrameUrl'
+import { openPlatformFrameOnClick } from '@/platform/workspace/platformFrame/platformFrameWaysIn'
 import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
@@ -140,10 +135,16 @@ const {
   pitch,
   videoSources = [],
   posterSrc = '',
-  handsOverWorkflow = false
+  handsOverWorkflow = false,
+  offersAgent = true,
+  frameRequest,
+  frameEntry
 } = defineProps<{
   pitch: CustomDeploymentPitch
   handsOverWorkflow?: boolean
+  offersAgent?: boolean
+  frameRequest?: PlatformFrameRequest
+  frameEntry?: CustomDeploymentEntry
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()
@@ -151,6 +152,7 @@ const {
 const emit = defineEmits<{
   done: []
   dismiss: []
+  platformClicked: []
 }>()
 
 defineOptions({ inheritAttrs: false })
@@ -161,8 +163,21 @@ const createDeploymentUrl = computed(() =>
   customDeploymentCreateUrl('custom-deployment-card')
 )
 
+const frames = usePlatformFrameStore()
+const opensInEditor = computed(
+  () =>
+    frameRequest !== undefined &&
+    frameEntry !== undefined &&
+    frames.isAvailable()
+)
+
 function createOnPlatform(event: MouseEvent) {
-  if (handsOverWorkflow)
+  emit('platformClicked')
+  const openedHere =
+    frameRequest !== undefined &&
+    frameEntry !== undefined &&
+    openPlatformFrameOnClick(event, frameRequest, frameEntry)
+  if (!openedHere && handsOverWorkflow)
     handOverWorkflowOnClick(event, 'custom-deployment-card')
   emit('done')
 }

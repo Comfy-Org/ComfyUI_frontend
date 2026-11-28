@@ -4,7 +4,10 @@ import type {
   NodeError,
   PromptFailureResponse
 } from '@comfyorg/api-client/types'
-import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
+import type {
+  ExecutionErrorWsMessage,
+  NodeProgressState
+} from '@comfyorg/api-client/executionTypes'
 import type {
   PromptOutputsSkippedFrame,
   PromptOutputsSkippedNodeError
@@ -15,7 +18,13 @@ import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
+type CloudExecutionErrorFrame = {
+  type: 'execution_error'
+  data: ExecutionErrorWsMessage
+}
+
 type RunOptions = {
+  start?: boolean
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
   beforePromptResponse?: (jobId: string) => void | Promise<void>
@@ -73,16 +82,15 @@ export class ExecutionHelper {
     return this.ws
   }
 
-  /**
-   * Intercept POST /api/prompt, execute Comfy.QueuePrompt, and return
-   * the synthetic job ID.
-   *
-   * The app receives a valid PromptResponse so storeJob() fires
-   * and registers the job against the active workflow path.
-   */
+  /** Queues the active workflow against a mocked /api/prompt and returns its job id. */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
+    const {
+      start = this.ws !== undefined,
+      nodeErrors = {},
+      onPromptRequest,
+      beforePromptResponse
+    } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -109,6 +117,7 @@ export class ExecutionHelper {
 
     await this.command.executeCommand('Comfy.QueuePrompt')
     await prompted
+    if (start) this.executionStart(jobId)
 
     return jobId
   }
@@ -256,6 +265,30 @@ export class ExecutionHelper {
           traceback: []
         }
       })
+    )
+  }
+
+  promptRejectedAtValidation(
+    jobId: string,
+    nodeId: string,
+    summary: string,
+    nodeErrors: Record<string, PromptOutputsSkippedNodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_error',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: nodeErrors[nodeId].class_type,
+          executed: [],
+          exception_message: summary,
+          exception_type: 'ValidationError',
+          traceback: [],
+          node_errors: nodeErrors
+        }
+      } satisfies CloudExecutionErrorFrame)
     )
   }
 

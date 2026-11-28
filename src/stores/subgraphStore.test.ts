@@ -19,9 +19,11 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { ASSERTION_FAILURE_PREFIX } from '@/base/assert'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createCanvas } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
@@ -92,6 +94,7 @@ describe('useSubgraphStore', () => {
   }
 
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     resetReportedWorkflowStateAnomaliesForTests()
     vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
     vi.mocked(useDialogService().confirm).mockResolvedValue(true)

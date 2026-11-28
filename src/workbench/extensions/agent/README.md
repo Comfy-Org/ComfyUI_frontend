@@ -37,7 +37,11 @@ The panel speaks one contract on the cloud and on the local agent:
   is not observed here; outside the agent, `platform/customNodes/useReconnectNodeDefinitionRefresh.ts`
   (wired in `composables/useServerReconnectLifecycle.ts`, local only) checks `/object_info` on every
   reconnect and, when it lists node types the page lacks, refreshes
-  definitions and reloads the open workflow if it holds one of them.
+  definitions and reloads the open workflow if it holds one of them. When
+  ComfyUI reports a `server_boot_id` feature flag, that core path instead
+  refreshes definitions and reloads the open workflow once per real restart
+  (a new boot id), and this store leaves restarts to it; it still refreshes
+  definitions after `refresh_catalog`.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
@@ -98,13 +102,24 @@ new scope. Desktop/Local sign-in continuation authenticates before saving.
 
 `agent_consent_not_offered` names why an automatic offer was not made.
 
-| `reason`              | Why                                         | Retried                |
-| --------------------- | ------------------------------------------- | ---------------------- |
-| `first_run_screen`    | Getting Started or another first-run screen | When it closes         |
-| `tour_active`         | Another onboarding tour                     | When it ends           |
-| `dialog_open`         | Another dialog                              | When it closes         |
-| `boot_undecided`      | The startup decision did not settle         | No, for this page load |
-| `storage_unavailable` | localStorage cannot be written              | No, for this page load |
+| `reason`                 | Why                                         | Retried                |
+| ------------------------ | ------------------------------------------- | ---------------------- |
+| `first_run_screen`       | Getting Started or another first-run screen | When it closes         |
+| `tour_active`            | Another onboarding tour                     | When it ends           |
+| `dialog_open`            | Another dialog                              | When it closes         |
+| `boot_undecided`         | The startup decision did not settle         | No, for this page load |
+| `storage_unavailable`    | localStorage cannot be written              | No, for this page load |
+| `first_session_deferred` | A new local user's first launch             | No, for this page load |
+
+On a non-cloud build, the launch that shows a new user the template browser
+(nothing restored, `Comfy.TutorialCompleted` unset) is left to the templates:
+the panel does not auto-open, the launch does not count toward the two
+activation launches, and the card is not offered unprompted, including after a
+dialog closes or the user signs in. A panel restored open from an earlier
+profile stays hidden from the first paint, without forgetting it, so the next
+launch restores it. The Agent button and keybinding work as usual.
+`Comfy.AgentPanel.firstSessionDeferred` in localStorage bounds this to one
+launch; if it cannot be written, the launch is not deferred.
 
 `agent_consent_offer_exited` covers every other ending. Split queries by
 `exit`; a total is not a quantity.

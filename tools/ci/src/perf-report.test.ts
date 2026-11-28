@@ -235,4 +235,31 @@ describe('perf-report baseline comparison', () => {
       '> ❌ **1 scenario below the ≥52 P5 FPS target** · ⚠️ **2 regressions detected**. Expand the scenario timings and regressions below and profile the affected scenarios before merging.'
     ])
   })
+
+  it('drops detail tables that would push the PR comment past GitHub’s size limit', () => {
+    const suite = Array.from({ length: 400 }, (_, i) =>
+      frames(`scenario-with-a-long-descriptive-name-${i}`, 0, 17)
+    ).flat()
+    const output = render(suite, {
+      baseline: suite,
+      history: [suite, suite, suite]
+    })
+
+    expect(output.length).toBeLessThan(65_536)
+    expect(output).not.toContain('<summary>Raw data</summary>')
+    expect(output).toContain(
+      'The full data is in the `perf-metrics` artifact of the CI: Performance Report run.'
+    )
+  })
+
+  it('keeps every detail table when the report is small', () => {
+    const output = render(frames('steady', 0, 17), {
+      baseline: frames('steady', 0, 17),
+      history: [frames('steady', 0, 17), frames('steady', 0, 17)]
+    })
+
+    expect(output).toContain('<summary>All metrics</summary>')
+    expect(output).toContain('<summary>Raw data</summary>')
+    expect(output).not.toContain('comment size limit')
+  })
 })

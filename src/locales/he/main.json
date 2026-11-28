@@ -62,6 +62,7 @@
       "body": "פתח את החיוב כדי לבדוק שמילוי הקרדיטים האוטומטי מופעל.",
       "title": "קרדיטים נוספו"
     },
+    "balanceAfter": "לאחר הטעינה: {credits} קרדיטים.",
     "blocked": {
       "action": "פתיחת דף התשלום",
       "body": "הדפדפן שלך חסם את הלשונית החדשה. פתחו את דף התשלום כדי להשלים את התשלום.",
@@ -84,7 +85,7 @@
       "title": "התשלום שלך בסך {amount} דורש אימות",
       "titleNoAmount": "התשלום שלך דורש אימות"
     },
-    "negativeBalance": "יתרתך היא −{credits} קרדיטים. טעינה זו מכסה זאת תחילה.",
+    "negativeBalance": "היתרה שלך היא −{credits} קרדיטים.",
     "notAllowed": {
       "body": "בדוק את הגדרות החיוב כדי לראות מדוע.",
       "title": "לא ניתן להוסיף קרדיטים כרגע"
@@ -127,6 +128,7 @@
       "bodyNoWait": "נסה שוב מאוחר יותר, או {support}.",
       "title": "הגעת למגבלת הטעינות לעת עתה"
     },
+    "stillNegativeAfter": "היתרה עדיין שלילית לאחר הטעינה: −{credits} קרדיטים.",
     "title": "הוסף קרדיטים",
     "wait": {
       "day": "יום",
@@ -140,7 +142,10 @@
   "agent": {
     "addFromAssets": "גררו נכס מלוח הנכסים",
     "addNodesFromGraph": "אזכור צמתים מהגרף",
+    "addSkill": "הוספת מיומנות",
     "addToPrompt": "הוסף לפרומפט",
+    "agentCostNotice": "Comfy Agent משתמש בנקודות הזכות של סביבת העבודה שלך. העלויות משתנות לפי המודל והבקשה.",
+    "agentCostNoticeLabel": "הודעת עלות הסוכן",
     "askUnavailable": "הסוכן ממתין לשלב שלוח זה אינו יכול להציג.",
     "askUser": {
       "answerRejected": "הסוכן לא הצליח לקבל את התשובה הזו. שנו את הבחירות שלכם או עצרו את התור.",
@@ -165,6 +170,7 @@
     "attach": "צרף קובץ",
     "attachFiles": "העלאת תמונות או קבצים",
     "attachmentCountExceeded": "ניתן לצרף רק {count} קבצים להודעה אחת",
+    "attachmentEmpty": "{name} ריק ולא ניתן היה לצרף אותו",
     "attachmentInvalidVideo": "{name} אינו קובץ וידאו תקין. הסר אותו ונסה קובץ אחר.",
     "attachmentNamesOverflow": "{names} ועוד {count}",
     "attachmentTooLarge": "{name} גדול מ-{limit}",
@@ -172,14 +178,14 @@
     "attachmentUnsupportedType": "{name} אינו מסוג קובץ שהסוכן מקבל. הסירו אותו ונסו קובץ אחר.",
     "attachmentUploadFailed": "לא ניתן היה להעלות את {name}",
     "attachmentsAlreadyAdded": "{name} כבר נמצא במגש הנכסים | דולגו על {count} נכסים כפולים",
+    "backToChat": "חזרה לצ'אט",
     "backToPreviousChat": "חזרה לצ'אט הקודם",
+    "backToSkills": "חזרה למיומנויות",
     "beta": "בטא",
     "canvasIsEmptyAfterTurn": "קנבס זה ריק — לא נוסף אליו דבר. עדיין אין כאן מה להפעיל, לשמור או לייצא.",
     "canvasNotReadyForSend": "הקנבס של לשונית זו עדיין אינו מוכן, ולכן ההודעה שלך לא נשלחה. נסה שוב בעוד רגע.",
-    "changeWorkflowForChat": "שנו את תהליך העבודה שהסוכן יכול לערוך",
     "chatOptions": "אפשרויות צ'אט",
     "chooseWorkflow": "בחר תהליך עבודה",
-    "chooseWorkflowForChat": "בחר תהליך עבודה עבור צ'אט זה",
     "close": "סגור",
     "coachBody": "תארו את הרעיונות שלכם, ובקשו ממנו לבנות ולהריץ תהליכי עבודה. הוא רואה את הקנבס והקבצים שלכם.",
     "coachHistoryBody": "שיחות קודמות נשמרות כאן. פתחו אחת כדי לעיין בה או להמשיך לעבוד עם הסוכן.",
@@ -187,7 +193,7 @@
     "coachHoldNotice": "ההודעה שלך תישלח כשתסיים או תדלג על הסיור.",
     "coachProgress": "{current} מתוך {total}",
     "coachTitle": "הכירו את Comfy Agent שלכם",
-    "coachWorkflowBody": "שם תהליך העבודה מופיע בחלק העליון של תיבת ההודעות. לחץ על השם כדי לבחור תהליך עבודה אחר. לחיצה על לשונית של תהליך עבודה עשויה לפתוח את השיחה האחרונה שלו, אלא אם כן יש טיוטה בתיבת ההודעות.",
+    "coachWorkflowBody": "לכל לשונית של תהליך עבודה יש צ'אטים משלה. מעבר בין לשוניות מעביר לצ'אט של אותה לשונית.",
     "coachWorkflowTitle": "הסוכן עורך תהליך עבודה אחד בכל פעם",
     "consent": {
       "accept": "התחלת השימוש ב-Comfy Agent",
@@ -214,7 +220,6 @@
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
     "creditTransitionNotice": "ניצלת את הקרדיטים החינמיים של הסוכן. פעילות נוספת של הסוכן משתמשת בקרדיטים של סביבת העבודה שלך, שעשויים לכלול קרדיטים בתשלום.",
     "creditsUsed": "הסוכן השתמש ב-{credits} קרדיט | הסוכן השתמש ב-{credits} קרדיטים",
-    "currentTab": "הלשונית הנוכחית",
     "delete": "מחק",
     "deleteApproval": {
       "answered": "נענה",
@@ -229,6 +234,8 @@
       "retired": "בקשה זו אינה פתוחה כאן עוד.",
       "unconfirmed": "לא הצלחנו לאשר את תשובתכם. בדקו את הקנבס לפני שתנסו שוב."
     },
+    "deleteSkillMessage": "האם למחוק את \"{name}\"? לא ניתן לבטל פעולה זו.",
+    "deleteSkillTitle": "מחיקת מיומנות",
     "diagnosticReport": {
       "clipboardFailed": "הגישה ללוח הגזירים נכשלה. בחרו והעתיקו את הדוח שלהלן, או נסו שוב.",
       "collectionFailed": "לא ניתן לאסוף את הדוח. נסו שוב, או כבו מקורות אופציונליים ונסו שוב.",
@@ -236,6 +243,10 @@
       "manualCopy": "דוח להעתקה",
       "retry": "נסה שוב להעתיק את הדוח"
     },
+    "discardDraft": "ביטול הטיוטה",
+    "discardDraftChanges": "ביטול שינויי הטיוטה",
+    "discardDraftMessage": "הטקסט שהקלדת יימחק ממכשיר זה.",
+    "discardDraftTitle": "לבטל את הטיוטה?",
     "dismiss": "סגור",
     "downloadAssets": "הורדת נכסים",
     "dragAndDropAssets": "גרור ושחרר נכסים כאן",
@@ -256,6 +267,7 @@
       "withReasonCode": "{notice} סיבה: {code}",
       "withReasonTarget": "{notice} נדחה: {target}"
     },
+    "editSkill": "עריכת מיומנות",
     "editWhileWorking": "אפשר להמשיך לערוך בזמן שהוא פועל",
     "entryButton": "סוכן",
     "entryFailed": "הסוכן אינו זמין",
@@ -265,6 +277,7 @@
     "errorContext": {
       "allLabel": "כל הבעיות",
       "draftBlocked": "תחילה שלח או נקה את ההודעה הנוכחית שלך, ולאחר מכן שאל את הסוכן לגבי שגיאות אלה.",
+      "noOriginWorkflow": "שגיאות אלה לא הגיעו מתהליך העבודה הפתוח, ולכן לא צורף דבר.",
       "problemCount": "בעיה אחת: {count} | {count} בעיות",
       "remove": "הסר בעיה מצורפת",
       "workflowChanged": "תהליך העבודה עם שגיאות אלה אינו פתוח עוד, ולכן לא צורף דבר."
@@ -276,10 +289,10 @@
       "restartHint": "השינוי ייכנס לתוקף לאחר הפעלה מחדש של ComfyUI. טען מחדש דף זה לאחר ההפעלה מחדש."
     },
     "feedbackCaption": "שיתוף משוב",
+    "firstChatFreeNotice": "נסה את הצ'אט הראשון שלך בחינם!",
     "focusNode": "הצג בקנבס",
     "focusNodeLabel": "הצג את {node} בקנבס",
     "followedChatOpenFailed": "לא ניתן היה לפתוח את הצ'אט עבור {workflowName}.",
-    "freeUseNotice": "נסה את הצ'אט הראשון שלך בחינם!",
     "freeUseNoticeLabel": "הודעת שימוש חינם",
     "friend": "שם",
     "gotIt": "הבנתי",
@@ -296,7 +309,9 @@
     "historyYesterday": "אתמול",
     "latest": "העדכני ביותר",
     "loadFailed": "טעינת חלונית הסוכן נכשלה.",
+    "loadingWorkflowChats": "טוען את הצ'אטים עבור {workflowName}",
     "malformedEvent": "הסוכן שלח אירוע שלוח זה לא הצליח לקרוא",
+    "manageSkills": "ניהול מיומנויות",
     "maximize": "הגדל את הלוח",
     "mention": "אזכר צומת",
     "minimize": "מזער את הלוח",
@@ -306,6 +321,8 @@
     "noNodesToMention": "אין צמתים בתהליך עבודה זה",
     "noNodesToReference": "אין צמתים זמינים להפניה",
     "noSkillsFound": "לא נמצאו מיומנויות",
+    "noSkillsHint": "הוסיפו אחת כדי ללמד את הסוכן העדפה שאתם חוזרים עליה שוב ושוב.",
+    "noSkillsYet": "אין עדיין מיומנויות",
     "noWorkflowsToReference": "אין תהליכי עבודה זמינים להפניה",
     "nodeSelection": {
       "bannerSubtitle": "בחר צומת אחד או יותר להוספה כהפניה",
@@ -320,7 +337,6 @@
     "openWorkflowTab": "פתיחת {name}",
     "openingChat": "פתיחת צ'אט…",
     "openingWorkflowChat": "פתיחת צ'אט עבור {workflowName}…",
-    "otherOpenWorkflows": "תהליכי עבודה פתוחים אחרים",
     "paused": {
       "recheck": "הסוכן ינסה שוב באופן אוטומטי בעוד כ-{seconds} שנייה. | הסוכן ינסה שוב באופן אוטומטי בעוד כ-{seconds} שניות.",
       "resume": "המשך",
@@ -396,6 +412,7 @@
       "answerSuperseded": "כבר ניתנה תשובה במקום אחר, ולכן נעשה שימוש בתשובה זו במקום בתשובתכם.",
       "answerUncertain": "לא ניתן היה לאשר שתשובתכם הגיעה לסוכן. ייתכן שהיא עדיין הוחלה — טענו מחדש את הדף כדי לראות מה המצב.",
       "cancel": "ביטול",
+      "estimateAtLeast": "עלות משוערת: לפחות {credits} קרדיטים",
       "lead": "Comfy Agent מבקש להריץ את תהליך העבודה:",
       "leadBound": "Comfy Agent מבקש להפעיל את תהליך העבודה הזה.",
       "question": "האם לאשר?",
@@ -420,8 +437,6 @@
     "runPermissions": "הרשאות הפעלה",
     "runPermissionsDescription": "בחר מתי הסוכן זקוק להסכמתך",
     "savingWorkflow": "שומר תהליך עבודה",
-    "searchWorkflows": "חפש תהליכי עבודה",
-    "selectWorkflowForAgent": "בחרו תהליך עבודה שבו הסוכן יעבוד",
     "selectWorkflowForNodes": "יש לבחור תחילה תהליך עבודה",
     "selectWorkflowToGenerate": "בחר תהליך עבודה ליצירה בו",
     "send": "שלח",
@@ -430,17 +445,42 @@
     "sendBlockedByUnsupportedType": "{name} אינו מסוג קובץ שהסוכן מקבל. הסירו אותו כדי לשלוח.",
     "sendBusy": "הודעה כבר נשלחת",
     "sendFailed": "שליחת ההודעה נכשלה",
+    "sendFailedDisownedWorkflow": "תהליך עבודה זה אינו זמין עוד.",
+    "sendFailedNetwork": "ההודעה לא הגיעה לשרת. בדוק את החיבור שלך ונסה שוב.",
+    "sendFailedOffscreen": "לא ניתן היה לשלוח את ההודעה שלך",
+    "sendFailedOffscreenShow": "הצג",
+    "sendFailedTurnInProgress": "תשובה עדיין הייתה בתהליך בצ'אט זה.",
+    "sendFailedUncertain": "לא ניתן היה לאשר אם השרת קיבל את הודעתך. בדוק את הצ'אט לפני שליחה חוזרת.",
     "sendTurnInProgress": "בצ'אט זה עדיין פועלת תגובה. המתן לסיומה, או עצור אותה, ולאחר מכן שלח שוב.",
+    "sendingMessage": "שולח…",
     "showChatHistory": "הצג היסטוריית צ'אטים",
     "showLess": "הצג פחות",
     "showMore": "הצג עוד",
     "showTarget": "הצג יעד",
     "showTargetWorkflow": "הצג את תהליך העבודה המיועד: {workflowName}",
+    "skillDraftChanges": "שינויי טיוטה",
+    "skillDraftNote": "טיוטה · נשמרה במכשיר זה בלבד",
+    "skillDrafts": "טיוטות",
+    "skillInstructions": "הוראות",
+    "skillInstructionsPlaceholder": "ההוראות שהסוכן פועל לפיהן לאחר טעינת מיומנות זו.",
+    "skillLimitHint": "הסירו מיומנות כדי לפנות מקום לזו.",
+    "skillLimitTitle": "הגעת למגבלה",
+    "skillName": "שם",
+    "skillNameHint": "אותיות, ספרות, '.', '_' ו-'-'. זהו השם שבאמצעותו הסוכן טוען את המיומנות.",
+    "skillNameLocked": "לא ניתן לשנות את השם. כדי לשנות שם, מחקו מיומנות זו והוסיפו אותה מחדש.",
+    "skillNamePlaceholder": "לדוגמה, my-render-defaults",
     "skillNotAvailable": "לא זמין",
+    "skillOptions": "אפשרויות עבור {name}",
+    "skillSize": "{bytes} בתים",
+    "skillWhenToUse": "מתי להשתמש",
+    "skillWhenToUseHint": "שורה אחת המציינת מתי לטעון מיומנות זו. היא נכללת בכל פרומפט, בין שהמיומנות בשימוש ובין שלא, לכן יש לקצר.",
+    "skillWhenToUsePlaceholder": "טען אותי כאשר המשתמש מבקש הגדלת רזולוציה",
     "skills": "מיומנויות",
     "skillsLoadError": "לא ניתן לטעון מיומנויות. נסה שוב.",
     "skillsLoading": "טוען מיומנויות…",
+    "skillsUnavailable": "המיומנויות אינן זמינות כרגע.",
     "skip": "דלג",
+    "startNewChat": "התחל צ'אט חדש",
     "stop": "עצור",
     "stopShortcut": "Esc",
     "suggestedPrompts": {
@@ -468,11 +508,8 @@
         ]
       }
     },
-    "switchWorkflow": "החלף תהליך עבודה",
     "switchWorkflowForNodes": "עברו אל {workflowName} כדי להוסיף צמתים.",
     "takeTour": "התחל סיור",
-    "targetFollowsVisibleWorkflow": "תהליך העבודה המיועד מתעדכן לפי הלשונית הגלויה, עד שתבחר יעד, תפנה לצמתים או תשלח הודעה.",
-    "targetForThisChat": "יעד הסוכן עבור שיחה זו",
     "targetNavigationUnavailable": "יעד זה של תהליך העבודה אינו זמין עוד.",
     "targetWorkflowOpenFailed": "לא ניתן היה לפתוח את תהליך העבודה המבוקש.",
     "targetWorkflowUnavailable": "תהליך העבודה המבוקש אינו זמין עוד.",
@@ -504,6 +541,7 @@
     "unavailableWorkflowReference": "{name} (לא זמין)",
     "unsavedWorkflow": "לא נשמר",
     "untitledChat": "ללא כותרת",
+    "untitledSkill": "מיומנות ללא כותרת",
     "updatingGraph": "הסוכן מעדכן את הגרף",
     "uploading": "מעלה",
     "uploadingAttachments": "מעלה קובץ מצורף אחד | מעלה {count} קבצים מצורפים",
@@ -513,7 +551,7 @@
     "workedForMinutes": "עבד במשך {minutes}m {seconds}s",
     "workedForSeconds": "עבד במשך {seconds} שניות",
     "workedNotConfirmedOnCanvas": "השינויים לא אושרו בקנבס שלכם",
-    "workflowEditNotice": "הסוכן יכול כעת לערוך את {workflow}. הוא עובד על תהליך עבודה אחד בכל פעם, וניתן להחליף תהליכי עבודה במהלך השיחה.",
+    "workflowEditNotice": "הסוכן יכול כעת לערוך את {workflow}. הוא עובד על תהליך עבודה אחד בכל פעם.",
     "workflowReferenceUnavailableReason": "תהליך העבודה שאליו בוצעה ההפניה אינו זמין עוד או שאין לך גישה אליו.",
     "workflowSyncFailedDetail": "תהליך עבודה זה נוצר באמצעות גרסת מסמך שאינה תואמת. הקנבס שלך נותר ללא שינוי.",
     "workflowSyncFailedDetailCatalogMismatch": "צומת בתהליך עבודה זה השתנה מאז שהסוכן ראה אותו לאחרונה. הקנבס שלכם נותר ללא שינוי. ההודעה הבאה שלכם תשלח את הקנבס שלכם כדי שהסוכן יוכל לבנות מחדש את העותק שלו של תהליך העבודה.",
@@ -615,10 +653,12 @@
     "fileName": "שם הקובץ",
     "fileSize": "גודל הקובץ",
     "fileUpload": {
+      "accessDenied": "ההפעלה הנוכחית שלכם אינה יכולה להעלות מודלים לסביבת עבודה זו.",
       "cancelled": "ההעלאה בוטלה.",
       "choose": "בחירת קובץ",
       "drop": "או שחררו כאן קובץ .safetensors",
       "failed": "ההעלאה נכשלה. נסו שוב.",
+      "featureDisabled": "העלאות מודלים אינן זמינות כעת.",
       "notSafetensors": "ניתן להעלות רק קובצי .safetensors.",
       "notStopped": "לא ניתן היה לאשר שההעלאה הקודמת הופסקה, ולכן הקובץ לא נשלח שוב.",
       "planUnavailable": "לא ניתן היה לבדוק את התוכנית שלכם. נסו שוב.",
@@ -692,6 +732,7 @@
     },
     "modelName": "שם המודל",
     "modelNamePlaceholder": "הזן שם עבור מודל זה",
+    "modelTypeNotAddable": "לא ניתן להוסיף סוג מודל זה לקנבס מספריית המודלים. הוסף צומת שטוען אותו ולאחר מכן בחר את המודל שם.",
     "modelTypeSelectorLabel": "איזה סוג מודל זה?",
     "modelTypeSelectorPlaceholder": "בחר סוג מודל",
     "modelUploaded": "המודל יובא בהצלחה.",
@@ -745,7 +786,8 @@
     "uploadModelHelpVideo": "סרטון עזרה להעלאת מודל",
     "uploadModelHowDoIFindThis": "כיצד אני מוצא זאת?",
     "uploadSuccess": "המודל יובא בהצלחה!",
-    "uploadingModel": "מייבא מודל..."
+    "uploadingModel": "מייבא מודל...",
+    "useDisabledNoProvider": "סוג מודל זה עדיין אינו נתמך"
   },
   "auth": {
     "accountChanged": {
@@ -1465,7 +1507,8 @@
       "apiNodeUsage": "שימוש בצומת שותף",
       "apiUsage": "שימוש ב-API",
       "creditAdded": "קרדיטים נוספו",
-      "gpuUsage": "שימוש ב-GPU"
+      "gpuUsage": "שימוש ב-GPU",
+      "routerUsage": "שימוש ב-Router"
     },
     "faqs": "שאלות נפוצות",
     "formerMember": "{name} (חבר/ת לשעבר)",
@@ -1482,6 +1525,15 @@
     "member": "חבר/ת",
     "messageSupport": "שליחת הודעה לתמיכה",
     "model": "מודל",
+    "personalWallet": {
+      "addCredits": "הוספת קרדיטים אישיים",
+      "apiKeyDescription": "מפתח זה מחייב את החשבון האישי שלך. יש ליצור מפתח API של צוות או להוסיף קרדיטים אישיים.",
+      "createTeamApiKey": "יצירת מפתח API של צוות",
+      "sessionDescription": "הפעלה זו מחייבת את החשבון האישי שלך. כדי לחייב צוות במקום זאת, יש לעבור לסביבת העבודה שלו.",
+      "sessionNoTeamsDescription": "הפעלה זו מחייבת את החשבון האישי שלך. יש להוסיף קרדיטים אישיים כדי להמשיך.",
+      "switchTo": "מעבר אל {workspaceName}",
+      "title": "בחשבון האישי שלך אזלו הקרדיטים"
+    },
     "purchaseCredits": "רכישת קרדיטים",
     "refreshes": "מתחדש ב-{date}",
     "time": "זמן",
@@ -1494,6 +1546,7 @@
         "setUp": "הגדרה"
       },
       "awaitingBankApprovalBody": "הבנק שלכם צריך לאשר תשלום זה לפני שהקרדיטים יתווספו. תוכלו להשלים זאת דרך אפליקציית הבנק או קישור התשלום עבור רכישה זו. לא ניתן להתחיל טעינת קרדיטים חדשה עד שזו תושלם או תפוג.",
+      "balanceAfterTopup": "לאחר הטעינה: {credits} קרדיט. | לאחר הטעינה: {credits} קרדיטים.",
       "buy": "קנה",
       "buyCredits": "המשך לתשלום",
       "buyNow": "קנה עכשיו",
@@ -1524,7 +1577,7 @@
       "minRequired": "{credits} קרדיטים מינימום",
       "minimumPurchase": "{amount}$ מינימום ({credits} קרדיטים)",
       "needMore": "צריך עוד?",
-      "negativeBalanceNotice": "היתרה שלך היא ‎−{credits} קרדיט. טעינה זו מכסה זאת תחילה. | היתרה שלך היא ‎−{credits} קרדיטים. טעינה זו מכסה זאת תחילה.",
+      "negativeBalanceNotice": "היתרה שלך היא −{credits} קרדיט. | היתרה שלך היא −{credits} קרדיטים.",
       "noPaymentMethodCheckoutHint": "לא נשמר כרטיס במרחב עבודה זה לטעינות בלחיצה אחת. שלמו בדף התשלום במקום זאת, או הגדירו כרטיס ברירת מחדל כך שהטעינות הבאות יחויבו ישירות בו.",
       "openCheckout": "פתח את דף התשלום",
       "openPaymentPage": "פתח את דף התשלום",
@@ -1547,6 +1600,7 @@
       "setDefaultCard": "הגדר כרטיס ברירת מחדל",
       "setDefaultCardError": "לא ניתן היה לפתוח את הגדרות הכרטיס",
       "startOver": "התחלה מחדש",
+      "stillNegativeAfterTopup": "היתרה עדיין שלילית לאחר הטעינה: −{credits} קרדיט. | היתרה עדיין שלילית לאחר הטעינה: −{credits} קרדיטים.",
       "templateNote": "*נוצר באמצעות תבנית Wan 2.2 Image-to-Video",
       "topUp": "טעינה",
       "unknownError": "אירעה שגיאה לא ידועה",
@@ -1711,21 +1765,21 @@
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
     "compatibleEnvironments": "סביבות תואמות",
-    "createCustomDeployment": "צור פריסה מותאמת אישית",
+    "createCustomDeployment": "יצירת Build מותאם אישית",
     "currentTooltip": "פועל על {deployment}",
     "customDeployment": {
-      "body": "פריסה מותאמת אישית מוסיפה את הצמתים והמודלים המותאמים אישית שאינם זמינים ב-Comfy Cloud. מגדירים אותה ב-Platform, והיא מופיעה תחת \"הרצה על\" עבור סביבת העבודה שלכם.",
+      "body": "Build מותאם אישית מוסיף את הצמתים והמודלים המותאמים אישית שאינם זמינים ב-Comfy Cloud. מגדירים אותו ב-Platform, והוא מופיע תחת \"Run on\" עבור סביבת העבודה שלך.",
       "createOnPlatform": "יצירה ב-Platform",
       "pointApi": "קריאה אליה מהמוצר שלכם כ-API בעל התאמה אוטומטית לעומס",
       "pointGpu": "עבודה ב-ComfyUI על ה-GPU שתבחרו",
       "pointNodes": "שימוש בצמתים ובמודלים מותאמים אישית שאינם זמינים ב-Comfy Cloud",
-      "title": "יצירת פריסה מותאמת אישית"
+      "title": "יצירת Build מותאם אישית"
     },
     "defaultDeleted": "נמחקה",
     "defaultGone": "ברירת המחדל של סביבת העבודה נמחקה, ולכן חברים מתחילים ב-Comfy Cloud.",
     "defaultGoneOwner": "ברירת המחדל של סביבת העבודה נמחקה, ולכן חברים מתחילים ב-Comfy Cloud. בחר ברירת מחדל חדשה תחת ״ברירת מחדל של סביבת העבודה״.",
     "deployCustomNodes": {
-      "body": "צרו פריסה מותאמת אישית שמריצה את הצמתים והמודלים המותאמים אישית שלכם ב-Comfy Cloud, ומופיעה תחת \"הרצה על\" עבור סביבת העבודה שלכם.",
+      "body": "צרו Build מותאם אישית שמריץ את הצמתים והמודלים המותאמים אישית שלכם ב-Comfy Cloud, ומופיע תחת \"Run on\" עבור סביבת העבודה שלכם.",
       "pointNodes": "פרסו את חבילות הצמתים המותאמות אישית או הפרטיות שתהליכי העבודה שלכם זקוקים להן",
       "title": "פריסת צמתים מותאמים אישית ב-Comfy Cloud"
     },
@@ -1738,18 +1792,20 @@
     "incompatibleEnvironments": "סביבות שאינן תואמות",
     "labelWithDetail": "{label} · {detail}",
     "landed": "פועל על {deployment}",
+    "later": "מאוחר יותר",
     "linkRefused": "לא ניתן היה לפתוח פריסה זו",
     "linkTimedOut": "לפריסה זו לקח זמן רב מדי להיפתח. נסה שוב את הקישור.",
     "linkWorkspaceRefused": "לא ניתן היה לעבור לאותה סביבת עבודה. אתה עדיין ב־{workspaceName}.",
     "lookupUnavailable": "לא ניתן היה לבדוק על איזו פריסה עורך זה פועל.",
     "lookupUnavailableDetail": "המודלים המוצגים הם של Comfy Cloud. טען מחדש כדי לנסות שוב.",
-    "manageDeployments": "ניהול פריסות",
+    "manageBuilds": "ניהול גרסאות Build",
     "manageDeploymentsTooltip": "נהלו את ה-Builds שלכם ואת הפריסות שלהם ב-Developer Platform.",
     "membersStartOn": "חברים ללא בחירה משלהם מתחילים ב־",
     "missingNodes": "חסר צומת {count} | חסרים {count} צמתים",
     "missingNodesAfterReason": "הוא אינו יכול להריץ תהליך עבודה זה. חסרים בו {nodes}.",
     "missingNodesNamed": "{deployment} אינו יכול להריץ תהליך עבודה זה. חסרים בו {nodes}.",
     "namedDeployment": "{name}",
+    "newDeploymentName": "פריסה חדשה",
     "noDeployments": "לסביבת עבודה זו עדיין אין פריסות.",
     "notChecked": "לא נבדק",
     "notCheckedAfterReason": "לא ניתן היה לבדוק אם הוא יכול להריץ תהליך עבודה זה.",
@@ -1767,6 +1823,10 @@
       "stopped": "{deployment} נעצר. הפעילו אותו כדי להריץ עליו משימות."
     },
     "releaseChanged": "פריסה זו פועלת כעת עם מהדורה אחרת. טען מחדש כדי לקבל את הצמתים שלה.",
+    "releaseChangedRun": "{deployment} מפעיל כעת את v{version}. יש לטעון מחדש כדי להפעיל עליו.",
+    "releaseChangedRunNoVersion": "{deployment} מפעיל כעת גרסה אחרת. יש לטעון מחדש כדי להפעיל עליו.",
+    "releaseChangedRunUnknown": "הפעלות נשלחות כעת לגרסה אחרת. יש לטעון מחדש כדי להפעיל עליה.",
+    "releaseChangedRunUnknownTarget": "הגרסה החדשה",
     "reload": "טען מחדש",
     "retry": "ניסיון חוזר",
     "retryLabel": "ניסיון חוזר להפעלת {deployment}",
@@ -1790,6 +1850,7 @@
     "startLabel": "הפעלת {deployment}",
     "startOnPlatformLabel": "הפעלת {deployment} ב-Developer Platform",
     "status": {
+      "building": "בתהליך בנייה",
       "failed": "נכשל",
       "notReady": "לא מוכן",
       "provisioning": "מתחיל",
@@ -1808,25 +1869,31 @@
     "unnamedDeployment": "פריסה {id}",
     "unsaved": {
       "message": "מעבר אל {deployment} יטען מחדש את הלשונית. בתהליכי עבודה אלה יש שינויים שטרם נשמרו.",
+      "reloadMessage": "טעינה מחדש של הלשונית תפעיל אותה ב־{deployment}. בתהליכי עבודה אלה יש שינויים שטרם נשמרו.",
+      "reloadTitle": "לשמור את תהליכי העבודה לפני הטעינה מחדש?",
+      "reloadWithoutSaving": "טעינה מחדש ללא שמירה",
+      "saveAndReload": "שמירה וטעינה מחדש",
       "saveAndSwitch": "שמירה והחלפה",
       "switchWithoutSaving": "החלפה ללא שמירה",
       "tabsReturn": "הלשוניות הפתוחות שלך יחזרו לאחר הטעינה מחדש בכל מקרה.",
       "title": "לשמור את תהליכי העבודה לפני ההחלפה?"
     },
     "version": "v{version}",
+    "versionChanged": "{deployment} מפעיל כעת את v{version}. יש לטעון מחדש כדי להשתמש בצמתים שלו.",
+    "versionChangedNoVersion": "{deployment} מפעיל כעת גרסה אחרת. יש לטעון מחדש כדי להשתמש בצמתים שלו.",
     "workflowNeedsDeployment": {
-      "andMore": "{names}, ועוד {count}",
-      "buildOnPlatform": "Build ב-Platform",
-      "installBody": "פרוס Build מותאם אישית כדי להוסיף את הצמתים והמודלים המותאמים האישית שאין ל-Comfy Cloud. הגדר אותו ב-Platform, והוא יופיע תחת \"הפעל על\" עבור סביבת העבודה שלך.",
-      "installTitle": "התקן את הצמתים המותאמים האישית החסרים",
+      "createBody": "בילד מותאם אישית מוסיף את מה שחסר ב-Comfy Cloud, כך שתהליך העבודה הזה פשוט פועל.",
+      "createCustomBuild": "יצירת Custom Build",
+      "createTitle": "יצירת בילד מותאם אישית להפעלת תהליך עבודה זה",
       "missingModels": "מודל אחד חסר: {count} | חסרים {count} מודלים",
       "missingNodes": "צומת אחד חסר: {count} | חסרים {count} צמתים",
       "missingPacks": "חבילת צמתים אחת חסרה: {count} | חסרות {count} חבילות צמתים",
-      "noneRunIt": "לאף פריסה בסביבת עבודה זו אין את כל הצמתים האלה.",
+      "more": "+{count} נוספים",
+      "pointBilling": "תשלום רק בזמן שה-GPU פועל, בתוספת אחסון",
+      "showLess": "הצג פחות",
       "switch": "החלפה",
       "switchBody": "צמתים אלה חסרים ב-Comfy Cloud. עברו לפריסה שמכילה אותם והמשיכו לעבוד משם.",
-      "title": "הפעלת תהליך עבודה זה בפריסה מותאמת אישית",
-      "titleNoneRunIt": "צרו פריסה כדי להפעיל תהליך עבודה זה ב-Comfy Cloud"
+      "title": "הפעלת תהליך עבודה זה ב-Build מותאם אישית"
     },
     "workspaceDefault": "ברירת מחדל של סביבת העבודה"
   },
@@ -2075,6 +2142,13 @@
         "title": "היצירה נכשלה",
         "toastMessage": "אין מספיק זיכרון GPU. נסה להקטין את רזולוציית התמונה או את גודל האצווה ולהריץ שוב.",
         "toastTitle": "היצירה נכשלה"
+      },
+      "personal_wallet_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "החיוב עבור הרצה זו בוצע לחשבון האישי שלך, שאין בו מספיק קרדיטים.",
+        "title": "אין מספיק קרדיטים",
+        "toastMessage": "החיוב עבור הרצה זו בוצע לחשבון האישי שלך, שאין בו מספיק קרדיטים.",
+        "toastTitle": "אין מספיק קרדיטים"
       },
       "preprocessing_failed": {
         "itemLabel": "{nodeName}",
@@ -2328,16 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "שאל את הסוכן",
+    "createCustomBuild": "יצירת בילד מותאם אישית",
     "missingMedia": "חסרים קלטים נדרשים בחלק מהצמתים",
     "missingModels": "חסר {count} מודל נדרש | חסרים {count} מודלים נדרשים",
     "missingNodes": "חלק מהצמתים חסרים ויש להתקינם",
-    "moreDeployments": "{count} נוספים",
+    "missingNodesOnCloud": "צמתים מותאמים אישית נדרשים אינם נתמכים ב-Cloud.",
     "multipleIssueCount": "נמצאה {count} בעיה | נמצאו {count} בעיות",
     "multipleIssuesMessage": "פתור בעיות אלה לפני הפעלת תהליך העבודה.",
-    "runOnCustomDeployment": "הפעילו אותו בפריסה מותאמת אישית",
-    "runsOn": "פועל ב-{deployment}",
-    "setUpCustomDeployment": "הגדרה",
-    "switchDeployment": "החלפה",
+    "switchBuild": "החלפת בילד",
+    "switchBuildTo": "מעבר אל {build}",
     "viewDetails": "הצגת פרטים"
   },
   "errorPanelSurvey": {
@@ -2409,20 +2482,24 @@
     "agentCreated": "נוצר על-ידי סוכן",
     "agentExtensionAdded": "הסוכן שלך הוסיף את {name}",
     "agentExtensionDisableFailed": "לא ניתן היה להשבית את ההרחבה. נסה שוב.",
+    "agentFinishedUnseen": "הסוכן השיב",
     "agentInputNeededShort": "נדרש קלט",
     "agentModified": "הסוכן עדכן תהליך עבודה זה",
     "agentNeedsApproval": "הסוכן ממתין לתשובתך",
     "agentWorking": "הסוכן עובד על תהליך עבודה זה",
+    "agentWorkingAndWorkflowRunning": "הסוכן פועל ותהליך העבודה רץ",
+    "align": "יישור",
+    "alignBottom": "יישור הקצוות התחתונים",
+    "alignHorizontalCenters": "יישור המרכזים האופקיים",
+    "alignLeft": "יישור הקצוות השמאליים",
+    "alignRight": "יישור הקצוות הימניים",
+    "alignTop": "יישור הקצוות העליונים",
+    "alignVerticalCenters": "יישור המרכזים האנכיים",
     "all": "הכול",
     "allKeybindingsReset": "כל מקשי הקיצור אופסו לברירת המחדל",
     "amount": "סכום",
     "apply": "החלה",
     "architecture": "ארכיטקטורה",
-    "arrange": "סידור",
-    "arrangeAsGrid": "סידור כרשת",
-    "arrangeHorizontally": "סידור אופקי",
-    "arrangeSpacing": "ריווח הסידור",
-    "arrangeVertically": "סידור אנכי",
     "asset": "נכס {count} | {count} נכסים",
     "audioFailedToLoad": "טעינת השמע נכשלה",
     "audioPlaybackFailed": "לא ניתן היה לנגן שמע זה. נסה שוב, או הורד אותו כדי לנגן אותו ביישום אחר.",
@@ -2501,6 +2578,9 @@
     "disabling": "משבית את {id}",
     "disconnectedFromBackend": "החיבור לשרת נותק. בדוק אם השרת פועל.",
     "dismiss": "סגירה",
+    "distributeGap": "מרווח בין צמתים מפוזרים",
+    "distributeHorizontally": "פיזור אופקי",
+    "distributeVertically": "פיזור אנכי",
     "download": "הורדה",
     "downloadAudio": "הורדת שמע",
     "downloadImage": "הורדת תמונה",
@@ -2562,6 +2642,8 @@
     "galleryImagePosition": "תמונת גלריה {index} מתוך {total}",
     "galleryThumbnail": "תמונה ממוזערת בגלריה",
     "galleryThumbnailPosition": "תמונה ממוזערת בגלריה {index} מתוך {total}",
+    "gapHandle": "מרווח בין צמתים",
+    "gapValue": "{value} יחידת קנבס | {value} יחידות קנבס",
     "getHelpAction": "קבלת עזרה",
     "goToNode": "מעבר לצומת",
     "graphNavigation": "ניווט בגרף",
@@ -2635,12 +2717,15 @@
     "logs": "יומנים",
     "manageExtensions": "ניהול הרחבות",
     "markdown": "markdown",
+    "matchHeight": "התאמת גובה",
+    "matchWidth": "התאמת רוחב",
     "maximizeDialog": "הגדלת החלון",
     "megapixelsValue": "{count} MP",
     "micPermissionDenied": "ההרשאה לשימוש במיקרופון נדחתה",
     "migrate": "העברה",
     "missing": "חסר",
     "missingNodeTypesInGroup": "חסר: {types}",
+    "mixedGaps": "מעורב",
     "modifyKeybinding": "שינוי מקש הקיצור",
     "more": "עוד",
     "moreOptions": "אפשרויות נוספות",
@@ -2683,6 +2768,7 @@
     "openLayerEditor": "פתח עורך שכבות",
     "openManager": "פתיחת המנהל",
     "openNewIssue": "פתיחת דיווח חדש (Issue)",
+    "openWorkflows": "תהליכי עבודה פתוחים",
     "or": "או",
     "output": "פלט",
     "overwrite": "דריסה",
@@ -2753,6 +2839,11 @@
     "resultsCount": "נמצאו {count} תוצאות",
     "retry": "נסה שוב",
     "running": "פועל",
+    "safeExtensionBoot": {
+      "description": "דילוג עליהן מתבצע רק בטעינה זו. טען מחדש כדי להפעיל אותן שוב.",
+      "reload": "טען מחדש עם הרחבות",
+      "title": "מצב בטוח: הרחבות מותאמות אישית מושבתות"
+    },
     "save": "שמירה",
     "saveAnyway": "שמור בכל זאת",
     "saving": "שומר",
@@ -2776,6 +2867,7 @@
     "selectItemsToRename": "בחר פריטים לשינוי שם",
     "selected": "נבחר",
     "selectedFile": "הקובץ הנבחר",
+    "sessionRevoked": "הגישה שלך לסביבת עבודה זו הסתיימה. יש להתחבר שוב כדי להתחבר מחדש.",
     "setAKeybindingForTheFollowing": "הגדר מקש קיצור עבור הפעולה הבאה:",
     "setAsBackground": "הגדרה כרקע",
     "settings": "הגדרות",
@@ -2811,6 +2903,8 @@
     "systemStatsTemplatesVersion": "גרסת תבניות",
     "terminal": "טרמינל",
     "textFailedToLoad": "טעינת הטקסט נכשלה",
+    "tidyUp": "סידור",
+    "tidyUpTooltip": "יישור הצמתים בשורות ובעמודות והשוואת המרווחים ביניהם",
     "title": "כותרת",
     "triggerPhrase": "ביטוי הפעלה",
     "unknownError": "שגיאה לא ידועה",
@@ -3417,6 +3511,27 @@
     "newerVersionRequiredGeneric": "חלק מהצמתים דורשים גרסה חדשה יותר של ComfyUI. יש לעדכן כדי להשתמש בכל הצמתים.",
     "unknownVersion": "לא ידוע"
   },
+  "localMcp": {
+    "clients": {
+      "claudeCode": "Claude Code",
+      "claudeDesktop": "Claude Desktop",
+      "cursor": "Cursor"
+    },
+    "connected": "מחובר: סוכן הריץ כאן תהליך עבודה באמצעות Comfy MCP.",
+    "copyConfig": "העתק",
+    "description": "אפשר לסוכן AI כגון Claude או Cursor להריץ תהליכי עבודה ב-ComfyUI זה באמצעות Comfy MCP. הוא פועל במחשב שלך.",
+    "label": "סוכן",
+    "locations": {
+      "claudeDesktop": "הוסף אל claude_desktop_config.json (הגדרות > מפתחים > עריכת תצורה), ולאחר מכן הפעל מחדש את Claude Desktop.",
+      "cursor": "הוסף אל ~/.cursor/mcp.json, או אל .cursor/mcp.json בפרויקט."
+    },
+    "openDocs": "מדריך הגדרה מלא",
+    "step1": "1. התקן את Comfy MCP",
+    "step2": "2. הוסף אותו ללקוח שלך",
+    "step3": "3. בקש מהסוכן שלך להריץ תהליך עבודה",
+    "step3Hint": "הפעל מחדש את הלקוח שלך, ולאחר מכן בקש ממנו לאשר שה-ComfyUI המקומי שלך פועל ולהריץ תהליך עבודה. לוח זה יציג את המצב מחובר לאחר ההרצה הראשונה.",
+    "title": "חבר את סוכן ה-AI שלך"
+  },
   "logsTerminal": {
     "loadError": "לא ניתן לטעון את היומנים, אנא ודא שעדכנת את שרת ComfyUI שלך.",
     "resyncError": "לא ניתן לסנכרן מחדש את היומנים לאחר התחברות השרת מחדש. פתח מחדש את המסוף כדי לנסות שוב."
@@ -4006,6 +4121,7 @@
     "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
+    "TypeSafe": "בטיחות טיפוסים",
     "VEED": "VEED",
     "Veo": "Veo",
     "Vidu": "Vidu",
@@ -4243,6 +4359,18 @@
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
+      "comfy-mcp:tools:call": {
+        "label": "הפעלת תהליכי עבודה ומודלים של שותפים בשמך, באמצעות הקרדיטים שלך"
+      },
+      "comfy-mcp:tools:read": {
+        "label": "הצגת כלי תהליך העבודה הזמינים לך"
+      },
+      "comfy-router:models:invoke": {
+        "label": "הפעלת מודלים של שותפים דרך Comfy Router, באמצעות הקרדיטים שלך"
+      },
+      "comfy-router:models:read": {
+        "label": "הצגת קטלוג המודלים של Comfy Router"
+      },
       "mcp:tools:call": {
         "label": "הרצת תהליכי עבודה בשמך"
       },
@@ -4374,11 +4502,14 @@
     "checkFailed": "לא ניתן היה לבדוק את תהליך העבודה הזה ב-Comfy Cloud. נסו שוב.",
     "cloudButton": {
       "checking": "מתבצעת בדיקה של Comfy Cloud…",
-      "tooltip": "הפעל ב-Comfy Cloud"
+      "resumeUpload": "המשך העלאת מודל",
+      "tooltip": "הפעלת תהליך עבודה זה ב־Comfy Cloud",
+      "uploading": "מעלה מודלים ל-Comfy Cloud, {percent}%"
     },
     "deploySetup": "פרסו את ההגדרה שלכם ל-Comfy Cloud",
     "deploySetupDialog": {
       "body": "פרסו את ההגדרה המקומית שלכם ל-Comfy Cloud כ-Build, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API בעל התאמה אוטומטית לעומס.",
+      "missingNodesBody": "ב־Comfy Cloud חסרים חלק מהצמתים שבהם משתמש תהליך עבודה זה. פרוס את ההגדרה המקומית שלך ל־Comfy Cloud כ־Build, ולאחר מכן השתמש בה ב־ComfyUI או קרא לה כ־API עם התאמה אוטומטית של קנה המידה.",
       "platformTabBlocked": "תהליך העבודה נשמר. לחצו שוב על פרסום בפלטפורמה כדי להמשיך.",
       "pointGpu": "הפעילו על מעבדי GPU עוצמתיים בענן",
       "pointNodes": "הביאו את הצמתים והמודלים המותאמים אישית שלכם",
@@ -4397,8 +4528,38 @@
     "handoffMissingDetail": "ComfyUI מפסיק להמתין לאחר 10 דקות. לחצו שוב על Open on Comfy Cloud ב-ComfyUI.",
     "missingLocalModelLoader": "לא ניתן היה לקרוא את הגדרות המודל עבור {nodeType}. התקן את חבילת הצמתים שמספקת אותו ולאחר מכן נסה שוב.",
     "missingModels": {
+      "accountChanged": "ההעלאה הופסקה מכיוון שהחשבון או סביבת העבודה השתנו. נסו שוב.",
+      "cancelUpload": "בטל העלאה",
+      "cancelled": "ההעלאה בוטלה.",
+      "checkAgain": "בדקו שוב",
+      "chooseAgain": "בחרו שוב",
+      "chooseFile": "בחרו קובץ",
+      "chooseFileFor": "בחרו קובץ עבור {name}",
+      "chooseFiles": "Comfy Cloud זקוק למודלים אלה כדי להפעיל תהליך עבודה זה. בחרו כל קובץ מתיקיית המודלים שלכם כדי להעלות אותו לסביבת העבודה שלכם.",
+      "chooseMissingFilesAgain": "בחרו שוב קבצים חסרים",
+      "chosen": "הקובץ נבחר",
+      "confirmUploads": "אשרו העלאות",
+      "confirmationDescription": "בדקו אם Comfy Cloud יכול להשתמש בקבצים אלה בסביבת העבודה שלכם.",
+      "confirmationPending": "Comfy Cloud עדיין לא אישר מודלים אלה.",
+      "confirmationTitle": "אישור מודלים שהועלו",
+      "confirming": "בודק את המודלים שהועלו…",
+      "failed": "ההעלאה נכשלה. נסו שוב.",
+      "folderUnsupported": "Comfy Cloud עדיין אינו מקבל העלאות לתיקייה זו.",
+      "hide": "הסתר",
+      "preparing": "בודק אילו מודלים ניתן להעלות…",
+      "progress": "{sent} מתוך {total}",
+      "signInToUpload": "התחברו כדי להעלות",
+      "signedOut": "Comfy Cloud זקוק למודלים אלה כדי להפעיל תהליך עבודה זה. התחברו כדי להעלות אותם לסביבת העבודה שלכם.",
+      "sizeUnavailable": "לא ניתן לאמת את גודל הקובץ. הוסיפו מודל זה מעורך ה-Cloud.",
+      "storagePending": "Comfy Cloud עדיין מאשר מודל זה. נסו שוב כדי לבדוק את ההעלאה הקיימת.",
+      "subfolderUnsupported": "העלאות מכאן עדיין אינן יכולות לשמור את תיקיית המשנה של מודל זה. הוסיפו אותו ל-Comfy Cloud מעורך ה-Cloud.",
       "title": "חסר מודל {count} | חסרים {count} מודלים",
-      "unavailable": "הוסיפו את המודלים האלה ל-Comfy Cloud כדי להפעיל את תהליך העבודה הזה. העלאות מ-ComfyUI זה אינן זמינות כעת."
+      "total": "סה״כ {size}",
+      "unavailable": "הוסיפו את המודלים האלה ל-Comfy Cloud כדי להפעיל את תהליך העבודה הזה. העלאות מ-ComfyUI זה אינן זמינות כעת.",
+      "upload": "העלה",
+      "uploadTitle": "העלה מודל {count} | העלה {count} מודלים",
+      "uploaded": "הועלה",
+      "wrongFile": "בחרו את {name} מתיקיית המודלים שלכם."
     },
     "openedFromLocal": "נפתח מ-ComfyUI במחשב שלכם",
     "openedFromLocalDetail": "ב-Comfy Cloud קיימים כל הצמתים והמודלים שבהם תהליך העבודה הזה משתמש. לחצו על הפעל כשתהיו מוכנים.",
@@ -4406,10 +4567,18 @@
     "prepareFailed": "לא ניתן היה להכין את תהליך העבודה הזה עבור Comfy Cloud",
     "prepareFailedDetail": "בדקו את תהליך העבודה לאיתור שגיאות, שמרו אותו ונסו שוב.",
     "runDialog": {
-      "asksToSignIn": "Comfy Cloud יבקש מכם להתחבר.",
+      "askAgainNotSaved": "Comfy Cloud ישאל לפני כל בדיקה עד שתטען מחדש, אך ייתכן שיפסיק לשאול לאחר מכן.",
+      "body": "פתח תהליך עבודה זה ב־Comfy Cloud, או פרוס את ההגדרה המקומית שלך כ־Build אם הוא זקוק לצמתים מותאמים אישית.",
+      "checkCompatibility": "בדיקת תאימות",
+      "consentNotSaved": "לא ניתן היה לשמור את בחירתך לגבי בדיקת Comfy Cloud",
+      "dontAskAgain": "אל תשאל שוב",
+      "dontAskAgainNotSaved": "ייתכן ש-Comfy Cloud ישאל שוב בפעם הבאה שתפתח את ComfyUI.",
       "openOnCloud": "פתח ב-Comfy Cloud",
+      "pointApi": "השתמש בו ב־ComfyUI או קרא לו כ־API",
       "ready": "ב-Comfy Cloud קיימים כל הצמתים והמודלים שבהם תהליך העבודה הזה משתמש. הוא ייפתח בלשונית חדשה, מוכן להפעלה.",
-      "title": "הפעל ב-Comfy Cloud"
+      "readyWithUncheckedInputs": "ב־Comfy Cloud קיימים כל הצמתים והמודלים שניתן היה לבדוק. לא ניתן היה לבדוק את המודלים עבור הקלטים האלה: {inputs}. התהליך ייפתח בלשונית חדשה.",
+      "sends": "הבדיקה תשלח ל־Comfy Cloud את שמות הצמתים והמודלים של תהליך עבודה זה.",
+      "uncheckedInput": "{input} ב־{nodeType}"
     },
     "verifyAccessFailed": "לא ניתן היה לאמת את הגישה אל Comfy Cloud",
     "verifyAccessFailedDetail": "אם הלחצן Cloud עדיין זמין, בחרו שוב באפשרות פתיחה ב-Comfy Cloud."
@@ -4466,6 +4635,33 @@
     "tooltip": "צומתי שותפים מפעילים דרך Comfy מודלים בקוד סגור, כגון Kling או Veo, על חומרת הספק. הם משתמשים בקרדיטים; שאר Comfy נשאר חינמי.",
     "unmuteOpen": "ביטול השתקת clip בעל משקלים פתוחים",
     "unmutePartner": "ביטול השתקת clip של צומת שותף"
+  },
+  "platformFrame": {
+    "buildFailed": "הבנייה נכשלה. {deployment} לא נפרס.",
+    "buildStep": "שלב {step} מתוך {of}",
+    "buildTakesMinutes": "הפעולה נמשכת כמה דקות. אפשר להמשיך לעבוד.",
+    "building": "מתבצעת בנייה של {deployment}",
+    "deployFailed": "הפריסה נכשלה. {deployment} נבנה אך לא נפרס.",
+    "deploying": "מתבצעת פריסה של {deployment}",
+    "finishingOnPrevious": "מסיים את המשימה שלך בגרסה v{version}. | מסיים {count} מהמשימות שלך בגרסה v{version}.",
+    "getStarted": "תחילת העבודה",
+    "later": "מאוחר יותר",
+    "nothingChanged": "לא השתנה דבר: {deployment} עדיין פועל בגרסה v{version}.",
+    "nothingChangedNoVersion": "לא השתנה דבר: {deployment} עדיין פועל כפי שפעל קודם לכן.",
+    "openOnPlatform": "פתיחה בפלטפורמה",
+    "preinstallTitle": "התקן מראש מודלים כדי להפעיל תהליך עבודה זה",
+    "readyNew": "{deployment} מוכן",
+    "readyUpdate": "{deployment} פועל כעת בגרסה v{version}.",
+    "readyUpdateReload": "{deployment} פועל כעת בגרסה v{version}. טען מחדש כדי להשתמש בצמתים שלו.",
+    "reload": "טעינה מחדש",
+    "switch": "החלפה",
+    "switchListingUnavailable": "הפריסות שלך לא נטענו. נסה שוב מתוך \"הפעלה ב\".",
+    "title": "Build מותאם אישית",
+    "unanswered": "הפלטפורמה לא נפתחה כאן.",
+    "updateDeployment": "עדכון {deployment}",
+    "updateShortcut": "לחץ על E כדי לעדכן אותו.",
+    "updateUnfinished": "{deployment} לא סיים להתעדכן לגרסה v{version}.",
+    "viewDetails": "הצגת פרטים"
   },
   "profileMenu": {
     "balanceUnavailable": "לא הצלחנו לטעון את היתרה שלכם.",
@@ -4565,13 +4761,16 @@
   },
   "rightSidePanel": {
     "addFavorite": "הוספה למועדפים",
-    "addToDeploymentBuild": "הוסיפו אותם ל-build של {deployment} ב-Platform, ולאחר מכן פרסו מהדורה חדשה.",
+    "addMissingItems": "הוסף פריטים חסרים ל-Build",
+    "addMissingModelsToBuild": "הוסף את המודלים החסרים לבנייה",
+    "addToDeploymentBuild": "הוסף אותם ל-Build של {deployment} ב-Platform, ולאחר מכן פרוס גרסה חדשה.",
     "advancedInputs": "קלטים מתקדמים",
     "askAgent": "שאל את הסוכן",
     "askAgentAbout": "שאל את הסוכן לגבי {title}",
     "askAgentAboutAll": "שאל את הסוכן לגבי בעיה אחת מתוך {count} | שאל את הסוכן לגבי כל {count} הבעיות",
     "blockedLastRun": "נחסם בהרצה האחרונה",
     "bypass": "עקיפה",
+    "cloudLacksCustomNodes": "ל-Comfy Cloud אין צמתים מותאמים אישית אלה",
     "collapse": "כווץ",
     "color": "צבע הצומת",
     "editBuildOnPlatform": "עריכת ה-build ב-Platform",
@@ -4713,6 +4912,7 @@
     "seeError": "הצגת השגיאה",
     "selectedNodeErrors": "{node} — {count} בעיה | {node} — {count} בעיות",
     "selectedNodesErrors": "{nodes} צמתים נבחרו — {count} בעיה | {nodes} צמתים נבחרו — {count} בעיות",
+    "setUpCustomDeployment": "הגדרת Custom Build",
     "settings": "הגדרות",
     "setupFilter": "נדרשת הגדרה עבור {count}",
     "setupNodeSummary": "{nodes} צומת — {count} פריט | {nodes} צומת — {count} פריטים",
@@ -4779,6 +4979,12 @@
     "executeButton": {
       "disabledTooltip": "לא נבחרו צמתי פלט",
       "tooltip": "ביצוע עד צמתי הפלט הנבחרים (מודגשים במסגרת כתומה)"
+    },
+    "linkDestinations": {
+      "goTo": "עבור אל {node}",
+      "goToLinkedNode": "עבור אל צומת מקושר",
+      "subgraphInputs": "קלטי תת-גרף",
+      "subgraphOutputs": "פלטי תת-גרף"
     }
   },
   "serverConfig": {
@@ -4955,6 +5161,7 @@
     "Canvas Navigation": "ניווט בקנבס",
     "ColorPalette": "לוח צבעים",
     "Comfy": "Comfy",
+    "Comfy Cloud": "Comfy Cloud",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "תפריט הקשר",
     "Credits": "קרדיטים",
@@ -5000,7 +5207,7 @@
     "Server-Config": "הגדרות שרת",
     "Settings": "הגדרות",
     "Sidebar": "סרגל צד",
-    "SkillPacks": "חבילות מיומנויות",
+    "Smart Guides": "קווי עזר חכמים",
     "Tree Explorer": "סייר העץ",
     "UV": "UV",
     "User": "משתמש",
@@ -5076,6 +5283,7 @@
     "viewControls": "בקרות תצוגה"
   },
   "sideToolbar": {
+    "addModelsToDeployment": "הוספת מודלים לפריסה זו",
     "assets": "נכסים",
     "backToAssets": "חזרה לכל הנכסים",
     "browseTemplates": "עיון בתבניות לדוגמה",
@@ -5242,6 +5450,7 @@
     "templates": "תבניות",
     "themeToggle": "החלפת ערכת הנושא",
     "workflowTab": {
+      "bookmarkSaveFailed": "השינוי בסימנייה לא נשמר. יש לבדוק את החיבור ולנסות שוב.",
       "confirmDelete": "האם אתה בטוח שברצונך למחוק את תהליך העבודה הזה?",
       "confirmDeleteTitle": "למחוק את תהליך העבודה?",
       "confirmOverwrite": "הקובץ שלמטה כבר קיים. האם ברצונך לדרוס אותו?",
@@ -5249,51 +5458,50 @@
       "deleteFailed": "הניסיון למחוק את תהליך העבודה נכשל.",
       "deleteFailedTitle": "המחיקה נכשלה",
       "deleted": "תהליך העבודה נמחק",
+      "deletedButBookmarksNotUpdated": "תהליך העבודה נמחק, אך לא ניתן היה לעדכן את הסימניות שלך",
       "dirtyClose": "הקבצים שלמטה שונו. האם ברצונך לשמור אותם לפני הסגירה?",
       "dirtyCloseAnyway": "סגור בכל זאת",
       "dirtyCloseHint": "החזק Shift כדי לסגור ללא בקשת אישור",
       "dirtyCloseTitle": "לשמור את השינויים?",
+      "renamedButBookmarksNotUpdated": "שם תהליך העבודה שונה, אך לא ניתן היה לעדכן את הסימניות שלך",
+      "status": {
+        "agentReplied": "הסוכן השיב",
+        "agentWorking": "הסוכן פועל",
+        "runFailed": "ההרצה נכשלה",
+        "runFinished": "ההרצה הסתיימה",
+        "unsavedChanges": "שינויים שלא נשמרו",
+        "waitingForAnswer": "הסוכן ממתין לתשובתך",
+        "workflowRunning": "תהליך העבודה רץ"
+      },
       "workflowTreeType": {
         "bookmarks": "סימניות",
         "browse": "עיון",
         "open": "פתוחים"
       }
     },
-    "workflows": "תהליכי עבודה"
+    "workflows": "תהליכי עבודה",
+    "workspaceLibrary": {
+      "blockedByModelRules": "נחסם על ידי כללי המודלים של Build זה",
+      "empty": "אין מודלים בספריית סביבת העבודה שלך.",
+      "explainer": "מודלים בסביבת העבודה שלך. מודלים שאינם ב-build זה יורדו כאשר משימה תזדקק להם.",
+      "fromWorkspace": "מסביבת העבודה שלך",
+      "loadFailed": "לא ניתן היה לטעון את ספריית סביבת העבודה שלך.",
+      "modelCount": "{count} מודל | {count} מודלים",
+      "title": "ספריית סביבת העבודה"
+    }
   },
   "skillPacks": {
-    "addPack": "הוסף חבילת מיומנויות",
-    "atLimitHint": "הסר חבילה כדי לפנות מקום עבור חבילה זו.",
-    "atLimitTitle": "הגעת למגבלה שלך",
-    "body": "הוראות",
-    "bodyPlaceholder": "ההוראות שהסוכן פועל לפיהן לאחר טעינת חבילה זו.",
-    "bodySize": "{bytes} בתים",
-    "deleteConfirmMessage": "האם אתה בטוח שברצונך למחוק את \"{name}\"? לא ניתן לבטל פעולה זו.",
-    "deleteConfirmTitle": "מחק חבילת מיומנויות",
-    "editPack": "ערוך חבילת מיומנויות",
     "errors": {
       "bodyRequired": "נדרשות הוראות",
-      "descriptionRequired": "נדרשת שורת הפעלה",
-      "descriptionSingleLine": "שורת ההפעלה חייבת להיות שורה אחת ללא תווי בקרה",
-      "descriptionTooLong": "שורת ההפעלה חייבת להכיל {max} תווים או פחות",
-      "nameAlreadyExists": "חבילת מיומנויות בשם \"{name}\" כבר קיימת. ערוך את החבילה הזו במקום זאת.",
+      "descriptionRequired": "השדה \"מתי להשתמש\" הוא שדה חובה",
+      "descriptionSingleLine": "\"מתי להשתמש\" חייב להיות שורה אחת ללא תווי בקרה",
+      "descriptionTooLong": "\"מתי להשתמש\" חייב להכיל לכל היותר {max} תווים",
+      "nameAlreadyExists": "כבר קיימת מיומנות בשם \"{name}\". ערכו במקום זאת את המיומנות הזו.",
       "nameCharset": "השם יכול להכיל רק אותיות, ספרות, '.', '_' ו-'-', וחייב לכלול לפחות תו אחד שאינו נקודה",
       "nameRequired": "נדרש שם",
-      "nameReserved": "\"{name}\" הוא שם של חבילה מובנית ואי אפשר להשתמש בו",
+      "nameReserved": "\"{name}\" הוא שם מיומנות מובנה ואי אפשר להשתמש בו",
       "nameTooLong": "השם חייב להכיל {max} תווים או פחות"
-    },
-    "name": "שם",
-    "nameHint": "אותיות, ספרות, '.', '_' ו-'-'. זהו השם שבאמצעותו הסוכן טוען את החבילה.",
-    "namePlaceholder": "למשל, my-render-defaults",
-    "noPacks": "עדיין אין חבילות מיומנויות. הוסף אחת כדי ללמד את הסוכן העדפה שאתה חוזר עליה.",
-    "packSize": "{bytes} בתים",
-    "panelDescription": "הגדר העדפה פעם אחת, והסוכן יטען אותה כאשר שורת ההפעלה תואמת. החבילות פרטיות עבורך.",
-    "publish": "פרסם",
-    "title": "חבילות מיומנויות של הסוכן",
-    "triggerLine": "שורת הפעלה",
-    "triggerLineHint": "שורה אחת המציינת מתי לטעון חבילה זו. היא נכללת בכל פרומפט, בין אם החבילה נמצאת בשימוש ובין אם לא, לכן שמור עליה קצרה.",
-    "triggerLinePlaceholder": "טען אותי כאשר המשתמש שואל על הגדלת רזולוציה",
-    "yourPacks": "החבילות שלך"
+    }
   },
   "subgraphInputValues": {
     "enterInstanceHint": "היכנסו לתת-הגרף הזה דרך צומת תת-גרף כדי לערוך את הערכים שלו.",
@@ -5301,6 +5509,8 @@
     "instance": "{title} · #{id}",
     "linked": "ערך מקושר · לקריאה בלבד",
     "locateSource": "איתור צומת המקור",
+    "reorderHint": "גרור או לחץ על Alt + מקשי החצים כדי לסדר מחדש",
+    "reorderPort": "סדר מחדש את {name}",
     "sharedSource": "מקור משותף",
     "sourceHint": "עריכת מקור זה משנה גם את הקלטים האחרים המחוברים אליו.",
     "unavailable": "הערך אינו זמין"
@@ -5996,6 +6206,7 @@
     "a1111CoreNodesUnavailable": "לא ניתן לטעון את תהליך העבודה כי התקנת ComfyUI זו חסרה צמתים חיוניים. בדוק שהשרת האחורי הופעל כראוי.",
     "a1111EmbeddingsUnavailable": "לא ניתן היה לטעון Embeddings מהשרת. תהליך העבודה יובא, אך שמות ה-embeddings נותרו כטקסט פשוט.",
     "assetDropFailed": "לא ניתן לטעון את הנכס שנגרר",
+    "batchStoppedOnWorkflowChange": "נוספו לתור {queued} מתוך {requested}. הפעולה נעצרה מפני שהחלפת תהליך עבודה, ולכן השאר היו מופעלים בתהליך הלא נכון.",
     "cannotCreateSubgraph": "לא ניתן ליצור תת-גרף",
     "couldNotDetermineFileType": "לא ניתן היה לקבוע את סוג הקובץ",
     "dropFileError": "לא ניתן לעבד את הפריט שנגרר: {error}",
@@ -6052,6 +6263,7 @@
     "missingMediaVerificationFailed": "אימות המדיה החסרה נכשל. ייתכן שחלק מהקלטים לא יוצגו בלשונית הבעיות.",
     "missingModelVerificationFailed": "אימות המודלים החסרים נכשל. ייתכן שחלק מהמודלים לא יוצגו בלשונית הבעיות.",
     "modelLoadedSuccessfully": "מודל התלת-ממד נטען בהצלחה",
+    "modelTooLargeToPreview": "המודל גדול מדי לתצוגה מקדימה (מקסימום {maxSize} MB)",
     "modelsAndCacheCleared": "המודלים ומטמון הביצוע נוקו.",
     "modelsUnloaded": "המודלים נפרקו מהזיכרון.",
     "no3dScene": "אין סצנת תלת-ממד להחלת המרקם",
@@ -6067,6 +6279,8 @@
     "nothingToQueue": "אין מה להוסיף לתור",
     "notificationsLabel": "התראה",
     "notificationsViewportLabel": "התראות ({hotkey})",
+    "outdatedVideoHelperSuite": "עדכן את ComfyUI-VideoHelperSuite",
+    "outdatedVideoHelperSuiteDetail": "גרסה זו של Video Helper Suite עשויה לנתק קישורים בתהליך העבודה המוצג על המסך כאשר צומת Unbatch בתהליך עבודה פתוח אחר משנה את סוגו. עדכן אותה דרך המנהל.",
     "pendingTasksDeleted": "המשימות הממתינות נמחקו",
     "pleaseSelectNodesToGroup": "אנא בחר את הצמתים (או קבוצות אחרות) ליצירת קבוצה",
     "pleaseSelectOutputNodes": "אנא בחר צמתי פלט",
@@ -6222,6 +6436,12 @@
       "placeholderModel": "בחר מודל...",
       "placeholderUnknown": "בחר מדיה...",
       "placeholderVideo": "בחר סרטון...",
+      "thumbnailSize": "גודל תמונה ממוזערת",
+      "thumbnailSizes": {
+        "compact": "קומפקטי",
+        "large": "גדול",
+        "standard": "רגיל"
+      },
       "topResult": "התוצאה המובילה: {result}"
     },
     "valueControl": {
@@ -6259,6 +6479,7 @@
     "enterFilename": "הזן את שם הקובץ",
     "enterFilenamePrompt": "הזן את שם הקובץ:",
     "exportWorkflow": "ייצוא תהליך העבודה",
+    "pathInUse": "\"{path}\" כבר נמצא בשימוש. בחר שם אחר.",
     "saveWorkflow": "שמירת תהליך העבודה",
     "savedAsApp": "הומר לתהליך עבודה מסוג יישום",
     "savedAsWorkflow": "הומר לתהליך עבודה מסוג גרף צמתים בלבד",
@@ -6269,7 +6490,9 @@
   },
   "workspace": {
     "addedToNamedWorkspace": "נוספת אל {workspaceName}",
+    "deepLinkPricingRefused": "קישור זה מיועד לסביבת עבודה שאין לך גישה אליה, ולכן התוכניות לא נפתחו.",
     "deepLinkStayed": "לא ניתן היה לפתוח את סביבת העבודה הזו. אתם עדיין נמצאים ב-{workspaceName}.",
+    "deepLinkTopUpRefused": "קישור זה מיועד לסביבת עבודה שאין לך גישה אליה, ולכן הטעינה הנוספת לא נפתחה.",
     "inviteAccepted": "ההזמנה התקבלה",
     "inviteDirectoryManaged": "מנהל המערכת של הארגון שלך מנהל את החברות",
     "inviteDirectoryManagedDetail": "החברים בסביבת עבודה זו מנוהלים דרך ספריית הארגון שלך, ולכן לא ניתן להשתמש בקישורי הזמנה כדי להצטרף אליה. בקש ממנהל המערכת של הארגון שלך להוסיף אותך.",
@@ -6448,7 +6671,7 @@
         "available": "זמין",
         "availableUntil": "זמין עד {date}",
         "inUse": "בשימוש כעת",
-        "overdrawn": "ההרצות שלך השתמשו בקרדיט אחד יותר מכפי שהיה לך. | ההרצות שלך השתמשו ב־{count} קרדיטים יותר מכפי שהיה לך.",
+        "overdrawn": "השתמשת ב-{count} קרדיט יותר מכפי שהיה לך. הוסף קרדיטים כדי להמשיך לפעול. | השתמשת ב-{count} קרדיטים יותר מכפי שהיה לך. הוסף קרדיטים כדי להמשיך לפעול.",
         "plan": "תוכנית",
         "planOfPool": "{remaining} מתוך {total}",
         "planTooltip": "קרדיטים מהתוכנית מנוצלים לפני קרדיטים מטעינה מחדש.",

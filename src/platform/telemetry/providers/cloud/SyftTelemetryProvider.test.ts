@@ -1,20 +1,18 @@
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('@/composables/auth/useCurrentUser'))
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const SYFT_SRC = 'https://cdn.sy-d.io/syftnext/syft.umd.js'
 
 async function importProvider() {
-  const [{ SyftTelemetryProvider }, { useCurrentUser }, { remoteConfig }] =
-    await Promise.all([
-      import('@/platform/telemetry/providers/cloud/SyftTelemetryProvider'),
-      import('@/composables/auth/useCurrentUser'),
-      import('@/platform/remoteConfig/remoteConfig')
-    ])
-  return { SyftTelemetryProvider, useCurrentUser, remoteConfig }
+  const [{ SyftTelemetryProvider }, { useCurrentUser }] = await Promise.all([
+    import('@/platform/telemetry/providers/cloud/SyftTelemetryProvider'),
+    import('@/composables/auth/useCurrentUser')
+  ])
+  return { SyftTelemetryProvider, useCurrentUser }
 }
 
 function installSyftSpy(): SyftDataClient {
@@ -64,8 +62,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('loads the Syft SDK once when a source id is configured', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const appendChild = mockScriptAppend()
 
     new SyftTelemetryProvider()
@@ -81,8 +82,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('clears the stub after SDK load failure so later calls can retry', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const appendChild = mockScriptAppend()
     const provider = new SyftTelemetryProvider()
 
@@ -106,8 +110,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('replays a pending identify with its original traits after SDK load failure', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const appendChild = mockScriptAppend()
 
     new SyftTelemetryProvider().trackAuth({
@@ -128,9 +135,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('replays at most once but still allows a later manual retry', async () => {
-    const { SyftTelemetryProvider, remoteConfig, useCurrentUser } =
-      await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider, useCurrentUser } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const appendChild = mockScriptAppend()
     useCurrentUser().userEmail = computed(() => 'restored@example.com')
     const provider = new SyftTelemetryProvider()
@@ -156,8 +165,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('leaves an externally installed client untouched on script error', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const appendChild = mockScriptAppend()
 
     new SyftTelemetryProvider().trackAuth({
@@ -176,8 +188,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('rejects pending fetchID promises when the SDK fails to load', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const appendChild = mockScriptAppend()
 
     new SyftTelemetryProvider()
@@ -189,14 +204,17 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('bootstraps on the first call after the source id arrives', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
+    const { SyftTelemetryProvider } = await importProvider()
     const appendChild = mockScriptAppend()
     const provider = new SyftTelemetryProvider()
 
     expect(appendChild).not.toHaveBeenCalled()
     expect(window.syftc).toBeUndefined()
 
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     provider.trackAuth({
       email: 'late@example.com',
       is_new_user: false,
@@ -213,8 +231,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('preserves an existing opt-out flag when writing the source id', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     window.syftc = { enabled: false }
     mockScriptAppend()
 
@@ -224,8 +245,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('skips identify when Syft installed its disabled-mode client', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const appendChild = mockScriptAppend()
     const disabledClient = { enable: vi.fn() }
     window.syft = disabledClient
@@ -243,9 +267,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('does not touch the current user store during construction', async () => {
-    const { SyftTelemetryProvider, remoteConfig, useCurrentUser } =
-      await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider, useCurrentUser } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     mockScriptAppend()
 
     new SyftTelemetryProvider()
@@ -254,8 +280,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('preserves an existing GTM-loaded Syft client and script', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     const syft = installSyftSpy()
     const appendChild = mockScriptAppend()
 
@@ -266,8 +295,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('identifies new auth users with signup source and normalized email', async () => {
-    const { SyftTelemetryProvider, remoteConfig } = await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     mockScriptAppend()
 
     new SyftTelemetryProvider().trackAuth({
@@ -329,9 +361,11 @@ describe('SyftTelemetryProvider', () => {
   })
 
   it('identifies restored sessions from the current user store', async () => {
-    const { SyftTelemetryProvider, remoteConfig, useCurrentUser } =
-      await importProvider()
-    remoteConfig.value = { syftdata_source_id: 'src-123' }
+    const { SyftTelemetryProvider, useCurrentUser } = await importProvider()
+    useRemoteConfigStore().acceptConfig(
+      { syftdata_source_id: 'src-123' },
+      false
+    )
     mockScriptAppend()
     useCurrentUser().userEmail = computed(() => 'Restored@Example.com')
     vi.mocked(useCurrentUser).mockClear()

@@ -387,9 +387,9 @@ describe('canvas Copy Image action', () => {
     const original = document.createElement('img')
     original.width = 4096
     original.height = 2048
+    vi.spyOn(original, 'decode').mockResolvedValue(undefined)
     vi.stubGlobal('createImageBitmap', undefined)
     vi.spyOn(globalThis, 'Image').mockImplementation(function () {
-      queueMicrotask(() => original.dispatchEvent(new Event('load')))
       return original
     })
     const context = createMockCanvasRenderingContext2D()
@@ -407,7 +407,6 @@ describe('canvas Copy Image action', () => {
     )
     const write = vi
       .spyOn(navigator.clipboard, 'write')
-      .mockRejectedValueOnce(new Error('Unsupported image/webp'))
       .mockResolvedValue(undefined)
     const options: (IContextMenuValue | null)[] = []
     node.getExtraMenuOptions?.(app.canvas, options)
@@ -420,9 +419,9 @@ describe('canvas Copy Image action', () => {
       new URL('http://localhost/view?filename=original.webp')
     )
     expect(bounds).toEqual([4096, 2048])
-    expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
-    expect(write).toHaveBeenCalledTimes(2)
-    expect(await write.mock.calls[1][0][0].getType('image/png')).toBe(png)
+    expect(write).toHaveBeenCalledOnce()
+    const copied = await write.mock.calls[0][0][0].getType('image/png')
+    expect(await copied.text()).toBe('original pixels')
   })
 })
 

@@ -29,7 +29,8 @@ import {
   desktopLoginRedemptionStatus,
   hasPendingDesktopLoginCode,
   isDesktopLoginRedemptionSettled,
-  releaseDesktopLoginRedemptionStatus
+  releaseDesktopLoginRedemptionStatus,
+  restoreShownDesktopLoginRedemptionStatus
 } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 
 const { t } = useI18n()
@@ -39,7 +40,9 @@ const router = useRouter()
 claimDesktopLoginRedemptionStatus()
 
 const hasNothingToApprove =
-  !hasPendingDesktopLoginCode() && desktopLoginRedemptionStatus.value === 'idle'
+  !hasPendingDesktopLoginCode() &&
+  desktopLoginRedemptionStatus.value === 'idle' &&
+  !restoreShownDesktopLoginRedemptionStatus()
 if (hasNothingToApprove) {
   void router.replace({ path: '/', query: route.query, hash: route.hash })
 }

@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.61.5",
+  "version": "1.61.10",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -16,6 +16,8 @@
     "command-locales:check": "tsx scripts/check-command-locales.ts",
     "follower-invariants:check": "tsx scripts/check-follower-invariants.ts",
     "audit:inherited-classes": "tsx tools/design-system-audits/src/cli.ts",
+    "audit:vue-wrappers": "tsx scripts/audit-vue-wrappers.ts",
+    "audit:vue-wrapper-mutations": "tsx scripts/audit-vue-wrapper-mutations.ts",
     "follower-document-mutations:check": "tsx scripts/check-follower-document-mutations.ts",
     "benchmark:packages": "pnpm build:packages && tsx tools/architecture/src/benchmark-package-references.ts",
     "build:packages": "node node_modules/vue-tsc/bin/vue-tsc.js -b tsconfig.packages.json",
@@ -103,9 +105,11 @@
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/api-client": "workspace:*",
+    "@comfyorg/assets-core": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/billing-core": "workspace:*",
     "@comfyorg/comfy-multi-player": "catalog:",
+    "@comfyorg/comfyui-api-types": "workspace:*",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/design-system": "workspace:*",
@@ -261,5 +265,5 @@
     "node": ">=26.8.2 <27",
     "pnpm": ">=11.3"
   },
-  "packageManager": "pnpm@11.28.10"
+  "packageManager": "pnpm@12.23.0"
 }

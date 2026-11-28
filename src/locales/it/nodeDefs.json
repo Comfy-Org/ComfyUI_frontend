@@ -5569,7 +5569,7 @@
       },
       "text": {
         "name": "testo",
-        "tooltip": "Descrizione testuale dell'effetto sonoro da generare."
+        "tooltip": "Descrivi il suono in inglese, fino a 450 caratteri. I prompt in altre lingue vengono spesso pronunciati ad alta voce invece di essere trasformati in un suono."
       }
     },
     "outputs": {
@@ -15470,6 +15470,91 @@
       }
     }
   },
+  "MeshyImageToReliefNode": {
+    "description": "Trasforma una foto in un modello a bassorilievo e in una mappa di profondità a 16 bit per la stampa 3D, l'incisione laser e la fresatura CNC. Vengono generati e scaricati solo gli output collegati; senza un output del modello collegato, l'attività restituisce solo la mappa di profondità.",
+    "display_name": "Meshy: Da immagine a bassorilievo",
+    "inputs": {
+      "base": {
+        "name": "base",
+        "tooltip": "none rimuove lo sfondo e non crea alcuna base."
+      },
+      "base_base_thickness_mm": {
+        "name": "base_thickness_mm"
+      },
+      "bend": {
+        "name": "bend",
+        "tooltip": "convex curva la parte anteriore verso l'esterno, concave la curva verso l'interno."
+      },
+      "carving_mode": {
+        "name": "carving_mode",
+        "tooltip": "emboss solleva le parti più vicine della foto, engrave le incide."
+      },
+      "color_mapping": {
+        "name": "color_mapping",
+        "tooltip": "Colora i file GLB, OBJ, FBX e USDZ con la foto. STL e 3MF restano bianchi."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "La grafica scura su uno sfondo chiaro viene resa in rilievo. La trasparenza viene eliminata prima del caricamento, quindi appiattisci prima un logo trasparente su uno sfondo bianco."
+      },
+      "mesh_resolution": {
+        "name": "mesh_resolution",
+        "tooltip": "Punti della mesh lungo il lato più lungo della foto. A 1024 il GLB è di circa 50 MB e lo STL di circa 105 MB, a 2048 circa 200 MB e 420 MB; una curvatura li raddoppia."
+      },
+      "relief_type": {
+        "name": "relief_type",
+        "tooltip": "low: incisione poco profonda per incisione laser, CNC e targhe. high: incisione più profonda per pezzi stampati in 3D."
+      },
+      "relief_type_carving_depth_mm": {
+        "name": "carving_depth_mm"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Il seed controlla se il nodo deve essere eseguito nuovamente; i risultati non sono deterministici indipendentemente dal seed. Modificalo per richiedere un output collegato dopo l'ultima esecuzione."
+      },
+      "size_mm": {
+        "name": "size_mm",
+        "tooltip": "Lunghezza del lato più lungo della foto sul modello, misurata in piano prima di qualsiasi curvatura."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "STL",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
+      },
+      "4": {
+        "name": "USDZ",
+        "tooltip": null
+      },
+      "5": {
+        "name": "3MF",
+        "tooltip": null
+      },
+      "6": {
+        "name": "depth_map",
+        "tooltip": "Mappa di profondità con l'intera gamma a 16 bit; Save Image (Advanced) la scrive come PNG a 16 bit."
+      },
+      "7": {
+        "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Da Immagini Multiple a Modello",
     "inputs": {
@@ -15765,6 +15850,44 @@
         "tooltip": null
       },
       "3": {
+        "name": "FBX",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureN1Node": {
+    "description": "Applica texture a un modello creato in precedenza con Meshy N1 usando da 1 a 4 viste di riferimento dello stesso oggetto.",
+    "display_name": "Meshy: Applica texture al modello (N1)",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Usa gli UV originali del modello invece di generarne di nuovi. Quando è abilitato, Meshy preserva le texture esistenti del modello caricato. Se il modello non ha UV originali, la qualità dell'output potrebbe non essere altrettanto buona."
+      },
+      "extra_views": {
+        "name": "viste_aggiuntive",
+        "tooltip": "Ulteriori viste dello stesso oggetto, in qualsiasi ordine. Insieme a front_view, al massimo 4 immagini."
+      },
+      "front_view": {
+        "name": "front_view",
+        "tooltip": "La vista che Meshy considera come fronte. Un'immagine applica la texture al fronte e lascia il retro senza texture; aggiungi viste posteriori e laterali in extra_views per un retro fedele."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
         "name": "FBX",
         "tooltip": null
       }
@@ -19904,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "Genera risposte testuali con i modelli GPT di OpenAI. Fornisci un prompt di testo e, facoltativamente, immagini o file come contesto.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Il modello usato per generare la risposta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "Genera immagini in modo sincrono tramite l'endpoint GPT Image di OpenAI.",
     "display_name": "OpenAI GPT Image 2",
@@ -21897,6 +22053,56 @@
       }
     }
   },
+  "PrunaAvatarNode": {
+    "description": "Genera un video parlato da un ritratto e dal parlato usando Pruna P-Video-2 Pro Avatar: il tuo audio o uno script pronunciato con la sintesi vocale.",
+    "display_name": "Avatar Pruna P-Video-2 Pro",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "Aggiunge al prompt il movimento visibile nel ritratto, come quello dello sfondo, delle luci e del corpo. Disattivalo per usare il prompt così come è scritto e riprodurre esattamente un risultato con lo stesso seed."
+      },
+      "image": {
+        "name": "immagine",
+        "tooltip": "Ritratto da cui inizia il video. Il video mantiene le proporzioni da 1:2 a 4:1; le immagini più estreme, come 1:5, vengono ritagliate a 9:16 o 16:9."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrive ciò che mostra il video. Fino a 5000 caratteri."
+      },
+      "resolution": {
+        "name": "risoluzione",
+        "tooltip": "1080p, 2k e 4k eseguono l'upscale del video a 768p. 2k è limitato a 150 secondi e 4k a 60 secondi."
+      },
+      "seed": {
+        "name": "seme",
+        "tooltip": "Seme per la generazione. Lo stesso seme riproduce esattamente un risultato solo quando enhance_prompt è disattivato."
+      },
+      "speech": {
+        "name": "parlato",
+        "tooltip": "Guida il video con uno script text-to-speech o il tuo audio."
+      },
+      "speech_language": {
+        "name": "lingua"
+      },
+      "speech_script": {
+        "name": "script"
+      },
+      "speech_voice": {
+        "name": "voce"
+      },
+      "speech_voice_prompt": {
+        "name": "voice_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "PrunaImageToVideoNode": {
     "description": "Anima un'immagine trasformandola in un video usando i modelli video Pruna, con un ultimo fotogramma opzionale, suono generato o traccia audio.",
     "display_name": "Pruna P-Video-2 da immagine a video",
@@ -21945,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "Frequenza dei fotogrammi di output. 'source' mantiene la frequenza del video, fino a 60. Una frequenza più alta viene interpolata. L'output oltre 30 fps costa il doppio."
+        "tooltip": "Frequenza dei fotogrammi in uscita. 'source' mantiene la frequenza del video, fino a 60. Una frequenza superiore viene interpolata. L'output oltre 30 fps costa il doppio, tranne con turbo."
       },
       "target": {
         "name": "destinazione",
@@ -21953,11 +22159,53 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Upscale più veloce con dettagli più morbidi, allo stesso prezzo."
+        "tooltip": "Upscale più rapido con dettagli più morbidi, a un prezzo inferiore."
       },
       "video": {
         "name": "video",
         "tooltip": "Video di cui aumentare la risoluzione, fino a 512 MiB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaReferenceToVideoNode": {
+    "description": "Genera un video da un prompt guidato da immagini, video e audio di riferimento usando i modelli video Pruna.",
+    "display_name": "Da riferimento a video Pruna P-Video-2 Pro",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_duration": {
+        "name": "durata"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_keep_audio": {
+        "name": "keep_audio"
+      },
+      "model_mode": {
+        "name": "modalità"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
       }
     },
     "outputs": {
@@ -22878,7 +23126,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per una generazione coerente nello stile e richiedono sempre un style_id o style_references; recraftv4_1_flash è il modello più veloce ed economico e non supporta alcuno stile."
+        "tooltip": "Il modello da usare per la generazione. I modelli recraftv4_styles sono progettati per generazioni coerenti nello stile e richiedono sempre style_id o style_references; recraftv4_1_flash esegue Recraft V4.1 Flash V2, il modello più veloce ed economico, e non supporta affatto gli stili."
       },
       "model_size": {
         "name": "dimensione"
@@ -22989,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "immagine"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical sovrappone le forme in livelli gerarchici; cut_out crea forme che non si sovrappongono mai, per plotter, taglierine per vinile e serigrafia."
+      },
+      "version": {
+        "name": "versione",
+        "tooltip": "v1_pro (Vectorizer Pro) offre SVG più puliti con curve morbide, linee rette e angoli netti, ideali per scritte e forme intricate."
       }
     },
     "outputs": {
@@ -29041,7 +29297,7 @@
       },
       "face_limit": {
         "name": "limite facce",
-        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo limita silenziosamente: v2.5 a 500.000, mesh quad a 150.000."
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4M di facce su v3.x standard, 2M su dettagliato). Tripo limita silenziosamente le mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualità geometria"
@@ -29118,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1.4M facce su v3.x standard, 2M su detailed). Tripo limita automaticamente: v2.5 a 500.000, le mesh quad a 150.000."
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4M di facce su v3.x standard, 2M su dettagliato). Tripo limita silenziosamente le mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29261,7 +29517,7 @@
       },
       "face_limit": {
         "name": "limite facce",
-        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo limita silenziosamente: v2.5 a 500.000, mesh quad a 150.000."
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4M di facce su v3.x standard, 2M su dettagliato). Tripo limita silenziosamente le mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualità geometria"
@@ -30033,7 +30289,7 @@
       },
       "face_limit": {
         "name": "limite_facce",
-        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo applica limiti senza avviso: v2.5 a 500.000, mesh quad a 150.000."
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4M di facce su v3.x standard, 2M su dettagliato). Tripo limita silenziosamente le mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "qualità_geometria"
@@ -30110,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4 M di facce su v3.x standard, 2 M su detailed). Tripo applica silenziosamente un limite: v2.5 a 500.000, mesh quad a 150.000."
+        "tooltip": "Numero massimo di facce. -1 consente a Tripo di scegliere in modo adattivo (circa 1,4M di facce su v3.x standard, 2M su dettagliato). Tripo limita silenziosamente le mesh quad a 150.000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30177,8 +30433,7 @@
         "name": "task_id_modello"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modello di texture: v3.0 per le mesh generate con v3.x, v2.5 per le mesh generate con v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30241,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modello di texture: v3.0 per le mesh generate con v3.x, v2.5 per le mesh generate con v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30307,6 +30561,150 @@
       "0": {
         "name": "testi",
         "tooltip": "Testi elaborati"
+      }
+    }
+  },
+  "TypeSafeJevChoice": {
+    "description": "Scegli una delle opzioni per testo o immagini. Collega `choice` a un nodo Branch i cui ingressi riportano i nomi delle opzioni, oppure usa `option_index`.",
+    "display_name": "TypeSafe Jev (Scelta)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini a cui si riferisce la domanda. Fino a 32 immagini in totale; più di 4 vengono inviate in dimensioni ridotte."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "options": {
+        "name": "opzioni",
+        "tooltip": "Un'opzione per riga. Aggiungi un'opzione come `other` per gli ingressi che non rientrano in nessuna di esse."
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "La domanda a cui rispondono le opzioni. Con più ingressi, usa i nomi dei socket, ad esempio \"Quale stagione è mostrata in image_1?\""
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio un prompt o una risposta di un LLM."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "scelta",
+        "tooltip": null
+      },
+      "1": {
+        "name": "indice_opzione",
+        "tooltip": "Posizione dell'opzione scelta nell'elenco delle opzioni, a partire da 0."
+      },
+      "2": {
+        "name": "confidenza",
+        "tooltip": "Quanto è sicuro Jev, da 0 (nessun vincitore chiaro) a 1 (certo)."
+      }
+    }
+  },
+  "TypeSafeJevPickImage": {
+    "description": "Scegli un'immagine da un batch. Collega `index` a Get Image from Batch per mantenere l'immagine scelta.",
+    "display_name": "TypeSafe Jev (Scegli immagine)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini tra cui scegliere, da 2 a 32."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "Quale immagine scegliere. Collega il prompt a `text` per scegliere l'immagine che vi corrisponde meglio."
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio il prompt con cui sono state create le immagini."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "indice",
+        "tooltip": "Posizione dell'immagine scelta nel batch, a partire da 0."
+      },
+      "1": {
+        "name": "confidenza",
+        "tooltip": "Quanto è sicuro Jev, da 0 (nessun vincitore chiaro) a 1 (certo)."
+      }
+    }
+  },
+  "TypeSafeJevScore": {
+    "description": "Valuta testo o immagini da 1 a 10. Collega `result` a un nodo If/Else Switch per agire in base al punteggio.",
+    "display_name": "TypeSafe Jev (Punteggio)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini a cui si riferisce la domanda. Fino a 32 immagini in totale; più di 4 vengono inviate in dimensioni ridotte."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "Cosa valutare, su una scala da 1 a 10. Specifica cosa significano 1 e 10, come nell'esempio."
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio un prompt o una risposta di un LLM."
+      },
+      "threshold": {
+        "name": "soglia",
+        "tooltip": "`result` è true quando il punteggio è almeno questo valore."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "risultato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "punteggio",
+        "tooltip": null
+      }
+    }
+  },
+  "TypeSafeJevYesNo": {
+    "description": "Poni una domanda con risposta sì/no su testo o immagini. Collega `result` a un nodo If/Else Switch per scegliere tra due percorsi.",
+    "display_name": "TypeSafe Jev (Sì/No)",
+    "inputs": {
+      "images": {
+        "name": "immagini",
+        "tooltip": "Le immagini a cui si riferisce la domanda. Fino a 32 immagini in totale; più di 4 vengono inviate a dimensioni inferiori."
+      },
+      "model": {
+        "name": "modello"
+      },
+      "question": {
+        "name": "domanda",
+        "tooltip": "Una domanda con risposta sì o no su ciò che è connesso. Formulala in modo che sì sia il caso su cui agire. Con più input, usa i nomi delle socket, ad esempio 'image_2 mostra la stessa persona di image_1?'"
+      },
+      "text": {
+        "name": "testo",
+        "tooltip": "Il testo a cui si riferisce la domanda, ad esempio un prompt o una risposta di un LLM."
+      },
+      "threshold": {
+        "name": "soglia",
+        "tooltip": "La risposta è sì quando la probabilità di sì è almeno questo valore."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "risultato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "risposta",
+        "tooltip": null
+      },
+      "2": {
+        "name": "probabilità",
+        "tooltip": null
       }
     }
   },

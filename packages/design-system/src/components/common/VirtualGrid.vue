@@ -43,6 +43,7 @@ const {
   defaultItemHeight = 200,
   defaultItemWidth = 200,
   maxColumns = Infinity,
+  minItemWidth,
   onLoadMore,
   canLoadMore = false
 } = defineProps<{
@@ -53,6 +54,7 @@ const {
   defaultItemHeight?: number
   defaultItemWidth?: number
   maxColumns?: number
+  minItemWidth?: number
   onLoadMore?: () => unknown
   canLoadMore?: boolean
 }>()
@@ -66,15 +68,18 @@ const { y: scrollY } = useScroll(container, {
 })
 
 const cols = computed(() => {
-  if (maxColumns !== Infinity) return maxColumns
-  return Math.floor(width.value / itemWidth.value) || 1
+  if (maxColumns === Infinity) {
+    return Math.floor(width.value / itemWidth.value) || 1
+  }
+  if (!minItemWidth) return maxColumns
+  return clamp(Math.floor(width.value / minItemWidth), 1, maxColumns)
 })
 
 const mergedGridStyle = computed<CSSProperties>(() => {
   if (maxColumns === Infinity) return gridStyle
   return {
     ...gridStyle,
-    gridTemplateColumns: `repeat(${maxColumns}, minmax(0, 1fr))`
+    gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`
   }
 })
 

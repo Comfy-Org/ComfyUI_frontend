@@ -44,14 +44,63 @@ export const zAcceptedAutoTopUpSettings = z.object({
 })
 
 /**
+ * A person named in an access change.
+ */
+export const zAccessEventPerson = z.object({
+  name: z.string(),
+  user_id: z.string()
+})
+
+/**
+ * One change to who can access what in the workspace.
+ */
+export const zAccessEvent = z.object({
+  action: z.string(),
+  actor: zAccessEventPerson,
+  after: z.record(z.string(), z.unknown()).optional(),
+  before: z.record(z.string(), z.unknown()).optional(),
+  create_time: z.iso.datetime(),
+  id: z.uuid(),
+  project_id: z.string().optional(),
+  project_name: z.string().optional(),
+  target: zAccessEventPerson.optional()
+})
+
+/**
+ * Where the next page of access changes starts.
+ */
+export const zAccessEventsPagination = z.object({
+  has_more: z.boolean(),
+  next_cursor: z.string().optional()
+})
+
+/**
+ * The upload to add to the deployment, passed to comfy-deploy as written.
+ */
+export const zAddDeploymentModelRequest = z.object({
+  blobId: z.string(),
+  filename: z.string().optional(),
+  type: z.string()
+})
+
+/**
  * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
  */
 export const zAgentAdmissionError = z.object({
+  blocking_budgets: z.array(z.record(z.string(), z.unknown())).optional(),
+  budget: z.record(z.string(), z.unknown()).optional(),
+  denied_reason: z.string().optional(),
   error: z.object({
     message: z.string(),
-    reason: z.enum(['no_funds', 'manual_block', 'funds_unavailable']),
+    reason: z.enum([
+      'budget_exceeded',
+      'no_funds',
+      'manual_block',
+      'funds_unavailable'
+    ]),
     type: z.enum(['PAYMENT_REQUIRED', 'SERVICE_UNAVAILABLE'])
-  })
+  }),
+  error_type: z.string().optional()
 })
 
 /**
@@ -274,6 +323,7 @@ export const zAgentPausedContext = z.object({
 export const zAgentPendingAskBase = z.object({
   allow_other: z.boolean(),
   ask_id: z.string(),
+  expires_at: z.iso.datetime().optional(),
   kind: zAgentAskKind,
   max_selections: z.int(),
   message_id: z.string(),
@@ -348,6 +398,16 @@ export const zAgentPostMessageRequest = z.object({
       })
     )
     .optional()
+})
+
+/**
+ * User-by-workspace assignment for the proactive greeting experiment.
+ */
+export const zAgentProactiveGreetingAssignment = z.object({
+  group_key: z.string().min(1),
+  user_id: z.string().min(1),
+  variant: z.enum(['control', 'generic', 'canvas-prefill', 'canvas-only']),
+  workspace_id: z.string().min(1)
 })
 
 /**
@@ -698,7 +758,8 @@ export const zAgentMessageDoneFrame = z.object({
 })
 
 export const zAgentUsageStatusResponse = z.object({
-  has_used_agent: z.boolean()
+  has_used_agent: z.boolean(),
+  scope: z.enum(['local_installation']).optional()
 })
 
 /**
@@ -783,6 +844,7 @@ export const zAgentAttachmentError = z.discriminatedUnion('type', [
  * Represents a user-owned asset (image, video, or other generated output).
  */
 export const zAsset = z.object({
+  blocked_by_model_policy: z.boolean().optional(),
   created_at: z.iso.datetime(),
   display_name: z.string().nullish(),
   file_path: z.string().nullish(),
@@ -800,6 +862,7 @@ export const zAsset = z.object({
   name: z.string(),
   preview_id: z.uuid().nullish(),
   preview_url: z.url().optional(),
+  project_id: z.string().optional(),
   short_url: z.string().nullish(),
   size: z.coerce
     .bigint()
@@ -1242,7 +1305,8 @@ export const zBillingAddress = z.object({
  * every owner.
  *
  * When the deployment has billing disabled, this endpoint answers without
- * consulting billing-api: can_top_up is true; can_manage_members,
+ * consulting billing-api: can_top_up is true; can_view_workspace_usage
+ * follows the same rule as with billing enabled; can_manage_members,
  * can_invite_members, can_manage_subscription, can_manage_auto_top_up and
  * can_view_auto_top_up follow the owner role, and
  * can_view_auto_top_up_member_notice is true for a non-owner. Other billing-action fields are false. These role
@@ -1275,7 +1339,8 @@ export const zBillingCapabilities = z.object({
   can_view_auto_top_up_member_notice: z.boolean(),
   can_view_own_usage: z.boolean().optional(),
   can_view_pending_invites: z.boolean(),
-  can_view_team_usage: z.boolean()
+  can_view_team_usage: z.boolean(),
+  can_view_workspace_usage: z.boolean()
 })
 
 /**
@@ -1557,6 +1622,9 @@ export const zBillingCapabilityDenials = z.object({
       'not_workspace_owner',
       'usage_attribution_unavailable'
     ])
+    .optional(),
+  can_view_workspace_usage: z
+    .enum(['not_a_member', 'not_workspace_owner'])
     .optional()
 })
 
@@ -1683,6 +1751,22 @@ export const zBillingOpOutcomeResponse = z.object({
 })
 
 /**
+ * Answers "should this client show and apply a promotion right now?". Non-null means yes: show the offer, put `promotion_code` on plan links and follow `auto_apply` at checkout. Null means no promotion is running, and clients show and apply nothing. It is not a statement about the caller: it does not say this visitor or workspace qualifies, and a code restricted to first-time customers is still refused at checkout for anyone else.
+ */
+export const zBillingPromotion = z
+  .object({
+    auto_apply: z.boolean(),
+    ends_at: z.iso.datetime().nullable(),
+    percent_off: z.number().nullable(),
+    promotion_code: z.string()
+  })
+  .nullable()
+
+export const zBillingPromotionResponse = z.object({
+  promotion: zBillingPromotion
+})
+
+/**
  * Payment lifecycle status
  */
 export const zBillingStatus = z.enum([
@@ -1779,12 +1863,13 @@ export const zBudgetScopeKind = z.enum([
 ])
 
 /**
- * A budget with its spend in the workspace's current billing period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
+ * A budget with its spend in the workspace's current billing period. This is the subscription cycle or, when there is no cycle, the UTC calendar month. Only a workspace whose subscription is unresolved has no budget period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
  *
  */
 export const zBudget = z.object({
   alert_percents: z.array(z.int()),
   alerts: z.array(zBudgetAlert),
+  alerts_available: z.boolean(),
   created_by: z.string(),
   crossed_alert_percent: z.int().nullable(),
   ends_at: z.iso.datetime().nullable(),
@@ -1806,6 +1891,7 @@ export const zBudget = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   mode: zBudgetMode,
+  owner_email: z.string().nullable(),
   percent_used: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1867,7 +1953,8 @@ export const zBudgetCreateRequest = z.object({
 
 export const zBudgetList = z.object({
   auto_top_up_conflict: z.boolean(),
-  budgets: z.array(zBudget)
+  budgets: z.array(zBudget),
+  viewer: z.enum(['owner', 'member']).optional()
 })
 
 export const zBudgetUpdateRequest = z.object({
@@ -2325,6 +2412,30 @@ export const zCccSiteTagUsage = z.object({
   tags: z.array(zCccSiteTagUsageItem).max(5000)
 })
 
+/**
+ * One app page at its Draft head, with only what a Desktop card shows.
+ */
+export const zCccStaffApp = z.object({
+  description: z.string().max(1000),
+  enabled: z.boolean(),
+  on_desktop: z.boolean(),
+  on_hub: z.boolean(),
+  picture: z.string().max(200).optional(),
+  slug: z.string().max(200),
+  status: z.enum(['not_live', 'unpublished', 'hidden', 'scheduled', 'live']),
+  title: z.string().max(300),
+  uid: z.uuid()
+})
+
+/**
+ * One page of the comfy.org staff app list.
+ */
+export const zCccStaffAppsPage = z.object({
+  has_more: z.boolean(),
+  items: z.array(zCccStaffApp).max(100),
+  next_cursor: z.string().max(2048).optional()
+})
+
 export const zCccStaffPermissions = z.object({
   account_id: z.string().min(1).max(128),
   avatar_url: z.string().max(4000).optional(),
@@ -2470,8 +2581,8 @@ export const zCccWebsiteRootTab = z.object({
   facets: zCccWebsiteCardFacets,
   page: zCccWebsiteRootPageInfo,
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
-    .max(4)
+    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
+    .max(5)
 })
 
 export const zCccWebsiteRootTabs = z.object({
@@ -2603,8 +2714,8 @@ export const zCccWebsiteCardsPage = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
-    .max(4),
+    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
+    .max(5),
   total: z.int().gte(0).optional()
 })
 
@@ -2870,6 +2981,7 @@ export const zBillingBalanceResponse = z.object({
   pending_charges_micros: z.number().optional(),
   prepaid_balance_cents: z.number().optional(),
   prepaid_balance_micros: z.number().optional(),
+  scoped_balance_cents: z.record(z.string(), z.number()).optional(),
   suggested_topup_amount_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -2925,6 +3037,92 @@ export const zDeployToCloudError = z.object({
  */
 export const zDeploymentCompatibilityRequest = z.object({
   node_types: z.array(z.string())
+})
+
+/**
+ * comfy-builder's BlobUploadComplete (its POST /v1/blobs/{id}/complete 200), passed through as written.
+ */
+export const zDeploymentModelUploadComplete = z.object({
+  blobId: z.string(),
+  sizeBytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
+ * comfy-builder's 409 on the parts and complete routes, passed through as written. It never carries `code`.
+ */
+export const zDeploymentModelUploadConflict = z.object({
+  error: z.string(),
+  message: z.string().optional()
+})
+
+/**
+ * comfy-builder's BlobUploadPart, passed through as written.
+ */
+export const zDeploymentModelUploadPart = z.object({
+  expiresAt: z.iso.datetime(),
+  offsetBytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  partNumber: z.int(),
+  sizeBytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  uploadUrl: z.string()
+})
+
+/**
+ * comfy-builder's BlobUpload (its POST /v1/blobs 201), passed through as written; the fields are comfy-builder's.
+ */
+export const zDeploymentModelUpload = z.object({
+  blobId: z.string(),
+  deduplicated: z.boolean(),
+  expiresAt: z.iso.datetime().optional(),
+  parts: z.array(zDeploymentModelUploadPart).optional(),
+  uploadUrl: z.string().optional()
+})
+
+/**
+ * comfy-builder's BlobUploadParts (its POST /v1/blobs/{id}/parts 200), passed through as written.
+ */
+export const zDeploymentModelUploadParts = z.object({
+  blobId: z.string(),
+  parts: z.array(zDeploymentModelUploadPart)
+})
+
+/**
+ * comfy-builder's CreateBlobRequest without `kind`, which ingest sets to `model`; the fields are passed on as written.
+ */
+export const zDeploymentModelUploadRequest = z.object({
+  blake3: z.string().optional(),
+  filename: z.string(),
+  parts: z.boolean().optional(),
+  reuse: z.boolean().optional(),
+  sha256: z.string(),
+  sizeBytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
 })
 
 export const zDeploymentNodeCompatibility = z.object({
@@ -2993,6 +3191,13 @@ export const zDesktopLoginCodeRedeemRequest = z.object({
  */
 export const zDesktopLoginCodeRedeemResponse = z.object({
   status: z.enum(['redeemed'])
+})
+
+/**
+ * A one-time Firebase custom token for the Desktop grant's user.
+ */
+export const zDesktopWebSessionResponse = z.object({
+  custom_token: z.string()
 })
 
 /**
@@ -3149,19 +3354,6 @@ export const zDocUpdateFrame = z.object({
 export const zExchangeTokenRequest = z.object({
   resource: z.enum(['partner-node']).optional(),
   workspace_id: z.string().optional()
-})
-
-/**
- * Detailed execution error information from ComfyUI
- */
-export const zExecutionError = z.object({
-  current_inputs: z.record(z.string(), z.unknown()),
-  current_outputs: z.record(z.string(), z.unknown()),
-  exception_message: z.string(),
-  exception_type: z.string(),
-  node_id: z.string(),
-  node_type: z.string(),
-  traceback: z.array(z.string())
 })
 
 /**
@@ -3590,53 +3782,6 @@ export const zJobDeployment = z.object({
 })
 
 /**
- * Lightweight job data for list views (workflow and full outputs excluded)
- */
-export const zJobEntry = z.object({
-  create_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  deployment: zJobDeployment.optional(),
-  execution_end_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  execution_error: zExecutionError.optional(),
-  execution_start_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
-  id: z.uuid(),
-  outputs_count: z.int().optional(),
-  preview_output: z.record(z.string(), z.unknown()).optional(),
-  previewable_outputs_count: z.int().optional(),
-  status: z.enum([
-    'pending',
-    'in_progress',
-    'completed',
-    'failed',
-    'cancelled'
-  ]),
-  workflow_id: z.string().optional()
-})
-
-/**
  * Where one executed node ran and where its output is shown, as ComfyUI
  * records it in the history `meta`. Live `executed` messages carry the
  * same `display_node`.
@@ -3647,70 +3792,6 @@ export const zJobExecutionMetaEntry = z.object({
   node_id: z.string().optional(),
   parent_node: z.string().nullish(),
   real_node_id: z.string().optional()
-})
-
-/**
- * Full job details including workflow and outputs
- */
-export const zJobDetailResponse = z.object({
-  create_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  deployment: zJobDeployment.optional(),
-  execution_end_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  execution_error: zExecutionError.optional(),
-  execution_meta: z.record(z.string(), zJobExecutionMetaEntry).optional(),
-  execution_start_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .optional(),
-  execution_status: z.record(z.string(), z.unknown()).optional(),
-  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
-  id: z.uuid(),
-  outputs: z.record(z.string(), z.unknown()).optional(),
-  outputs_count: z.int().optional(),
-  preview_output: z.record(z.string(), z.unknown()).optional(),
-  previewable_outputs_count: z.int().optional(),
-  queue_position: z.int().gte(1).nullish(),
-  queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
-  status: z.enum([
-    'pending',
-    'in_progress',
-    'completed',
-    'failed',
-    'cancelled'
-  ]),
-  update_time: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  user_id: z.string().optional(),
-  workflow: z.record(z.string(), z.unknown()).optional(),
-  workflow_id: z.string().optional(),
-  workflow_version_id: z.string().optional(),
-  workspace_id: z.string().optional()
 })
 
 /**
@@ -3754,12 +3835,29 @@ export const zJobStatusResponse = z.object({
   id: z.uuid(),
   last_state_update: z.iso.datetime().optional(),
   status: z.enum([
+    'submitted',
+    'preprocessing',
+    'queued_limited',
+    'queued_waiting',
+    'held_budget',
+    'allocated',
+    'preparing',
+    'pending_execution',
+    'executing',
+    'executed',
+    'cancel_requested',
+    'cancel_pending',
+    'erroring',
+    'cancelling_preparing',
+    'cancelled',
+    'non_retryable_error',
+    'error',
+    'lost',
+    'success',
     'waiting_to_dispatch',
     'pending',
     'in_progress',
-    'completed',
-    'error',
-    'cancelled'
+    'completed'
   ]),
   updated_at: z.iso.datetime()
 })
@@ -3859,6 +3957,14 @@ export const zHubWorkflowSummary = z.object({
 export const zHubWorkflowListResponse = z.object({
   next_cursor: z.string().optional(),
   workflows: z.array(z.union([zHubWorkflowSummary, zHubWorkflowDetail]))
+})
+
+/**
+ * A page of access changes, newest first.
+ */
+export const zListAccessEventsResponse = z.object({
+  events: z.array(zAccessEvent),
+  pagination: zAccessEventsPagination
 })
 
 /**
@@ -4203,14 +4309,6 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Paginated list of jobs for the authenticated user.
- */
-export const zJobsListResponse = z.object({
-  jobs: z.array(zJobEntry),
-  pagination: zPaginationInfo
-})
-
-/**
  * Request body for generating a payment portal session URL.
  */
 export const zPaymentPortalRequest = z.object({
@@ -4365,6 +4463,11 @@ export const zPlanSeatSummary = z.object({
 })
 
 /**
+ * comfy-deploy's or comfy-builder's answer, passed through as written; its shape is that service's. Their refusals are `{error, message}` (Echo's own only `message`) and never carry `code`.
+ */
+export const zPlatformPassthroughBody = z.record(z.string(), z.unknown())
+
+/**
  * Request body for previewing the cost of a plan subscription change.
  */
 export const zPreviewSubscribeRequest = z.object({
@@ -4380,6 +4483,109 @@ export const zPreviewSubscribeRequest = z.object({
 export const zPreviousPlan = z.object({
   plan_slug: z.string(),
   team_credit_stop_id: z.string().optional()
+})
+
+/**
+ * What the caller may do with one kind of thing in a project. `write` includes `read`. On things that belong to one person (runs, assets, usage) the level carries a scope: `_own` covers what the caller created and `_all` covers everyone's, and `_all` includes `_own`.
+ */
+export const zProjectPermissionLevel = z.enum([
+  'read',
+  'write',
+  'read_own',
+  'read_all',
+  'write_own',
+  'write_all'
+])
+
+/**
+ * The caller's permissions in this project, for showing and hiding actions. Render each as received; do not rebuild them from `my_role` or the workspace role. An absent key means no access. Each write is checked again by the server.
+ */
+export const zProjectPermissions = z.object({
+  project: zProjectPermissionLevel.optional(),
+  'project.assets': zProjectPermissionLevel.optional(),
+  'project.deployments': zProjectPermissionLevel.optional(),
+  'project.members': zProjectPermissionLevel.optional(),
+  'project.queue': zProjectPermissionLevel.optional(),
+  'project.usage': zProjectPermissionLevel.optional(),
+  'project.workflow': zProjectPermissionLevel.optional()
+})
+
+/**
+ * How many projects the workspace may have and has.
+ */
+export const zProjectQuota = z.object({
+  active: z.int(),
+  can_create: z.boolean(),
+  max_active: z.int()
+})
+
+/**
+ * A person's role in one project. A Runner runs existing workflows. A Builder also creates and edits workflows. A Project admin also manages the project, its members and its deployments.
+ */
+export const zProjectRole = z.enum(['runner', 'builder', 'project_admin'])
+
+/**
+ * A private, invite-only space inside a workspace, or the workspace's default project.
+ */
+export const zProject = z.object({
+  create_time: z.iso.datetime(),
+  created_by_user_id: z.string().optional(),
+  description: z.string().optional(),
+  id: z.string(),
+  is_default: z.boolean(),
+  my_role: zProjectRole.optional(),
+  name: z.string(),
+  permissions: zProjectPermissions,
+  shared_cloud_allowed: z.boolean(),
+  update_time: z.iso.datetime(),
+  workspace_id: z.string(),
+  writable: z.boolean()
+})
+
+/**
+ * The projects the caller can view, with the workspace's project quota.
+ */
+export const zListProjectsResponse = z.object({
+  projects: z.array(zProject),
+  projects_in_use: z.boolean(),
+  quota: zProjectQuota
+})
+
+/**
+ * A person in a project, with their project role.
+ */
+export const zProjectMember = z.object({
+  added_by_user_id: z.string().optional(),
+  create_time: z.iso.datetime(),
+  email: z.string(),
+  name: z.string(),
+  role: zProjectRole,
+  user_id: z.string()
+})
+
+/**
+ * The people in a project.
+ */
+export const zListProjectMembersResponse = z.object({
+  members: z.array(zProjectMember)
+})
+
+/**
+ * A workspace member to add to a project, with their project role.
+ */
+export const zProjectMemberInput = z.object({
+  role: zProjectRole,
+  user_id: z.string()
+})
+
+/**
+ * Request body for creating a project.
+ */
+export const zCreateProjectRequest = z.object({
+  description: z.string().max(500).optional(),
+  members: z.array(zProjectMemberInput).optional(),
+  name: z.string().min(1).max(80),
+  shared_cloud_allowed: z.boolean().optional().default(true)
 })
 
 /**
@@ -4421,6 +4627,143 @@ export const zPromptOutputsSkippedNodeError = z.object({
   class_type: z.string(),
   dependent_outputs: z.array(z.string()),
   errors: z.array(z.union([z.string(), zPromptOutputsSkippedValidationError]))
+})
+
+/**
+ * Detailed execution error information from ComfyUI
+ */
+export const zExecutionError = z.object({
+  current_inputs: z.record(z.string(), z.unknown()),
+  current_outputs: z.record(z.string(), z.unknown()),
+  exception_message: z.string(),
+  exception_type: z.string(),
+  node_errors: z.record(z.string(), zPromptOutputsSkippedNodeError).optional(),
+  node_id: z.string(),
+  node_type: z.string(),
+  traceback: z.array(z.string())
+})
+
+/**
+ * Full job details including workflow and outputs
+ */
+export const zJobDetailResponse = z.object({
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  deployment: zJobDeployment.optional(),
+  execution_end_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_error: zExecutionError.optional(),
+  execution_meta: z.record(z.string(), zJobExecutionMetaEntry).optional(),
+  execution_start_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_status: z.record(z.string(), z.unknown()).optional(),
+  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
+  id: z.uuid(),
+  outputs: z.record(z.string(), z.unknown()).optional(),
+  outputs_count: z.int().optional(),
+  preview_output: z.record(z.string(), z.unknown()).optional(),
+  previewable_outputs_count: z.int().optional(),
+  project_id: z.string().optional(),
+  queue_position: z.int().gte(1).nullish(),
+  queue_reason: z.enum(['concurrency_limit', 'capacity']).optional(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled',
+    'held_budget'
+  ]),
+  update_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  user_id: z.string().optional(),
+  workflow: z.record(z.string(), z.unknown()).optional(),
+  workflow_id: z.string().optional(),
+  workflow_version_id: z.string().optional(),
+  workspace_id: z.string().optional()
+})
+
+/**
+ * Lightweight job data for list views (workflow and full outputs excluded)
+ */
+export const zJobEntry = z.object({
+  create_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  deployment: zJobDeployment.optional(),
+  execution_end_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  execution_error: zExecutionError.optional(),
+  execution_start_time: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
+  id: z.uuid(),
+  outputs_count: z.int().optional(),
+  preview_output: z.record(z.string(), z.unknown()).optional(),
+  previewable_outputs_count: z.int().optional(),
+  project_id: z.string().optional(),
+  status: z.enum([
+    'pending',
+    'in_progress',
+    'completed',
+    'failed',
+    'cancelled',
+    'held_budget'
+  ]),
+  workflow_id: z.string().optional()
+})
+
+/**
+ * Paginated list of jobs for the authenticated user.
+ */
+export const zJobsListResponse = z.object({
+  jobs: z.array(zJobEntry),
+  pagination: zPaginationInfo
 })
 
 /**
@@ -4482,6 +4825,27 @@ export const zProviderPolicyEntry = z.object({
 export const zProviderPolicy = z.object({
   enforcement_enabled: z.boolean(),
   providers: z.array(zProviderPolicyEntry)
+})
+
+export const zPublicModel = z.object({
+  file_path: z.string().optional(),
+  id: z.uuid(),
+  name: z.string(),
+  size: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  source_url: z.string().optional(),
+  tags: z.array(z.string())
+})
+
+export const zPublicModelsResponse = z.object({
+  models: z.array(zPublicModel)
 })
 
 /**
@@ -4743,6 +5107,13 @@ export const zServerDocFrame = z.union([
   zDocResetFrame,
   zDocOpsResultFrame
 ])
+
+/**
+ * Request body for adding a project member or changing their role.
+ */
+export const zSetProjectMemberRequest = z.object({
+  role: zProjectRole
+})
 
 /**
  * The deployment a start was asked for, and its status after the ask.
@@ -5670,6 +6041,11 @@ export const zCreateTopupCheckoutRequest = z.object({
   return_url: z.url()
 })
 
+export const zCreateTopupPurchaseRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(99999999)),
+  auto_top_up: zTopupAutoTopUpSettings.optional()
+})
+
 /**
  * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
  */
@@ -5680,15 +6056,10 @@ export const zInteractiveTopupRequest = z.object({
   confirmation_token: z.string().min(1).max(255).optional(),
   idempotency_key: z.string().min(1).max(255),
   make_default: z.boolean().optional().default(false),
+  purchase_id: z.string().min(1).max(64).optional(),
   return_url: z.string().min(1).max(2048).optional(),
   save_payment_method: z.boolean().optional().default(false),
-  saved_payment_method_id: z.string().min(1).max(255).optional(),
-  purchase_id: z.string().min(1).max(64).optional()
-})
-
-export const zCreateTopupPurchaseRequest = z.object({
-  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(99999999)),
-  auto_top_up: zTopupAutoTopUpSettings.optional()
+  saved_payment_method_id: z.string().min(1).max(255).optional()
 })
 
 export const zTopupPurchase = z.object({
@@ -5705,7 +6076,14 @@ export const zTopupPurchase = z.object({
   billing_op_status: z.string().optional(),
   expires_at: z.iso.datetime(),
   purchase_id: z.string(),
-  status: z.enum(['open', 'processing', 'paid', 'superseded', 'expired'])
+  status: z.enum([
+    'open',
+    'processing',
+    'paid',
+    'reconciliation_needed',
+    'superseded',
+    'expired'
+  ])
 })
 
 /**
@@ -5720,6 +6098,15 @@ export const zTopupQuoteResponse = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  balance_after_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -5729,7 +6116,8 @@ export const zTopupQuoteResponse = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   expires_at: z.iso.datetime(),
-  payment_method_configuration_id: z.string().optional()
+  payment_method_configuration_id: z.string().optional(),
+  runs_paused_after: z.boolean().optional()
 })
 
 /**
@@ -5747,6 +6135,15 @@ export const zUpdateHubProfileRequest = z.object({
  */
 export const zUpdateMemberRoleRequest = z.object({
   role: z.enum(['owner', 'member'])
+})
+
+/**
+ * Request body for changing a project. Only the fields sent are changed.
+ */
+export const zUpdateProjectRequest = z.object({
+  description: z.string().max(500).optional(),
+  name: z.string().min(1).max(80).optional(),
+  shared_cloud_allowed: z.boolean().optional()
 })
 
 /**
@@ -5843,7 +6240,7 @@ export const zUsageNotAvailable = z.object({
 })
 
 /**
- * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields. `balance` is omitted, never null, when it could not be read, the workspace has no billing account, or the caller may not see it (can_view_workspace_usage is false).
  */
 export const zUsageSummary = z.object({
   balance: zUsageBalance.optional(),
@@ -6010,6 +6407,7 @@ export const zWorkflowResponse = z.object({
   id: z.string(),
   latest_version: z.int(),
   name: z.string().optional(),
+  project_id: z.string().optional(),
   updated_at: z.iso.datetime()
 })
 
@@ -6127,6 +6525,23 @@ export const zErrorResponse = z.object({
   message: z.string(),
   organization_id: z.string().optional()
 })
+
+/**
+ * A 403 on the deployment model routes. A body with `accepted` is ingest's authentication refusing the credential before any other check (AuthTypeNotAllowedError, `{error: {message, type: auth_type_not_allowed}, accepted}`, no `code`): a credential these routes never take, such as `X-ComfyAPI-Secret`, or the session while `web_session_enabled` is off for the user. Otherwise `code` tells them apart as in DeploymentModelsRefusalBody: a body with `code` is ingest's own refusal, and one with neither `code` nor `accepted` is the platform's 403, passed through as written.
+ */
+export const zDeploymentModelsForbiddenBody = z.union([
+  zErrorResponse,
+  zAuthTypeNotAllowedError,
+  zPlatformPassthroughBody
+])
+
+/**
+ * A refusal on the deployment model routes: ingest's own (and the session's), as ErrorResponse `{code, message}`, or the platform's, passed through as written. One status can carry either; `code` tells them apart. A body with `code` is ingest's own refusal, made before or instead of the platform's answer; a body without it is the platform's, comfy-deploy's or comfy-builder's `{error, message}` (or only `message`), which never carries `code`. The one exception is a 403 with `accepted`, ingest's authentication refusal (see DeploymentModelsForbiddenBody).
+ */
+export const zDeploymentModelsRefusalBody = z.union([
+  zErrorResponse,
+  zPlatformPassthroughBody
+])
 
 /**
  * A 403 body: ErrorResponse, or AuthTypeNotAllowedError for a credential the route does not take.
@@ -6273,7 +6688,8 @@ export const zMember = z.object({
   joined_at: z.iso.datetime(),
   managed_by_directory: z.boolean().optional(),
   name: z.string(),
-  role: z.enum(['owner', 'member'])
+  role: z.enum(['owner', 'member']),
+  workspace_admin: z.boolean().optional()
 })
 
 /**
@@ -6324,7 +6740,8 @@ export const zWorkspaceWithRole = z.object({
   plan_summary: zWorkspacePlanSummary.optional(),
   role: z.enum(['owner', 'member']),
   subscription_tier: zSubscriptionTier.optional(),
-  type: z.enum(['personal', 'team'])
+  type: z.enum(['personal', 'team']),
+  workspace_admin: z.boolean().optional()
 })
 
 /**
@@ -6342,6 +6759,7 @@ export const zListWorkspacesResponse = z.object({
  * Represents a user-owned asset (image, video, or other generated output).
  */
 export const zAssetWritable = z.object({
+  blocked_by_model_policy: z.boolean().optional(),
   created_at: z.iso.datetime(),
   display_name: z.string().nullish(),
   file_path: z.string().nullish(),
@@ -6358,6 +6776,7 @@ export const zAssetWritable = z.object({
   name: z.string(),
   preview_id: z.uuid().nullish(),
   preview_url: z.url().optional(),
+  project_id: z.string().optional(),
   short_url: z.string().nullish(),
   size: z.coerce
     .bigint()
@@ -6410,6 +6829,21 @@ export const zListAssetsResponseWritable = z.object({
 })
 
 /**
+ * The blobId the model upload route answered
+ */
+export const zDeploymentModelUploadBlobId = z.string()
+
+/**
+ * One of the workspace's deployments (dep-{uuid} format)
+ */
+export const zDeploymentModelsDeploymentId = z.string()
+
+/**
+ * Workspace ID (w-{uuid} format)
+ */
+export const zDeploymentModelsWorkspaceId = z.string()
+
+/**
  * The workspace a media request reads from, where a media tag cannot
  * send `X-Comfy-Workspace-ID`. It applies only while
  * `web_session_enabled` is on for the user; with it off, and always on
@@ -6425,6 +6859,27 @@ export const zListAssetsResponseWritable = z.object({
  *
  */
 export const zMediaWorkspaceId = z.string()
+
+/**
+ * The project a request acts in. The operations that list it are the
+ * ones that read it: they list workflows, runs or assets, create one,
+ * export assets, clear the caller's queue or History, or pick the
+ * deployment a browser runs on. Absent means
+ * the workspace's default project, which is how existing clients keep
+ * working.
+ *
+ * An operation on one existing workflow, run or asset does not take
+ * it: the row's own project decides. Any other operation that creates
+ * a workflow, run or asset acts in the default project until it lists
+ * this parameter.
+ *
+ * The project must be in the workspace the request resolves to. A
+ * project that does not exist, or that the caller may not view, is 404
+ * `not_found`; the two look the same. Where Projects is not enabled for
+ * the workspace the header is ignored.
+ *
+ */
+export const zProjectId = z.string()
 
 /**
  * JWKS response
@@ -6473,6 +6928,10 @@ export const zAgentGetDraftResponse = zAgentDraftSnapshot
 export const zGetAgentEventsQuery = z.object({
   token: z.string().optional(),
   workspace_id: z.string().optional()
+})
+
+export const zAgentGetExecutionsHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
 })
 
 export const zAgentGetExecutionsQuery = z.object({
@@ -6580,6 +7039,10 @@ export const zAgentDeleteSkillPath = z.object({
  */
 export const zAgentDeleteSkillResponse = z.void()
 
+export const zAgentListThreadsHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 export const zAgentListThreadsQuery = z.object({
   limit: z.int().gte(1).lte(100).optional().default(20),
   after: z.string().optional(),
@@ -6593,12 +7056,20 @@ export const zAgentListThreadsResponse = zAgentThreadListResponse
 
 export const zAgentCreateThreadBody = zAgentThreadCreateRequest
 
+export const zAgentCreateThreadHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 /**
  * Thread created
  */
 export const zAgentCreateThreadResponse = zAgentThreadCreated
 
 export const zAgentAnswerAskBody = zAgentAnswerRequest
+
+export const zAgentAnswerAskHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 export const zAgentAnswerAskPath = z.object({
   id: z.string(),
@@ -6609,6 +7080,10 @@ export const zAgentAnswerAskPath = z.object({
  * Answer accepted; the turn resumes and streams over the WebSocket
  */
 export const zAgentAnswerAskResponse = zAgentAnswerAccepted
+
+export const zAgentGetMessagesHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 export const zAgentGetMessagesPath = z.object({
   id: z.string()
@@ -6621,6 +7096,10 @@ export const zAgentGetMessagesResponse = z.array(zAgentMessage)
 
 export const zAgentPostMessageBody = zAgentPostMessageRequest
 
+export const zAgentPostMessageHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 export const zAgentPostMessagePath = z.object({
   id: z.string()
 })
@@ -6629,6 +7108,10 @@ export const zAgentPostMessagePath = z.object({
  * Turn accepted; the agent runs asynchronously and streams output over the WebSocket
  */
 export const zAgentPostMessageResponse = zAgentTurnAccepted
+
+export const zAgentCancelMessageHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 export const zAgentCancelMessagePath = z.object({
   id: z.string(),
@@ -6644,6 +7127,10 @@ export const zAgentCancelMessageResponse = zAgentCancelAccepted
  * Message usage for the authenticated user and workspace.
  */
 export const zAgentGetUsageStatusResponse = zAgentUsageStatusResponse
+
+export const zListAssetsHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 export const zListAssetsQuery = z.object({
   include_tags: z.array(z.string()).optional(),
@@ -6685,6 +7172,10 @@ export const zCreateAssetBody = z.object({
   preview_id: z.uuid().optional(),
   tags: z.string().optional(),
   user_metadata: z.string().optional()
+})
+
+export const zCreateAssetHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
 })
 
 /**
@@ -6796,6 +7287,10 @@ export const zCreateAssetExportBody = z.object({
     .default('group_by_job_time')
 })
 
+export const zCreateAssetExportHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 /**
  * Accepted - Export task created and processing in background
  */
@@ -6816,6 +7311,10 @@ export const zCreateAssetFromHashBody = z.object({
   name: z.string().optional(),
   tags: z.array(z.string()).min(1).max(64),
   user_metadata: z.record(z.string(), z.unknown()).optional()
+})
+
+export const zCreateAssetFromHashHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
 })
 
 /**
@@ -6978,6 +7477,11 @@ export const zRedeemDesktopLoginCodeBody = zDesktopLoginCodeRedeemRequest
  * Code redeemed (or already redeemed by the same user)
  */
 export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
+
+/**
+ * Custom token minted
+ */
+export const zCreateDesktopWebSessionResponse = zDesktopWebSessionResponse
 
 export const zCreateBillingHandoffBody = zBillingHandoffCreateRequest
 
@@ -7224,6 +7728,11 @@ export const zPreviewSubscribeBody = zPreviewSubscribeRequest
  */
 export const zPreviewSubscribeResponse2 = zPreviewSubscribeResponse
 
+/**
+ * The promotion running right now, or null
+ */
+export const zGetBillingPromotionResponse = zBillingPromotionResponse
+
 export const zAcceptRetentionOfferBody = zRetentionAcceptRequest
 
 /**
@@ -7314,6 +7823,22 @@ export const zCreateInteractiveTopupBody = zInteractiveTopupRequest
  * Top-up initiated successfully
  */
 export const zCreateInteractiveTopupResponse = zCreateTopupResponse
+
+export const zCreateTopupPurchaseBody = zCreateTopupPurchaseRequest
+
+/**
+ * Purchase opened; Cache-Control no-store.
+ */
+export const zCreateTopupPurchaseResponse = zTopupPurchase
+
+export const zGetTopupPurchasePath = z.object({
+  id: z.string().max(64)
+})
+
+/**
+ * Current purchase facts; Cache-Control no-store.
+ */
+export const zGetTopupPurchaseResponse = zTopupPurchase
 
 export const zCreateTopupQuoteBody = zCreateTopupQuoteRequest
 
@@ -7423,10 +7948,7 @@ export const zGetFeaturesResponse = z.object({
       state: z.enum(['ready'])
     })
     .optional(),
-  'agent-credit-usage-summary': z
-    .enum(['control', 'treatment'])
-    .optional()
-    .default('control'),
+  'agent-credit-usage-summary': z.enum(['control', 'treatment']).optional(),
   'agent-free-use-message-placement': z
     .enum([
       'control',
@@ -7437,11 +7959,9 @@ export const zGetFeaturesResponse = z.object({
     ])
     .optional()
     .default('control'),
-  'agent-starter-prompt-set': z
-    .enum(['control', 'test'])
-    .optional()
-    .default('control'),
   agent_gratis_local_arm: z.enum(['control', 'treatment']).optional(),
+  agent_proactive_greeting_assignment:
+    zAgentProactiveGreetingAssignment.optional(),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
   deploy_to_cloud: z.boolean().optional(),
@@ -7462,8 +7982,11 @@ export const zGetFeaturesResponse = z.object({
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   open_on_cloud_enabled: z.boolean().optional(),
+  open_on_cloud_model_upload_enabled: z.boolean().optional(),
   open_on_cloud_use_local_agent_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
+  'prompt-editor-surface': z.enum(['control', 'panel']).optional(),
+  server_boot_id: z.string().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional(),
@@ -7539,6 +8062,10 @@ export const zGetGlobalSubgraphPath = z.object({
 export const zGetGlobalSubgraphResponse = zGlobalSubgraphData
 
 export const zManageHistoryBody = zHistoryManageRequest
+
+export const zManageHistoryHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 export const zGetLegacyHistoryByIdPath = z.object({
   prompt_id: z.string()
@@ -7681,6 +8208,10 @@ export const zCreateInputUploadUrlBody = zInputUploadUrlRequest
  */
 export const zCreateInputUploadUrlResponse = zUploadGrantResponse
 
+export const zInterruptJobHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 export const zAcceptWorkspaceInvitePath = z.object({
   token: z.string()
 })
@@ -7706,6 +8237,10 @@ export const zGetJobStatusPath = z.object({
  * Success - Job status returned
  */
 export const zGetJobStatusResponse = zJobStatusResponse
+
+export const zListJobsHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 export const zListJobsQuery = z.object({
   status: z.string().optional(),
@@ -7802,11 +8337,79 @@ export const zGetLegacyObjectInfoByNodeClassPath = z.object({
 })
 
 /**
+ * Projects the caller can view. Also answered to a workspace whose plan no longer includes Projects (a lapsed or downgraded plan) but that still has projects other than the default: those projects are frozen and read-only, each with `writable: false`, and the quota has `max_active: 0` and `can_create: false`. Do not read a 200 as the plan including Projects; read `writable` on each project and `quota.can_create`.
+ */
+export const zListProjectsResponse2 = zListProjectsResponse
+
+export const zCreateProjectBody = zCreateProjectRequest
+
+/**
+ * Project created
+ */
+export const zCreateProjectResponse = zProject
+
+export const zGetProjectPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The project. In a workspace whose plan no longer includes Projects (a lapsed or downgraded plan), a project other than the default is still answered to whoever may view it, frozen, with `writable: false`. Do not read a 200 as the project taking writes, or as the plan including Projects; read `writable` and `permissions`.
+ */
+export const zGetProjectResponse = zProject
+
+export const zUpdateProjectBody = zUpdateProjectRequest
+
+export const zUpdateProjectPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Project updated
+ */
+export const zUpdateProjectResponse = zProject
+
+export const zListProjectMembersPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Project members
+ */
+export const zListProjectMembersResponse2 = zListProjectMembersResponse
+
+export const zRemoveProjectMemberPath = z.object({
+  id: z.string(),
+  userId: z.string()
+})
+
+/**
+ * Member removed
+ */
+export const zRemoveProjectMemberResponse = z.void()
+
+export const zSetProjectMemberBody = zSetProjectMemberRequest
+
+export const zSetProjectMemberPath = z.object({
+  id: z.string(),
+  userId: z.string()
+})
+
+/**
+ * The member, with the role now in effect
+ */
+export const zSetProjectMemberResponse = zProjectMember
+
+/**
  * Success
  */
 export const zGetPromptInfoResponse = zPromptInfo
 
 export const zExecutePromptBody = zPromptRequest
+
+export const zExecutePromptHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional(),
+  'Comfy-Loaded-Release': z.string().optional()
+})
 
 /**
  * Success - Prompt accepted
@@ -7823,11 +8426,20 @@ export const zGetLegacyPromptByIdPath = z.object({
 export const zGetProvidersResponse = zProviderCatalogResponse
 
 /**
+ * The public model catalog
+ */
+export const zListPublicModelsResponse = zPublicModelsResponse
+
+/**
  * Success
  */
 export const zGetQueueInfoResponse = zQueueInfo
 
 export const zManageQueueBody = zQueueManageRequest
+
+export const zManageQueueHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 /**
  * Success
@@ -7987,6 +8599,10 @@ export const zUploadImageBody = z.object({
   type: z.string().optional()
 })
 
+export const zUploadImageHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 /**
  * Image uploaded successfully
  */
@@ -7999,6 +8615,10 @@ export const zUploadImageResponse = z.object({
 export const zUploadMaskBody = z.object({
   image: z.string(),
   original_ref: z.string()
+})
+
+export const zUploadMaskHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
 })
 
 /**
@@ -8180,7 +8800,7 @@ export const zListCccWebsiteCardsQuery = z.object({
     .default('en'),
   q: z.string().max(300).optional(),
   sort: z
-    .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
+    .enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc'])
     .optional()
     .default('popular'),
   category: z.array(z.string().max(200)).max(30).optional(),
@@ -8784,6 +9404,26 @@ export const zGetCccTypeSchemaPath = z.object({
  */
 export const zGetCccTypeSchemaResponse = zCccTypeSchema
 
+export const zListCccStaffAppsQuery = z.object({
+  limit: z.int().gte(1).lte(100).optional().default(100),
+  cursor: z.string().min(1).max(2048).optional()
+})
+
+/**
+ * One page of app rows and the optional opaque next_cursor
+ */
+export const zListCccStaffAppsResponse = zCccStaffAppsPage
+
+export const zGetCccStaffAppPicturePath = z.object({
+  uid: z.uuid(),
+  version: z.uuid()
+})
+
+/**
+ * The picture bytes; private no-store
+ */
+export const zGetCccStaffAppPictureResponse = z.string()
+
 /**
  * Private state; never cacheable
  */
@@ -8885,6 +9525,10 @@ export const zGetApiViewVideoAliasResponse = z.string()
  */
 export const zGetWorkflowTemplatesResponse = z.record(z.string(), z.unknown())
 
+export const zListWorkflowsHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 export const zListWorkflowsQuery = z.object({
   limit: z.int().lte(100).optional().default(20),
   offset: z.int().optional().default(0),
@@ -8903,6 +9547,10 @@ export const zListWorkflowsQuery = z.object({
 export const zListWorkflowsResponse = zWorkflowListResponse
 
 export const zCreateWorkflowBody = zCreateWorkflowRequest
+
+export const zCreateWorkflowHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
 
 /**
  * Workflow created successfully
@@ -8949,6 +9597,10 @@ export const zGetWorkflowContentResponse = zWorkflowVersionContentResponse
 
 export const zForkWorkflowBody = zForkWorkflowRequest
 
+export const zForkWorkflowHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 export const zForkWorkflowPath = z.object({
   workflow_id: z.string()
 })
@@ -8993,6 +9645,17 @@ export const zCreateWorkflowUploadUrlBody = zWorkflowUploadUrlRequest
  * Upload grant minted
  */
 export const zCreateWorkflowUploadUrlResponse = zUploadGrantResponse
+
+export const zListWorkspaceAccessEventsQuery = z.object({
+  project_id: z.string().optional(),
+  after: z.string().optional(),
+  limit: z.int().gte(1).lte(100).optional().default(50)
+})
+
+/**
+ * Access changes, newest first
+ */
+export const zListWorkspaceAccessEventsResponse = zListAccessEventsResponse
 
 export const zListWorkspaceApiKeysQuery = z.object({
   include_revoked: z.boolean().optional().default(false)
@@ -9094,6 +9757,24 @@ export const zUpdateWorkspaceMemberRolePath = z.object({
  */
 export const zUpdateWorkspaceMemberRoleResponse = zMember
 
+export const zRevokeWorkspaceAdminPath = z.object({
+  userId: z.string()
+})
+
+/**
+ * The member, with `workspace_admin` false
+ */
+export const zRevokeWorkspaceAdminResponse = zMember
+
+export const zGrantWorkspaceAdminPath = z.object({
+  userId: z.string()
+})
+
+/**
+ * The member, with `workspace_admin` true
+ */
+export const zGrantWorkspaceAdminResponse = zMember
+
 /**
  * The policy document
  */
@@ -9183,6 +9864,10 @@ export const zClearWorkspaceDeploymentResponse = z.void()
 
 export const zPickWorkspaceDeploymentBody = zPickWorkspaceDeploymentRequest
 
+export const zPickWorkspaceDeploymentHeaders = z.object({
+  'X-Comfy-Project-ID': z.string().optional()
+})
+
 export const zPickWorkspaceDeploymentPath = z.object({
   id: z.string()
 })
@@ -9214,6 +9899,77 @@ export const zListWorkspaceDeploymentsQuery = z.object({
  * The workspace's live deployments, newest first
  */
 export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
+
+export const zCreateWorkspaceDeploymentModelUploadBody =
+  zDeploymentModelUploadRequest
+
+export const zCreateWorkspaceDeploymentModelUploadPath = z.object({
+  id: z.string(),
+  deployment_id: z.string()
+})
+
+/**
+ * comfy-builder's BlobUpload, unchanged
+ */
+export const zCreateWorkspaceDeploymentModelUploadResponse =
+  zDeploymentModelUpload
+
+export const zCompleteWorkspaceDeploymentModelUploadPath = z.object({
+  id: z.string(),
+  deployment_id: z.string(),
+  blob_id: z.string()
+})
+
+/**
+ * comfy-builder's BlobUploadComplete, unchanged
+ */
+export const zCompleteWorkspaceDeploymentModelUploadResponse =
+  zDeploymentModelUploadComplete
+
+export const zRefreshWorkspaceDeploymentModelUploadPartsPath = z.object({
+  id: z.string(),
+  deployment_id: z.string(),
+  blob_id: z.string()
+})
+
+/**
+ * comfy-builder's BlobUploadParts, unchanged
+ */
+export const zRefreshWorkspaceDeploymentModelUploadPartsResponse =
+  zDeploymentModelUploadParts
+
+export const zListWorkspaceDeploymentModelsPath = z.object({
+  id: z.string(),
+  deployment_id: z.string()
+})
+
+/**
+ * comfy-deploy's model list, unchanged
+ */
+export const zListWorkspaceDeploymentModelsResponse = zPlatformPassthroughBody
+
+export const zAddWorkspaceDeploymentModelBody = zAddDeploymentModelRequest
+
+export const zAddWorkspaceDeploymentModelPath = z.object({
+  id: z.string(),
+  deployment_id: z.string()
+})
+
+/**
+ * comfy-deploy's new entry, unchanged
+ */
+export const zAddWorkspaceDeploymentModelResponse = zPlatformPassthroughBody
+
+export const zRemoveWorkspaceDeploymentModelPath = z.object({
+  id: z.string(),
+  deployment_id: z.string(),
+  model_id: z.string()
+})
+
+/**
+ * comfy-deploy's entry, now removing, unchanged
+ */
+export const zRemoveWorkspaceDeploymentModelResponse = zPlatformPassthroughBody
 
 export const zStartWorkspaceDeploymentPath = z.object({
   id: z.string(),
@@ -9255,6 +10011,22 @@ export const zRedirectExtensionScriptsPath = z.object({
  * Service is healthy
  */
 export const zGetHealthResponse = z.string()
+
+export const zAgentGetSupportReplayHeaders = z.object({
+  'X-Comfy-Replay-Support-Secret': z.string(),
+  'X-Comfy-Workspace-ID': z.string(),
+  'X-Comfy-Replay-Requester': z.string(),
+  'X-Comfy-Replay-Reason': z.string()
+})
+
+export const zAgentGetSupportReplayPath = z.object({
+  id: z.uuid()
+})
+
+/**
+ * A degraded or full AgentReplayBundleV1.
+ */
+export const zAgentGetSupportReplayResponse = z.record(z.string(), z.unknown())
 
 /**
  * Map of folder type name to list of path entries

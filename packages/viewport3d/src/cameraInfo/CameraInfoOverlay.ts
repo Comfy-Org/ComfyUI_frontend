@@ -1,8 +1,10 @@
 import * as THREE from 'three'
 
+import { disposeObject3D } from '#/load3d/SceneModelManager'
 import type { SceneOverlay } from '#/load3d/interfaces'
 
 import { computeSubjectTransform } from './cameraTransform'
+import { SUBJECT_MODEL_SCENE_SCALE } from './subjectModel'
 import { DEFAULT_CAMERA_INFO_STATE } from './types'
 import type { CameraInfoCameraType, CameraInfoState } from './types'
 
@@ -24,6 +26,7 @@ export class CameraInfoOverlay implements SceneOverlay {
   private readonly referenceCube: THREE.Mesh
   private readonly referenceCubeEdges: THREE.LineSegments
   private readonly axesHelper: THREE.AxesHelper
+  private subjectModel: THREE.Object3D | null = null
 
   private renderCamera: THREE.Camera | null = null
   private disposed = false
@@ -112,11 +115,24 @@ export class CameraInfoOverlay implements SceneOverlay {
     this.disposed = true
     this.disposeCameraHelper()
     this.detach()
+    this.releaseSubjectModel()
     this.referenceCube.geometry.dispose()
     ;(this.referenceCube.material as THREE.Material).dispose()
     this.referenceCubeEdges.geometry.dispose()
     ;(this.referenceCubeEdges.material as THREE.Material).dispose()
     this.axesHelper.dispose()
+  }
+
+  setSubjectModel(model: THREE.Object3D | null): void {
+    this.releaseSubjectModel()
+    if (this.disposed) {
+      if (model) disposeObject3D(model, new Set())
+      return
+    }
+    this.subjectModel = model
+    if (model) this.referenceGroup.add(model)
+    this.referenceCube.visible = !model
+    this.axesHelper.scale.setScalar(model ? SUBJECT_MODEL_SCENE_SCALE : 1)
   }
 
   getSubjectCamera(): THREE.Camera {
@@ -145,6 +161,13 @@ export class CameraInfoOverlay implements SceneOverlay {
     }
     this.applyStateToScene()
     if (modeChanged || cameraTypeChanged) this.refreshHelperVisibility()
+  }
+
+  private releaseSubjectModel(): void {
+    if (!this.subjectModel) return
+    this.referenceGroup.remove(this.subjectModel)
+    disposeObject3D(this.subjectModel, new Set())
+    this.subjectModel = null
   }
 
   private applyStateToScene(): void {

@@ -14,6 +14,7 @@ import type {
 } from '@sentry/vue'
 
 import { sentryBeforeSend } from './sentryBeforeSend'
+import { capRepeatedSentryEvent } from './sentryRepeatCap'
 import {
   REDACTION_SENTINEL,
   redactTelemetryUrls,
@@ -34,7 +35,7 @@ function redactSentryEvent(event: ErrorEvent, hint: EventHint) {
   for (const exception of filtered.exception?.values ?? []) {
     redactSentryException(exception)
   }
-  return filtered
+  return capRepeatedSentryEvent(filtered) ?? null
 }
 
 /**
@@ -53,6 +54,11 @@ function redactSharedSentryEventFields(event: Event): void {
   }
   if (event.transaction) {
     event.transaction = redactTelemetryUrls(event.transaction)
+  }
+  if (event.fingerprint) {
+    event.fingerprint = event.fingerprint.map((part) =>
+      redactTelemetryUrls(part)
+    )
   }
   if (event.tags) {
     event.tags = Object.fromEntries(
@@ -155,6 +161,23 @@ function redactSentryException(exception: Exception): void {
   }
 }
 
+const SENTRY_ENVIRONMENT_BY_HOSTNAME = new Map<string, string>([
+  ['cloud.comfy.org', 'production'],
+  ['stagingcloud.comfy.org', 'staging'],
+  ['testcloud.comfy.org', 'test']
+])
+
+/**
+ * The Sentry environment for a cloud hostname. Unknown hosts get `undefined`,
+ * which keeps the SDK default (`production`).
+ */
+export function resolveSentryEnvironment(hostname: string): string | undefined {
+  return (
+    SENTRY_ENVIRONMENT_BY_HOSTNAME.get(hostname) ??
+    (hostname.endsWith('.testenvs.comfy.org') ? 'preview' : undefined)
+  )
+}
+
 const RESOURCE_TIMING_BUFFER_SIZE = 1000
 
 function expandResourceTimingBuffer(): void {
@@ -179,6 +202,9 @@ export function initSentry({
     dsn,
     enabled,
     release: __COMFYUI_FRONTEND_VERSION__,
+    environment: isCloud
+      ? resolveSentryEnvironment(window.location.hostname)
+      : undefined,
     normalizeDepth: 8,
     tracesSampleRate: isCloud ? 1.0 : 0,
     replaysSessionSampleRate: 0,

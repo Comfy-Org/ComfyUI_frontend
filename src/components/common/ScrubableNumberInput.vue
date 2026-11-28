@@ -3,6 +3,7 @@
     <TooltipTrigger as-child>
       <div
         ref="scrubElement"
+        data-part="widget-number"
         v-bind="$attrs"
         :class="
           cn(
@@ -18,30 +19,30 @@
           :aria-label="t('g.decrement')"
           data-testid="decrement"
           class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+          data-part="widget-stepper"
+          data-direction="decrement"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canDecrement"
           tabindex="-1"
           @click="modelValue = clamp(modelValue - step)"
         >
-          <i
-            class="icon-[lucide--minus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
-          />
+          <i class="icon-[lucide--minus]" data-part="widget-stepper-icon" />
         </Button>
         <slot name="label" />
         <slot name="between" />
         <div
-          class="relative my-0.25 ml-auto min-h-0 min-w-[4ch] self-stretch py-1.5"
+          class="relative my-0.25 ml-auto min-h-0 min-w-[4ch] touch-pan-y self-stretch px-2 py-1.5 before:invisible before:block before:truncate before:content-[attr(data-value)] after:absolute after:inset-0 after:z-10 after:cursor-ew-resize focus-within:touch-auto focus-within:after:hidden"
+          data-part="widget-value"
+          :data-value="draft ?? displayValue ?? modelValue"
         >
-          <span aria-hidden="true" class="invisible block truncate px-2">
-            {{ draft ?? displayValue ?? modelValue }}
-          </span>
           <input
             ref="inputField"
             v-bind="inputAttrs"
             :value="draft ?? displayValue ?? modelValue"
             :disabled
-            class="peer absolute inset-0 truncate border-0 bg-transparent p-1 pr-2 text-right text-xs focus:outline-0"
+            class="absolute inset-0 truncate border-0 bg-transparent p-1 pr-2 text-right text-xs focus:outline-0"
+            data-part="widget-value"
             inputmode="decimal"
             autocomplete="off"
             autocorrect="off"
@@ -56,9 +57,6 @@
             @keydown.page-up.prevent="updateValueBy(10 * step)"
             @keydown.page-down.prevent="updateValueBy(-10 * step)"
           />
-          <div
-            class="absolute inset-0 z-10 cursor-ew-resize touch-pan-y peer-focus:hidden"
-          />
         </div>
         <slot />
         <Button
@@ -66,15 +64,15 @@
           :aria-label="t('g.increment')"
           data-testid="increment"
           class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+          data-part="widget-stepper"
+          data-direction="increment"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canIncrement"
           tabindex="-1"
           @click="modelValue = clamp(modelValue + step)"
         >
-          <i
-            class="icon-[lucide--plus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
-          />
+          <i class="icon-[lucide--plus]" data-part="widget-stepper-icon" />
         </Button>
       </div>
     </TooltipTrigger>

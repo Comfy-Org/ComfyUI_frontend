@@ -5,13 +5,32 @@ export interface CloudWorkflowGaps {
   models: CompatibilityModel[]
 }
 
+export interface UncheckedModelInput {
+  nodeType: string
+  input: string
+}
+
 export type CloudWorkflowVerdict =
-  | { kind: 'canOpen' }
+  | {
+      kind: 'canOpen'
+      workspaceId?: string
+      uncheckedInputs?: UncheckedModelInput[]
+    }
   | { kind: 'missing'; gaps: CloudWorkflowGaps }
+
+export type CloudCheckFailureReason =
+  | 'unreachable'
+  | 'busy'
+  | 'workspace'
+  | 'tooBig'
+  | 'outdated'
+  | 'unreadable'
+  | 'switchedOff'
 
 export type CloudWorkflowBlocker =
   | { kind: 'emptyWorkflow' }
   | { kind: 'unreadableModelLoader'; nodeType: string }
+  | { kind: 'checkFailed'; reason: CloudCheckFailureReason }
 
 export type CloudWorkflowCheckResult =
   | CloudWorkflowVerdict

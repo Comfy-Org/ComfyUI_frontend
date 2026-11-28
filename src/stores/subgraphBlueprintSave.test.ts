@@ -28,6 +28,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { ChangeTracker } from '@/scripts/changeTracker'
 
 function putBlueprintOnCanvas() {
   const graph = app.rootGraph
@@ -43,6 +44,7 @@ describe('subgraph blueprint save on the canvas', () => {
   let stored = ''
 
   beforeEach(() => {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     stored = putBlueprintOnCanvas()
     resetCanvasTrackerForTest()
     onTestFinished(resetCanvasTrackerForTest)
@@ -71,6 +73,7 @@ describe('subgraph blueprint save on the canvas', () => {
     const stored = workflowStore.getWorkflowByPath('subgraphs/mine.json')
     assert(stored, 'blueprint is in the workflow list')
     const blueprint = await stored.load()
+    blueprint.adoptGraph(app.rootGraph)
     workflowStore.activeWorkflow = blueprint
     bindCanvasTracker(blueprint.changeTracker)
     return blueprint

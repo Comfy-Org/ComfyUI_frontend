@@ -2,7 +2,15 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+import {
+  checkCloudCompatibility,
+  readCloudMissingModels
+} from '@/platform/openOnCloud/cloudCompatibilityApi'
+import type { CloudCheckFailureReason } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -18,6 +26,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
@@ -69,10 +78,15 @@ function cloudAnswers(response: Response | Error) {
 
 describe(checkCloudCompatibility, () => {
   beforeEach(() => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: true
+    })
     stubFirebaseAuthHarness()
     rootGraph = createTestRootGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-    vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(null)
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthContext').mockResolvedValue({
+      headers: null
+    })
   })
 
   it('opens a workflow when Cloud omits the optional missing models', async () => {
@@ -82,6 +96,310 @@ describe(checkCloudCompatibility, () => {
     await expect(checkCloudCompatibility()).resolves.toEqual({
       kind: 'canOpen'
     })
+  })
+
+  it.for([
+    {
+      uploadsEnabled: true,
+      expected: { kind: 'checkFailed', reason: 'outdated' }
+    },
+    { uploadsEnabled: false, expected: { kind: 'canOpen' } }
+  ])(
+    'checks a workflow with models and no model verdict when uploads are $uploadsEnabled',
+    async ({ uploadsEnabled, expected }) => {
+      Object.assign(useFeatureFlags().flags, {
+        openOnCloudModelUploadEnabled: uploadsEnabled
+      })
+      registerCheckpointLoader()
+      workflowHas(
+        node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' })
+      )
+      cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+      await expect(checkCloudCompatibility()).resolves.toEqual(expected)
+      expect(requestBody().models).toEqual([
+        { folder: 'checkpoints', name: 'sdxl.safetensors' }
+      ])
+    }
+  )
+
+  it.for([
+    { label: 'no credential', headers: null },
+    {
+      label: 'an account credential',
+      headers: { Authorization: 'Bearer user' }
+    }
+  ] as const)(
+    'keeps a signed-in workflow unchecked when workspace resolution returns $label',
+    async ({ headers }) => {
+      workflowHas(node('KSampler'))
+      const authStore = useAuthStore()
+      Object.assign(authStore, { isAuthenticated: true })
+      vi.mocked(authStore.getWorkspaceAuthContext).mockResolvedValue({
+        headers
+      })
+
+      await expect(checkCloudCompatibility()).resolves.toEqual({
+        kind: 'checkFailed',
+        reason: 'workspace'
+      })
+      expect(authStore.getWorkspaceAuthContext).toHaveBeenCalledWith({
+        requireWorkspace: true
+      })
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reports a missing workspace credential while offline as unreachable', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockResolvedValue({
+      headers: null
+    })
+    const offline = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreachable'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+    offline.mockRestore()
+  })
+
+  it('reports a failed token refresh as a workspace problem', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    const refreshFailed = new Error('token refresh failed')
+    vi.mocked(authStore.getWorkspaceAuthContext).mockRejectedValue(
+      refreshFailed
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'workspace'
+    })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      refreshFailed,
+      expect.anything()
+    )
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('reports an auth step that fails for lack of a network as unreachable', async () => {
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockRejectedValue(
+      Object.assign(new Error('offline'), {
+        code: 'auth/network-request-failed'
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreachable'
+    })
+  })
+
+  it('sends no workflow data if the workspace changes while authorization is pending', async () => {
+    workflowHas(node('KSampler'))
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+    const authStore = useAuthStore()
+    const workspaces = useTeamWorkspaceStore()
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-original' })
+    type AuthContext = Awaited<
+      ReturnType<typeof authStore.getWorkspaceAuthContext>
+    >
+    let finishAuth!: (value: AuthContext) => void
+    const auth = new Promise<AuthContext>((resolve) => {
+      finishAuth = resolve
+    })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockReturnValueOnce(auth)
+    const checks = useCloudWorkflowCheckStore()
+    const pending = checks.check()
+    await vi.waitFor(() =>
+      expect(authStore.getWorkspaceAuthContext).toHaveBeenCalledOnce()
+    )
+
+    Object.assign(workspaces, { activeWorkspaceId: 'ws-next' })
+    finishAuth({
+      headers: { Authorization: 'Bearer next-workspace' },
+      workspaceId: 'ws-next'
+    })
+    await pending
+
+    expect(fetch).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(checks.state.phase).toBe('idle')
+  })
+
+  it('uses account authorization for an ordinary model workflow while uploads are off', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    registerCheckpointLoader()
+    workflowHas(
+      node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' })
+    )
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.spyOn(authStore, 'getAuthHeader').mockResolvedValue({
+      Authorization: 'Bearer account'
+    })
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen'
+    })
+    expect(authStore.getWorkspaceAuthContext).not.toHaveBeenCalled()
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer account'
+    })
+  })
+
+  it('carries the workspace used by the compatibility credential into the ready verdict', async () => {
+    workflowHas(node('KSampler'))
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer host-workspace' },
+      workspaceId: 'ws-host'
+    })
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      workspaceId: 'ws-host'
+    })
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer host-workspace'
+    })
+  })
+
+  it('keeps a recovered model in the selected workspace after upload rollback', async () => {
+    const model = { folder: 'checkpoints', name: 'sdxl.safetensors' }
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    const authStore = useAuthStore()
+    Object.assign(authStore, { isAuthenticated: true })
+    vi.mocked(authStore.getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer workspace' },
+      workspaceId: 'ws-recovered'
+    })
+    registerCheckpointLoader()
+    workflowHas(node('CheckpointLoaderSimple', { ckpt_name: model.name }))
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(
+      checkCloudCompatibility({ workspaceId: 'ws-recovered', models: [model] })
+    ).resolves.toEqual({
+      kind: 'canOpen',
+      workspaceId: 'ws-recovered'
+    })
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer workspace'
+    })
+  })
+
+  it('checks a previous upload by model in the signed-in workspace', async () => {
+    const model = { folder: 'loras', name: 'model.safetensors' }
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer workspace' },
+      workspaceId: 'ws-upload'
+    })
+    cloudAnswers(
+      Response.json({
+        cloud: {
+          missing_node_types: [],
+          missing_models: [model]
+        }
+      })
+    )
+
+    await expect(readCloudMissingModels([model], 'ws-upload')).resolves.toEqual(
+      [model]
+    )
+    expect(requestBody()).toEqual({ node_types: [], models: [model] })
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer workspace'
+    })
+  })
+
+  it.for([
+    { label: 'an explicit empty model list', missing: [], expected: [] },
+    { label: 'no model verdict', missing: undefined, expected: null }
+  ])(
+    'reads $label when rechecking a previous upload',
+    async ({ missing, expected }) => {
+      vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+        headers: { Authorization: 'Bearer workspace' },
+        workspaceId: 'ws-upload'
+      })
+      cloudAnswers(
+        Response.json({
+          cloud: { missing_node_types: [], missing_models: missing }
+        })
+      )
+
+      await expect(
+        readCloudMissingModels(
+          [{ folder: 'loras', name: 'model.safetensors' }],
+          'ws-upload'
+        )
+      ).resolves.toEqual(expected)
+    }
+  )
+
+  it('can retry model confirmation after the workspace credential deadline', async () => {
+    const model = { folder: 'loras', name: 'model.safetensors' }
+    const context = {
+      headers: { Authorization: 'Bearer workspace' },
+      workspaceId: 'ws-upload'
+    } as const
+    let supplyCredentials!: (value: typeof context) => void
+    const stalled = new Promise<typeof context>((resolve) => {
+      supplyCredentials = resolve
+    })
+    const credentials = vi
+      .mocked(useAuthStore().getWorkspaceAuthContext)
+      .mockReturnValueOnce(stalled)
+      .mockResolvedValue(context)
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    const pending = readCloudMissingModels([model], 'ws-upload')
+    expect(credentials).toHaveBeenCalledOnce()
+    deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
+
+    await expect(pending).resolves.toBeNull()
+    supplyCredentials(context)
+    await stalled
+    expect(fetch).not.toHaveBeenCalled()
+    await expect(readCloudMissingModels([model], 'ws-upload')).resolves.toEqual(
+      []
+    )
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(requestBody()).toEqual({ node_types: [], models: [model] })
+  })
+
+  it('declines to confirm storage without an explicit matching workspace', async () => {
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer account' }
+    })
+
+    await expect(
+      readCloudMissingModels(
+        [{ folder: 'loras', name: 'model.safetensors' }],
+        'ws-upload'
+      )
+    ).resolves.toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('lists the node packs Cloud is missing', async () => {
@@ -102,8 +420,8 @@ describe(checkCloudCompatibility, () => {
       node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' }),
       node('KSampler')
     )
-    vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
-      Authorization: 'Bearer token'
+    vi.mocked(useAuthStore().getWorkspaceAuthContext).mockResolvedValue({
+      headers: { Authorization: 'Bearer token' }
     })
     cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
 
@@ -158,20 +476,29 @@ describe(checkCloudCompatibility, () => {
     ])
   })
 
-  it('returns no verdict, without asking Cloud, when a loader model is not in the local library', async () => {
+  it('asks Cloud about the rest and names the input whose model is missing from the local library', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({ directory: 'text_encoders', models: {} })
     ])
     workflowHas(
       node('DualCLIPLoader', { clip_name1: 't5xxl_fp16.safetensors' })
     )
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(fetch).not.toHaveBeenCalled()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['DualCLIPLoader'],
+      models: []
+    })
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('returns no verdict when a loader model name exists in more than one local folder', async () => {
+  it('names the input whose model file name matches more than one local folder', async () => {
     vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
       fromPartial<ModelFolder>({
         directory: 'clip_vision',
@@ -183,9 +510,65 @@ describe(checkCloudCompatibility, () => {
       })
     ])
     workflowHas(node('DualCLIPLoader', { clip_name1: 'model.safetensors' }))
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(fetch).not.toHaveBeenCalled()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
+    })
+  })
+
+  it('asks Cloud about a loader whose folders share one directory, naming the models it could not place', async () => {
+    const sharedDirectory = {
+      '0/model.safetensors': { file_name: 'model.safetensors' },
+      '0/Wan2.2_VAE.pth': { file_name: 'Wan2.2_VAE.pth' }
+    }
+    vi.spyOn(useModelStore(), 'loadModels').mockResolvedValue([
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_4danyone',
+        models: sharedDirectory
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_perceptual',
+        models: sharedDirectory
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'splatkit_birefnet',
+        models: { '0/model.safetensors': { file_name: 'model.safetensors' } }
+      }),
+      fromPartial<ModelFolder>({
+        directory: 'detection',
+        models: {
+          '0/sam_3d_body.safetensors': { file_name: 'sam_3d_body.safetensors' }
+        }
+      })
+    ])
+    workflowHas(
+      node('SplatKit_4DAnyoneModelLoader', {
+        checkpoint: 'model.safetensors',
+        vae: 'Wan2.2_VAE.pth',
+        birefnet: 'model.safetensors',
+        sam3d_body: 'sam_3d_body.safetensors'
+      })
+    )
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'checkpoint' },
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'vae' },
+        { nodeType: 'SplatKit_4DAnyoneModelLoader', input: 'birefnet' }
+      ]
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['SplatKit_4DAnyoneModelLoader'],
+      models: [{ folder: 'detection', name: 'sam_3d_body.safetensors' }]
+    })
   })
 
   it('treats only picker widgets as possible model files', async () => {
@@ -279,7 +662,7 @@ describe(checkCloudCompatibility, () => {
     }
   )
 
-  it('returns no verdict when a loader takes its model from another node', async () => {
+  it('asks Cloud about the rest and names the input when a loader takes its model from another node', async () => {
     registerCheckpointLoader()
     const selector = node('ModelNameSelector')
     selector.addOutput('ckpt_name', 'COMBO')
@@ -290,8 +673,88 @@ describe(checkCloudCompatibility, () => {
     workflowHas(selector, loader)
     selector.connect(0, loader, 0)
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
-    expect(fetch).not.toHaveBeenCalled()
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [
+        { nodeType: 'CheckpointLoaderSimple', input: 'ckpt_name' }
+      ]
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['ModelNameSelector', 'CheckpointLoaderSimple'],
+      models: []
+    })
+  })
+
+  it('reports missing Cloud nodes when the sampler choice comes from another node', async () => {
+    const selector = node('ConvertStringToComboNode')
+    selector.addOutput('combo', 'COMBO')
+    const sampler = node('KSamplerSelect')
+    sampler.addWidget('combo', 'sampler_name', 'euler', () => {}, {
+      values: ['euler', 'heun']
+    })
+    sampler.addInput('sampler_name', 'COMBO').widget = { name: 'sampler_name' }
+    workflowHas(selector, sampler)
+    selector.connect(0, sampler, 0)
+    cloudAnswers(
+      Response.json({
+        cloud: { missing_node_types: ['ConvertStringToComboNode'] }
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'missing',
+      gaps: { nodePacks: ['ConvertStringToComboNode'], models: [] }
+    })
+    expect(requestBody()).toEqual({
+      node_types: ['ConvertStringToComboNode', 'KSamplerSelect'],
+      models: []
+    })
+  })
+
+  it('names a linked filename picker with no folder mapping as unchecked', async () => {
+    const selector = node('ConvertStringToComboNode')
+    selector.addOutput('combo', 'COMBO')
+    const loader = node('DualCLIPLoader', {
+      clip_name1: 'clip_l.safetensors'
+    })
+    loader.addInput('clip_name1', 'COMBO').widget = { name: 'clip_name1' }
+    workflowHas(selector, loader)
+    selector.connect(0, loader, 0)
+
+    cloudAnswers(
+      Response.json({ cloud: { missing_node_types: [], missing_models: [] } })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen',
+      uncheckedInputs: [{ nodeType: 'DualCLIPLoader', input: 'clip_name1' }]
+    })
+  })
+
+  it('still reports what Cloud lacks when a linked model is also unchecked', async () => {
+    registerCheckpointLoader()
+    const selector = node('ModelNameSelector')
+    selector.addOutput('ckpt_name', 'COMBO')
+    const loader = node('CheckpointLoaderSimple', {
+      ckpt_name: 'stale.safetensors'
+    })
+    loader.addInput('ckpt_name', 'COMBO').widget = { name: 'ckpt_name' }
+    workflowHas(selector, loader)
+    selector.connect(0, loader, 0)
+    cloudAnswers(
+      Response.json({
+        cloud: { missing_node_types: ['ModelNameSelector'], missing_models: [] }
+      })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'missing',
+      gaps: { nodePacks: ['ModelNameSelector'], models: [] }
+    })
   })
 
   it('still asks Cloud when only non-model inputs are connected', async () => {
@@ -337,26 +800,183 @@ describe(checkCloudCompatibility, () => {
     ])
   })
 
-  it.for([
-    { name: 'a network failure', response: () => new TypeError('offline') },
+  it.for<{
+    name: string
+    response: () => Response | Error
+    reason: CloudCheckFailureReason
+  }>([
     {
-      name: 'a failed response',
-      response: () => new Response(null, { status: 503 })
+      name: 'a network failure',
+      response: () => new TypeError('offline'),
+      reason: 'unreachable'
+    },
+    {
+      name: 'a 503 while the node list loads',
+      response: () => new Response(null, { status: 503 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 500 reading the models',
+      response: () => new Response(null, { status: 500 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 429',
+      response: () => new Response(null, { status: 429 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 400 for too many node types',
+      response: () =>
+        Response.json(
+          {
+            code: 'INVALID_REQUEST',
+            message: 'at most 2000 distinct node types'
+          },
+          { status: 400 }
+        ),
+      reason: 'tooBig'
+    },
+    {
+      name: 'a 413 for a body over the limit',
+      response: () => new Response(null, { status: 413 }),
+      reason: 'tooBig'
+    },
+    {
+      name: 'a 400 for a workspace the credential does not match',
+      response: () =>
+        Response.json(
+          { code: 'workspace_id_invalid', message: 'conflict' },
+          { status: 400 }
+        ),
+      reason: 'workspace'
+    },
+    {
+      name: 'a 403',
+      response: () => new Response(null, { status: 403 }),
+      reason: 'workspace'
+    },
+    {
+      name: 'a 408',
+      response: () => new Response(null, { status: 408 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 404 that is not the switch-off answer',
+      response: () => new Response('<html>Not Found</html>', { status: 404 }),
+      reason: 'busy'
+    },
+    {
+      name: 'a 400 that is not about size',
+      response: () =>
+        Response.json(
+          { code: 'INVALID_REQUEST', message: 'node_types is required' },
+          { status: 400 }
+        ),
+      reason: 'outdated'
+    },
+    {
+      name: 'a 400 with no body',
+      response: () => new Response(null, { status: 400 }),
+      reason: 'outdated'
+    },
+    {
+      name: 'a 200 whose body is cut off',
+      response: () =>
+        new Response(
+          new ReadableStream({
+            start: (controller) => controller.error(new TypeError('dropped'))
+          })
+        ),
+      reason: 'unreachable'
+    },
+    {
+      name: 'a 200 that is not JSON',
+      response: () => new Response('<html>Portal</html>', { status: 200 }),
+      reason: 'outdated'
+    },
+    {
+      name: 'an unexpected 4xx',
+      response: () => new Response(null, { status: 422 }),
+      reason: 'outdated'
     },
     {
       name: 'a body outside the contract',
-      response: () => Response.json({ cloud: { missing_node_types: 'none' } })
+      response: () => Response.json({ cloud: { missing_node_types: 'none' } }),
+      reason: 'outdated'
     }
-  ])('reports $name and returns no verdict', async ({ response }) => {
+  ])('reports $name as $reason', async ({ response, reason }) => {
     workflowHas(node('KSampler'))
     cloudAnswers(response())
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason
+    })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.anything(),
       expect.objectContaining({
         errorType: 'failure_checking_cloud_compatibility'
       })
     )
+  })
+
+  it('reports a 404 as switched off', async () => {
+    workflowHas(node('KSampler'))
+    cloudAnswers(
+      Response.json(
+        { code: 'NOT_FOUND', message: 'Not found' },
+        { status: 404 }
+      )
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    expect(reportError).toHaveBeenCalledOnce()
+  })
+
+  it('reports no answer within the deadline as busy', async () => {
+    workflowHas(node('KSampler'))
+    const deadline = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(deadline.signal)
+    vi.mocked(fetch).mockImplementation(
+      (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(init.signal?.reason)
+          )
+          deadline.abort(new DOMException('Test deadline', 'TimeoutError'))
+        })
+    )
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'busy'
+    })
+  })
+
+  it('reports a workflow it cannot read as unreadable', async () => {
+    vi.spyOn(app, 'rootGraph', 'get').mockImplementation(() => {
+      throw new Error('broken graph')
+    })
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'checkFailed',
+      reason: 'unreadable'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('returns no verdict when the caller cancels the check', async () => {
+    workflowHas(node('KSampler'))
+    const controller = new AbortController()
+    controller.abort()
+
+    await expect(
+      checkCloudCompatibility(undefined, controller.signal)
+    ).resolves.toBeNull()
+    expect(reportError).not.toHaveBeenCalled()
   })
 })

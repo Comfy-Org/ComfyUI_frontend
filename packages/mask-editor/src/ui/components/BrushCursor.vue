@@ -1,6 +1,6 @@
 <template>
   <div
-    id="maskEditor_brush"
+    class="maskEditor_brush"
     data-testid="brush-cursor"
     :style="{
       position: 'absolute',
@@ -14,7 +14,7 @@
     }"
   >
     <div
-      id="maskEditor_brushPreviewGradient"
+      class="maskEditor_brushPreviewGradient"
       data-testid="brush-cursor-gradient"
       :style="{
         display: gradientVisible ? 'block' : 'none',

@@ -1,10 +1,10 @@
 import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import type { BillingType } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -70,7 +70,10 @@ beforeEach(() => {
   mocks.billingType.value = 'workspace'
   mocks.activeWorkspaceId = 'workspace-1'
   mocks.isPersonal = true
-  remoteConfig.value = { cancellation_survey_id: 'survey-1' }
+  useRemoteConfigStore().acceptConfig(
+    { cancellation_survey_id: 'survey-1' },
+    false
+  )
 
   vi.spyOn(
     useTeamWorkspaceStore(),
@@ -82,10 +85,6 @@ beforeEach(() => {
     'isInPersonalWorkspace',
     'get'
   ).mockImplementation(() => mocks.isPersonal)
-})
-
-afterEach(() => {
-  remoteConfig.value = {}
 })
 
 describe('launchCancellationFlow', () => {
@@ -169,7 +168,7 @@ describe('launchCancellationFlow', () => {
     { name: 'is not configured', config: {} },
     { name: 'is blank', config: { cancellation_survey_id: '' } }
   ])('skips the survey when its ID $name', async ({ config }) => {
-    remoteConfig.value = config
+    useRemoteConfigStore().acceptConfig(config, false)
     const { shown, showFlow } = captureFlow()
 
     await launchCancellationFlow({ showFlow })

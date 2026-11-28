@@ -50,7 +50,7 @@ test(
       }
     ]
   },
-  async ({ page, promptHistory, workflowSelection }) => {
+  async ({ page, promptHistory }) => {
     await new AgentPanel(page).open()
     await page
       .getByRole('button', {
@@ -60,17 +60,6 @@ test(
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
-    // The composer gates Send behind an explicit workflow target
-    // (agent.selectWorkflowForAgent); without this the click below never
-    // reaches promptHistory.
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     await composer.pressSequentially('find a node for me')
@@ -154,8 +143,7 @@ test(
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
     const summary = reopenedPanel.getByRole('button', {
-      name: enMessages.agent.worked,
-      exact: true
+      name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
     await expect(

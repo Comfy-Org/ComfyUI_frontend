@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, watchSyncEffect } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -22,6 +23,7 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
@@ -324,6 +326,70 @@ describe('widget visibility', () => {
 
   it('shows normal widgets', () => {
     expect(visibilityOf({})).toBe(true)
+  })
+
+  describe('runtime type swaps on a widget that owns an input slot', () => {
+    function registerSlotOwningWidget(name = 'points_store') {
+      const nodeId = toNodeId(1)
+      const { graph, node } = createGraphWithNode([], nodeId)
+      const widget = node.addWidget('number', name, 0, () => {})
+      node.inputs = [
+        {
+          name,
+          type: 'INT',
+          widget: { name },
+          boundingRect: [0, 0, 0, 0]
+        }
+      ]
+      const id = widget.widgetId
+      if (!id) throw new Error('Expected widget registration to succeed')
+      return {
+        widget,
+        process: () =>
+          processWidgets({ widgetIds: [id], nodeId, rootGraph: graph })[0]
+      }
+    }
+
+    it('suppresses a widget an extension hides by type', () => {
+      const { widget, process } = registerSlotOwningWidget()
+      expect(process().visible).toBe(true)
+
+      widget.type = fromAny('hidden')
+
+      const processed = process()
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
+      expect(processed.visible).toBe(false)
+      expect(processed.suppressedByConnection).toBe(false)
+    })
+
+    it('restores the widget when the extension puts the original type back', () => {
+      const { widget, process } = registerSlotOwningWidget()
+
+      widget.type = fromAny('hidden')
+      widget.type = fromAny('number')
+
+      expect(process().visible).toBe(true)
+    })
+
+    it('keeps a socket-only row for a converted widget', () => {
+      const { widget, process } = registerSlotOwningWidget()
+
+      widget.type = fromAny('converted-widget')
+
+      const processed = process()
+      expect(processed.simplified.type).toBe('converted-widget')
+      expect(processed.slotMetadata).toEqual({
+        index: 0,
+        type: 'INT',
+        linked: false,
+        promoted: false
+      })
+    })
   })
 
   it('hides hidden widgets', () => {
@@ -768,6 +834,92 @@ describe('computeProcessedWidgets', () => {
     expect(result[0].simplified.borderStyle).toBe('ring ring-primary')
   })
 
+  it('serializes folder locks per input without changing widget values or sibling metadata', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'model')
+    registerWidgetState(id, { type: 'combo', value: 'Other/model.safetensors' })
+    const { node } = createGraphWithNode([
+      createMockWidget({
+        widgetId: id,
+        name: 'model',
+        value: 'Other/model.safetensors'
+      })
+    ])
+    node.serialize_widgets = true
+    const store = useWidgetValueStore()
+    const sibling = widgetId(GRAPH_ID, node.id, 'sibling')
+    useWidgetFolderLockStore().set(sibling, { directory: ['SDXL'] })
+
+    useWidgetFolderLockStore().set(id, { directory: ['MOSS', 'image'] })
+    const saved = node.serialize()
+    expect(saved).toMatchObject({
+      properties: {
+        widget_folder_locks: { model: ['MOSS', 'image'], sibling: ['SDXL'] }
+      },
+      widgets_values: ['Other/model.safetensors']
+    })
+    store.clearNode(GRAPH_ID, node.id)
+    node.configure(saved)
+    expect(useWidgetFolderLockStore().get(id)?.directory).toEqual([
+      'MOSS',
+      'image'
+    ])
+    expect(node.properties).not.toHaveProperty('widget_folder_locks')
+    useWidgetFolderLockStore().set(id, undefined)
+    expect(node.serialize().properties?.widget_folder_locks).toEqual({
+      sibling: ['SDXL']
+    })
+    expect(useWidgetFolderLockStore().get(id)).toBeUndefined()
+  })
+
+  it('restores a detached copy under its new node identity without sharing the lock', () => {
+    const { graph, node } = createGraphWithNode([])
+    const originalId = widgetId(GRAPH_ID, node.id, 'model')
+    useWidgetFolderLockStore().set(originalId, { directory: ['MOSS', 'image'] })
+    const saved = node.serialize()
+    const copy = createNode([])
+
+    copy.configure(saved)
+    expect(copy.serialize().properties?.widget_folder_locks).toEqual({
+      model: ['MOSS', 'image']
+    })
+    graph.add(copy)
+    const copyId = widgetId(GRAPH_ID, copy.id, 'model')
+
+    expect(copyId).not.toBe(originalId)
+    expect(useWidgetFolderLockStore().get(copyId)).toEqual({
+      directory: ['MOSS', 'image']
+    })
+    expect(copy.properties).not.toHaveProperty('widget_folder_locks')
+    graph.remove(copy)
+    expect(copy.serialize().properties?.widget_folder_locks).toEqual({
+      model: ['MOSS', 'image']
+    })
+    graph.add(copy)
+    useWidgetFolderLockStore().set(copyId, undefined)
+    expect(copy.serialize().properties).not.toHaveProperty(
+      'widget_folder_locks'
+    )
+    expect(useWidgetFolderLockStore().get(originalId)).toEqual({
+      directory: ['MOSS', 'image']
+    })
+  })
+
+  it('does not resurrect a detached lock when configuring an unlocked snapshot', () => {
+    const { graph, node } = createGraphWithNode([])
+    const id = widgetId(GRAPH_ID, node.id, 'model')
+    const unlocked = node.serialize()
+    useWidgetFolderLockStore().set(id, { directory: ['MOSS', 'image'] })
+    graph.remove(node)
+
+    node.configure(unlocked)
+    graph.add(node)
+
+    expect(useWidgetFolderLockStore().get(id)).toBeUndefined()
+    expect(node.serialize().properties).not.toHaveProperty(
+      'widget_folder_locks'
+    )
+  })
+
   it('reads widget identity, value, label, and options from widgetId state', () => {
     const id = widgetId(GRAPH_ID, toNodeId('host'), 'text')
     registerWidgetState(id, {
@@ -1022,6 +1174,32 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe(42)
     expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
+  })
+
+  it('calls a clicked button callback with its own value and leaves that value unchanged', () => {
+    const callback = vi.fn()
+    const id = widgetId(GRAPH_ID, NODE_ID, 'clear')
+    const widget = createMockWidget({
+      name: 'clear',
+      type: 'button',
+      value: 'clear',
+      widgetId: id,
+      callback
+    })
+    registerWidgetState(id, { type: 'button', value: 'clear' })
+
+    const [processed] = processUpdateWidgets([widget])
+    processed.simplified.callback?.(undefined)
+
+    expect(callback).toHaveBeenCalledExactlyOnceWith(
+      'clear',
+      undefined,
+      expect.any(LGraphNode),
+      undefined,
+      undefined
+    )
+    expect(widget.value).toBe('clear')
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe('clear')
   })
 
   it('updates widgetState.value when store entry exists', () => {

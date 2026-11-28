@@ -63,15 +63,19 @@ async function serveAppShellForDeepLink(page: Page) {
 
 async function serveNewBillingUi(page: Page) {
   await page.route('**/api/features', (route) =>
-    route.fulfill(
-      jsonRoute({ billing_new_ux_enabled: true, pricing_table_fallback: false })
-    )
+    route.fulfill(jsonRoute({ billing_new_ux_enabled: true }))
   )
   await page
     .context()
     .route(`**${PLATFORM_PLANS_PATH}**`, (route) =>
       route.fulfill({ contentType: 'text/html', body: 'Plans' })
     )
+}
+
+async function blockPopups(page: Page) {
+  await page.addInitScript(() => {
+    window.open = () => null
+  })
 }
 
 async function serveCapabilitiesAfterBillingStatus(page: Page) {
@@ -86,31 +90,42 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
   test.describe('with the new billing UI on', () => {
-    test('takes a never-subscribed owner to Plans in the same tab with pop-ups blocked', async ({
-      page
-    }) => {
-      await new CloudWorkspaceMockHelper(page).setup(
-        DEFAULT_TEAM_MEMBERS,
-        workspace('personal', 'owner'),
-        {
-          ...PERSONAL_BILLING_STATUS,
-          subscription_status: undefined,
-          subscription_state: 'never_subscribed'
-        }
-      )
-      await page.addInitScript(() => {
-        window.open = () => null
+    test.describe('with a never-subscribed owner', () => {
+      test.beforeEach(async ({ page }) => {
+        await new CloudWorkspaceMockHelper(page).setup(
+          DEFAULT_TEAM_MEMBERS,
+          workspace('personal', 'owner'),
+          {
+            ...PERSONAL_BILLING_STATUS,
+            subscription_status: undefined,
+            subscription_state: 'never_subscribed'
+          }
+        )
+        await serveNewBillingUi(page)
+        await serveAppShellForDeepLink(page)
       })
-      await serveNewBillingUi(page)
-      await serveAppShellForDeepLink(page)
 
-      await page.goto(`${APP_URL}/cloud/subscribe?tier=standard&cycle=monthly`)
+      for (const popupPolicy of ['blocked', 'allowed']) {
+        test.describe(`with pop-ups ${popupPolicy}`, () => {
+          if (popupPolicy === 'blocked') {
+            test.beforeEach(async ({ page }) => {
+              await blockPopups(page)
+            })
+          }
 
-      await expect(page).toHaveURL(new RegExp(PLATFORM_PLANS_PATH), {
-        timeout: 45_000
-      })
-      expect(new URL(page.url()).searchParams.has('tier')).toBe(false)
-      expect(new URL(page.url()).searchParams.has('cycle')).toBe(false)
+          test('takes the owner to Plans', async ({ page }) => {
+            await page.goto(
+              `${APP_URL}/cloud/subscribe?tier=standard&cycle=monthly`
+            )
+
+            await expect(page).toHaveURL(new RegExp(PLATFORM_PLANS_PATH), {
+              timeout: 45_000
+            })
+            expect(new URL(page.url()).searchParams.has('tier')).toBe(false)
+            expect(new URL(page.url()).searchParams.has('cycle')).toBe(false)
+          })
+        })
+      }
     })
 
     test('forwards a pricing query to Platform Plans without selecting a plan', async ({
@@ -168,6 +183,7 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
         TEAM_WORKSPACE,
         INACTIVE_TEAM_BILLING_STATUS
       )
+      await blockPopups(page)
       await serveNewBillingUi(page)
       await serveAppShellForDeepLink(page)
       await serveCapabilitiesAfterBillingStatus(page)
@@ -188,6 +204,7 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
         TEAM_MEMBER_WORKSPACE,
         INACTIVE_TEAM_BILLING_STATUS
       )
+      await blockPopups(page)
       await serveNewBillingUi(page)
       await serveAppShellForDeepLink(page)
       await serveCapabilitiesAfterBillingStatus(page)
@@ -211,6 +228,7 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
         TEAM_WORKSPACE,
         TEAM_BILLING_STATUS
       )
+      await blockPopups(page)
       await serveNewBillingUi(page)
       await serveAppShellForDeepLink(page)
       await serveCapabilitiesAfterBillingStatus(page)
@@ -230,6 +248,7 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
         TEAM_MEMBER_WORKSPACE,
         TEAM_BILLING_STATUS
       )
+      await blockPopups(page)
       await serveNewBillingUi(page)
       await serveAppShellForDeepLink(page)
       await serveCapabilitiesAfterBillingStatus(page)

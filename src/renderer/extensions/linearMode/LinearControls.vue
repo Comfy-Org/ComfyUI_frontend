@@ -25,6 +25,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
+import SharedNodeTooltip from '@/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
@@ -186,6 +187,7 @@ function replayAppModeTour() {
         class="grow scroll-shadows-background overflow-y-auto contain-size"
       >
         <AppModeWidgetList ref="widgetListRef" :mobile />
+        <SharedNodeTooltip />
       </section>
       <Teleport
         v-if="!jobToastTimeout || pendingJobQueues > 0"

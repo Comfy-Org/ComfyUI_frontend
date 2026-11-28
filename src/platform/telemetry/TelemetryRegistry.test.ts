@@ -22,6 +22,8 @@ import type {
   AgentPanelOpenedMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
@@ -136,6 +138,22 @@ describe('TelemetryRegistry', () => {
     registry.trackRunOnCloudEvent(event)
 
     expect(a.trackRunOnCloudEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches a custom deployment event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackCustomDeploymentEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'platform:deployment_link_clicked',
+      properties: { kind: 'manage_deployments', workspace_id: 'ws-1' }
+    } as const
+    registry.trackCustomDeploymentEvent(event)
+
+    expect(a.trackCustomDeploymentEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches unified auth retry outcomes to supporting providers', () => {
@@ -317,6 +335,47 @@ describe('TelemetryRegistry', () => {
     )
   })
 
+  it('dispatches prompt editor experiment events to every registered provider', () => {
+    const providers = [0, 1].map((): TelemetryProvider => ({
+      trackPromptEditorExposure: vi.fn(),
+      trackPromptEditorOpened: vi.fn(),
+      trackPromptEditorClosed: vi.fn()
+    }))
+    const registry = new TelemetryRegistry()
+    providers.forEach((provider) => registry.registerProvider(provider))
+    const exposure = {
+      variant: 'panel' as const,
+      '$feature/prompt-editor-surface': 'panel' as const
+    }
+    const opened = {
+      surface: 'panel' as const,
+      trigger: 'expand_button' as const,
+      '$feature/prompt-editor-surface': 'panel' as const
+    }
+    const closed = {
+      ...opened,
+      end_reason: 'close' as const,
+      duration_ms: 1200,
+      input_count: 4,
+      node_switch_count: 2
+    }
+
+    registry.trackPromptEditorExposure(exposure)
+    registry.trackPromptEditorOpened(opened)
+    registry.trackPromptEditorClosed(closed)
+
+    expect(
+      providers.map((provider) => ({
+        exposure: vi.mocked(provider.trackPromptEditorExposure!).mock.calls,
+        opened: vi.mocked(provider.trackPromptEditorOpened!).mock.calls,
+        closed: vi.mocked(provider.trackPromptEditorClosed!).mock.calls
+      }))
+    ).toEqual([
+      { exposure: [[exposure]], opened: [[opened]], closed: [[closed]] },
+      { exposure: [[exposure]], opened: [[opened]], closed: [[closed]] }
+    ])
+  })
+
   describe('agent telemetry dispatch', () => {
     const feedbackMetadata = {
       message_id: 'm1',
@@ -337,6 +396,7 @@ describe('TelemetryRegistry', () => {
     const messageSentMetadata = {
       attachment_count: 1,
       node_tag_count: 2,
+      skill_count: 1,
       thread_id: 'th-1',
       workflow_id: 'w1',
       client_message_id: 'cm-1',
@@ -368,8 +428,16 @@ describe('TelemetryRegistry', () => {
       action: 'next'
     } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
-      source: 'mention_picker'
+      source: 'mention_picker',
+      node_count: 1
     } satisfies AgentNodeTaggedMetadata
+    const skillSelectedMetadata = {
+      source: 'slash_picker'
+    } satisfies AgentSkillSelectedMetadata
+    const skillSavedMetadata = {
+      mode: 'add',
+      outcome: 'saved'
+    } satisfies AgentSkillSavedMetadata
     const workflowAppliedMetadata = {
       workflow_id: 'w1',
       target: 'active_tab_open'
@@ -513,6 +581,17 @@ describe('TelemetryRegistry', () => {
         invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
       },
       {
+        method: 'trackAgentSkillSelected',
+        expected: { ...skillSelectedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentSkillSelected(skillSelectedMetadata)
+      },
+      {
+        method: 'trackAgentSkillSaved',
+        expected: { ...skillSavedMetadata },
+        invoke: (registry) => registry.trackAgentSkillSaved(skillSavedMetadata)
+      },
+      {
         method: 'trackAgentAttachButtonClicked',
         expected: { method: 'menu' },
         invoke: (registry) =>
@@ -574,20 +653,63 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentRunApprovalShown',
-        expected: { turn_id: 't1', workflow_id: 'w1' },
+        expected: { ask_id: 'a1', turn_id: 't1', workflow_id: 'w1' },
         invoke: (registry) =>
           registry.trackAgentRunApprovalShown({
+            ask_id: 'a1',
             turn_id: 't1',
             workflow_id: 'w1'
           })
       },
       {
         method: 'trackAgentRunApprovalResolved',
-        expected: { decision: 'run', time_to_decide_ms: 120 },
+        expected: {
+          ask_id: 'a1',
+          turn_id: 't1',
+          decision: 'run',
+          time_to_decide_ms: 120
+        },
         invoke: (registry) =>
           registry.trackAgentRunApprovalResolved({
+            ask_id: 'a1',
+            turn_id: 't1',
             decision: 'run',
             time_to_decide_ms: 120
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalAnswerFailed',
+        expected: { ask_id: 'a1', turn_id: 't1' },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalAnswerFailed({
+            ask_id: 'a1',
+            turn_id: 't1'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalRecoveryAttempted',
+        expected: { ask_id: 'a1', turn_id: 't1', cause: 'reconnect' },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalRecoveryAttempted({
+            ask_id: 'a1',
+            turn_id: 't1',
+            cause: 'reconnect'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalRecoveryOutcome',
+        expected: {
+          ask_id: 'a1',
+          turn_id: 't1',
+          cause: 'reconnect',
+          outcome: 'restored'
+        },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalRecoveryOutcome({
+            ask_id: 'a1',
+            turn_id: 't1',
+            cause: 'reconnect',
+            outcome: 'restored'
           })
       },
       {
