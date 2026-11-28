@@ -242,10 +242,14 @@ describe('TaskItemImpl', () => {
 
     const task = new TaskItemImpl(job)
 
-    expect(task.flatOutputs).toHaveLength(1)
-    expect(task.flatOutputs[0].filename).toBe('')
-    expect(task.previewableOutputs).toHaveLength(1)
-    expect(task.previewOutput?.content).toBe('test')
+    expect(task.flatOutputs).toStrictEqual([
+      expect.objectContaining({
+        filename: '',
+        content: 'test',
+        mediaType: 'text'
+      })
+    ])
+    expect(task.previewableOutputs).toStrictEqual(task.flatOutputs)
   })
 
   it('should reject non-text preview outputs without a filename', () => {
@@ -796,6 +800,29 @@ describe('useQueueStore', () => {
       expect(updatedTask).not.toBe(initialTask)
     })
 
+    it('replaces a reused history task when its deployment is renamed', async () => {
+      const deployment = {
+        deployment_id: 'dep-flux',
+        release_id: 'rel-flux-3',
+        build_name: 'Flux Studio'
+      }
+      const job = { ...createHistoryJob(10, 'job-1'), deployment }
+
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([job])
+      await store.update()
+
+      vi.mocked(api.getHistory).mockResolvedValue([
+        { ...job, deployment: { ...deployment, build_name: 'Flux Pro' } }
+      ])
+      await store.update()
+
+      expect(store.historyTasks[0].job.deployment).toEqual({
+        ...deployment,
+        build_name: 'Flux Pro'
+      })
+    })
+
     it('should reuse TaskItemImpl when outputs_count unchanged', async () => {
       const job = {
         ...createHistoryJob(10, 'job-1'),
@@ -1048,7 +1075,7 @@ describe('useQueueStore', () => {
       const job = createPendingJob(1, 'pend-1')
       const task = new TaskItemImpl(job)
 
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([])
 
@@ -1061,7 +1088,7 @@ describe('useQueueStore', () => {
       const job = createHistoryJob(1, 'hist-1')
       const task = new TaskItemImpl(job, createTaskOutput())
 
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([])
 
@@ -1074,7 +1101,7 @@ describe('useQueueStore', () => {
       const job = createPendingJob(1, 'pend-1')
       const task = new TaskItemImpl(job)
 
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([])
 

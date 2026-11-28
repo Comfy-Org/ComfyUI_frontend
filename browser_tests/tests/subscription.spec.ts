@@ -9,35 +9,34 @@ import {
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import type { SubscriptionHelper } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 
-// oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-// Installs subscription mocks AFTER comfyPage.setup() and reloads the page
-// so `addInitScript` (which sets `window.__CONFIG__.subscription_required`)
-// applies before module-level reads in `ComfyRunButton/index.ts` evaluate.
 function createSubscriptionTest(
   ...defaultOps: Parameters<typeof createSubscriptionHelper>[1][]
 ) {
   return comfyPageFixture.extend<{
+    subscriptionMocks: SubscriptionHelper
     subscriptionHelper: SubscriptionHelper
   }>({
     initialSettings: {
       'Comfy.Extension.Disabled': ['Comfy.Cloud.Subscription']
     },
-    subscriptionHelper: [
-      async ({ comfyPage }, use) => {
-        const helper = createSubscriptionHelper(comfyPage.page, ...defaultOps)
+    subscriptionMocks: [
+      async ({ page }, use) => {
+        const helper = createSubscriptionHelper(page, ...defaultOps)
         await helper.mock()
-        await comfyPage.page.reload()
-        // Firebase auth resolves asynchronously after app boot — wait for the
-        // user button (v-if="isLoggedIn") before any test body interacts with it.
-        // Note: The 15s timeout accounts for video recording overhead in CI rather than expected load time.
+        await use(helper)
+        await helper.clearMocks()
+      },
+      { auto: true }
+    ],
+    subscriptionHelper: [
+      async ({ comfyPage, subscriptionMocks }, use) => {
         await expect(
           comfyPage.page.getByTestId(TestIds.user.currentUserButton)
         ).toBeVisible({ timeout: 15000 })
-        // Defense-in-depth: dismiss the dialog if it surfaces via a different code path.
-        await helper.dismissSubscriptionDialogIfOpen()
-        await use(helper)
-        await helper.clearMocks()
+        await subscriptionMocks.dismissSubscriptionDialogIfOpen()
+        await use(subscriptionMocks)
       },
       { auto: true }
     ]
@@ -66,14 +65,13 @@ unsubscribedTest.describe(
     )
 
     unsubscribedTest(
-      'SubscribeToRun click opens subscription dialog',
+      'SubscribeToRun click opens the platform Plans page',
       async ({ comfyPage }) => {
-        await comfyPage.page
-          .getByTestId(TestIds.topbar.subscribeToRunButton)
-          .click()
-        await expect(
-          comfyPage.page.locator('[data-dialog-key="subscription-required"]')
-        ).toBeVisible()
+        await expectPlatformPlansOpened(comfyPage.page, () =>
+          comfyPage.page
+            .getByTestId(TestIds.topbar.subscribeToRunButton)
+            .click()
+        )
       }
     )
 
@@ -86,26 +84,6 @@ unsubscribedTest.describe(
         )
         await expect(btn).toBeVisible()
         await expect(btn).not.toContainText(/to run/i)
-      }
-    )
-
-    unsubscribedTest(
-      'User popover shows subscribe when unsubscribed',
-      async ({ subscriptionHelper }) => {
-        const popover = await subscriptionHelper.openUserPopover()
-        await expect(
-          popover.getByRole('button', { name: /subscribe/i })
-        ).toBeVisible()
-      }
-    )
-
-    unsubscribedTest(
-      'User popover subscribe click opens dialog',
-      async ({ comfyPage, subscriptionHelper }) => {
-        await subscriptionHelper.clickPopoverSubscribe()
-        await expect(
-          comfyPage.page.locator('[data-dialog-key="subscription-required"]')
-        ).toBeVisible()
       }
     )
 
@@ -157,27 +135,23 @@ unsubscribedTest.describe(
     )
 
     unsubscribedTest(
-      'Cleanup prevents stale subscription state after dialog close',
+      'Returning from the Plans page refreshes stale subscription state',
       async ({ comfyPage, subscriptionHelper }) => {
-        await subscriptionHelper.clickPopoverSubscribe()
-        const dialog = comfyPage.page.locator(
-          '[data-dialog-key="subscription-required"]'
+        const plans = await expectPlatformPlansOpened(comfyPage.page, () =>
+          comfyPage.page
+            .getByTestId(TestIds.topbar.subscribeToRunButton)
+            .click()
         )
-        await expect(dialog).toBeVisible()
-
-        await dialog.getByRole('button', { name: /close/i }).first().click()
-        await expect(dialog).toBeHidden()
-
         subscriptionHelper.setStatus({
           is_active: true,
           subscription_tier: 'STANDARD',
           subscription_duration: 'MONTHLY'
         })
+        await plans.close()
         await comfyPage.page.evaluate(() => {
           window.dispatchEvent(new Event('focus'))
         })
 
-        await expect(dialog).toBeHidden()
         await expect(
           comfyPage.page.getByTestId(TestIds.topbar.subscribeToRunButton)
         ).toBeHidden()

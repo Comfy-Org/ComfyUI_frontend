@@ -86,6 +86,7 @@ export class LiteGraphGlobal {
   NODE_TITLE_TEXT_Y = 20
   NODE_SLOT_HEIGHT = 20
   NODE_WIDGET_HEIGHT = 20
+  NODE_WIDGET_GAP = 4
   NODE_WIDTH = 140
   NODE_MIN_WIDTH = 50
   NODE_COLLAPSED_RADIUS = 10
@@ -451,6 +452,7 @@ export class LiteGraphGlobal {
   // Special Rendering Values pulled out of app.ts patches
   nodeOpacity = 1
   nodeLightness: number | undefined = undefined
+  linkStyle: 'solid' | 'chalk' | undefined = undefined
 
   // TODO: Remove legacy accessors
   LGraph = LGraph

@@ -77,7 +77,9 @@ export const PlanStatus: Story = {
     view: {
       kind: 'planStatus',
       title: 'Your Team plan ends on November 20, 2026',
-      body: "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits."
+      body: "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits.",
+      action: 'resumePlan',
+      href: null
     }
   }
 }

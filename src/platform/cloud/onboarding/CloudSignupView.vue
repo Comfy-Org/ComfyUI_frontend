@@ -18,7 +18,7 @@
       </RouterLink>
     </p>
 
-    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
@@ -48,7 +48,7 @@
       </template>
 
       <template v-else>
-        <Message v-if="isFreeTierEnabled" severity="warning" class="w-full">
+        <Message v-if="isFreeTierEnabled" severity="warning">
           {{ t('auth.signup.emailNotEligibleForFreeTier') }}
         </Message>
 
@@ -61,11 +61,7 @@
           <Skeleton class="h-10 w-full" />
           <Skeleton class="h-10 w-full" />
         </div>
-        <Message
-          v-else-if="regionStatus === 'blocked'"
-          severity="warning"
-          class="w-full"
-        >
+        <Message v-else-if="regionStatus === 'blocked'" severity="warning">
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
         <SignUpForm

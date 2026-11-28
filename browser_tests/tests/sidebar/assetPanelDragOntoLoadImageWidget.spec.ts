@@ -4,8 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import {
   STALE_TEMP_ASSET,
-  STALE_TEMP_CARD_TEXT,
-  STALE_TEMP_FILENAME
+  STALE_TEMP_CARD_TEXT
 } from '@e2e/fixtures/data/assetFixtures'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -50,9 +49,9 @@ test.describe(
           const url = new URL(route.request().url())
           const filename = url.searchParams.get('filename')
           if (
-            (filename === STALE_TEMP_FILENAME &&
+            (filename === STALE_TEMP_ASSET.hash &&
               (!tempAvailable || url.searchParams.get('type') !== 'temp')) ||
-            filename === `${STALE_TEMP_FILENAME} [temp]`
+            filename === `${STALE_TEMP_ASSET.hash} [temp]`
           ) {
             return route.fulfill({ status: 404 })
           }
@@ -64,7 +63,7 @@ test.describe(
           const imageWidget = await loadImageNodeRef.getWidgetByName('image')
           await expect
             .poll(() => imageWidget.getValue())
-            .toBe(`${STALE_TEMP_FILENAME} [temp]`)
+            .toBe(`${STALE_TEMP_ASSET.hash} [temp]`)
         })
 
         await test.step('Show the dropped asset preview', async () => {

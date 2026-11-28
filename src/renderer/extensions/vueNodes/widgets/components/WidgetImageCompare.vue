@@ -26,6 +26,7 @@
     <div
       v-if="beforeImage || afterImage"
       ref="containerRef"
+      data-media-overlay
       data-testid="image-compare-viewport"
       class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node py-4"
     >
@@ -96,8 +97,8 @@ const { widget, nodeId } = defineProps<{
 }>()
 
 const node = useWidgetHostNode(
-  () => widget.nodeLocatorId,
-  () => nodeId
+  () => nodeId,
+  () => widget.nodeLocatorId
 )
 
 const { beforeImages, afterImages } = useImageCompareImages(node, nodeId)

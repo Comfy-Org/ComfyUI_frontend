@@ -46,30 +46,30 @@ test.describe(
 )
 
 test.describe('Settings dialog', { tag: '@ui' }, () => {
-  test('About panel renders mocked version from server', async ({
-    comfyPage
-  }) => {
-    const stats = {
-      ...mockSystemStats,
-      system: {
-        ...mockSystemStats.system,
-        comfyui_version: MOCK_COMFYUI_VERSION
+  test.describe('About panel', () => {
+    test.beforeEach(async ({ page }) => {
+      const stats = {
+        ...mockSystemStats,
+        system: {
+          ...mockSystemStats.system,
+          comfyui_version: MOCK_COMFYUI_VERSION
+        }
       }
-    }
-    await comfyPage.page.route('**/system_stats**', async (route) => {
-      await route.fulfill({ json: stats })
+      await page.route('**/system_stats**', async (route) => {
+        await route.fulfill({ json: stats })
+      })
     })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
 
-    const dialog = comfyPage.settingDialog
-    await dialog.open()
-    await dialog.goToAboutPanel()
+    test('renders mocked version from server', async ({ comfyPage }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await dialog.goToAboutPanel()
 
-    const aboutPanel = comfyPage.page.getByTestId('about-panel')
-    await expect(aboutPanel).toBeVisible()
-    await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
-    await expect(aboutPanel).toContainText('ComfyUI_frontend')
+      const aboutPanel = comfyPage.page.getByTestId('about-panel')
+      await expect(aboutPanel).toBeVisible()
+      await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
+      await expect(aboutPanel).toContainText('ComfyUI_frontend')
+    })
   })
 
   test('Toggling a boolean setting through UI persists the value', async ({

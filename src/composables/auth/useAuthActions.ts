@@ -19,10 +19,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { AuthFlowAction } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  clearAllWorkspaceStorage,
-  prepareWorkflowLogoutTransition
-} from '@/platform/workflow/persistence/base/storageIO'
+import { clearAllWorkspaceStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogService } from '@/services/dialogService'
@@ -120,8 +117,12 @@ export const useAuthActions = () => {
   /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. */
   const logout = wrapWithErrorHandlingAsync(
     async ({
-      beforeSignOut
-    }: { beforeSignOut?: () => Promise<boolean> } = {}) => {
+      beforeSignOut,
+      signInPath = '/cloud/login'
+    }: {
+      beforeSignOut?: () => Promise<boolean>
+      signInPath?: string
+    } = {}): Promise<boolean> => {
       if (isCloud) {
         const workflowStore = useWorkflowStore()
         const modifiedWorkflows = workflowStore.modifiedWorkflows
@@ -133,14 +134,14 @@ export const useAuthActions = () => {
             type: 'dirtyClose',
             denyLabel: t('auth.signOut.signOutAnyway')
           })
-          if (confirmed === null) return
+          if (confirmed === null) return false
 
           if (confirmed) {
             const workflowService = useWorkflowService()
             for (const workflow of modifiedWorkflows) {
               try {
                 const saved = await workflowService.saveWorkflow(workflow)
-                if (!saved) return
+                if (!saved) return false
               } catch {
                 throw new Error(
                   t('auth.signOut.saveFailed', { workflow: workflow.path })
@@ -151,13 +152,10 @@ export const useAuthActions = () => {
         }
       }
 
-      if (beforeSignOut && !(await beforeSignOut())) return
+      if (beforeSignOut && !(await beforeSignOut())) return false
 
       await authStore.logout()
-      if (isCloud) {
-        prepareWorkflowLogoutTransition()
-        clearAllWorkspaceStorage()
-      }
+      if (isCloud) clearAllWorkspaceStorage()
 
       toast.success(t('auth.signOut.success'), {
         description: t('auth.signOut.successDetail'),
@@ -166,12 +164,13 @@ export const useAuthActions = () => {
 
       if (isCloud) {
         try {
-          window.location.href = '/cloud/login'
+          window.location.href = signInPath
         } catch {
           // needed for local development until we bring in cloud login pages.
           window.location.reload()
         }
       }
+      return true
     },
     reportError
   )

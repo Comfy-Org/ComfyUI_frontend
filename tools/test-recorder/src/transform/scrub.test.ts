@@ -54,7 +54,7 @@ describe('credential-shaped values', () => {
   it.for([
     "await page.getByLabel('Name').fill('my workflow name')",
     "await page.getByLabel('Prompt').fill('a nice prompt about cats')"
-  ])('leaves ordinary fill unchanged', (code) => {
+  ])('leaves ordinary fill unchanged in %s', (code) => {
     expect(scrubSecrets(code)).toEqual({ code, findings: [] })
   })
 })

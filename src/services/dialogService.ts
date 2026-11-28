@@ -8,8 +8,10 @@ import { assert } from '@/base/assert'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { withRefusalReason } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatalog/types'
 import type { PromptError } from '@comfyorg/api-client/types'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -25,7 +27,7 @@ import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
-import { tryExtractValidationError } from '@/utils/executionErrorUtil'
+import { cloudValidationErrorOf } from '@/utils/executionErrorUtil'
 
 const GLOBAL_PROMPT_KEY = 'global-prompt'
 
@@ -59,7 +61,16 @@ function getPromptErrorSources(response: unknown): RunErrorMessageSource[] {
 
   return [
     ...(promptError
-      ? [{ kind: 'prompt' as const, error: promptError, isCloud }]
+      ? [
+          {
+            kind: 'prompt' as const,
+            error:
+              isCloud && useFeatureFlags().flags.billingNewUxEnabled
+                ? withRefusalReason(promptError, parsed.data.error)
+                : promptError,
+            isCloud
+          }
+        ]
       : []),
     ...Object.entries(nodeErrors).flatMap(([nodeId, value]) => {
       if (!isPlainObject(value)) return []
@@ -113,7 +124,7 @@ function formatDialogError(error: Error): string {
 // would never settle. Serialize FIFO per key; distinct keys stay concurrent.
 const promptTails = new Map<string, Promise<unknown>>()
 
-function enqueuePrompt<T>(
+export function enqueuePrompt<T>(
   key: string,
   show: (resolve: (value: T) => void) => void
 ): Promise<T> {
@@ -134,9 +145,7 @@ export const useDialogService = (): CoreDialogService => {
   const dialogStore = useDialogStore()
 
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
-    const validationError = tryExtractValidationError(
-      executionError.exception_message
-    )
+    const validationError = cloudValidationErrorOf(executionError)
     const validationSources = getPromptErrorSources(validationError)
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       errorSources: validationSources.length

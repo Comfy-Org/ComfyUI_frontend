@@ -314,12 +314,14 @@ test.describe('Topbar commands', () => {
         .toBe(true)
     })
 
-    test('Should let a native modal dialog opened over Settings take clicks', async ({
+    test('Should center a native legacy modal over Settings and let it take clicks', async ({
       comfyPage
     }) => {
       await comfyPage.settingDialog.open()
       await comfyPage.page.evaluate(() => {
         const dialog = document.createElement('dialog')
+        dialog.className = 'comfy-dialog comfyui-dialog comfy-modal'
+        dialog.style.display = 'flex'
         const option = document.createElement('input')
         option.type = 'checkbox'
         option.setAttribute('aria-label', 'Extension option')
@@ -330,6 +332,19 @@ test.describe('Topbar commands', () => {
       const option = comfyPage.page.getByRole('checkbox', {
         name: 'Extension option'
       })
+      const dialog = comfyPage.page.getByRole('dialog').filter({ has: option })
+
+      await expect
+        .poll(() =>
+          dialog.evaluate((element) => {
+            const bounds = element.getBoundingClientRect()
+            return Math.max(
+              Math.abs(bounds.x + bounds.width / 2 - window.innerWidth / 2),
+              Math.abs(bounds.y + bounds.height / 2 - window.innerHeight / 2)
+            )
+          })
+        )
+        .toBeLessThan(1)
 
       await option.click()
 

@@ -53,7 +53,7 @@ const STATUS_TEXT: Record<AskUserResolution['status'], string> = {
       <li
         v-for="(answer, index) in answers"
         :key="index"
-        class="flex items-start gap-2 text-foreground"
+        class="flex items-start gap-2"
       >
         <i class="mt-0.5 icon-[lucide--check] text-primary" />
         <span class="min-w-0 wrap-break-word">{{ answer }}</span>

@@ -13,6 +13,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -126,14 +127,11 @@ async function setupRefusedPlanChange(page: Page, portalUrl: string) {
   return portalOpens
 }
 
-/** The avatar menu's Plans and pricing entry, then the Standard tier's action. */
 async function changeToStandardYearly(page: Page) {
-  await page.goto(APP_URL)
+  await page.goto(`${APP_URL}/?pricing=1`)
   await page.waitForFunction(() => !!window.app?.extensionManager, null, {
     timeout: 45_000
   })
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('plans-pricing-menu-item').click()
   await expect(
     page.getByRole('heading', { name: 'Choose a Plan' })
   ).toBeVisible({ timeout: 45_000 })
@@ -141,6 +139,8 @@ async function changeToStandardYearly(page: Page) {
 }
 
 test.describe('Billing portal origin (#19892)', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('opens the custom-domain portal session the server mints', async ({
     page
   }) => {

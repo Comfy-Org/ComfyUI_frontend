@@ -23,18 +23,15 @@ export class SelectedItemsView extends Set<Positionable> {
     for (const item of items) super.add(item)
   }
 
-  // fallow-ignore-next-line unused-class-member
   override add(item: Positionable): this {
     if (this.graph) updateGraphSelection(this.graph, item, true)
     return this
   }
 
-  // fallow-ignore-next-line unused-class-member
   override delete(item: Positionable): boolean {
     return this.graph ? updateGraphSelection(this.graph, item, false) : false
   }
 
-  // fallow-ignore-next-line unused-class-member
   override clear(): void {
     clearGraphSelection(this.graph)
   }

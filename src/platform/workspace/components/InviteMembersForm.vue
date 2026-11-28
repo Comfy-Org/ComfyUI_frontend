@@ -56,7 +56,7 @@
       <Button
         variant="secondary"
         size="lg"
-        :class="cn(!cancelLabel && 'w-full rounded-lg')"
+        :class="cn(!cancelLabel && 'w-full')"
         :loading
         :disabled="!canSubmit"
         :aria-busy="loading"

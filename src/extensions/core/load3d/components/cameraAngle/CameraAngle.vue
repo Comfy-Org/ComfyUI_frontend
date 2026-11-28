@@ -113,7 +113,7 @@ import type {
 } from '@comfyorg/viewport3d/cameraAngle/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -226,7 +226,7 @@ function selectPreset(field: CameraAngleField, key: unknown) {
 
 function resolveOwnerNode(): LGraphNode | null {
   const locatorId = widget.nodeLocatorId
-  const graph = app.rootGraphOrUndefined
+  const graph = useApp().rootGraphOrUndefined
   return locatorId && graph ? getNodeByLocatorId(graph, locatorId) : null
 }
 

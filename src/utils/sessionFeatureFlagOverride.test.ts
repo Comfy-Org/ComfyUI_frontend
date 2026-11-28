@@ -95,9 +95,9 @@ describe('getSessionOverride', () => {
   })
 
   it('overrides any flag, with no opt-in registry to join', () => {
-    visit('/?ff=unified_cloud_auth&ff=some_flag_invented_tomorrow:42')
+    visit('/?ff=sso_enabled&ff=some_flag_invented_tomorrow:42')
 
-    expect(getSessionOverride('unified_cloud_auth')).toBe(true)
+    expect(getSessionOverride('sso_enabled')).toBe(true)
     expect(getSessionOverride('some_flag_invented_tomorrow')).toBe(42)
   })
 
@@ -191,18 +191,13 @@ describe('getSessionOverride', () => {
 
     it('withholds a stored override before Auth has resolved and does not initialize Firebase', async () => {
       vi.resetModules()
-      const [
-        { getSessionOverride: readFresh },
-        { getApps, initializeApp },
-        { remoteConfigState }
-      ] = await Promise.all([
-        import('@/utils/sessionFeatureFlagOverride'),
-        import('firebase/app'),
-        import('@/platform/remoteConfig/remoteConfig')
-      ])
+      const [{ getSessionOverride: readFresh }, { getApps, initializeApp }] =
+        await Promise.all([
+          import('@/utils/sessionFeatureFlagOverride'),
+          import('firebase/app')
+        ])
       vi.mocked(initializeApp).mockClear()
       vi.mocked(getApps).mockReturnValue([])
-      remoteConfigState.value = 'anonymous'
       visit('/?ff=onboarding_tour_enabled')
 
       expect(readFresh('onboarding_tour_enabled')).toBeUndefined()

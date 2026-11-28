@@ -13,6 +13,8 @@ export interface DialogComponentProps {
    * sections, so the dialog frame adds no padding around them.
    */
   flush?: boolean
+  /** Keeps the top where the dialog opened, so a taller state grows downward. */
+  growsDown?: boolean
   /** The component renders the whole panel: its surface, size and close button. */
   headless?: boolean
   maximizable?: boolean

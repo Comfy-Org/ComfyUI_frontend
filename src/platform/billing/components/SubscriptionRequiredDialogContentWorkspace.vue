@@ -99,7 +99,6 @@
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
       :action-url="activeCheckoutActionUrl"
-      :force-reactivation="reactivationRequired"
       :authentication-state
       :payment-cancelable
       :canceling-payment="isCancelingPayment"
@@ -162,7 +161,6 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
-  reactivationRequired,
   selectedTierKey,
   selectedBillingCycle,
   activeCheckoutActionUrl,

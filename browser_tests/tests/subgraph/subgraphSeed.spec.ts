@@ -18,18 +18,19 @@ wstest(
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
     async function verifySeedControl(initializeState = true) {
-      const seedWidget = comfyPage.vueNodes.getWidgetByName('', 'seed')
+      const seedWidget = comfyPage.vueNodes.getWidgetRowByLabel('', 'seed')
       const { input, valueControl } =
         comfyPage.vueNodes.getInputNumberControls(seedWidget)
 
       if (initializeState) {
         await input.fill('1')
+        await input.blur()
         await valueControl.click()
         await comfyPage.page.getByRole('radio', { name: 'increment' }).click()
         await comfyPage.keyboard.press('Escape')
       }
 
-      await execution.run()
+      execution.executionSuccess(await execution.run())
       await expect.soft(input).toHaveValue('2')
     }
 

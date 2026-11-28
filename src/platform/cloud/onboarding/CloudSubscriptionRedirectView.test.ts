@@ -4,8 +4,12 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { TeamCreditStops } from '@comfyorg/billing-core'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
@@ -15,13 +19,15 @@ const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 // Router mocks
 let mockQuery: Record<string, unknown> = {}
 const mockRouterPush = vi.fn()
+const mockRouterReplace = vi.fn()
 
 vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
     query: mockQuery
   }),
   useRouter: () => ({
-    push: mockRouterPush
+    push: mockRouterPush,
+    replace: mockRouterReplace
   })
 }))
 
@@ -30,7 +36,13 @@ vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock(import('@/composables/useErrorHandling'))
 
+vi.mock(import('@/composables/useFeatureFlags'))
+
+vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
+
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
 
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
@@ -139,6 +151,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -184,6 +197,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: {
         planMode: 'team',
@@ -209,6 +223,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(useAuthActions().reportError).toHaveBeenCalledWith(plansError)
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: undefined
     })
@@ -256,7 +271,133 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal'
     })
+  })
+
+  describe('with the new billing UI on', () => {
+    beforeEach(() => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      serveCanOpenPlans(true)
+      useBillingCapabilities().hasResolvedCapabilities = computed(() => true)
+    })
+
+    function serveCanOpenPlans(granted: boolean) {
+      useBillingCapabilities().canOpenPlans = computed(() =>
+        receiveServerFact('can_open_plans', granted)
+      )
+    }
+
+    function serveCanManageSubscription(granted: boolean) {
+      const billingUI = useBillingUI()
+      billingUI.permissions = computed(() => ({
+        canManageSubscription: receiveServerFact(
+          'can_manage_subscription',
+          granted
+        ),
+        canManageSubscriptionLifecycle: receiveServerFact(
+          'can_manage_subscription',
+          granted
+        ),
+        canDowngradeToPersonal: false
+      }))
+    }
+
+    test('opens plans only after the capabilities read settles', async () => {
+      let settleCapabilitiesRead = () => {}
+      vi.mocked(useBillingCapabilities().initialize).mockReturnValue(
+        new Promise<void>((resolve) => {
+          settleCapabilitiesRead = resolve
+        })
+      )
+
+      await mountView({ tier: 'standard' })
+
+      expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+
+      settleCapabilitiesRead()
+      await flushPromises()
+
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'deep_link', sameTab: true })
+      )
+      expect(mockRouterReplace).not.toHaveBeenCalled()
+    })
+
+    test('leaves the redirect screen for the app when the person cannot manage the subscription', async () => {
+      serveCanOpenPlans(false)
+      serveCanManageSubscription(false)
+
+      await mountView({ tier: 'standard' })
+
+      expect(mockRouterReplace).toHaveBeenCalledWith('/')
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledTimes(1)
+    })
+
+    test('takes a person who can manage an active plan to Plans in the same tab', async () => {
+      useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
+
+      await mountView({ tier: 'standard' })
+
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'deep_link', sameTab: true })
+      )
+      expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+      expect(mockRouterReplace).not.toHaveBeenCalled()
+    })
+
+    test('moves a member of an active workspace to the app without the inactive notice', async () => {
+      useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
+      serveCanOpenPlans(false)
+      serveCanManageSubscription(false)
+
+      await mountView({ tier: 'standard' })
+
+      expect(mockRouterReplace).toHaveBeenCalledWith('/')
+      expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+      expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+    })
+
+    test('reads capabilities once more when the first read brings none', async () => {
+      useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
+
+      await mountView({ tier: 'standard' })
+
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+    })
+
+    test('does not read capabilities again once they are served', async () => {
+      await mountView({ tier: 'standard' })
+
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
+    })
+
+    test.for([
+      { workspace: 'an inactive', active: false },
+      { workspace: 'an active', active: true }
+    ])(
+      'moves a person who manages $workspace workspace but cannot open Plans to the app',
+      async ({ active }) => {
+        useBillingContext().canAccessSubscriptionFeatures = computed(
+          () => active
+        )
+        serveCanOpenPlans(false)
+
+        await mountView({ tier: 'standard' })
+
+        expect(mockRouterReplace).toHaveBeenCalledWith('/')
+        expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+        expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+      }
+    )
+  })
+
+  test('reads no capabilities and stays on the redirect screen with the new billing UI off', async () => {
+    await mountView({ tier: 'standard' })
+
+    expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
+    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledTimes(1)
   })
 })

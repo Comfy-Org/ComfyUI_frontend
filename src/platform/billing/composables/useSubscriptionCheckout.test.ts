@@ -370,7 +370,8 @@ vi.mock<unknown>(
 
 provideBillingDialogs(() => ({
   showSubscriptionRequiredDialog: vi.fn(),
-  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
+  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog,
+  showTopUpCreditsDialog: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
@@ -634,6 +635,8 @@ describe('useSubscriptionCheckout', () => {
         credits_today_cents: 3150,
         credits_next_period_cents: 4200,
         requires_reactivation_confirmation: true,
+        requires_reactivation_charge_confirmation: false,
+        cancel_at: '2026-11-20T00:00:00Z',
         current_plan: {
           ...makeCreatorMonthly(),
           period_end: '2026-11-27T00:00:00Z'
@@ -1177,7 +1180,7 @@ describe('useSubscriptionCheckout', () => {
       ['TRANSITION_NOT_ALLOWED', 'payment_failed'],
       ['TRANSITION_NOT_ALLOWED', 'paused']
     ] as const)(
-      'routes %s previews to the billing portal',
+      'routes %s previews to the billing portal when billing status is %s',
       async ([code, status]) => {
         if (status) {
           mockGetBillingStatus.mockResolvedValueOnce({ billing_status: status })
@@ -4637,6 +4640,10 @@ describe('useSubscriptionCheckout', () => {
 
       async function setupOnRail(parked?: RailOperation) {
         const rail = reactive(railStub({ subscriptionActionOperation: parked }))
+        rail.getOperation = (opId) =>
+          rail.subscriptionActionOperation?.opId === opId
+            ? rail.subscriptionActionOperation
+            : undefined
         mockSubscriptionRail.value = rail
         return { rail, checkout: await setupWithApprovedPreview() }
       }
@@ -4725,6 +4732,41 @@ describe('useSubscriptionCheckout', () => {
 
         settleSecond()
         await second
+      })
+
+      it('keeps Back from leaving while the subscribe is verified, until verification times out', async () => {
+        const { rail, checkout } = await setupOnRail()
+        selectPersonal(checkout)
+        checkout.checkoutStep.value = 'preview'
+        let failSubscribe!: (error: Error) => void
+        mockSubscribe.mockImplementationOnce(
+          () =>
+            new Promise((_, reject) => {
+              failSubscribe = reject
+            })
+        )
+        const verifying: RailOperation = {
+          ...PARKED_ON_CARD,
+          actionUrl: null,
+          phase: null
+        }
+        const payment = checkout.handleAddCreditCard()
+        await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+        rail.subscriptionActionOperation = { ...PARKED_ON_CARD, phase: null }
+        await nextTick()
+        rail.subscriptionActionOperation = undefined
+        rail.getOperation = () => verifying
+        await nextTick()
+
+        checkout.handleBackToPricing()
+        expect(checkout.checkoutStep.value).toBe('preview')
+
+        rail.getOperation = () => ({ ...verifying, status: 'timeout' })
+        failSubscribe(new Error('Subscription verification timed out'))
+        await payment
+        checkout.handleBackToPricing()
+
+        expect(checkout.checkoutStep.value).toBe('pricing')
       })
     })
 

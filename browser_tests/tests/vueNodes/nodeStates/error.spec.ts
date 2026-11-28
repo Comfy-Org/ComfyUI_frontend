@@ -224,15 +224,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       })
 
       await test.step('edit steps widget so the new value is within range', async () => {
-        const stepsWidget = comfyPage.vueNodes.getWidgetByName(
-          'KSampler',
-          'steps'
-        )
-        const controls = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
-        // ScrubableNumberInput commits on blur — explicit blur avoids a race
-        // with the keyup-Enter handler in case Enter is consumed elsewhere.
-        await controls.input.fill('25')
-        await controls.input.blur()
+        const stepsInput = comfyPage.vueNodes
+          .getNodeLocator(ksamplerId)
+          .getByRole('spinbutton', { name: 'steps', exact: true })
+        await stepsInput.fill('25')
+        await stepsInput.blur()
       })
 
       await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)

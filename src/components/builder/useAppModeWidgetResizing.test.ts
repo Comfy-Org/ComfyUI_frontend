@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
 
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -33,28 +32,17 @@ describe('useAppModeWidgetResizing', () => {
   function setup() {
     const onResize =
       vi.fn<(widget: IBaseWidget, config: InputWidgetConfig) => void>()
-    const { onPointerDown } = useAppModeWidgetResizing(onResize)
+    const { onPointerDown, onPointerUp } = useAppModeWidgetResizing(onResize)
 
     function bind(wrapper: HTMLElement, widget: IBaseWidget) {
       wrapper.addEventListener('pointerdown', (e) => onPointerDown(widget, e), {
         capture: true
       })
+      wrapper.addEventListener('pointerup', onPointerUp, { capture: true })
     }
 
     return { onResize, bind }
   }
-
-  it('persists height when textarea is resized via drag', () => {
-    const { bind, onResize } = setup()
-    const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, WIDGET_PROMPT)
-
-    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    setHeight(textarea, 250)
-    window.dispatchEvent(new PointerEvent('pointerup'))
-
-    expect(onResize).toHaveBeenCalledWith(WIDGET_PROMPT, { height: 250 })
-  })
 
   it('does not persist when no height change occurs (e.g. a click)', () => {
     const { bind, onResize } = setup()
@@ -62,22 +50,9 @@ describe('useAppModeWidgetResizing', () => {
     bind(wrapper, WIDGET_PROMPT)
 
     textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    textarea.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
 
     expect(onResize).not.toHaveBeenCalled()
-  })
-
-  it('persists once per drag gesture; stray pointerup is a no-op', () => {
-    const { bind, onResize } = setup()
-    const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, WIDGET_PROMPT)
-
-    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    setHeight(textarea, 250)
-    window.dispatchEvent(new PointerEvent('pointerup'))
-    window.dispatchEvent(new PointerEvent('pointerup'))
-
-    expect(onResize).toHaveBeenCalledTimes(1)
   })
 
   it('ignores pointerdown on non-resizable targets (label, button, popover)', () => {
@@ -89,7 +64,7 @@ describe('useAppModeWidgetResizing', () => {
     bind(wrapper, WIDGET_PROMPT)
 
     button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
 
     expect(onResize).not.toHaveBeenCalled()
   })
@@ -108,7 +83,7 @@ describe('useAppModeWidgetResizing', () => {
 
     inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(indicator, 250)
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    indicator.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
 
     expect(onResize).toHaveBeenCalledWith(WIDGET_IMAGE, { height: 250 })
   })
@@ -129,60 +104,15 @@ describe('useAppModeWidgetResizing', () => {
       new PointerEvent('pointerdown', { bubbles: true })
     )
     setHeight(second.textarea, 300)
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    first.textarea.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true })
+    )
+    second.textarea.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true })
+    )
 
     expect(onResize).toHaveBeenCalledTimes(1)
     expect(onResize).toHaveBeenCalledWith(WIDGET_OTHER, { height: 300 })
-  })
-
-  it('treats pointercancel as the end of a gesture and persists the new height', () => {
-    const { bind, onResize } = setup()
-    const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, WIDGET_PROMPT)
-
-    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    setHeight(textarea, 250)
-    window.dispatchEvent(new PointerEvent('pointercancel'))
-
-    expect(onResize).toHaveBeenCalledWith(WIDGET_PROMPT, { height: 250 })
-  })
-
-  it('after pointercancel, a subsequent stray pointerup is a no-op', () => {
-    const { bind, onResize } = setup()
-    const { wrapper, textarea } = wrapWithTextarea()
-    bind(wrapper, WIDGET_PROMPT)
-
-    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    setHeight(textarea, 250)
-    window.dispatchEvent(new PointerEvent('pointercancel'))
-    setHeight(textarea, 400)
-    window.dispatchEvent(new PointerEvent('pointerup'))
-
-    expect(onResize).toHaveBeenCalledTimes(1)
-    expect(onResize).toHaveBeenCalledWith(WIDGET_PROMPT, { height: 250 })
-  })
-
-  it('removes global listeners when the owning scope is disposed mid-gesture', () => {
-    const onResize =
-      vi.fn<(widget: IBaseWidget, config: InputWidgetConfig) => void>()
-    const scope = effectScope()
-    const { onPointerDown } = scope.run(() =>
-      useAppModeWidgetResizing(onResize)
-    )!
-    const { wrapper, textarea } = wrapWithTextarea()
-    wrapper.addEventListener(
-      'pointerdown',
-      (e) => onPointerDown(WIDGET_PROMPT, e),
-      { capture: true }
-    )
-
-    textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    setHeight(textarea, 250)
-    scope.stop()
-    window.dispatchEvent(new PointerEvent('pointerup'))
-    window.dispatchEvent(new PointerEvent('pointercancel'))
-
-    expect(onResize).not.toHaveBeenCalled()
   })
 
   it('does not match a resizable that is an ancestor of the wrapper', () => {
@@ -201,7 +131,7 @@ describe('useAppModeWidgetResizing', () => {
 
     inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(outerIndicator, 250)
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    inner.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
 
     expect(onResize).not.toHaveBeenCalled()
   })

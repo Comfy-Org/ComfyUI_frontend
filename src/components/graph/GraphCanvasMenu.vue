@@ -9,18 +9,15 @@
         class="pointer-events-auto ml-auto flex max-w-full min-w-0 gap-1 overflow-x-auto floating-panel"
         @wheel="canvasInteractions.handleWheel"
       >
-        <CanvasModeSelector
-          :button-styles="stringifiedMinimapStyles.buttonStyles"
-        />
+        <CanvasModeSelector />
 
         <div class="h-[27px] w-px self-center bg-border" />
 
         <Button
           :tooltip="fitViewLabel"
-          variant="secondary"
+          variant="textonly"
           :aria-label="fitViewLabel"
-          :style="stringifiedMinimapStyles.buttonStyles"
-          class="size-8 bg-transparent p-0"
+          class="size-8 p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
           <i class="icon-[lucide--focus]" aria-hidden="true" />
@@ -28,20 +25,16 @@
 
         <Button
           :tooltip="t('zoomControls.label')"
-          variant="secondary"
-          :class="
-            cn(
-              'h-8 w-15 bg-transparent p-0 hover:bg-accent',
-              isModalVisible && 'not-active:bg-muted'
-            )
-          "
+          variant="textonly"
+          :class="cn('w-15 p-0', isModalVisible && 'not-active:bg-muted')"
           :aria-label="t('zoomControls.label')"
           data-testid="zoom-controls-button"
-          :style="stringifiedMinimapStyles.buttonStyles"
           @click="toggleModal"
         >
           <span class="inline-flex items-center gap-1 px-2 text-xs">
-            <span>{{ canvasStore.appScalePercentage }}%</span>
+            <span class="tabular-nums"
+              >{{ canvasStore.appScalePercentage }}<span>%</span></span
+            >
             <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </span>
         </Button>
@@ -50,13 +43,12 @@
 
         <Button
           :tooltip="minimapLabel"
-          variant="secondary"
+          variant="textonly"
           :aria-label="minimapLabel"
           data-testid="toggle-minimap-button"
-          :style="stringifiedMinimapStyles.buttonStyles"
           :class="
             cn(
-              'size-8 bg-transparent p-0 hover:bg-accent',
+              'size-8 p-0',
               settingStore.get('Comfy.Minimap.Visible') && 'not-active:bg-muted'
             )
           "
@@ -67,16 +59,10 @@
 
         <Button
           :tooltip="linkVisibilityLabel"
-          variant="secondary"
-          :class="
-            cn(
-              'size-8 bg-transparent p-0 hover:bg-accent',
-              linkHidden && 'not-active:bg-muted'
-            )
-          "
+          variant="textonly"
+          :class="cn('size-8 p-0', linkHidden && 'not-active:bg-muted')"
           :aria-label="linkVisibilityLabel"
           data-testid="toggle-link-visibility-button"
-          :style="stringifiedMinimapStyles.buttonStyles"
           @click="onLinkVisibilityToggleClick"
         >
           <i class="icon-[lucide--route-off]" aria-hidden="true" />
@@ -98,7 +84,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -111,29 +96,8 @@ const { formatKeySequence } = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
-const minimap = useMinimap()
-
 const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
-
-const stringifiedMinimapStyles = computed(() => {
-  const buttonKeys = ['borderRadius']
-  const additionalButtonStyles = {
-    border: 'none'
-  }
-
-  const containerStyles = minimap.containerStyles.value
-
-  const buttonStyles = {
-    ...Object.fromEntries(
-      Object.entries(containerStyles).filter(([key]) =>
-        buttonKeys.includes(key)
-      )
-    ),
-    ...additionalButtonStyles
-  }
-  return { buttonStyles }
-})
 
 // Computed properties for reactive states
 const linkHidden = computed(

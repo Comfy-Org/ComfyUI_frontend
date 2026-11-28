@@ -14,26 +14,13 @@ import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPo
 vi.mock(import('firebase/auth'))
 
 const flagState = vi.hoisted(() => ({
-  billingSdkTopupEnabled: false,
-  billingSdkSubscriptionEnabled: false,
-  unifiedCloudAuthEnabled: true
+  billingSdkRailEnabled: false
 }))
 vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
   useFeatureFlags: () => ({
     flags: {
-      get billingSdkTopupEnabled() {
-        return flagState.billingSdkTopupEnabled
-      },
-      get billingSdkTopupRailEnabled() {
-        return (
-          flagState.billingSdkTopupEnabled && flagState.unifiedCloudAuthEnabled
-        )
-      },
-      get billingSdkSubscriptionRailEnabled() {
-        return (
-          flagState.billingSdkSubscriptionEnabled &&
-          flagState.unifiedCloudAuthEnabled
-        )
+      get billingSdkRailEnabled() {
+        return flagState.billingSdkRailEnabled
       }
     }
   })
@@ -118,8 +105,7 @@ beforeEach(() => {
   stubAccountIdentityPort()
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockReturnValue(harness.sdk)
-  flagState.billingSdkSubscriptionEnabled = false
-  flagState.unifiedCloudAuthEnabled = true
+  flagState.billingSdkRailEnabled = false
   vi.mocked(billingApi.getBillingStatus).mockResolvedValue(STATUS)
   vi.mocked(billingApi.getBillingBalance).mockResolvedValue({
     amount_micros: 0,
@@ -132,7 +118,7 @@ beforeEach(() => {
 
 describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
   it('issues through the workspace client while the flag is off', async () => {
-    flagState.billingSdkTopupEnabled = false
+    flagState.billingSdkRailEnabled = false
     const response = {
       billing_op_id: 'op-1',
       topup_id: 'topup-1',
@@ -147,7 +133,7 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
   })
 
   it('reattaches a pending top-up through the SDK instead of the poller', async () => {
-    flagState.billingSdkTopupEnabled = true
+    flagState.billingSdkRailEnabled = true
     sdkStatus({
       pending_billing_op_id: 'op-1',
       pending_billing_op_type: 'topup'
@@ -159,9 +145,7 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
     expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
   })
 
-  it('keeps a pending top-up on the poller while unified auth is off, whatever the SDK flag says', async () => {
-    flagState.billingSdkTopupEnabled = true
-    flagState.unifiedCloudAuthEnabled = false
+  it('keeps a pending top-up on the poller while the SDK rail is off', async () => {
     vi.mocked(billingApi.getBillingStatus).mockResolvedValue({
       ...STATUS,
       pending_billing_op_id: 'op-1',
@@ -174,69 +158,10 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
-  it('still hands a pending subscription to the poller', async () => {
-    flagState.billingSdkTopupEnabled = true
-    sdkStatus({
-      pending_billing_op_id: 'op-sub',
-      pending_billing_op_type: 'subscription'
-    })
-
-    await setupBilling().fetchStatus()
-
-    expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
-      'op-sub',
-      'subscription',
-      { resumed: true },
-      undefined
-    )
-    expect(harness.sdk.lifecycle.recover).not.toHaveBeenCalled()
-  })
-
-  // Each kind of pending operation follows the rail that issues it. An
-  // operation adopted on the other rail is the mid-session-flip ambiguity: its
-  // writes went one way and its poller the other. A server predating
-  // `pending_billing_op_type` only ever had subscriptions to hand back.
-  it.for<{
-    type: 'topup' | 'subscription' | undefined
-    topupRail: boolean
-    subscriptionRail: boolean
-    adopter: 'SDK' | 'poller'
-  }>([
-    {
-      type: 'subscription',
-      topupRail: false,
-      subscriptionRail: true,
-      adopter: 'SDK'
-    },
-    {
-      type: undefined,
-      topupRail: false,
-      subscriptionRail: true,
-      adopter: 'SDK'
-    },
-    {
-      type: 'topup',
-      topupRail: false,
-      subscriptionRail: true,
-      adopter: 'poller'
-    },
-    {
-      type: 'subscription',
-      topupRail: true,
-      subscriptionRail: false,
-      adopter: 'poller'
-    },
-    {
-      type: undefined,
-      topupRail: true,
-      subscriptionRail: false,
-      adopter: 'poller'
-    }
-  ])(
-    'a pending $type resumes on the $adopter with topup rail $topupRail and subscription rail $subscriptionRail',
-    async ({ type, topupRail, subscriptionRail, adopter }) => {
-      flagState.billingSdkTopupEnabled = topupRail
-      flagState.billingSdkSubscriptionEnabled = subscriptionRail
+  it.for(['topup', 'subscription', undefined] as const)(
+    'resumes a pending %s on the SDK while the rail is on',
+    async (type) => {
+      flagState.billingSdkRailEnabled = true
       sdkStatus({
         pending_billing_op_id: 'op-pending',
         ...(type !== undefined && { pending_billing_op_type: type })
@@ -244,18 +169,15 @@ describe('useWorkspaceBilling top-up with the billing SDK flag', () => {
 
       await setupBilling().fetchStatus()
 
-      const onSdk = adopter === 'SDK'
-      expect(harness.sdk.lifecycle.recover).toHaveBeenCalledTimes(onSdk ? 1 : 0)
-      expect(useBillingOperationStore().startOperation).toHaveBeenCalledTimes(
-        onSdk ? 0 : 1
-      )
+      expect(harness.sdk.lifecycle.recover).toHaveBeenCalledOnce()
+      expect(useBillingOperationStore().startOperation).not.toHaveBeenCalled()
     }
   )
 })
 
 describe('useWorkspaceBilling reads with the billing SDK flag', () => {
   it('reads status and balance through the workspace client while the flag is off', async () => {
-    flagState.billingSdkTopupEnabled = false
+    flagState.billingSdkRailEnabled = false
     const billing = setupBilling()
 
     await billing.fetchStatus()
@@ -267,7 +189,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
   })
 
   it('reads status through the SDK reader and publishes what it decoded', async () => {
-    flagState.billingSdkTopupEnabled = true
+    flagState.billingSdkRailEnabled = true
     sdkStatus({ subscription_tier: 'PRO' })
     const billing = setupBilling()
 
@@ -278,20 +200,28 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
     expect(billing.error.value).toBeNull()
   })
 
-  it('reads through the SDK reader when only the subscription rail is on', async () => {
-    flagState.billingSdkTopupEnabled = false
-    flagState.billingSdkSubscriptionEnabled = true
+  it('asks the SDK readers for a read that does not join an earlier request when fresh', async () => {
+    flagState.billingSdkRailEnabled = true
     sdkStatus({ subscription_tier: 'PRO' })
+    vi.mocked(harness.sdk.credits.read).mockResolvedValue({
+      status: 'ok',
+      value: {
+        balance: { amount_micros: 5_000_000, currency: 'USD' },
+        scope: SCOPE,
+        readAt: READ_AT
+      }
+    })
     const billing = setupBilling()
 
-    await billing.fetchStatus()
+    await billing.fetchStatus({ fresh: true })
+    await billing.fetchBalance({ fresh: true })
 
-    expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
-    expect(billing.tier.value).toBe('PRO')
+    expect(harness.sdk.status.read).toHaveBeenLastCalledWith({ fresh: true })
+    expect(harness.sdk.credits.read).toHaveBeenLastCalledWith({ fresh: true })
   })
 
   it('reports a status the host cannot hold exactly as a malformed read', async () => {
-    flagState.billingSdkTopupEnabled = true
+    flagState.billingSdkRailEnabled = true
     sdkStatus({
       team_credit_stop: {
         id: 'team_huge',
@@ -308,7 +238,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
   })
 
   it('reads the balance through the SDK reader', async () => {
-    flagState.billingSdkTopupEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.credits.read).mockResolvedValue({
       status: 'ok',
       value: {
@@ -326,7 +256,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
   })
 
   it('keeps the previous state and reports nothing when the scope moved under a read', async () => {
-    flagState.billingSdkTopupEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.status.read).mockResolvedValue({
       status: 'error',
       code: 'SUPERSEDED'
@@ -341,7 +271,7 @@ describe('useWorkspaceBilling reads with the billing SDK flag', () => {
   })
 
   it('surfaces a failed SDK read the way a failed client read is surfaced', async () => {
-    flagState.billingSdkTopupEnabled = true
+    flagState.billingSdkRailEnabled = true
     vi.mocked(harness.sdk.credits.read).mockResolvedValue({
       status: 'error',
       code: 'REQUEST_FAILED'

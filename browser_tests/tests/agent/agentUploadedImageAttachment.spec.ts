@@ -14,7 +14,7 @@ test.use({ connectWebSocketToServer: false })
 test(
   'keeps an uploaded image decodable in Gallery after sending',
   { tag: ['@cloud', '@agent', '@ui'] },
-  async ({ page, workflowSelection, promptHistory }) => {
+  async ({ page, promptHistory }) => {
     const response: UploadImageResponse = {
       name: 'reference.png',
       subfolder: '',
@@ -23,7 +23,7 @@ test(
     await page.route('**/api/upload/image', (route) =>
       route.fulfill(jsonRoute(response))
     )
-    await page.route('**/view?filename=reference.png&type=input', (route) =>
+    await page.route('**/view?filename=reference.png&type=input*', (route) =>
       route.fulfill({ path: assetPath('image32x32.webp') })
     )
 
@@ -36,14 +36,6 @@ test(
       .click()
     const panel = page.locator('#agent-panel-root')
     await expect(panel).toBeVisible()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     await panel
       .getByTestId('agent-file-input')

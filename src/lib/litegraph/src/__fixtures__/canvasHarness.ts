@@ -73,6 +73,8 @@ export function pointerEvent(
     Object.defineProperty(event, 'timeStamp', { value: timeStamp })
   }
   return Object.assign(event, {
+    x,
+    y,
     canvasX: x,
     canvasY: y,
     deltaX: 0,

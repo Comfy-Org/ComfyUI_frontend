@@ -3,15 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type {
-  AgentFreeUseNoticeMetadata,
-  AgentFreeUsePlacement
-} from '@comfyorg/telemetry/types'
+import type { AgentFreeUseNoticeMetadata } from '@comfyorg/telemetry/types'
 
-import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
-
-import AgentPanel from './AgentPanel.vue'
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
@@ -30,114 +25,62 @@ function mount(
       onFreeUseNotice
     },
     global: {
-      plugins: [i18n],
-      stubs: { WorkflowSelectorChip: true }
+      plugins: [i18n]
     }
   })
 }
 
 function notice() {
-  return screen.getByRole('note', {
-    name: 'Free use notice'
-  })
+  return screen.getByRole('note', { name: 'Free use notice' })
 }
 
-describe('AgentPanel free-use placement', () => {
-  it('shows no notice in the control arm', () => {
+describe('AgentPanel free-use notice', () => {
+  it('shows no notice for Cloud control', () => {
     mount('control')
 
-    expect(
-      screen.queryByRole('note', {
-        name: 'Free use notice'
-      })
-    ).toBeNull()
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
   })
 
-  it.for(AGENT_FREE_USE_PLACEMENTS)(
-    'renders and reports exactly one notice at %s',
-    (variant) => {
-      const onFreeUseNotice = vi.fn()
-      mount(variant, onFreeUseNotice)
-
-      expect(notice()).toHaveAttribute('data-placement', variant)
-      expect(onFreeUseNotice.mock.calls).toEqual([
-        [{ action: 'shown', placement: variant }]
-      ])
-    }
-  )
-
-  const REGIONS = [
-    'agent-panel-footer',
-    'agent-composer',
-    'composer-input-box'
-  ] as const
-  type Region = (typeof REGIONS)[number]
-
-  function noticeIn(region: Region) {
-    return within(screen.getByTestId(region)).queryByRole('note', {
-      name: 'Free use notice'
-    })
-  }
-
-  const CASES: readonly [AgentFreeUsePlacement, readonly Region[]][] = [
-    ['top-banner', []],
-    ['near-composer', ['agent-panel-footer']],
-    ['above-input', ['agent-panel-footer', 'agent-composer']],
-    [
-      'inside-input',
-      ['agent-panel-footer', 'agent-composer', 'composer-input-box']
-    ]
-  ]
-
-  it.for(CASES)('renders %s in its region', ([variant, containing]) => {
-    mount(variant)
-
-    expect(notice()).toBeInTheDocument()
-    expect(REGIONS.filter((region) => noticeIn(region))).toEqual(containing)
-  })
-
-  it('hides the top banner while chat history is open', async () => {
-    mount('top-banner')
-
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Show chat history' })
-    )
-
-    expect(
-      screen.queryByRole('note', {
-        name: 'Free use notice'
-      })
-    ).toBeNull()
-  })
-
-  it.for(AGENT_FREE_USE_PLACEMENTS)(
-    'leaves the starter prompts and placeholder untouched at %s',
-    (variant) => {
-      const control = mount('control')
-      const controlPrompts = screen.getByTestId('suggested-prompts').textContent
-      const controlPlaceholder = screen.getByRole('textbox').ariaLabel
-      control.unmount()
-
-      mount(variant)
-
-      expect(screen.getByTestId('suggested-prompts').textContent).toBe(
-        controlPrompts
-      )
-      expect(screen.getByRole('textbox').ariaLabel).toBe(controlPlaceholder)
-    }
-  )
-
-  it('reports the dismissal of the notice', async () => {
+  it('renders and reports the Local notice beside the composer', () => {
     const onFreeUseNotice = vi.fn()
-    mount('above-input', onFreeUseNotice)
+    mount('near-composer', onFreeUseNotice)
+
+    expect(notice()).toHaveAttribute('data-placement', 'near-composer')
+    expect(
+      within(screen.getByTestId('agent-panel-footer')).getByRole('note', {
+        name: 'Free use notice'
+      })
+    ).toBeInTheDocument()
+    expect(onFreeUseNotice.mock.calls).toEqual([
+      [{ action: 'shown', placement: 'near-composer' }]
+    ])
+  })
+
+  it('leaves the starter prompts and placeholder unchanged', () => {
+    const control = mount('control')
+    const controlPrompts = screen.getByTestId('suggested-prompts').textContent
+    const controlPlaceholder = screen.getByRole('textbox').ariaLabel
+    control.unmount()
+
+    mount('near-composer')
+
+    expect(screen.getByTestId('suggested-prompts').textContent).toBe(
+      controlPrompts
+    )
+    expect(screen.getByRole('textbox').ariaLabel).toBe(controlPlaceholder)
+  })
+
+  it('reports dismissal of the Local notice', async () => {
+    const onFreeUseNotice = vi.fn()
+    mount('near-composer', onFreeUseNotice)
 
     await userEvent.click(
       within(notice()).getByRole('button', { name: 'Dismiss' })
     )
 
     expect(onFreeUseNotice.mock.calls).toEqual([
-      [{ action: 'shown', placement: 'above-input' }],
-      [{ action: 'dismissed', placement: 'above-input' }]
+      [{ action: 'shown', placement: 'near-composer' }],
+      [{ action: 'dismissed', placement: 'near-composer' }]
     ])
   })
 })

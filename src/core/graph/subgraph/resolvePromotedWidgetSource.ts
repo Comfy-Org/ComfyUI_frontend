@@ -1,5 +1,5 @@
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'

@@ -335,6 +335,57 @@ describe('API key authentication initialization', () => {
     )
   })
 
+  it('warns and keeps the saved key when the initial read fails', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+
+    await apiKeyStore.clearStoredApiKey()
+    getItem.mockRestore()
+
+    expect(apiKeyStore.getApiKey()).toBeNull()
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'API Key cleared for this session only',
+        description:
+          'Your browser is blocking site storage. A key saved earlier may be used again if you re-enable storage.'
+      })
+    )
+    expect(localStorage.getItem('comfy_api_key')).toBe('key-a')
+  })
+
+  it('warns when the read that verifies removal fails', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+    const realGetItem = localStorage.getItem.bind(localStorage)
+    let reads = 0
+    const getItem = vi
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key) => {
+        if (reads++ > 0)
+          throw new DOMException('Access is denied', 'SecurityError')
+        return realGetItem(key)
+      })
+
+    await apiKeyStore.clearStoredApiKey()
+    getItem.mockRestore()
+
+    expect(apiKeyStore.getApiKey()).toBeNull()
+    expect(useToast().toasts.at(-1)).toEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'API Key cleared for this session only',
+        description:
+          'Your browser is blocking site storage. A key saved earlier may be used again if you re-enable storage.'
+      })
+    )
+  })
+
   it('warns that an earlier key may return when saving with storage blocked', async () => {
     localStorage.setItem('comfy_api_key', 'key-a')
     vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
@@ -374,7 +425,7 @@ describe('API key authentication initialization', () => {
     )
   })
 
-  it('reports blocked storage once at startup', async () => {
+  it('does not report expected browser storage restrictions', async () => {
     vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
       throw new DOMException('Access is denied', 'SecurityError')
     })
@@ -384,9 +435,25 @@ describe('API key authentication initialization', () => {
     await apiKeyStore.storeApiKey('key-b')
     await apiKeyStore.clearStoredApiKey()
 
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports unexpected storage failures once', async () => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    const driverFailure = () => {
+      throw new Error('Storage driver failed')
+    }
+    vi.spyOn(localStorage, 'setItem').mockImplementation(driverFailure)
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(driverFailure)
+    useAuthStore()
+    const apiKeyStore = useApiKeyAuthStore()
+
+    await apiKeyStore.storeApiKey('key-b')
+    await apiKeyStore.clearStoredApiKey()
+
     expect(reportError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(
-      expect.any(DOMException),
+      expect.objectContaining({ message: 'Storage driver failed' }),
       expect.objectContaining({ errorType: 'api_key_storage_failed' })
     )
   })

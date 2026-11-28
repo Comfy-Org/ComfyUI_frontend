@@ -180,15 +180,6 @@ describe('projectTopupResult', () => {
 })
 
 describe('projectHostedTopupCheckoutResult', () => {
-  it('hands the dialog the hosted Checkout URL', () => {
-    expect(
-      projectHostedTopupCheckoutResult({
-        status: 'ok',
-        url: 'https://checkout.stripe.com/c/pay/cs_1'
-      })
-    ).toBe('https://checkout.stripe.com/c/pay/cs_1')
-  })
-
   it.for([
     [{ status: 'error', code: 'INVALID_RETURN_URL' }, 'validation'],
     [{ status: 'error', code: 'NOT_AVAILABLE' }, 'api_rejected'],

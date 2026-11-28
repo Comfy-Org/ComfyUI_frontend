@@ -40,6 +40,11 @@ export interface SubgraphEventMap extends LGraphEventMap {
     oldOrder: readonly string[]
     newOrder: readonly string[]
   }
+  'outputs-reordered': {
+    subgraph: Subgraph
+    oldOrder: readonly string[]
+    newOrder: readonly string[]
+  }
 
   'renaming-input': {
     input: SubgraphInput

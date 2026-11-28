@@ -1,3 +1,4 @@
+import type { CustomDeploymentEntry } from '@comfyorg/telemetry/types'
 import { nextTick } from 'vue'
 import type { Component } from 'vue'
 
@@ -10,6 +11,7 @@ import {
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
 import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
+import type { PlatformFrameRequest } from '@/platform/workspace/platformFrame/platformFrameUrl'
 import { useDialogStore } from '@/stores/dialogStore'
 
 function cardOf(module: { default?: Component } | undefined): Component {
@@ -18,10 +20,12 @@ function cardOf(module: { default?: Component } | undefined): Component {
   return module.default
 }
 
-async function openCardDialog(
+/** Lazily opens a headless deployment card; a failed load shows a toast and resolves false. */
+export async function openCardDialog(
   key: string,
   load: () => Promise<{ default?: Component } | undefined>,
-  props: Record<string, unknown>
+  props: Record<string, unknown>,
+  isStillWanted: () => boolean = () => true
 ): Promise<boolean> {
   const card = await load()
     .then(cardOf)
@@ -29,7 +33,7 @@ async function openCardDialog(
       useErrorHandling().toastErrorHandler(error)
       return null
     })
-  if (card === null) return false
+  if (card === null || !isStillWanted()) return false
   const dialogStore = useDialogStore()
   const hide = () => dialogStore.closeDialog({ key })
   dialogStore.showDialog({
@@ -46,13 +50,16 @@ async function openCardDialog(
 
 function openCustomDeploymentDialog(
   key: string,
-  pitch: CustomDeploymentPitch
+  pitch: CustomDeploymentPitch,
+  frameRequest?: PlatformFrameRequest
 ): Promise<boolean> {
   return openCardDialog(
     key,
     () => import('@/platform/workspace/components/CustomDeploymentCard.vue'),
     {
       pitch,
+      frameRequest,
+      frameEntry: frameRequest ? 'overview_dialog' : undefined,
       videoSources: DEPLOY_VIDEO_SOURCES,
       posterSrc: DEPLOY_VIDEO_POSTER_SRC
     }
@@ -68,18 +75,26 @@ export function openCreateCustomDeploymentDialog(): Promise<boolean> {
 }
 
 /** Opens the Extensions dialog on Comfy Cloud; false if it could not load. */
-export function openDeployCustomNodesDialog(): Promise<boolean> {
-  return openCustomDeploymentDialog('global-deploy-custom-nodes', {
-    title: t('deploymentSwitcher.deployCustomNodes.title'),
-    body: t('deploymentSwitcher.deployCustomNodes.body'),
-    points: [
-      t('deploymentSwitcher.deployCustomNodes.pointNodes'),
-      t('deploymentSwitcher.customDeployment.pointGpu'),
-      t('deploymentSwitcher.customDeployment.pointApi')
-    ],
-    platformLabel: t('deployToComfyApi.deployOnPlatform'),
-    brief: CUSTOM_DEPLOYMENT_BRIEF
-  })
+export function openDeployCustomNodesDialog(
+  frameRequest?: PlatformFrameRequest
+): Promise<boolean> {
+  return openCustomDeploymentDialog(
+    'global-deploy-custom-nodes',
+    {
+      title: t('deploymentSwitcher.deployCustomNodes.title'),
+      body: t('deploymentSwitcher.deployCustomNodes.body'),
+      points: [
+        t('deploymentSwitcher.deployCustomNodes.pointNodes'),
+        t('deploymentSwitcher.customDeployment.pointGpu'),
+        t('deploymentSwitcher.customDeployment.pointApi')
+      ],
+      platformLabel: frameRequest
+        ? t('platformFrame.getStarted')
+        : t('deployToComfyApi.deployOnPlatform'),
+      brief: CUSTOM_DEPLOYMENT_BRIEF
+    },
+    frameRequest
+  )
 }
 
 const WORKFLOW_NEEDS_DEPLOYMENT_KEY = 'global-workflow-needs-deployment'
@@ -98,16 +113,23 @@ export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
     )
 }
 
+/** Whether the workflow deployment dialog is open. */
+export function isWorkflowNeedsDeploymentDialogOpen(): boolean {
+  return useDialogStore().isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)
+}
+
 /** Opens the workflow deployment dialog, replacing an earlier one. */
-export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+export async function openWorkflowNeedsDeploymentDialog(
+  entry: CustomDeploymentEntry = 'workflow_dialog'
+): Promise<boolean> {
   const dialogStore = useDialogStore()
-  if (dialogStore.isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)) {
+  if (isWorkflowNeedsDeploymentDialogOpen()) {
     dialogStore.closeDialog({ key: WORKFLOW_NEEDS_DEPLOYMENT_KEY })
     await nextTick()
   }
   return openCardDialog(
     WORKFLOW_NEEDS_DEPLOYMENT_KEY,
     loadWorkflowNeedsDeploymentCard,
-    {}
+    { entry }
   )
 }

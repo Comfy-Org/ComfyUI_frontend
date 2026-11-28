@@ -113,6 +113,7 @@ const PLAN = {
 }
 
 const AUTO_TOP_UP_OFF = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: false,
   cycle_resets_at: null,
@@ -175,13 +176,18 @@ function capabilitiesBody(overrides: Record<string, unknown> = {}) {
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_view_workspace_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_subscription: false,
       can_open_plans: false,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_subscribe_self_serve: false,
       can_top_up: true

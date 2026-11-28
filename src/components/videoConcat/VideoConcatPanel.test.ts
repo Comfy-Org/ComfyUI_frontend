@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import type { Ref } from 'vue'
@@ -64,10 +64,11 @@ const i18n = createI18n({
         noClips: 'Connect videos to preview and order them',
         clips: 'Clips',
         clipLabel: 'Clip {position}',
-        previewClips: 'Clips',
-        previewResult: 'Last run',
         reorderHint: 'Drag clips to reorder, click to jump',
-        mixedDimensions: 'Mixed sizes'
+        mixedDimensions: 'Mixed sizes',
+        mixedDimensionsWarning:
+          'All clips must match clip {position} ({width} x {height}): {clips}.',
+        clipSize: 'clip {position} is {width} x {height}'
       }
     }
   }
@@ -79,9 +80,9 @@ function clip(name: string, linkId: number): ConcatClip {
 
 const clips = [clip('video0', 1), clip('video1', 2), clip('video2', 3)]
 
-function renderPanel(panelClips: ConcatClip[] = clips, resultUrl?: string) {
+function renderPanel(panelClips: ConcatClip[] = clips) {
   return render(VideoConcatPanel, {
-    props: { clips: panelClips, resultUrl },
+    props: { clips: panelClips },
     global: { plugins: [i18n] }
   })
 }
@@ -172,12 +173,29 @@ describe('VideoConcatPanel', () => {
     )
   })
 
-  it('warns when the clips have different sizes', async () => {
+  it('marks the clips whose size differs from the first clip', async () => {
     renderPanel()
 
     await loadTileMetadata([2, 3, 1.5], [320, 400, 320])
 
     expect(screen.getByText('Mixed sizes')).toBeTruthy()
+    expect(
+      screen.getByTestId('video-concat-size-warning').textContent.trim()
+    ).toBe('All clips must match clip 1 (320 x 180): clip 2 is 400 x 180.')
+    expect(
+      tiles().map((tile) =>
+        Boolean(within(tile).queryByTestId('video-concat-clip-size-warning'))
+      )
+    ).toEqual([false, true, false])
+  })
+
+  it('shows no size warning while every clip has the same size', async () => {
+    renderPanel()
+
+    await loadTileMetadata([2, 3, 1.5])
+
+    expect(screen.queryByTestId('video-concat-size-warning')).toBeNull()
+    expect(screen.queryByTestId('video-concat-clip-size-warning')).toBeNull()
   })
 
   it('emits a reorder when a tile is dragged past its neighbours', async () => {
@@ -295,33 +313,6 @@ describe('VideoConcatPanel', () => {
     await rerender({ clips })
 
     expect(screen.getByText('2s')).toBeTruthy()
-  })
-  it('offers the last run only once there is one', () => {
-    renderPanel()
-
-    expect(screen.queryByTestId('video-concat-preview-mode')).toBeNull()
-  })
-
-  it('plays the last run result and returns to the clips when a tile is picked', async () => {
-    renderPanel(clips, '/api/view?filename=result')
-    await loadTileMetadata([2, 3, 1.5])
-
-    await userEvent.click(screen.getByRole('button', { name: 'Last run' }))
-
-    expect(previewSource()).toBe('/api/view?filename=result')
-    expect(tiles().filter((tile) => tile.getAttribute('aria-current'))).toEqual(
-      []
-    )
-
-    await press(tiles()[2], 10)
-    window.dispatchEvent(new PointerEvent('pointerup', { clientX: 11 }))
-    await nextTick()
-    await nextTick()
-
-    expect(previewSource()).toBe('/api/view?filename=video2')
-    expect(
-      screen.getByRole('button', { name: 'Clips' }).getAttribute('aria-pressed')
-    ).toBe('true')
   })
   it('moves on to the next clip when the playing clip fails to load', async () => {
     renderPanel()

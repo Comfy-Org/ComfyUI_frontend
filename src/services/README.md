@@ -65,10 +65,8 @@ The following table lists ALL services in the system as of 2025-09-01:
 | -------------------------- | --------------------------------------------------------- | ---------- |
 | audioService.ts            | Manages audio recording and WAV encoding functionality    | Media      |
 | autoQueueService.ts        | Manages automatic queue execution                         | Execution  |
-| colorPaletteService.ts     | Handles color palette management and customization        | UI         |
 | comfyManagerService.ts     | Manages ComfyUI application packages and updates          | Manager    |
 | comfyRegistryService.ts    | Handles registration and discovery of ComfyUI extensions  | Registry   |
-| customerEventsService.ts   | Handles customer event tracking and audit logs            | Analytics  |
 | dialogService.ts           | Provides dialog and modal management                      | UI         |
 | extensionService.ts        | Manages extension registration and lifecycle              | Extensions |
 | litegraphService.ts        | Provides utilities for working with the LiteGraph library | Graph      |

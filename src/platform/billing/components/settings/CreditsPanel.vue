@@ -27,9 +27,9 @@
           {{ $t('subscription.manageBilling') }}
         </Button>
       </div>
-      <CreditsTile class="max-w-md" />
+      <component :is="creditsTile" class="max-w-md" />
     </div>
-    <CreditsTile v-else />
+    <component :is="creditsTile" v-else />
 
     <div v-if="!embedded" class="flex items-center justify-between">
       <h3 class="m-0">{{ $t('credits.activity') }}</h3>
@@ -60,15 +60,22 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import UsageLogsTable from '@/platform/billing/components/settings/UsageLogsTable.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/billing/subscription/components/CreditsTile.vue'
+import CreditsTileLegacy from '@/platform/billing/legacy160/platform/billing/subscription/components/CreditsTile.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { openSupportForm } from '@/platform/support/openSupportForm'
+
+const { flags } = useFeatureFlags()
+const creditsTile = computed(() =>
+  flags.billingNewUxEnabled ? CreditsTile : CreditsTileLegacy
+)
 
 const { embedded = false } = defineProps<{
   embedded?: boolean
@@ -76,7 +83,6 @@ const { embedded = false } = defineProps<{
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, manageSubscription } = useBillingContext()
-const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 
 const usageLogsTableRef = ref<InstanceType<typeof UsageLogsTable> | null>(null)
@@ -90,13 +96,13 @@ const handleCreditsHistoryClick = async () => {
   await manageSubscription()
 }
 
-const handleMessageSupport = async () => {
+const handleMessageSupport = () => {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
     source: 'credits_panel'
   })
-  await commandStore.execute('Comfy.ContactSupport')
+  openSupportForm('billing')
 }
 
 const handleFaqClick = () => {

@@ -37,7 +37,7 @@
             <i
               class="pi pi-circle-fill"
               :style="{
-                color: isLightTheme ? option.value.light : option.value.dark
+                color: themeStore.toNodeColor(option.value)
               }"
               :data-testid="option.name"
             />
@@ -49,7 +49,6 @@
 </template>
 
 <script setup lang="ts">
-import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { useEventListener } from '@vueuse/core'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
@@ -71,43 +70,33 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 const workflowStore = useWorkflowStore()
-const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
 
 const showColorPicker = ref(false)
 
 type ColorOption = {
   name: string
   localizedName: string
-  value: {
-    dark: string
-    light: string
-  }
+  value: string
 }
 
 const NO_COLOR_OPTION: ColorOption = {
   name: 'noColor',
   localizedName: t('color.noColor'),
-  value: {
-    dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
-    light: toLightThemeNodeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
-  }
+  value: LiteGraph.NODE_DEFAULT_BGCOLOR
 }
 const colorOptions: ColorOption[] = [
   NO_COLOR_OPTION,
   ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
     name,
     localizedName: t(`color.${name}`),
-    value: {
-      dark: color.bgcolor,
-      light: toLightThemeNodeColor(color.bgcolor)
-    }
+    value: color.bgcolor
   }))
 ]
 
@@ -142,18 +131,14 @@ const applyColor = (colorOption: ColorOption | null) => {
 const currentColorOption = ref<CanvasColorOption | null>(null)
 const currentColor = computed(() =>
   currentColorOption.value
-    ? isLightTheme.value
-      ? toLightThemeNodeColor(currentColorOption.value?.bgcolor)
-      : currentColorOption.value?.bgcolor
+    ? themeStore.toNodeColor(currentColorOption.value.bgcolor)
     : null
 )
 
 const localizedCurrentColorName = computed(() => {
   if (!currentColorOption.value?.bgcolor) return null
   const colorOption = colorOptions.find(
-    (option) =>
-      option.value.dark === currentColorOption.value?.bgcolor ||
-      option.value.light === currentColorOption.value?.bgcolor
+    (option) => option.value === currentColorOption.value?.bgcolor
   )
   return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
 })

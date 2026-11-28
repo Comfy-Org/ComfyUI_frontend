@@ -39,7 +39,9 @@ export function getControlWidget(
   const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
   if (!controlWidget) return
   return {
-    value: normalizeControlOption(controlWidget.value),
+    get value() {
+      return normalizeControlOption(controlWidget.value)
+    },
     update: (value) => (controlWidget.value = normalizeControlOption(value))
   }
 }
@@ -64,8 +66,8 @@ export interface SimplifiedWidget<
 
   borderStyle?: string
 
-  /** Callback fired when value changes */
-  callback?: (value: T) => void
+  /** Callback fired when the value changes, or with the click event when a button is clicked */
+  callback?: (value: T, click?: MouseEvent) => void
 
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }

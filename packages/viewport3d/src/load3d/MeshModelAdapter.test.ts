@@ -475,26 +475,42 @@ describe('MeshModelAdapter', () => {
   })
 
   describe('GLTF loader path', () => {
-    it('loads a .glb and returns the scene with vertex normals computed', async () => {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(),
-        new THREE.MeshStandardMaterial()
+    function triangleGeometry(normals?: number[]): THREE.BufferGeometry {
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3)
       )
-      const computeNormals = vi.spyOn(mesh.geometry, 'computeVertexNormals')
+      if (normals) {
+        geometry.setAttribute(
+          'normal',
+          new THREE.Float32BufferAttribute(normals, 3)
+        )
+      }
+      return geometry
+    }
+
+    async function loadGlbWithMesh(geometry: THREE.BufferGeometry) {
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial())
       const scene = new THREE.Group()
       scene.add(mesh)
       const gltf = { scene }
       gltfLoaderStub.parseAsync.mockResolvedValue(gltf)
-
-      const adapter = new MeshModelAdapter()
       const ctx = makeContext()
 
-      const result = await adapter.load(
+      const result = await new MeshModelAdapter().load(
         ctx,
         '/api/view/',
         'scene.glb',
         fetchBytes
       )
+
+      return { ctx, gltf, scene, result }
+    }
+
+    it('loads a .glb and returns its scene', async () => {
+      const { ctx, gltf, scene, result } =
+        await loadGlbWithMesh(triangleGeometry())
 
       expect(gltfLoaderStub.setPath).toHaveBeenCalledWith('/api/view/')
       expect(gltfLoaderStub.parseAsync).toHaveBeenCalledWith(
@@ -502,9 +518,29 @@ describe('MeshModelAdapter', () => {
         '/api/view/'
       )
       expect(ctx.setOriginalModel).toHaveBeenCalledWith(gltf)
-      expect(computeNormals).toHaveBeenCalled()
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
       expect(result!.object).toBe(scene)
+    })
+
+    it('keeps the normals stored in the file', async () => {
+      const fileNormals = [0.6, 0.8, 0, 0, 0.6, 0.8, 0.8, 0, 0.6]
+      const geometry = triangleGeometry(fileNormals)
+
+      await loadGlbWithMesh(geometry)
+
+      expect(Array.from(geometry.getAttribute('normal').array)).toEqual(
+        Array.from(new Float32Array(fileNormals))
+      )
+    })
+
+    it('computes normals for a mesh the file stores without them', async () => {
+      const geometry = triangleGeometry()
+
+      await loadGlbWithMesh(geometry)
+
+      expect(Array.from(geometry.getAttribute('normal').array)).toEqual([
+        0, 0, 1, 0, 0, 1, 0, 0, 1
+      ])
     })
 
     it('records polygon sizes for meshes flagged with FB_ngon_encoding', async () => {

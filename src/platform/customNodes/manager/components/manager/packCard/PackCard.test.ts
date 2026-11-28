@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/vue'
 import Spinner from '@comfyorg/design-system/spinner/Spinner'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import PackCard from '@/platform/customNodes/manager/components/manager/packCard/PackCard.vue'
 import type {
   MergedNodePack,
@@ -44,7 +44,7 @@ describe('PackCard', () => {
         }
       ]
     }
-    useColorPaletteStore().activePaletteId = 'light'
+    useThemeStore().activePresetId = 'light'
   })
 
   function renderComponent(props: {

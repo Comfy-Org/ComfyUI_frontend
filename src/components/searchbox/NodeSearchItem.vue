@@ -48,7 +48,7 @@
       <Badge
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
         variant="chip"
-        class="text-sm font-light"
+        class="font-light"
       >
         {{ nodeDef.nodeSource.displayText }}
       </Badge>

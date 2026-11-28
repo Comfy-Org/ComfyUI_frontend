@@ -36,6 +36,9 @@ export function insertComposerReference(
         : item.textOffset
   }))
   references.splice(referenceIndex, 0, { ...reference, textOffset })
+  let caretReferenceIndex = referenceIndex + 1
+  while (references[caretReferenceIndex]?.textOffset === textOffset)
+    caretReferenceIndex++
   return {
     prompt: {
       text: needsSpace
@@ -45,7 +48,7 @@ export function insertComposerReference(
     },
     insertion: {
       textOffset: textOffset + 1,
-      referenceIndex: referenceIndex + 1
+      referenceIndex: caretReferenceIndex
     }
   }
 }
@@ -73,7 +76,7 @@ export function composerPromptForSend(prompt: ComposerPrompt): PromptSnapshot {
         textOffset: text.length,
         workflowIndex: workflowReferences.length
       }
-    } else {
+    } else if (reference.kind !== 'error') {
       const name = composerReferenceName(reference)
       text +=
         reference.kind === 'node'
@@ -100,6 +103,14 @@ export function sameComposerReferenceOrder(
         composerReferenceKey(b.references[index])
     )
   )
+}
+
+export function promptSkillCount(
+  prompt: Pick<ComposerPrompt, 'references'>
+): 0 | 1 {
+  return prompt.references.some((reference) => reference.kind === 'skill')
+    ? 1
+    : 0
 }
 
 export function composerPromptForSubmission(

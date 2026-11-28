@@ -63,7 +63,7 @@ describe('Comfy.CameraAngle extension', () => {
     expect(view.value).toBe('object')
   })
 
-  it('keeps the viewport out of the right side panel', async () => {
+  it('keeps the viewport out of the properties panel', async () => {
     const { view } = await addCameraAngleNode(new LGraph())
 
     const visibility = view.visibility ?? deriveWidgetVisibility(view)

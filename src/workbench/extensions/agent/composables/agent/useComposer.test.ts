@@ -120,15 +120,23 @@ describe('useComposer', () => {
     expect(onSend).not.toHaveBeenCalled()
   })
 
-  it('routes submit to stop while running, without sending', () => {
+  it('sends a follow-up while running when the draft can send', () => {
     const { composer, onSend, onStop } = setup(true)
-    composer.setText('ignored while streaming')
+    composer.setText('queue this')
+
+    composer.submit()
+
+    expect(onSend).toHaveBeenCalledWith('queue this', [])
+    expect(onStop).not.toHaveBeenCalled()
+  })
+
+  it('routes submit to stop while running when the draft cannot send', () => {
+    const { composer, onSend, onStop } = setup(true)
 
     composer.submit()
 
     expect(onStop).toHaveBeenCalledOnce()
     expect(onSend).not.toHaveBeenCalled()
-    expect(composer.draft.value).toBe('ignored while streaming')
   })
 
   it('insert appends to the draft without sending', () => {
@@ -263,6 +271,39 @@ describe('useComposer', () => {
     expect(first.attachments.value.map((attachment) => attachment.id)).toEqual([
       'a1'
     ])
+  })
+
+  it('allows sending with only an attached error context', () => {
+    const { composer, onSend } = setup()
+
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    expect(composer.errorContext.value).not.toBeNull()
+    expect(composer.canSend.value).toBe(true)
+    composer.submit()
+    expect(onSend).toHaveBeenCalledWith('', [])
+  })
+
+  it('clearing the error context blocks an otherwise empty send', () => {
+    const { composer } = setup()
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+
+    composer.clearErrorContext()
+
+    expect(composer.errorContext.value).toBeNull()
+    expect(composer.canSend.value).toBe(false)
   })
 
   it('removeAttachment drops the matching staged attachment', () => {

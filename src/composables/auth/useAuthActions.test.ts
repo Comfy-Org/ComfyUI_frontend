@@ -34,7 +34,6 @@ const mockDistributionState = vi.hoisted(() => ({
   isDesktop: false
 }))
 const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
-const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
 
@@ -73,8 +72,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
-  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
+  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
@@ -164,19 +162,32 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
     expect(mockClearAllWorkspaceStorage).toHaveBeenCalledExactlyOnceWith()
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
-    ).toBeLessThan(
-      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
-    )
-    expect(
-      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
     ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
     expect(
       mockClearAllWorkspaceStorage.mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
+  })
+
+  it.for([
+    { case: 'the cloud login page by default', signInPath: undefined },
+    {
+      case: 'the requested sign-in page',
+      signInPath: '/cloud/login?switchAccount=true'
+    }
+  ])('lands on $case after cloud logout', async ({ signInPath }) => {
+    const navigationSpy = vi
+      .spyOn(window.location, 'href', 'set')
+      .mockImplementation(() => {})
+    const { logout } = useAuthActions()
+
+    await logout({ signInPath })
+
+    expect(navigationSpy).toHaveBeenCalledExactlyOnceWith(
+      signInPath ?? '/cloud/login'
+    )
   })
 
   it('does not clear cloud workflows when logout fails', async () => {
@@ -187,7 +198,6 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
     expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
   })
 

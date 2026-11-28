@@ -5,12 +5,14 @@ import { createI18n } from 'vue-i18n'
 
 import { BillingBanner } from '@comfyorg/account-ui/billing'
 import type { BillingBannerCopy } from '@comfyorg/account-ui/billing'
-import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import type { WorkspaceIdentityAccess } from '@/platform/workspace/ports/workspaceIdentity'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
+import { serveBillingNotices } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 interface Subscription {
   hasFunds: boolean
@@ -26,7 +28,9 @@ const state = vi.hoisted(() => ({
   billingStatus: 'paid' as string | null,
   subscriptionStatus: 'active' as string | null,
   subscription: null as Subscription | null,
-  workspaceType: 'team' as WorkspaceWithRole['type'],
+  workspaceType: 'team' as NonNullable<
+    WorkspaceIdentityAccess['activeWorkspace']
+  >['type'],
   canManageSubscription: true
 }))
 
@@ -48,6 +52,7 @@ vi.mock<unknown>(
         () => state.canAccessSubscriptionFeatures
       ),
       isTeamPlan: computed(() => state.isTeamPlan),
+      subscriptionState: computed(() => null),
       billingStatus: computed(() => state.billingStatus),
       subscriptionStatus: computed(() => state.subscriptionStatus),
       subscription: computed(() => state.subscription),
@@ -99,7 +104,12 @@ const copy: Pick<BillingBannerCopy, 'dismiss' | 'actions'> = {
     addCredits: t(`${bs}.outOfCredits.addCredits`),
     updatePayment: t(`${bs}.updatePayment`),
     verifyPayment: t(`${bs}.planCheckout.verifyPayment.action`),
-    contactSupport: t(`${bs}.parked.contactSupport`)
+    contactSupport: t(`${bs}.parked.contactSupport`),
+    resumePlan: t(`${bs}.ending.reactivate`),
+    choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
+    contactSales: t(`${bs}.ending.contactSales`),
+    finishPayment: t('subscription.signupPaymentRecovery.finishPayment'),
+    viewPlans: t(`${bs}.planNotStarted.viewPlans`)
   }
 }
 
@@ -154,6 +164,11 @@ describe('BillingBanner parity with the Billing tab plan status banner', () => {
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
+    useBillingCapabilities()
+    serveBillingNotices(() => ({
+      isTeamPlan: state.isTeamPlan,
+      ...state.subscription
+    }))
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
@@ -173,12 +188,14 @@ describe('BillingBanner parity with the Billing tab plan status banner', () => {
     enter: () => void
     title: () => string
     body: () => string
+    action?: 'resumePlan' | 'choosePlan' | 'contactSales'
   }>([
     {
       case: 'a team plan ending',
       enter: () => ending(),
       title: () => t(`${bs}.ending.title`, { date: 'October 28, 2026' }),
-      body: () => t(`${bs}.ending.body`)
+      body: () => t(`${bs}.ending.body`),
+      action: 'resumePlan'
     },
     {
       case: 'a team plan ending, for a member',
@@ -200,7 +217,8 @@ describe('BillingBanner parity with the Billing tab plan status banner', () => {
           plan: 'Pro',
           date: 'October 28, 2026'
         }),
-      body: () => t(`${bs}.ending.personalBody`)
+      body: () => t(`${bs}.ending.personalBody`),
+      action: 'resumePlan'
     },
     {
       case: 'an Enterprise plan ending inside the notice window',
@@ -211,7 +229,8 @@ describe('BillingBanner parity with the Billing tab plan status banner', () => {
       },
       title: () =>
         t(`${bs}.ending.enterpriseTitle`, { date: 'October 28, 2026' }),
-      body: () => t(`${bs}.ending.enterpriseBody`)
+      body: () => t(`${bs}.ending.enterpriseBody`),
+      action: 'contactSales'
     },
     {
       case: 'a scheduled plan change',
@@ -261,7 +280,7 @@ describe('BillingBanner parity with the Billing tab plan status banner', () => {
         }),
       body: () => t(`${bs}.planEnded.personalBody`)
     }
-  ])('renders $case the same', ({ enter, title, body }) => {
+  ])('renders $case the same', ({ enter, title, body, action = null }) => {
     enter()
     const app = render(BillingStatusBanner, {
       props: { section: 'billing' },
@@ -272,7 +291,13 @@ describe('BillingBanner parity with the Billing tab plan status banner', () => {
 
     const pkg = render(BillingBanner, {
       props: {
-        view: { kind: 'planStatus', title: title(), body: body() },
+        view: {
+          kind: 'planStatus',
+          title: title(),
+          body: body(),
+          action,
+          href: null
+        },
         copy
       }
     })

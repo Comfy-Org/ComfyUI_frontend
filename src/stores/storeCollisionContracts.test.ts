@@ -145,7 +145,7 @@ describe('store collision contracts (EX-002)', () => {
     expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)
   })
 
-  it('nodeDataStore rejects a different identity at a registered id without touching the incumbent', () => {
+  it('nodeDataStore rejects a different identity at a registered id silently and without touching the incumbent', () => {
     const store = useNodeDataStore()
     const incumbent = store.registerNode(
       scopeA,
@@ -155,6 +155,7 @@ describe('store collision contracts (EX-002)', () => {
 
     const usurper = nodeState(1, rootA, 'Usurper')
     expect(store.registerNode(scopeA, usurper)).toBeUndefined()
+    expect(console.warn).not.toHaveBeenCalled()
 
     expect(incumbent.title).toBe('Incumbent')
     expect(store.getGraphNodesFor(rootA, rootA)).toHaveLength(1)

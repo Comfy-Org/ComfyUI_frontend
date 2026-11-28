@@ -6,7 +6,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
-import type { FilterOption } from '@/platform/assets/types/filterTypes'
+import type { FilterOption } from '@comfyorg/assets-core/filtering'
 
 vi.mock<unknown>(
   import('@/platform/assets/composables/useModelUpload'),

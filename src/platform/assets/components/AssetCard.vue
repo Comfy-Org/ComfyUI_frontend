@@ -16,7 +16,7 @@
     "
     @click.stop="interactive && $emit('focus', asset)"
     @focus="interactive && $emit('focus', asset)"
-    @keydown.enter.self="interactive && $emit('select', asset)"
+    @keydown.enter.self="interactive && handleKeyboardSelect()"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
@@ -30,7 +30,7 @@
         class="size-full cursor-pointer object-cover"
       />
 
-      <AssetBadgeGroup :badges="asset.badges" />
+      <AssetBadgeGroup :badges="badges" />
       <IconGroup
         :class="
           cn(
@@ -118,9 +118,15 @@
         </div>
         <Button
           v-if="interactive"
+          :tooltip="useDisabledReason"
+          tooltip-side="top"
           variant="secondary"
           size="lg"
-          class="shrink-0"
+          :aria-disabled="!canUseAsset"
+          :aria-label="useButtonLabel"
+          :class="
+            cn('shrink-0', !canUseAsset && 'cursor-not-allowed opacity-50')
+          "
           @click.stop="handleSelect"
         >
           {{ $t('g.use') }}
@@ -153,16 +159,23 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetCardTitle } from '@comfyorg/assets-core/metadata'
+import { canCreateNodeForAsset } from '@/platform/assets/integration/resolveModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useAssetDownloadStore } from '@/platform/assets/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { asset, interactive, focused } = defineProps<{
+const {
+  asset,
+  interactive,
+  focused,
+  requireNodeProvider = false
+} = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
   focused?: boolean
+  requireNodeProvider?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -176,6 +189,12 @@ const { t, d } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
+
+const badges = computed<AssetDisplayItem['badges']>(() =>
+  asset.isWorkspaceLibrary
+    ? [{ label: t('assetBrowser.library'), type: 'type' }, ...asset.badges]
+    : asset.badges
+)
 
 const assetMenuOpen = ref(false)
 
@@ -196,6 +215,17 @@ const formattedDate = computed(() =>
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 
 const showAssetOptions = computed(() => !(asset.is_immutable ?? true))
+const canUseAsset = computed(
+  () => !requireNodeProvider || canCreateNodeForAsset(asset)
+)
+const useDisabledReason = computed(() =>
+  canUseAsset.value ? undefined : t('assetBrowser.useDisabledNoProvider')
+)
+const useButtonLabel = computed(() =>
+  canUseAsset.value
+    ? t('g.use')
+    : `${t('g.use')}: ${t('assetBrowser.useDisabledNoProvider')}`
+)
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
@@ -207,7 +237,16 @@ const { isLoading, error } = useImageQuiet({
 })
 
 function handleSelect() {
+  if (!canUseAsset.value) {
+    emit('focus', asset)
+    return
+  }
   acknowledgeAsset(asset.id)
+  emit('select', asset)
+}
+
+function handleKeyboardSelect() {
+  if (!canUseAsset.value) return
   emit('select', asset)
 }
 
@@ -226,9 +265,8 @@ function confirmDeletion() {
     footerProps: {
       cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
-      // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-destructive text-foreground ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
+        'bg-destructive ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
@@ -244,7 +282,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.complete', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
           emit('deleted', asset)
         } catch (err: unknown) {
@@ -252,7 +289,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.failed', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 3_000))
         } finally {
           closeDialog(confirmDialog)

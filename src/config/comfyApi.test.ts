@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import {
   getComfyApiBaseUrl,
@@ -23,7 +23,7 @@ const baseUrlCases: BaseUrlCase[] = [
     label: 'API',
     getBaseUrl: getComfyApiBaseUrl,
     setOverride: (value) => {
-      remoteConfig.value = { comfy_api_base_url: value }
+      useRemoteConfigStore().acceptConfig({ comfy_api_base_url: value }, false)
     },
     defaultUrl: 'https://stagingapi.comfy.org'
   },
@@ -31,7 +31,10 @@ const baseUrlCases: BaseUrlCase[] = [
     label: 'Cloud',
     getBaseUrl: getComfyCloudBaseUrl,
     setOverride: (value) => {
-      remoteConfig.value = { comfy_cloud_base_url: value }
+      useRemoteConfigStore().acceptConfig(
+        { comfy_cloud_base_url: value },
+        false
+      )
     },
     defaultUrl: 'https://testcloud.comfy.org'
   },
@@ -39,7 +42,10 @@ const baseUrlCases: BaseUrlCase[] = [
     label: 'Platform',
     getBaseUrl: getComfyPlatformBaseUrl,
     setOverride: (value) => {
-      remoteConfig.value = { comfy_platform_base_url: value }
+      useRemoteConfigStore().acceptConfig(
+        { comfy_platform_base_url: value },
+        false
+      )
     },
     defaultUrl: 'https://stagingplatform.comfy.org'
   }
@@ -48,14 +54,8 @@ const baseUrlCases: BaseUrlCase[] = [
 describe.for(baseUrlCases)(
   '$label base URL',
   ({ getBaseUrl, setOverride, defaultUrl }) => {
-    const originalConfig = remoteConfig.value
-
     beforeEach(() => {
-      remoteConfig.value = {}
-    })
-
-    afterEach(() => {
-      remoteConfig.value = originalConfig
+      useRemoteConfigStore().acceptConfig({}, false)
     })
 
     it('honors a server-provided HTTPS override', () => {
@@ -79,14 +79,8 @@ describe.for(baseUrlCases)(
 )
 
 describe('compatibility with comfyui servers that predate the override keys', () => {
-  const originalConfig = remoteConfig.value
-
   beforeEach(() => {
-    remoteConfig.value = {}
-  })
-
-  afterEach(() => {
-    remoteConfig.value = originalConfig
+    useRemoteConfigStore().acceptConfig({}, false)
   })
 
   it('falls back to build-time defaults when /features omits the URL keys', async () => {

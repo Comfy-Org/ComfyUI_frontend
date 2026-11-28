@@ -106,7 +106,7 @@ jobs:
           path: comfyui
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           package_json_file: frontend/package.json
 
@@ -129,7 +129,7 @@ jobs:
           set -euo pipefail
 
           # Run the resolver script
-          if ! RESULT=$(pnpm exec tsx scripts/cicd/resolve-comfyui-release.ts ../comfyui .); then
+          if ! RESULT=$(pnpm exec tsx tools/ci/src/cicd/resolve-comfyui-release.ts ../comfyui .); then
             echo "Failed to resolve release information"
             exit 1
           fi
@@ -231,12 +231,12 @@ jobs:
       - name: Check out release scripts
         uses: actions/checkout@v7
         with:
-          sparse-checkout: scripts/cicd
+          sparse-checkout: tools/ci/src/cicd
           sparse-checkout-cone-mode: false
           path: release-scripts
 
       - name: Stage release scripts
-        run: cp -r release-scripts/scripts/cicd "$RUNNER_TEMP/cicd"
+        run: cp -r release-scripts/tools/ci/src/cicd "$RUNNER_TEMP/cicd"
 
       - name: Wait for the release tag
         if: needs.trigger-release-if-needed.result == 'success'
@@ -254,7 +254,7 @@ jobs:
           path: release
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           package_json_file: release/package.json
 
@@ -297,7 +297,7 @@ jobs:
           COMFYUI_FRONTEND_VERSION: ${{ needs.resolve-version.outputs.target_version }}
 
       - name: Publish pypi package
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           skip-existing: true
           password: ${{ secrets.PYPI_TOKEN }}
@@ -342,7 +342,8 @@ jobs:
         uses: actions/checkout@v7
         with:
           sparse-checkout: |
-            scripts/cicd/comfyui-bump-guard.sh
+            tools/ci/src/cicd/comfyui-bump-guard.sh
+            tools/ci/src/cicd/gh-retry.sh
           sparse-checkout-cone-mode: false
           path: frontend-scripts
 
@@ -447,7 +448,7 @@ jobs:
           git show HEAD:requirements.txt > ../master-requirements.txt
           PINNED_FILES=(../master-requirements.txt)
           OPEN_PR=""
-          OPEN_HEAD=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+          OPEN_HEAD=$(../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
             --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
               | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
           if [ -n "$OPEN_HEAD" ]; then
@@ -456,11 +457,11 @@ jobs:
               echo "::error title=ComfyUI bump PR is orphaned::Open PR #${OPEN_PR} has no head repository (its fork was deleted). Close it, then rerun."
               exit 1
             fi
-            gh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
+            ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
               | base64 -d > ../pending-requirements.txt
             PINNED_FILES+=(../pending-requirements.txt)
           fi
-          DECISION=$(../frontend-scripts/scripts/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "${PINNED_FILES[@]}")
+          DECISION=$(../frontend-scripts/tools/ci/src/cicd/comfyui-bump-guard.sh "$TARGET_VERSION" "${PINNED_FILES[@]}")
           if [ "$DECISION" = "skip" ]; then
             PINS=$(grep -h '^comfyui-frontend-package==' "${PINNED_FILES[@]}" | paste -sd ' ')
             MSG="Not replacing the ComfyUI bump: ${TARGET_VERSION} is older than a current pin (master, then open PR ${OPEN_PR:-none}: ${PINS})."
@@ -480,9 +481,9 @@ jobs:
             if [ -n "$OPEN_PR" ]; then
               # Its pin is not newer (the guard checked), so merging it would downgrade or do nothing.
               MSG="Closed ComfyUI PR #${OPEN_PR}: master already pins ${TARGET_VERSION}."
-              gh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
+              ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
                 -f body="Closing: master already pins comfyui-frontend-package==${TARGET_VERSION}, so this older bump is no longer needed."
-              gh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
+              ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
               echo "::notice title=Stale ComfyUI bump closed::${MSG}"
               echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
             fi
@@ -502,7 +503,7 @@ jobs:
           PR_BODY=$(cat ../pr-body.txt)
 
           # Try to create PR, ignore error if it already exists
-          if ! gh pr create \
+          if ! ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh pr create \
             --repo Comfy-Org/ComfyUI \
             --head "$HEAD_BRANCH" \
             --base master \
@@ -512,18 +513,19 @@ jobs:
 
             # Check if PR already exists
             set +e
-            EXISTING_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>&1)
+            PR_LIST_STDERR=$(mktemp)
+            EXISTING_PR=$(../frontend-scripts/tools/ci/src/cicd/gh-retry.sh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>"$PR_LIST_STDERR")
             PR_LIST_EXIT=$?
             set -e
 
             if [ $PR_LIST_EXIT -ne 0 ]; then
-              echo "Failed to check for existing PR: $EXISTING_PR"
+              echo "Failed to check for existing PR: $(cat "$PR_LIST_STDERR")"
               exit 1
             fi
 
             if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
               echo "PR already exists (#${EXISTING_PR}), refreshing title/body"
-              gh api --silent --method PATCH \
+              ../frontend-scripts/tools/ci/src/cicd/gh-retry.sh api --silent --method PATCH \
                 "repos/Comfy-Org/ComfyUI/pulls/${EXISTING_PR}" \
                 -f title="Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
                 -F body=@../pr-body.txt
@@ -533,12 +535,68 @@ jobs:
             fi
           fi
 
+      - name: Mark the bump PR ready for review
+        if: steps.create-pr.outputs.skipped != 'true' && needs.publish-pypi.outputs.pypi_confirmed == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          COMFYUI_FORK: ${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}
+        run: |
+          set -euo pipefail
+
+          FORK_OWNER=$(echo "$COMFYUI_FORK" | cut -d'/' -f1)
+          BRANCH="automation/comfyui-frontend-bump"
+
+          NODE_ID=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+            --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
+              | select(. != null) | .node_id')
+          if [ -z "$NODE_ID" ]; then
+            echo "::warning title=No open bump PR::Could not find an open bump PR for ${BRANCH}; nothing to mark ready."
+            exit 0
+          fi
+
+          gh api graphql -f query='
+            mutation($id: ID!) {
+              markPullRequestReadyForReview(input: { pullRequestId: $id }) {
+                pullRequest { number isDraft }
+              }
+            }' -F id="$NODE_ID" --jq '.data.markPullRequestReadyForReview.pullRequest
+              | "PR #\(.number) isDraft=\(.isDraft)"'
+
+      - name: Return the reused bump PR to draft when its PyPI check is unconfirmed
+        if: steps.create-pr.outputs.skipped != 'true' && needs.publish-pypi.outputs.pypi_confirmed != 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          COMFYUI_FORK: ${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}
+        run: |
+          set -euo pipefail
+
+          FORK_OWNER=$(echo "$COMFYUI_FORK" | cut -d'/' -f1)
+          BRANCH="automation/comfyui-frontend-bump"
+
+          NODE_ID=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+            --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
+              | select(. != null) | .node_id')
+          if [ -z "$NODE_ID" ]; then
+            echo "::warning title=No open bump PR::Could not find an open bump PR for ${BRANCH}; nothing to convert to draft."
+            exit 0
+          fi
+
+          gh api graphql -f query='
+            mutation($id: ID!) {
+              convertPullRequestToDraft(input: { pullRequestId: $id }) {
+                pullRequest { number isDraft }
+              }
+            }' -F id="$NODE_ID" --jq '.data.convertPullRequestToDraft.pullRequest
+              | "PR #\(.number) isDraft=\(.isDraft)"'
+
       - name: Summary
         if: steps.create-pr.outputs.skipped != 'true'
         run: |
           echo "## ComfyUI PR Created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Draft PR created in Comfy-Org/ComfyUI" >> $GITHUB_STEP_SUMMARY
+          echo "PR created in Comfy-Org/ComfyUI (marked ready for review once PyPI is confirmed)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### PR Body:" >> $GITHUB_STEP_SUMMARY
           cat pr-body.txt >> $GITHUB_STEP_SUMMARY
@@ -559,4 +617,4 @@ jobs:
           PACKAGE: comfyui-frontend-package
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
           TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
-        run: ./scripts/cicd/assert-release-shipped.sh
+        run: ./tools/ci/src/cicd/assert-release-shipped.sh

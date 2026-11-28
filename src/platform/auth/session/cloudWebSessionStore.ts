@@ -67,6 +67,11 @@ import {
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  abortWorkflowStorageAuthFence,
+  fenceWorkflowStorageForAuthState
+} from '@/platform/workflow/persistence/base/storageIO'
+import type { WorkflowStorageAuthFence } from '@/platform/workflow/persistence/base/storageIO'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -176,6 +181,9 @@ function createCloudIdentity(
 ): WebSessionIdentity {
   const visibility = createWebVisibilityPort()
   const crossTab = createWebCrossTabRefreshPort<WebSessionSharedMessage>()
+  let currentAuthFence:
+    | { epoch: number; owner: WorkflowStorageAuthFence }
+    | undefined
   return createWebSessionIdentity({
     session: sessionOptions(),
     principal: {
@@ -190,7 +198,27 @@ function createCloudIdentity(
       }
     },
     origin: window.location.origin,
-    onAccountChanged,
+    onAccountChanged: (change) => {
+      if (change.reason === 'user_changed' || change.outcome === 'revoked') {
+        currentAuthFence = {
+          epoch: change.epoch,
+          owner: fenceWorkflowStorageForAuthState()
+        }
+      }
+      onAccountChanged(change)
+    },
+    onLocalSignOutFailed: (error, { epoch }) => {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'failure_signing_out_revoked_web_session_locally',
+        level: 'error',
+        tags: { outcome: 'degraded' }
+      })
+      if (currentAuthFence?.epoch === epoch) {
+        abortWorkflowStorageAuthFence(currentAuthFence.owner)
+        currentAuthFence = undefined
+      }
+    },
     ...webSessionTelemetryHooks((event) =>
       useTelemetry()?.trackWebSessionEvent(event)
     ),
@@ -200,10 +228,7 @@ function createCloudIdentity(
   })
 }
 
-/**
- * The cloud app's side of the shared web session. `unified_web_session` is
- * read once, on the first `start()`, and decides the whole page load.
- */
+/** The cloud app's side of the shared web session, started once per page load on the Cloud build. */
 export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   let decided = false
   let identity: WebSessionIdentity | null = null
@@ -295,15 +320,15 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     session.boot()
   }
 
-  /** Decides the flag for this page load; true when the session is on. */
+  /** Starts the session for this page load; true on the Cloud build. */
   function start(): boolean {
     if (decided) return identity !== null
-    const enabled = useFeatureFlags().flags.unifiedWebSessionEnabled
     decided = true
-    if (!enabled) return false
+    if (!isCloud) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
-      if (change.reason === 'signed_out' && !signingOut) {
+      if (signingOut) return
+      if (change.reason === 'signed_out') {
         void signedOutElsewhere.trigger()
       }
     })
@@ -330,6 +355,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       scope: requestScope,
       workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
+      ingestHeaders: async ({ session, workspaceId }, method) => {
+        const { headers } = await authorize(
+          { kind: 'session', session },
+          { target: 'ingest', method, workspaceId }
+        )
+        return headers
+      },
       workspaceToken: async (scope) =>
         settleScopedToken(scope, await mint.mint(scope.workspaceId)),
       remintWorkspaceToken: async (scope) =>
@@ -412,10 +444,12 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signingOut = false
     })
     if (result === undefined || result.status === 'ok') return
-    reportError(new Error('Session cookie deletion failed'), {
+    const error = new Error(`Session cookie deletion failed: ${result.code}`)
+    reportError(error, {
       surface: 'auth',
       errorType: 'auth_session_cookie_delete_failed',
-      level: 'error'
+      level: 'error',
+      tags: { failure_code: result.code, outcome: 'degraded' }
     })
   }
 
@@ -500,7 +534,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
       ssoRequired: ({ session }) =>
-        presentSsoRequired('session_refused', { email: session.user.email })
+        presentSsoRequired('session_refused', { email: session.user.email }),
+      retriesLapsedSession:
+        useFeatureFlags().flags.webSessionLapseRecoveryEnabled
     })
   }
 

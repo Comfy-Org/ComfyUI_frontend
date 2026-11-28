@@ -105,10 +105,12 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
+  signed_out_reroute_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   cancellation_survey_id?: string
   'agent-in-app-experience'?: boolean
+  'Comfy.Agent.CrdtDebug'?: boolean
   partner_node_governance_enabled?: boolean
   /** Kill switch for the local partner-nodes run gate; defaults on client-side. */
   partner_run_gate_enabled?: boolean
@@ -132,16 +134,18 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
-  unified_cloud_auth?: boolean
-  unified_web_session?: boolean
+  web_session_lapse_recovery_enabled?: boolean
   sso_enabled?: boolean
   local_web_sso?: boolean
-  billing_sdk_topup_enabled?: boolean
-  billing_sdk_subscription_enabled?: boolean
+  /** Comfy MCP connect surface on local installs. Never served on Cloud. */
+  local_mcp_connect?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
+  billing_new_ux_enabled?: boolean
+  billing_auto_top_up_at_checkout_enabled?: boolean
   v1_payment_recovery?: boolean
   unified_billing_settings?: boolean
+  oauth_consent_switch_account_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */

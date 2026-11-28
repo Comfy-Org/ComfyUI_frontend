@@ -591,8 +591,7 @@ describe('useSubscription', () => {
         )
         .mockResolvedValueOnce({
           is_active: false,
-          has_funds: false,
-          billing_rail: 'legacy_stripe'
+          has_funds: false
         })
 
       const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
@@ -615,8 +614,7 @@ describe('useSubscription', () => {
       expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
       expect(subscriptionStatus.value).toEqual({
         is_active: false,
-        has_funds: false,
-        billing_rail: 'legacy_stripe'
+        has_funds: false
       })
     })
 
@@ -2375,7 +2373,7 @@ describe('useSubscription', () => {
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://stagingplatform.comfy.org/profile/usage?workspace=ws-team-1',
+        'https://stagingplatform.comfy.org/profile/usage?utm_source=comfy_cloud&utm_medium=app&workspace=ws-team-1',
         '_blank'
       )
 

@@ -149,6 +149,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Экспорт рабочего процесса (формат API)"
   },
+  "Comfy_ExportWorkflowImage": {
+    "label": "Экспортировать изображение рабочего процесса"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Преобразовать выделенное в подграф"
   },

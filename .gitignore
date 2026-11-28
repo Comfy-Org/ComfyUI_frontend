@@ -64,6 +64,7 @@ coverage/
 /test-results/
 /playwright-report/
 /blob-report/
+/staging-smoke-report.json
 /playwright/.cache/
 browser_tests/**/*-win32.png
 browser_tests/**/*-darwin.png
@@ -122,3 +123,11 @@ matrix-proof/
 
 # Raw recorder sidecars (frames, rows, identifiers); only the sanitized conversation JSON is tracked
 browser_tests/fixtures/data/agent/conversations/recordings/
+
+# PR screenshots belong in the PR description on GitHub, not in the repository.
+# Drag them into the description box; GitHub hosts them for you.
+# Hall of shame for committing images here anyway: uytieu, mariana953,
+# benjcooley, Willie, Dante, claude[bot]. Don't add your name to this list.
+.github/pr-images/
+
+__pycache__/

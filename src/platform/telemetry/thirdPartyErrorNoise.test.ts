@@ -10,14 +10,17 @@ const MESSAGING_ERROR =
 describe('third-party error noise', () => {
   it.for([
     {
+      case: 'in the original exception',
       event: { type: undefined },
       hint: { originalException: new Error(EXTENSION_ERROR) }
     },
     {
+      case: 'in the event message',
       event: { type: undefined, message: `Error: ${EXTENSION_ERROR}` },
       hint: {}
     },
     {
+      case: 'in the exception value',
       event: {
         type: undefined,
         exception: { values: [{ value: EXTENSION_ERROR }] }
@@ -25,14 +28,15 @@ describe('third-party error noise', () => {
       hint: {}
     },
     {
+      case: 'for a duplicate messaging listener',
       event: {
         type: undefined,
         exception: { values: [{ value: `Error: ${MESSAGING_ERROR}` }] }
       },
       hint: {}
     }
-  ] satisfies Array<{ event: ErrorEvent; hint: EventHint }>)(
-    'drops the extension error from Sentry',
+  ] satisfies Array<{ case: string; event: ErrorEvent; hint: EventHint }>)(
+    'drops the extension error $case from Sentry',
     ({ event, hint }) => {
       expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
     }
@@ -40,6 +44,7 @@ describe('third-party error noise', () => {
 
   it.for([
     {
+      case: 'in the original exception',
       event: { type: undefined },
       hint: {
         originalException: new DOMException(
@@ -49,6 +54,7 @@ describe('third-party error noise', () => {
       }
     },
     {
+      case: 'in the exception values',
       event: {
         type: undefined,
         exception: {
@@ -58,6 +64,7 @@ describe('third-party error noise', () => {
       hint: {}
     },
     {
+      case: 'behind a TypeError cause',
       event: {
         type: undefined,
         exception: {
@@ -69,8 +76,8 @@ describe('third-party error noise', () => {
       },
       hint: {}
     }
-  ] satisfies Array<{ event: ErrorEvent; hint: EventHint }>)(
-    'drops intentional AbortErrors from Sentry',
+  ] satisfies Array<{ case: string; event: ErrorEvent; hint: EventHint }>)(
+    'drops intentional AbortErrors $case from Sentry',
     ({ event, hint }) => {
       expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
     }

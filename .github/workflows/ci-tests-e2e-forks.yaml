@@ -85,8 +85,8 @@ jobs:
           [ -d "reports/playwright-report-chromium-merged" ] && \
             mv reports/playwright-report-chromium-merged reports/playwright-report-chromium
 
-          chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
-          ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
+          chmod +x tools/ci/src/cicd/pr-playwright-deploy-and-comment.sh
+          ./tools/ci/src/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ steps.pr.outputs.number }}" \
             "$BRANCH_NAME" \
             "completed"

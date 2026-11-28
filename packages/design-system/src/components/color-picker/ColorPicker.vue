@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger, useForwardProps } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
 import type {
@@ -12,12 +12,32 @@ import {
   hsvaToHex,
   rgbToHex
 } from '@comfyorg/shared-frontend-utils/colorUtil'
+import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
-const { alpha = true, accessibleLabel } = defineProps<ColorPickerProps>()
+const {
+  alpha = true,
+  align = 'start',
+  sideOffset = 7,
+  accessibleLabel,
+  triggerId,
+  class: className,
+  disabled,
+  hexLabel,
+  rgbaLabel,
+  hueLabel,
+  alphaLabel,
+  redLabel,
+  greenLabel,
+  blueLabel,
+  saturationBrightnessLabel,
+  formatLabel,
+  ...restProps
+} = defineProps<ColorPickerProps>()
+const forwarded = useForwardProps(restProps)
 
 const modelValue = defineModel<string>({ default: '#000000' })
 
@@ -73,40 +93,30 @@ const isOpen = ref(false)
   <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <slot name="trigger">
-        <button
+        <Button
+          :id="triggerId"
           type="button"
-          :disabled="$props.disabled"
+          :disabled
           :aria-label="accessibleLabel"
           :class="
             cn(
-              'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary pr-2 outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50',
+              'w-full gap-0 overflow-clip border border-solid border-transparent p-0 pr-2 font-normal',
               isOpen && 'border-border',
-              $props.class
+              className
             )
           "
         >
-          <div class="flex size-8 shrink-0 items-center justify-center">
-            <div class="relative size-4 overflow-hidden rounded-sm">
-              <div
-                class="absolute inset-0"
-                :style="{
-                  backgroundImage:
-                    'repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%)',
-                  backgroundSize: '4px 4px'
-                }"
-              />
-              <div
-                class="absolute inset-0"
-                :style="{ backgroundColor: previewColor }"
-              />
-            </div>
-          </div>
+          <div
+            class="m-2 size-4 shrink-0 rounded-sm"
+            :style="{
+              backgroundImage: `linear-gradient(${previewColor}, ${previewColor}), repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%)`,
+              backgroundSize: 'auto, 4px 4px'
+            }"
+          />
           <div
             class="flex flex-1 items-center justify-between pl-1 text-xs text-foreground"
           >
-            <template v-if="displayMode === 'hex'">
-              <span>{{ displayHex }}</span>
-            </template>
+            <template v-if="displayMode === 'hex'">{{ displayHex }}</template>
             <template v-else>
               <div class="flex gap-2">
                 <span>{{ baseRgb.r }}</span>
@@ -116,27 +126,28 @@ const isOpen = ref(false)
             </template>
             <span v-if="alpha">{{ hsva.a }}%</span>
           </div>
-        </button>
+        </Button>
       </slot>
     </PopoverTrigger>
     <PopoverContent
-      align="start"
-      :side-offset="7"
+      v-bind="forwarded"
+      :align
+      :side-offset
       class="w-auto border-0 bg-transparent p-0 shadow-none"
     >
       <ColorPickerPanel
         v-model:hsva="hsva"
         v-model:display-mode="displayMode"
         :alpha
-        :hex-label="$props.hexLabel"
-        :rgba-label="$props.rgbaLabel"
-        :hue-label="$props.hueLabel"
-        :alpha-label="$props.alphaLabel"
-        :red-label="$props.redLabel"
-        :green-label="$props.greenLabel"
-        :blue-label="$props.blueLabel"
-        :saturation-brightness-label="$props.saturationBrightnessLabel"
-        :format-label="$props.formatLabel"
+        :hex-label
+        :rgba-label
+        :hue-label
+        :alpha-label
+        :red-label
+        :green-label
+        :blue-label
+        :saturation-brightness-label
+        :format-label
       />
     </PopoverContent>
   </PopoverRoot>

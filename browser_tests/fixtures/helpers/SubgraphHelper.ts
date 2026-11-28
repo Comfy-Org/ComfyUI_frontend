@@ -29,13 +29,45 @@ type SubgraphDefinitionInventory = SubgraphDefinitionRow[]
 
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
+  public readonly inputPanel: Locator
+  public readonly inputPorts: Locator
+  public readonly outputPorts: Locator
+  public readonly addInputSocket: Locator
+  public readonly addOutputSocket: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.editor = new SubgraphEditor(comfyPage)
+    const { subgraphIo, node } = TestIds
+    this.inputPanel = comfyPage.page.getByTestId(subgraphIo.inputPanel)
+    const outputPanel = comfyPage.page.getByTestId(subgraphIo.outputPanel)
+    this.inputPorts = this.inputPanel.getByTestId(subgraphIo.inputPort)
+    this.outputPorts = outputPanel.getByTestId(subgraphIo.outputPort)
+    this.addInputSocket = this.inputPanel
+      .getByTestId(subgraphIo.addInput)
+      .getByTestId(node.slotConnectionDot)
+    this.addOutputSocket = outputPanel
+      .getByTestId(subgraphIo.addOutput)
+      .getByTestId(node.slotConnectionDot)
   }
 
   private get page(): Page {
     return this.comfyPage.page
+  }
+
+  inputPort(name: string): Locator {
+    return this.inputPorts.and(
+      this.inputPanel.getByLabel(name, { exact: true })
+    )
+  }
+
+  inputSocket(name: string): Locator {
+    return this.inputPort(name).getByTestId(TestIds.node.slotConnectionDot)
+  }
+
+  async fillInput(name: string, value: string): Promise<void> {
+    const input = this.inputPanel.getByRole('textbox', { name, exact: true })
+    await input.fill(value)
+    await input.blur()
   }
 
   /**
@@ -256,9 +288,10 @@ export class SubgraphHelper {
     return await this.comfyPage.page.evaluate(() => {
       const graph = app!.canvas.graph as Subgraph
       const inputNode = graph.inputNode
-      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
-      const width = inputNode.size[0] * app!.canvas.ds.scale
-      const height = inputNode.size[1] * app!.canvas.ds.scale
+      const { pos, size } = inputNode.boundingRect
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(pos)
+      const width = size[0] * app!.canvas.ds.scale
+      const height = size[1] * app!.canvas.ds.scale
       return { x, y, width, height }
     })
   }
@@ -355,9 +388,24 @@ export class SubgraphHelper {
   }
 
   /**
-   * Disconnects and reconnects the interior link feeding a promoted subgraph
-   * input, forcing every host node of this definition to re-resolve the
-   * promoted widget through `SubgraphNode._setWidget`.
+   * Disconnects the interior link feeding a promoted input.
+   *
+   * Must be called from inside the subgraph.
+   */
+  async disconnectPromotedInput(
+    interiorNode: NodeReference,
+    inputName: string
+  ) {
+    const slot = await interiorNode.getInputByName(inputName)
+    await slot.removeLinks()
+    await this.comfyPage.nextFrame()
+    await slot.expectLinkCount(0, 'Interior link should be disconnected')
+
+    return slot
+  }
+
+  /**
+   * Disconnects and reconnects the interior link feeding a promoted input.
    *
    * Must be called from inside the subgraph.
    */
@@ -365,30 +413,16 @@ export class SubgraphHelper {
     interiorNode: NodeReference,
     inputName: string
   ): Promise<void> {
-    const slotIndex = await this.page.evaluate(
-      ([nodeId, name]) => {
-        const node = window.app!.canvas.graph!.getNodeById(nodeId)
-        if (!node) throw new Error(`Node ${nodeId} not found`)
-        const index = node.inputs.findIndex((input) => input.name === name)
-        if (index === -1) {
-          throw new Error(`Input '${name}' not found on node ${nodeId}`)
-        }
-        return index
-      },
-      [interiorNode.id, inputName] as const
-    )
+    const slot = await this.disconnectPromotedInput(interiorNode, inputName)
 
-    const slot = await interiorNode.getInput(slotIndex)
-    await slot.removeLinks()
-    await this.comfyPage.nextFrame()
-    await slot.expectLinkCount(0, 'Interior link should be detached')
-
-    await this.connectFromInput(interiorNode, slotIndex, inputName)
+    await this.connectFromInput(interiorNode, slot.index, inputName)
     await slot.expectLinkCount(1, 'Interior link should be restored')
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
-    const widget = nodeLocator.getByLabel(widgetName, { exact: true })
+    const widget = nodeLocator.getByTestId(TestIds.widgets.widget).filter({
+      has: this.page.getByLabel(widgetName, { exact: true })
+    })
     await this.comfyPage.contextMenu
       .openFor(widget)
       .then((m) => m.clickMenuItemExact(`Promote Widget: ${widgetName}`))
@@ -546,6 +580,22 @@ export class SubgraphHelper {
       if (!graph || !('inputNode' in graph)) return 0
       return graph[`${slotType}s`].length
     }, type)
+  }
+
+  async getInteriorLinkCounts(): Promise<{
+    ioLinks: number
+    connectedInputs: number
+  }> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      return {
+        ioLinks: [...graph.links.values()].filter((link) => link.originIsIoNode)
+          .length,
+        connectedInputs: graph.nodes
+          .flatMap((node) => node.inputs)
+          .filter((input) => input.link != null).length
+      }
+    })
   }
 
   async getSlotLabel(

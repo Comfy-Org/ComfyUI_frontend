@@ -32,7 +32,7 @@ vi.mock<unknown>(
 
 const mockStop = vi.hoisted(() => vi.fn())
 const mockRegisterRefreshOnReturn = vi.hoisted(() =>
-  vi.fn((_refresh: () => Promise<unknown>) => mockStop)
+  vi.fn((_refresh: (returned: Event) => Promise<unknown>) => mockStop)
 )
 vi.mock<unknown>(import('@/platform/billing/refreshOnReturn'), () => ({
   registerRefreshOnReturn: mockRegisterRefreshOnReturn
@@ -99,7 +99,7 @@ describe('openHostedBillingTab', () => {
 
     openHostedBillingTab('pricing')
     const [refresh] = mockRegisterRefreshOnReturn.mock.calls[0]
-    await refresh()
+    await refresh(new Event('focus'))
 
     expect(refreshed.mock.calls).toEqual([['account']])
     expect(mockCapabilitiesRefresh).toHaveBeenCalledTimes(1)

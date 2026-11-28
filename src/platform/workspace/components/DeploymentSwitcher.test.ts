@@ -28,14 +28,23 @@ import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
-  DEPLOYMENT_START_POLL_MS
+  DEPLOYMENT_START_POLL_MS,
+  DEPLOYMENT_VERSION_WATCH_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import type {
+  BuildStage,
+  FollowedBuild
+} from '@/platform/workspace/platformFrame/platformFrameBuild'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { api } from '@/scripts/api'
+
+import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
 
 import DeploymentSwitcher from './DeploymentSwitcher.vue'
 
@@ -73,7 +82,14 @@ vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(
+  import('@/platform/workspace/platformFrame/customDeploymentTelemetry'),
+  {
+    spy: true
+  }
+)
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const distribution = vi.hoisted(() => ({ isCloud: true }))
@@ -150,9 +166,10 @@ function workflowWith(...types: string[]): LGraph {
   return graph
 }
 
-function renderSwitcher(plugin = i18n) {
+function renderSwitcher(plugin = i18n, { onTeamPlan = true } = {}) {
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   render(DeploymentSwitcher, {
+    props: { onTeamPlan },
     global: { plugins: [plugin] }
   })
   return user
@@ -434,6 +451,46 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
 
+  it('names the Build beside the icon on a deployment', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    renderSwitcher()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-build-name')
+    ).toHaveTextContent(/^Studio Build$/)
+  })
+
+  it('shows only the icon on a deployment without a Build name', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2,
+      items: [
+        { ...listing.items[0], build_name: undefined },
+        ...listing.items.slice(1)
+      ]
+    })
+    renderSwitcher()
+
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/production/))
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows only the icon on Comfy Cloud', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+
+    await screen.findByTestId('deployment-switcher-trigger')
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
   it('marks the engine button until its first open closes, and remembers it on every device as soon as it opens', async () => {
     useSettingStore().$patch({
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
@@ -473,7 +530,7 @@ describe('DeploymentSwitcher', () => {
 
     await user.click(screen.getByTestId(`deployment-row-${D1}`))
     expect(openPage).toHaveBeenCalledWith(
-      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`,
       '_blank',
       'noopener,noreferrer'
     )
@@ -585,13 +642,98 @@ describe('DeploymentSwitcher', () => {
     const user = renderSwitcher()
     await openList(user)
 
-    const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
+    const builds = screen.getByRole('menuitem', { name: 'Manage builds' })
     expect(builds).toHaveAttribute(
       'href',
-      expect.stringMatching(/\/profile\/builds$/)
+      `${getComfyPlatformBaseUrl()}/profile/builds?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`
     )
     expect(builds).toHaveAttribute('target', '_blank')
-    expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
+  })
+
+  it('offers to create a Custom Build in a workspace that already has deployments', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
+    )
+
+    await waitFor(() =>
+      expect(
+        useDialogStore().isDialogOpen('global-create-custom-deployment')
+      ).toBe(true)
+    )
+  })
+
+  function sendRealLinkTelemetry() {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    onTestFinished(() => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: false
+      })
+    })
+  }
+
+  function sentLinkEvents() {
+    return vi
+      .mocked(useTelemetry()!.trackCustomDeploymentEvent)
+      .mock.calls.map(([event]) => event)
+      .filter((event) => event.name === 'platform:deployment_link_clicked')
+  }
+
+  const MANAGE_DEPLOYMENTS_EVENT = {
+    name: 'platform:deployment_link_clicked',
+    properties: { kind: 'manage_deployments', workspace_id: null }
+  }
+
+  it('counts a Manage builds click', async () => {
+    sendRealLinkTelemetry()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(screen.getByRole('menuitem', { name: 'Manage builds' }))
+
+    await waitFor(() =>
+      expect(sentLinkEvents()).toEqual([MANAGE_DEPLOYMENTS_EVENT])
+    )
+  })
+
+  it('counts a Manage builds click once when a script cancels and replays it', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    sendRealLinkTelemetry()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    render(DeploymentSwitcher, { global: { plugins: [i18n] } })
+    const user = userEvent.setup({
+      pointerEventsCheck: 0,
+      advanceTimers: vi.advanceTimersByTime
+    })
+    await openList(user)
+    const builds = screen.getByRole('menuitem', { name: 'Manage builds' })
+    let replayed = false
+    builds.addEventListener('click', (event) => {
+      if (builds.dataset.replayed === 'true') {
+        delete builds.dataset.replayed
+        replayed = true
+        return
+      }
+      builds.dataset.replayed = 'true'
+      setTimeout(() => builds.click(), 10)
+      event.preventDefault()
+    })
+
+    await user.click(builds)
+
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(replayed).toBe(true)
+    expect(sentLinkEvents()).toEqual([MANAGE_DEPLOYMENTS_EVENT])
   })
 
   it('says a workspace with no deployments has none yet and opens the creation dialog', async () => {
@@ -609,7 +751,7 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByText(/Switching reloads the editor/)).toBeNull()
 
     await user.click(
-      screen.getByRole('menuitem', { name: 'Create a custom deployment' })
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
     )
 
     await waitFor(() =>
@@ -874,6 +1016,29 @@ describe('DeploymentSwitcher', () => {
     }
   )
 
+  it.for([
+    { flag: true, reads: 2 },
+    { flag: false, reads: 1 }
+  ])(
+    'reads once on focus, and every 30 s only with Platform in the editor on: $flag',
+    async ({ flag, reads }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: flag
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      renderSwitcher()
+      await screen.findByTestId('deployment-switcher-trigger')
+      await vi.advanceTimersByTimeAsync(0)
+
+      window.dispatchEvent(new Event('focus'))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_VERSION_WATCH_MS)
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(1 + reads)
+    }
+  )
+
   it('asks again on focus at most once a minute while the listing keeps failing', async () => {
     mockWorkspaceApi.listDeployments.mockRejectedValue(
       new WorkspaceApiError('Service unavailable', 503)
@@ -905,6 +1070,135 @@ describe('DeploymentSwitcher', () => {
 
     expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+  })
+
+  it('reads the listing again when the window regains focus on a listing already shown', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+    expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+  })
+
+  it('puts keyboard focus in the menu each time it is asked to open', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await screen.findByTestId('deployment-switcher-trigger')
+    const store = useDeploymentPickStore()
+
+    store.requestSwitcherOpen()
+    const firstMenu = await screen.findByRole('menu')
+    await waitFor(() => expect(firstMenu).toHaveFocus())
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    store.requestSwitcherOpen()
+    const secondMenu = await screen.findByRole('menu')
+    await waitFor(() => expect(secondMenu).toHaveFocus())
+  })
+
+  it('counts as a switcher that can open only while it is mounted', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const { unmount } = render(DeploymentSwitcher, {
+      global: { plugins: [i18n] }
+    })
+    await screen.findByTestId('deployment-switcher-trigger')
+    const store = useDeploymentPickStore()
+
+    store.requestSwitcherOpen()
+    expect(await screen.findByRole('menu')).toBeVisible()
+    expect(store.switcherMounts).toBe(1)
+
+    unmount()
+
+    expect(store.switcherMounts).toBe(0)
+  })
+
+  it('keeps reading the listing while the picked deployment is starting, with the menu closed', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1,
+      items: [
+        listing.items[0],
+        withStatus(listing.items[1], 'starting'),
+        listing.items[2]
+      ]
+    })
+    renderSwitcher()
+    expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
+    await vi.advanceTimersByTimeAsync(0)
+    const readsAtBoot = mockWorkspaceApi.listDeployments.mock.calls.length
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(
+      readsAtBoot + 1
+    )
+  })
+
+  it('keeps reading the listing when it mounts on a pick that is already starting', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1,
+      items: [
+        listing.items[0],
+        withStatus(listing.items[1], 'starting'),
+        listing.items[2]
+      ]
+    })
+    await useDeploymentPickStore().loadOnce()
+    renderSwitcher()
+    expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
+    await vi.advanceTimersByTimeAsync(0)
+    const readsAtMount = mockWorkspaceApi.listDeployments.mock.calls.length
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(
+      readsAtMount + 1
+    )
+  })
+
+  it('offers Switch on Comfy Cloud when the picked deployment is stopped, and switches there', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1
+    })
+    mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const cloud = await screen.findByTestId('deployment-row-cloud')
+    expect(within(cloud).getByText('Switch')).toBeVisible()
+    expect(
+      within(screen.getByTestId(`deployment-row-${D2}`)).queryByText('Switch')
+    ).toBeNull()
+
+    await user.click(cloud)
+
+    await waitFor(() =>
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1')
+    )
+  })
+
+  it('offers no Switch while the picked deployment is ready', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      within(await screen.findByTestId('deployment-row-cloud')).queryByText(
+        'Switch'
+      )
+    ).toBeNull()
   })
 
   it('renders nothing when the listing fails', async () => {
@@ -1023,6 +1317,85 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
+  it('offers an owner on a Team or Enterprise plan the workspace default', async () => {
+    asOwner()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      screen.getByTestId('deployment-switcher-default')
+    ).toBeInTheDocument()
+  })
+
+  it('hides the workspace default from an owner on an individual plan', async () => {
+    asOwner()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher(i18n, { onTeamPlan: false })
+    await openList(user)
+
+    expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
+    expect(
+      screen.getByRole('menuitem', { name: 'Manage builds' })
+    ).toBeInTheDocument()
+  })
+
+  it.for([
+    { recorded: 'a default', reply: { default_deployment_id: D1 } },
+    {
+      recorded: 'a deleted default',
+      reply: { gone_default_deployment_id: GONE }
+    }
+  ] satisfies {
+    recorded: string
+    reply: Partial<WorkspaceDeploymentList>
+  }[])(
+    'offers an owner on an individual plan only clearing the workspace default while $recorded is recorded',
+    async ({ reply }) => {
+      asOwner()
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        ...reply
+      })
+      const user = renderSwitcher(i18n, { onTeamPlan: false })
+      await openList(user)
+      await openDefaultMenu(user)
+
+      expect(screen.getByTestId('default-row-cloud')).toBeInTheDocument()
+      expect(screen.queryByTestId(`default-row-${D2}`)).not.toBeInTheDocument()
+    }
+  )
+
+  it('keeps the current default checked in the clear-only menu for an owner on an individual plan', async () => {
+    asOwner()
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      default_deployment_id: D1
+    })
+    const user = renderSwitcher(i18n, { onTeamPlan: false })
+    await openList(user)
+    await openDefaultMenu(user)
+
+    expect(screen.getByTestId(`default-row-${D1}`)).toHaveAttribute(
+      'aria-checked',
+      'true'
+    )
+  })
+
+  it('does not send an owner on an individual plan to choose a new default when it was deleted', async () => {
+    asOwner()
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      gone_default_deployment_id: GONE
+    })
+    const user = renderSwitcher(i18n, { onTeamPlan: false })
+    await openList(user)
+
+    expect(
+      screen.getByTestId('deployment-switcher-notice')
+    ).not.toHaveTextContent('Choose a new one under Workspace default')
+  })
+
   it('lets an owner clear the workspace default, a deleted one included, by choosing Comfy Cloud', async () => {
     asOwner()
     mockWorkspaceApi.listDeployments.mockResolvedValue({
@@ -1120,7 +1493,8 @@ describe('DeploymentSwitcher', () => {
         next: listing,
         act: (user: ReturnType<typeof userEvent.setup>) =>
           user.click(screen.getByTestId(`deployment-row-${D2}`)),
-        target: 'Studio Build · production'
+        message:
+          "Switching to Studio Build · production reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'picking Comfy Cloud',
@@ -1129,7 +1503,8 @@ describe('DeploymentSwitcher', () => {
         next: { ...listing, picked_deployment_id: D2, pick_source: 'browser' },
         act: (user: ReturnType<typeof userEvent.setup>) =>
           user.click(screen.getByTestId('deployment-row-cloud')),
-        target: 'Comfy Cloud'
+        message:
+          "Switching to Comfy Cloud reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'following the workspace default',
@@ -1148,7 +1523,8 @@ describe('DeploymentSwitcher', () => {
         },
         act: (user: ReturnType<typeof userEvent.setup>) =>
           user.click(screen.getByTestId(`deployment-row-${D2}`)),
-        target: 'Studio Build · production'
+        message:
+          "Switching to Studio Build · production reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'changing the default this browser follows',
@@ -1159,7 +1535,8 @@ describe('DeploymentSwitcher', () => {
           await openDefaultMenu(user)
           await user.click(screen.getByTestId(`default-row-${D1}`))
         },
-        target: 'Studio Build · staging'
+        message:
+          "Switching to Studio Build · staging reloads the tab. These workflows have changes that aren't saved yet."
       },
       {
         path: 'reloading after its deployment changed',
@@ -1176,7 +1553,8 @@ describe('DeploymentSwitcher', () => {
         },
         act: async (user: ReturnType<typeof userEvent.setup>) =>
           user.click(await screen.findByTestId('deployment-switcher-reload')),
-        target: 'Studio Build · production'
+        message:
+          "Reloading the tab runs it on Studio Build · production. These workflows have changes that aren't saved yet."
       }
     ] satisfies {
       path: string
@@ -1184,15 +1562,15 @@ describe('DeploymentSwitcher', () => {
       boot: WorkspaceDeploymentList
       next: WorkspaceDeploymentList
       act: (user: ReturnType<typeof userEvent.setup>) => Promise<void>
-      target: string
+      message: string
     }[])(
       'asks to save them first when $path, and changes nothing on Cancel',
-      async ({ setup, boot, next, act, target }) => {
+      async ({ setup, boot, next, act, message }) => {
         setup()
         mockWorkspaceApi.listDeployments
           .mockResolvedValueOnce(boot)
           .mockResolvedValue(next)
-        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+        vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(null)
         const user = renderSwitcher()
         await screen.findByTestId('deployment-switcher-trigger')
         await openList(user)
@@ -1200,9 +1578,9 @@ describe('DeploymentSwitcher', () => {
         await act(user)
 
         await waitFor(() =>
-          expect(useDialogService().confirm).toHaveBeenCalledWith(
+          expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
             expect.objectContaining({
-              message: `Switching to ${target} reloads the tab. These workflows have changes that aren't saved yet.`,
+              message,
               itemList: ['workflows/portrait.json']
             })
           )
@@ -1223,7 +1601,7 @@ describe('DeploymentSwitcher', () => {
       async ({ answer, saved }) => {
         mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
         mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
-        vi.mocked(useDialogService().confirm).mockResolvedValueOnce(answer)
+        vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(answer)
         const user = renderSwitcher()
         await openList(user)
 
@@ -1247,15 +1625,13 @@ describe('DeploymentSwitcher', () => {
         settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
       })
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(null)
       const user = renderSwitcher()
       await openList(user)
 
       await user.click(screen.getByTestId(`deployment-row-${D2}`))
 
-      await waitFor(() =>
-        expect(useDialogService().confirm).toHaveBeenCalledOnce()
-      )
+      await waitFor(() => expect(showUnsavedWorkDialog).toHaveBeenCalledOnce())
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
       await waitFor(() =>
         expect(
@@ -1266,7 +1642,7 @@ describe('DeploymentSwitcher', () => {
 
     it('stays put when a save does not finish', async () => {
       mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(true)
       vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValueOnce(false)
       const user = renderSwitcher()
       await openList(user)
@@ -1285,7 +1661,7 @@ describe('DeploymentSwitcher', () => {
       mockWorkspaceApi.pickDeployment.mockRejectedValue(
         new WorkspaceApiError('deployment is not in this workspace', 403)
       )
-      vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
+      vi.mocked(showUnsavedWorkDialog).mockResolvedValueOnce(false)
       const user = renderSwitcher()
       await openList(user)
 
@@ -1310,7 +1686,7 @@ describe('DeploymentSwitcher', () => {
 
       await user.click(screen.getByTestId(`default-row-${D2}`))
 
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.setDefaultDeployment).not.toHaveBeenCalled()
     })
 
@@ -1332,7 +1708,7 @@ describe('DeploymentSwitcher', () => {
           'ws-1'
         )
       )
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
     })
 
@@ -1362,7 +1738,7 @@ describe('DeploymentSwitcher', () => {
       expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1', {
         follow: 'workspace'
       })
-      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(showUnsavedWorkDialog).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
     })
   })
@@ -1439,7 +1815,7 @@ describe('DeploymentSwitcher', () => {
     })
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
-    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await screen.findByTestId('deployment-switcher-trigger')
     expect(screen.queryByRole('menu')).toBeNull()
 
     useDeploymentPickStore().requestSwitcherOpen()
@@ -1459,7 +1835,9 @@ describe('DeploymentSwitcher', () => {
         screen.queryByTestId('deployment-switcher-new')
       ).not.toBeInTheDocument()
     )
-    expect(trigger).toHaveAccessibleName(
+    expect(
+      screen.getByTestId('deployment-switcher-trigger')
+    ).toHaveAccessibleName(
       'Running on Comfy Cloud. Choose where this editor runs'
     )
   })
@@ -1537,6 +1915,32 @@ describe('DeploymentSwitcher', () => {
           `deployment-row-${D9}`
         ])
       )
+    })
+
+    it('offers Switch on a ready deployment that runs the workflow when Comfy Cloud lacks its nodes', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D1
+      })
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [
+          { deployment_id: D2, missing_node_types: [], unknown: false },
+          { deployment_id: D1, missing_node_types: [], unknown: false },
+          { deployment_id: D9, missing_node_types: [], unknown: false }
+        ],
+        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(
+          within(screen.getByTestId(`deployment-row-${D2}`)).getByText('Switch')
+        ).toBeVisible()
+      )
+      expect(
+        within(screen.getByTestId('deployment-row-cloud')).queryByText('Switch')
+      ).toBeNull()
     })
 
     it('lists the current row under Running on, then the rows that run it, then the rest, and names missing nodes on hover and in the row description', async () => {
@@ -2038,7 +2442,7 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
       })
     )
     expect(openPage).toHaveBeenCalledWith(
-      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`,
       '_blank',
       'noopener,noreferrer'
     )
@@ -2100,4 +2504,603 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
       ).toHaveTextContent(notice)
     }
   )
+})
+
+describe('DeploymentSwitcher with Platform in the editor', () => {
+  beforeEach(() => {
+    hoisted.rootGraph = undefined
+    distribution.isCloud = true
+    sessionStorage.clear()
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.DeploymentSwitcher.Seen': true }
+    })
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    const platformFrame = usePlatformFrameStore()
+    onTestFinished(() => platformFrame.close())
+  })
+
+  function framedAt() {
+    const url = usePlatformFrameStore().session?.url
+    return url ? Object.fromEntries(new URL(url).searchParams) : null
+  }
+
+  it.for([
+    { flag: true, pencils: 1 },
+    { flag: false, pencils: 0 }
+  ])(
+    'puts the update pencil on a deployment row only with the flag on: $flag',
+    async ({ flag, pencils }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: flag
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(
+        within(screen.getByTestId(`deployment-row-${D2}`)).queryAllByTestId(
+          'deployment-row-edit'
+        )
+      ).toHaveLength(pencils)
+      expect(
+        within(screen.getByTestId('deployment-row-cloud')).queryAllByTestId(
+          'deployment-row-edit'
+        )
+      ).toHaveLength(0)
+    }
+  )
+
+  it('opens the update for that deployment from its pencil, without switching to it', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const pencil = within(
+      screen.getByTestId(`deployment-row-${D2}`)
+    ).getByTestId('deployment-row-edit')
+    expect(pencil).toHaveAccessibleName('Update Studio Build')
+
+    await user.click(pencil)
+
+    expect(framedAt()).toMatchObject({
+      step: 'update',
+      deployment: D2
+    })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+  })
+
+  it('opens the update from the keyboard with E on a deployment row', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = screen.getByTestId(`deployment-row-${D2}`)
+    expect(row).toHaveAttribute('aria-keyshortcuts', 'E')
+    expect(row).toHaveAccessibleDescription(
+      expect.stringContaining('Press E to update it.')
+    )
+    row.focus()
+    await user.keyboard('e')
+
+    expect(framedAt()).toMatchObject({
+      step: 'update',
+      deployment: D2
+    })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { way: 'E on a deployment row', item: 'row' },
+    { way: 'Enter on Create a Custom Build', item: 'create' }
+  ])(
+    'returns focus to Run on when the frame opened with $way closes',
+    async ({ item }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: true
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(
+        item === 'row' ? listing : { ...listing, items: [] }
+      )
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+      render(
+        {
+          components: { DeploymentSwitcher, PlatformFrameHost },
+          template: '<DeploymentSwitcher /><PlatformFrameHost />'
+        },
+        { global: { plugins: [i18n] } }
+      )
+      await openList(user)
+      const focused =
+        item === 'row'
+          ? screen.getByTestId(`deployment-row-${D2}`)
+          : screen.getByRole('menuitem', { name: 'Create a Custom Build' })
+      focused.focus()
+      await waitFor(() => expect(focused).toHaveFocus())
+
+      await user.keyboard(item === 'row' ? 'e' : '{Enter}')
+      const frame = await screen.findByTestId('platform-frame')
+      await waitFor(() => expect(frame).toHaveFocus())
+      await user.click(screen.getByRole('button', { name: 'Close' }))
+
+      await waitFor(() =>
+        expect(screen.getByTestId('deployment-switcher-trigger')).toHaveFocus()
+      )
+    }
+  )
+
+  it('leaves E alone on the Comfy Cloud row', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = screen.getByTestId('deployment-row-cloud')
+    expect(row).not.toHaveAttribute('aria-keyshortcuts')
+    row.focus()
+    await user.keyboard('e')
+
+    expect(framedAt()).toBeNull()
+  })
+
+  const unhealthyListing: WorkspaceDeploymentList = {
+    ...listing,
+    items: [listing.items[0], withStatus(listing.items[1], 'failed', false)]
+  }
+
+  it('reaches the update of a deployment that cannot start with the arrow keys and E, while it still cannot be picked', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const production = screen.getByTestId(`deployment-row-${D2}`)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+    production.focus()
+    await waitFor(() => expect(production).toHaveFocus())
+
+    await user.keyboard('{ArrowDown}')
+    expect(unhealthy).toHaveFocus()
+    expect(unhealthy).toHaveAttribute('aria-disabled', 'true')
+
+    await user.keyboard('{Enter}')
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeVisible()
+
+    await user.keyboard('e')
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+  })
+
+  it('highlights a deployment that cannot start on hover, so its pencil shows and opens the update', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(unhealthyListing)
+    const user = renderSwitcher()
+    await openList(user)
+    const unhealthy = screen.getByTestId(`deployment-row-${D1}`)
+
+    await user.hover(unhealthy)
+    expect(unhealthy).toHaveFocus()
+
+    await user.click(within(unhealthy).getByTestId('deployment-row-edit'))
+    expect(framedAt()).toMatchObject({ step: 'update', deployment: D1 })
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+  })
+
+  it('opens a new deployment at its nodes from Create a Custom Build', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: []
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Create a Custom Build' })
+    )
+
+    expect(framedAt()).toMatchObject({ step: 'new', start: 'nodes' })
+    expect(
+      useDialogStore().isDialogOpen('global-create-custom-deployment')
+    ).toBe(false)
+    expect(usePlatformFrameStore().session?.url).toMatch(
+      new RegExp(`^${escapeRegExp(getComfyPlatformBaseUrl())}/embed/`)
+    )
+  })
+
+  function following(stage: BuildStage, progress: FollowedBuild['progress']) {
+    Object.assign(usePlatformFrameStore(), {
+      build: {
+        kind: 'update',
+        buildId: 'b-1',
+        accountId: 'uid-ana',
+        workspaceId: 'ws-1',
+        deploymentId: D2,
+        deploymentName: 'production',
+        releaseId: 'r-2',
+        version: 3,
+        previousReleaseId: 'r-1',
+        previousVersion: 2,
+        stage,
+        progress,
+        startedAt: 0
+      } satisfies FollowedBuild
+    })
+  }
+
+  it('drops the Build name while the spinner follows a build', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    following('building', null)
+    renderSwitcher()
+
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/Studio Build/))
+    expect(
+      screen.getByTestId('deployment-switcher-building')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      stage: 'building',
+      progress: { step: 3, of: 5 },
+      text: 'Building production Step 3 of 5'
+    },
+    { stage: 'building', progress: null, text: 'Building production' },
+    { stage: 'deploying', progress: null, text: 'Deploying production' }
+  ] as const)(
+    'turns Run on into a spinner that names the stage on hover: $text',
+    async ({ stage, progress, text }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      following(stage, progress)
+      const user = renderSwitcher()
+      const trigger = await screen.findByTestId('deployment-switcher-trigger')
+
+      expect(
+        within(trigger).getByTestId('deployment-switcher-building')
+      ).toBeInTheDocument()
+      await user.hover(trigger)
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(text)
+    }
+  )
+
+  it('shows the build step apart from the stage, after the deployment name', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', { step: 2, of: 5 })
+    const user = renderSwitcher()
+    await user.hover(await screen.findByTestId('deployment-switcher-trigger'))
+
+    expect(
+      await screen.findByTestId('deployment-switcher-build-step')
+    ).toHaveTextContent(/^Step 2 of 5$/)
+    expect(await screen.findByRole('tooltip')).not.toHaveTextContent('·')
+  })
+
+  it('spins the row of the deployment being built', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', null)
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      within(screen.getByTestId(`deployment-row-${D2}`)).queryAllByTestId(
+        'deployment-row-spinner'
+      )
+    ).toHaveLength(1)
+    expect(
+      within(screen.getByTestId(`deployment-row-${D1}`)).queryAllByTestId(
+        'deployment-row-spinner'
+      )
+    ).toHaveLength(0)
+  })
+
+  it('keeps the update pencil on the row being built beside its spinner', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('building', null)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = within(screen.getByTestId(`deployment-row-${D2}`))
+    expect(row.getByTestId('deployment-row-spinner')).toBeInTheDocument()
+    expect(row.getByTestId('deployment-row-edit')).toHaveAccessibleName(
+      'Update Studio Build'
+    )
+  })
+
+  it.for([
+    { stage: 'building', deploymentId: '' },
+    { stage: 'deploying', deploymentId: 'dep-c4c4c4c4' }
+  ] as const)(
+    'lists the first deployment while $stage, unpickable, instead of saying there are none',
+    async ({ stage, deploymentId }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: []
+      })
+      Object.assign(usePlatformFrameStore(), {
+        build: {
+          kind: 'new',
+          buildId: 'b-4',
+          accountId: 'uid-ana',
+          workspaceId: 'ws-1',
+          deploymentId,
+          deploymentName: 'lora-stack-demo',
+          releaseId: 'r-4',
+          version: 1,
+          previousReleaseId: null,
+          previousVersion: null,
+          stage,
+          progress: null,
+          startedAt: 0
+        } satisfies FollowedBuild
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(screen.queryByTestId('deployment-switcher-empty')).toBeNull()
+      const row = screen.getByRole('menuitemradio', {
+        name: /lora-stack-demo/
+      })
+      expect(row).toHaveTextContent('Building')
+      expect(row).toHaveAttribute('aria-checked', 'false')
+
+      await user.click(row)
+
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+    }
+  )
+
+  const INTENDED = 'dep-c4c4c4c4-0000-4000-8000-000000000004'
+  const SIBLING = 'dep-c5c5c5c5-0000-4000-8000-000000000005'
+  const PLACEHOLDER = 'b-4'
+
+  function firstBuildDeployment(
+    deployment_id: string,
+    deployment_name: string,
+    created_at: string
+  ): WorkspaceDeployment {
+    return {
+      deployment_id,
+      deployment_name,
+      release_id: 'r-4',
+      release_version: 1,
+      status: 'queued',
+      can_start: false,
+      created_at
+    }
+  }
+
+  const intendedListed = firstBuildDeployment(
+    INTENDED,
+    'lora-stack-demo',
+    '2026-11-25T00:00:00Z'
+  )
+  const siblingListed = firstBuildDeployment(
+    SIBLING,
+    'lora-stack-staging',
+    '2026-11-25T00:01:00Z'
+  )
+
+  function spinnersByRow(): Record<string, number | null> {
+    return Object.fromEntries(
+      [INTENDED, SIBLING, PLACEHOLDER].map((id) => {
+        const row = screen.queryByTestId(`deployment-row-${id}`)
+        return [
+          id,
+          row === null
+            ? null
+            : within(row).queryAllByTestId('deployment-row-spinner').length
+        ]
+      })
+    )
+  }
+
+  it.for<{
+    when: string
+    listed: WorkspaceDeployment[]
+    deploymentId: string
+    deploymentName: string
+    spinners: Record<string, number | null>
+  }>([
+    {
+      when: 'nothing is listed yet',
+      listed: [],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: null, [SIBLING]: null, [PLACEHOLDER]: 1 }
+    },
+    {
+      when: 'its deployment is listed before deploy-sent names it',
+      listed: [intendedListed],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: 1, [SIBLING]: null, [PLACEHOLDER]: null }
+    },
+    {
+      when: 'another deployment of its release is listed first',
+      listed: [siblingListed, intendedListed],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: 1, [SIBLING]: 0, [PLACEHOLDER]: null }
+    },
+    {
+      when: 'only another deployment of its release is listed',
+      listed: [siblingListed],
+      deploymentId: '',
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: null, [SIBLING]: 0, [PLACEHOLDER]: 1 }
+    },
+    {
+      when: 'deploy-sent names its deployment',
+      listed: [siblingListed, intendedListed],
+      deploymentId: INTENDED,
+      deploymentName: 'lora-stack-demo',
+      spinners: { [INTENDED]: 1, [SIBLING]: 0, [PLACEHOLDER]: null }
+    },
+    {
+      when: 'it has no name to match before deploy-sent',
+      listed: [siblingListed],
+      deploymentId: '',
+      deploymentName: '',
+      spinners: { [INTENDED]: null, [SIBLING]: 0, [PLACEHOLDER]: 1 }
+    }
+  ])(
+    'spins only the first build of its own deployment when $when',
+    async ({ listed, deploymentId, deploymentName, spinners }) => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: [...listing.items, ...listed]
+      })
+      Object.assign(usePlatformFrameStore(), {
+        build: {
+          kind: 'new',
+          buildId: PLACEHOLDER,
+          accountId: 'uid-ana',
+          workspaceId: 'ws-1',
+          deploymentId,
+          deploymentName,
+          releaseId: 'r-4',
+          version: 1,
+          previousReleaseId: null,
+          previousVersion: null,
+          stage: deploymentId ? 'deploying' : 'building',
+          progress: null,
+          startedAt: 0
+        } satisfies FollowedBuild
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      expect(spinnersByRow()).toEqual(spinners)
+    }
+  )
+
+  function followFirstBuild(deploymentId: string, deploymentName: string) {
+    Object.assign(usePlatformFrameStore(), {
+      build: {
+        kind: 'new',
+        buildId: PLACEHOLDER,
+        accountId: 'uid-ana',
+        workspaceId: 'ws-1',
+        deploymentId,
+        deploymentName,
+        releaseId: 'r-4',
+        version: 1,
+        previousReleaseId: null,
+        previousVersion: null,
+        stage: deploymentId ? 'deploying' : 'building',
+        progress: null,
+        startedAt: 0
+      } satisfies FollowedBuild
+    })
+  }
+
+  it.for([
+    {
+      offers: 'offers no',
+      when: 'before deploy-sent',
+      deploymentId: '',
+      pencils: 0,
+      keys: null
+    },
+    {
+      offers: 'offers an',
+      when: 'once deploy-sent names its deployment',
+      deploymentId: INTENDED,
+      pencils: 1,
+      keys: 'E'
+    }
+  ])(
+    '$offers update on the Building row $when',
+    async ({ deploymentId, pencils, keys }) => {
+      Object.assign(useFeatureFlags().flags, {
+        customDeploymentsEditorEnabled: true
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        items: []
+      })
+      followFirstBuild(deploymentId, 'lora-stack-demo')
+      const user = renderSwitcher()
+      await openList(user)
+
+      const row = screen.getByTestId(
+        `deployment-row-${deploymentId || PLACEHOLDER}`
+      )
+      expect(within(row).queryAllByTestId('deployment-row-edit')).toHaveLength(
+        pencils
+      )
+      expect(row.getAttribute('aria-keyshortcuts')).toBe(keys)
+    }
+  )
+
+  it('opens no update with E on the Building row before deploy-sent', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      customDeploymentsEditorEnabled: true
+    })
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: []
+    })
+    followFirstBuild('', 'lora-stack-demo')
+    const open = vi.spyOn(usePlatformFrameStore(), 'open')
+    const user = renderSwitcher()
+    await openList(user)
+
+    screen.getByTestId(`deployment-row-${PLACEHOLDER}`).focus()
+    await user.keyboard('e')
+
+    expect(open).not.toHaveBeenCalled()
+    expect(framedAt()).toBeNull()
+  })
+
+  it('names a Building row with no deployment name yet New deployment', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      items: []
+    })
+    followFirstBuild('', '')
+    const user = renderSwitcher()
+    await openList(user)
+
+    const row = screen.getByTestId(`deployment-row-${PLACEHOLDER}`)
+    expect(row).toHaveTextContent(/^New deployment/)
+    expect(row).toHaveAccessibleDescription(
+      "New deployment isn't ready. Pick it once it's ready."
+    )
+  })
+
+  it('shows the usual status again once a build fails', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    following('failed', null)
+    renderSwitcher()
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+
+    expect(
+      within(trigger).queryByTestId('deployment-switcher-building')
+    ).toBeNull()
+  })
 })

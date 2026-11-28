@@ -12,6 +12,7 @@ import {
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { PromptFailureResponse } from '@comfyorg/api-client/types'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
@@ -20,6 +21,16 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { useDialogService } from './dialogService'
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'localhost' as const,
+  isDesktop: false,
+  isNightly: false,
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -223,6 +234,35 @@ describe('legacy error dialog catalog', () => {
       'SAM3_Detect (#9) is missing a required input: mask'
     )
     expect(dialog).not.toHaveTextContent('return_type_mismatch details')
+  })
+
+  it('explains node input failures a cloud validation error sends as structured node_errors', () => {
+    useDialogService().showExecutionErrorDialog({
+      exception_type: 'ValidationError',
+      node_type: 'SAM3_Detect',
+      node_id: '9',
+      exception_message:
+        'Prompt outputs failed validation. node 9 (SAM3_Detect): mask — required_input_missing: Required input is missing (mask).',
+      node_errors: {
+        '9': {
+          class_type: 'SAM3_Detect',
+          dependent_outputs: ['12'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing',
+              details: 'mask',
+              extra_info: { input_name: 'mask' }
+            }
+          ]
+        }
+      }
+    })
+    renderOpenedDialog()
+
+    expect(screen.getByTestId('error-dialog')).toHaveTextContent(
+      'SAM3_Detect (#9) is missing a required input: mask'
+    )
   })
 
   it('preserves original errors in reports and issue searches', async () => {
@@ -453,4 +493,81 @@ describe('legacy error dialog catalog', () => {
       )
     }
   )
+})
+
+describe('legacy error dialog for a run Cloud refused with a served reason', () => {
+  const CLOUD_MESSAGE = 'Subscription or credits required to queue workflows'
+  const REFUSALS = [
+    {
+      reason: 'manual_block',
+      body: 'This workspace has been blocked. Contact support.'
+    },
+    {
+      reason: 'workspace_cap_exceeded',
+      body: 'This workspace has reached its spending limit.'
+    },
+    {
+      reason: 'project_cap_exceeded',
+      body: 'This project has reached its spending limit.'
+    },
+    {
+      reason: 'user_cap_exceeded',
+      body: "You've reached your spending limit in this workspace."
+    }
+  ]
+
+  function openRefusal(
+    reason: string,
+    { billingNewUxEnabled, isCloud }: Record<string, boolean>
+  ) {
+    useRemoteConfigStore().acceptConfig(
+      { billing_new_ux_enabled: billingNewUxEnabled },
+      false
+    )
+    distribution.isCloud = isCloud
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    useDialogService().showErrorDialog(
+      new PromptExecutionError({
+        error: { type: 'PAYMENT_REQUIRED', message: CLOUD_MESSAGE, reason },
+        node_errors: {}
+      }),
+      { title: 'Prompt Execution Error' }
+    )
+    renderOpenedDialog()
+  }
+
+  it.for(REFUSALS)(
+    'explains $reason with the new billing UX on',
+    ({ reason, body }) => {
+      openRefusal(reason, { billingNewUxEnabled: true, isCloud: true })
+
+      expect(
+        screen.getByRole('heading', { name: "Your workflow didn't run" })
+      ).toBeVisible()
+      expect(screen.getByText(body)).toBeVisible()
+    }
+  )
+
+  it.for(REFUSALS)(
+    'keeps the message Cloud sent for $reason with the new billing UX off',
+    ({ reason }) => {
+      openRefusal(reason, { billingNewUxEnabled: false, isCloud: true })
+
+      expect(
+        screen.getByRole('heading', { name: 'Prompt Execution Error' })
+      ).toBeVisible()
+      expect(screen.getByText(CLOUD_MESSAGE)).toBeVisible()
+    }
+  )
+
+  it('keeps the message the backend sent off Cloud', () => {
+    openRefusal('manual_block', { billingNewUxEnabled: true, isCloud: false })
+
+    expect(
+      screen.getByRole('heading', { name: 'Prompt Execution Error' })
+    ).toBeVisible()
+    expect(screen.getByText(CLOUD_MESSAGE)).toBeVisible()
+  })
 })

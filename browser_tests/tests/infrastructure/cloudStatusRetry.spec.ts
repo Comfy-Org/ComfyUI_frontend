@@ -46,7 +46,7 @@ test.describe('Shared request status retry', { tag: '@cloud' }, () => {
   test('keeps credits locked when the billing read stays unavailable', async ({
     page
   }) => {
-    await routeUnavailableGets(
+    const capabilityReads = await routeUnavailableGets(
       page,
       CAPABILITIES_ROUTE,
       Number.POSITIVE_INFINITY
@@ -56,7 +56,12 @@ test.describe('Shared request status retry', { tag: '@cloud' }, () => {
     const content = await workspace.openPlanAndCreditsSettings()
 
     await expect(content.getByText('Total credits')).toBeVisible()
-    await expect.poll(() => finishedReads.length).toBeGreaterThanOrEqual(3)
+    await expect
+      .poll(() => finishedReads.length, {
+        message: 'the read gave up and handed its last 503 to the app'
+      })
+      .toBeGreaterThan(0)
+    expect(capabilityReads.length).toBeGreaterThanOrEqual(3)
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toHaveCount(0)

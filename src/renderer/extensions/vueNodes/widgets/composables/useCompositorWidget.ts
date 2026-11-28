@@ -1,7 +1,7 @@
 import {
   emptyCompositorWidgetValue,
   isCompositorWidgetValue
-} from '@/renderer/extensions/compositor/components/types'
+} from '@/renderer/extensions/layerEditor/compositor/widgetValue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ICompositorWidget } from '@comfyorg/graph-model/widgets'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'

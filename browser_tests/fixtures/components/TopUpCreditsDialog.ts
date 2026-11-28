@@ -1,13 +1,17 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
+import type { BillingBalanceResponse } from '@comfyorg/ingest-types'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
+import { APP_URL } from '@e2e/fixtures/utils/cloudAppSetup'
 
 export class TopUpCreditsDialog extends BaseDialog {
   readonly heading: Locator
   readonly openedHeading: Locator
   readonly blockedHeading: Locator
   readonly description: Locator
+  readonly presets: Locator
   readonly preset10: Locator
   readonly preset25: Locator
   readonly preset50: Locator
@@ -23,6 +27,7 @@ export class TopUpCreditsDialog extends BaseDialog {
   readonly negativeBalance: Locator
   readonly verifyPaymentLink: Locator
   readonly contactSupportLink: Locator
+  readonly autoTopUpCheckbox: Locator
 
   constructor(page: Page) {
     super(
@@ -41,6 +46,7 @@ export class TopUpCreditsDialog extends BaseDialog {
     this.description = this.root.getByText(
       "You don't have enough credits to run this workflow."
     )
+    this.presets = this.root.getByRole('radiogroup', { name: 'Add credits' })
     this.preset10 = this.root.getByRole('radio', { name: '$10', exact: true })
     this.preset25 = this.root.getByRole('radio', { name: '$25', exact: true })
     this.preset50 = this.root.getByRole('radio', { name: '$50', exact: true })
@@ -63,6 +69,24 @@ export class TopUpCreditsDialog extends BaseDialog {
     this.contactSupportLink = this.root.getByRole('link', {
       name: 'Contact support'
     })
+    this.autoTopUpCheckbox = this.root.getByRole('checkbox', {
+      name: /Turn on auto top-up/
+    })
+  }
+
+  async openFromTopupLink() {
+    await this.page.goto(`${APP_URL}/?topup=1`)
+    await expect(this.heading).toBeVisible({ timeout: 45_000 })
+  }
+
+  async payAndReturn(checkoutUrl: string, balance: BillingBalanceResponse) {
+    const checkoutPage = this.page.context().waitForEvent('page')
+    await this.continueButton.click()
+    await expect(await checkoutPage).toHaveURL(checkoutUrl)
+    await this.page.route('**/api/billing/balance', (route) =>
+      route.fulfill({ json: balance })
+    )
+    await this.page.evaluate(() => window.dispatchEvent(new Event('focus')))
   }
 
   async open(options?: { isInsufficientCredits?: boolean }) {

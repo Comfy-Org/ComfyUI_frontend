@@ -51,6 +51,14 @@ describe('createAgentDocFrameTransport', () => {
     expect(status.mock.calls).toEqual([[false], [true], [false], [true]])
   })
 
+  it('reconnects the shared socket so it reads a fresh credential', () => {
+    const fake = createFakeAgentSocket()
+
+    fake.transport.reconnect()
+
+    expect(fake.reconnect).toHaveBeenCalledOnce()
+  })
+
   it('stops listening once destroyed', () => {
     const fake = createFakeAgentSocket()
     fake.transport.addEventListener('doc_update', vi.fn())

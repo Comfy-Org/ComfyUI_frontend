@@ -11,21 +11,22 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { DEFAULT_BILLING_STATUS } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { hostTelemetryFixture } from '@e2e/fixtures/hostTelemetryFixture'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const FLAG = 'agent-free-use-message-placement'
-const PLACEMENT = 'near-composer'
 
 function billingStatus({
-  grantHeld
+  grantHeld,
+  agentHasFunds = true
 }: {
   grantHeld: boolean
+  agentHasFunds?: boolean
 }): BillingStatusResponse {
   return {
     ...DEFAULT_BILLING_STATUS,
-    billing_rail: 'metronome',
-    scoped_effective_has_funds: { agent: true },
+    billing_rail: 'stripe',
+    has_funds: agentHasFunds,
+    scoped_effective_has_funds: { agent: agentHasFunds },
     scoped_has_funds: { agent: grantHeld }
   }
 }
@@ -33,98 +34,30 @@ function billingStatus({
 const test = mergeTests(agentTest, hostTelemetryFixture, webSocketFixture)
 
 test.describe(
-  'Agent free-use placement experiment',
+  'Cloud Agent free-use notice',
   {
     tag: ['@cloud', '@agent', '@ui']
   },
   () => {
-    test(
-      'connects authenticated placement to the rendered notice and exposure',
-      { tag: ['@screenshot'] },
-      async ({ hostTelemetry, page }) => {
-        await bootAgentApp(page, true, {
-          features: { [FLAG]: PLACEMENT, enable_telemetry: true },
-          billingStatus: billingStatus({ grantHeld: true })
-        })
-        const agentPanel = new AgentPanel(page)
-
-        await agentPanel.open()
-
-        const notice = agentPanel.root.getByRole('note', {
-          name: 'Free use notice'
-        })
-        await expect(notice).toBeVisible()
-        await expect(notice).toContainText('Try your first chat for free!')
-        await expect(
-          notice,
-          'the retired blanket-beta sentence is not appended'
-        ).not.toContainText('during BETA')
-        await expect(notice).toHaveAttribute('data-placement', PLACEMENT)
-        await expect(
-          notice.getByRole('link', { name: 'Learn more' })
-        ).toHaveAttribute(
-          'href',
-          'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
-        )
-
-        const composer = agentPanel.root.getByTestId('agent-composer')
-        await expect
-          .poll(async () => {
-            const [noticeBox, composerBox] = await Promise.all([
-              notice.boundingBox(),
-              composer.boundingBox()
-            ])
-            return noticeBox && composerBox
-              ? noticeBox.y + noticeBox.height <= composerBox.y
-              : null
-          })
-          .toBe(true)
-
-        await expect
-          .poll(() =>
-            hostTelemetry.find(
-              ({ event }) => event === 'app:agent_free_use_exposure'
-            )
-          )
-          .toEqual({
-            event: 'app:agent_free_use_exposure',
-            properties: {
-              [`$feature/${FLAG}`]: PLACEMENT,
-              placement: PLACEMENT
-            }
-          })
-
-        await expectElementScreenshot(notice, 'agent-free-use-notice.png')
-      }
-    )
-
-    test('says nothing about free turns once the grant is spent', async ({
+    test('keeps the selected near-composer notice without reading the retired flag', async ({
       hostTelemetry,
       page
     }) => {
-      const billingRead = page.waitForResponse('**/api/billing/status')
       await bootAgentApp(page, true, {
-        features: { [FLAG]: PLACEMENT, enable_telemetry: true },
-        billingStatus: billingStatus({ grantHeld: false })
+        features: { [FLAG]: 'near-composer', enable_telemetry: true },
+        billingStatus: billingStatus({ grantHeld: true })
       })
       const agentPanel = new AgentPanel(page)
 
       await agentPanel.open()
-      await billingRead
-      await expect
-        .poll(
-          () =>
-            hostTelemetry.filter(
-              ({ event }) => event === 'app:agent_free_use_exposure'
-            ).length
-        )
-        .toBe(1)
-      await expect(
-        agentPanel.root.getByRole('note', { name: 'Free use notice' })
-      ).toBeHidden()
+      const notice = agentPanel.root.getByRole('note', {
+        name: 'Free use notice'
+      })
+      await expect(notice).toBeVisible()
+      await expect(notice).toHaveAttribute('data-placement', 'near-composer')
       expect(
         hostTelemetry.filter(
-          ({ event }) => event === 'app:agent_free_use_notice'
+          ({ event }) => event === 'app:agent_free_use_exposure'
         )
       ).toEqual([])
     })
@@ -150,7 +83,43 @@ test.describe(
         name: 'Free use notice'
       })
       await expect(notice).toBeVisible()
+      await expect(notice).toContainText('Try your first chat for free!')
       await expect(notice).toHaveAttribute('data-placement', 'near-composer')
+      await expect(
+        notice.getByRole('link', { name: 'Learn more' })
+      ).toHaveAttribute(
+        'href',
+        'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
+      )
+    })
+
+    test('explains workspace-credit use when Local starts without an Agent grant', async ({
+      page
+    }) => {
+      await bootAgentApp(page, true, {
+        features: { enable_telemetry: true },
+        billingStatus: billingStatus({
+          grantHeld: false,
+          agentHasFunds: false
+        })
+      })
+      const agentPanel = new AgentPanel(page)
+
+      await agentPanel.open()
+
+      const notice = agentPanel.root.getByRole('note', {
+        name: 'Agent cost notice'
+      })
+      await expect(notice).toBeVisible()
+      await expect(notice).toContainText(
+        'Comfy Agent uses your workspace credits'
+      )
+      await expect(
+        notice.getByRole('link', { name: 'Learn more' })
+      ).toHaveAttribute(
+        'href',
+        'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
+      )
     })
 
     test('removes the free-use claim after the local Agent grant is spent', async ({

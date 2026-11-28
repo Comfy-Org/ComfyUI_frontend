@@ -32,11 +32,7 @@ export interface TemplateDetailRow {
   status?: TemplateDetailRowStatus
 }
 
-/**
- * What the Detail footer should offer. Absent means nothing to offer - setup
- * off, requirements met, or nothing startable - which all render a lone Open now.
- */
-export type TemplateModelSetup =
+export type TemplateAssetSetup =
   | { state: 'resolving' }
   | { state: 'startable'; remainingSize?: string }
 

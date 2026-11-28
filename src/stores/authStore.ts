@@ -50,15 +50,25 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { provideAuthStore } from '@/platform/auth/authStoreAccess'
+import type { AuthTokenRequest } from '@comfyorg/api-client/apiAuthProvider'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  fenceWorkflowStorageForAuthState,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 type CreateCustomerPayload = NonNullable<
   operations['createCustomer']['requestBody']
 >['content']['application/json']
+interface WorkspaceAuthContext {
+  headers: AuthHeader | null
+  workspaceId?: string
+}
+
 export interface SocialSignInOptions {
   readonly isNewUser?: boolean
   /** How a closed popup's late result is finished or discarded. */
@@ -135,11 +145,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Token refresh trigger - increments when token is refreshed
   const tokenRefreshTrigger = ref(0)
-  /**
-   * The user ID for which the initial ID token has been observed.
-   * When a token changes for the same user, that is a refresh.
-   */
-  const lastTokenUserId = ref<string | null>(null)
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
@@ -233,16 +238,20 @@ export const useAuthStore = defineStore('auth', () => {
 
     currentUser.value = user
     isInitialized.value = true
-    if (user === null) {
-      lastTokenUserId.value = null
-    } else if (isCloud && !flags.unifiedWebSessionEnabled) {
-      // Mint the single Cloud JWT at login (flag-guarded inside the store; a
-      // no-op when unified_cloud_auth is off). With the web session on, this
-      // runs before the router decides the session, so WorkspaceAuthGate
-      // mints instead, and only for a tab the session did not sign in.
-      void mintUnifiedToken(user.uid)
-    }
   })
+
+  const dropDormantApiKey = (): void => {
+    const apiKeyStore = useApiKeyAuthStore()
+    if (apiKeyStore.getApiKey() !== null) void apiKeyStore.clearStoredApiKey()
+  }
+
+  watch(
+    currentUser,
+    (user, previousUser) => {
+      if (isCloud && previousUser && !user) dropDormantApiKey()
+    },
+    { flush: 'sync' }
+  )
 
   watch(
     () => desktopHostUser.value?.id ?? null,
@@ -271,29 +280,7 @@ export const useAuthStore = defineStore('auth', () => {
     { immediate: true }
   )
 
-  // Listen for token refresh events
-  firebaseIdentity.onTokenChanged((user) => {
-    if (user && isCloud) {
-      // Skip initial token change
-      if (lastTokenUserId.value !== user.uid) {
-        lastTokenUserId.value = user.uid
-        return
-      }
-      // Under unified_cloud_auth the Cloud-JWT refresh lifecycle drives session
-      // cookie rotation (workspaceAuthStore.refreshUnified → notifyTokenRefreshed),
-      // so gate this Firebase-driven bump off to avoid a double rotation.
-      if (!flags.unifiedCloudAuthEnabled) {
-        tokenRefreshTrigger.value++
-      }
-    }
-  })
-
-  /**
-   * Bumps the token-refresh trigger so downstream consumers (e.g. session
-   * cookie rotation via useCurrentUser) react to a fresh Cloud JWT. Called by
-   * the unified refresh lifecycle; under unified_cloud_auth it replaces the
-   * Firebase onIdTokenChanged bump above as the sole rotation driver.
-   */
+  /** Bumps the token-refresh trigger after the unified refresh lifecycle mints a fresh Cloud JWT. */
   const notifyTokenRefreshed = (): void => {
     tokenRefreshTrigger.value++
   }
@@ -335,6 +322,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const getFreshFirebaseIdToken = async (): Promise<string | undefined> => {
+    const user = currentUser.value
+    const minted = await user?.getIdToken(true).catch((error: unknown) => {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'auth_id_token_refresh_failed'
+      })
+      return undefined
+    })
+    if (currentUser.value?.uid !== user?.uid) return
+    return minted ?? getFirebaseIdToken()
+  }
+
   /**
    * Awaits any in-flight unified-auth login mint for the current identity.
    * The wait can outlast an account switch, so callers must treat a `true`
@@ -347,53 +347,28 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid !== uid
   }
 
-  /**
-   * Unified Cloud JWT header, falling back to the Firebase token when minting
-   * failed. See getAuthHeader for the full priority order.
-   */
+  const storedApiKeyAsOnlyLogin = (): AuthHeader | null =>
+    isInitialized.value && currentUser.value === null
+      ? useApiKeyAuthStore().getAuthHeader()
+      : null
+
   const getUnifiedAuthHeader = async (): Promise<AuthHeader | null> => {
     if (await awaitUnifiedMint()) return null
     const token = useWorkspaceAuthStore().getUnifiedToken()
     if (token) return { Authorization: `Bearer ${token}` }
-    return await getFirebaseAuthHeader()
+    return currentUser.value === null
+      ? storedApiKeyAsOnlyLogin()
+      : await getFirebaseAuthHeader()
   }
 
-  /**
-   * Retrieves the appropriate authentication header for API requests.
-   *
-   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
-   * returns the single Cloud JWT; if minting failed, falls back to the
-   * Firebase token rather than reporting an authenticated user as logged out.
-   * Otherwise checks for authentication in the following order:
-   * 1. Workspace token on Cloud when the user has active workspace context
-   * 2. Firebase authentication token (if user is logged in)
-   * 3. API key (if stored in the browser's credential manager)
-   *
-   * @returns {Promise<AuthHeader | null>}
-   *   - A LoggedInAuthHeader with Bearer token (unified Cloud JWT, workspace, or Firebase)
-   *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
-   *   - null if no authentication method is available
-   */
   const getAccountAuthHeader = async (): Promise<AuthHeader | null> => {
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly)
       return headerFromToken(await webSessionRunToken(sessionOnly))
 
-    if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthHeader()
+    if (isCloud) return getUnifiedAuthHeader()
 
     if (webSessionRequests()) return getUserAuthHeader()
-
-    const workspaceAuth = useWorkspaceAuthStore()
-    const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-
-    if (isCloud && activeWorkspaceId) {
-      return workspaceAuth.ensureWorkspaceAuthHeader(activeWorkspaceId)
-    }
-
-    if (isCloud) {
-      const wsHeader = workspaceAuth.getWorkspaceAuthHeader()
-      if (wsHeader) return wsHeader
-    }
 
     const token = await getIdToken()
     if (token) {
@@ -446,45 +421,48 @@ export const useAuthStore = defineStore('auth', () => {
    * tab's active workspace, else the one Desktop's session reports. Desktop
    * releases nothing on a mismatch, and with neither there is no credential.
    */
+  const desktopHostTabWorkspaceId = (): string | undefined =>
+    useTeamWorkspaceStore().activeWorkspaceId ??
+    desktopHostUser.value?.workspaceId
+
   const desktopHostTabToken = async (): Promise<string | undefined> => {
-    const tabWorkspaceId = (): string | undefined =>
-      useTeamWorkspaceStore().activeWorkspaceId ??
-      desktopHostUser.value?.workspaceId
-    const workspaceId = tabWorkspaceId()
+    const workspaceId = desktopHostTabWorkspaceId()
     if (!workspaceId) return undefined
     const token = await desktopHostWorkspaceToken(workspaceId)
-    return tabWorkspaceId() === workspaceId ? token : undefined
+    return desktopHostTabWorkspaceId() === workspaceId ? token : undefined
   }
 
-  /**
-   * Returns the workspace-scoped auth header. An API-key session has no
-   * Firebase token to exchange for a workspace token; the key itself is the
-   * workspace credential (the server resolves the key's bound workspace), so
-   * it is sent directly instead of minting a token.
-   */
-  const getAccountWorkspaceAuthHeader =
-    async (): Promise<AuthHeader | null> => {
-      const sessionOnly = sessionOnlyRequests()
-      if (sessionOnly)
-        return headerFromToken(await webSessionRunToken(sessionOnly))
-
-      if (flags.unifiedCloudAuthEnabled) {
-        if (await awaitUnifiedMint()) return null
-        const token = useWorkspaceAuthStore().getUnifiedToken()
-        return token ? { Authorization: `Bearer ${token}` } : null
+  const getAccountWorkspaceAuthContext = async (
+    requireWorkspace: boolean
+  ): Promise<WorkspaceAuthContext> => {
+    const sessionOnly = sessionOnlyRequests()
+    if (sessionOnly)
+      return {
+        headers: headerFromToken(await webSessionRunToken(sessionOnly))
       }
 
-      if (currentUser.value === null) {
-        const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
-        if (apiKeyHeader) return apiKeyHeader
-      }
-
-      const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-      if (!activeWorkspaceId) return getFirebaseAuthHeader()
-      return useWorkspaceAuthStore().ensureWorkspaceAuthHeader(
-        activeWorkspaceId
-      )
+    if (isCloud) {
+      if (await awaitUnifiedMint()) return { headers: null }
+      const token = useWorkspaceAuthStore().getUnifiedToken()
+      return { headers: headerFromToken(token) ?? storedApiKeyAsOnlyLogin() }
     }
+
+    if (currentUser.value === null) {
+      const apiKeyHeader = useApiKeyAuthStore().getAuthHeader()
+      if (apiKeyHeader) return { headers: apiKeyHeader }
+    }
+
+    if (requireWorkspace && !(await resolveLocalWorkspace()))
+      return { headers: null }
+    const workspaceId = useTeamWorkspaceStore().activeWorkspaceId
+    if (!workspaceId)
+      return {
+        headers: requireWorkspace ? null : await getFirebaseAuthHeader()
+      }
+    const headers =
+      await useWorkspaceAuthStore().ensureWorkspaceAuthHeader(workspaceId)
+    return { headers, workspaceId }
+  }
 
   /**
    * Unified Cloud JWT token. See getAuthToken for the full priority order.
@@ -494,35 +472,28 @@ export const useAuthStore = defineStore('auth', () => {
     return useWorkspaceAuthStore().getUnifiedToken()
   }
 
-  /**
-   * Returns the raw auth token (not wrapped in a header object).
-   * When unified_cloud_auth is enabled, awaits any in-flight login mint and
-   * returns the single Cloud JWT; otherwise Cloud priority is workspace token
-   * > Firebase token.
-   * Use this for WebSocket connections and backend node auth.
-   */
-  const getAccountAuthToken = async (): Promise<string | undefined> => {
+  const getRemintedUnifiedAuthToken = async (): Promise<string | undefined> => {
+    const cached = await getUnifiedAuthToken()
+    if (!cached) return undefined
+    return (
+      (await useWorkspaceAuthStore().remintUnifiedOnce(cached)) ?? undefined
+    )
+  }
+
+  /** The raw auth token for WebSocket connections and backend node auth: the unified Cloud JWT on Cloud, else the Firebase token. */
+  const getAccountAuthToken = async ({
+    forceRefresh = false
+  }: AuthTokenRequest = {}): Promise<string | undefined> => {
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly) return webSessionRunToken(sessionOnly)
 
-    if (flags.unifiedCloudAuthEnabled) return getUnifiedAuthToken()
-
-    const workspaceAuth = useWorkspaceAuthStore()
-    const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-
-    if (isCloud && activeWorkspaceId) {
-      return (
-        (await workspaceAuth.ensureWorkspaceToken(activeWorkspaceId)) ??
-        undefined
-      )
-    }
-
     if (isCloud) {
-      const wsToken = workspaceAuth.getWorkspaceToken()
-      if (wsToken) return wsToken
+      return forceRefresh
+        ? getRemintedUnifiedAuthToken()
+        : getUnifiedAuthToken()
     }
 
-    return await getIdToken()
+    return forceRefresh ? await getFreshIdToken() : await getIdToken()
   }
 
   /**
@@ -532,7 +503,6 @@ export const useAuthStore = defineStore('auth', () => {
   const resolveLocalWorkspace = async (): Promise<boolean> => {
     const teamWorkspaceStore = useTeamWorkspaceStore()
     const needsResolution =
-      !isCloud &&
       currentUser.value !== null &&
       !teamWorkspaceStore.activeWorkspaceId &&
       teamWorkspaceStore.initState !== 'ready'
@@ -545,10 +515,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /** The run token for the tab's active workspace, per distribution. */
+  /** The run token for the tab's active workspace off Cloud. */
   const activeWorkspaceRunToken = async (): Promise<string | undefined> => {
     const activeWorkspaceId = useTeamWorkspaceStore().activeWorkspaceId
-    if (!isCloud && currentUser.value && !activeWorkspaceId) return undefined
+    if (currentUser.value && !activeWorkspaceId) return undefined
     if (!activeWorkspaceId) return (await getIdToken()) ?? undefined
     return (
       (await useWorkspaceAuthStore().ensureWorkspaceToken(activeWorkspaceId)) ??
@@ -562,9 +532,7 @@ export const useAuthStore = defineStore('auth', () => {
     const requests = webSessionRequests()
     if (requests) return webSessionRunToken(requests)
 
-    if (flags.unifiedCloudAuthEnabled) {
-      return useWorkspaceAuthStore().getUnifiedToken()
-    }
+    if (isCloud) return useWorkspaceAuthStore().getUnifiedToken()
 
     if (currentUser.value === null && useApiKeyAuthStore().isAuthenticated) {
       return undefined
@@ -579,18 +547,31 @@ export const useAuthStore = defineStore('auth', () => {
     () => desktopHostTabToken(),
     getFirebaseIdToken
   )
+  /** An ID token minted now; the cached one when minting fails. */
+  const getFreshIdToken = preferDesktopHost(
+    () => desktopHostTabToken(),
+    getFreshFirebaseIdToken
+  )
+  /** Account auth header for API requests; null when no credential is available. */
   const getAuthHeader = preferDesktopHost(
     desktopHostTabHeader,
     getAccountAuthHeader
   )
-  const getWorkspaceAuthHeader = preferDesktopHost(
-    desktopHostTabHeader,
-    getAccountWorkspaceAuthHeader
-  )
-  const getAuthToken = preferDesktopHost(
-    () => desktopHostTabToken(),
-    getAccountAuthToken
-  )
+  const getWorkspaceAuthContext = async ({
+    requireWorkspace = false
+  }: { requireWorkspace?: boolean } = {}): Promise<WorkspaceAuthContext> => {
+    if (isDesktopHostSignedIn()) {
+      const workspaceId = desktopHostTabWorkspaceId()
+      return { headers: await desktopHostTabHeader(), workspaceId }
+    }
+    return getAccountWorkspaceAuthContext(requireWorkspace)
+  }
+  const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> =>
+    (await getWorkspaceAuthContext()).headers
+  const getAuthToken = (request?: AuthTokenRequest) =>
+    isDesktopHostSignedIn()
+      ? desktopHostTabToken()
+      : getAccountAuthToken(request)
   const getWorkspaceAuthToken = preferDesktopHost(
     () => desktopHostTabToken(),
     getAccountWorkspaceAuthToken
@@ -659,7 +640,7 @@ export const useAuthStore = defineStore('auth', () => {
         },
         body: JSON.stringify(body)
       },
-      isCloud && flags.unifiedCloudAuthEnabled
+      isCloud
     )
     if (!createCustomerRes.ok) {
       if (!completedUser) assertIdentityUnchanged(sessionIdentity)
@@ -853,25 +834,44 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction(async () => {
-      await revokePartnerNodeLogin()
-      const signsOutDesktopHost = isDesktopHostSignedIn()
-      if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
-        throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+  async function logout(): Promise<void> {
+    const persistenceFence = isCloud
+      ? prepareWorkflowLogoutTransition()
+      : undefined
+    try {
+      await executeAuthAction(async () => {
+        await revokePartnerNodeLogin()
+        const signsOutDesktopHost = isDesktopHostSignedIn()
+        if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
+          throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+        }
+        const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
+        const apiKeyStore = useApiKeyAuthStore()
+        if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
+          await apiKeyStore.clearStoredApiKey()
+        }
+        await useCloudWebSessionStore().signOut()
+        if (currentUser.value) await firebaseIdentity.signOut()
+      })
+      persistenceFence?.release()
+    } catch (error) {
+      if (persistenceFence) {
+        if (!userId.value) fenceWorkflowStorageForAuthState()
+        const persistenceResumed =
+          persistenceFence.releaseAndResumePersistence()
+        reportError(error, {
+          surface: 'auth',
+          errorType: 'failure_logging_out_user',
+          level: 'warning',
+          tags: {
+            outcome: 'degraded',
+            persistence_resumed: persistenceResumed
+          }
+        })
       }
-      // Local and Desktop keep the key: partner nodes run on it. A Desktop
-      // host logout drops it, or an earlier session's key would take over.
-      const dropsStoredApiKey =
-        signsOutDesktopHost ||
-        (flags.ssoEnabled && flags.unifiedWebSessionEnabled)
-      await useCloudWebSessionStore().signOut()
-      if (currentUser.value) await firebaseIdentity.signOut()
-      const apiKeyStore = useApiKeyAuthStore()
-      if (dropsStoredApiKey && apiKeyStore.getApiKey() !== null) {
-        await apiKeyStore.clearStoredApiKey()
-      }
-    })
+      throw error
+    }
+  }
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))
@@ -906,6 +906,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     createCustomer,
     getIdToken,
+    getFreshIdToken,
     loginWithGoogle,
     loginWithGithub,
     sendPasswordReset,
@@ -916,6 +917,7 @@ export const useAuthStore = defineStore('auth', () => {
     getFirebaseAuthHeaderOrThrow,
     getUserAuthHeader,
     currentUserIdentity,
+    getWorkspaceAuthContext,
     getWorkspaceAuthHeader,
     getWorkspaceAuthHeaderOrThrow,
     getAuthToken,

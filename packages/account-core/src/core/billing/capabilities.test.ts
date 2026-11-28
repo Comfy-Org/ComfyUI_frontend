@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from '#/core/session'
 import type { AccountCredential } from '#/core/sessionContracts'
@@ -50,13 +50,18 @@ const CAPABILITIES = {
   can_manage_partner_node_access: false,
   can_view_pending_invites: false,
   can_view_team_usage: false,
+  can_view_workspace_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
   can_edit_workspace: false,
   can_manage_auto_top_up: false,
+  can_view_auto_top_up: false,
+  can_view_auto_top_up_member_notice: false,
   can_manage_subscription: false,
   can_open_plans: false,
   can_run_workflows: false,
+  can_set_budgets: false,
+  can_set_hard_caps: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
   can_top_up: true
@@ -98,6 +103,25 @@ describe('createCapabilitiesReader', () => {
     }
   )
 
+  it.for([
+    { wire: { billing_web_checkout_ui: 'full_page' }, expected: 'full_page' },
+    { wire: { billing_web_checkout_ui: 'embedded' }, expected: 'embedded' },
+    { wire: { billing_web_checkout_ui: 'sideways' }, expected: undefined },
+    { wire: {}, expected: undefined }
+  ])(
+    'serves the checkout UI variant $expected as received',
+    async ({ wire, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(wire))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()?.billingWebCheckoutUi).toBe(expected)
+    }
+  )
+
   it('decodes the server answer and reports the resolved scope', async () => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(capabilitiesBody())])
@@ -105,8 +129,7 @@ describe('createCapabilitiesReader', () => {
 
     const result = await reader.read()
 
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
+    assert.isOk(result.status === 'ok')
     expect(result.value.capabilities.can_top_up).toBe(true)
     expect(result.value.revision).toBe(42)
     expect(result.value.scope).toEqual({
@@ -136,8 +159,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.paymentRecoveryAvailable).toBe(expected)
     }
   )
@@ -159,9 +181,40 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.planKind).toBe(expected)
+    }
+  )
+
+  it.for([
+    {
+      served: {
+        billing_notice_audience: 'team',
+        ending_notice_starts_at: '2026-11-12T00:00:00Z'
+      },
+      expected: {
+        billingNoticeAudience: 'team',
+        endingNoticeStartsAt: '2026-11-12T00:00:00Z'
+      }
+    },
+    {
+      served: {},
+      expected: {
+        billingNoticeAudience: undefined,
+        endingNoticeStartsAt: undefined
+      }
+    }
+  ] as const)(
+    'keeps the served billing notice facts $served instead of dropping them',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(served))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      assert.isOk(result.status === 'ok')
+      expect(result.value).toMatchObject(expected)
     }
   )
 
@@ -187,9 +240,82 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.autoTopUpSetup).toEqual(expected)
+    }
+  )
+
+  it.for([
+    {
+      case: 'a served view',
+      served: {
+        status: 'paused_by_budget',
+        threshold_credits: 1000,
+        target_credits: 6275,
+        cycle_resets_at: '2026-11-28T00:00:00Z',
+        monthly_budget_is_default: true
+      }
+    },
+    {
+      case: 'a view turned off by declines',
+      served: {
+        status: 'failed',
+        threshold_credits: null,
+        target_credits: null,
+        cycle_resets_at: null,
+        monthly_budget_is_default: false,
+        disabled_reason: 'consecutive_declines'
+      }
+    },
+    { case: 'an omitted view', served: undefined }
+  ] as const)(
+    'keeps auto_top_up_member_view for $case with credits as numbers',
+    async ({ served }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { auto_top_up_member_view: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      assert.isOk(result.status === 'ok')
+      expect(result.value.autoTopUpMemberView).toEqual(served)
+    }
+  )
+
+  it.for([
+    {
+      case: 'an unknown status',
+      served: { status: 'snoozed', monthly_budget_is_default: false }
+    },
+    {
+      case: 'fractional credits',
+      served: {
+        status: 'on',
+        threshold_credits: 1.5,
+        target_credits: 6000,
+        cycle_resets_at: null,
+        monthly_budget_is_default: false
+      }
+    }
+  ])(
+    'drops a malformed auto_top_up_member_view for $case and keeps the read',
+    async ({ served }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(capabilitiesBody({ auto_top_up_member_view: served }))
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      assert.isOk(result.status === 'ok')
+      expect(result.value.autoTopUpMemberView).toBeUndefined()
     }
   )
 
@@ -212,9 +338,34 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.hasParkedBillingOperation).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps cancel_takes_effect_immediately $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined
+              ? {}
+              : { cancel_takes_effect_immediately: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      assert.isOk(result.status === 'ok')
+      expect(result.value.cancelTakesEffectImmediately).toBe(expected)
     }
   )
 
@@ -234,8 +385,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.capabilities.can_manage_members).toBe(allowed)
     }
   )
@@ -409,8 +559,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.freshUntil).toBe(clock + 60_000)
     })
   })
@@ -429,8 +578,7 @@ describe('createCapabilitiesReader', () => {
 
       expect(reader.getSnapshot()).toBeUndefined()
       const result = await reader.read()
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.scope.role).toBe('member')
       expect(transport).toHaveBeenCalledTimes(2)
     })
@@ -512,8 +660,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.denials['can_subscribe_self_serve']).toBe(
         'not_workspace_owner'
       )
@@ -536,8 +683,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.denials['can_subscribe_self_serve']).toBe(
         'unspecified'
       )
@@ -564,8 +710,7 @@ describe('createCapabilitiesReader', () => {
           scopeSource
         }).read()
 
-        expect(result.status).toBe('ok')
-        if (result.status !== 'ok') return
+        assert.isOk(result.status === 'ok')
         expect(result.value.capabilities.can_top_up).toBe(true)
         expect(result.value.denials.can_top_up).toBe(decoded)
       }
@@ -580,8 +725,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.denials).toEqual({})
       expect(result.value.capabilities.can_subscribe_self_serve).toBe(false)
     })

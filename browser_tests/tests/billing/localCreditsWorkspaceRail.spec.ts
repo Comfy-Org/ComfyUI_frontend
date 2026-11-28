@@ -20,7 +20,8 @@ test.describe('Local credits surfaces on the workspace billing rail', () => {
     await page.getByTestId(TestIds.user.currentUserButton).click()
     const popover = page.getByTestId(TestIds.user.currentUserPopover)
     await expect(popover).toBeVisible()
-    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
+    await popover.getByTestId('credits-menu-item').hover()
+    await expect(page.getByTestId('add-credits-button')).toBeVisible()
     await expect(
       popover.getByTestId('upgrade-to-add-credits-button')
     ).toHaveCount(0)
@@ -28,14 +29,14 @@ test.describe('Local credits surfaces on the workspace billing rail', () => {
       popover.getByRole('button', { name: 'Subscribe', exact: true })
     ).toHaveCount(0)
 
-    await popover.getByTestId('add-credits-button').click()
+    await page.getByTestId('add-credits-button').click()
     await expect(topUpDialog.heading).toBeVisible()
     await topUpDialog.close()
 
     await page.getByTestId(TestIds.user.currentUserButton).click()
     await page
       .getByTestId(TestIds.user.currentUserPopover)
-      .getByTestId('plans-credits-menu-item')
+      .getByTestId('workspace-settings-menu-item')
       .click()
 
     const settingsDialog = comfyPage.settingDialog

@@ -31,6 +31,28 @@ function connectedGraph() {
 }
 
 describe('Reroute ↔ rerouteStore integration', () => {
+  it('extends a floating output chain without replacing its link', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('source')
+    const output = node.addOutput('out', 'INT')
+    graph.add(node)
+    const first = node.connectFloatingReroute([17, 31], output)
+    assert.exists(first)
+    const [link] = graph.floatingLinks.values()
+    assert.exists(link)
+
+    const tip = node.connectFloatingReroute([53, 79], output, first.id)
+
+    assert.exists(tip)
+    expect([...graph.floatingLinks.values()]).toEqual([link])
+    expect(link.origin_id).toBe(node.id)
+    expect(link.parentId).toBe(tip.id)
+    expect(tip.parentId).toBe(first.id)
+    expect(first.floating).toBeUndefined()
+    expect(tip.floating).toEqual({ slotType: 'output' })
+    expect([...tip.floatingLinkIds]).toEqual([link.id])
+  })
+
   it('createReroute registers the chain, removeReroute unregisters it', () => {
     const { graph, link } = connectedGraph()
     const store = useRerouteStore()

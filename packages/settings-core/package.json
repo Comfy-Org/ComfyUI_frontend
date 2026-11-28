@@ -21,11 +21,11 @@
     "@comfyorg/keybindings": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/telemetry": "workspace:*",
+    "@comfyorg/theme-core": "workspace:*",
     "@vueuse/core": "catalog:",
     "es-toolkit": "catalog:",
     "semver": "^7.7.2",
-    "vue": "catalog:",
-    "zod": "catalog:"
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@types/semver": "catalog:",

@@ -203,6 +203,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
     )
     billingContext.isLoading = ref(false)
+    billingContext.balanceReadFailed = computed(() => false)
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     const workspaceUI = vi.mocked(useAccountUI())
     workspaceUI.permissions = computed(() => ({
@@ -277,6 +278,43 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.keyboard('{Escape}')
 
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  it('shows a failed balance read as unavailable, not as 0 credits', () => {
+    const billing = vi.mocked(useBillingContext)()
+    billing.balance = computed(() => null)
+    billing.balanceReadFailed = computed(() => true)
+
+    renderComponent()
+
+    expect(screen.getByTestId('credits-balance-unavailable')).toHaveTextContent(
+      '—'
+    )
+    expect(screen.getByText("Couldn't load your balance.")).toBeInTheDocument()
+  })
+
+  it('does not report an unread balance as failed before any read failed', () => {
+    const billing = vi.mocked(useBillingContext)()
+    billing.balance = computed(() => null)
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('credits-balance-unavailable')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the skeleton, not the unavailable state, while billing loads', () => {
+    const billing = vi.mocked(useBillingContext)()
+    billing.balance = computed(() => null)
+    billing.balanceReadFailed = computed(() => true)
+    billing.isLoading = ref(true)
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('credits-balance-unavailable')
+    ).not.toBeInTheDocument()
   })
 
   it('reports a failed balance read once instead of leaving it unhandled', async () => {
@@ -527,8 +565,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
     {
       denial: 'topup_purchases_paused',
-      reason:
-        "Buying credits isn't available right now. Try again later, or message support."
+      reason: "Buying credits isn't available right now. Try again later."
     },
     {
       denial: 'payment_past_due',

@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import type { useAuthActions as realUseAuthActions } from '@/composables/auth/useAuthActions'
 
 const actions: ReturnType<typeof realUseAuthActions> = {
-  logout: vi.fn(async () => undefined),
+  logout: vi.fn(async () => true),
   sendPasswordReset: vi.fn(async () => true),
   signInWithGoogle: vi.fn(async () => undefined),
   signInWithGithub: vi.fn(async () => undefined),

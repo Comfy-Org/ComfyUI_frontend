@@ -24,8 +24,7 @@ async function runOnBackgroundTab(
   await comfyPage.workflow.waitForWorkflowIdle()
 
   const exec = new ExecutionHelper(comfyPage, ws)
-  const jobId = await exec.run()
-  await comfyPage.nextFrame()
+  const jobId = await exec.run({ start: false })
 
   await topbar.newWorkflowButton.click()
   await comfyPage.workflow.waitForWorkflowIdle()

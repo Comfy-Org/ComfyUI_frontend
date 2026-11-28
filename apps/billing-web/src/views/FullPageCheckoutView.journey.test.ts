@@ -14,6 +14,10 @@ import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
+import {
+  awaitPlanChangeCardChoice,
+  awaitPromoAutoApply
+} from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type {
@@ -36,7 +40,8 @@ const CHECKOUT_PATH =
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 vi.mock(import('@/config/stripeKey'), () => ({
@@ -72,6 +77,8 @@ const SESSION: AccountCredential = {
   workspace: { id: 'ws-team', name: 'Acme Team', type: 'team' },
   role: 'owner'
 }
+
+vi.mock(import('@/config/checkoutUi'), { spy: true })
 
 vi.mock(import('@/session/billingWebSession'), async () => {
   const { computed } = await import('vue')
@@ -185,6 +192,8 @@ const REFUSED_BY_THE_SERVER = {
 const vueErrors: unknown[] = []
 
 beforeEach(() => {
+  vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
+  vi.mocked(awaitPromoAutoApply).mockResolvedValue(false)
   vueErrors.length = 0
 })
 
@@ -711,6 +720,65 @@ describe('the full-page checkout promo journey', () => {
       expect(JSON.stringify(journey())).not.toMatch(/launch20|nope/i)
     }
   )
+
+  describe('with billing_web_promo_auto_apply on', () => {
+    beforeEach(() => {
+      vi.mocked(awaitPromoAutoApply).mockResolvedValue(true)
+    })
+
+    function quotesCampaign(fake: FakeBillingClient) {
+      fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+        promotionCode === undefined
+          ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+          : {
+              status: 'ok',
+              value: previewOf({
+                quote_id: 'q_campaign',
+                promotion_code: 'BLACKFRIDAY26',
+                discounts: [
+                  {
+                    kind: 'promotion',
+                    code: 'BLACKFRIDAY26',
+                    amount_off_cents: 560
+                  }
+                ]
+              })
+            }
+      )
+    }
+
+    it('reports the campaign code checkout applied itself as auto_applied, never the code', async () => {
+      await renderCheckout(
+        {},
+        quotesCampaign,
+        `${CHECKOUT_PATH}&promo=BLACKFRIDAY26`
+      )
+      await screen.findByText('−$5.60')
+
+      await waitFor(() => expect(promoEvents()).toHaveLength(1))
+      expect(journey().at(-1)).toMatchObject({
+        phase: 'promo',
+        result: 'applied',
+        prefilled: true,
+        auto_applied: true
+      })
+      expect(JSON.stringify(journey())).not.toMatch(/blackfriday26/i)
+    })
+
+    it('reports a code the customer applied by hand as not auto_applied', async () => {
+      await renderCheckout({}, quotesByCode)
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      await enterCode('LAUNCH20')
+
+      await waitFor(() => expect(promoEvents()).toHaveLength(1))
+      expect(journey().at(-1)).toMatchObject({
+        phase: 'promo',
+        result: 'applied',
+        auto_applied: false
+      })
+    })
+  })
 
   it('reports nothing for a code that no quote could judge', async () => {
     await renderCheckout({}, (fake) =>

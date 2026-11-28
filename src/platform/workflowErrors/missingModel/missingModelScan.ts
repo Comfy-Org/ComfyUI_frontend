@@ -11,8 +11,9 @@ import {
   isNodeAndAncestorsActive
 } from '@/platform/workflow/core/utils/modelRequirements'
 import type { MissingModelCandidate } from './types'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { findModelReplacements } from './modelReplacements'
+import { getAssetFilename } from '@comfyorg/assets-core/metadata'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 import {
   inputForWidget,
   promotedInputWidgets
@@ -30,7 +31,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@comfyorg/graph-model/widgets'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   collectAllNodes,
@@ -43,9 +44,14 @@ export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
 }
 
+type CandidateVerification = Pick<
+  MissingModelCandidate,
+  'isMissing' | 'replacements'
+>
+
 type DeferredVerification = (
   signal?: AbortSignal
-) => Promise<boolean | undefined>
+) => Promise<CandidateVerification>
 
 /**
  * On a developer-platform deployment (FE-2434) the editor's node catalog is
@@ -338,7 +344,7 @@ function deferToReleaseOptions(
       target.definitionWidgetName,
       signal
     )
-    return options?.includes(candidate.name) ? false : undefined
+    return { isMissing: options?.includes(candidate.name) ? false : undefined }
   })
 }
 
@@ -398,23 +404,28 @@ function scanComboWidget(
     return candidate
   }
 
-  const isAbsentFromOptions = () =>
-    !resolveComboValues(target.definitionWidget).includes(value)
+  const verifyAgainstOptions = (): CandidateVerification => {
+    const options = resolveComboValues(target.definitionWidget)
+    if (options.includes(value)) return { isMissing: false }
+    const replacements = findModelReplacements(value, options)
+    return replacements.length
+      ? { isMissing: true, replacements }
+      : { isMissing: true }
+  }
   const inventory = getComboWidgetInventory(target.definitionWidget)
   if (inventory && inventory.getStatus() !== 'ready') {
     pendingVerifications.set(candidate, async (signal) => {
       await untilSettledOrAborted(inventory.waitForSettled(signal), signal)
       if (signal?.aborted || inventory.getStatus() !== 'ready') {
-        return undefined
+        return { isMissing: undefined }
       }
-      if (target.valueWidget.value !== value) return undefined
-      return isAbsentFromOptions()
+      if (target.valueWidget.value !== value) return { isMissing: undefined }
+      return verifyAgainstOptions()
     })
     return candidate
   }
 
-  candidate.isMissing = isAbsentFromOptions()
-  return candidate
+  return Object.assign(candidate, verifyAgainstOptions())
 }
 
 async function untilSettledOrAborted(
@@ -505,6 +516,20 @@ function collectEmbeddedModels(
   return result
 }
 
+const ASSET_LOAD_ATTEMPTS = 2
+
+async function loadAssetsOrFailure(
+  store: ReturnType<typeof useAssetsStore>,
+  nodeType: string
+): Promise<unknown> {
+  try {
+    await store.updateModelsForNodeType(nodeType)
+    return store.getError(nodeType)
+  } catch (err) {
+    return err ?? new Error('asset load failed')
+  }
+}
+
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal
@@ -516,8 +541,8 @@ export async function verifyAssetSupportedCandidates(
       const verify = pendingVerifications.get(candidate)
       if (!verify) return
       pendingVerifications.delete(candidate)
-      const isMissing = await verify(signal)
-      if (!signal?.aborted) candidate.isMissing = isMissing
+      const verification = await verify(signal)
+      if (!signal?.aborted) Object.assign(candidate, verification)
     })
   )
 
@@ -537,15 +562,16 @@ export async function verifyAssetSupportedCandidates(
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
-      if (signal?.aborted) return
-      try {
-        await store.updateModelsForNodeType(nodeType)
-      } catch (err) {
+      for (let attempt = 1; !signal?.aborted; attempt++) {
+        const failure = await loadAssetsOrFailure(store, nodeType)
+        if (failure === undefined) return
+        if (attempt < ASSET_LOAD_ATTEMPTS && !signal?.aborted) continue
         failedNodeTypes.add(nodeType)
         console.warn(
           `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
-          err
+          failure
         )
+        return
       }
     })
   )

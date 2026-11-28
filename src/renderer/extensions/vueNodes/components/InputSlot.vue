@@ -2,74 +2,75 @@
   <div v-if="renderError" class="node-error p-1 text-xs text-destructive">
     ⚠️
   </div>
-  <Tooltip v-else :disabled="!tooltipText">
-    <TooltipTrigger as-child>
-      <div
-        :aria-label="standalone ? accessibleName : undefined"
+  <div
+    v-else
+    :data-node-tooltip="tooltipText || undefined"
+    data-node-tooltip-side="left"
+    :aria-label="standalone ? accessibleName : undefined"
+    :data-slot-type="slotData.type"
+    :class="
+      cn(
+        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
+        'cursor-crosshair',
+        !props.dotOnly && 'h-5',
+        effectiveDotOnly ? 'lg-slot--dot-only' : 'pr-2',
+        {
+          'lg-slot--connected': props.connected,
+          'lg-slot--compatible': props.compatible,
+          'opacity-40': shouldDim
+        },
+        props.socketless && 'pointer-events-none invisible'
+      )
+    "
+    @pointerenter="revealLinks"
+    @pointerleave="unrevealLinks"
+  >
+    <SlotConnectionDot
+      :slot-key
+      :class="
+        cn(
+          'w-3 -translate-x-1/2',
+          hasError &&
+            'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-destructive before:ring-offset-0'
+        )
+      "
+      :slot-data
+      @click="onClick"
+      @dblclick="onDoubleClick"
+      @pointerdown="onPointerDown"
+    />
+
+    <template v-if="!effectiveDotOnly">
+      <EditableText
+        v-if="isEditing"
+        class="h-full min-w-0 content-center"
+        data-part="slot-label"
+        is-editing
+        :model-value="label"
+        @cancel="isEditing = false"
+        @edit="onEditLabel"
+      />
+      <span
+        v-else
+        data-part="slot-label"
         :class="
           cn(
-            'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
-            'cursor-crosshair',
-            effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
-            {
-              'lg-slot--connected': props.connected,
-              'lg-slot--compatible': props.compatible,
-              'opacity-40': shouldDim
-            },
-            props.socketless && 'pointer-events-none invisible'
+            'block h-full min-w-0 content-center truncate',
+            hasError && 'font-medium text-destructive'
           )
         "
-        @pointerenter="revealLinks"
-        @pointerleave="unrevealLinks"
+        @dblclick="isEditing = true"
       >
-        <!-- Connection Dot -->
-        <SlotConnectionDot
-          :slot-key
-          :class="
-            cn(
-              'w-3 -translate-x-1/2',
-              hasError &&
-                'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-destructive before:ring-offset-0'
-            )
-          "
-          :slot-data
-          @click="onClick"
-          @dblclick="onDoubleClick"
-          @pointerdown="onPointerDown"
-        />
-
-        <!-- Slot Name -->
-        <div class="flex h-full min-w-0 items-center">
-          <EditableText
-            v-if="!props.dotOnly && !hasNoLabel"
-            class="min-w-0"
-            :label-class="
-              cn('block truncate', hasError && 'font-medium text-destructive')
-            "
-            :is-editing
-            :model-value="
-              slotData.label ||
-              slotData.localized_name ||
-              (slotData.name ?? `Input ${index}`)
-            "
-            @cancel="isEditing = false"
-            @dblclick="isEditing = true"
-            @edit="onEditLabel"
-          />
-        </div>
-      </div>
-    </TooltipTrigger>
-    <TooltipContent side="left">{{ tooltipText }}</TooltipContent>
-  </Tooltip>
+        {{ label }}
+      </span>
+    </template>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -106,6 +107,12 @@ const hasNoLabel = computed(
     props.slotData.name === ''
 )
 const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const label = computed(
+  () =>
+    props.slotData.label ||
+    props.slotData.localized_name ||
+    (props.slotData.name ?? `Input ${props.index}`)
+)
 const accessibleName = computed(
   () =>
     props.slotData.label ||
@@ -116,7 +123,7 @@ const accessibleName = computed(
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const { getInputSlotTooltip } = useNodeTooltips(props.nodeType || '')
+const { getInputSlotTooltip } = useNodeTooltips(() => props.nodeType || '')
 const tooltipText = computed(() => getInputSlotTooltip(props.slotData))
 
 const { revealLinks, unrevealLinks } = useSlotLinkReveal({

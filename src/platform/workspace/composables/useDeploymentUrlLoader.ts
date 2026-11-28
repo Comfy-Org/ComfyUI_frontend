@@ -11,6 +11,7 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -20,6 +21,8 @@ import { useWorkspaceSwitch } from './useWorkspaceSwitch'
 const WORKSPACE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 const DEPLOYMENT_NAMESPACE = PRESERVED_QUERY_NAMESPACES.DEPLOYMENT
 const SWITCH_KEY = WORKSPACE_STORAGE_KEYS.DEPLOYMENT_LINK_SWITCH
+
+const COMFY_CLOUD_LINK_VALUE = 'standard'
 
 /**
  * One usable value: a non-empty string. Null for absent, empty, a bare
@@ -50,41 +53,25 @@ function linkQuery(routeQuery: LocationQueryRaw): LocationQueryRaw {
  * again.
  */
 function takeSwitchTarget(): string | null {
-  try {
-    const id = sessionStorage.getItem(SWITCH_KEY)
-    sessionStorage.removeItem(SWITCH_KEY)
-    return id
-  } catch {
-    return null
-  }
+  const id = safeSessionStorage.getItem(SWITCH_KEY)
+  if (!safeSessionStorage.remove(SWITCH_KEY).ok) return null
+  return id
 }
 
 function setSwitchTarget(workspaceId: string | null): boolean {
-  try {
-    if (workspaceId === null) sessionStorage.removeItem(SWITCH_KEY)
-    else sessionStorage.setItem(SWITCH_KEY, workspaceId)
+  if (workspaceId === null) {
+    safeSessionStorage.removeItem(SWITCH_KEY)
     return true
-  } catch {
-    return false
   }
+  return (
+    safeSessionStorage.isPersistent &&
+    safeSessionStorage.setItem(SWITCH_KEY, workspaceId) === 'ok'
+  )
 }
 
 /**
- * Opens the editor on the deployment a link names (BE-20294):
- * `/?workspace=<workspace id>&deployment=<deployment id>`. Runs before the
- * `?workspace=` loader and owns both params when `deployment` is present.
- *
- * In another workspace it switches there first, keeping both params so the
- * boot after the switch's reload picks; a switch that fails, or that did not
- * land after its reload, stays in the active workspace and says so. In the
- * named workspace it strips both params, then picks with the switcher's own
- * request, which reloads onto the deployment's nodes; a refused pick (outside
- * the rollout, a deployment gone or not the workspace's) shows the server's
- * reason and changes nothing. A link without both values, or an API-key
- * session (bound to one workspace, no pick), does nothing but drop
- * `deployment`. Signed out, the router sends the person to sign in with the
- * full path, query included, to come back to; both params are also stashed
- * by the preserved-query tracker.
+ * Opens the deployment, or Comfy Cloud for `standard`, that a
+ * `?workspace=<id>&deployment=<id>` link names.
  */
 export function useDeploymentUrlLoader() {
   const route = useRoute()
@@ -149,16 +136,14 @@ export function useDeploymentUrlLoader() {
     return false
   }
 
-  /**
-   * In the named workspace: strip the link, then pick. Returns `true` when
-   * the pick took and the page is reloading onto the deployment.
-   */
   async function pickDeployment(
     query: LocationQueryRaw,
-    deploymentId: string
+    linkValue: string
   ): Promise<boolean> {
     await stripParams(query, ['workspace', 'deployment'])
-    const outcome = await pickStore.pickFromLink(deploymentId)
+    const outcome = await pickStore.pickFromLink(
+      linkValue === COMFY_CLOUD_LINK_VALUE ? null : linkValue
+    )
     if (outcome.kind === 'timedOut') {
       toast.error(t('deploymentSwitcher.linkTimedOut'), { duration: 8000 })
     }

@@ -21,6 +21,11 @@ function normalizeTimestamp(value: number | string): number {
   return value
 }
 
+export interface UserFileSaveOptions {
+  force?: boolean
+  overwrite?: boolean
+}
+
 /**
  * Represents a file in the user's data directory.
  */
@@ -109,9 +114,7 @@ export class UserFile {
     this.isLoading = true
     const resp = await api.getUserData(this.path)
     if (resp.status !== 200) {
-      throw new Error(
-        `Failed to load file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
+      throw new Error(`Failed to load file: ${resp.status} ${resp.statusText}`)
     }
     this.content = await resp.text()
     this.originalContent = this.content
@@ -139,13 +142,17 @@ export class UserFile {
    * Saves the file to the remote storage.
    * @param force Whether to force the save even if the file is not modified.
    */
-  async save({ force = false }: { force?: boolean } = {}): Promise<UserFile> {
+  async save({
+    force = false,
+    overwrite = this.isPersisted
+  }: UserFileSaveOptions = {}): Promise<UserFile> {
     if (this.isPersisted && !this.isModified && !force) return this
 
     const resp = await api.storeUserData(this.path, this.content, {
-      overwrite: this.isPersisted,
+      overwrite,
       throwOnError: true,
-      full_info: true
+      full_info: true,
+      reportConflict: false
     })
 
     // Note: Backend supports full_info=true feature after

@@ -2,7 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
-test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+test.use({
+  initialSettings: { 'Comfy.UseNewMenu': 'Disabled' },
+  billingNewUx: false
+})
 
 test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {

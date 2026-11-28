@@ -33,6 +33,7 @@ vi.mock<unknown>(
 
   () => ({
     layoutStore: {
+      applyOperations: vi.fn(),
       queryRerouteAtPoint: mockQueryRerouteAtPoint
     }
   })
@@ -198,7 +199,7 @@ describe('getCanvasContextMenuTarget', () => {
 
     const target = resolve()
 
-    expect(target.stackedLinks).toEqual([links[0], links[1]])
+    expect(target.stack?.links).toEqual([links[0], links[1]])
     expect(target.link).toBeUndefined()
   })
 

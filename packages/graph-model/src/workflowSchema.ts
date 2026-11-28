@@ -161,7 +161,8 @@ const zFlags = z
     pinned: z.boolean().optional(),
     allow_interaction: z.boolean().optional(),
     horizontal: z.boolean().optional(),
-    skip_repeated_outputs: z.boolean().optional()
+    skip_repeated_outputs: z.boolean().optional(),
+    fullResolutionPreview: z.boolean().optional()
   })
   .passthrough()
 
@@ -585,7 +586,42 @@ const zSubgraphDefinition = zComfyWorkflow1
   })
   .passthrough()
 
+const zRecord = z.object({}).passthrough()
+
+/**
+ * The structure `LGraph.createSubgraphs` traverses without checking. A
+ * document-minted definition may omit every other field.
+ */
+export const zSparseSubgraphDefinition = z
+  .object({
+    id: z.guid(),
+    inputs: z
+      .array(zSubgraphIO.pick({ name: true, linkIds: true }).passthrough())
+      .optional(),
+    nodes: z
+      .array(z.object({ inputs: z.array(zRecord).optional() }).passthrough())
+      .optional(),
+    links: z.array(zRecord).optional(),
+    get definitions(): z.ZodOptional<
+      z.ZodObject<
+        {
+          subgraphs: z.ZodOptional<z.ZodArray<typeof zSparseSubgraphDefinition>>
+        },
+        z.core.$loose
+      >
+    > {
+      return z
+        .object({ subgraphs: z.array(zSparseSubgraphDefinition).optional() })
+        .passthrough()
+        .optional()
+    }
+  })
+  .passthrough()
+
 const zClipboardNode = zComfyNode
+  .extend({
+    properties: z.record(z.string(), zNodeProperty.optional()).default({})
+  })
   .refine(
     (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
     {

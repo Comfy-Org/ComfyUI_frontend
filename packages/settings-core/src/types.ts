@@ -1,5 +1,5 @@
 import type { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
-import type { ColorPalettes } from './colorPaletteSchema'
+import type { ThemePresets } from '@comfyorg/theme-core/themePresetSchema'
 import type { Keybinding } from '@comfyorg/keybindings/types'
 import type { NodeBadgeMode } from '@comfyorg/object-info-parser'
 import type { LinkReleaseTriggerAction } from './searchBoxTypes'
@@ -14,17 +14,19 @@ export type PreviewMethod = 'default' | 'none' | 'auto' | 'latent2rgb' | 'taesd'
 export type Settings = {
   'Comfy.AgentPanel.OnboardedScopes': Array<string>
   'Comfy.ColorPalette': string
-  'Comfy.CustomColorPalettes': ColorPalettes
+  'Comfy.CustomColorPalettes': ThemePresets
   'Comfy.Canvas.BackgroundImage'?: string
   'Comfy.ConfirmClear': boolean
   'Comfy.DevMode': boolean
+  'Comfy.Agent.CrdtDebug.Level': 'warn' | 'info' | 'debug' | 'trace'
   'Comfy.Appearance.DisableAnimations': boolean
   'Comfy.UI.TabBarLayout': 'Default' | 'Legacy'
   'Comfy.Workflow.ShowMissingModelsWarning': boolean
   'Comfy.ErrorSystem.ShowMissingModels': boolean
-  'Comfy.Workflow.ShowMissingNodesWarning': boolean
+  'Comfy.ErrorSystem.ShowMissingNodes': boolean
   'Comfy.Workflow.ShowMissingMediaWarning': boolean
   'Comfy.Workflow.WarnBlueprintOverwrite': boolean
+  'Comfy.Cloud.AskBeforeCompatibilityCheck': boolean
   'Comfy.Desktop.CloudNotificationShown': boolean
   'Comfy.DeploymentSwitcher.Seen': boolean
   'Comfy.DisableFloatRounding': boolean
@@ -79,6 +81,12 @@ export type Settings = {
   'Comfy.Sidebar.UnifiedWidth': boolean
   'Comfy.Sidebar.Style': 'floating' | 'connected'
   'Comfy.SnapToGrid.GridSize': number
+  'Comfy.Canvas.SmartGuides.Enabled': boolean
+  'Comfy.Canvas.SmartGuides.SnapToEdges': boolean
+  'Comfy.Canvas.SmartGuides.SnapToWires': boolean
+  'Comfy.Canvas.SmartGuides.SnapToSpacing': boolean
+  'Comfy.Canvas.SmartGuides.SnapDistance': number
+  'Comfy.Canvas.SmartGuides.Gap': number
   'Comfy.TextareaWidget.FontSize': number
   'Comfy.TextareaWidget.Spellcheck': boolean
   'Comfy.UseNewMenu': 'Disabled' | 'Top'
@@ -128,6 +136,7 @@ export type Settings = {
   'Comfy.OnboardingCoachmarks.Seen': Array<string>
   'Comfy.InstalledVersion': string | null
   'Comfy.Node.AllowImageSizeDraw': boolean
+  'Comfy.Node.DownscaleImagePreviews': boolean
   'Comfy.Minimap.Visible': boolean
   'Comfy.Minimap.NodeColors': boolean
   'Comfy.Minimap.ShowLinks': boolean
@@ -138,6 +147,7 @@ export type Settings = {
   'Comfy.Canvas.LeftMouseClickBehavior': string
   'Comfy.Canvas.MouseWheelScroll': string
   'Comfy.VueNodes.Enabled': boolean
+  'Comfy.VueNodes.HideSafeModelExtensions': boolean
   'Comfy.AppBuilder.VueNodeSwitchDismissed': boolean
   'Comfy.PartnerNodesEducation.Dismissed': boolean
   'Comfy.ModelLibrary.UseAssetBrowser': boolean
@@ -169,8 +179,8 @@ export type Settings = {
   'Comfy.Templates.SelectedModels': Array<string>
   'Comfy.Templates.SelectedUseCases': Array<string>
   'Comfy.Templates.SelectedRunsOn': Array<string>
+  'Comfy.Templates.HasOpenedLibrary': boolean
   'Comfy.Templates.SortBy':
-    | 'default'
     | 'recommended'
     | 'popular'
     | 'alphabetical'

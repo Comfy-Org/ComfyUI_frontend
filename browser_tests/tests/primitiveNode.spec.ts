@@ -150,3 +150,43 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     })
   })
 })
+
+test.describe(
+  'Primitive Node image upload admission',
+  { tag: ['@canvas', '@node', '@widget'] },
+  () => {
+    test('Gives the image upload button no input socket', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+
+      await expect(loadImageNode.getInputByName('upload')).rejects.toThrow(
+        'Input "upload" not found'
+      )
+    })
+
+    test('Does not attach to an upload socket saved by an older version', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'widgets/load_image_widget_upload_socket'
+      )
+      const [loadImageNode] =
+        await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+      const uploadInput = await loadImageNode.getInputByName('upload')
+      const beforeNodeIds = (await comfyPage.nodeOps.getAllNodeRefs()).map(
+        ({ id }) => id
+      )
+
+      const { x, y } = await uploadInput.getPosition()
+      await comfyPage.page.mouse.dblclick(x, y, { delay: 5 })
+      await comfyPage.nextFrame()
+
+      expect(
+        (await comfyPage.nodeOps.getAllNodeRefs()).map(({ id }) => id)
+      ).toEqual(beforeNodeIds)
+    })
+  }
+)

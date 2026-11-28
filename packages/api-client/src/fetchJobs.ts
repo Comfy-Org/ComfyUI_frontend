@@ -37,6 +37,7 @@ class JobsApiError extends Error {}
 
 interface FetchJobsOptions {
   throwOnError?: boolean
+  cappedTotal?: boolean
 }
 
 export interface FetchHistoryPageResult {
@@ -59,7 +60,8 @@ async function fetchJobsRaw(
   options?: FetchJobsOptions
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
-  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
+  const cappedTotalParam = options?.cappedTotal ? '&capped_total=true' : ''
+  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}${cappedTotalParam}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
@@ -104,9 +106,10 @@ function assignPriority(
 export async function fetchHistory(
   fetchApi: (url: string) => Promise<Response>,
   maxItems: number = 200,
-  offset: number = 0
+  offset: number = 0,
+  options?: FetchJobsOptions
 ): Promise<JobListItem[]> {
-  const { jobs } = await fetchHistoryPage(fetchApi, maxItems, offset)
+  const { jobs } = await fetchHistoryPage(fetchApi, maxItems, offset, options)
   return jobs
 }
 
@@ -116,16 +119,17 @@ export async function fetchHistory(
 export async function fetchHistoryPage(
   fetchApi: (url: string) => Promise<Response>,
   maxItems: number = 200,
-  offset: number = 0
+  offset: number = 0,
+  options?: FetchJobsOptions
 ): Promise<FetchHistoryPageResult> {
   const result = await fetchJobsRaw(
     fetchApi,
     ['completed', 'failed', 'cancelled'],
     maxItems,
-    offset
+    offset,
+    options
   )
 
-  // History gets priority based on total count (lower than queue)
   return {
     jobs: assignPriority(result.jobs, result.total - result.offset),
     total: result.total,

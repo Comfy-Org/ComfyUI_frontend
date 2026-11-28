@@ -4,7 +4,7 @@ import _ from 'es-toolkit/compat'
 import { assert } from '@/base/assert'
 import { LAYER_EDITOR_DIALOG_KEY } from '@/renderer/extensions/layerEditor/layerEditorDialogKey'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent, LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyWorkflow,
@@ -29,20 +29,24 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
+import { mergeNodeOutput } from '@/utils/nodeOutputUtil'
 
 import { api } from './api'
+import { emitGraphRestored } from './graphRestore'
 import {
   collectNodeHistoryWidgets,
   nodeHistoryValuesChanged,
   withNodeHistoryValuesFrom
 } from './nodeHistoryWidgetValues'
 import { useApp } from '@/scripts/appInstance'
-import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
+import { isGraphLoading } from '@/core/graph/graphLoadState'
 import { clipspace } from '@/scripts/clipspace'
+import { travelFocusedNodeHistory } from '@/scripts/focusedNodeHistory'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -105,28 +109,41 @@ function differsOnlyInNodeHistoryWidgets(
 }
 
 function keepingLiveNodeHistoryValues(
-  target: ComfyWorkflowJSON
+  target: ComfyWorkflowJSON,
+  rootGraph: LGraph | null
 ): ComfyWorkflowJSON {
-  const { rootGraph } = useApp()
+  if (!rootGraph) return target
   const widgets = collectNodeHistoryWidgets(rootGraph)
   if (!widgets.size) return target
   const live = clone(rootGraph.serialize()) as ComfyWorkflowJSON
   return withNodeHistoryValuesFrom(target, live, widgets, rootGraph.id)
 }
 
-function forgetRemovedNodeHistories(widgets: NodeHistoryWidgets): void {
-  useWidgetHistoryStore().retainLive(useApp().rootGraph.id, widgets)
+function forgetRemovedNodeHistories(
+  rootGraph: LGraph | null,
+  widgets = rootGraph && collectNodeHistoryWidgets(rootGraph)
+): void {
+  if (rootGraph && widgets)
+    useWidgetHistoryStore().retainLive(rootGraph.id, widgets)
 }
 
 function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
-function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
+export function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return
   const key = e.key.toUpperCase()
   if (key === 'Y' && !e.shiftKey) return 'redo'
   if (key === 'Z') return e.shiftKey ? 'redo' : 'undo'
+}
+
+function isEditingText(element: Element | null): boolean {
+  return (
+    element?.tagName === 'INPUT' ||
+    element?.tagName === 'TEXTAREA' ||
+    (element instanceof HTMLElement && element.isContentEditable)
+  )
 }
 
 function isAutoQueueOnChange(): boolean {
@@ -358,14 +375,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
     resetCanvasTrackerForTest()
     reportedCanvasMismatchCalls.clear()
   }
-  /**
-   * Guard flag to prevent captureCanvasState from running during loadGraphData.
-   * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
-   * contains the NEW workflow's data while activeWorkflow still points to
-   * the OLD workflow. Any captureCanvasState call in that window would
-   * serialize the wrong graph into the old workflow's activeState, corrupting it.
-   */
-  static isLoadingGraph = false
 
   /**
    * The active state of the workflow.
@@ -379,6 +388,12 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+  private preview?: { interrupt: () => void; rollback: () => void }
+
+  /** Whether a workflow load is configuring this tracker's graph. */
+  get isLoadingGraph(): boolean {
+    return isGraphLoading(this.workflow.graph)
+  }
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -411,8 +426,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   store() {
-    const { ds } = useApp().canvas
-    this.ds = { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
+    const app = useApp()
+    const { ds } = app.canvas
+    const graph = this.workflow.graph
+    this.ds =
+      graph && app.hasPendingCamera(graph)
+        ? undefined
+        : { scale: ds.scale, offset: [ds.offset[0], ds.offset[1]] }
     this.nodeOutputs = useNodeOutputStore().snapshotOutputs()
     const navigation = useSubgraphNavigationStore().exportState()
     // Always store the navigation state, even if empty (root level)
@@ -436,6 +456,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
+    this.preview?.interrupt()
     if (!this._restoringState && canCaptureCanvas(this)) {
       this.captureCanvasState()
     }
@@ -451,6 +472,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   prepareForSave() {
     if (isActiveTracker(this) && canCaptureCanvas(this)) {
+      this.preview?.interrupt()
       this.captureCanvasState()
     }
   }
@@ -464,6 +486,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (this.nodeOutputs) {
       useNodeOutputStore().restoreOutputs(this.nodeOutputs)
     }
+    const executionStore = useExecutionStore()
+    executionStore.showJobOutputs(executionStore.focusedJobFor(this.workflow))
     if (this.subgraphState) {
       const { navigation } = this.subgraphState
       const firstInvalidIndex = navigation.findIndex(
@@ -487,8 +511,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   updateModified(previousState?: ComfyWorkflowJSON) {
-    // Get the workflow from the store as ChangeTracker is raw object, i.e.
-    // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
     if (workflow) {
       // Declared non-null, but a tracker can still lack it at runtime.
@@ -508,6 +530,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     }
 
+    if (!isActiveTracker(this)) return
+
     const autoQueueGraphChanged =
       !!previousState &&
       isAutoQueueOnChange() &&
@@ -522,19 +546,17 @@ export class ChangeTracker implements WorkflowChangeTracker {
     }
   }
 
-  /**
-   * Snapshot the current canvas state into activeState and push undo.
-   * INVARIANT: only the active workflow's tracker may read from the canvas.
-   * Calling this on an inactive tracker would capture the wrong graph.
-   */
+  /** Snapshot the workflow's own graph into activeState and push undo. */
   captureCanvasState() {
+    const graph = this.workflow.graph
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
-      !useApp().isGraphReady ||
+      !graph ||
+      this.preview ||
       isInsideChangeTransaction ||
       isUndoRedoing ||
-      ChangeTracker.isLoadingGraph ||
+      this.isLoadingGraph ||
       isChangeCaptureSuppressed()
     )
       return
@@ -549,12 +571,10 @@ export class ChangeTracker implements WorkflowChangeTracker {
       return
     }
 
-    const currentState = clone(
-      useApp().rootGraph.serialize()
-    ) as ComfyWorkflowJSON
+    const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (!ChangeTracker.graphEqual(this.activeState, currentState)) {
       const previousState = this.activeState
-      const nodeHistoryWidgets = collectNodeHistoryWidgets(useApp().rootGraph)
+      const nodeHistoryWidgets = collectNodeHistoryWidgets(graph)
       if (
         !differsOnlyInNodeHistoryWidgets(
           previousState,
@@ -571,22 +591,24 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
       this.activeState = currentState
       this.updateModified(previousState)
-      forgetRemovedNodeHistories(nodeHistoryWidgets)
+      forgetRemovedNodeHistories(graph, nodeHistoryWidgets)
       void this.squashState()
     }
   }
   squashState = useDebounceFn(() => {
+    const graph = this.workflow.graph
     if (
-      this !== useWorkflowStore().activeWorkflow?.changeTracker ||
-      ChangeTracker.isLoadingGraph ||
+      !graph ||
+      !isActiveTracker(this) ||
+      this.preview ||
+      this.changeCount > 0 ||
+      this.isLoadingGraph ||
       isChangeCaptureSuppressed() ||
       !canCaptureCanvas(this)
     )
       return
 
-    const currentState = clone(
-      useApp().rootGraph.serialize()
-    ) as ComfyWorkflowJSON
+    const currentState = clone(graph.serialize()) as ComfyWorkflowJSON
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
@@ -599,7 +621,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * state, without adding undo history or reading the canvas.
    */
   markModified() {
-    if (!isActiveTracker(this) || ChangeTracker.isLoadingGraph) return
+    if (!isActiveTracker(this) || this.isLoadingGraph) return
 
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
     if (workflow) workflow.isModified = true
@@ -623,13 +645,33 @@ export class ChangeTracker implements WorkflowChangeTracker {
     ChangeTracker._checkStateWarned = false
   }
 
+  get hasPreview() {
+    return this.preview !== undefined
+  }
+
+  beginPreview(interrupt: () => void, rollback = interrupt): () => void {
+    this.preview?.interrupt()
+    this.captureCanvasState()
+    const preview = { interrupt, rollback }
+    this.preview = preview
+    return () => {
+      if (this.preview !== preview) return
+      this.preview = undefined
+      if (isActiveTracker(this)) this.captureCanvasState()
+    }
+  }
+
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
     const restore = async () => {
-      if (this._restoringState || source.length === 0) return
+      if (this._restoringState) return
+      this.preview?.rollback()
       const prevState = source.pop()
       if (prevState) {
         const previousState = this.activeState
-        const targetState = keepingLiveNodeHistoryValues(prevState)
+        const targetState = keepingLiveNodeHistoryValues(
+          prevState,
+          this.workflow.graph
+        )
         const restoresSavedState = ChangeTracker.graphEqual(
           targetState,
           this.initialState
@@ -644,7 +686,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
             this.workflow,
             {
               checkForRerouteMigration: false,
-              silentAssetErrors: true
+              silentAssetErrors: true,
+              restoreHistory: true
             }
           )
           restored = result !== false && result !== undefined
@@ -659,12 +702,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
           } else {
             source.push(prevState)
           }
-          if (restored) {
-            this.updateModified(previousState)
-            forgetRemovedNodeHistories(
-              collectNodeHistoryWidgets(useApp().rootGraph)
-            )
-          }
+          if (restored) this.finishRestore(previousState)
         }
       }
     }
@@ -673,6 +711,20 @@ export class ChangeTracker implements WorkflowChangeTracker {
       restore
     )
     return this.restoreChain
+  }
+
+  private finishRestore(previousState: ComfyWorkflowJSON) {
+    const { workflow } = this
+    const { graph } = workflow
+    this.updateModified(previousState)
+    forgetRemovedNodeHistories(graph)
+    if (graph)
+      emitGraphRestored({
+        workflow,
+        graph,
+        previous: previousState,
+        next: this.activeState
+      })
   }
 
   async undo() {
@@ -697,69 +749,68 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   afterChange() {
+    if (this.changeCount === 0) return
     if (!--this.changeCount) {
       this.captureCanvasState()
     }
   }
 
   static init() {
+    useWorkflowStore().provideChangeTracker(ChangeTracker)
     const getCurrentChangeTracker = () =>
       useWorkflowStore().activeWorkflow?.changeTracker
     const captureState = () => getCurrentChangeTracker()?.captureCanvasState()
     const dialogStore = useDialogStore()
 
     let keyIgnored = false
+    const keyOwnedElsewhere = () =>
+      !!clipspace.maskEditorIsOpened?.() ||
+      isModalOpen(dialogStore.dialogStack.length) ||
+      useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)
+
+    function onHistoryShortcut(e: KeyboardEvent, shortcut: 'undo' | 'redo') {
+      if (isEditingText(document.activeElement)) {
+        if (isAutoQueueOnChange() && !keyOwnedElsewhere()) keyIgnored = true
+        return
+      }
+      if (keyOwnedElsewhere()) return
+      e.preventDefault()
+      if (e.repeat || travelFocusedNodeHistory(shortcut)) return
+      keyIgnored = false
+      const tracker = getCurrentChangeTracker()
+      const selectOnly = isSelectOnly(useApp().canvas)
+      if (!selectOnly && tracker instanceof ChangeTracker) {
+        tracker.preview?.rollback()
+      }
+      requestAnimationFrame(async () => {
+        if (tracker && tracker === getCurrentChangeTracker()) {
+          await tracker.undoRedo(e, selectOnly)
+        }
+      })
+    }
+
+    function onEditKey(e: KeyboardEvent) {
+      if (e.repeat) return
+      const activeEl = document.activeElement
+      if (isEditingText(activeEl) && !isAutoQueueOnChange()) return
+      if (keyOwnedElsewhere()) return
+      keyIgnored = ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)
+      if (keyIgnored) return
+      requestAnimationFrame(() => {
+        const changeTracker = getCurrentChangeTracker()
+        if (!changeTracker) return
+        if (ChangeTracker.bindInput(isAutoQueueOnChange() ? null : activeEl))
+          return
+        changeTracker.captureCanvasState()
+      })
+    }
+
     window.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
-        // Do not trigger on repeat events (Holding down a key)
-        // This can happen when user is holding down "Space" to pan the canvas.
-        if (e.repeat) return
-
-        // If the mask editor is opened, we don't want to trigger on key events
-        if (clipspace.maskEditorIsOpened?.()) return
-
-        const activeEl = document.activeElement
-        if (
-          !isAutoQueueOnChange() &&
-          (activeEl?.tagName === 'INPUT' ||
-            activeEl?.tagName === 'TEXTAREA' ||
-            (activeEl instanceof HTMLElement && activeEl.isContentEditable))
-        ) {
-          // Text editors own their history. Bail out before the document-wide
-          // modal probes, whose cost otherwise scales with transcript size.
-          return
-        }
-        if (isModalOpen(dialogStore.dialogStack.length)) return
-
-        // The layer editor has its own session-local undo history
-        if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
-
-        keyIgnored =
-          e.key === 'Control' ||
-          e.key === 'Shift' ||
-          e.key === 'Alt' ||
-          e.key === 'Meta'
-        if (keyIgnored) return
-
-        const selectOnlyAtKeydown = isSelectOnly(useApp().canvas)
-        requestAnimationFrame(async () => {
-          let bindInputEl: Element | null = null
-          // If we are auto queue in change mode then we do want to trigger on inputs
-          if (!isAutoQueueOnChange()) {
-            bindInputEl = activeEl
-          }
-
-          const changeTracker = getCurrentChangeTracker()
-          if (!changeTracker) return
-
-          // Check if this is a ctrl+z ctrl+y
-          if (await changeTracker.undoRedo(e, selectOnlyAtKeydown)) return
-
-          // If our active element is some type of input then handle changes after they're done
-          if (ChangeTracker.bindInput(bindInputEl)) return
-          changeTracker.captureCanvasState()
-        })
+        const shortcut = historyShortcut(e)
+        if (shortcut) onHistoryShortcut(e, shortcut)
+        else onEditKey(e)
       },
       true
     )
@@ -771,8 +822,12 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
+    const isExpandedTextEditorOpen = () =>
+      dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY) ||
+      usePromptPanelStore().isEditorFocused
+
     window.addEventListener('mouseup', () => {
-      if (dialogStore.isDialogOpen(TEXT_EDITOR_DIALOG_KEY)) return
+      if (isExpandedTextEditorOpen()) return
       captureState()
     })
 
@@ -784,7 +839,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
       captureState()
     })
 
-    // Handle litegraph clicks
     const processMouseUp = LGraphCanvas.prototype.processMouseUp
     LGraphCanvas.prototype.processMouseUp = function (e) {
       const v = processMouseUp.apply(this, [e])
@@ -792,7 +846,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
       return v
     }
 
-    // Handle litegraph dialog popup for number/string widgets
     const prompt = LGraphCanvas.prototype.prompt
     LGraphCanvas.prototype.prompt = function (
       title: string,
@@ -807,7 +860,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
       return prompt.apply(this, [title, value, extendedCallback, event])
     }
 
-    // Handle litegraph context menu for COMBO widgets
     const close = LiteGraph.ContextMenu.prototype.close
     LiteGraph.ContextMenu.prototype.close = function (e: MouseEvent) {
       const v = close.apply(this, [e])
@@ -815,7 +867,6 @@ export class ChangeTracker implements WorkflowChangeTracker {
       return v
     }
 
-    // Handle multiple commands as a single transaction
     document.addEventListener('litegraph:canvas', (e: Event) => {
       const detail = (e as CustomEvent).detail
       if (detail.subType === 'before-change') {
@@ -825,28 +876,20 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
-    // Store node outputs
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
-      const workflow =
-        useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
+      const executionStore = useExecutionStore()
+      const workflow = executionStore.queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
+      if (executionStore.focusedJobFor(workflow) !== detail.prompt_id) return
       changeTracker.nodeOutputs ??= {}
       const nodeOutputs = changeTracker.nodeOutputs
       const output = nodeOutputs[detail.node]
-      if (detail.merge && output) {
-        for (const k in detail.output) {
-          const v = output[k]
-          if (v instanceof Array) {
-            output[k] = v.concat(detail.output[k])
-          } else {
-            output[k] = detail.output[k]
-          }
-        }
-      } else {
-        nodeOutputs[detail.node] = detail.output
-      }
+      nodeOutputs[detail.node] =
+        detail.merge && output
+          ? mergeNodeOutput(output, detail.output)
+          : detail.output
     })
   }
 
@@ -926,5 +969,3 @@ export class ChangeTracker implements WorkflowChangeTracker {
     return true
   }
 }
-
-provideChangeTracker(ChangeTracker)

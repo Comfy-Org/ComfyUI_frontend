@@ -12,7 +12,7 @@ import {
   toOwningGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import type {
   FloatingRerouteSlot,
   RerouteChain

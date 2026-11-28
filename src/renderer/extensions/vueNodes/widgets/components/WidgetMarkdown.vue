@@ -1,18 +1,13 @@
 <template>
   <div class="widget-markdown relative w-full" @dblclick="startEditing">
-    <SanitizedHtml
-      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg"
+    <MarkdownView
       :class="isEditing ? 'invisible' : 'visible'"
-      tabindex="0"
-      data-capture-wheel="true"
-      role="textarea"
       :aria-label="widget.name || $t('g.markdown')"
-      aria-readonly="true"
-      :html="renderedHtml"
+      :markdown="modelValue"
     />
 
     <Textarea
-      v-show="isEditing"
+      v-if="isEditing"
       ref="textareaRef"
       v-model="modelValue"
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"
@@ -29,13 +24,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
+
+import MarkdownView from './MarkdownView.vue'
 
 const { widget } = defineProps<{
   widget: SimplifiedWidget<string>
@@ -45,10 +40,6 @@ const modelValue = defineModel<string>({ default: '' })
 
 const isEditing = ref(false)
 const textareaRef = ref<InstanceType<typeof Textarea>>()
-
-const renderedHtml = computed(() =>
-  renderMarkdownToHtml(modelValue.value || '')
-)
 
 async function startEditing() {
   if (isEditing.value || widget.options?.read_only) return

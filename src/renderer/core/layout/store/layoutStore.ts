@@ -38,15 +38,16 @@ import type {
   NodeBoundsUpdate,
   NodeLayout,
   RerouteLayout,
-  SlotOffset,
-  SlotOffsetMode
+  SlotOffset
 } from '@comfyorg/graph-model/layout'
 import type {
+  Bounds,
   Point2D as Point,
   Size2D as Size,
   RectTuple as StoredRect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
+import type { DerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import {
   isBoundsEqual,
   isPointEqual
@@ -144,24 +145,19 @@ interface BatchUpdateBoundsOptions {
   source: LayoutSource
 }
 
-interface SlotOffsetSnapshot {
-  mode: SlotOffsetMode
-  byDirection: Record<SlotDirection, Map<SlotIndex, Point>>
-}
+type SlotOffsetSnapshot = Record<SlotDirection, Map<SlotIndex, Bounds>>
 
 function isSlotOffsetSnapshotEqual(
   current: SlotOffsetSnapshot,
   next: SlotOffsetSnapshot
 ): boolean {
-  if (current.mode !== next.mode) return false
-
   for (const direction of ['input', 'output'] as const) {
-    const currentOffsets = current.byDirection[direction]
-    const nextOffsets = next.byDirection[direction]
+    const currentOffsets = current[direction]
+    const nextOffsets = next[direction]
     if (currentOffsets.size !== nextOffsets.size) return false
-    for (const [index, point] of nextOffsets) {
-      const currentPoint = currentOffsets.get(index)
-      if (!currentPoint || !isPointEqual(currentPoint, point)) return false
+    for (const [index, bounds] of nextOffsets) {
+      const currentBounds = currentOffsets.get(index)
+      if (!currentBounds || !isBoundsEqual(currentBounds, bounds)) return false
     }
   }
   return true
@@ -187,8 +183,6 @@ class LayoutStoreImpl {
   // Vue reactivity layer
   private version = ref(0)
   private _nodeGeometryVersion = 0
-  private _contentSizeVersion = 0
-  private _slotOffsetVersion = ref(0)
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -220,8 +214,8 @@ class LayoutStoreImpl {
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
+  private derivedSlotAnchors = new Map<UUID, Map<NodeId, DerivedSlotAnchors>>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
-  private suppressedContentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -277,20 +271,6 @@ class LayoutStoreImpl {
    */
   get nodeGeometryVersion(): number {
     return this._nodeGeometryVersion
-  }
-
-  /** Non-reactive revision for measured Vue content dimensions. */
-  get contentSizeVersion(): number {
-    return this._contentSizeVersion
-  }
-
-  /**
-   * Reactive counter bumped when measured slot offsets are dropped in bulk.
-   * A Vue node that stays mounted through a graph reload has nothing else to
-   * tell it that its measurements are gone, so it re-measures on this.
-   */
-  get slotOffsetVersion(): number {
-    return this._slotOffsetVersion.value
   }
 
   constructor() {
@@ -429,26 +409,10 @@ class LayoutStoreImpl {
 
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
     const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    const suppressed = this.suppressedContentSizes.get(key)
-    if (suppressed) {
-      if (suppressed.width === size.width && suppressed.height === size.height)
-        return
-      this.suppressedContentSizes.delete(key)
-    }
     const previous = this.contentSizes.get(key)
     if (previous?.width === size.width && previous.height === size.height)
       return
     this.contentSizes.set(key, size)
-    this._contentSizeVersion++
-  }
-
-  clearContentSize(rootGraphId: UUID, nodeId: NodeId): void {
-    const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    const previous = this.contentSizes.get(key)
-    if (!previous) return
-    this.suppressedContentSizes.set(key, previous)
-    this.contentSizes.delete(key)
-    this._contentSizeVersion++
   }
 
   /**
@@ -525,39 +489,73 @@ class LayoutStoreImpl {
   updateNodeSlotOffsets(
     graphId: UUID,
     nodeId: NodeId,
-    offsets: readonly SlotOffset[],
-    mode: SlotOffsetMode
+    offsets: readonly SlotOffset[]
   ): void {
     const key = makeScopedLayoutKey(graphId, nodeId)
-    const byDirection: Record<SlotDirection, Map<SlotIndex, Point>> = {
-      input: new Map(),
-      output: new Map()
-    }
+    const next: SlotOffsetSnapshot = { input: new Map(), output: new Map() }
     for (const offset of offsets) {
-      byDirection[offset.type].set(offset.index, offset.position)
+      next[offset.type].set(offset.index, offset.bounds)
     }
-    const next = { mode, byDirection }
     const current = this.slotOffsets.get(key)
     if (current && isSlotOffsetSnapshotEqual(current, next)) return
 
     this.slotOffsets.set(key, next)
-    if (current?.mode === mode || offsets.length > 0) {
+    if (current || offsets.length > 0) {
       this.queueGeometryChange(new Set([graphId]))
     }
   }
 
-  getSlotOffset(
+  getSlotBounds(
     graphId: UUID,
     nodeId: NodeId,
     index: SlotIndex,
-    type: SlotDirection,
-    mode: SlotOffsetMode
-  ): Point | null {
-    const offsets = this.slotOffsets.get(makeScopedLayoutKey(graphId, nodeId))
-    return offsets?.mode === mode
-      ? (offsets.byDirection[type].get(index) ?? null)
-      : null
+    type: SlotDirection
+  ): Bounds | null {
+    return (
+      this.slotOffsets
+        .get(makeScopedLayoutKey(graphId, nodeId))
+        ?.[type].get(index) ?? null
+    )
   }
+
+  /** Publishes a node's derived slot anchors for link endpoints, or forgets them when `anchors` is undefined. The rendering node owns them, so graph clears leave them alone. */
+  setDerivedSlotAnchors(
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    anchors: DerivedSlotAnchors | undefined
+  ): void {
+    const graphAnchors = this.derivedSlotAnchors.get(rootGraphId)
+    if (anchors) {
+      if (graphAnchors) graphAnchors.set(nodeId, anchors)
+      else
+        this.derivedSlotAnchors.set(rootGraphId, new Map([[nodeId, anchors]]))
+      return
+    }
+    graphAnchors?.delete(nodeId)
+    if (graphAnchors?.size === 0) this.derivedSlotAnchors.delete(rootGraphId)
+  }
+
+  /** An expanded slot's anchor relative to `node.pos`, from the node's derived body layout. */
+  derivedSlotAnchorOf(
+    rootGraphId: UUID,
+    nodeId: NodeId,
+    index: SlotIndex,
+    direction: SlotDirection
+  ): Point | undefined {
+    return this.derivedSlotAnchors
+      .get(rootGraphId)
+      ?.get(nodeId)
+      ?.[direction].get(index)
+  }
+
+  /** Forgets everything the DOM measured for an entity. */
+  clearMeasuredGeometry(graphId: UUID, nodeId: NodeId): void {
+    const key = makeScopedLayoutKey(graphId, nodeId)
+    this.contentSizes.delete(key)
+    if (this.slotOffsets.delete(key))
+      this.queueGeometryChange(new Set([graphId]))
+  }
+
   /**
    * Get reroute layout data
    */
@@ -878,18 +876,11 @@ class LayoutStoreImpl {
     for (const key of this.contentSizes.keys()) {
       if (!key.startsWith(prefix)) continue
       this.contentSizes.delete(key)
-      this._contentSizeVersion++
     }
-    for (const key of this.suppressedContentSizes.keys()) {
-      if (key.startsWith(prefix)) this.suppressedContentSizes.delete(key)
-    }
-    let slotOffsetsDropped = false
     for (const key of this.slotOffsets.keys()) {
       if (!key.startsWith(prefix)) continue
       this.slotOffsets.delete(key)
-      slotOffsetsDropped = true
     }
-    if (slotOffsetsDropped) this._slotOffsetVersion.value++
     for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
@@ -989,6 +980,7 @@ class LayoutStoreImpl {
       this.rerouteLayouts.clear()
       this.rerouteSpatialIndex.clear()
       this.slotOffsets.clear()
+      this.derivedSlotAnchors.clear()
     }, 'initialization')
     this.clearViewGeometry()
   }
@@ -1003,15 +995,8 @@ class LayoutStoreImpl {
       this.linkSegmentSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
-      if (this.contentSizes.size > 0) {
-        this.contentSizes.clear()
-        this._contentSizeVersion++
-      }
-      this.suppressedContentSizes.clear()
-      if (this.slotOffsets.size > 0) {
-        this.slotOffsets.clear()
-        this._slotOffsetVersion.value++
-      }
+      this.contentSizes.clear()
+      this.slotOffsets.clear()
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false
@@ -1122,9 +1107,7 @@ class LayoutStoreImpl {
     if (!this.ynodes.has(nodeKey)) return false
 
     this.ynodes.delete(nodeKey)
-    if (this.contentSizes.delete(nodeKey)) this._contentSizeVersion++
-    this.suppressedContentSizes.delete(nodeKey)
-    this.slotOffsets.delete(nodeKey)
+    this.clearMeasuredGeometry(operation.graphId, nodeId)
     // Link geometry is cleaned up per-link by LLink.disconnect as the node's
     // connections are severed, so nothing to do here.
 
@@ -1293,6 +1276,11 @@ class LayoutStoreImpl {
     })
   }
 
+  flushPendingChanges(): void {
+    this.flushQueuedGlobalChanges()
+    this.flushQueuedGeometryChanges()
+  }
+
   private flushQueuedGlobalChanges(): void {
     this.isGlobalDispatchQueued = false
     if (this.pendingGlobalChanges.length === 0) return
@@ -1313,19 +1301,23 @@ class LayoutStoreImpl {
 
     this.isGeometryDispatchQueued = true
     queueMicrotask(() => {
-      this.isGeometryDispatchQueued = false
-      const changes = this.pendingGeometryChanges
-      this.pendingGeometryChanges = []
-      for (const change of changes) {
-        for (const listener of this.geometryListeners) {
-          try {
-            listener(change)
-          } catch (error) {
-            this.reportListenerFailure(error, 'geometry', listener)
-          }
+      this.flushQueuedGeometryChanges()
+    })
+  }
+
+  private flushQueuedGeometryChanges(): void {
+    this.isGeometryDispatchQueued = false
+    const changes = this.pendingGeometryChanges
+    this.pendingGeometryChanges = []
+    for (const change of changes) {
+      for (const listener of this.geometryListeners) {
+        try {
+          listener(change)
+        } catch (error) {
+          this.reportListenerFailure(error, 'geometry', listener)
         }
       }
-    })
+    }
   }
 
   private reportListenerFailure(

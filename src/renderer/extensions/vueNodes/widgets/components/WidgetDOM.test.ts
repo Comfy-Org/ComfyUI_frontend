@@ -1,8 +1,11 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render } from '@testing-library/vue'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { app } from '@/scripts/app'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/scripts/app'))
 
 const resolveMock = vi.hoisted(() => vi.fn())
 vi.mock(
@@ -23,27 +26,29 @@ import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 beforeEach(() => {
-  useCanvasStore().canvas = fromPartial({
-    canvas: document.createElement('canvas'),
-    graph: { getNodeById: vi.fn(() => null) }
-  })
+  useCanvasStore().currentGraph = app.rootGraph
 })
+
+function addRootNode(): LGraphNode {
+  const node = new LGraphNode('test')
+  app.rootGraph.add(node)
+  return node
+}
+
+function resolveDomWidgetOn(host: LGraphNode, element: HTMLElement) {
+  resolveMock.mockImplementation((node) =>
+    node === host ? { node, widget: { element, name: 'dom' } } : undefined
+  )
+}
 
 describe('WidgetDOM', () => {
   beforeEach(() => {
     isDOMWidgetMock.mockReturnValue(true)
   })
 
-  function mountWithWidget(domElement: HTMLElement | null) {
-    if (domElement) {
-      vi.mocked(
-        useCanvasStore().getCanvas().graph!.getNodeById
-      ).mockReturnValue(new LGraphNode('test'))
-      resolveMock.mockReturnValue({
-        node: { mock: true },
-        widget: { element: domElement, name: 'dom' }
-      })
-    }
+  function mountWithWidget(domElement: HTMLElement) {
+    const host = addRootNode()
+    resolveDomWidgetOn(host, domElement)
     return render(WidgetDOM, {
       props: {
         widget: createMockWidget<undefined>({
@@ -51,7 +56,7 @@ describe('WidgetDOM', () => {
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: toNodeId('n1')
+        nodeId: host.id
       }
     })
   }
@@ -68,10 +73,7 @@ describe('WidgetDOM', () => {
   })
 
   it('renders an empty container when no host node is found', () => {
-    vi.mocked(useCanvasStore().getCanvas().graph!.getNodeById).mockReturnValue(
-      null
-    )
-    resolveMock.mockReturnValue(undefined)
+    resolveDomWidgetOn(addRootNode(), document.createElement('div'))
 
     const { container } = render(WidgetDOM, {
       props: {
@@ -95,13 +97,8 @@ describe('WidgetDOM', () => {
     const hosted = document.createElement('div')
     hosted.setAttribute('data-testid', 'hosted-dom')
 
-    vi.mocked(useCanvasStore().getCanvas().graph!.getNodeById).mockReturnValue(
-      new LGraphNode('test')
-    )
-    resolveMock.mockReturnValue({
-      node: { mock: true },
-      widget: { element: hosted, name: 'dom' }
-    })
+    const host = addRootNode()
+    resolveDomWidgetOn(host, hosted)
     isDOMWidgetMock.mockReturnValue(false)
 
     const { container } = render(WidgetDOM, {
@@ -111,12 +108,35 @@ describe('WidgetDOM', () => {
           name: 'dom',
           type: 'dom'
         }),
-        nodeId: toNodeId('n1')
+        nodeId: host.id
       }
     })
 
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-testid="hosted-dom"]')).toBeNull()
+  })
+
+  it('mounts the DOM widget of a root graph owner while the canvas shows a subgraph', () => {
+    const owner = addRootNode()
+    useCanvasStore().currentGraph = createTestSubgraph({
+      rootGraph: app.rootGraph
+    })
+    const owned = document.createElement('div')
+    owned.setAttribute('data-testid', 'owned-dom')
+    resolveDomWidgetOn(owner, owned)
+
+    render(WidgetDOM, {
+      props: {
+        widget: createMockWidget<undefined>({
+          value: undefined,
+          name: 'dom',
+          type: 'dom'
+        }),
+        nodeId: owner.id
+      }
+    })
+
+    expect(screen.getByTestId('owned-dom')).toBe(owned)
   })
 
   it('renders a visible root element for pointer-event capture', () => {

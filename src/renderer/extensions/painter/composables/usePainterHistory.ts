@@ -1,10 +1,14 @@
+import { tryOnScopeDispose } from '@vueuse/core'
 import { computed } from 'vue'
 
 import {
   asHistoryReference,
   useWidgetHistoryStore
 } from '@/stores/widgetHistoryStore'
-import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
+import type {
+  HistoryDirection,
+  WidgetHistoryScope
+} from '@/stores/widgetHistoryStore'
 
 const PAINTER_HISTORY_BUDGET_BYTES = 512 * 1024 * 1024
 const PAINTER_HISTORY_COMPRESS_MIN_PIXELS = 1_000_000
@@ -249,7 +253,7 @@ export function usePainterHistory({
     target: WidgetHistoryScope,
     ctx: CanvasRenderingContext2D,
     next: CanvasRegion,
-    direction: 'undo' | 'redo'
+    direction: HistoryDirection
   ) {
     const current = captureCanvasRegion(ctx.canvas, next)
     if (!current) return
@@ -264,12 +268,12 @@ export function usePainterHistory({
     onRestore()
   }
 
-  function nextStep(target: WidgetHistoryScope, direction: 'undo' | 'redo') {
+  function nextStep(target: WidgetHistoryScope, direction: HistoryDirection) {
     const next = store.peek(target, direction)?.value
     return isCanvasRegion(next) && ownRegions.has(next) ? next : undefined
   }
 
-  async function travel(direction: 'undo' | 'redo'): Promise<void> {
+  async function travel(direction: HistoryDirection): Promise<void> {
     const target = scope()
     const ctx = context()
     const next = target && nextStep(target, direction)
@@ -282,7 +286,7 @@ export function usePainterHistory({
     swapRegion(target, ctx, next, direction)
   }
 
-  function enqueue(direction: 'undo' | 'redo') {
+  function enqueue(direction: HistoryDirection) {
     pendingCount++
     const run = pending
       .then(() => travel(direction))
@@ -305,6 +309,15 @@ export function usePainterHistory({
     const target = scope()
     return !!target && !!nextStep(target, 'redo')
   })
+
+  tryOnScopeDispose(
+    store.registerTraveler({
+      scope,
+      canTravel: (direction) =>
+        direction === 'undo' ? canUndo.value : canRedo.value,
+      travel: enqueue
+    })
+  )
 
   return {
     canUndo,

@@ -1,5 +1,10 @@
 import { isEqual } from 'es-toolkit/compat'
 
+import {
+  isMediaPreviewWidgetName,
+  previewSourceName
+} from '@/core/graph/subgraph/preview/mediaPreviewName'
+import { PRIMITIVE_NODE_TYPE } from '@/constants/primitiveNodeConstants'
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
@@ -162,7 +167,6 @@ interface PendingEntry {
   plan: Plan
 }
 
-const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 const QUARANTINE_PROPERTY = 'proxyWidgetErrorQuarantine'
 const QUARANTINE_VERSION = 1
 const PROXY_BYPASS_MARKER_PROPERTY = 'proxyBypassedToSubgraphInput'
@@ -361,6 +365,13 @@ function classify(
       }
     }
     return { kind: 'quarantine', reason: 'unlinkedSourceWidget' }
+  }
+
+  if (isMediaPreviewWidgetName(normalized.sourceWidgetName)) {
+    return {
+      kind: 'previewExposure',
+      sourcePreviewName: normalized.sourceWidgetName
+    }
   }
 
   const sourceWidget = resolveSourceWidget(
@@ -716,8 +727,11 @@ function migratePreview(
     return { ok: false, reason: 'missingSourceNode' }
   }
 
-  const isCanonicalPseudo = plan.sourcePreviewName.startsWith('$$')
-  if (!isCanonicalPseudo) {
+  const sourcePreviewName = previewSourceName(
+    sourceNode,
+    plan.sourcePreviewName
+  )
+  if (!sourcePreviewName.startsWith('$$')) {
     const widget = sourceNode.widgets?.find(
       (w) => w.name === plan.sourcePreviewName
     )
@@ -733,13 +747,13 @@ function migratePreview(
     .find(
       (exposure) =>
         exposure.sourceNodeId === entry.normalized.sourceNodeId &&
-        exposure.sourcePreviewName === plan.sourcePreviewName
+        exposure.sourcePreviewName === sourcePreviewName
     )
   if (existing) return { ok: true, previewName: existing.name }
 
   const added = store.addExposure(hostNode.rootGraph.id, hostNodeLocator, {
     sourceNodeId: entry.normalized.sourceNodeId,
-    sourcePreviewName: plan.sourcePreviewName
+    sourcePreviewName
   })
 
   return { ok: true, previewName: added.name }

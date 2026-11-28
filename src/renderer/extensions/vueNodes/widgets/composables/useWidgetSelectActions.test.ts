@@ -3,7 +3,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
@@ -16,7 +16,7 @@ import enMessages from '@/locales/en/main.json'
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/assets/utils/resolveWidgetValueAsset'))
+vi.mock(import('@/platform/assets/integration/resolveWidgetValueAsset'))
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({
@@ -107,6 +107,31 @@ describe('useWidgetSelectActions', () => {
       )
     })
 
+    it('rejects an untyped extensionless file on a video widget', async () => {
+      const modelValue = ref<string | undefined>('existing.mp4')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: ['existing.mp4'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        videoOnly: () => true
+      })
+
+      await handleFilesUpdate([new File(['video'], 'extensionless')])
+
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(modelValue.value).toBe('existing.mp4')
+      expect(useToast().warning).toHaveBeenCalledWith(
+        enMessages.g.videoFilenameExtensionRequired
+      )
+    })
+
     it('uploads file and updates modelValue', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({
@@ -139,6 +164,33 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('uploaded.png')
       expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
+    })
+
+    it('gives each concurrent upload the response timeout of the whole batch', async () => {
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
+        Response.json({ name: 'a.png', subfolder: '' })
+      )
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([
+        new File([new Uint8Array(2_621_440)], 'a.png'),
+        new File([new Uint8Array(2_621_440)], 'b.png')
+      ])
+
+      expect(
+        vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.timeoutMs)
+      ).toEqual([140_000, 140_000])
     })
 
     it('adds uploaded path to widget values array', async () => {

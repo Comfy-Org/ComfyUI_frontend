@@ -67,10 +67,20 @@
                 @update:progress-target="updateProgressTarget"
               />
               <CurrentUserButton
-                v-if="isLoggedIn && !isIntegratedTabBar"
+                v-if="
+                  isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isIntegratedTabBar" />
+              <LoginButton
+                v-else-if="
+                  !isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
+              />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
                 :tooltip="t('menu.manageExtensions')"
@@ -86,8 +96,12 @@
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
+              <CloudButton
+                v-if="isCloudButtonShown || hasCloudUploadRecovery"
+                :show-cloud-action="isCloudButtonShown"
+              />
               <Button
-                v-if="isDeployButtonShown"
+                v-if="!isCloudButtonShown && isDeployButtonShown"
                 :tooltip="t('deployToComfyApi.buttonLabel')"
                 tooltip-side="bottom"
                 variant="secondary"
@@ -110,7 +124,7 @@
               >
                 <i class="icon-[comfy--send]" />
               </Button>
-              <div v-if="!isRightSidePanelOpen" class="relative">
+              <div v-if="!isPropertiesPanelOpen" class="relative">
                 <Button
                   :tooltip="t('rightSidePanel.togglePanel')"
                   tooltip-side="bottom"
@@ -123,7 +137,7 @@
                   variant="secondary"
                   size="icon"
                   :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="openRightSidePanel"
+                  @click="openPropertiesPanel"
                 >
                   <i class="icon-[lucide--panel-right]" />
                 </Button>
@@ -180,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage, useMutationObserver } from '@vueuse/core'
+import { useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -204,19 +218,21 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
-import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
-import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { app } from '@/scripts/app'
+import { openCloudExtensions } from '@/platform/workspace/platformFrame/openCloudExtensions'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
+import CloudButton from '@/components/CloudButton.vue'
+import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
@@ -228,19 +244,37 @@ import { useManagerState } from '@/platform/customNodes/manager/composables/useM
 import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const deploymentPickStore = useDeploymentPickStore()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
+const cloudWorkflowCheck = isCloud ? undefined : useCloudWorkflowCheckStore()
+const isCloudButtonShown = computed(
+  () =>
+    !isCloud &&
+    pendingServerFact(
+      'BE-27740',
+      flags.openOnCloudEnabled && !cloudWorkflowCheck?.isSwitchedOffOnCloud
+    ) &&
+    canHandOffToCloud()
+)
+const localModelUploads = isCloud ? undefined : useLocalModelUploadStore()
+const hasCloudUploadRecovery = computed(
+  () =>
+    localModelUploads !== undefined &&
+    canHandOffToCloud() &&
+    (localModelUploads.isUploading ||
+      localModelUploads.retryBatches.some(localModelUploads.canFinish))
+)
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
   useTelemetry()?.trackUiButtonClicked({
@@ -259,7 +293,7 @@ const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const actionbarCardRef = ref<HTMLElement>()
-const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const isActionbarDocked = useSafeLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
   () => actionbarPosition.value !== 'Disabled'
@@ -272,9 +306,14 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isDeployButtonShown.value) return true
+  if (
+    isCloudButtonShown.value ||
+    hasCloudUploadRecovery.value ||
+    isDeployButtonShown.value
+  )
+    return true
   if (isCloud) return true
-  if (!isRightSidePanelOpen.value) return true
+  if (!isPropertiesPanelOpen.value) return true
   return false
 })
 const isActionbarContainerEmpty = computed(
@@ -324,19 +363,18 @@ const showErrorIndicatorOnPanelButton = computed(
   () =>
     isErrorsTabEnabled.value &&
     hasAnyError.value &&
-    !isRightSidePanelOpen.value &&
+    !isPropertiesPanelOpen.value &&
     !isErrorOverlayOpen.value
 )
 
-// Right side panel toggle
-const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+const { isOpen: isPropertiesPanelOpen } = storeToRefs(propertiesPanelStore)
 
-function openRightSidePanel() {
+function openPropertiesPanel() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'right_side_panel_opened',
     element_group: 'top_menu'
   })
-  rightSidePanelStore.togglePanel()
+  propertiesPanelStore.togglePanel()
 }
 
 const legacyCommandsContainerRef = ref<HTMLElement>()
@@ -368,8 +406,8 @@ useMutationObserver(
 onMounted(() => {
   const container = legacyCommandsContainerRef.value
   if (!container) return
-  app.menu.element.style.width = 'fit-content'
-  container.appendChild(app.menu.element)
+  useApp().menu.element.style.width = 'fit-content'
+  container.appendChild(useApp().menu.element)
   checkLegacyContent()
 })
 
@@ -378,15 +416,9 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
-async function pitchDeployingCustomNodes(): Promise<boolean> {
-  await waitForDeploymentListing(DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
-  if (!deploymentPickStore.isVisible) return false
-  return openDeployCustomNodesDialog()
-}
-
 const openCustomNodeManager = async () => {
   if (isCloud) {
-    if (!(await pitchDeployingCustomNodes())) managerSurveyDialog.show()
+    if (!(await openCloudExtensions())) managerSurveyDialog.show()
     return
   }
   try {

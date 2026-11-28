@@ -118,10 +118,7 @@
       "path": "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts"
     },
     {
-      "path": "src/platform/billing/composables/activateBillingScope.testUtils.ts"
-    },
-    {
-      "path": "src/platform/billing/composables/deriveAutoTopUpBanner.ts"
+      "path": "src/platform/billing/__tests__/activateBillingScope.ts"
     },
     {
       "path": "src/platform/billing/composables/useAutoTopUpBannerKind.ts"
@@ -134,9 +131,6 @@
     },
     {
       "path": "src/platform/billing/composables/billingOperationTestUtils.ts"
-    },
-    {
-      "path": "src/platform/billing/composables/deriveBillingBanner.test.ts"
     },
     {
       "path": "src/platform/billing/composables/readOnRail.ts"
@@ -193,6 +187,18 @@
       "path": "src/platform/billing/composables/useWorkspaceTierLabel.ts"
     },
     {
+      "path": "src/platform/billing/__tests__/mockBillingContext.ts"
+    },
+    {
+      "path": "src/platform/billing/api/__mocks__/customerEventsService.ts"
+    },
+    {
+      "path": "src/platform/billing/api/customerEventParams.ts"
+    },
+    {
+      "path": "src/platform/billing/api/customerEventsService.ts"
+    },
+    {
       "path": "src/platform/billing/stores/billingOperationStore.ts"
     },
     {
@@ -202,16 +208,13 @@
       "path": "src/platform/billing/utils/**"
     },
     {
-      "path": "src/services/__mocks__/**"
+      "path": "src/storybook/mocks/useBillingCapabilities.ts"
     },
     {
-      "path": "src/services/customerEventsService.ts"
+      "path": "src/storybook/mocks/useBillingContext.ts"
     },
     {
-      "path": "src/storybook/**"
-    },
-    {
-      "path": "src/utils/__tests__/mockBillingContext.ts"
+      "path": "src/storybook/mocks/useBillingUI.ts"
     },
     {
       "path": "packages/account-core/src/core/billing/**"
@@ -277,7 +280,6 @@
         "src/platform/billing/composables/useBillingCapabilities.test.ts",
         "src/platform/billing/api/capabilityRevision.test.ts",
         "src/platform/billing/composables/useBillingBanner.test.ts",
-        "src/platform/billing/composables/deriveBillingBanner.test.ts",
         "src/platform/billing/components/settings/BillingStatusBanner.test.ts",
         "src/platform/billing/customerAttention.test.ts",
         "src/platform/billing/customerActionParity.test.ts",
@@ -299,6 +301,10 @@
       ]
     },
     {
+      "name": "Credit pricing uses one credits-per-dollar rate across the account and shared packages",
+      "checks": ["src/platform/billing/utils/creditsRateParity.test.ts"]
+    },
+    {
       "name": "Topbar subscribe button routes to subscription checkout",
       "checks": [
         "src/platform/billing/components/TopbarSubscribeButton.test.ts"
@@ -306,7 +312,7 @@
     },
     {
       "name": "Customer events service pages credit and API-usage events with re-mint retry and formats them for usage logs",
-      "checks": ["src/services/customerEventsService.test.ts"]
+      "checks": ["src/platform/billing/api/customerEventsService.test.ts"]
     },
     {
       "name": "The shared billing-context fixture drives workspace billing operation tests",
@@ -330,6 +336,7 @@
     }
   ],
   "adrs": [
+    "docs/adr/BILLING-0049-billing-and-workspace-ownership.md",
     "docs/adr/BILLING-WEB-0038-checkout-only-hosts-own-plan-selection.md",
     "docs/adr/AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md",
     "docs/adr/AUTH-BILLING-0032-billing-stays-outside-the-account-package-in-v1.md",

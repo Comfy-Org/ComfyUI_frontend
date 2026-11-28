@@ -7,7 +7,7 @@
       "path": "src/platform/workflowErrors/workflowErrorManager.ts"
     },
     {
-      "path": "src/components/rightSidePanel/workflowErrors.integration.test.ts"
+      "path": "src/renderer/extensions/propertiesPanel/workflowErrors.integration.test.ts"
     },
     {
       "path": "src/platform/workflowErrors/overlay/**"
@@ -26,7 +26,7 @@
       "checks": [
         "src/platform/workflowErrors/panel/useErrorGroups.test.ts",
         "src/platform/workflowErrors/panel/swapNodeGroups.test.ts",
-        "src/components/rightSidePanel/workflowErrors.integration.test.ts"
+        "src/renderer/extensions/propertiesPanel/workflowErrors.integration.test.ts"
       ]
     },
     {

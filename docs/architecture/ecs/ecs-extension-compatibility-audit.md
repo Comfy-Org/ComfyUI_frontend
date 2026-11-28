@@ -85,7 +85,7 @@ reactive object where applicable, or use graph connection APIs.
 for success or idempotent re-registration, and `undefined` for collision. Never
 retain or render the incoming object before checking. Full examples and
 import-boundary rules are in
-[Link registration migration](../../extensions/link-registration-migration.md).
+[Link registration migration](https://docs.comfy.org/custom-nodes/js/link-registration-migration).
 
 ### Store-derived connectivity
 

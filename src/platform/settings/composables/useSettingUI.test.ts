@@ -2,7 +2,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -12,6 +12,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
@@ -52,6 +53,26 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+vi.mock<unknown>(
+  import('@/platform/account/components/dialogs/settings/BillingTab.vue'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      __esModule: true,
+      default: defineComponent(() => () => h('p', 'current billing tab'))
+    }
+  }
+)
+vi.mock<unknown>(
+  import('@/platform/account/components/dialogs/settings/BillingTabLegacy.vue'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      __esModule: true,
+      default: defineComponent(() => () => h('p', '1.60 billing tab'))
+    }
+  }
+)
 
 interface MockSettingParams {
   id: string
@@ -59,6 +80,7 @@ interface MockSettingParams {
   type: string
   defaultValue: unknown
   category?: string[]
+  deprecated?: boolean
 }
 
 const i18n = createI18n({
@@ -194,6 +216,35 @@ describe('useSettingUI', () => {
     }
   )
 
+  it('omits groups whose only settings are hidden or deprecated', () => {
+    Object.assign(useSettingStore(), {
+      settingsById: {
+        ...mockSettings,
+        'Comfy.Graph.Old': {
+          id: 'Comfy.Graph.Old',
+          name: 'Old',
+          type: 'boolean',
+          defaultValue: true,
+          deprecated: true
+        },
+        'Comfy.Secret.Value': {
+          id: 'Comfy.Secret.Value',
+          name: 'Value',
+          type: 'hidden',
+          defaultValue: ''
+        }
+      }
+    })
+
+    const { settingCategories } = useSettingUI()
+
+    const comfyGroups = findCategory(
+      settingCategories.value,
+      'Comfy'
+    )?.children?.map((group) => group.label)
+    expect(comfyGroups).toEqual(['Locale'])
+  })
+
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
     expect(defaultCategory.value.key).toBe('about')
@@ -255,6 +306,29 @@ describe('useSettingUI', () => {
       })
     })
 
+    it('renders the 1.60 Billing tab until billing_new_ux_enabled turns on', async () => {
+      env.state.isCloud = true
+      const flags = vi.mocked(useFeatureFlags().flags)
+      flags.unifiedBillingSettingsEnabled = true
+      flags.billingNewUxEnabled = false
+      onTestFinished(() => {
+        flags.unifiedBillingSettingsEnabled = false
+        flags.billingNewUxEnabled = false
+      })
+      const billingTab =
+        useSettingUI('workspace').findPanelByKey('workspace')?.component
+      if (!billingTab) throw new Error('Billing panel missing')
+      render(billingTab)
+
+      expect(await screen.findByText('1.60 billing tab')).toBeTruthy()
+      expect(screen.queryByText('current billing tab')).toBeNull()
+
+      flags.billingNewUxEnabled = true
+
+      expect(await screen.findByText('current billing tab')).toBeTruthy()
+      expect(screen.queryByText('1.60 billing tab')).toBeNull()
+    })
+
     it('keeps Plan & Credits on local when unified billing settings is off', () => {
       env.state.isCloud = false
       vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = false
@@ -274,22 +348,55 @@ describe('useSettingUI', () => {
       expect(findPanelByKey('workspace-allowlist')).toBeNull()
     })
 
-    it('shows Members off Cloud when the server says the actor can manage them', () => {
-      env.state.isCloud = false
-      vi.mocked(useBillingCapabilities()).canManageMembers = computed(() =>
-        receiveServerFact('can_manage_members', true)
-      )
+    it.for([
+      {
+        billingTab: 'off',
+        unifiedBillingSettingsEnabled: false,
+        panels: ['workspace', 'workspace-members']
+      },
+      {
+        billingTab: 'on',
+        unifiedBillingSettingsEnabled: true,
+        panels: ['workspace']
+      }
+    ])(
+      'lists $panels on local for an actor who can manage members while the local Billing tab is $billingTab',
+      ({ unifiedBillingSettingsEnabled, panels }) => {
+        env.state.isCloud = false
+        const flags = vi.mocked(useFeatureFlags().flags)
+        flags.unifiedBillingSettingsEnabled = unifiedBillingSettingsEnabled
+        onTestFinished(() => {
+          flags.unifiedBillingSettingsEnabled = false
+        })
+        vi.mocked(useBillingCapabilities()).canManageMembers = computed(() =>
+          receiveServerFact('can_manage_members', true)
+        )
 
-      const { navGroups } = useSettingUI()
-      const workspaceItems = navGroups.value
-        .find((group) => group.title === 'Workspace')
-        ?.items.map(({ id, label }) => ({ id, label }))
+        const { navGroups } = useSettingUI()
+        const workspaceItemIds = navGroups.value
+          .find((group) => group.title === 'Workspace')
+          ?.items.map(({ id }) => id)
 
-      expect(workspaceItems).toEqual([
-        { id: 'workspace', label: 'PlanCredits' },
-        { id: 'workspace-members', label: 'Members' }
-      ])
-    })
+        expect(workspaceItemIds).toEqual(panels)
+      }
+    )
+
+    it.for([false, true])(
+      'shows Members on cloud when the actor can manage members is %s',
+      (canManage) => {
+        env.state.isCloud = true
+        vi.mocked(useBillingCapabilities()).canManageMembers = computed(() =>
+          receiveServerFact('can_manage_members', canManage)
+        )
+
+        const { navGroups } = useSettingUI()
+        const workspaceItemIds = navGroups.value
+          .find((group) => group.title === 'Workspace')
+          ?.items.map(({ id }) => id)
+
+        expect(workspaceItemIds).toEqual(['workspace', 'workspace-members'])
+      }
+    )
 
     it('mounts the Billing tab on local when unified billing settings is on', () => {
       env.state.isCloud = false
@@ -344,6 +451,16 @@ describe('useSettingUI', () => {
         key: 'credits',
         label: 'Credits'
       })
+    })
+
+    it('lists no skills category even when skills are enabled for a signed-in user', () => {
+      useSkillPacksStore().flagsEnabled = true
+      const { findPanelByKey, navGroups } = useSettingUI()
+
+      expect(
+        navGroups.value.flatMap((group) => group.items.map(({ id }) => id))
+      ).not.toContain('skill-packs')
+      expect(findPanelByKey('skill-packs')).toBeNull()
     })
   })
 

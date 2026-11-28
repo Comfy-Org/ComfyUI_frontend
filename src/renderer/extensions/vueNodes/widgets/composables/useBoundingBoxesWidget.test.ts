@@ -75,4 +75,20 @@ describe('useBoundingBoxesWidget', () => {
     expect(passed[0].metadata.palette).not.toBe(shared[0].metadata.palette)
     expect(passed).toEqual(shared)
   })
+
+  it('forwards max_boxes from the spec to the widget options', () => {
+    const node = mockNode()
+    useBoundingBoxesWidget()(node, {
+      type: 'BOUNDING_BOXES',
+      name: 'editor_state',
+      max_boxes: 3
+    })
+    expect(node.addWidget).toHaveBeenCalledWith(
+      'boundingboxes',
+      'editor_state',
+      [],
+      null,
+      { ...widgetOptions, max_boxes: 3 }
+    )
+  })
 })

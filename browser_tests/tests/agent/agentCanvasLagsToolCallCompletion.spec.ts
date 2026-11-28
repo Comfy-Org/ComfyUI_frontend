@@ -9,7 +9,8 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import {
   agentTest as test,
-  bootAgentApp
+  bootAgentApp,
+  sendUnsavedWorkflowPromptAndWaitForSubscribe
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -17,7 +18,6 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Repro for PM-1575 / PM-1576 (stagingcloud, 2026-09): every agent tool call
@@ -181,23 +181,11 @@ async function driveThroughToolCallDone(
     return route.fulfill(jsonRoute(workflows))
   })
 
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-
-  await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
-
-  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
-  await composer.fill('Add a note to the canvas.')
-  await panel.getByRole('button', { name: SEND_LABEL }).click()
-  await expect(
-    panel.getByText('Add a note to the canvas.').first()
-  ).toBeVisible()
+  await sendUnsavedWorkflowPromptAndWaitForSubscribe(
+    panel,
+    hostSocket,
+    'Add a note to the canvas.'
+  )
 
   hostSocket.send({
     type: 'agent_active_tab',
@@ -321,9 +309,9 @@ async function driveThroughToolCallDone(
     panel.getByRole('button', {
       name:
         order === 'docUpdateBeforeToolCall'
-          ? enMessages.agent.worked
+          ? new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
           : enMessages.agent.workedNotConfirmedOnCanvas,
-      exact: true
+      exact: order !== 'docUpdateBeforeToolCall'
     })
   ).toBeVisible()
 
@@ -391,8 +379,7 @@ test.describe(
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
       await expect(
         panel.getByRole('button', {
-          name: enMessages.agent.worked,
-          exact: true
+          name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
         })
       ).toBeVisible()
     })
@@ -505,8 +492,7 @@ test.describe(
 
       const panel = page.locator('#agent-panel-root')
       const workSummary = panel.getByRole('button', {
-        name: enMessages.agent.worked,
-        exact: true
+        name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
       })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')

@@ -28,11 +28,7 @@ import {
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
@@ -42,6 +38,7 @@ import {
   announceHandledAgentFrames
 } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import type {
   ClientDocFrame,
   HumanOpsHost
@@ -215,8 +212,6 @@ interface DroppedWorkflowScope {
   graphId: string
 }
 
-type WorkflowTarget = 'saved-via-picker' | 'unsaved-draft'
-
 interface ReplayResponseOptions {
   beforeFirstGraphOps?: () => Promise<void>
   beforeGraphOps?: (ops: readonly RecordedGraphOperation[]) => Promise<void>
@@ -252,8 +247,7 @@ export class AgentConversationHarness {
     readonly replayTiming: ReplayTiming,
     caseId: string,
     private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
-    humanOpsHost: HumanOpsHost = 'hold',
-    private readonly workflowTarget: WorkflowTarget = 'saved-via-picker'
+    humanOpsHost: HumanOpsHost = 'hold'
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -319,7 +313,8 @@ export class AgentConversationHarness {
     agentFlag: boolean,
     vueNodes: boolean,
     bootAssets: ListAssetsResponse,
-    telemetryEnabled: boolean
+    telemetryEnabled: boolean,
+    crdtDebugEnabled: boolean
   ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
@@ -329,15 +324,15 @@ export class AgentConversationHarness {
     )
     await bootAgentApp(this.page, agentFlag, {
       vueNodes,
-      features: { enable_telemetry: telemetryEnabled },
+      features: {
+        enable_telemetry: telemetryEnabled,
+        'Comfy.Agent.CrdtDebug': crdtDebugEnabled
+      },
       settings: {
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.NodeSearchBoxImpl': 'default',
         'Comfy.NodeSearchBoxImpl.FollowCursor': true
       },
-      // Replayed nodes materialize from registered node types; the recordings use
-      // core nodes only, so a case needing another node supplies its definition
-      // here rather than routing /object_info a second time behind this one.
       objectInfo: { ...agentReplayNodeDefs, ...this.extraNodeDefs },
       assets: bootAssets
     })
@@ -354,24 +349,17 @@ export class AgentConversationHarness {
 
     await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)
     await new AgentPanel(this.page).open(PANEL_MOUNT_TIMEOUT)
-    if (this.workflowTarget === 'saved-via-picker')
-      await this.selectWorkflowTarget()
-  }
-
-  private async selectWorkflowTarget(name = 'Unsaved Workflow'): Promise<void> {
-    await mockWorkflowPersistence(this.page, this.conversation.workflow.id)
-    const picker = this.panel.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
-    await picker.click()
-    await this.page.getByRole('menuitemradio', { name, exact: true }).click()
-    await expect(picker).toHaveText(name)
   }
 
   async persistSavedWorkflow(): Promise<void> {
     this.savedWorkflow = await mockSavedWorkflowPersistence(
       this.page,
       this.conversation.workflow.id
+    )
+    await mockAgentSavedWorkflowSidebarFile(
+      this.page,
+      this.conversation.workflow.id,
+      this.savedWorkflow
     )
   }
 
@@ -409,14 +397,66 @@ export class AgentConversationHarness {
     this.hostSocket.refuseSubscribes(reason)
   }
 
+  async returnToRecordedWorkflowAfterRefusedSubscribe(): Promise<void> {
+    const receipt = crypto.randomUUID()
+    const attribute = 'data-agent-refused-subscribe-handled'
+    const cleanupType = `agent-refused-subscribe-cleanup-${receipt}`
+    await this.page.evaluate(
+      ({ receipt, attribute, cleanupType, handledEvent }) => {
+        function cleanup() {
+          document.removeEventListener(handledEvent, onHandled)
+          document.removeEventListener(cleanupType, cleanup)
+        }
+        function isRecord(value: unknown): value is Record<string, unknown> {
+          return typeof value === 'object' && value !== null
+        }
+        function onHandled(event: Event) {
+          if (!(event instanceof CustomEvent)) return
+          if (typeof event.detail !== 'string') return
+          const frame: unknown = JSON.parse(event.detail)
+          if (!isRecord(frame) || frame.type !== 'doc_subscribed') return
+          if (!isRecord(frame.data) || frame.data.ok !== false) return
+          document.documentElement.setAttribute(attribute, receipt)
+          cleanup()
+        }
+        document.addEventListener(handledEvent, onHandled)
+        document.addEventListener(cleanupType, cleanup, { once: true })
+      },
+      {
+        receipt,
+        attribute,
+        cleanupType,
+        handledEvent: AGENT_FRAME_HANDLED_EVENT
+      }
+    )
+    try {
+      await this.topbar.getTab(0).click()
+      await expect(this.page.locator('html')).toHaveAttribute(
+        attribute,
+        receipt
+      )
+    } finally {
+      await this.page.evaluate(
+        ({ attribute, cleanupType }) => {
+          document.dispatchEvent(new CustomEvent(cleanupType))
+          document.documentElement.removeAttribute(attribute)
+        },
+        { attribute, cleanupType }
+      )
+    }
+  }
+
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    // Replay frames are dropped until the page has applied the ack's thread id.
-    // useAgentSession records the user turn straight after storing that id, so
-    // the rendered turn says the ack landed without reading private storage.
+    // Replay frames are buffered until the page has applied the ack's thread id,
+    // and canvas catch-up baselines start right before POST /messages. Waiting
+    // for the posted turn and its cleared spinner proves the ack landed before
+    // replayResponse starts emitting server/canvas frames.
+    await expect.poll(() => this.postedTurns).toBeGreaterThanOrEqual(turn + 1)
     await expect(this.panel.getByText(content).first()).toBeVisible()
+    await expect(this.panel.getByTestId('pending-send-spinner')).toHaveCount(0)
   }
 
   private async waitForRecordedOffset(
@@ -531,25 +571,50 @@ export class AgentConversationHarness {
     ).toHaveCount(0)
   }
 
+  private recordWidgetOp(
+    graph: ReturnType<HostDoc['graph']>,
+    op: RecordedGraphOperation,
+    latest: Map<string, RecordedWidgetValue>
+  ): void {
+    if (op.op !== 'set_widget' || typeof op.widget !== 'string') return
+    const nodeId = String(op.node_id)
+    const widget = op.widget
+    const widgets = graph.nodes[nodeId]?.widgets as
+      | Record<string, unknown>
+      | undefined
+    const value = widgets?.[widget]
+    if (typeof value === 'string' || typeof value === 'number')
+      latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
+  }
+
   // Last write wins per widget; the rendered control shows only the final value.
   private recordedWidgetValues(throughTurn: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
     for (const entry of this.entries(throughTurn)) {
       if (entry.kind !== 'graph_ops') continue
-      for (const op of entry.ops) {
-        if (op.op !== 'set_widget' || typeof op.widget !== 'string') continue
-        const nodeId = String(op.node_id)
-        const widget = op.widget
-        const widgets = graph.nodes[nodeId]?.widgets as
-          | Record<string, unknown>
-          | undefined
-        const value = widgets?.[widget]
-        if (typeof value === 'string' || typeof value === 'number')
-          latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
-      }
+      for (const op of entry.ops) this.recordWidgetOp(graph, op, latest)
     }
     return [...latest.values()]
+  }
+
+  private async expectWidgetValuesReplayed(throughTurn: number): Promise<void> {
+    for (const { nodeId, widget, value } of this.recordedWidgetValues(
+      throughTurn
+    )) {
+      const field = this.vueNodes
+        .getNodeLocator(nodeId)
+        .getByLabel(widget, { exact: true })
+      if (typeof value === 'number') {
+        await expect
+          .poll(async () => Number(await field.inputValue()))
+          .toBe(value)
+        continue
+      }
+      const tag = await field.evaluate((el) => el.tagName.toLowerCase())
+      if (tag === 'button') await expect(field).toContainText(value)
+      else await expect(field).toHaveValue(value)
+    }
   }
 
   // The renderer's link map names the endpoints no DOM surface does; the
@@ -677,25 +742,7 @@ export class AgentConversationHarness {
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
-    for (const { nodeId, widget, value } of this.recordedWidgetValues(
-      throughTurn
-    )) {
-      const field = this.vueNodes
-        .getNodeLocator(nodeId)
-        .getByLabel(widget, { exact: true })
-      if (typeof value === 'number') {
-        // Number widgets format their input (0.5 renders as 0.50), so compare the number.
-        await expect
-          .poll(async () =>
-            Number(await field.locator('input').first().inputValue())
-          )
-          .toBe(value)
-        continue
-      }
-      const tag = await field.evaluate((el) => el.tagName.toLowerCase())
-      if (tag === 'button') await expect(field).toContainText(value)
-      else await expect(field).toHaveValue(value)
-    }
+    await this.expectWidgetValuesReplayed(throughTurn)
 
     const projectedLinks = projected.links.map((raw): RecordedLink => {
       const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
@@ -728,8 +775,6 @@ export class AgentConversationHarness {
     )
     links.sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
-    // A widget-backed input renders no slot row on an uncollapsed node
-    // (NodeSlots.vue); the wire above already covers that end.
     for (const link of links) {
       await expect(
         this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
@@ -979,6 +1024,11 @@ export class AgentConversationHarness {
     return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
   }
 
+  /** Every op this client has sent so far, in frame order, as `op:node_id`. */
+  humanOps(): string[] {
+    return this.humanOpFrames().flatMap((frame) => frame.ops)
+  }
+
   async humanAddNodeBaseVersion(
     workflowId: string,
     nodeId: string
@@ -1108,20 +1158,15 @@ export class AgentConversationHarness {
     return this.lastAddGhosted
   }
 
-  // Records the live node set the moment a tab's canvas finishes rebuilding,
-  // and every node the live graph drops afterwards, so a node present after
-  // configure() and gone later is distinguishable from one never rebuilt.
   installTabSwitchObserver(): Promise<void> {
     return this.page.evaluate(() => {
-      const lens: TabSwitchLens = { afterConfigure: [], removed: [] }
+      const lens: TabSwitchLens = { afterLoad: [], removed: [] }
       window.__tabSwitchLens = lens
       const app = window.app!
       app.registerExtension({
         name: 'TabSwitchLens',
-        afterConfigureGraph() {
-          lens.afterConfigure.push(
-            app.graph.nodes.map((node) => String(node.id))
-          )
+        afterLoadGraph() {
+          lens.afterLoad.push(app.graph.nodes.map((node) => String(node.id)))
         }
       })
       app.rootGraph.events.addEventListener('node:removed', (event) => {
@@ -1245,6 +1290,11 @@ export class AgentConversationHarness {
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {
+    const settings = this.comfyPage.settings
+    const persist = await settings.getSetting('Comfy.Workflow.Persist')
+    const confirm = await settings.getSetting('Comfy.Window.UnloadConfirmation')
+    await settings.setSetting('Comfy.Workflow.Persist', false)
+    await settings.setSetting('Comfy.Window.UnloadConfirmation', false)
     await this.page.evaluate(() => {
       for (const storage of [localStorage, sessionStorage]) {
         const workflowKeys = Object.keys(storage).filter((key) =>
@@ -1259,8 +1309,12 @@ export class AgentConversationHarness {
       state: 'hidden',
       timeout: PANEL_MOUNT_TIMEOUT
     })
+    await settings.setSetting('Comfy.Workflow.Persist', persist)
+    await settings.setSetting('Comfy.Window.UnloadConfirmation', confirm)
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
-    await this.selectWorkflowTarget()
+    await this.panel
+      .getByRole('button', { name: enMessages.agent.newChat })
+      .click()
   }
 
   // A reload that carries the canvas over the way the app's own persistence
@@ -1275,11 +1329,9 @@ export class AgentConversationHarness {
     await this.comfyPage.workflow.newBlankWorkflow()
     await this.comfyPage.workflow.loadGraphData(graph)
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
-    const name = await this.topbar
-      .getActiveTab()
-      .locator('.workflow-label')
-      .innerText()
-    await this.selectWorkflowTarget(name)
+    await this.panel
+      .getByRole('button', { name: enMessages.agent.newChat })
+      .click()
   }
 
   // Sends one more doc_update that resyncs `widget` on `nodeId` to its
@@ -1490,12 +1542,12 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
-  workflowTarget: WorkflowTarget
   // Assets the boot mock serves for every /api/assets query, so combo widgets
   // loaded with the seed already see them.
   bootAssets: ListAssetsResponse
   // Opt in only for cases that assert telemetry through hostTelemetryFixture.
   telemetryEnabled: boolean
+  crdtDebugEnabled: boolean
   seedPassthrough: Omit<Partial<WorkflowJSON>, 'nodes' | 'links'>
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
@@ -1509,7 +1561,6 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
-  workflowTarget: ['saved-via-picker', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
   telemetryEnabled: [false, { option: true }],
   seedPassthrough: [{}, { option: true }],
@@ -1518,10 +1569,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   },
   viewport: VIEWPORT,
   video: {
-    mode:
-      process.env.PLAYWRIGHT_LOCAL || process.env.RECORD_VIDEO === 'true'
-        ? 'on'
-        : 'off',
+    mode: process.env.RECORD_VIDEO === 'true' ? 'on' : 'off',
     size: VIEWPORT
   },
   agentConversation: async (
@@ -1533,9 +1581,9 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       extraNodeDefs,
       humanOpsHost,
-      workflowTarget,
       bootAssets,
       telemetryEnabled,
+      crdtDebugEnabled,
       seedPassthrough
     },
     use,
@@ -1560,10 +1608,15 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       conversationCase,
       extraNodeDefs,
-      humanOpsHost,
-      workflowTarget
+      humanOpsHost
     )
-    await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
+    await harness.boot(
+      agentFlagEnabled,
+      vueNodes,
+      bootAssets,
+      telemetryEnabled,
+      crdtDebugEnabled
+    )
     await use(harness)
   }
 })

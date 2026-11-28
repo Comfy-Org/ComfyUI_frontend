@@ -327,6 +327,30 @@ describe('useWaveAudioPlayer', () => {
       expect(useToast().toasts).toEqual([])
     })
 
+    it('resumes a retry from where a mid-playback failure stopped', async () => {
+      const { audio, player } = await createPlayer()
+      let position = 42
+      let mediaError: { code: number } | null = { code: 2 }
+      Object.defineProperty(audio, 'error', { get: () => mediaError })
+      Object.defineProperty(audio, 'currentTime', {
+        get: () => position,
+        set: (value: number) => {
+          position = value
+        }
+      })
+      vi.spyOn(audio, 'load').mockImplementation(() => {
+        mediaError = null
+        position = 0
+      })
+      vi.spyOn(audio, 'play').mockResolvedValue(undefined)
+
+      player.togglePlayPause()
+      await vi.waitFor(() => expect(audio.load).toHaveBeenCalledTimes(1))
+      audio.dispatchEvent(new Event('loadedmetadata'))
+
+      expect(position).toBe(42)
+    })
+
     it('reports failures on the caller surface', async () => {
       vi.mocked(useMediaControls).mockReset()
       const player = useWaveAudioPlayer({

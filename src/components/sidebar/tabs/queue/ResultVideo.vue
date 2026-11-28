@@ -17,7 +17,6 @@
 <script setup lang="ts">
 import { computed, onActivated, useTemplateRef } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -45,11 +44,13 @@ onActivated(() => {
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
-const playsCloudAssetUrl = computed(() => isCloud && !!props.result.url)
+const playsResolvedUrl = computed(
+  () => !!props.result.url && props.result.filenameIsDisplayName === true
+)
 
 const vhsAdvancedPreviews = computed(() => {
   return (
-    !playsCloudAssetUrl.value &&
+    !playsResolvedUrl.value &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&

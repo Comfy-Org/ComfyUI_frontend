@@ -26,7 +26,7 @@
     <template #header>
       <div
         class="flex w-full items-center justify-between gap-2"
-        @click.self="focusedAsset = null"
+        @click.self="focusedAssetId = null"
       >
         <SearchInput
           v-model="searchQuery"
@@ -58,21 +58,25 @@
         :assets="categoryFilteredAssets"
         :show-ownership-filter
         @filter-change="updateFilters"
-        @click.self="focusedAsset = null"
+        @click.self="focusedAssetId = null"
       />
     </template>
 
     <template #content>
+      <p v-if="loadError" role="alert" class="px-4 text-destructive">
+        {{ $t('assetBrowser.errorLoadingModels') }}
+      </p>
       <AssetGrid
         :assets="filteredAssets"
         :loading="isLoading"
         :focused-asset-id="focusedAsset?.id"
         :empty-message
+        :require-node-provider="props.nodeType === undefined"
         @asset-focus="handleAssetFocus"
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
         @asset-show-info="handleShowInfo"
-        @click="focusedAsset = null"
+        @click="focusedAssetId = null"
       />
     </template>
 
@@ -106,9 +110,9 @@ import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
-import { getPrimaryCategoryTag } from '@/platform/assets/utils/assetMetadataUtils'
+import { getPrimaryCategoryTag } from '@comfyorg/assets-core/metadata'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 
@@ -135,6 +139,10 @@ const cacheKey = computed(() => {
 
 const fetchedAssets = computed(
   () => props.overrideAssets ?? assetStore.getAssets(cacheKey.value)
+)
+
+const loadError = computed(() =>
+  props.overrideAssets ? undefined : assetStore.getError(cacheKey.value)
 )
 
 const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
@@ -171,7 +179,12 @@ const {
   updateFilters
 } = useAssetBrowser(fetchedAssets)
 
-const focusedAsset = ref<AssetDisplayItem | null>(null)
+const focusedAssetId = ref<string | null>(null)
+const focusedAsset = computed(
+  () =>
+    filteredAssets.value.find((asset) => asset.id === focusedAssetId.value) ??
+    null
+)
 const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
@@ -246,11 +259,11 @@ function handleClose() {
 }
 
 function handleAssetFocus(asset: AssetDisplayItem) {
-  focusedAsset.value = asset
+  focusedAssetId.value = asset.id
 }
 
 function handleShowInfo(asset: AssetDisplayItem) {
-  focusedAsset.value = asset
+  focusedAssetId.value = asset.id
   isRightPanelOpen.value = true
 }
 

@@ -6,6 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
 import type { ApiKeyAuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -25,6 +26,7 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
   const authStore = useAuthStoreAccess()
   let storageFailureReported = false
   const reportStorageFailure = (error: unknown) => {
+    if (error instanceof DOMException && error.name === 'SecurityError') return
     if (storageFailureReported) return
     storageFailureReported = true
     reportTelemetryError(error, {
@@ -34,53 +36,41 @@ export const useApiKeyAuthStore = defineStore('apiKeyAuth', () => {
     })
   }
 
-  const readPersistedKey = (): string | null => {
-    try {
-      return localStorage.getItem(STORAGE_KEY)
-    } catch (error) {
-      reportStorageFailure(error)
-      return null
-    }
-  }
-
-  const apiKey = ref<string | null>(readPersistedKey())
+  const apiKey = ref<string | null>(safeLocalStorage.getItem(STORAGE_KEY))
 
   useEventListener(window, 'storage', (event: StorageEvent) => {
     if (event.key !== null && event.key !== STORAGE_KEY) return
-    try {
-      if (event.storageArea !== localStorage) return
-    } catch {
-      return
-    }
+    if (!safeLocalStorage.isStorageArea(event.storageArea)) return
     apiKey.value = event.newValue
   })
 
   const persistKey = (key: string): boolean => {
-    try {
-      localStorage.setItem(STORAGE_KEY, key)
-      return true
-    } catch (error) {
-      reportStorageFailure(error)
-      return false
-    }
+    if (safeLocalStorage.backend !== 'localStorage') return false
+    const outcome = safeLocalStorage.write(STORAGE_KEY, key)
+    if (outcome.result === 'ok') return true
+    reportStorageFailure(outcome.error)
+    return false
   }
 
   const forgetPersistedKey = (): 'gone' | 'kept' | 'unreadable' => {
-    let stored: string | null
-    try {
-      stored = localStorage.getItem(STORAGE_KEY)
-    } catch (error) {
-      reportStorageFailure(error)
+    if (safeLocalStorage.backend !== 'localStorage') return 'unreadable'
+    const before = safeLocalStorage.read(STORAGE_KEY)
+    if (!before.ok) {
+      reportStorageFailure(before.error)
       return 'unreadable'
     }
-    if (stored === null) return 'gone'
-    try {
-      localStorage.removeItem(STORAGE_KEY)
-      return 'gone'
-    } catch (error) {
-      reportStorageFailure(error)
-      return 'kept'
+    if (before.value === null) return 'gone'
+    const removal = safeLocalStorage.remove(STORAGE_KEY)
+    const after = safeLocalStorage.read(STORAGE_KEY)
+    if (!after.ok) {
+      reportStorageFailure(removal.ok ? after.error : removal.error)
+      return 'unreadable'
     }
+    if (after.value === null) return 'gone'
+    reportStorageFailure(
+      removal.ok ? new Error('API key storage removal failed') : removal.error
+    )
+    return 'kept'
   }
   const toast = useToast()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()

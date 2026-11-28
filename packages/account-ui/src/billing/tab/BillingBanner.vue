@@ -7,11 +7,11 @@
       role="status"
       :class="
         cn(
-          'flex flex-col gap-3 border border-border/60 bg-background',
+          'flex flex-col gap-3 rounded-xl border border-border bg-background',
           look.windowBreakpoint
             ? 'sm:flex-row sm:items-center sm:gap-2'
             : '@2xl:flex-row @2xl:items-center @2xl:gap-2',
-          look.roomy ? 'rounded-2xl p-4' : 'rounded-xl p-3',
+          look.roomy ? 'p-4' : 'p-3',
           classes?.panel
         )
       "

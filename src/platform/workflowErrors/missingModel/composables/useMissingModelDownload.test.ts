@@ -15,6 +15,7 @@ vi.mock(
   import('@/platform/workflowErrors/missingModel/missingModelDownload'),
   () => ({
     downloadModel: mocks.downloadModel,
+    hostReportsModelDownloadProgress: () => false,
     fetchModelMetadata: mocks.fetchModelMetadata,
     isTrustedHuggingFaceUrl: mocks.isTrustedHuggingFaceUrl,
     openGatedRepoPage: mocks.openGatedRepoPage

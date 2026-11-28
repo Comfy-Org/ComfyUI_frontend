@@ -13,6 +13,12 @@
       "path": "src/extensions/core/index.ts"
     },
     {
+      "path": "src/extensions/core/clipspace.ts"
+    },
+    {
+      "path": "src/scripts/clipspace.ts"
+    },
+    {
       "path": "src/scripts/__mocks__/**"
     },
     {
@@ -62,10 +68,20 @@
     },
     {
       "path": "packages/api-client/src/apiTimeouts.ts"
+    },
+    {
+      "path": "packages/api-client/src/reconnectBackoff.ts"
     }
   ],
   "publicEntryPoints": [],
   "characterizationScenarios": [
+    {
+      "name": "Clipspace copies and pastes node images",
+      "checks": [
+        "src/scripts/clipspace.test.ts",
+        "src/extensions/core/index.test.ts"
+      ]
+    },
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",
       "checks": [
@@ -113,7 +129,9 @@
         "src/scripts/api.getSettings.test.ts",
         "src/scripts/api.getShareableAssets.test.ts",
         "src/scripts/api.logs.test.ts",
-        "src/scripts/api.socketReset.test.ts"
+        "src/scripts/api.socketReset.test.ts",
+        "packages/api-client/src/ComfyApi.reconnectBackoff.test.ts",
+        "packages/api-client/src/reconnectBackoff.test.ts"
       ]
     },
     {

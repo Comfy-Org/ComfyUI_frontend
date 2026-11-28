@@ -16,6 +16,7 @@ import {
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -99,7 +100,7 @@ describe('useBillingSdkStore', () => {
       useWorkspaceAuthStore().getUnifiedSessionClient()
     )
     expect(options.resolveUrl).toBe(ingestApiUrl)
-    expect(options.pointerStorage).toBe(sessionStorage)
+    expect(options.pointerStorage).toBe(safeSessionStorage)
   })
 
   it.for(['stripe', 'billing_web'] as const)(
@@ -710,6 +711,46 @@ describe('useBillingSdkStore subscription commands', () => {
     ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
+
+  it.for([
+    {
+      name: 'opens the payment page the subscribe still owes',
+      atRetry: pendingSubscription({ actionUrl: 'https://pay.example/op-1' }),
+      opened: [['https://pay.example/op-1', '_blank']],
+      reported: [['op-1', 'new_tab']]
+    },
+    {
+      name: 'opens nothing once the subscribe has settled',
+      atRetry: settledOperation('succeeded', 'subscription'),
+      opened: [],
+      reported: []
+    }
+  ])(
+    'retrying a blocked payment page from its warning $name',
+    ({ atRetry, opened, reported }) => {
+      const openPage = vi.spyOn(window, 'open').mockReturnValueOnce(null)
+      useBillingSdkStore()
+      harness.publish(
+        pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+      )
+      harness.publish(atRetry)
+      const warning = useToast().toasts.find(
+        (shown) =>
+          shown.kind === 'warning' &&
+          shown.description ===
+            "Couldn't open the payment page — please allow popups and try again."
+      )
+      expect(warning?.actions.map(({ label }) => label)).toEqual(['Try again'])
+      openPage.mockClear()
+
+      warning?.actions[0].onClick()
+
+      expect(openPage.mock.calls).toEqual(opened)
+      expect(
+        vi.mocked(harness.sdk.lifecycle.reportHostedStepOpened).mock.calls
+      ).toEqual(reported)
+    }
+  )
 
   it.for([
     { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },

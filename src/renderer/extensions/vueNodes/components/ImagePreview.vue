@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="imageUrls.length > 0"
+    v-if="items.length"
     class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
     :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
@@ -10,58 +10,46 @@
       v-if="viewMode === 'grid'"
       ref="gridEl"
       data-testid="image-grid"
+      data-image-preview-grid
+      :data-count="items.length"
+      :data-columns="gridCols"
+      :data-thumbnail-aspect-ratio="imageAspectRatio"
       class="relative grid w-full flex-1 gap-1 rounded-sm p-1 contain-size"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
       <Button
-        v-for="(url, index) in gridImageUrls"
+        v-for="(url, index) in gridUrls"
         :key="index"
         size="unset"
         class="overflow-hidden rounded-none p-0 ring-border hover:ring-1 focus-visible:ring-2"
         :aria-label="
-          $t('g.viewImageOfTotal', {
-            index: index + 1,
-            total: imageUrls.length
-          })
+          $t('g.viewImageOfTotal', { index: index + 1, total: items.length })
         "
-        @click="handleGridClick(index)"
+        @click="openImageInGallery(index)"
       >
-        <div
-          v-if="!isHdrPlaceholder(index)"
-          class="pointer-events-none relative size-full"
-        >
-          <img
-            :src="url"
-            :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
-            draggable="false"
-            class="size-full object-contain"
-            @load="updateAspectRatio($event, index)"
-            @error="failedHdrPreviews[index] = true"
-          />
-        </div>
-        <div
-          v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-foreground"
-        >
-          <i class="icon-[lucide--sun] size-6" />
-          <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
-        </div>
+        <img
+          v-if="url && !failedHdrPreviews[index]"
+          :src="url"
+          :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
+          draggable="false"
+          decoding="async"
+          class="pointer-events-none size-full object-contain"
+          @load="updateAspectRatio($event, index)"
+          @error="handleThumbnailError($event, index)"
+        />
+        <i v-else class="icon-[lucide--sun] size-6 text-foreground" />
       </Button>
-      <div
+      <Button
         v-if="canExportOutputs"
-        class="invisible absolute top-2 right-2 group-focus-within:visible group-hover:visible"
+        variant="inverted"
+        size="icon"
+        class="invisible absolute top-2 right-2 shadow-md group-focus-within:visible group-hover:visible"
+        :title="$t('g.downloadImages')"
+        :aria-label="$t('g.downloadImages')"
+        @click="handleExportOutputs"
       >
-        <Button
-          variant="inverted"
-          size="icon"
-          class="shadow-md"
-          :title="$t('g.downloadImages')"
-          :aria-label="$t('g.downloadImages')"
-          @click="handleExportOutputs"
-        >
-          <i class="icon-[lucide--folder-down]" />
-        </Button>
-      </div>
+        <i class="icon-[lucide--folder-down]" />
+      </Button>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -86,22 +74,53 @@
           {{ $t('g.imageFailedToLoad') }}
         </p>
         <p class="mt-1 text-xs">
-          {{ getImageFilename(currentImageUrl) }}
+          {{ items[currentIndex].filename }}
         </p>
       </div>
       <!-- Loading State -->
       <div
-        v-if="showLoader && !imageError && !isHdrPlaceholder(currentIndex)"
+        v-if="
+          showLoader &&
+          !imageError &&
+          displayUrls[currentIndex] &&
+          !failedHdrPreviews[currentIndex]
+        "
+        role="status"
+        :aria-label="t('g.loading')"
         class="size-full"
       >
         <Skeleton class="size-full rounded-sm" />
       </div>
+      <img
+        v-if="
+          !imageError &&
+          mainImageSrc &&
+          displayUrls[currentIndex] &&
+          !failedHdrPreviews[currentIndex]
+        "
+        :key="imageKeys[currentIndex]"
+        data-testid="main-image"
+        :src="mainImageSrc"
+        :data-file-url="isHdr ? resultItemUrl(items[currentIndex]) : undefined"
+        :data-full-src="isDownscaled ? currentImageUrl : undefined"
+        decoding="async"
+        :alt="
+          t('g.viewImageOfTotal', {
+            index: currentIndex + 1,
+            total: items.length
+          })
+        "
+        draggable="false"
+        class="pointer-events-none absolute inset-0 block size-full object-contain"
+        @load="handleImageLoad"
+        @error="mainImageSrc && handleImageError(displayUrls[currentIndex])"
+      />
       <button
-        v-if="!imageError && isHdrPlaceholder(currentIndex)"
+        v-else-if="!imageError && isHdr"
         type="button"
         data-testid="hdr-open-button"
         class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-foreground"
-        @click="openHdrViewer(currentImageUrl)"
+        @click="openHdrViewer(resultItemUrl(items[currentIndex]))"
       >
         <i class="icon-[lucide--sun] size-12" />
         <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
@@ -111,27 +130,13 @@
           {{ $t('hdrViewer.openInHdrViewer') }}
         </span>
       </button>
-      <!-- Main Image -->
-      <img
-        v-if="!imageError && !isHdrPlaceholder(currentIndex)"
-        :key="currentImageUrl"
-        data-testid="main-image"
-        :src="currentHdrPreviewUrl ?? currentImageUrl"
-        :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"
-        :alt="imageAltText"
-        draggable="false"
-        class="pointer-events-none absolute inset-0 block size-full object-contain"
-        @load="handleImageLoad"
-        @error="handleImageError"
-      />
-
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
       >
         <!-- Mask/Edit Button -->
         <Button
-          v-if="!hasMultipleImages && !imageError && !currentImageIsHdr"
+          v-if="!hasMultipleImages && !imageError && !isHdr"
           variant="inverted"
           size="icon"
           class="shadow-md"
@@ -143,13 +148,13 @@
         </Button>
 
         <Button
-          v-if="!imageError && currentHdrPreviewUrl"
+          v-if="!imageError && isHdr"
           variant="inverted"
           size="icon"
           class="shadow-md"
           :title="$t('hdrViewer.openInHdrViewer')"
           :aria-label="$t('hdrViewer.openInHdrViewer')"
-          @click="openHdrViewer(currentImageUrl)"
+          @click="openHdrViewer(resultItemUrl(items[currentIndex]))"
         >
           <i class="icon-[lucide--sun]" />
         </Button>
@@ -197,7 +202,11 @@
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
-      v-if="viewMode === 'gallery' && !isHdrPlaceholder(currentIndex)"
+      v-if="
+        viewMode === 'gallery' &&
+        (!isHdr ||
+          (displayUrls[currentIndex] && !failedHdrPreviews[currentIndex]))
+      "
       class="pt-2 text-center text-foreground"
     >
       <span
@@ -207,10 +216,13 @@
       >
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="showLoader"> {{ $t('g.loading') }}... </span>
-      <span v-else>
-        {{ actualDimensions || $t('g.calculatingDimensions') }}
-      </span>
+      <template v-else>
+        {{
+          showLoader
+            ? `${$t('g.loading')}...`
+            : actualDimensions || $t('g.calculatingDimensions')
+        }}
+      </template>
     </div>
 
     <!-- Multiple Images Navigation (gallery mode only) -->
@@ -230,14 +242,14 @@
 
       <!-- Navigation Dots -->
       <button
-        v-for="(_, index) in imageUrls"
+        v-for="(_, index) in displayUrls"
         :key="index"
         :class="getNavigationDotClass(index)"
         :aria-current="index === currentIndex ? 'true' : undefined"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
-            total: imageUrls.length
+            total: displayUrls.length
           })
         "
         @click="setCurrentIndex(index)"
@@ -247,7 +259,12 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize, useTimeoutFn } from '@vueuse/core'
+import {
+  computedAsync,
+  useElementSize,
+  useObjectUrl,
+  useTimeoutFn
+} from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -259,42 +276,58 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
-import { useToast } from '@/components/ui/toast/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { getHdrPreviewUrl, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
+import { isHdrResult } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
+import {
+  IMAGE_PREVIEW_CONTENT_MIN_HEIGHT,
+  imageGridColumns
+} from './imagePreviewLayout'
+
+const DISPLAY_MAX_EDGE = 1024
+const PRELOAD_MIN_SCALE = 1
 
 interface ImagePreviewProps {
-  /** Array of image URLs to display */
-  readonly imageUrls: readonly string[]
-  /** Optional node ID for context-aware actions */
+  readonly items: readonly AugmentedResultItem[]
   readonly nodeId?: NodeId
+  readonly fullResolution?: boolean
 }
 
-const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
+const {
+  items,
+  nodeId,
+  fullResolution = false
+} = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
+const { getDisplayImage } = useImagePreviewStore()
+const settingStore = useSettingStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
 
 type ViewMode = 'gallery' | 'grid'
 
-function defaultViewMode(urls: readonly string[]): ViewMode {
-  return urls.length > 1 ? 'grid' : 'gallery'
+function defaultViewMode(items: readonly unknown[]): ViewMode {
+  return items.length > 1 ? 'grid' : 'gallery'
 }
 
 const { width: gridWidth, height: gridHeight } = useElementSize(
@@ -302,7 +335,7 @@ const { width: gridWidth, height: gridHeight } = useElementSize(
 )
 
 const currentIndex = ref(0)
-const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
+const viewMode = ref<ViewMode>(defaultViewMode(items))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
@@ -319,58 +352,122 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
-const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
-const isHdrPlaceholder = (index: number) =>
-  isHdrImageUrl(imageUrls[index]) &&
-  (!getHdrPreviewUrl(imageUrls[index]) || !!failedHdrPreviews.value[index])
+const displayUrls = computed(() =>
+  items.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+)
+const imageKeys = computed(() =>
+  items.map(
+    (item, index) => `${resultItemUrl(item)}\n${displayUrls.value[index]}`
+  )
+)
+const gridUrls = computed(() =>
+  items.map((item) => getGridThumbnailUrl(resultItemPreviewUrl(item)))
+)
+const isHdr = computed(
+  () => items.length > 0 && isHdrResult(items[currentIndex.value])
+)
+const hasMultipleImages = computed(() => items.length > 1)
+const downscaleEnabled = computed(() =>
+  settingStore.get('Comfy.Node.DownscaleImagePreviews')
+)
+const showFullResolution = computed(
+  () => !downscaleEnabled.value || (fullResolution && !hasMultipleImages.value)
+)
 
-const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
-const currentHdrPreviewUrl = computed(() =>
-  getHdrPreviewUrl(currentImageUrl.value)
+const currentImageUrl = computed(
+  () => displayUrls.value[currentIndex.value] ?? ''
 )
-const gridImageUrls = computed(() =>
-  imageUrls.map((url) => getHdrPreviewUrl(url) ?? getGridThumbnailUrl(url))
+const displayImage = computedAsync(async () => {
+  const source = currentImageUrl.value
+  if (
+    viewMode.value !== 'gallery' ||
+    !source ||
+    isHdr.value ||
+    showFullResolution.value
+  )
+    return undefined
+  return getDisplayImage(source, DISPLAY_MAX_EDGE)
+})
+const currentDisplayImage = computed(() =>
+  displayImage.value?.source === currentImageUrl.value
+    ? displayImage.value
+    : undefined
 )
-const hasMultipleImages = computed(() => imageUrls.length > 1)
+const displayImageUrl = useObjectUrl(() => currentDisplayImage.value?.blob)
+const mainImageSrc = computed(() =>
+  isHdr.value || showFullResolution.value
+    ? currentImageUrl.value
+    : currentDisplayImage.value?.blob
+      ? displayImageUrl.value
+      : currentDisplayImage.value?.source
+)
+const isDownscaled = computed(
+  () => !showFullResolution.value && !!currentDisplayImage.value?.blob
+)
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
   return !!node && hasMultipleOutputs(node)
 })
-const imageAltText = computed(() =>
-  t('g.viewImageOfTotal', {
-    index: currentIndex.value + 1,
-    total: imageUrls.length
+const gridCols = computed(() =>
+  imageGridColumns({
+    count: items.length,
+    width: gridWidth.value,
+    height: gridHeight.value,
+    aspectRatio: imageAspectRatio.value
   })
 )
-const gridCols = computed(() => {
-  const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
-  return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
+
+const { camera } = useTransformState()
+const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)
+const preloadUrls = computed(() => {
+  if (!downscaleEnabled.value || !hasMultipleImages.value || !isZoomedIn.value)
+    return []
+  const count = items.length
+  const candidates =
+    viewMode.value === 'grid'
+      ? items
+      : [
+          items[(currentIndex.value + 1) % count],
+          items[(currentIndex.value - 1 + count) % count]
+        ]
+  return candidates
+    .filter((item) => !isHdrResult(item))
+    .map((item) => resultItemPreviewUrl(item, { fullRes: true }))
 })
+watch(
+  preloadUrls,
+  (urls) => {
+    for (const url of urls) void getDisplayImage(url, DISPLAY_MAX_EDGE)
+  },
+  { immediate: true }
+)
 
 watch(
-  () => imageUrls,
+  imageKeys,
   (newUrls, oldUrls) => {
-    const key = (url: string) =>
-      imageError.value ? url : (getHdrPreviewUrl(url) ?? url)
     const urlsChanged =
       !oldUrls ||
       newUrls.length !== oldUrls.length ||
-      newUrls.some((url, i) => key(url) !== key(oldUrls[i]))
-
+      newUrls.some((url, i) => url !== oldUrls[i])
     if (!urlsChanged) return
 
-    if (currentIndex.value >= newUrls.length) {
-      currentIndex.value = 0
-    }
-
+    if (currentIndex.value >= newUrls.length) currentIndex.value = 0
     actualDimensions.value = null
-
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
     failedHdrPreviews.value = []
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
+)
+
+watch(
+  [showFullResolution, mainImageSrc],
+  ([fullRes, src], [previousFullRes, previousSrc]) => {
+    if (fullRes === previousFullRes) return
+    imageError.value = false
+    if (src !== previousSrc) startDelayedLoader()
+  }
 )
 
 let isUnmounted = false
@@ -384,9 +481,11 @@ function handleImageLoad(event: Event) {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
-    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+  const { width, height } = currentDisplayImage.value?.originalSize ?? {
+    width: img.naturalWidth,
+    height: img.naturalHeight
   }
+  if (width && height) actualDimensions.value = `${width} x ${height}`
 
   if (nodeId && !isUnmounted) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
@@ -401,22 +500,24 @@ function updateAspectRatio(event: Event, index: number) {
   }
 }
 
-function handleImageError() {
+function handleThumbnailError(event: Event, index: number) {
+  if (!(event.target instanceof HTMLImageElement) || !event.target.isConnected)
+    return
+  failedHdrPreviews.value[index] = isHdrResult(items[index])
+}
+
+async function handleImageError(failedUrl: string) {
   stopDelayedLoader()
   showLoader.value = false
-  if (currentHdrPreviewUrl.value) {
+  if (isHdr.value) {
     failedHdrPreviews.value[currentIndex.value] = true
     return
   }
   imageError.value = true
   actualDimensions.value = null
 
-  // The error UI is already up; the diagnostic probe runs behind it so a slow
-  // or hanging re-request never delays what the user sees.
-  const failedUrl = currentImageUrl.value
-  void describeImageLoadFailure(failedUrl).then((metadata) => {
-    useTelemetry()?.trackImageLoadFailed(metadata)
-  })
+  const metadata = await describeImageLoadFailure(failedUrl)
+  useTelemetry()?.trackImageLoadFailed(metadata)
 }
 
 function handleEditMask() {
@@ -437,7 +538,11 @@ async function handleOpenLayerEditor() {
 
 function handleDownload() {
   try {
-    downloadFile(currentImageUrl.value)
+    downloadFile(
+      resultItemUrl(items[currentIndex.value]),
+      undefined,
+      'node_preview'
+    )
   } catch {
     toast.error(t('g.error'), {
       description: t('g.failedToDownloadImage')
@@ -454,11 +559,11 @@ function handleExportOutputs() {
 
 function setCurrentIndex(index: number) {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < imageUrls.length) {
-    const urlChanged = imageUrls[index] !== currentImageUrl.value
+  if (index >= 0 && index < items.length) {
+    const oldUrl = displayUrls.value[currentIndex.value]
     currentIndex.value = index
     imageError.value = false
-    if (urlChanged) startDelayedLoader()
+    if (displayUrls.value[index] !== oldUrl) startDelayedLoader()
   }
 }
 
@@ -467,15 +572,6 @@ async function openImageInGallery(index: number) {
   viewMode.value = 'gallery'
   await nextTick()
   galleryPanelEl.value?.focus()
-}
-
-function handleGridClick(index: number) {
-  const url = imageUrls[index]
-  if (isHdrPlaceholder(index)) {
-    openHdrViewer(url)
-    return
-  }
-  void openImageInGallery(index)
 }
 
 function getNavigationDotClass(index: number) {
@@ -498,19 +594,19 @@ function handleKeyDown(event: KeyboardEvent) {
     return
   }
 
-  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
+  if (items.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
+        currentIndex.value > 0 ? currentIndex.value - 1 : items.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
+        currentIndex.value < items.length - 1 ? currentIndex.value + 1 : 0
       )
       break
     case 'Home':
@@ -519,17 +615,8 @@ function handleKeyDown(event: KeyboardEvent) {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(imageUrls.length - 1)
+      setCurrentIndex(items.length - 1)
       break
-  }
-}
-
-function getImageFilename(url: string): string {
-  if (!url) return t('g.imageDoesNotExist')
-  try {
-    return new URL(url).searchParams.get('filename') || t('g.unknownFile')
-  } catch {
-    return t('g.imageDoesNotExist')
   }
 }
 </script>

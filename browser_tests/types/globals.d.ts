@@ -22,8 +22,41 @@ interface AppReadiness {
 }
 
 export interface TabSwitchLens {
-  afterConfigure: string[][]
+  afterLoad: string[][]
   removed: string[]
+}
+
+export interface LegacyGraphInstancePatches {
+  bootOnNodeAdded: string[]
+  overwriteOnNodeRemoved: string[]
+  configure: number
+  serialize: number
+  clear: number
+  beforeChange: number
+  afterChange: number
+  add: string[]
+  remove: string[]
+  stackedAfterChange: string[]
+  safeOnNodeAdded: string[]
+}
+
+interface EcosystemSimulacraLifecycleEntry {
+  hook: string
+  configured: string | null
+  active: string
+}
+
+export interface EcosystemSimulacra {
+  lifecycle: EcosystemSimulacraLifecycleEntry[]
+  registry: { graph: string; nodes: string[] } | null
+  promptExecuted: string[]
+  executed: string[]
+  added: string[]
+  removed: string[]
+  timerErrors: string[]
+  navigation: { groups: unknown[] }
+  timersHeld: () => number
+  releaseTimers: () => void
 }
 
 interface CapturedMessages {
@@ -58,8 +91,11 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __seededServerFlags?: Record<string, unknown>
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
+    __legacyGraphInstancePatches?: LegacyGraphInstancePatches
+    __ecosystemSimulacra?: EcosystemSimulacra
     __captureHostTelemetry?: (captured: {
       event: string
       properties: Record<string, unknown>

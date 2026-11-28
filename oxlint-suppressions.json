@@ -56,17 +56,12 @@
   },
   "packages/api-client/src/ComfyApi.ts": {
     "comfy/no-new-error-throw": {
-      "count": 8
+      "count": 7
     }
   },
   "packages/settings-core/src/settingStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "packages/telemetry/src/redactTelemetryUrls.ts": {
-    "regexp/no-dupe-characters-character-class": {
-      "count": 13
     }
   },
   "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
@@ -96,7 +91,7 @@
   },
   "src/base/common/downloadUtil.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/builder/builderViewOptions.ts": {
@@ -115,11 +110,6 @@
     }
   },
   "src/components/sidebar/SideToolbar.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/components/sidebar/tabs/AssetsSidebarTab.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
@@ -156,11 +146,6 @@
   },
   "src/composables/canvas/useFocusNode.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/composables/graph/contextMenuConverter.ts": {
-    "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
@@ -279,7 +264,7 @@
       "count": 9
     },
     "comfy/no-positional-boolean-params": {
-      "count": 7
+      "count": 6
     },
     "comfy/no-reexports": {
       "count": 1
@@ -296,9 +281,6 @@
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    },
     "comfy/no-positional-boolean-params": {
       "count": 22
     }
@@ -353,6 +335,11 @@
       "count": 4
     }
   },
+  "src/lib/litegraph/src/connectivitySystem.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
       "count": 43
@@ -373,7 +360,7 @@
   },
   "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/lib/litegraph/src/subgraph/Subgraph.ts": {
@@ -398,16 +385,6 @@
   },
   "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
     "comfy/no-reexports": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/utils/arrange.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts": {
-    "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
@@ -451,44 +428,14 @@
       "count": 21
     }
   },
-  "src/platform/assets/utils/assetFilterUtils.ts": {
-    "comfy/no-positional-boolean-params": {
+  "src/platform/assets/stores/assetsStore.ts": {
+    "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/platform/assets/utils/assetMetadataUtils.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 8
     }
   },
   "src/platform/assets/utils/assetPreviewUtil.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.property.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/marqueeSelectionUtil.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/assets/utils/resolveModelNodeFromAsset.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/platform/auth/session/useSessionCookie.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
     }
   },
   "src/platform/auth/unified/remintRetry.ts": {
@@ -653,7 +600,7 @@
   },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/platform/workflow/management/stores/workflowStore.ts": {
@@ -692,11 +639,6 @@
     }
   },
   "src/platform/workflow/sharing/utils/shareAuthAttribution.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/platform/workflow/templates/services/templateInputService.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
     }
@@ -791,11 +733,6 @@
       "count": 1
     }
   },
-  "src/renderer/core/layout/slots/syncSlotOffsets.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -811,29 +748,9 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/linearMode/LinearControls.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/PointerZone.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/ToolPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
@@ -844,11 +761,6 @@
   "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.ts": {
     "comfy/no-new-error-throw": {
       "count": 5
-    }
-  },
-  "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 4
     }
   },
   "src/renderer/extensions/painter/composables/usePainter.ts": {
@@ -864,11 +776,6 @@
   "src/renderer/extensions/vueNodes/composables/useSlotLinkInteraction.autoPan.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
     }
   },
   "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts": {
@@ -1024,7 +931,7 @@
   },
   "src/services/litegraphService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 3
+      "count": 2
     }
   },
   "src/services/nodeHelpService.ts": {
@@ -1037,17 +944,7 @@
       "count": 2
     }
   },
-  "src/services/useNewUserService.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/stores/apiKeyAuthStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/stores/assetsStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
     }
@@ -1075,11 +972,6 @@
   "src/stores/userStore.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
-    }
-  },
-  "src/stores/workspace/colorPaletteStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/types/extensionTypes.ts": {
@@ -1160,21 +1052,6 @@
   "src/workbench/extensions/agent/composables/agent/useAgentSession.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/CrdtDevPanel.clipboard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugGate.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugReport.ts": {
-    "regexp/no-dupe-disjunctions": {
-      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts": {

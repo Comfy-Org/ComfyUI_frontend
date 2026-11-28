@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
@@ -315,17 +316,15 @@ test.describe(
         test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
           comfyPage
         }) => {
-          await comfyPage.workflow.loadWorkflow(
-            'subgraphs/subgraph-with-text-widget'
-          )
+          await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
 
-          await comfyPage.vueNodes.enterSubgraph('11')
+          await comfyPage.vueNodes.enterSubgraph('10')
           await comfyPage.nextFrame()
 
-          const clipNode = comfyPage.vueNodes.getNodeLocator('10')
+          const clipNode = comfyPage.vueNodes.getNodeLocator('6')
           await expect(clipNode).toBeVisible()
 
-          await comfyPage.vueNodes.selectNode('10')
+          await comfyPage.vueNodes.selectNode('6')
           await comfyPage.nextFrame()
 
           const textarea = clipNode.locator('textarea')
@@ -678,17 +677,17 @@ test(
 
     await test.step('widgets display in order promoted', async () => {
       await expect(editor.promotionItems.first()).toContainText('steps')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'steps'
-      )
+      await expect(
+        subgraphNode.getByTestId(TestIds.widgets.layoutFieldLabel).first()
+      ).toHaveText('steps')
     })
 
     await test.step('Reorder widgets', async () => {
       await editor.dragItem(0, 1)
       await expect(editor.promotionItems.first()).toContainText('cfg')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'cfg'
-      )
+      await expect(
+        subgraphNode.getByTestId(TestIds.widgets.layoutFieldLabel).first()
+      ).toHaveText('cfg')
     })
 
     await comfyPage.vueNodes.enterSubgraph('2')
@@ -719,10 +718,7 @@ test(
       const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
       const fromSlot = ksampler.getSlot('steps')
-      const toPos = await comfyPage.subgraph
-        .getInputSlot()
-        .getOpenSlotPosition()
-      await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await fromSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
       await expect.poll(isConnected).toBe(true)
 
@@ -763,18 +759,6 @@ test(
     const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
 
     await test.step('Promote both image previews', async () => {
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() =>
-            window.app!.graph.nodes.flatMap((node) =>
-              node.isSubgraphNode()
-                ? node.subgraph.nodes.map((inner) => inner.imgs?.length ?? 0)
-                : []
-            )
-          )
-        )
-        .toEqual([1, 1])
-
       await editor.togglePromotion(subgraph.root, {
         nodeId: '1',
         widgetName: '$$canvas-image-preview',
@@ -815,10 +799,7 @@ test(
       const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
 
       const fromSlot = ksampler.getSlot('steps')
-      const toPos = await comfyPage.subgraph
-        .getInputSlot()
-        .getOpenSlotPosition()
-      await fromSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await fromSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(fromSlot)
       await expect.poll(isConnected).toBe(true)
 

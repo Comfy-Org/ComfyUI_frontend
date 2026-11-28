@@ -1,15 +1,18 @@
 <template>
-  <WidgetLayoutField :widget="widget">
+  <WidgetLayoutField :widget :input-id>
     <AppColorPicker
       v-model="localValue"
+      :trigger-id="inputId"
       :alpha="format !== 'int'"
+      align="end"
+      class="bg-transparent"
       @update:model-value="onUpdate"
     />
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, useId, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
@@ -32,6 +35,7 @@ const { widget } = defineProps<{
 }>()
 
 const modelValue = defineModel<ColorWidgetValue>({ required: true })
+const inputId = useId()
 
 const format =
   widget.options?.format === 'int' || isColorFormat(widget.options?.format)

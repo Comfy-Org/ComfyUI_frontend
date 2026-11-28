@@ -30,6 +30,7 @@ import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import { mockAgentSavedWorkflowSidebarFile } from '@e2e/fixtures/helpers/agentSavedWorkflowSidebarFile'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -383,6 +384,7 @@ async function mockAgentBoot(
   {
     agentConsentAccepted,
     agentConsentLoadStatus,
+    agentConsentLoadRefusalCode,
     agentConsentReads,
     agentConsentSave,
     agentConsentWebSession,
@@ -393,6 +395,7 @@ async function mockAgentBoot(
     agentRetryAfter,
     agentBilling,
     acceptedTurns,
+    agentRemoteConfig,
     crdtDebugEnabled,
     initialFeatureFlags,
     initialSettings,
@@ -420,7 +423,6 @@ async function mockAgentBoot(
         )
       }
       if (debugEnabled) {
-        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
         localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
       }
     },
@@ -464,8 +466,9 @@ async function mockAgentBoot(
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
-      ...(agentConsentWebSession && { unified_web_session: true }),
-      ...initialFeatureFlags
+      'Comfy.Agent.CrdtDebug': crdtDebugEnabled,
+      ...initialFeatureFlags,
+      ...agentRemoteConfig
     },
     settings: storedSettings,
     objectInfo
@@ -550,6 +553,11 @@ async function mockAgentBoot(
     }
     return route.fulfill(jsonRoute(workflows))
   })
+  await mockAgentSavedWorkflowSidebarFile(page, WORKFLOW_ID, {
+    savedName: () =>
+      savedWorkflow?.path.slice('workflows/'.length, -'.json'.length),
+    savedContent: () => savedContent
+  })
   const threads = emptyAgentThreadList()
   await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
@@ -599,7 +607,15 @@ async function mockAgentBoot(
       }
       agentConsentReads.push(consentAccepted)
       if (agentConsentLoadStatus >= 400)
-        return route.fulfill({ status: agentConsentLoadStatus })
+        return route.fulfill({
+          ...(agentConsentLoadRefusalCode
+            ? jsonRoute({
+                code: agentConsentLoadRefusalCode,
+                message: 'Refused'
+              })
+            : {}),
+          status: agentConsentLoadStatus
+        })
       return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
@@ -700,6 +716,7 @@ type AgentFixtures = {
   agentBilling: AgentBillingFixture
   agentConsentAccepted: boolean
   agentConsentLoadStatus: number
+  agentConsentLoadRefusalCode: string | undefined
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWebSession: boolean
@@ -709,6 +726,7 @@ type AgentFixtures = {
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
   agentRetryAfter: string | undefined
+  agentRemoteConfig: Partial<RemoteConfig>
   crdtDebugEnabled: boolean
   /** `'server'` loads real node definitions instead of the empty catalog. */
   objectInfo: 'server' | undefined
@@ -724,6 +742,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   },
   agentConsentAccepted: [true, { option: true }],
   agentConsentLoadStatus: [200, { option: true }],
+  agentConsentLoadRefusalCode: [undefined, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
@@ -741,12 +760,14 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentPanelInitiallyOpen: [false, { option: true }],
   agentOnboardingCompleted: [true, { option: true }],
   agentRetryAfter: [undefined, { option: true }],
+  agentRemoteConfig: [{}, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
   objectInfo: [undefined, { option: true }],
   page: async (
     {
       agentConsentAccepted,
       agentConsentLoadStatus,
+      agentConsentLoadRefusalCode,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,
@@ -757,6 +778,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentRetryAfter,
       agentBilling,
       acceptedTurns,
+      agentRemoteConfig,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,
@@ -770,6 +792,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await mockAgentBoot(page, {
       agentConsentAccepted,
       agentConsentLoadStatus,
+      agentConsentLoadRefusalCode,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,
@@ -780,6 +803,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentRetryAfter,
       agentBilling,
       acceptedTurns,
+      agentRemoteConfig,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,

@@ -27,6 +27,22 @@
     overflow-y: auto;
     font-size: var(--comfy-textarea-font-size);
 
+    p,
+    ul,
+    ol {
+      margin-block: 1em;
+    }
+
+    ul,
+    ol {
+      padding-inline-start: 40px;
+    }
+
+    a {
+      color: revert;
+      text-decoration: revert;
+    }
+
     :first-child {
       margin-top: 0;
     }
@@ -48,10 +64,6 @@
   border-radius: 0.5em;
   margin: 0.5em;
   padding: 0.5em;
-}
-
-.comfy-markdown .tiptap table {
-  border-collapse: collapse;
 }
 
 .comfy-markdown .tiptap th {
@@ -77,7 +89,14 @@
 .comfy-markdown-content h4,
 .comfy-markdown-content h5,
 .comfy-markdown-content h6 {
+  font-size: revert;
+  font-weight: revert;
   margin-block: 0.67em;
+}
+
+.comfy-markdown .tiptap :is(ul, ol),
+.comfy-markdown-content :is(ul, ol) {
+  list-style-type: revert;
 }
 
 .comfy-markdown-content h1,
@@ -164,7 +183,6 @@
 
 .comfy-markdown-content table {
   width: 100%;
-  border-collapse: collapse;
 }
 
 .comfy-markdown-content th,
@@ -199,9 +217,6 @@
 
 .comfy-markdown-content img,
 .comfy-markdown-content video {
-  max-width: 100%;
-  height: auto;
-  display: block;
   margin-bottom: 1rem;
 }
 

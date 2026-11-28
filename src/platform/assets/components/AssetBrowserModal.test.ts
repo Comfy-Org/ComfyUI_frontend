@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 const mockAssetsByKey = vi.hoisted(() => new Map<string, AssetItem[]>())
 const mockLoadingByKey = vi.hoisted(() => new Map<string, boolean>())
@@ -41,6 +41,7 @@ vi.mock<unknown>(
         <div data-testid="content">
           <slot name="content" />
         </div>
+        <slot name="rightPanel" />
       </div>
     `
     }
@@ -106,13 +107,14 @@ vi.mock<unknown>(import('@/platform/assets/components/AssetGrid.vue'), () => ({
   default: {
     name: 'AssetGrid',
     props: ['assets', 'loading'],
-    emits: ['asset-select'],
+    emits: ['asset-select', 'asset-show-info'],
     template: `
       <div data-testid="asset-grid">
         <div
           v-for="asset in assets"
           :key="asset.id"
           @click="$emit('asset-select', asset)"
+          @dblclick.stop="$emit('asset-show-info', asset)"
           :data-testid="'asset-' + asset.id"
           class="asset-card"
         >
@@ -125,6 +127,16 @@ vi.mock<unknown>(import('@/platform/assets/components/AssetGrid.vue'), () => ({
     `
   }
 }))
+
+vi.mock<unknown>(
+  import('@/platform/assets/components/modelInfo/ModelInfoPanel.vue'),
+  () => ({
+    default: {
+      props: ['asset'],
+      template: '<div data-testid="model-info">{{ asset.name }}</div>'
+    }
+  })
+)
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
@@ -187,6 +199,33 @@ describe('AssetBrowserModal', () => {
   beforeEach(() => {
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
+  })
+
+  it('removes focused model details when the accessible inventory changes', async () => {
+    const user = userEvent.setup()
+    const model = createTestAsset('private', 'Private workspace model', 'loras')
+    const { rerender } = renderModal({ overrideAssets: [model] })
+
+    await user.dblClick(screen.getByTestId('asset-private'))
+    expect(screen.getByTestId('model-info')).toHaveTextContent(model.name)
+
+    await rerender({ overrideAssets: [] })
+
+    expect(screen.queryByTestId('asset-private')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('model-info')).not.toBeInTheDocument()
+  })
+
+  it('shows a list error alongside the available Release cards', async () => {
+    mockAssetsByKey.set('tag:models', [
+      createTestAsset('release', 'Release model', 'loras')
+    ])
+    vi.mocked(useAssetsStore().getError).mockReturnValue(
+      new Error('library unavailable')
+    )
+    renderModal({ assetType: 'models' })
+    await flushPromises()
+    expect(screen.getByRole('alert')).toHaveTextContent('Some models')
+    expect(screen.getByTestId('asset-release')).toBeDefined()
   })
 
   describe('Integration with useAssetBrowser', () => {

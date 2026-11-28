@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe('useSubscriptionOperationView', () => {
   it('reads the poller while the rail is off', () => {
-    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = false
+    vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = false
     Object.assign(useBillingOperationStore(), {
       isSettingUp: true,
       subscriptionActionOperation: billingOperation({
@@ -58,7 +58,7 @@ describe('useSubscriptionOperationView', () => {
   })
 
   it('reads the SDK lifecycle while the rail is on, and not the poller', () => {
-    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
     Object.assign(useBillingOperationStore(), {
       isSettingUp: false,
       subscriptionActionOperation: undefined
@@ -77,7 +77,7 @@ describe('useSubscriptionOperationView', () => {
   // here would assert the value it just assigned. `billingOperationStore`'s
   // suite holds that side; this holds the projection the rail publishes.
   it('offers no hosted step for another workspace on the SDK rail', () => {
-    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
 
     const view = useSubscriptionOperationView()
     harness.publish(pendingSubscription({ actionUrl: HOSTED_STEP }))
@@ -93,7 +93,7 @@ describe('useSubscriptionOperationView', () => {
   })
 
   it('refuses a hosted step that is not https on the SDK rail', () => {
-    vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
 
     const view = useSubscriptionOperationView()
     harness.publish(pendingSubscription({ actionUrl: 'javascript:alert(1)' }))

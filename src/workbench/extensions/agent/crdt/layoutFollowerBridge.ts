@@ -162,6 +162,22 @@ export class LayoutFollowerBridge extends EventTarget {
     )
   }
 
+  /**
+   * True while the current subscribe was acknowledged at seq 0 and no
+   * document frame has been applied in this lineage: the workflow has no
+   * document yet. Documents mint only at agent turn start, and that mint
+   * seeds from the canvas. A frame applied before the acknowledgement means
+   * a document exists, so this stays false and the normal refusal applies.
+   */
+  get isPreMintBaseline(): boolean {
+    return (
+      this.ackSeq === 0 &&
+      this.lastSeq === null &&
+      this.integratedSeq === null &&
+      this.schemaError === null
+    )
+  }
+
   /** The KA-11 read-gate failure that closed this bridge's read path, if any. */
   get lastSchemaError(): FollowerSchemaError | null {
     return this.schemaError
@@ -406,7 +422,9 @@ export class LayoutFollowerBridge extends EventTarget {
 
   private reportGap(workflowId: string, expected: number, received: number) {
     this.dispatchEvent(
-      new CustomEvent('doc_gap', { detail: { workflowId, expected, received } })
+      new CustomEvent('doc_gap', {
+        detail: { workflowId, expected, received }
+      })
     )
     this.resubscribe()
   }

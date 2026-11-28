@@ -1,24 +1,28 @@
 import { toValue } from 'vue'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
-import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
+import { uploadTimeoutMs } from '@/utils/uploadTimeout'
+import {
+  isExtensionlessVideo,
+  isUntypedOrVideoWithoutExtension
+} from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
 const BYTES_PER_MB = 1024 * 1024
@@ -58,11 +62,12 @@ function addMissingOptionValues(
 
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
-  dropdownItems: ComputedRef<FormDropdownItem[]>
+  dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
   widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
+  videoOnly?: MaybeRefOrGetter<boolean>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
@@ -102,7 +107,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const name =
       id == null
         ? undefined
-        : dropdownItems.value.find((item) => item.id === id)?.name
+        : toValue(dropdownItems).find((item) => item.id === id)?.name
 
     modelValue.value = name
     void showHdrPreviewIfApplicable(name)
@@ -111,6 +116,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   async function uploadFile(
     file: File,
+    timeoutMs: number,
     isPasted: boolean = false,
     formFields: Partial<{ type: ResultItemType }> = {}
   ) {
@@ -125,7 +131,8 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
     const resp = await api.fetchApi('/upload/image', {
       method: 'POST',
-      body
+      body,
+      timeoutMs
     })
 
     if (resp.status !== 200) {
@@ -144,8 +151,9 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   async function uploadFiles(files: File[]): Promise<UploadResponse[]> {
     const folder = toValue(options.uploadFolder) ?? 'input'
+    const timeoutMs = uploadTimeoutMs(files)
     const uploadPromises = files.map((file) =>
-      uploadFile(file, false, { type: folder })
+      uploadFile(file, timeoutMs, false, { type: folder })
     )
     return (await Promise.all(uploadPromises)).filter((data) => !!data)
   }
@@ -163,7 +171,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
-      if (files.some(isExtensionlessVideo)) {
+      const isRejectedVideo = toValue(options.videoOnly)
+        ? isUntypedOrVideoWithoutExtension
+        : isExtensionlessVideo
+      if (files.some(isRejectedVideo)) {
         toast.warning(t('g.videoFilenameExtensionRequired'))
         return
       }

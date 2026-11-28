@@ -35,9 +35,16 @@ export function getHdrPreviewUrl(url: string | undefined): string | undefined {
   return previewId ? hdrPreviewAssetUrl(previewId) : undefined
 }
 
+export function fullResolutionSrc(img: HTMLImageElement): string {
+  return img.dataset.fullSrc ?? img.src
+}
+
 /** The file an image shows, rather than the stored preview it may display. */
 export function getImageFileUrl(img: HTMLImageElement): URL {
-  const url = new URL(img.dataset.fileUrl ?? img.src, img.baseURI)
+  const url = new URL(
+    img.dataset.fileUrl ?? fullResolutionSrc(img),
+    img.baseURI
+  )
   url.searchParams.delete('preview')
   return url
 }

@@ -4,6 +4,7 @@ import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 
 import {
@@ -13,8 +14,10 @@ import {
 } from './globalSettingsApi'
 
 vi.mock(import('@/config/comfyApi'), () => ({
-  getComfyApiBaseUrl: () => 'https://api.comfy.test'
+  getComfyApiBaseUrl: () => 'https://api.comfy.test',
+  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
 }))
+vi.mock(import('@/composables/useFeatureFlags'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/scripts/api'))
@@ -45,15 +48,23 @@ describe('Global Settings transport', () => {
     vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
   })
 
-  it.for([true, false])(
-    'reads with the credential it is handed (Cloud=%s)',
-    async (cloud) => {
+  const hosts = [
+    { cloud: true, openOnCloudEnabled: false, host: '' },
+    { cloud: true, openOnCloudEnabled: true, host: '' },
+    { cloud: false, openOnCloudEnabled: false, host: 'https://api.comfy.test' },
+    { cloud: false, openOnCloudEnabled: true, host: 'https://api.comfy.test' }
+  ]
+
+  it.for(hosts)(
+    'reads with the credential it is handed (Cloud=$cloud, Open on Cloud=$openOnCloudEnabled)',
+    async ({ cloud, openOnCloudEnabled, host }) => {
       distribution.isCloud = cloud
+      Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
       respondWith(stored)
 
       await expect(getGlobalSetting(key, authHeader)).resolves.toEqual(stored)
       expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-        `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings/${key}`,
+        `${host}/api/global-settings/${key}`,
         expect.objectContaining({ cache: 'no-store', headers: authHeader }),
         false
       )
@@ -61,17 +72,18 @@ describe('Global Settings transport', () => {
     }
   )
 
-  it.for([true, false])(
-    'posts a typed value to the collection (Cloud=%s)',
-    async (cloud) => {
+  it.for(hosts)(
+    'posts a typed value to the collection (Cloud=$cloud, Open on Cloud=$openOnCloudEnabled)',
+    async ({ cloud, openOnCloudEnabled, host }) => {
       distribution.isCloud = cloud
+      Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
       respondWith(stored)
 
       await expect(
         setGlobalSetting({ key, value: true }, authHeader)
       ).resolves.toEqual(stored)
       expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-        `${cloud ? '' : 'https://api.comfy.test'}/api/global-settings`,
+        `${host}/api/global-settings`,
         expect.objectContaining({
           method: 'POST',
           headers: { ...authHeader, 'Content-Type': 'application/json' },
@@ -126,6 +138,39 @@ describe('Global Settings transport', () => {
     await expect(getGlobalSetting(key, authHeader)).rejects.toBeInstanceOf(
       GlobalSettingsApiError
     )
+  })
+
+  it.for([
+    { serverCode: 'session_revoked', code: 'SESSION_REVOKED' },
+    { serverCode: 'TOKEN_REVOKED', code: 'TOKEN_REVOKED' }
+  ])(
+    'rejects a read refused for a revoked session with $code',
+    async ({ serverCode, code }) => {
+      respondWith({ code: serverCode, message: 'revoked' }, 401)
+      await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+        name: 'SessionRevokedError',
+        code
+      })
+    }
+  )
+
+  it('rejects a write refused for a revoked session the same way', async () => {
+    respondWith({ code: 'session_revoked', message: 'revoked' }, 401)
+    await expect(
+      setGlobalSetting({ key, value: true }, authHeader)
+    ).rejects.toMatchObject({ name: 'SessionRevokedError' })
+  })
+
+  it.for([
+    { name: 'a session that ended', body: { code: 'session_expired' } },
+    { name: 'a request with no session', body: { code: 'no_session' } },
+    { name: 'a refusal with no code', body: { message: 'Unauthorized' } }
+  ])('keeps the 401 for $name an ordinary failure', async ({ body }) => {
+    respondWith(body, 401)
+    await expect(getGlobalSetting(key, authHeader)).rejects.toMatchObject({
+      name: 'GlobalSettingsApiError',
+      status: 401
+    })
   })
 
   it('surfaces rejected writes', async () => {

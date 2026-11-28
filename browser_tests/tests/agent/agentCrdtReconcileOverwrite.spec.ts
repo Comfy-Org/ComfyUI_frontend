@@ -5,7 +5,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 /**
  * The color and title specs cover a follower rebind: returning to a workflow
@@ -37,13 +37,10 @@ const UNTOUCHED_NODE_ID = '6'
 const ADD_THEN_SET_CASE = 'agent-rec-add-set-delete'
 const ADDED_NODE_ID = '2785690574723683'
 
-// Real product opt-in for the CRDT debug instrument (crdtDebugGate.ts), not
-// test-only furniture — the same keys `agentDebugPanel.spec.ts` sets. Turning
-// it on surfaces `useAgentCrdtFollower`'s own `status.outcomes` counters in
-// the DOM, which is the browser-side apply signal below.
+test.use({ crdtDebugEnabled: true })
+
 async function enableCrdtDebugPanel(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
     localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   })
 }
@@ -127,7 +124,7 @@ test.describe(
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
       const actionbar = new ComfyActionbar(page)
-      const panel = new PropertiesPanelHelper(page)
+      const panel = new PropertiesPanel(page)
       const wrapper = agentConversation.vueNodes
         .getNodeLocator(UNTOUCHED_NODE_ID)
         .getByTestId('node-inner-wrapper')
@@ -198,7 +195,7 @@ test.describe(
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
       const actionbar = new ComfyActionbar(page)
-      const panel = new PropertiesPanelHelper(page)
+      const panel = new PropertiesPanel(page)
       const CUSTOM_TITLE = 'My Custom Prompt'
       const titleLocator = agentConversation.vueNodes
         .getNodeLocator(UNTOUCHED_NODE_ID)
@@ -338,7 +335,7 @@ test.describe(
         .getByLabel('text', { exact: true })
       const agentEditedField = agentConversation.vueNodes
         .getNodeLocator('3')
-        .getByLabel('steps', { exact: true })
+        .getByRole('spinbutton', { name: 'steps', exact: true })
       const localValue = 'keep this completed local edit'
 
       await agentConversation.sendPrompt(0)
@@ -355,7 +352,7 @@ test.describe(
       })
       await agentConversation.waitForTurnComplete()
 
-      await expect(agentEditedField.getByRole('spinbutton')).toHaveValue('30')
+      await expect(agentEditedField).toHaveValue('30')
       await expect(textField).toHaveValue(localValue)
     })
   }

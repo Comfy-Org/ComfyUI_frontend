@@ -9,12 +9,15 @@ export const ADD_CREDITS_COPY = {
   'amountError.above_max':
     'The largest top-up is {amount}. Add more with another top-up.',
   'amountError.whole_dollars': 'Whole dollars only.',
-  negativeBalance:
-    'Your balance is −{credits} credits. This top-up covers that first.',
+  negativeBalance: 'Your balance is −{credits} credits.',
+  balanceAfter: 'After this top-up: {credits} credits.',
+  stillNegativeAfter: 'Still negative after this top-up: −{credits} credits.',
   'planLine.no_plan':
     "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
   'planLine.ended':
     "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+  'planLine.ended_sales_managed':
+    "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
   'planLine.free_runs':
     "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
   credits: '{credits} credits',
@@ -65,13 +68,59 @@ export const ADD_CREDITS_COPY = {
   'blocked.title': "Checkout didn't open",
   'blocked.body':
     'Your browser blocked the new tab. Open checkout to finish paying.',
-  'blocked.action': 'Open checkout'
+  'blocked.action': 'Open checkout',
+  'autoTopUpOffer.body':
+    'Buy credits automatically when you run low, so workflows and API calls keep running.',
+  'autoTopUpOffer.setUp': 'Set up',
+  'autoTopUpOffer.notNow': 'Not now',
+  'autoTopUp.label': 'Turn on auto top-up',
+  'autoTopUp.body':
+    'Buy credits automatically when you run low, so workflows keep running.',
+  'autoTopUp.threshold': 'When credits drop below',
+  'autoTopUp.thresholdHint': 'Counts plan credits and credits you’ve bought.',
+  'autoTopUp.target': 'Top up to',
+  'autoTopUp.targetHint': '{target} credits. Each top-up is at least {amount}.',
+  'autoTopUp.limit': 'Monthly limit',
+  'autoTopUp.limitOff':
+    'Up to {max} a month, the maximum. Turn on to set a lower limit.',
+  'autoTopUp.limitHint': 'Most you can set here: {max} a month.',
+  'autoTopUp.consentNoCard':
+    'Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.',
+  'autoTopUp.consentDefaultCard':
+    'Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.',
+  'autoTopUp.card': '{brand} ···· {last4}',
+  'autoTopUp.billing': 'Billing',
+  'autoTopUp.invalid': 'Enter a valid value.',
+  'autoTopUp.fieldError.notWhole': 'Enter a whole number of credits.',
+  'autoTopUp.fieldError.belowMinimum': 'Must be at least 1 credit.',
+  'autoTopUp.fieldError.belowTarget':
+    'Must be at least {minimum} credits, about {usd} above your threshold.',
+  'autoTopUp.fieldError.aboveTarget':
+    'Can’t be more than {max} credits (about {usd}).',
+  'autoTopUp.fieldError.belowTopUp':
+    'Can’t cover one top-up. Set at least {amount}.',
+  'autoTopUp.isOn': 'Auto top-up is on.',
+  'autoTopUp.manage': 'Manage',
+  'autoTopUpOn.title': 'Auto top-up is on',
+  'autoTopUpOn.summary': 'Below {threshold} credits, tops up to {target}.',
+  'autoTopUpOn.limit': 'Up to {limit} a month.',
+  'autoTopUpOn.noLimit': 'No monthly limit.',
+  'autoTopUpOn.done': 'Done',
+  'autoTopUpFailed.title': "Auto top-up didn't turn on",
+  'autoTopUpFailed.body':
+    'Your credits were added. Set up auto top-up in Billing to try again.',
+  'autoTopUpUnconfirmed.title': 'Credits added',
+  'autoTopUpUnconfirmed.body': 'Open Billing to check that auto top-up is on.'
 } as const satisfies Record<string, string>
 
 export type AddCreditsCopyKey = keyof typeof ADD_CREDITS_COPY
 
 /** The surface-only plan line a host passes in from its served plan state. */
-export type AddCreditsPlanLine = 'no_plan' | 'ended' | 'free_runs'
+export type AddCreditsPlanLine =
+  | 'no_plan'
+  | 'ended'
+  | 'ended_sales_managed'
+  | 'free_runs'
 
 export type AddCreditsCopyParams = Readonly<Record<string, string | number>>
 

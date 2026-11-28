@@ -36,7 +36,9 @@ describe('consoleErrorLedger', () => {
 
   it('required startup errors fail stale and filter only their exact signatures', () => {
     const error =
-      "[vite:preloadError] {url: null, message: Unexpected token '}'} [http://localhost:8188/assets/main-abc.js]"
+      "[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/js/ltx_director_guide.js: Unexpected token '}'"
+    const otherCause =
+      "[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/js/ltx_director_guide.js: The requested module '/scripts/app.js' does not provide an export named 'app'"
     expect(
       staleRequiredStartupErrorRulesForPacks(['WhatDreamsCost-ComfyUI'], [])
     ).toEqual(['WhatDreamsCost-ComfyUI/ltx-director-guide-syntax'])
@@ -49,9 +51,9 @@ describe('consoleErrorLedger', () => {
     expect(
       unallowlistedGlobalExtensionErrorsForPacks(
         ['WhatDreamsCost-ComfyUI'],
-        [error, 'different failure']
+        [error, otherCause, 'different failure']
       )
-    ).toEqual(['different failure'])
+    ).toEqual([otherCause, 'different failure'])
   })
 
   it('reports every console acceptance with unique removal metadata', () => {

@@ -11,6 +11,7 @@ import {
   LGraphNode,
   isComboWidget
 } from '@/lib/litegraph/src/litegraph'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type {
   WebSessionRequestScope,
   WebSessionRequests
@@ -35,7 +36,7 @@ function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
 
 const mockCloudAuth = vi.hoisted(() => ({
   isCloud: false,
-  authHeader: null as { Authorization: `Bearer ${string}` } | null
+  authHeader: null as AuthHeader | null
 }))
 
 vi.mock(import('axios'), { spy: true })
@@ -586,6 +587,22 @@ describe('useRemoteWidget', () => {
           )
         })
       })
+
+      it('sends no Cloud credential to a route on another origin', async () => {
+        mockCloudAuth.isCloud = true
+        mockCloudAuth.authHeader = { 'X-API-KEY': 'stored-key' }
+        mockAxiosResponse(['external data'])
+        const route = 'https://example.com/options'
+
+        const hook = useRemoteWidget(createMockOptions({ route }))
+        await getResolvedValue(hook)
+
+        expect(axios.get).toHaveBeenCalledExactlyOnceWith(route, {
+          params: undefined,
+          signal: expect.any(AbortSignal),
+          timeout: 4096
+        })
+      })
     })
 
     describe('when distribution is not cloud', () => {
@@ -747,23 +764,26 @@ describe('useRemoteWidget', () => {
 
     it.for([
       {
-        name: 'a cross-origin route',
+        name: 'a cross-origin route, without the Cloud credential',
         route: 'https://example.com/x',
-        sessionScope: sessionScope
+        sessionScope: sessionScope,
+        headers: {}
       },
       {
-        name: 'a protocol-relative route',
+        name: 'a protocol-relative route, without the Cloud credential',
         route: '//example.com/x',
-        sessionScope: sessionScope
+        sessionScope: sessionScope,
+        headers: {}
       },
       {
         name: 'a tab that is not on the session',
         route: uniqueRoute(),
-        sessionScope: () => undefined
+        sessionScope: () => undefined,
+        headers: { headers: { Authorization: 'Bearer test-token' } }
       }
     ])(
       'stays on axios for $name',
-      async ({ route, sessionScope: nextScope }) => {
+      async ({ route, sessionScope: nextScope, headers }) => {
         mockCloudAuth.isCloud = true
         mockCloudAuth.authHeader = { Authorization: 'Bearer test-token' }
         scope = nextScope
@@ -778,7 +798,7 @@ describe('useRemoteWidget', () => {
           params: undefined,
           signal: expect.any(AbortSignal),
           timeout: 4096,
-          headers: { Authorization: 'Bearer test-token' }
+          ...headers
         })
         expect(hook.getCachedValue()).toEqual(['ax'])
       }

@@ -16,7 +16,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { isValidShareId } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -175,14 +175,15 @@ export function useSharedWorkflowUrlLoader() {
       }
 
       try {
-        await app.loadGraphData(
+        await useApp().loadGraphData(
           payload.workflowJson,
           true,
           true,
           workflowName,
           {
             openSource: 'shared_url',
-            shareId: payload.shareId
+            shareId: payload.shareId,
+            initiator: 'user'
           }
         )
       } catch (error) {

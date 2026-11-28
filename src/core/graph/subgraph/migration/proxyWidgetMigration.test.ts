@@ -469,6 +469,30 @@ describe('flushProxyWidgetMigration', () => {
       expect(exposures[0].sourceNodeId).toBe(String(inner.id))
     })
 
+    it('exposes legacy video and animation preview entries once under the canvas preview name before the previews are drawn', () => {
+      const host = buildHost()
+      const inner = addInnerNode(host, 'Inner')
+
+      host.properties.proxyWidgets = [
+        [String(inner.id), 'video-preview'],
+        [String(inner.id), '$$comfy_animation_preview']
+      ]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(
+        usePreviewExposureStore().getExposures(
+          host.rootGraph.id,
+          String(host.id)
+        )
+      ).toEqual([
+        expect.objectContaining({
+          sourceNodeId: String(inner.id),
+          sourcePreviewName: '$$canvas-image-preview'
+        })
+      ])
+      expect(host.properties.proxyWidgetErrorQuarantine).toBeUndefined()
+    })
+
     it('classifies type:preview serialize:false widgets as preview exposure', () => {
       const host = buildHost()
       const inner = addInnerNode(host, 'Inner', (n) => {

@@ -100,6 +100,9 @@ export class CanvasPointer {
   /** The last pointerup event for the primary button */
   eUp?: CanvasPointerEvent
 
+  /** Screen-space travel already applied by canvas panning since the last pointerdown */
+  panTravel: [number, number] = [0, 0]
+
   /** Currently detected input device type */
   detectedDevice: 'mouse' | 'trackpad' = 'mouse'
 
@@ -468,6 +471,7 @@ export class CanvasPointer {
         this.isDown = false
         this.isDouble = false
         this.resizeDirection = undefined
+        this.panTravel = [0, 0]
 
         if (this.clearEventsOnReset) {
           this.eDown = undefined

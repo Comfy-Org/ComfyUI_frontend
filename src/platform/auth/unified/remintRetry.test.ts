@@ -2,11 +2,21 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import type { AxiosAdapter } from 'axios'
 import axios, { AxiosError } from 'axios'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import * as distributionTypes from '@/platform/distribution/types'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -56,10 +66,6 @@ describe('cloudRetryPolicy', () => {
 describe('fetchWithUnifiedRemint', () => {
   const ok = { status: 200 } as Response
   const unauthorized = { status: 401 } as Response
-
-  beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-  })
 
   it('re-mints once and retries with the fresh token on a 401 (AC1)', async () => {
     vi.mocked(fetch)
@@ -580,10 +586,6 @@ describe('fetchWithUnifiedRemint', () => {
 })
 
 describe('attachUnifiedRemintInterceptor', () => {
-  beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-  })
-
   // A custom axios adapter is responsible for its own status handling (axios
   // only applies validateStatus inside its built-in adapters), so reject
   // non-2xx with a real AxiosError to mirror a live response.
@@ -689,8 +691,11 @@ describe('attachUnifiedRemintInterceptor', () => {
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
   })
 
-  it('does not re-mint when the flag is OFF (AC3)', async () => {
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
+  it('does not re-mint off Cloud (AC3)', async () => {
+    vi.mocked(distributionTypes).isCloud = false
+    onTestFinished(() => {
+      vi.mocked(distributionTypes).isCloud = true
+    })
     const { client, adapter } = makeClient([401])
 
     await expect(

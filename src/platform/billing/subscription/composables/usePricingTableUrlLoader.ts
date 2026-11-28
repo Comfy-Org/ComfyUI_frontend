@@ -1,6 +1,9 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import {
@@ -115,7 +118,9 @@ export function usePricingTableUrlLoader() {
     })
   }
 
-  async function loadPricingTableFromUrl() {
+  async function loadPricingTableFromUrl({
+    workspaceLinkRefused = false
+  } = {}) {
     hydratePreservedQuery(NAMESPACE)
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
@@ -141,6 +146,10 @@ export function usePricingTableUrlLoader() {
     clearPreservedQuery(NAMESPACE)
 
     if (typeof param !== 'string' || !param) return
+    if (workspaceLinkRefused) {
+      useToast().info(t('workspace.deepLinkPricingRefused'))
+      return
+    }
 
     await initializeCapabilities()
     if (!permissions.value.canManageSubscription) {
@@ -182,6 +191,7 @@ export function usePricingTableUrlLoader() {
       if (!availableTeamCreditStops) {
         await subscriptionDialog.showPricingTable({
           reason: 'deep_link',
+          sameTab: true,
           planMode: 'team'
         })
         return
@@ -198,6 +208,7 @@ export function usePricingTableUrlLoader() {
     if (teamCheckoutRequest && !initialCheckout) {
       await subscriptionDialog.showPricingTable({
         reason: 'deep_link',
+        sameTab: true,
         planMode: 'team'
       })
       return
@@ -222,6 +233,7 @@ export function usePricingTableUrlLoader() {
 
     await subscriptionDialog.showPricingTable({
       reason: 'deep_link',
+      sameTab: true,
       planMode,
       initialCheckout
     })

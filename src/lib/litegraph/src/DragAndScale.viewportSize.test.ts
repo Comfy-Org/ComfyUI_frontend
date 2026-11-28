@@ -46,3 +46,35 @@ describe('DragAndScale viewport size cache', () => {
     expect(canvas.ds.getViewportSize()).toEqual([400, 300])
   })
 })
+
+describe('DragAndScale anchored zoom', () => {
+  it.for([
+    { requested: 8, expected: 4 },
+    { requested: 0.01, expected: 0.25 },
+    { requested: 1.005, expected: 1 },
+    { requested: 1.02, expected: 1.02 }
+  ])(
+    'clamps or snaps $requested to $expected without moving the anchor',
+    ({ requested, expected }) => {
+      const element = createTestCanvasElement({ cssSize: [800, 600] })
+      vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(13, 29, 800, 600)
+      )
+      const ds = new DragAndScale(element)
+      ds.min_scale = 0.25
+      ds.max_scale = 4
+      ds.scale = 2
+      ds.offset = [17, -9]
+
+      ds.changeScale(requested, [313, 229])
+
+      expect(ds.scale).toBe(expected)
+      const anchoredPoint = ds.convertCanvasToOffset([300, 200])
+      expect(anchoredPoint[0]).toBeCloseTo(133, 5)
+      expect(anchoredPoint[1]).toBeCloseTo(109, 5)
+      ds.changeScale(2, [313, 229])
+      expect(ds.offset[0]).toBeCloseTo(17, 5)
+      expect(ds.offset[1]).toBeCloseTo(-9, 5)
+    }
+  )
+})

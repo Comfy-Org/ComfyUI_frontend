@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { appTooltipProviderDefaults } from '@comfyorg/design-system/lib/tooltip/tooltipConfig'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -16,7 +17,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
@@ -62,7 +63,8 @@ function renderToolbox() {
         })
       ],
       stubs: {
-        ArrangeButton: true,
+        TidyUpButton: true,
+        AlignButton: true,
         ColorPickerButton: {
           template: '<button aria-label="Color" />'
         },
@@ -77,7 +79,7 @@ function renderToolbox() {
 describe('SelectionToolbox', () => {
   beforeEach(() => {
     useCanvasStore().canvas = createMockCanvas()
-    vi.spyOn(useRightSidePanelStore(), 'openPanel').mockImplementation(() => {})
+    vi.spyOn(usePropertiesPanelStore(), 'openPanel').mockReturnValue(true)
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
     vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([])
     useSettingStore().$patch({
@@ -161,7 +163,7 @@ describe('SelectionToolbox', () => {
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'Node Info' }))
-    expect(useRightSidePanelStore().openPanel).toHaveBeenCalledWith('info')
+    expect(usePropertiesPanelStore().openPanel).toHaveBeenCalledWith('info')
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'selection_toolbox_node_info_opened',
       element_group: 'selection_toolbox'
@@ -308,15 +310,17 @@ describe('SelectionToolbox', () => {
     expect(useCanvasInteractions().forwardEventToCanvas).toHaveBeenCalledOnce()
   })
 
-  it('waits a full second before showing a tooltip over the canvas', async () => {
-    vi.useFakeTimers()
+  it('waits for deliberate hover before showing a tooltip over the canvas', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     setCanvasSelection([new LGraphNode('Test Node')])
     renderToolbox()
     await user.hover(screen.getByRole('button', { name: 'More Options' }))
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(
+      appTooltipProviderDefaults.delayDuration - 1
+    )
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(1)
     expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
       'More Options'
     )

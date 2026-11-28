@@ -1,11 +1,15 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/platform/billing/composables/types'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 
@@ -27,11 +31,28 @@ vi.mock<unknown>(import('./UsageLogsTable.vue'), async () => {
 vi.mock(
   import('@/platform/billing/subscription/components/CreditsTile.vue'),
   () => ({
-    default: defineComponent({ setup: () => () => h('div') })
+    default: defineComponent({
+      setup: () => () => h('div', { 'data-testid': 'credits-tile-current' })
+    })
   })
 )
+vi.mock(
+  import('@/platform/billing/legacy160/platform/billing/subscription/components/CreditsTile.vue'),
+  () => ({
+    default: defineComponent({
+      setup: () => () => h('div', { 'data-testid': 'credits-tile-1.60' })
+    })
+  })
+)
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+beforeEach(() => {
+  provideCurrentUser(useCurrentUser)
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -67,6 +88,25 @@ describe('CreditsPanel', () => {
     })
   }
 
+  it.for([
+    { enabled: false, tile: 'credits-tile-1.60' },
+    { enabled: true, tile: 'credits-tile-current' }
+  ])(
+    'renders the $tile credits tile with billing_new_ux_enabled $enabled',
+    ({ enabled, tile }) => {
+      mockBillingContext()
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+      renderComponent()
+
+      expect(screen.getByTestId(tile)).toBeInTheDocument()
+      expect(
+        screen.queryByTestId(
+          enabled ? 'credits-tile-1.60' : 'credits-tile-current'
+        )
+      ).not.toBeInTheDocument()
+    }
+  )
+
   it('opens the billing portal for the active billing rail', async () => {
     const billing = mockBillingContext()
     const user = userEvent.setup()
@@ -75,6 +115,21 @@ describe('CreditsPanel', () => {
     await user.click(screen.getByRole('button', { name: /Invoice History/ }))
 
     expect(billing.manageSubscription).toHaveBeenCalledOnce()
+  })
+
+  it('opens the Billing / Refund Issue form from Message Support', async () => {
+    mockBillingContext()
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const user = userEvent.setup()
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: /Message Support/ }))
+
+    expect(openSpy).toHaveBeenCalledExactlyOnceWith(
+      'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue',
+      '_blank',
+      'noopener,noreferrer'
+    )
   })
 
   it('refreshes activity on a balance change but not on first hydration', async () => {

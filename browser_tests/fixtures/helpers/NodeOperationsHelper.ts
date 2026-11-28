@@ -203,10 +203,9 @@ export class NodeOperationsHelper {
   }
 
   async loadGraph(data: ComfyWorkflowJSON): Promise<void> {
-    await this.page.evaluate(
-      (d) => window.app!.loadGraphData(d, true, true, null),
-      data
-    )
+    await this.page.evaluate(async (d) => {
+      await window.app!.loadGraphData(d, true, true, null)
+    }, data)
   }
 
   async repositionNodes(

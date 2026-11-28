@@ -12,6 +12,7 @@ import type {
   CancelSubscriptionResponse,
   CreateTopupCheckoutRequest,
   CreateTopupCheckoutResponse,
+  CreateTopupPurchaseRequest,
   CreateTopupQuoteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
@@ -39,6 +40,8 @@ import type {
   SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary,
+  TopupAutoTopUpSettings,
+  TopupPurchase,
   TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -47,6 +50,13 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import type { AxiosInstance, AxiosRequestConfig } from 'axios'
+
+function throwIfSignalAborted(signal: AbortSignal | undefined): void {
+  if (!signal?.aborted) return
+  throw signal.reason === undefined
+    ? new DOMException('This operation was aborted', 'AbortError')
+    : signal.reason
+}
 
 export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 type SubscribeBillingCycle = 'monthly' | 'yearly'
@@ -101,9 +111,14 @@ export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
 export type BillingCapabilitiesRead = Omit<
   BillingCapabilitiesResponse,
-  'denied_reasons' | 'auto_top_up_enabled'
+  'denied_reasons' | 'auto_top_up_enabled' | 'billing_web_checkout_ui'
 > &
-  Partial<Pick<BillingCapabilitiesResponse, 'auto_top_up_enabled'>> & {
+  Partial<
+    Pick<
+      BillingCapabilitiesResponse,
+      'auto_top_up_enabled' | 'billing_web_checkout_ui'
+    >
+  > & {
     denied_reasons?: Readonly<Partial<Record<string, string>>>
   }
 export type BillingTopUpDenial = NonNullable<
@@ -458,23 +473,46 @@ export function createBillingApi({
     async createTopupCheckout(
       amountCents: number,
       returnUrl: string,
-      signal?: AbortSignal
+      signal?: AbortSignal,
+      autoTopUp?: TopupAutoTopUpSettings
     ): Promise<CreateTopupCheckoutResponse> {
       const auth = await requestAuth()
-      signal?.throwIfAborted()
+      throwIfSignalAborted(signal)
       try {
         const response = await client.post<CreateTopupCheckoutResponse>(
           resolveUrl('/billing/topup/checkout'),
           {
             amount_cents: amountCents,
             return_url: returnUrl,
-            idempotency_key: crypto.randomUUID()
+            idempotency_key: crypto.randomUUID(),
+            ...(autoTopUp === undefined ? {} : { auto_top_up: autoTopUp })
           } satisfies CreateTopupCheckoutRequest,
           { ...auth, signal }
         )
         return response.data
       } catch (err) {
         handleAxiosError(err, 'createTopupCheckout')
+      }
+    },
+    async createTopupPurchase(
+      amountCents: number,
+      signal?: AbortSignal,
+      autoTopUp?: TopupAutoTopUpSettings
+    ): Promise<TopupPurchase> {
+      const auth = await requestAuth()
+      throwIfSignalAborted(signal)
+      try {
+        const response = await client.post<TopupPurchase>(
+          resolveUrl('/billing/topup/purchases'),
+          {
+            amount_cents: amountCents,
+            ...(autoTopUp === undefined ? {} : { auto_top_up: autoTopUp })
+          } satisfies CreateTopupPurchaseRequest,
+          { ...auth, signal }
+        )
+        return response.data
+      } catch (err) {
+        handleAxiosError(err, 'createTopupPurchase')
       }
     },
     async quoteTopup(
@@ -505,14 +543,18 @@ export function createBillingApi({
         handleAxiosError(err, 'listTopupCheckouts')
       }
     },
-    async getTopupCheckout(sessionId: string): Promise<HostedTopupCheckout> {
+    async getTopupCheckout(
+      sessionId: string,
+      signal?: AbortSignal
+    ): Promise<HostedTopupCheckout> {
       const auth = await requestAuth()
+      throwIfSignalAborted(signal)
       try {
         const response = await client.get<HostedTopupCheckout>(
           resolveUrl(
             `/billing/topup/checkouts/${encodeURIComponent(sessionId)}`
           ),
-          { ...auth, timeout: 10_000 }
+          { ...auth, timeout: 10_000, signal }
         )
         return response.data
       } catch (err) {

@@ -1,6 +1,6 @@
 import type { Asset } from '@comfyorg/ingest-types'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 /**
  * Core-native asset shape: the ingest Asset plus the `loader_path` contract
@@ -86,7 +86,7 @@ export const AGENT_AUDIO_ASSET: Asset = createOutputAsset({
   last_access_time: '2026-09-18T00:00:00.000Z'
 })
 
-export const STALE_TEMP_FILENAME = 'ComfyUI_temp_thsmm_00001_.png'
+const STALE_TEMP_FILENAME = 'ComfyUI_temp_thsmm_00001_.png'
 export const STALE_TEMP_CARD_TEXT = STALE_TEMP_FILENAME.replace(/\.[^.]+$/, '')
 export const STALE_TEMP_ASSET: Asset = createOutputAsset({
   id: '55555555-5555-4555-a555-555555555555',
@@ -111,6 +111,13 @@ export const STABLE_CHECKPOINT: Asset = createModelAsset({
   created_at: '2025-01-15T10:30:00Z',
   updated_at: '2025-01-15T10:30:00Z'
 })
+
+export const UNSUPPORTED_QWEN_TTS: Asset = {
+  ...STABLE_CHECKPOINT,
+  id: 'test-qwen-tts-001',
+  name: 'Qwen3-TTS-12Hz-0.6B-CustomVoice.safetensors',
+  tags: ['models', 'qwen-tts/Qwen3-TTS-12Hz-0.6B-CustomVoice']
+}
 
 export const STABLE_CHECKPOINT_2: Asset = createModelAsset({
   id: 'test-checkpoint-002',

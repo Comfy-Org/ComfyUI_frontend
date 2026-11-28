@@ -1,15 +1,22 @@
 import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
-import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
-import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
-import { resetCompositorStateWidgets } from '@/renderer/extensions/compositor/composables/compositorWidgets'
+import type { CompositorBBox } from '@comfyorg/layer-editor/persistence/compositorLayerState'
+import type { ImageFileRef } from '@/renderer/extensions/layerEditor/compositor/compositorPaths'
+import { resetCompositorStateWidgets } from '@/renderer/extensions/layerEditor/compositor/compositorWidgets'
 import {
   clearCompositorLayers,
   clearCompositorPreviewOverride,
   setCompositorLayers
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeOutputWith } from '@comfyorg/api-client/executionTypes'
+import type {
+  NodeExecutionOutput,
+  NodeOutputWith
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 type ImageCompositorOutput = NodeOutputWith<{
   compositor_layers?: Partial<ImageFileRef>[]
@@ -19,11 +26,46 @@ type ImageCompositorOutput = NodeOutputWith<{
   compositor_state_stale?: boolean[]
 }>
 
+function isImageCompositor(node: LGraphNode): boolean {
+  return node.constructor.comfyClass === 'ImageCompositor'
+}
+
+function applyCompositorLayers(
+  node: LGraphNode,
+  output: ImageCompositorOutput | undefined
+): void {
+  const kept = (output?.compositor_layers ?? []).flatMap(
+    ({ filename, subfolder = '', type = 'temp' }, index) =>
+      filename ? [{ layer: { filename, subfolder, type }, index }] : []
+  )
+  const layers = kept.map(({ layer }) => layer)
+  const rawBboxes = output?.compositor_bboxes
+  const bboxes = rawBboxes
+    ? kept.map(({ index }) => rawBboxes[index] ?? null)
+    : undefined
+  setCompositorLayers(
+    node,
+    layers,
+    output?.compositor_inputs,
+    bboxes,
+    output?.compositor_canvas?.[0]
+  )
+}
+
 export const imageCompositorExtension: ComfyExtension = {
   name: 'Comfy.ImageCompositor',
 
+  onNodeOutputsUpdated(
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+  ) {
+    const { nodeToNodeLocatorId } = useWorkflowStore()
+    for (const node of collectAllNodes(useApp().rootGraph, isImageCompositor)) {
+      applyCompositorLayers(node, nodeOutputs[nodeToNodeLocatorId(node)])
+    }
+  },
+
   nodeCreated(node: LGraphNode) {
-    if (node.constructor.comfyClass !== 'ImageCompositor') return
+    if (!isImageCompositor(node)) return
 
     const [oldWidth, oldHeight] = node.size
     node.setSize([Math.max(oldWidth, 300), Math.max(oldHeight, 400)])
@@ -34,23 +76,8 @@ export const imageCompositorExtension: ComfyExtension = {
     node.onExecuted = function (output: ImageCompositorOutput) {
       onExecuted?.call(this, output)
 
-      const kept = (output.compositor_layers ?? []).flatMap(
-        ({ filename, subfolder = '', type = 'temp' }, index) =>
-          filename ? [{ layer: { filename, subfolder, type }, index }] : []
-      )
-      const layers = kept.map(({ layer }) => layer)
-      const rawBboxes = output.compositor_bboxes
-      const bboxes = rawBboxes
-        ? kept.map(({ index }) => rawBboxes[index] ?? null)
-        : undefined
-      if (layers.length)
-        setCompositorLayers(
-          node,
-          layers,
-          output.compositor_inputs,
-          bboxes,
-          output.compositor_canvas?.[0]
-        )
+      if (output.compositor_layers?.some((layer) => layer.filename))
+        applyCompositorLayers(node, output)
       clearCompositorPreviewOverride(node)
 
       if (output.compositor_state_stale?.[0]) {

@@ -1,4 +1,7 @@
-import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zBillingStatusResponse,
+  zSubscriptionTier
+} from '@comfyorg/ingest-types/zod'
 import type { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
@@ -12,6 +15,15 @@ const BillingStatusBodySchema = zBillingStatusResponse.extend({
   next_charge: zBillingStatusResponse.shape.next_charge.optional()
 })
 
+function withoutUnsupportedTier(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null) return body
+  if (!('subscription_tier' in body)) return body
+  const { subscription_tier: tier, ...rest } = body
+  const unsupported =
+    typeof tier === 'string' && !zSubscriptionTier.safeParse(tier).success
+  return unsupported ? rest : body
+}
+
 export type BillingStatusData = z.infer<typeof BillingStatusBodySchema>
 
 export type BillingStatusScope = BillingScope
@@ -24,6 +36,11 @@ export interface BillingStatusSnapshot {
 
 export interface BillingStatusReadOptions {
   readonly signal?: AbortSignal
+  /**
+   * Start a new request instead of joining one in flight. The older request
+   * stops publishing.
+   */
+  readonly fresh?: boolean
 }
 
 export interface BillingStatusReader {
@@ -54,15 +71,20 @@ export function createBillingStatusReader(
     transport,
     scopeSource,
     route: BILLING_STATUS_ROUTE,
-    parse: (body) => BillingStatusBodySchema.safeParse(body),
+    parse: (body) =>
+      BillingStatusBodySchema.safeParse(withoutUnsupportedTier(body)),
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { status: data, scope, readAt: now() }
-    })
+    }),
+    publish: (value, fenced) => (fenced ? undefined : value)
   })
 
   return {
-    read: reader.read,
+    read: (readOptions) => {
+      if (readOptions?.fresh === true) reader.fenceInFlight({ detach: true })
+      return reader.read(readOptions)
+    },
     getSnapshot: reader.getSnapshot,
     dispose: reader.dispose
   }

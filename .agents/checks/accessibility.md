@@ -24,5 +24,7 @@ Rules:
 - Focus on NEW or CHANGED UI in the diff — do not audit the entire existing codebase
 - Only flag issues in .vue, .tsx, .jsx, .html, or template-containing files
 - Skip non-UI files entirely (stores, services, utils)
+- Prefer `@comfyorg/design-system` components, which already handle focus, roles, and keyboard behavior; flag hand-rolled replacements for them.
+- Accessible names built in script code must be `vue-i18n` text; lint already checks static template attributes. Runtime values such as node or file names, and `aria-labelledby` ID references, are not translated.
 - Skip canvas-based content: the LiteGraph node editor renders on `<canvas>` elements, not DOM-based UI. WCAG rules don't fully apply to canvas rendering internals — only audit the DOM-based controls around it (toolbars, panels, dialogs)
 - "Critical" for completely inaccessible interactive elements, "major" for missing labels/ARIA, "minor" for enhancement opportunities

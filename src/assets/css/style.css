@@ -1,47 +1,16 @@
+@layer theme, base, components, utilities, presets;
+
 @import '@comfyorg/design-system/css/style.css';
+@import '@comfyorg/mask-editor/ui/style.css';
+@import '@comfyorg/theme-core/presets/classic.css';
+@import '@comfyorg/theme-core/presets/morning-class.css';
+
+@source '../../../packages/layer-editor-ui/src';
+@source '../../../packages/mask-editor/src/ui';
+@source not '../../../tools';
 
 @theme {
   --comfy-canvas-gutter: calc(var(--spacing) * 2);
-}
-
-.node-blood-drips {
-  color: #990c20;
-}
-
-.node-blood-drips::before {
-  content: '';
-  position: absolute;
-  inset: -4px 0 auto;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.node-blood-drop {
-  transform: translateY(5px) scaleX(0.8);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  body:not(.disable-animations) .node-blood-drop {
-    animation: blood-fall 3.7s infinite both;
-  }
-}
-
-@keyframes blood-fall {
-  0% {
-    transform: translateY(0) scale(0.8, 0.6);
-    animation-timing-function: ease-out;
-  }
-  60% {
-    transform: translateY(12px) scale(0.8, 1.2);
-    opacity: 1;
-    animation-timing-function: ease-in;
-  }
-  90%,
-  100% {
-    transform: translateY(70px) scale(0.8, 1.4);
-    opacity: 0;
-  }
 }
 
 @layer base {
@@ -101,12 +70,12 @@
   }
 }
 
-/* Use 0.001ms instead of 0s so transitionend/animationend events still fire
-   and JS listeners aren't broken. */
 .disable-animations *,
 .disable-animations *::before,
 .disable-animations *::after {
+  /* stylelint-disable-next-line declaration-no-important */
   animation-duration: 0.001ms !important;
+  /* stylelint-disable-next-line declaration-no-important */
   transition-duration: 0.001ms !important;
 }
 

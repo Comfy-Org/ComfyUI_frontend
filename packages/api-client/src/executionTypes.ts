@@ -1,10 +1,32 @@
-import type { PromptInfo } from '@comfyorg/ingest-types'
+import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
+import type {
+  BillingStatusResponse,
+  ExecutionError,
+  PromptInfo
+} from '@comfyorg/ingest-types'
+import { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
 import { resultItemType } from './resultItemTypeSchema'
 
 export type JobId = string
+
+/**
+ * Core's OpenAPI defines no websocket frame schemas. It documents that
+ * `workflow_metadata` is echoed onto every JSON frame carrying a `prompt_id`,
+ * so this field is the request contract read back rather than a separate one.
+ *
+ * What transfers from the spec is the map's VALUE type, not the map: core types
+ * `workflow_metadata` as an arbitrary string map, and the frame carries that
+ * map's contents merged into the frame object. So a `Pick` or `Partial` of the
+ * map would describe the wrong shape here even though it would compile.
+ *
+ * The generated package is bundled into the published declarations by
+ * `tsconfig.types.json`, so this reference is inlined rather than emitted as an
+ * import of a private package that an external consumer could not resolve.
+ */
+type StampedWorkflowId = { workflow_id?: PromptWorkflowMetadata[string] }
 
 export const zResultItem = z.object({
   filename: z.string().optional(),
@@ -39,7 +61,7 @@ export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null
 }
-export interface ProgressWsMessage {
+export interface ProgressWsMessage extends StampedWorkflowId {
   value: number
   max: number
   prompt_id: JobId
@@ -55,11 +77,11 @@ export interface NodeProgressState {
   parent_node_id?: NodeId
   real_node_id?: NodeId
 }
-export interface ProgressStateWsMessage {
+export interface ProgressStateWsMessage extends StampedWorkflowId {
   prompt_id: JobId
   nodes: Record<NodeId, NodeProgressState>
 }
-export interface ExecutingWsMessage {
+export interface ExecutingWsMessage extends StampedWorkflowId {
   node: NodeId | null
   display_node?: NodeId
   prompt_id: JobId
@@ -70,7 +92,7 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
   output: NodeExecutionOutput
   merge?: boolean
 }
-interface ExecutionWsMessageBase {
+interface ExecutionWsMessageBase extends StampedWorkflowId {
   prompt_id: JobId
   timestamp: number
 }
@@ -90,10 +112,40 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   executed: NodeId[]
   exception_message: string
   exception_type: string
-  traceback: string[]
+  /** Cloud can send `null` (or omit it) when no traceback was captured. */
+  traceback?: string[] | null
   current_inputs?: unknown
   current_outputs?: unknown
+  node_errors?: ExecutionError['node_errors']
 }
+const zRelayedValidationError =
+  zPromptOutputsSkippedNodeError.shape.errors.element
+
+const zRelayedValidationErrors = z
+  .array(z.unknown())
+  .catch([])
+  .transform((errors) =>
+    errors.flatMap((error) => {
+      const item = zRelayedValidationError.safeParse(error)
+      return item.success ? [item.data] : []
+    })
+  )
+
+const zRelayedNodeError = z
+  .object({
+    class_type: zPromptOutputsSkippedNodeError.shape.class_type.catch(''),
+    dependent_outputs:
+      zPromptOutputsSkippedNodeError.shape.dependent_outputs.catch([]),
+    errors: zRelayedValidationErrors
+  })
+  .catch({ class_type: '', dependent_outputs: [], errors: [] })
+
+/** Relayed `node_errors` with every node kept and each part outside the contract emptied. */
+export const zRelayedNodeErrors = z.record(
+  z.string(),
+  zRelayedNodeError
+) satisfies z.ZodType<NonNullable<ExecutionError['node_errors']>>
+
 export interface ProgressTextWsMessage {
   nodeId: NodeId
   text: string
@@ -124,6 +176,18 @@ export type FeatureFlagsWsMessage = Record<string, unknown>
 export interface AgentStatusWsMessage {
   state: 'starting' | 'ready' | 'failed'
   reason?: string | null
+}
+/**
+ * Cloud pushes this when shared or Agent-scoped funds change. It is a hint,
+ * not the system of record: clients reconcile by reading billing status.
+ */
+export interface BillingStatusWsMessage {
+  billing_status?: Partial<
+    Pick<
+      BillingStatusResponse,
+      'has_funds' | 'scoped_has_funds' | 'scoped_effective_has_funds'
+    >
+  >
 }
 export interface AssetDownloadWsMessage {
   task_id: string

@@ -137,6 +137,11 @@ export function nextPollDelayMs(
   ) {
     return OPERATION_POLL_TIMING.parkedMs
   }
+  return backoffDelayMs(previousDelayMs)
+}
+
+/** The wait before the next read of an operation nothing is parked on: longer after each read, up to a cap. */
+export function backoffDelayMs(previousDelayMs: number | undefined): number {
   return Math.min(
     (previousDelayMs ?? OPERATION_POLL_TIMING.initialMs) *
       OPERATION_POLL_TIMING.multiplier,

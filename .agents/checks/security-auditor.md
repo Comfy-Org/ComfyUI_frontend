@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: Reviews code for security vulnerabilities aligned with OWASP Top 10
+description: Reviews code for security vulnerabilities, including hardcoded secrets
 severity-default: critical
 tools: [Read, Grep]
 ---
@@ -28,7 +28,7 @@ Rules:
 
 ## Repo-Specific Patterns
 
-- HTML sanitization must use `DOMPurify.sanitize()` — flag any `v-html` or `innerHTML` without DOMPurify
-- API calls should use `api.get(api.apiURL(...))` helpers, not raw `fetch('/api/...')` — direct URL construction can bypass auth
-- Firebase/Sentry credentials are configured via environment — flag any hardcoded Firebase config objects
-- Electron IPC: check for unsafe `ipcRenderer.send` patterns in desktop code paths
+- HTML sanitization must use `DOMPurify.sanitize()`. Lint rejects `v-html` in `src/`; flag `innerHTML`, `outerHTML`, `insertAdjacentHTML`, and `document.write` with unsanitized input.
+- API requests go through `api.fetchApi(route)`, which attaches auth; flag raw `fetch('/api/...')` and `fetch(api.apiURL(...))`. `api.apiURL(route)` only builds a URL string.
+- Firebase, Sentry, and Datadog credentials come from the environment. Flag hardcoded config objects, tokens, API keys, and private keys in source, tests, fixtures, and workflows.
+- Never log secrets or tokens, including in `reportError` context.

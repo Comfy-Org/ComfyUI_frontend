@@ -1,6 +1,5 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
@@ -22,15 +21,18 @@ import {
   isSurveyReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import {
+  isStorageAvailable,
+  registerWorkflowPersistence,
+  releaseWorkflowStorageAuthFence,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   startDesktopHostSession,
@@ -50,7 +52,6 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 }))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
@@ -82,8 +83,6 @@ vi.mock(import('firebase/auth'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
-let mockResetSocket: Mock
-
 // Mock useDialogService
 vi.mock(import('@/services/dialogService'))
 vi.mock<unknown>(
@@ -92,12 +91,13 @@ vi.mock<unknown>(
 )
 vi.mock(import('@/composables/useFeatureFlags'))
 
-// Mock apiKeyAuthStore
+beforeEach(() => {
+  vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
+})
 
 describe('useAuthStore', () => {
   let store: ReturnType<typeof useAuthStore>
   let authStateCallback: (user: User | null) => void
-  let idTokenCallback: (user: User | null) => void
 
   const mockUser: MockUser = {
     uid: 'test-user-id',
@@ -107,10 +107,9 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
-    mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
+    resetStorageAvailable()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })
@@ -122,22 +121,14 @@ describe('useAuthStore', () => {
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => port.register(callback as IdentityObserver)
     )
-    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
-      (_auth, callback) => {
-        idTokenCallback = callback as (user: User | null) => void
-        return vi.fn()
-      }
-    )
 
     respondToFetch(CUSTOMERS_URL, createCustomerResponse)
 
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
 
-    // Reset and set up getIdToken mock
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
-    // Default: no API key auth
     vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
     vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(null)
     Object.assign(useTeamWorkspaceStore(), {
@@ -146,39 +137,6 @@ describe('useAuthStore', () => {
   })
 
   describe('token refresh events', () => {
-    it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
-      idTokenCallback(mockUser)
-      expect(store.tokenRefreshTrigger).toBe(0)
-    })
-
-    it('should increment tokenRefreshTrigger on subsequent ID token events for the same user', () => {
-      idTokenCallback(mockUser)
-      idTokenCallback(mockUser)
-      expect(store.tokenRefreshTrigger).toBe(1)
-    })
-
-    it('should not increment when ID token event is for a different user UID', () => {
-      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback(mockUser)
-      idTokenCallback(otherUser)
-      expect(store.tokenRefreshTrigger).toBe(0)
-    })
-
-    it('should increment after switching to a new UID and receiving a second event for that UID', () => {
-      const otherUser = { uid: 'other-user-id' } as Partial<User> as User
-      idTokenCallback(mockUser)
-      idTokenCallback(otherUser)
-      idTokenCallback(otherUser)
-      expect(store.tokenRefreshTrigger).toBe(1)
-    })
-
-    it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-      idTokenCallback(mockUser) // initial event (always skipped)
-      idTokenCallback(mockUser) // refresh — gated off; the unified lifecycle drives rotation
-      expect(store.tokenRefreshTrigger).toBe(0)
-    })
-
     it('notifyTokenRefreshed increments the rotation trigger (unified rotation driver)', () => {
       store.notifyTokenRefreshed()
       expect(store.tokenRefreshTrigger).toBe(1)
@@ -283,14 +241,15 @@ describe('useAuthStore', () => {
 
   describe('unified identity source', () => {
     it('the session client listens to the same Auth instance through the package port', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       const observedAuths = () =>
         vi
           .mocked(firebaseAuth.onAuthStateChanged)
           .mock.calls.map(([auth]) => auth)
-      const registeredAtConstruction = observedAuths().length
+      await useWorkspaceAuthStore().mintAtLogin()
+
+      const registeredByFirstMint = observedAuths().length
       expect(
-        registeredAtConstruction,
+        registeredByFirstMint,
         'the store listener and the port both registered'
       ).toBe(2)
       expect(
@@ -302,8 +261,8 @@ describe('useAuthStore', () => {
 
       expect(
         observedAuths(),
-        'a mint reuses the port subscribed at construction'
-      ).toHaveLength(registeredAtConstruction)
+        'a later mint reuses the port the first one subscribed'
+      ).toHaveLength(registeredByFirstMint)
     })
   })
 
@@ -576,7 +535,7 @@ describe('useAuthStore', () => {
       expect(
         mockReportError,
         'a silently orphaned account bricks every retry with email-already-in-use and nobody learns'
-      ).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      ).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'auth',
         errorType: 'auth_signup_rollback_failed'
       })
@@ -610,21 +569,61 @@ describe('useAuthStore', () => {
   })
 
   describe('logout', () => {
-    it('should sign out the user', async () => {
+    it('fences workflow storage only while sign-out is in flight', async () => {
       vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
-      await store.logout()
+      const logout = store.logout()
+      expect(isStorageAvailable()).toBe(false)
+      await logout
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+      expect(isStorageAvailable()).toBe(true)
     })
 
-    it('should handle logout errors', async () => {
+    it('should handle logout errors', async ({ onTestFinished }) => {
       const mockError = new Error('Network error')
       vi.mocked(firebaseAuth.signOut).mockRejectedValue(mockError)
+      const resumeAfterAbort = vi.fn()
+      onTestFinished(
+        registerWorkflowPersistence({
+          flush: () => {},
+          cancel: () => {},
+          resumeAfterAbort
+        })
+      )
 
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+      expect(isStorageAvailable()).toBe(true)
+      expect(resumeAfterAbort).toHaveBeenCalledOnce()
+      expect(mockReportError).toHaveBeenCalledWith(mockError, {
+        surface: 'auth',
+        errorType: 'failure_logging_out_user',
+        level: 'warning',
+        tags: { outcome: 'degraded', persistence_resumed: true }
+      })
+    })
+
+    it('keeps workflow writes fenced when logout fails after Firebase signed out', async () => {
+      const mockError = new Error('Network error')
+      vi.mocked(firebaseAuth.signOut).mockImplementation(async () => {
+        authStateCallback(null)
+        throw mockError
+      })
+
+      await expect(store.logout()).rejects.toThrow('Network error')
+
+      expect(store.currentUser).toBeNull()
+      expect(isStorageAvailable()).toBe(false)
+      releaseWorkflowStorageAuthFence()
+      expect(isStorageAvailable()).toBe(true)
+      expect(mockReportError).toHaveBeenCalledWith(mockError, {
+        surface: 'auth',
+        errorType: 'failure_logging_out_user',
+        level: 'warning',
+        tags: { outcome: 'degraded', persistence_resumed: false }
+      })
     })
   })
 
@@ -796,6 +795,84 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('getFreshIdToken', () => {
+    const cachedUnless =
+      (mint: () => Promise<string>) => (forceRefresh?: boolean) =>
+        forceRefresh ? mint() : Promise.resolve('cached-token')
+
+    it.for([
+      {
+        name: 'a token minted now although a cached one exists',
+        mint: async () => 'minted-token',
+        token: 'minted-token'
+      },
+      {
+        name: 'the cached token when a new one cannot be minted',
+        mint: () =>
+          Promise.reject(
+            new FirebaseError(
+              firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED,
+              'offline'
+            )
+          ),
+        token: 'cached-token'
+      }
+    ])('returns $name', async ({ mint, token }) => {
+      mockUser.getIdToken.mockImplementation(cachedUnless(mint))
+
+      await expect(store.getFreshIdToken()).resolves.toBe(token)
+    })
+
+    it('reports a mint that failed and fell back to the cached token', async () => {
+      const offline = new FirebaseError(
+        firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED,
+        'offline'
+      )
+      mockUser.getIdToken.mockImplementation(
+        cachedUnless(() => Promise.reject(offline))
+      )
+
+      await store.getFreshIdToken()
+
+      expect(mockReportError).toHaveBeenCalledWith(offline, {
+        surface: 'auth',
+        errorType: 'auth_id_token_refresh_failed'
+      })
+    })
+
+    it('leaves getIdToken on the cached token', async () => {
+      mockUser.getIdToken.mockImplementation(
+        cachedUnless(async () => 'minted-token')
+      )
+
+      await expect(store.getIdToken()).resolves.toBe('cached-token')
+    })
+
+    it('returns no token when no user is signed in', async () => {
+      authStateCallback(null)
+
+      await expect(store.getFreshIdToken()).resolves.toBeUndefined()
+    })
+
+    it('discards a token minted for an account the tab has since left', async () => {
+      let finishMint: (token: string) => void = () => {}
+      mockUser.getIdToken.mockImplementation(
+        cachedUnless(
+          () =>
+            new Promise((resolve) => {
+              finishMint = resolve
+            })
+        )
+      )
+      const token = store.getFreshIdToken()
+
+      authStateCallback({ ...mockUser, uid: 'different-user-id' })
+      finishMint('minted-token')
+
+      await expect(token).resolves.toBeUndefined()
+    })
+  })
+
   describe('getAuthHeader', () => {
     it('should handle network errors gracefully when getting Firebase token (reproduces issue #4468)', async () => {
       // This test reproduces the issue where getAuthHeader fails due to network errors
@@ -811,112 +888,6 @@ describe('useAuthStore', () => {
 
       const authHeader = await store.getAuthHeader()
       expect(authHeader).toBeNull() // Should fallback gracefully
-    })
-  })
-
-  describe('getAuthHeader workspace recovery', () => {
-    it('uses the workspace header when a valid workspace token exists', async () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue({
-        Authorization: 'Bearer ws-token'
-      })
-
-      const header = await store.getAuthHeader()
-
-      expect(header).toEqual({ Authorization: 'Bearer ws-token' })
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
-    })
-
-    it('recovers the workspace token instead of downgrading to personal auth', async () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: 'workspace-123'
-      })
-      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
-      const ensureSpy = vi
-        .spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
-        .mockResolvedValue({ Authorization: 'Bearer recovered-ws-token' })
-
-      const header = await store.getAuthHeader()
-
-      expect(ensureSpy).toHaveBeenCalledWith('workspace-123')
-      expect(header).toEqual({ Authorization: 'Bearer recovered-ws-token' })
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
-    })
-
-    it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: 'workspace-123'
-      })
-      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
-      vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader').mockResolvedValue(
-        null
-      )
-
-      const header = await store.getAuthHeader()
-
-      expect(header).toBeNull()
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
-    })
-
-    it('falls back to Firebase when workspace mode is not yet initialized', async () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: null
-      })
-      vi.spyOn(workspaceAuth, 'getWorkspaceAuthHeader').mockReturnValue(null)
-      const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceAuthHeader')
-
-      const header = await store.getAuthHeader()
-
-      expect(ensureSpy).not.toHaveBeenCalled()
-      expect(header).toEqual({ Authorization: 'Bearer mock-id-token' })
-    })
-  })
-
-  describe('getAuthToken workspace recovery', () => {
-    it('recovers the workspace token instead of downgrading to personal auth', async () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: 'workspace-123'
-      })
-      const ensureSpy = vi
-        .spyOn(workspaceAuth, 'ensureWorkspaceToken')
-        .mockResolvedValue('recovered-ws-token')
-
-      const token = await store.getAuthToken()
-
-      expect(ensureSpy).toHaveBeenCalledWith('workspace-123')
-      expect(token).toBe('recovered-ws-token')
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
-    })
-
-    it('fails closed (no personal Firebase downgrade) when recovery yields no token', async () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: 'workspace-123'
-      })
-      vi.spyOn(workspaceAuth, 'ensureWorkspaceToken').mockResolvedValue(null)
-
-      const token = await store.getAuthToken()
-
-      expect(token).toBeUndefined()
-      expect(mockUser.getIdToken).not.toHaveBeenCalled()
-    })
-
-    it('falls back to Firebase when workspace mode is not yet initialized', async () => {
-      const workspaceAuth = useWorkspaceAuthStore()
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspaceId: null
-      })
-      vi.spyOn(workspaceAuth, 'getWorkspaceToken').mockReturnValue(undefined)
-      const ensureSpy = vi.spyOn(workspaceAuth, 'ensureWorkspaceToken')
-
-      const token = await store.getAuthToken()
-
-      expect(ensureSpy).not.toHaveBeenCalled()
-      expect(token).toBe('mock-id-token')
     })
   })
 
@@ -1391,6 +1362,47 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('socket credential refresh', () => {
+    const tokenResponse = (token: string) =>
+      Response.json({
+        token,
+        expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+        user_id: mockUser.uid,
+        workspace: {
+          id: 'workspace-personal',
+          name: 'Personal',
+          type: 'personal'
+        },
+        role: 'owner',
+        permissions: ['owner:*']
+      })
+
+    it('re-mints the unified token instead of returning the cached one', async () => {
+      const minted = ['cached-token', 'reminted-token']
+      respondToFetch(/\/auth\/token$/, () => tokenResponse(minted.shift()!))
+
+      await expect(store.getAuthToken()).resolves.toBe('cached-token')
+      await expect(store.getAuthToken()).resolves.toBe('cached-token')
+      await expect(store.getAuthToken({ forceRefresh: true })).resolves.toBe(
+        'reminted-token'
+      )
+    })
+
+    it('has no token when the re-mint is refused', async () => {
+      respondToFetch(/\/auth\/token$/, () => tokenResponse('cached-token'))
+      await expect(store.getAuthToken()).resolves.toBe('cached-token')
+
+      respondToFetch(
+        /\/auth\/token$/,
+        () => new Response(null, { status: 503 })
+      )
+
+      await expect(
+        store.getAuthToken({ forceRefresh: true })
+      ).resolves.toBeUndefined()
+    })
+  })
+
   describe('realtime socket identity lifecycle', () => {
     const accountB: MockUser = {
       ...mockUser,
@@ -1399,18 +1411,15 @@ describe('useAuthStore', () => {
     }
 
     it('does not reset the socket on the initial sign-in', () => {
-      // The store is created in beforeEach, which drives the initial
-      // authStateCallback(mockUser); the first identity must not reconnect
-      // because api.init() already owns the initial connect.
-      expect(mockResetSocket).not.toHaveBeenCalled()
+      expect(api.resetSocket).not.toHaveBeenCalled()
     })
 
     it('reconnects the socket on a direct A -> B account switch', () => {
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
       authStateCallback(accountB)
 
-      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+      expect(api.resetSocket).toHaveBeenCalledTimes(1)
     })
 
     it('clears an onboarding replay on a direct account switch', () => {
@@ -1446,7 +1455,7 @@ describe('useAuthStore', () => {
 
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
-      expect(remoteConfigState.value).toBe('unloaded')
+      expect(useRemoteConfigStore().loadState).toBe('unloaded')
 
       await refreshRemoteConfig()
       resolveAccountA?.(
@@ -1456,36 +1465,32 @@ describe('useAuthStore', () => {
       )
       await accountARefresh
 
-      expect(remoteConfig.value.subscription_required).toBe(false)
+      expect(useRemoteConfigStore().config.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
-      // Same UID observed again (e.g. onAuthStateChanged re-emitting the same
-      // user) must not tear down the connection.
       authStateCallback(mockUser)
 
-      expect(mockResetSocket).not.toHaveBeenCalled()
+      expect(api.resetSocket).not.toHaveBeenCalled()
     })
 
     it('reconnects the socket on sign-out', () => {
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
       authStateCallback(null)
 
-      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+      expect(api.resetSocket).toHaveBeenCalledTimes(1)
     })
 
     it('does not reconnect when transitioning from signed-out to signed-in', () => {
       authStateCallback(null)
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
-      // Re-signing in from a signed-out state records the identity again; the
-      // socket was already torn down on sign-out, so there is no extra reset.
       authStateCallback(accountB)
 
-      expect(mockResetSocket).not.toHaveBeenCalled()
+      expect(api.resetSocket).not.toHaveBeenCalled()
     })
   })
 })
@@ -1509,6 +1514,7 @@ describe('useAuthStore in local/desktop distribution', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
+    resetStorageAvailable()
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
@@ -1527,7 +1533,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
-    mockResetSocket.mockClear()
+    vi.mocked(api.resetSocket).mockClear()
   })
 
   afterEach(() => {
@@ -1545,6 +1551,16 @@ describe('useAuthStore in local/desktop distribution', () => {
 
     expect(result.user).toEqual(mockUser)
     expect(store.loading).toBe(false)
+  })
+
+  it('leaves workflow storage open during and after logout', async () => {
+    vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+    const logout = store.logout()
+    expect(isStorageAvailable()).toBe(true)
+    await logout
+
+    expect(isStorageAvailable()).toBe(true)
   })
 
   it('signs in with Google through the same package identity path as cloud', async () => {
@@ -1572,7 +1588,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     authStateCallback(accountB)
 
     expect(
-      mockResetSocket,
+      api.resetSocket,
       'socket re-handshake is a cloud-only side effect (isCloud && identityChanged); local/desktop has no realtime socket to reset'
     ).not.toHaveBeenCalled()
   })
@@ -1587,6 +1603,29 @@ describe('useAuthStore in local/desktop distribution', () => {
       mintSpy,
       'mintAtLogin is gated on isCloud; local/desktop has no Cloud workspace JWT to mint'
     ).not.toHaveBeenCalled()
+  })
+
+  it('waits for workspace initialization when a workspace credential is required', async () => {
+    const teams = useTeamWorkspaceStore()
+    Object.assign(teams, { activeWorkspaceId: null, initState: 'loading' })
+    let finishInitialization!: () => void
+    const initialization = new Promise<void>((resolve) => {
+      finishInitialization = resolve
+    })
+    vi.spyOn(teams, 'initialize').mockReturnValue(initialization)
+    const headers = { Authorization: 'Bearer ws-token' } as const
+    const ensureHeader = vi
+      .spyOn(useWorkspaceAuthStore(), 'ensureWorkspaceAuthHeader')
+      .mockResolvedValue(headers)
+
+    const context = store.getWorkspaceAuthContext({ requireWorkspace: true })
+    expect(teams.initialize).toHaveBeenCalledOnce()
+    expect(ensureHeader).not.toHaveBeenCalled()
+    Object.assign(teams, { activeWorkspaceId: 'ws-ready', initState: 'ready' })
+    finishInitialization()
+
+    await expect(context).resolves.toEqual({ headers, workspaceId: 'ws-ready' })
+    expect(ensureHeader).toHaveBeenCalledWith('ws-ready')
   })
 
   describe('with the Desktop host session', () => {
@@ -1636,7 +1675,24 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
+      await expect(store.getWorkspaceAuthContext()).resolves.toEqual({
+        headers: hostHeader,
+        workspaceId: 'ws-host'
+      })
       expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('answers a fresh-token request from Desktop without minting through Firebase', async () => {
+      await startDesktopHostSession(
+        hostBridge({
+          status: 'signed_in',
+          userId: 'host-user',
+          workspaceId: 'ws-host'
+        })
+      )
+
+      await expect(store.getFreshIdToken()).resolves.toBe('host-token')
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 
@@ -1854,7 +1910,6 @@ describe('store construction order', () => {
     })
     vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(mockAuth)
     vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
-    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
     respondToFetch(CUSTOMERS_URL, createCustomerResponse)
     respondToFetch(/\/auth\/token$/, () => Response.json(tokenResponse))
@@ -1875,5 +1930,61 @@ describe('store construction order', () => {
     ).toBe(2)
     await expect(workspaceAuth.mintAtLogin()).resolves.toBe(true)
     expect(workspaceAuth.getUnifiedToken()).toBe('construction-token')
+  })
+})
+
+describe('a stored API key while Firebase restores the saved sign-in', () => {
+  const EARLIER_KEY = { 'X-API-KEY': 'earlier-account-key' }
+  const firebaseObservers: IdentityObserver[] = []
+  const firebaseReports = (user: User | null) =>
+    firebaseObservers.forEach((observer) => observer(user))
+  const storeHoldingAnEarlierKey = () => {
+    const store = useAuthStore()
+    vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(EARLIER_KEY)
+    return store
+  }
+
+  beforeEach(() => {
+    firebaseObservers.length = 0
+    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
+      showErrorDialog: vi.fn()
+    })
+    vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(
+      fromPartial<Auth>({ currentUser: null })
+    )
+    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
+    vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+      (_, callback) => {
+        firebaseObservers.push(callback as IdentityObserver)
+        return vi.fn()
+      }
+    )
+  })
+
+  it('sends no credential before Firebase has answered', async () => {
+    const store = storeHoldingAnEarlierKey()
+
+    await expect(store.getAuthHeader()).resolves.toBeNull()
+    await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+  })
+
+  it('sends the stored key once Firebase confirms that nobody is signed in', async () => {
+    const store = storeHoldingAnEarlierKey()
+
+    firebaseReports(null)
+
+    await expect(store.getAuthHeader()).resolves.toEqual(EARLIER_KEY)
+    await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(EARLIER_KEY)
+  })
+
+  it('keeps the stored key when the first Firebase answer is that nobody is signed in', () => {
+    storeHoldingAnEarlierKey()
+    vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+      'earlier-account-key'
+    )
+
+    firebaseReports(null)
+
+    expect(useApiKeyAuthStore().clearStoredApiKey).not.toHaveBeenCalled()
   })
 })

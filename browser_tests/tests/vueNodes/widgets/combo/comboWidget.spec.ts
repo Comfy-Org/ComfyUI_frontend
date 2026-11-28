@@ -194,12 +194,12 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
         canvas.ds.offset[1] += dy / canvas.ds.scale
         canvas.setDirty(true, true)
       },
-      [100 - comboBox.x, 200 - comboBox.y]
+      [-comboBox.x, 200 - comboBox.y]
     )
     await expect
       .poll(async () => (await samplerCombo.boundingBox())?.x)
-      .toBeCloseTo(100, 0)
-    await samplerCombo.click({ position: { x: 20, y: 20 } })
+      .toBeCloseTo(0, 0)
+    await samplerCombo.press('Enter')
 
     await expect(
       comfyPage.page.getByTestId('widget-select-default-overlay')

@@ -7,8 +7,8 @@ import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { DEFAULT_LIGHT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { DEFAULT_LIGHT_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
@@ -50,6 +50,17 @@ beforeEach(() => {
   useCurrentUser().userEmail = computed(() => 'restored@example.com')
 })
 
+const assetDownload = {
+  phase: 'body',
+  auth_credential: 'bearer',
+  route: 'assets_content',
+  media_kind: 'image',
+  surface: 'gallery',
+  duration_ms: 120,
+  page_age_ms: 5000,
+  online: true
+} as const
+
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
@@ -62,7 +73,7 @@ describe('DatadogRumTelemetryProvider', () => {
   ])(
     'reports the active $paletteId theme after startup',
     ({ paletteId, expectedScheme }) => {
-      useColorPaletteStore().activePaletteId = paletteId
+      useThemeStore().activePresetId = paletteId
       const registry = new TelemetryRegistry()
       registry.registerProvider(new DatadogRumTelemetryProvider())
 
@@ -72,6 +83,7 @@ describe('DatadogRumTelemetryProvider', () => {
         phase_count: 0,
         untraced_ms: 123,
         hidden_ms: 0,
+        visible_ms: 123,
         phases: {}
       })
 
@@ -83,8 +95,8 @@ describe('DatadogRumTelemetryProvider', () => {
   )
 
   it('reports custom themes without sending their user-defined IDs', () => {
-    useColorPaletteStore().addCustomPalette({
-      ...DEFAULT_LIGHT_COLOR_PALETTE,
+    useThemeStore().addCustomPreset({
+      ...DEFAULT_LIGHT_THEME_PRESET,
       id: 'private-palette-name'
     })
 
@@ -94,6 +106,7 @@ describe('DatadogRumTelemetryProvider', () => {
       phase_count: 0,
       untraced_ms: 123,
       hidden_ms: 0,
+      visible_ms: 123,
       phases: {}
     })
 
@@ -112,6 +125,7 @@ describe('DatadogRumTelemetryProvider', () => {
         phase_count: 0,
         untraced_ms: 123,
         hidden_ms: 0,
+        visible_ms: 123,
         phases: {}
       })
 
@@ -214,6 +228,21 @@ describe('DatadogRumTelemetryProvider', () => {
       schema_version: 1,
       billing_surface: 'cloud_app'
     })
+  })
+
+  it('records why the agent chat called its workflow unavailable as a RUM action', () => {
+    const metadata = {
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-1',
+      startup_tab_restore_settled: false
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentTargetUnavailable(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      metadata
+    )
   })
 
   it('records gated agent sends as RUM actions so drop-offs can be monitored', () => {
@@ -357,6 +386,20 @@ describe('DatadogRumTelemetryProvider', () => {
       { source: 'node_image_preview' }
     )
   })
+
+  it.for([
+    ['completed', TelemetryEvents.ASSET_DOWNLOAD_COMPLETED],
+    ['failed', TelemetryEvents.ASSET_DOWNLOAD_FAILED]
+  ] as const)(
+    'adds a %s asset download as its own RUM action',
+    ([outcome, actionName]) => {
+      const metadata = { ...assetDownload, outcome }
+
+      new DatadogRumTelemetryProvider().trackAssetDownload(metadata)
+
+      expect(addAction).toHaveBeenCalledExactlyOnceWith(actionName, metadata)
+    }
+  )
 
   it.for([
     ['extension.manager:supports-v4', 'extension_manager_supports_v4'],

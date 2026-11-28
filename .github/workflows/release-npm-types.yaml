@@ -16,18 +16,6 @@ on:
         description: 'Git ref to checkout (commit SHA, tag, or branch)'
         required: false
         type: string
-  workflow_call:
-    inputs:
-      version:
-        required: true
-        type: string
-      dist_tag:
-        required: false
-        type: string
-        default: latest
-      ref:
-        required: false
-        type: string
 
 concurrency:
   group: publish-frontend-types
@@ -40,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Validate inputs
         shell: bash
@@ -76,7 +65,7 @@ jobs:
           fetch-depth: 1
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -141,6 +130,18 @@ jobs:
             fi
           fi
 
+      - name: Checkout publishing helpers
+        if: steps.check_npm.outputs.exists == 'false'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: release-scripts
+          persist-credentials: false
+          sparse-checkout: |
+            tools/ci/src/cicd/resolve-npm-dist-tag.ts
+            tools/ci/src/cicd/actions-output.ts
+          sparse-checkout-cone-mode: false
+
       - name: Resolve dist-tag
         id: dist_tag
         if: steps.check_npm.outputs.exists == 'false'
@@ -148,7 +149,7 @@ jobs:
           NAME: '@comfyorg/comfyui-frontend-types'
           VERSION: ${{ inputs.version }}
           DIST_TAG: ${{ inputs.dist_tag }}
-        run: pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts
+        run: pnpm exec tsx release-scripts/tools/ci/src/cicd/resolve-npm-dist-tag.ts
 
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'

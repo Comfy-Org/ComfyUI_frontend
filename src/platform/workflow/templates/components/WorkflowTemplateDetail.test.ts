@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   TemplateDetailGroup,
-  TemplateModelSetup
+  TemplateAssetSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 
 import WorkflowTemplateDetail from './WorkflowTemplateDetail.vue'
@@ -45,15 +45,15 @@ function renderDetail({
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetup
+  assetSetup
 }: {
   renderedGroups?: readonly TemplateDetailGroup[]
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetup?: TemplateModelSetup
+  assetSetup?: TemplateAssetSetup
 } = {}) {
-  const modelSetupProps = { modelSetup }
+  const assetSetupProps = { assetSetup }
 
   return render(WorkflowTemplateDetail, {
     props: {
@@ -63,7 +63,7 @@ function renderDetail({
       cloudUrl,
       isPartnerNode,
       openPending,
-      ...modelSetupProps
+      ...assetSetupProps
     },
     slots: {
       preview: '<img src="/thumbnail.webp" alt="Wan 2.2 workflow preview" />'
@@ -109,7 +109,7 @@ describe('WorkflowTemplateDetail', () => {
     expect(within(detail).queryByText(/left$/i)).not.toBeInTheDocument()
     expect(within(detail).getAllByRole('button')).toHaveLength(1)
     expect(
-      within(detail).getByRole('button', { name: 'Open now' })
+      within(detail).getByRole('button', { name: 'Open' })
     ).toBeInTheDocument()
   })
 
@@ -137,21 +137,21 @@ describe('WorkflowTemplateDetail', () => {
     ).toHaveFocus()
   })
 
-  it('emits the sole Open now action and disables it while opening', async () => {
+  it('emits the sole Open action and disables it while opening', async () => {
     const user = userEvent.setup()
     const result = renderDetail()
 
-    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await user.click(screen.getByRole('button', { name: 'Open' }))
     expect(result.emitted('open-template')).toEqual([[]])
 
     await result.rerender({ openPending: true })
-    expect(screen.getByRole('button', { name: 'Open now' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeDisabled()
   })
 
-  it('marks Open now unavailable while opening without dropping its focus', async () => {
-    const result = renderDetail({ modelSetup: { state: 'startable' } })
+  it('marks Just open unavailable while opening without dropping its focus', async () => {
+    const result = renderDetail({ assetSetup: { state: 'startable' } })
 
-    const openNow = screen.getByRole('button', { name: 'Open now' })
+    const openNow = screen.getByRole('button', { name: 'Just open' })
     openNow.focus()
     await result.rerender({ openPending: true })
 
@@ -159,28 +159,28 @@ describe('WorkflowTemplateDetail', () => {
     expect(openNow).toHaveFocus()
   })
 
-  it('keeps Open now available while offering Download models & open', async () => {
+  it('keeps Just open available while offering Download assets & open', async () => {
     const user = userEvent.setup()
-    const result = renderDetail({ modelSetup: { state: 'startable' } })
+    const result = renderDetail({ assetSetup: { state: 'startable' } })
 
-    await user.click(screen.getByRole('button', { name: 'Open now' }))
+    await user.click(screen.getByRole('button', { name: 'Just open' }))
     await user.click(
-      screen.getByRole('button', { name: 'Download models & open' })
+      screen.getByRole('button', { name: 'Download assets & open' })
     )
 
     expect(result.emitted('open-template')).toEqual([[]])
-    expect(result.emitted('download-models-and-open')).toEqual([[]])
+    expect(result.emitted('download-assets-and-open')).toEqual([[]])
     expect(
       screen.queryByRole('button', { name: 'Open without downloading' })
     ).not.toBeInTheDocument()
   })
 
-  it('does not block Open now while model metadata is pending', () => {
-    renderDetail({ modelSetup: { state: 'resolving' } })
+  it('does not block Just open while model metadata is pending', () => {
+    renderDetail({ assetSetup: { state: 'resolving' } })
 
-    expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Just open' })).toBeEnabled()
     expect(
-      screen.getByRole('button', { name: 'Download models & open' })
+      screen.getByRole('button', { name: 'Download assets & open' })
     ).toBeDisabled()
   })
 
@@ -190,7 +190,7 @@ describe('WorkflowTemplateDetail', () => {
     expect(
       screen.queryByRole('region', { name: 'Template requirements' })
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open now' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument()
   })
 
   it('offers a generic Cloud alternative without free-run messaging or an icon', () => {
@@ -503,38 +503,38 @@ describe('WorkflowTemplateDetail', () => {
   })
   it('states the cost on the bulk action when every startable row declares one', () => {
     renderDetail({
-      modelSetup: { state: 'startable', remainingSize: '6.46 GB' }
+      assetSetup: { state: 'startable', remainingSize: '6.46 GB' }
     })
 
     expect(
-      screen.getByRole('button', { name: 'Download models & open (6.46 GB)' })
+      screen.getByRole('button', { name: 'Download assets & open (6.46 GB)' })
     ).toBeInTheDocument()
   })
 
   it('drops the cost rather than stating a partial one', () => {
-    renderDetail({ modelSetup: { state: 'startable' } })
+    renderDetail({ assetSetup: { state: 'startable' } })
 
     expect(
-      screen.getByRole('button', { name: 'Download models & open' })
+      screen.getByRole('button', { name: 'Download assets & open' })
     ).toBeInTheDocument()
   })
 
   it('offers the bulk action disabled while availability is still resolving', () => {
-    renderDetail({ modelSetup: { state: 'resolving' } })
+    renderDetail({ assetSetup: { state: 'resolving' } })
 
     expect(
-      screen.getByRole('button', { name: 'Download models & open' })
+      screen.getByRole('button', { name: 'Download assets & open' })
     ).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Open now' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Just open' })).toBeEnabled()
   })
 
-  it('offers only Open now once every requirement is met', () => {
-    renderDetail({ modelSetup: undefined })
+  it('offers only Open once every requirement is met', () => {
+    renderDetail({ assetSetup: undefined })
 
     expect(
-      screen.queryByRole('button', { name: /Download models & open/ })
+      screen.queryByRole('button', { name: /Download assets & open/ })
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open now' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument()
   })
   it.for([
     ['error', true],

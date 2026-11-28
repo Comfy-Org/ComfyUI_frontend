@@ -399,6 +399,22 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
+    it('ignores a switch target it cannot clear', async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockTeamWorkspace.id)
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+        mockPersonalWorkspace.id
+      )
+      vi.spyOn(sessionStorage, 'removeItem').mockImplementation(() => {
+        throw new DOMException('denied', 'SecurityError')
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
     it('keeps the requested switch target when the first switch fails transiently', async () => {
       mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
       sessionStorage.setItem(
@@ -902,10 +918,15 @@ describe('useTeamWorkspaceStore', () => {
       )
 
       const firstSwitch = store.switchWorkspace(mockTeamWorkspace.id)
-      await store.switchWorkspace(mockMemberWorkspace.id)
+      const refused = await store.switchWorkspace(mockMemberWorkspace.id)
+      const refusedActive = await store.switchWorkspace(
+        mockPersonalWorkspace.id
+      )
       finishSwitch()
-      await firstSwitch
 
+      expect(refused).toBe(false)
+      expect(refusedActive).toBe(false)
+      expect(await firstSwitch).toBe(true)
       expect(console.error).toHaveBeenCalledWith(
         'Workspace switch already in progress'
       )
@@ -968,6 +989,26 @@ describe('useTeamWorkspaceStore', () => {
 
       finishSwitch()
       await previousIdentitySwitch
+    })
+
+    it('reports a workspace switch cancelled by an identity change as failed', async () => {
+      mockDistributionTypes.isCloud = false
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      let finishSwitch: () => void = () => {}
+      vi.mocked(useWorkspaceAuthStore().switchWorkspace).mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSwitch = resolve
+          })
+      )
+
+      const cancelledSwitch = store.switchWorkspace(mockTeamWorkspace.id)
+      store.resetForIdentityChange()
+      finishSwitch()
+
+      expect(await cancelledSwitch).toBe(false)
     })
 
     it('propagates a failed local workspace switch to waiters', async () => {
@@ -1543,7 +1584,7 @@ describe('useTeamWorkspaceStore', () => {
         }
       }
     ] as const)(
-      'names the served $reason refusal',
+      'names the served $reason refusal for denied reason $response.denied_reasons.can_create_workspace',
       async ({ reason, response }) => {
         mockWorkspaceApi.list.mockResolvedValue(response)
 
