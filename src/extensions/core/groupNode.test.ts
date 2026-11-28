@@ -1492,6 +1492,39 @@ describe('legacy group lifecycle ownership', () => {
     expect(target.getInputLink(0)?.origin_id).toBe(group.id)
   })
 
+  it('restores an external group output when its replacement callback throws', () => {
+    const graph = createTestRootGraph()
+    const definitionData = createTestSubgraph({
+      id: crypto.randomUUID(),
+      outputs: [{ name: 'result', type: 'MASK' }]
+    }).asSerialisable()
+    const definition = graph.createSubgraph(definitionData)
+    useSubgraphService().registerNewSubgraph(definition, definitionData)
+    const { group, handler } = groupWithMembers(graph, [definition.id])
+    group.addOutput('result', 'MASK')
+    const target = new LGraphNode('External target')
+    target.addInput('result', 'MASK')
+    graph.add(target)
+    group.connect(0, target, 0)
+    handler.groupData.newToOldOutputMap[0] = {
+      node: handler.groupData.nodeData.nodes[0],
+      slot: 0
+    }
+    const callbackError = new Error('replacement callback failed')
+    target.onConnectionsChange = (_side, _slot, connected, link) => {
+      if (connected && link?.origin_id !== group.id) throw callbackError
+    }
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({
+      refused: true,
+      interference: { phase: 'reconnect', cause: callbackError }
+    })
+    expect(graph.nodes).toEqual([group, target])
+    expect(target.getInputLink(0)?.origin_id).toBe(group.id)
+  })
+
   it('preserves a callback-owned disconnection when reconnection invalidates another member', () => {
     const graph = createTestRootGraph()
     const sourceData = createTestSubgraph({
@@ -1515,8 +1548,8 @@ describe('legacy group lifecycle ownership', () => {
       node: handler.groupData.nodeData.nodes[0],
       slot: 0
     }
-    target.onConnectionsChange = (_side, _slot, connected) => {
-      if (!connected) return
+    target.onConnectionsChange = (_side, _slot, connected, link) => {
+      if (!connected || link?.origin_id === group.id) return
       target.disconnectInput(0)
       graph.releaseSubgraphs([required])
     }

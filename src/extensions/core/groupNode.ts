@@ -1016,18 +1016,21 @@ export class GroupNodeHandler {
               const targetNode = graph.getNodeById(link.target_id)
               const newNode = createdNodes.at(slot.node.index ?? 0)
               if (targetNode) {
-                newNode?.connect(slot.slot, targetNode, link.target_slot)
-                const replacement = targetNode.getInputLink(link.target_slot)
-                if (
-                  newNode &&
-                  replacement?.origin_id === newNode.id &&
-                  replacement.origin_slot === slot.slot
-                ) {
-                  replacedOutputTargets.push({
-                    groupOutputId,
-                    targetNode,
-                    targetSlot: link.target_slot
-                  })
+                try {
+                  newNode?.connect(slot.slot, targetNode, link.target_slot)
+                } finally {
+                  const replacement = targetNode.getInputLink(link.target_slot)
+                  if (
+                    newNode &&
+                    replacement?.origin_id === newNode.id &&
+                    replacement.origin_slot === slot.slot
+                  ) {
+                    replacedOutputTargets.push({
+                      groupOutputId,
+                      targetNode,
+                      targetSlot: link.target_slot
+                    })
+                  }
                 }
               }
             }
