@@ -1,4 +1,5 @@
 import { mergeTests } from '@playwright/test'
+import type { Locator, WebSocketRoute } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
@@ -414,6 +415,38 @@ test(
   }
 )
 
+test(
+  'double-clicking a resize corner shrinks a node whose last row is an unsized legacy widget',
+  { tag: ['@vue-nodes', '@canvas', '@node'] },
+  async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.page.evaluate(() => {
+      const checkpoint = window.app!.graph.nodes.find(
+        ({ type }) => type === 'CheckpointLoaderSimple'
+      )
+      checkpoint?.addCustomWidget({
+        name: 'legacy',
+        type: 'legacy-canvas',
+        value: 0,
+        y: 0,
+        options: {},
+        draw: () => {}
+      })
+    })
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await expect(node.root.getByTestId('node-widget')).toHaveCount(2)
+    const getHeight = () => heightOf(node.root)
+    const initialHeight = await getHeight()
+
+    await node.resizeFromCorner('SE', 0, 100)
+    await expect.poll(getHeight).toBeCloseTo(initialHeight + 100, 0)
+
+    await node.getResizeHandle('SE').dblclick()
+
+    await expect.poll(getHeight).toBeLessThan(initialHeight + 20)
+  }
+)
+
 test.describe(
   'Vue node media preview aspect fit',
   { tag: ['@vue-nodes', '@canvas', '@node'] },
@@ -534,6 +567,32 @@ test.describe(
       expect(after.height).toBeGreaterThan(before.height + 100)
     })
 
+    test('a subgraph node shares a resize between its promoted preview and promoted textarea', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-preview-and-textarea'
+      )
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      const host = new VueNodeFixture(comfyPage.vueNodes.getNodeLocator('8'))
+      await expect(host.imagePreview.locator('img')).toHaveCount(1, {
+        timeout: 30_000
+      })
+      await expect(host.widgetRow('value')).toBeVisible()
+      const getPreviewHeight = () => heightOf(host.imagePreview)
+      const getTextHeight = () => heightOf(host.widgetRow('value'))
+      const getHeight = () => heightOf(host.root)
+      const initialPreview = await getPreviewHeight()
+      const initialText = await getTextHeight()
+      const initialHeight = await getHeight()
+
+      await host.resizeFromCorner('SE', 0, 200)
+
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 200, 0)
+      await expect.poll(getPreviewHeight).toBeGreaterThan(initialPreview + 50)
+      await expect.poll(getTextHeight).toBeGreaterThan(initialText + 50)
+    })
+
     test('each preview promoted to a subgraph node resizes on its own', async ({
       comfyPage
     }) => {
@@ -588,45 +647,102 @@ test.describe(
       await expect.poll(() => heightOf(host.root)).toBeCloseTo(fittedHeight, 0)
     })
 
-    wstest(
-      'an image grid uses content fitting even when only one thumbnail loads',
-      async ({ comfyPage, getWebSocket }) => {
-        const missing = 'missing-thumbnail.exr'
-        await comfyPage.page.route(
-          (url) => url.searchParams.get('filename') === missing,
-          (route) => route.fulfill({ status: 404 })
-        )
-        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-        await comfyPage.searchBoxV2.addNode('Preview Image')
-        const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
-        const file = { filename: 'example.png', type: 'input' }
-        const jobId = await execution.run()
-        execution.executed(jobId, '1', {
-          images: [file, { ...file, filename: missing }]
-        })
-        await expect(node.imageGrid.getByRole('button')).toHaveCount(2)
-        await expect(node.imageGrid.getByRole('img')).toHaveCount(1)
-        await expect
-          .poll(() =>
-            node.imageGrid
-              .getByRole('img')
-              .evaluate((image: HTMLImageElement) => image.naturalWidth)
+    async function showImageGrid(
+      comfyPage: ComfyPage,
+      getWebSocket: () => Promise<WebSocketRoute>,
+      { count, missing = [] }: { count: number; missing?: number[] }
+    ) {
+      await comfyPage.page.route(
+        (url) =>
+          url.pathname.endsWith('/api/view') &&
+          url.searchParams.get('filename')?.startsWith('portrait-') === true,
+        (route) =>
+          route.fulfill(
+            route.request().url().includes('portrait-missing')
+              ? { status: 404 }
+              : { path: assetPath('workflowInMedia/workflow.webp') }
           )
-          .toBeGreaterThan(0)
-        const before = await requireBoundingBox(node.root)
+      )
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.searchBoxV2.addNode('Preview Image')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const jobId = await execution.run()
+      execution.executed(jobId, '1', {
+        images: Array.from({ length: count }, (_, index) => ({
+          filename: missing.includes(index)
+            ? `portrait-missing-${index}.webp`
+            : `portrait-${index}.webp`,
+          subfolder: '',
+          type: 'output'
+        }))
+      })
+      const slots = node.imageGrid.getByRole('button', { name: /^View image/ })
+      await expect(slots).toHaveCount(count)
+      await expect
+        .poll(() =>
+          node.imageGrid
+            .getByRole('img')
+            .evaluateAll(
+              (images) =>
+                images.filter(
+                  (image) =>
+                    image instanceof HTMLImageElement && image.naturalWidth
+                ).length
+            )
+        )
+        .toBe(count - missing.length)
+      return { node, slots }
+    }
+
+    async function gridLayout(slots: Locator) {
+      const boxes = await slots.evaluateAll((elements) =>
+        elements.map((element) => {
+          const { left, width, height } = element.getBoundingClientRect()
+          return { left: Math.round(left), aspectRatio: width / height }
+        })
+      )
+      return {
+        slots: boxes.length,
+        columns: new Set(boxes.map(({ left }) => left)).size,
+        aspectRatios: boxes.map(({ aspectRatio }) => aspectRatio)
+      }
+    }
+
+    const PORTRAIT_ASPECT_RATIO = 896 / 1152
+
+    wstest(
+      'double-clicking a resize corner fits an image grid at the node width, keeping its columns and failed slots',
+      async ({ comfyPage, getWebSocket }) => {
+        const { node, slots } = await showImageGrid(comfyPage, getWebSocket, {
+          count: 5,
+          missing: [3]
+        })
         await node.resizeFromCorner('SE', 120, 170)
         await comfyPage.nextFrame()
-        const wider = await requireBoundingBox(node.root)
+        const resized = await requireBoundingBox(node.root)
+        const { columns } = await gridLayout(slots)
+        expect(columns).toBeGreaterThan(1)
+
         await node.getResizeHandle('SE').dblclick()
         await comfyPage.nextFrame()
+
         const fitted = await requireBoundingBox(node.root)
-        expect(fitted.width).toBeCloseTo(wider.width, 0)
-        expect(fitted.height).toBeCloseTo(before.height, 0)
+        expect(fitted.width).toBeCloseTo(resized.width, 0)
+        const layout = await gridLayout(slots)
+        expect(layout.slots).toBe(5)
+        expect(layout.columns).toBe(columns)
+        expect(layout.aspectRatios).toEqual(
+          Array(layout.slots).fill(expect.closeTo(PORTRAIT_ASPECT_RATIO, 1))
+        )
+
+        await node.getResizeHandle('SE').dblclick()
+        await comfyPage.nextFrame()
+
+        expect(await requireBoundingBox(node.root)).toEqual(fitted)
 
         const getGridHeight = () => heightOf(node.imageGrid)
-
-        await node.dragHandle(node.growableRegionHandle(), 0, 80)
+        await node.dragHandle(node.growableRegionHandle(), 0, -40)
         await comfyPage.nextFrame()
         const sized = await requireBoundingBox(node.root)
         await node.growableRegionHandle().dblclick()
@@ -640,6 +756,38 @@ test.describe(
         await expect
           .poll(getGridHeight)
           .toBeCloseTo(releasedGridHeight + 100, 0)
+      }
+    )
+
+    wstest(
+      'fitting a large image batch stops the grid at twice its width and packs more columns',
+      async ({ comfyPage, getWebSocket }) => {
+        const { node, slots } = await showImageGrid(comfyPage, getWebSocket, {
+          count: 40
+        })
+        await node.resizeFromCorner('SE', 0, 200)
+        await comfyPage.nextFrame()
+        const resized = await requireBoundingBox(node.root)
+        const { columns } = await gridLayout(slots)
+        const tallGrid = await requireBoundingBox(node.imageGrid)
+        expect(tallGrid.height / tallGrid.width).toBeGreaterThan(2.5)
+
+        await node.getResizeHandle('SE').dblclick()
+        await comfyPage.nextFrame()
+
+        const grid = await requireBoundingBox(node.imageGrid)
+        expect((await requireBoundingBox(node.root)).width).toBeCloseTo(
+          resized.width,
+          0
+        )
+        expect(grid.height / grid.width).toBeLessThanOrEqual(2)
+        expect(grid.height / grid.width).toBeGreaterThan(1.9)
+        const layout = await gridLayout(slots)
+        expect(layout.slots).toBe(40)
+        expect(layout.columns).toBeGreaterThan(columns)
+        expect(layout.aspectRatios).toEqual(
+          Array(layout.slots).fill(expect.closeTo(PORTRAIT_ASPECT_RATIO, 1))
+        )
       }
     )
   }

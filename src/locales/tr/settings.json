@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "Bağlantı çizgilerinin düz olması için hizala"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Comfy Cloud uyumluluğunu denetlemek için düğüm ve model adlarını göndermeden önce sor"
+  },
   "Comfy_ConfirmClear": {
     "name": "İş akışını temizlerken onay iste"
   },

@@ -5,7 +5,10 @@ const MISSING_SOURCE_MESSAGE = 'Required input is missing: source'
 
 export const cloudValidationSummary = `Prompt outputs failed validation. node ${PREVIEW_ANY_NODE_ID} (PreviewAny): source — required_input_missing: ${MISSING_SOURCE_MESSAGE}.`
 
-export const cloudRelayedNodeErrors = {
+export const cloudRelayedNodeErrors: Record<
+  string,
+  PromptOutputsSkippedNodeError
+> = {
   [PREVIEW_ANY_NODE_ID]: {
     class_type: 'PreviewAny',
     dependent_outputs: [PREVIEW_ANY_NODE_ID],
@@ -17,4 +20,4 @@ export const cloudRelayedNodeErrors = {
       }
     ]
   }
-} satisfies Record<string, PromptOutputsSkippedNodeError>
+}

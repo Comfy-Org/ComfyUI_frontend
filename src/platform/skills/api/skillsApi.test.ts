@@ -19,6 +19,25 @@ describe('skill pack error responses', () => {
     })
   })
 
+  it('keeps the loopback-only code and the host reason from the local agent', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      Response.json(
+        {
+          error: 'Open http://127.0.0.1:8188 to use the agent.',
+          code: 'agent_loopback_only'
+        },
+        { status: 403 }
+      )
+    )
+
+    await expect(listSkillPacks()).rejects.toMatchObject({
+      name: 'SkillPacksApiError',
+      status: 403,
+      code: 'agent_loopback_only',
+      message: 'Open http://127.0.0.1:8188 to use the agent.'
+    })
+  })
+
   it.for([
     {
       case: 'the error field',

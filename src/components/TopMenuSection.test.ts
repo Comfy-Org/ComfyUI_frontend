@@ -27,6 +27,7 @@ import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composabl
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
@@ -771,7 +772,11 @@ describe('TopMenuSection', () => {
 
     it.for([
       { origin: 'http://127.0.0.1:8188', count: 1 },
-      { origin: 'http://192.168.1.20:8188', count: 1 },
+      { origin: 'http://localhost:8000', count: 1 },
+      { origin: 'http://192.168.1.20:8188', count: 0 },
+      { origin: 'http://comfy-box.local:8188', count: 0 },
+      { origin: 'http://[::1]:8188', count: 0 },
+      { origin: 'https://localhost:8188', count: 0 },
       { origin: 'https://comfy.example.com', count: 0 }
     ])(
       'renders $count Cloud button when ComfyUI is served from $origin',
@@ -819,6 +824,32 @@ describe('TopMenuSection', () => {
         expect(screen.getByTestId('cloud-button')).toBeInTheDocument()
       }
     )
+
+    it('hides the Cloud button on Desktop when ComfyUI is served from a LAN address', () => {
+      window.__comfyDesktop2 = {}
+      onTestFinished(() => {
+        delete window.__comfyDesktop2
+      })
+      servedFrom('http://192.168.1.20:8188')
+      Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+
+      createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+      expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+    })
+
+    it('hides the Cloud button once Comfy Cloud has switched the check off', async () => {
+      servedFrom('http://127.0.0.1:8188')
+      Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+
+      createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+      expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(1)
+
+      useCloudWorkflowCheckStore().isSwitchedOffOnCloud = true
+      await nextTick()
+
+      expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+    })
 
     it.for([
       { openOnCloudEnabled: false, cloud: 0, deploy: 1 },

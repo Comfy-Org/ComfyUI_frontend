@@ -2,6 +2,8 @@ import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -153,6 +155,36 @@ export class VueNodeFixture {
             lines * Number.parseFloat(style.lineHeight)
         )
       }, lines)
+  }
+
+  /** Client-pixel distance between each rendered slot dot's centre and the link endpoint `getInputPos`/`getOutputPos` gives it, read in one task. */
+  async slotEndpointDeviations(): Promise<Record<string, number>> {
+    const nodeId = toNodeId(
+      (await this.root.getAttribute('data-node-id')) ?? ''
+    )
+    return this.root.evaluate((nodeElement, nodeId) => {
+      const canvas = window.app!.canvas
+      const node = window.app!.graph.getNodeById(nodeId)!
+      const canvasRect = canvas.canvas.getBoundingClientRect()
+      const deviations: Record<string, number> = {}
+      for (const dot of nodeElement.querySelectorAll<HTMLElement>(
+        '[data-slot-key]'
+      )) {
+        const key = dot.dataset.slotKey!
+        const match = /-(in|out)-(\d+)$/.exec(key)
+        const rect = dot.getBoundingClientRect()
+        if (!match || rect.width === 0) continue
+        const index = Number(match[2])
+        const [x, y] = canvas.ds.convertOffsetToCanvas(
+          match[1] === 'in' ? node.getInputPos(index) : node.getOutputPos(index)
+        )
+        deviations[key] = Math.hypot(
+          x + canvasRect.left - (rect.left + rect.width / 2),
+          y + canvasRect.top - (rect.top + rect.height / 2)
+        )
+      }
+      return deviations
+    }, nodeId)
   }
 
   /** Locator for the bottom-edge resize handle inside `region`, or this node's only one. */

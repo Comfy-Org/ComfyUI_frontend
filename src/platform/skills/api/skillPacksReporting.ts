@@ -1,12 +1,19 @@
 import type { ReportErrorOptions } from '@comfyorg/telemetry/reportError'
 
-import { SkillPacksApiError } from '@/platform/skills/api/skillsApi'
+import {
+  isLoopbackOnlyRefusal,
+  SkillPacksApiError
+} from '@/platform/skills/api/skillsApi'
 
-/** Returns Sentry routing options for a session-denied skill-pack call. */
+/**
+ * Keeps expected refusals (an ended session, the local host's loopback-only
+ * fence) out of Sentry; Datadog still counts them.
+ */
 export function skillPacksReporting(
   error: unknown
 ): Pick<ReportErrorOptions, 'sentryMode'> {
-  return error instanceof SkillPacksApiError && error.status === 401
-    ? { sentryMode: 'never' }
-    : {}
+  const expected =
+    (error instanceof SkillPacksApiError && error.status === 401) ||
+    isLoopbackOnlyRefusal(error)
+  return expected ? { sentryMode: 'never' } : {}
 }

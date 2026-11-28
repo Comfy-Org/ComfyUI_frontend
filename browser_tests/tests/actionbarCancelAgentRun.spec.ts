@@ -1,9 +1,8 @@
 import { mergeTests } from '@playwright/test'
-import type { z } from 'zod'
 
 import type {
   RawJobListItem,
-  zJobsListResponse
+  JobsListResponse
 } from '@comfyorg/api-client/jobTypes'
 
 import {
@@ -14,8 +13,6 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-
-type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

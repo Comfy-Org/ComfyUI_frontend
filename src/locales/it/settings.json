@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "Aggancia in modo che i collegamenti diventino diritti"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Chiedi prima di inviare i nomi dei nodi e dei modelli per verificare la compatibilità con Comfy Cloud"
+  },
   "Comfy_ConfirmClear": {
     "name": "Richiedi conferma quando si cancella il workflow"
   },

@@ -431,6 +431,9 @@ const mentionMenuHeading = computed(() => {
   return mentionSection.value === 'root' ? t('agent.reference') : undefined
 })
 const skillsMenuStatus = useSkillCatalogStatus()
+const skillsMenuStatusMessage = computed(() =>
+  skillsMenuStatus.value === 'failed' ? skills.loadFailureReason : undefined
+)
 const userSkillFailureInMention = computed(
   () => mentionSection.value === 'skills' && skillsMenuStatus.value === 'failed'
 )
@@ -445,18 +448,22 @@ const showEmptyMentionStatus = computed(
     !userSkillFailureInMention.value &&
     !comfySkillFailureInMention.value
 )
-const emptyMentionLabel = computed(() => {
-  if (mentionSection.value !== 'skills') {
-    return t(
-      mentionSection.value === 'workflows'
-        ? 'agent.noWorkflowsToReference'
-        : 'agent.noNodesToReference'
-    )
-  }
+const emptyMentionLabel = computed(() =>
+  mentionSection.value === 'skills'
+    ? skillsEmptyLabel()
+    : t(
+        mentionSection.value === 'workflows'
+          ? 'agent.noWorkflowsToReference'
+          : 'agent.noNodesToReference'
+      )
+)
+
+function skillsEmptyLabel(): string {
   if (skills.loading) return t('agent.skillsLoading')
   if (builtinSkills.loading) return t('agent.comfySkillsLoading')
+  if (skills.catalogUnavailable) return t('agent.skillsUnavailable')
   return t('agent.noSkillsFound')
-})
+}
 
 function openReferenceMenu(): void {
   const editor = editorRef.value
@@ -705,7 +712,7 @@ defineExpose({
         />
         <MentionMenuStatus
           v-if="userSkillFailureInMention"
-          :label="t('agent.skillsLoadError')"
+          :label="skills.loadFailureReason ?? t('agent.skillsLoadError')"
           retryable
           @retry="skills.ensurePacks()"
         />
@@ -834,6 +841,7 @@ defineExpose({
               :skills-enabled="skills.enabled"
               :skills="skills.packs"
               :skills-status="skillsMenuStatus"
+              :skills-status-message="skillsMenuStatusMessage"
               :comfy-skills="builtinSkills.visibleSkills"
               :comfy-skills-status="comfySkillsMenuStatus"
               @select-nodes="onSelectNodes"

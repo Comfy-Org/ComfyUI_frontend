@@ -25,8 +25,7 @@ function reportPanel(
       index,
       type: node.slotDirection,
       bounds: { x: x - 12, y: y - 12, width: 24, height: 24 }
-    })),
-    'expanded'
+    }))
   )
 }
 

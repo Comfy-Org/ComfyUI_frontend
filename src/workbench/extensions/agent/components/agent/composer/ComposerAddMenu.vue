@@ -30,6 +30,7 @@ const {
   skillsEnabled,
   skills,
   skillsStatus,
+  skillsStatusMessage,
   comfySkills = [],
   comfySkillsStatus
 } = defineProps<{
@@ -42,6 +43,7 @@ const {
   skillsEnabled: boolean
   skills: SkillReferenceMetadata[]
   skillsStatus?: SkillCatalogStatus
+  skillsStatusMessage?: string
   comfySkills?: SkillReferenceMetadata[]
   comfySkillsStatus?: BuiltinSkillCatalogStatus
 }>()
@@ -171,6 +173,7 @@ function onCloseAutoFocus(event: Event): void {
         v-if="skillsEnabled"
         :skills
         :status="skillsStatus"
+        :status-message="skillsStatusMessage"
         :comfy-skills
         :comfy-status="comfySkillsStatus"
         @opened="emit('requestSkills')"
