@@ -47,10 +47,23 @@ function readHsva(hex: string): HSVA {
   return next
 }
 
+function withHexPrefix(hex: string) {
+  return hex.startsWith('#') ? hex : `#${hex}`
+}
+
+function applyAlpha(hex: string, alpha: number) {
+  if (alpha >= 100) return hex
+  const alphaHex = Math.round((alpha / 100) * 255)
+    .toString(16)
+    .padStart(2, '0')
+  return `${hex}${alphaHex}`
+}
+
 const hsva = ref<HSVA>(readHsva(modelValue.value))
 const exactHex = ref(modelValue.value)
 const displayMode = ref<'hex' | 'rgba'>('hex')
 let isReadingModel = false
+let previousHsva = { ...hsva.value }
 
 watch(modelValue, (newVal) => {
   exactHex.value = newVal
@@ -68,8 +81,16 @@ watch(modelValue, (newVal) => {
 watch(
   hsva,
   (newHsva) => {
+    const colorChanged =
+      newHsva.h !== previousHsva.h ||
+      newHsva.s !== previousHsva.s ||
+      newHsva.v !== previousHsva.v
+    previousHsva = { ...newHsva }
     if (isReadingModel) return
-    const hex = hsvaToHex(newHsva)
+    const rgbHex = colorChanged
+      ? hsvaToHex({ ...newHsva, a: 100 })
+      : rgbToHex(baseRgb.value)
+    const hex = applyAlpha(rgbHex, newHsva.a)
     exactHex.value = hex
     if (hex !== modelValue.value) {
       modelValue.value = hex
@@ -78,7 +99,7 @@ watch(
   { deep: true, flush: 'sync' }
 )
 
-const baseRgb = computed(() => hexToRgb(exactHex.value))
+const baseRgb = computed(() => hexToRgb(withHexPrefix(exactHex.value)))
 
 const previewColor = computed(() => {
   const hex = rgbToHex(baseRgb.value)
@@ -146,6 +167,7 @@ const isOpen = ref(false)
       <ColorPickerPanel
         v-model:hsva="hsva"
         v-model:display-mode="displayMode"
+        :color-value="exactHex"
         :alpha
         :hex-label
         :rgba-label

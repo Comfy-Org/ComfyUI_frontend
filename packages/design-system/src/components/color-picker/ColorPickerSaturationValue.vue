@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-const { hue } = defineProps<{
+const { hue, saturation, value } = defineProps<{
   hue: number
+  saturation: number
+  value: number
 }>()
-
-const saturation = defineModel<number>('saturation', { required: true })
-const value = defineModel<number>('value', { required: true })
+const emit = defineEmits<{
+  update: [saturation: number, value: number]
+}>()
 
 const containerRef = ref<HTMLElement | null>(null)
 
 const hueBackground = computed(() => `hsl(${hue}, 100%, 50%)`)
 
 const handleStyle = computed(() => ({
-  left: `${saturation.value}%`,
-  top: `${100 - value.value}%`
+  left: `${saturation}%`,
+  top: `${100 - value}%`
 }))
 
 function updateFromPointer(e: PointerEvent) {
@@ -22,8 +24,7 @@ function updateFromPointer(e: PointerEvent) {
   const rect = el.getBoundingClientRect()
   const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
-  saturation.value = Math.round(x * 100)
-  value.value = Math.round((1 - y) * 100)
+  emit('update', Math.round(x * 100), Math.round((1 - y) * 100))
 }
 
 function handlePointerDown(e: PointerEvent) {
