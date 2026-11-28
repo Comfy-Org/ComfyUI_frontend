@@ -102,6 +102,10 @@ export class RollHandle {
     return this.root.visible
   }
 
+  setScale(scale: number): void {
+    this.root.scale.setScalar(scale)
+  }
+
   update(state: CameraInfoState): void {
     if (state.mode === 'quaternion') {
       this.root.visible = false

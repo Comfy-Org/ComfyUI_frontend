@@ -82,6 +82,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import ViewportWidgetShell from '@comfyorg/design-system/common/ViewportWidgetShell'
 import { actionClass } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import Button from '@comfyorg/design-system/button/Button'
+import { resolveSubjectModelFile } from '@/extensions/core/load3d/cameraInfo/subjectModelFile'
 import { useCameraInfo } from '@/extensions/core/load3d/composables/useCameraInfo'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
@@ -120,8 +121,15 @@ const {
   setGizmosVisible,
   setTransformGizmoMode,
   setLookThrough,
+  showSubjectModel,
   mode
 } = useCameraInfo(node)
+
+const subjectModelFile = computed(() =>
+  node.value
+    ? resolveSubjectModelFile(node.value, nodeId ?? node.value.id)
+    : undefined
+)
 
 const gizmosLabel = computed(() =>
   gizmosOn.value ? t('load3d.hideGizmos') : t('load3d.showGizmos')
@@ -181,12 +189,14 @@ function selectTransformGizmo(value: TransformGizmoMode) {
 watch(gizmosOn, (on) => setGizmosVisible(on))
 watch(effectiveTransformGizmoMode, (m) => setTransformGizmoMode(m))
 watch(lookingThrough, (on) => setLookThrough(on))
+watch(subjectModelFile, (modelFile) => void showSubjectModel(modelFile))
 
 function initializeViewport(container: HTMLElement) {
   initialize(container)
   setGizmosVisible(gizmosOn.value)
   setTransformGizmoMode(effectiveTransformGizmoMode.value)
   setLookThrough(lookingThrough.value)
+  void showSubjectModel(subjectModelFile.value)
 }
 
 onMounted(() => {
