@@ -9,7 +9,12 @@ const NAVIGATION_KEYS = new Set([
 ])
 
 export function replayComboboxNavigation(event: KeyboardEvent) {
-  if (!event.isTrusted || event.isComposing || !NAVIGATION_KEYS.has(event.key))
+  if (
+    event.target instanceof HTMLButtonElement ||
+    !event.isTrusted ||
+    event.isComposing ||
+    !NAVIGATION_KEYS.has(event.key)
+  )
     return
   const { target } = event
   event.preventDefault()

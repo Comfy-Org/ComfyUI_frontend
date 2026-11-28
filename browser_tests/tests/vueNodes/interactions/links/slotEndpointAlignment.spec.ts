@@ -48,6 +48,36 @@ test.describe(
       await expect.poll(() => maxEndpointDeviation(node)).toBeLessThan(1)
     })
 
+    test('link endpoints stay on every slot dot after undoing and redoing a node move', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      const nodes = NODE_IDS.map(
+        (id) => new VueNodeFixture(comfyPage.vueNodes.getNodeLocator(id))
+      )
+      await comfyMouse.dragElementBy(nodes[0].header, { x: 60, y: 40 })
+
+      await comfyPage.keyboard.undo()
+
+      for (const [i, node] of nodes.entries()) {
+        await expect
+          .poll(() => maxEndpointDeviation(node), {
+            message: `node ${NODE_IDS[i]} after undo`
+          })
+          .toBeLessThan(1)
+      }
+
+      await comfyPage.keyboard.redo()
+
+      for (const [i, node] of nodes.entries()) {
+        await expect
+          .poll(() => maxEndpointDeviation(node), {
+            message: `node ${NODE_IDS[i]} after redo`
+          })
+          .toBeLessThan(1)
+      }
+    })
+
     test('link endpoints sit on the slot dots of a reroute, whose input has no label', async ({
       comfyPage
     }) => {

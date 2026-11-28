@@ -19,6 +19,11 @@ async function boundsOf(comfyPage: ComfyPage, titles: string[]) {
   )
 }
 
+async function cornerOf(comfyPage: ComfyPage, title: string) {
+  const [{ x, y }] = await boundsOf(comfyPage, [title])
+  return { x: Math.round(x), y: Math.round(y) }
+}
+
 async function leftsOf(comfyPage: ComfyPage, titles: string[]) {
   return (await boundsOf(comfyPage, titles)).map(({ x }) => Math.round(x))
 }
@@ -54,7 +59,41 @@ async function centreOf(comfyPage: ComfyPage, index: number) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
 
+async function stripBetweenNotes(comfyPage: ComfyPage) {
+  const { canvasOps, page } = comfyPage
+  const [from, to] = await Promise.all([
+    canvasOps.canvasPosToClientPos([45, 216]),
+    canvasOps.canvasPosToClientPos([65, 240])
+  ])
+  return page.screenshot({
+    clip: { x: from.x, y: from.y, width: to.x - from.x, height: to.y - from.y }
+  })
+}
+
+function testGuideVisibility() {
+  test('a guide joins a snapped node to its neighbour until the node is dropped', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
+    await comfyPage.canvasOps.setOffset([200, 100])
+    const grip = await comfyPage.canvasOps.canvasPosToClientPos([85, 285])
+    const withoutGuide = await stripBetweenNotes(comfyPage)
+    const guideShows = async () =>
+      !(await stripBetweenNotes(comfyPage)).equals(withoutGuide)
+
+    await comfyMouse.move(grip)
+    await comfyMouse.drag({ x: grip.x - 5, y: grip.y + 60 })
+    await expect.poll(guideShows).toBe(true)
+
+    await comfyMouse.drop()
+    await expect.poll(guideShows).toBe(false)
+  })
+}
+
 test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
+  testGuideVisibility()
+
   test.describe('Dragging a node 5 units left of another node’s left edge', () => {
     const cases = [
       { name: 'snaps onto the edge', settings: {}, keys: [], left: 55 },
@@ -90,8 +129,8 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
           await comfyMouse.dragElementBy(dragged.header, { x: -5, y: 60 })
 
           await expect
-            .poll(() => leftsOf(comfyPage, ['Dragged']))
-            .toEqual([left])
+            .poll(() => cornerOf(comfyPage, 'Dragged'))
+            .toEqual({ x: left, y: 330 })
         })
       })
     }
@@ -279,6 +318,74 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
   test.describe('Align popover', () => {
     test.use({
       initialSettings: { 'Comfy.Canvas.SelectionToolbox': true }
+    })
+
+    test.describe('Narrow viewport', () => {
+      test.use({ viewport: { width: 320, height: 720 } })
+
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row', {
+          workflow: {
+            extra: { ds: { scale: 0.25, offset: [-150, 1200] } }
+          }
+        })
+      })
+
+      test('can reach and activate the last alignment action', async ({
+        comfyPage
+      }) => {
+        await comfyPage.keyboard.selectAll()
+        await openAlign(comfyPage)
+        const matchHeight = comfyPage.page.getByRole('button', {
+          name: 'Match height',
+          exact: true
+        })
+
+        const distribute = comfyPage.page.getByRole('button', {
+          name: 'Distribute horizontally',
+          exact: true
+        })
+
+        await expect(matchHeight).toBeInViewport({ ratio: 1 })
+        await expect(async () => {
+          const [distributeBox, matchHeightBox] = await Promise.all([
+            distribute.boundingBox(),
+            matchHeight.boundingBox()
+          ])
+          expect(distributeBox?.y).toBe(matchHeightBox?.y)
+        }).toPass({ timeout: 5000 })
+        const popover = comfyPage.page.getByRole('dialog')
+        await expect
+          .poll(async () => {
+            const bounds = await popover.evaluate((element) => {
+              const { left, right } = element.getBoundingClientRect()
+              return { left, right }
+            })
+            const buttons = await popover
+              .getByRole('button')
+              .evaluateAll((elements) =>
+                elements.map((element) => {
+                  const { left, right } = element.getBoundingClientRect()
+                  return { left, right }
+                })
+              )
+            const leftPadding =
+              Math.min(...buttons.map(({ left }) => left)) - bounds.left
+            const rightPadding =
+              bounds.right - Math.max(...buttons.map(({ right }) => right))
+            return Math.round(rightPadding - leftPadding)
+          })
+          .toBe(0)
+        await matchHeight.click()
+
+        await expect
+          .poll(async () =>
+            (await boundsOf(comfyPage, ROW_TITLES)).map((b) =>
+              Math.round(b.height)
+            )
+          )
+          .toEqual([190, 190, 190])
+      })
     })
 
     test.describe('Aligning and matching sizes', () => {
@@ -619,6 +726,8 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
 })
 
 test.describe('Smart guides on the classic canvas', { tag: '@canvas' }, () => {
+  testGuideVisibility()
+
   test('dragging a node snaps it onto another node’s left edge', async ({
     comfyPage
   }) => {
@@ -651,5 +760,42 @@ test.describe('Smart guides on the classic canvas', { tag: '@canvas' }, () => {
     )
 
     await expect.poll(rightEdge).toBe(375)
+  })
+
+  test.describe('Inside a subgraph', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.subgraph.enterSubgraphWithFallback('2')
+    })
+
+    test('dragging the input bar near level snaps its wire straight', async ({
+      comfyPage,
+      comfyMouse
+    }) => {
+      function wireRise() {
+        return comfyPage.page.evaluate(() => {
+          const graph = window.app!.canvas.subgraph!
+          const slot = graph.inputNode.slots[0]
+          const wire = graph.links.get(slot.linkIds[0])!
+          return 2 * (wire._pos[1] - slot.pos[1])
+        })
+      }
+      const grip = await comfyPage.page.evaluate(() => {
+        const [x, y, width, height] =
+          window.app!.canvas.subgraph!.inputNode.boundingRect
+        return [x + width / 2, y + height - 3] satisfies [number, number]
+      })
+      const from = await comfyPage.canvasOps.canvasPosToClientPos(grip)
+      const to = await comfyPage.canvasOps.canvasPosToClientPos([
+        grip[0] + 80,
+        grip[1] + (await wireRise()) - 4
+      ])
+
+      await comfyMouse.move(from)
+      await comfyMouse.drag(to)
+      await comfyMouse.drop()
+
+      await expect.poll(wireRise).toBeCloseTo(0, 3)
+    })
   })
 })

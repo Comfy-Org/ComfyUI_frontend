@@ -313,7 +313,6 @@ import {
   VUE_NODE_BODY
 } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
 import { vueNodeBodyKey } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
-import { setDerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
   shouldHideLinkedCoreLoadAudioPlayer,
@@ -1046,8 +1045,10 @@ watch(
   [() => canvasStore.rootGraphId, () => nodeData.id, slotAnchors],
   ([rootGraphId, id, anchors], _, onCleanup) => {
     if (!rootGraphId) return
-    setDerivedSlotAnchors(rootGraphId, id, anchors)
-    onCleanup(() => setDerivedSlotAnchors(rootGraphId, id, undefined))
+    layoutStore.setDerivedSlotAnchors(rootGraphId, id, anchors)
+    onCleanup(() =>
+      layoutStore.setDerivedSlotAnchors(rootGraphId, id, undefined)
+    )
   },
   { immediate: true }
 )

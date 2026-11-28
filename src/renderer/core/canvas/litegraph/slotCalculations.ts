@@ -19,7 +19,7 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
-import { getVueSlotAnchor } from '@/renderer/core/layout/slots/derivedSlotAnchors'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
@@ -213,7 +213,7 @@ function getDerivedSlotAnchor(
       y: nodeGeometry().headerHeight / 2 - litegraph().NODE_TITLE_HEIGHT
     }
   if (!node.graph) return undefined
-  return getVueSlotAnchor(
+  return layoutStore.derivedSlotAnchorOf(
     node.graph.rootGraph.id,
     node.id,
     slotIndex,

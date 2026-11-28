@@ -10,9 +10,10 @@ import { SKILL_CATALOG_STATUS_LABELS } from '@/platform/skills/composables/useSk
 import type { SkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 
-const { skills, status } = defineProps<{
+const { skills, status, statusMessage } = defineProps<{
   skills: SkillReferenceMetadata[]
   status?: SkillCatalogStatus
+  statusMessage?: string
 }>()
 const emit = defineEmits<{
   opened: []
@@ -68,7 +69,7 @@ watch(open, (isOpen) => {
         role="status"
         class="px-2 py-1 text-xs text-muted-foreground"
       >
-        {{ t(SKILL_CATALOG_STATUS_LABELS[status]) }}
+        {{ statusMessage ?? t(SKILL_CATALOG_STATUS_LABELS[status]) }}
       </div>
       <MenuItem v-if="status === 'failed'" @select.prevent="emit('retry')">
         <i aria-hidden="true" class="icon-[lucide--rotate-cw]" />

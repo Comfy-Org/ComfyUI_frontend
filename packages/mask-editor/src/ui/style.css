@@ -1,4 +1,4 @@
-#maskEditor_brush {
+.maskEditor_brush {
   position: absolute;
   pointer-events: none;
   border-radius: 50%;
@@ -6,7 +6,7 @@
   outline: 1px dashed black;
   box-shadow: 0 0 0 1px white;
 }
-#maskEditor_brushPreviewGradient {
+.maskEditor_brushPreviewGradient {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -72,7 +72,7 @@
   background: currentColor;
 }
 
-#maskEditorCanvasContainer {
+.maskEditor_canvasContainer {
   position: absolute;
   width: 1000px;
   height: 667px;

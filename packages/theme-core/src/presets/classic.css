@@ -103,9 +103,22 @@
       padding-block: 0;
     }
 
+    [data-part='widget-field'] > :has(> [data-part='widget-toggle-group']) {
+      align-self: stretch;
+      grid-template-rows: minmax(0, 1fr);
+    }
+
     [data-part='widget-toggle-group'] {
       height: 100%;
       padding: 0;
+      overflow: clip;
+      border-radius: calc(
+        var(--node-widget-height) / 2 - var(--node-widget-border-width)
+      );
+    }
+
+    [data-part='widget-toggle-option'] {
+      padding-block: 0;
     }
 
     [data-part='widget-toggle-option'],

@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -23,7 +26,12 @@ const i18n = createI18n({
       },
       widgets: {
         selectFolder: 'Folder: {name}',
-        backFromFolder: 'Back: {name}'
+        backFromFolder: 'Back: {name}',
+        lockFolder: 'Lock folder: {name}',
+        unlockFolder: 'Unlock folder: {name}',
+        folderLocked: 'Locked to folder: {name}',
+        browseToLockFolder: 'Open a folder to lock it',
+        allFolders: 'All folders'
       }
     }
   }
@@ -59,6 +67,7 @@ describe('WidgetSelectDefault', () => {
     const result = render(WidgetSelectDefault, {
       props: {
         widget,
+        widgetId: widgetId('test-graph', toNodeId(1), widget.name),
         modelValue,
         filenameSummary,
         'onUpdate:modelValue': onUpdate
@@ -121,15 +130,93 @@ describe('WidgetSelectDefault', () => {
   })
 
   it.for([
-    { current: 42, action: 'Next', expected: 89 },
+    { filename: 'portrait.safetensors', summary: 'portrait' },
+    { filename: 'portrait.SFT', summary: 'portrait' },
+    { filename: 'portrait.SAFETENSORS', summary: 'portrait' },
+    { filename: 'portrait.ckpt', summary: 'portrait.ckpt' },
+    { filename: 'portrait.pt', summary: 'portrait.pt' },
+    { filename: 'portrait.pth', summary: 'portrait.pth' },
+    { filename: 'portrait.bin', summary: 'portrait.bin' },
+    {
+      filename: 'portrait.safetensors.ckpt',
+      summary: 'portrait.safetensors.ckpt'
+    },
+    { filename: '.sft', summary: '.sft' }
+  ])('optionally summarizes $filename as $summary', ({ filename, summary }) => {
+    useSettingStore().settingValues['Comfy.VueNodes.HideSafeModelExtensions'] =
+      true
+    const raw = `studio/models/${filename}`
+    renderComponent(createWidget([raw]), raw, undefined, true)
+
+    expect(screen.getByRole('combobox').textContent.trim()).toBe(summary)
+  })
+
+  it.for([
+    { filenameSummary: false, options: {}, expected: 'studio/model.sft' },
+    {
+      filenameSummary: true,
+      options: { getOptionLabel: () => 'Custom.sft' },
+      expected: 'Custom.sft'
+    }
+  ])(
+    'preserves $expected with extension hiding enabled',
+    ({ filenameSummary, options, expected }) => {
+      useSettingStore().settingValues[
+        'Comfy.VueNodes.HideSafeModelExtensions'
+      ] = true
+      const raw = 'studio/model.sft'
+      renderComponent(
+        createWidget([raw], options),
+        raw,
+        undefined,
+        filenameSummary
+      )
+
+      expect(screen.getByRole('combobox').textContent.trim()).toBe(expected)
+    }
+  )
+
+  it('updates summaries live without hiding option extensions or changing raw selections', async () => {
+    const settings = useSettingStore()
+    const first = 'studio/model.safetensors'
+    const second = 'studio/model.sft'
+    const { user, onUpdate, rerender } = renderComponent(
+      createWidget([first, second]),
+      first,
+      undefined,
+      true
+    )
+    settings.settingValues['Comfy.VueNodes.HideSafeModelExtensions'] = true
+    await nextTick()
+    expect(screen.getByRole('combobox').textContent.trim()).toBe('model')
+
+    await openDropdown(user)
+    expect(
+      screen.getByRole('option', { name: 'model.safetensors' })
+    ).toBeVisible()
+    await user.click(screen.getByRole('option', { name: 'model.sft' }))
+    expect(onUpdate).toHaveBeenCalledWith(second)
+    await rerender({ modelValue: second })
+
+    settings.settingValues['Comfy.VueNodes.HideSafeModelExtensions'] = false
+    await nextTick()
+    expect(screen.getByRole('combobox').textContent.trim()).toBe('model.sft')
+  })
+
+  it.for([
+    { current: 42, action: 'Next', expected: -7 },
     { current: 42, action: 'Previous', expected: 11 },
     { current: 11, action: 'Next', expected: 42 },
-    { current: 89, action: 'Previous', expected: 42 }
+    { current: -7, action: 'Previous', expected: 42 },
+    { current: '', action: 'Next', expected: 11 },
+    { current: '', action: 'Previous', expected: -7 },
+    { current: 'missing', action: 'Next', expected: 11 },
+    { current: 'missing', action: 'Previous', expected: -7 }
   ])(
     'steps $action from $current to raw value $expected',
     async ({ current, action, expected }) => {
       const { user, onUpdate } = renderComponent(
-        createWidget([11, 42, 89]),
+        createWidget([11, 42, -7]),
         current,
         undefined,
         false
@@ -237,12 +324,12 @@ describe('WidgetSelectDefault', () => {
       await user.click(screen.getByRole('option', { name: 'Folder: studio' }))
       await user.click(screen.getByRole('option', { name: 'Folder: models' }))
       expect(
-        screen.getByRole('option', { name: 'Back: studio / models' })
+        screen.getByRole('button', { name: 'Back: studio / models' })
       ).toBeVisible()
       expect(onUpdate).not.toHaveBeenCalled()
       expect(screen.getByRole('combobox', { name: 'Search' })).toHaveFocus()
       await user.click(
-        screen.getByRole('option', { name: 'Back: studio / models' })
+        screen.getByRole('button', { name: 'Back: studio / models' })
       )
       expect(
         screen.getByRole('option', { name: 'Folder: models' })
@@ -271,7 +358,10 @@ describe('WidgetSelectDefault', () => {
       true
     )
     await openDropdown(user)
-    expect(optionLabels()).toEqual(['studio / models', 'portrait.safetensors'])
+    expect(optionLabels()).toEqual(['portrait.safetensors'])
+    expect(
+      screen.getByRole('button', { name: 'Back: studio / models' })
+    ).toBeVisible()
     expect(
       screen.getByRole('option', {
         name: 'portrait.safetensors',
@@ -332,6 +422,67 @@ describe('WidgetSelectDefault', () => {
     expect(onUpdate).toHaveBeenCalledWith('archive/portrait.safetensors')
   })
 
+  it.for([
+    {
+      query: 'studio port',
+      labels: ['studio/models/portrait_03.safetensors']
+    },
+    {
+      query: 'port STUDIO',
+      labels: ['studio/models/portrait_03.safetensors']
+    },
+    {
+      query: '  trait  ',
+      labels: [
+        'studio/models/portrait_03.safetensors',
+        'archive/portrait.safetensors'
+      ]
+    },
+    { query: 'studio archive', labels: [] }
+  ])(
+    'matches every whitespace-separated term of "$query" anywhere in the path',
+    async ({ query, labels }) => {
+      const { user } = renderComponent(
+        createWidget([
+          'studio/models/portrait_03.safetensors',
+          'studio/landscape.safetensors',
+          'archive/portrait.safetensors'
+        ]),
+        '',
+        undefined,
+        true
+      )
+      await openDropdown(user)
+      await user.type(screen.getByRole('combobox', { name: 'Search' }), query)
+      expect(optionLabels()).toEqual(labels)
+    }
+  )
+
+  it('matches terms split between a custom label and its raw value', async () => {
+    const { user } = renderComponent(
+      createWidget(
+        [
+          'studio/portrait.safetensors',
+          'archive/portrait.safetensors',
+          'archive/a.safetensors',
+          'archive/b.safetensors',
+          'archive/c.safetensors'
+        ],
+        {
+          getOptionLabel: (value: string) =>
+            value.startsWith('studio') ? 'Approved' : `Draft ${value}`
+        }
+      ),
+      ''
+    )
+    await openDropdown(user)
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search' }),
+      'approved portrait'
+    )
+    expect(optionLabels()).toEqual(['Approved'])
+  })
+
   it('navigates into and out of folders with the keyboard before selecting a file', async () => {
     const { user, onUpdate } = renderComponent(
       createWidget(['studio/models/portrait.safetensors']),
@@ -341,15 +492,18 @@ describe('WidgetSelectDefault', () => {
     )
     await openDropdown(user)
     await user.keyboard('{Home}{Enter}')
-    await expectHighlightedOption('Back: studio')
-    await user.keyboard('{ArrowDown}{Enter}')
-    await expectHighlightedOption('Back: studio / models')
+    await expectHighlightedOption('Folder: models')
     await user.keyboard('{Enter}')
-    await expectHighlightedOption('Back: studio')
+    await expectHighlightedOption('portrait.safetensors')
+    await user.tab()
+    expect(
+      screen.getByRole('button', { name: 'Back: studio / models' })
+    ).toHaveFocus()
+    await user.keyboard('{Enter}')
+    await expectHighlightedOption('Folder: models')
+    expect(screen.getByRole('combobox', { name: 'Search' })).toHaveFocus()
     expect(onUpdate).not.toHaveBeenCalled()
-    await user.keyboard('{ArrowDown}{Enter}')
-    await expectHighlightedOption('Back: studio / models')
-    await user.keyboard('{End}')
+    await user.keyboard('{Enter}')
     await expectHighlightedOption('portrait.safetensors')
     await user.keyboard('{Enter}')
     expect(onUpdate).toHaveBeenCalledWith('studio/models/portrait.safetensors')
@@ -379,6 +533,179 @@ describe('WidgetSelectDefault', () => {
       expect(optionLabels()).toEqual(labels)
     }
   )
+
+  it.for([
+    { separator: '/', expected: 'MOSS/image/nested/portrait.safetensors' },
+    { separator: '\\', expected: 'MOSS\\image\\nested\\portrait.safetensors' }
+  ])(
+    'locks browsing and search with $separator paths',
+    async ({ separator, expected }) => {
+      const values = [
+        'MOSS/image/portrait.safetensors',
+        'MOSS/image/nested/portrait.safetensors',
+        'MOSS/image-other/portrait.safetensors',
+        'Other/portrait.safetensors'
+      ].map((value) => value.replaceAll('/', separator))
+      const { user, onUpdate } = renderComponent(
+        createWidget(values),
+        '',
+        undefined,
+        true
+      )
+      await openDropdown(user)
+      await user.click(screen.getByRole('option', { name: 'Folder: MOSS' }))
+      await user.click(screen.getByRole('option', { name: 'Folder: image' }))
+      await user.click(
+        screen.getByRole('button', { name: 'Lock folder: MOSS / image' })
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Back: MOSS / image' })
+      ).not.toBeInTheDocument()
+      await user.click(screen.getByRole('option', { name: 'Folder: nested' }))
+      expect(screen.getByTitle('MOSS / image / nested')).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: 'Unlock folder: MOSS / image' })
+      ).toHaveAttribute('aria-pressed', 'true')
+      await user.click(
+        screen.getByRole('button', { name: 'Back: MOSS / image / nested' })
+      )
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search' }),
+        'portrait'
+      )
+      expect(optionLabels()).toEqual(values.slice(0, 2))
+      await user.click(screen.getByRole('option', { name: expected }))
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+      await openDropdown(user)
+      expect(
+        screen.getByRole('button', { name: 'Unlock folder: MOSS / image' })
+      ).toHaveAttribute('aria-pressed', 'true')
+      await user.type(screen.getByRole('combobox', { name: 'Search' }), 'Other')
+      expect(optionLabels()).toEqual([])
+      await user.click(
+        screen.getByRole('button', { name: 'Unlock folder: MOSS / image' })
+      )
+      expect(optionLabels()).toEqual(values.slice(2))
+      expect(screen.getByRole('combobox', { name: 'Search' })).toHaveFocus()
+    }
+  )
+
+  it.for([
+    { current: 'MOSS/a.safetensors', action: 'Previous', expected: undefined },
+    {
+      current: 'MOSS/a.safetensors',
+      action: 'Next',
+      expected: 'MOSS/nested/b.safetensors'
+    },
+    {
+      current: 'MOSS/nested/b.safetensors',
+      action: 'Next',
+      expected: undefined
+    },
+    {
+      current: 'MOSS/nested/b.safetensors',
+      action: 'Previous',
+      expected: 'MOSS/a.safetensors'
+    },
+    {
+      current: 'Other/between.safetensors',
+      action: 'Next',
+      expected: 'MOSS/a.safetensors'
+    },
+    {
+      current: 'missing.safetensors',
+      action: 'Previous',
+      expected: 'MOSS/nested/b.safetensors'
+    }
+  ])(
+    'keeps $action from $current inside the locked folder',
+    async ({ current, action, expected }) => {
+      const { user, onUpdate, rerender } = renderComponent(
+        createWidget([
+          'Other/before.safetensors',
+          'MOSS/a.safetensors',
+          'Other/between.safetensors',
+          'MOSS/nested/b.safetensors',
+          'MOSS-extra/after.safetensors'
+        ]),
+        'MOSS/a.safetensors',
+        undefined,
+        true
+      )
+      await openDropdown(user)
+      await user.click(
+        screen.getByRole('button', { name: 'Lock folder: MOSS' })
+      )
+      await rerender({ modelValue: current })
+      await user.type(screen.getByRole('combobox', { name: 'Search' }), 'Other')
+      expect(optionLabels()).toEqual([])
+      const stepper = screen.getByRole('button', {
+        name: `test_combo: ${action}`
+      })
+      expect(stepper.hasAttribute('disabled')).toBe(expected === undefined)
+      await user.click(stepper)
+      expect(onUpdate.mock.calls).toEqual(
+        expected === undefined ? [] : [[expected]]
+      )
+    }
+  )
+
+  it('keeps a removed dynamic folder locked and recoverable without selecting outside it', async () => {
+    let values = ['MOSS/a.safetensors', 'Other/b.safetensors']
+    const { user, onUpdate } = renderComponent(
+      createWidget(() => values),
+      'MOSS/a.safetensors',
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('button', { name: 'Lock folder: MOSS' }))
+    await user.keyboard('{Escape}')
+    values = ['Other/b.safetensors']
+    await user.click(screen.getByRole('button', { name: 'test_combo: Next' }))
+    expect(onUpdate).not.toHaveBeenCalled()
+    await openDropdown(user)
+    expect(optionLabels()).toEqual([])
+    await user.keyboard('{Escape}')
+    values = ['Other/b.safetensors', 'MOSS/nested/recovered.safetensors']
+    await user.click(screen.getByRole('button', { name: 'test_combo: Next' }))
+    expect(onUpdate).toHaveBeenCalledWith('MOSS/nested/recovered.safetensors')
+    await openDropdown(user)
+    await user.click(
+      screen.getByRole('button', { name: 'Unlock folder: MOSS' })
+    )
+    await user.type(screen.getByRole('combobox', { name: 'Search' }), 'Other')
+    expect(optionLabels()).toEqual(['Other/b.safetensors'])
+  })
+
+  it('retains search focus and filtering until closing after unlocking a removed folder', async () => {
+    let values = ['MOSS/a.safetensors', 'Other/b.safetensors']
+    const { user, onUpdate } = renderComponent(
+      createWidget(() => values),
+      'MOSS/a.safetensors'
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('button', { name: 'Lock folder: MOSS' }))
+    await user.keyboard('{Escape}')
+    values = ['None']
+    await openDropdown(user)
+    await user.keyboard('{Tab}{Enter}')
+
+    const search = screen.getByRole('combobox', { name: 'Search' })
+    expect(search).toHaveFocus()
+    expect(optionLabels()).toEqual(['None'])
+    await user.type(search, 'missing')
+    expect(optionLabels()).toEqual([])
+    await user.clear(search)
+    expect(optionLabels()).toEqual(['None'])
+    expect(onUpdate).not.toHaveBeenCalled()
+
+    await user.keyboard('{Escape}')
+    expect(screen.getByTestId('widget-select-default-trigger')).toHaveFocus()
+    await openDropdown(user)
+    expect(screen.queryByRole('combobox', { name: 'Search' })).toBeNull()
+    expect(optionLabels()).toEqual(['None'])
+  })
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
@@ -752,10 +1079,22 @@ describe('WidgetSelectDefault', () => {
       expect(trigger).not.toHaveAttribute('aria-invalid')
     })
 
-    it('disables the trigger when widget options are disabled', () => {
-      renderComponent(createWidget(['a'], { disabled: true }), 'a')
+    it('disables the trigger and both steppers when widget options are disabled', async () => {
+      const { user, onUpdate } = renderComponent(
+        createWidget(['a', 'b', 'c'], { disabled: true }),
+        'b'
+      )
 
       expect(screen.getByTestId('widget-select-default-trigger')).toBeDisabled()
+      const previous = screen.getByRole('button', {
+        name: 'test_combo: Previous'
+      })
+      const next = screen.getByRole('button', { name: 'test_combo: Next' })
+      expect(previous).toBeDisabled()
+      expect(next).toBeDisabled()
+      await user.click(previous)
+      await user.click(next)
+      expect(onUpdate).not.toHaveBeenCalled()
     })
 
     it('uses getOptionLabel for trigger and option labels', async () => {
