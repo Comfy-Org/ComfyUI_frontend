@@ -191,6 +191,21 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[1].value).toBe('fixed')
   })
 
+  it('restores positional main and control values when the link follows configure', () => {
+    const { primitive, target } = intFixture()
+
+    primitive.configure(
+      fromPartial({
+        widgets_values: [222, 'fixed'],
+        outputs: [{ type: 'INT' }]
+      })
+    )
+    primitive.connect(0, target, 0)
+
+    expect(primitive.widgets?.[0].value).toBe(222)
+    expect(primitive.widgets?.[1].value).toBe('fixed')
+  })
+
   it('does not apply a serialized value left over from an unresolved output type', () => {
     const graph = new LGraph()
     const target = new LGraphNode('Loader')

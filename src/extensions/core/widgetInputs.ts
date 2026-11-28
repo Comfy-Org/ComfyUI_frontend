@@ -138,13 +138,7 @@ export class PrimitiveNode extends LGraphNode {
   override configure(serialisedNode: ISerialisedNode) {
     const type = serialisedNode.outputs?.[0]?.type
     super.configure(serialisedNode)
-    if (
-      !this.graph ||
-      this.widgets?.length ||
-      typeof type !== 'string' ||
-      !outputHasLinks(this.graph, this.id, 0)
-    )
-      return
+    if (!this.graph || this.widgets?.length || typeof type !== 'string') return
 
     useWidgetValueStore().setNodeWidgetRestoration(
       this.graph.rootGraph.id,
@@ -154,11 +148,12 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   override onAfterGraphConfigured() {
-    if (
-      this.graph &&
-      outputHasLinks(this.graph, this.id, 0) &&
-      !this.widgets?.length
-    ) {
+    if (!this.graph) return
+    if (!outputHasLinks(this.graph, this.id, 0)) {
+      this._clearWidgetRestoration()
+      return
+    }
+    if (!this.widgets?.length) {
       this._onFirstConnection()
 
       // Merge values if required
