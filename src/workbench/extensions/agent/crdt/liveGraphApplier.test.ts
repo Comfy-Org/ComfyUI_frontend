@@ -1099,6 +1099,10 @@ describe('LiveGraphApplier', () => {
     const type = 'TestLateRegistration'
     let positionWhenAdded: [number, number] | undefined
     let sizeWhenAdded: number[] | undefined
+    const lifecycleVisibility: {
+      phase: 'added' | 'configured'
+      attached: boolean
+    }[] = []
     class TestLateRegistration extends LGraphNode {
       constructor() {
         super('Late registration')
@@ -1108,6 +1112,17 @@ describe('LiveGraphApplier', () => {
       override onAdded(): void {
         positionWhenAdded = [this.pos[0], this.pos[1]]
         sizeWhenAdded = Array.from(this.size)
+        lifecycleVisibility.push({
+          phase: 'added',
+          attached: this.graph?.nodes.includes(this) ?? false
+        })
+      }
+
+      override onConfigure(): void {
+        lifecycleVisibility.push({
+          phase: 'configured',
+          attached: this.graph?.nodes.includes(this) ?? false
+        })
       }
     }
     const { graph, doc, applyCollected, applyEdit } = setup({
@@ -1154,6 +1169,10 @@ describe('LiveGraphApplier', () => {
     expect(resolved?.has_errors).toBeFalsy()
     expect(positionWhenAdded).toEqual([777, 888])
     expect(sizeWhenAdded).toEqual([650, 450])
+    expect(lifecycleVisibility).toEqual([
+      { phase: 'added', attached: true },
+      { phase: 'configured', attached: true }
+    ])
     expect(Array.from(resolved!.pos)).toEqual([777, 888])
     expect(Array.from(resolved!.size)).toEqual([650, 450])
 

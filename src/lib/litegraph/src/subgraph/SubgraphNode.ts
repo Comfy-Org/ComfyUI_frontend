@@ -71,6 +71,7 @@ import {
 } from './hostSlotOrder'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
+import { registerSubgraphNodeLifetime } from './subgraphNodeLifetime'
 
 import { createBitmapCache } from './svgBitmapCache'
 
@@ -142,6 +143,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ) {
     super(subgraph.name, subgraph.id)
     this._eventAbortController = eventAbortController
+    registerSubgraphNodeLifetime(this, eventAbortController)
     this.graph = graph
 
     Object.defineProperty(this, 'widgets', {
@@ -209,12 +211,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphEvents.addEventListener(
       'removing-input',
       (e) => {
-        const widget = e.detail.input._widget
-        if (widget) this.ensureWidgetRemoved(widget)
-
         const input = hostInputOf(this, e.detail.input)
-        if (input) this.unbindDynamicInput(input)
+        const widget = input?._widget ?? e.detail.input._widget
+        const id = input?.widgetId
+        if (input) {
+          input._listenerController?.abort()
+          this.unbindDynamicInput(input)
+        }
         this.removeInput(input ? this.inputs.indexOf(input) : e.detail.index)
+        if (input) this._demoteInputWidget(input, widget, id)
+        else if (widget) this.ensureWidgetRemoved(widget)
         this.invalidatePromotedViews()
         this.setDirtyCanvas(true, true)
       },
@@ -407,7 +413,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const token = Symbol()
         input._pendingDemotionToken = token
         queueMicrotask(() => {
-          if (input._pendingDemotionToken !== token) return
+          if (signal.aborted || input._pendingDemotionToken !== token) return
           input._pendingDemotionToken = undefined
           this.unbindDynamicInput(input)
           this._demoteInputWidget(input, widget, id)

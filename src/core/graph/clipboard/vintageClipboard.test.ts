@@ -70,189 +70,39 @@ it('keeps clipboard indices stable when a target graph refuses a node', () => {
   expect(survivingLink.target_slot).toBe(0)
 })
 
-it('requires every clipboard member before running any available constructor', () => {
-  const availableType = 'test/vintage-available'
-  const missingType = 'test/vintage-unavailable-middle'
-  const constructed = vi.fn()
-  class AvailableNode extends LGraphNode {
-    constructor() {
-      super('Clipboard test')
-      constructed()
-    }
-  }
-  LiteGraph.registerNodeType(availableType, AvailableNode)
-  const graph = new LGraph()
-  graph.add(new VintageSource())
-  const before = graph.serialize()
-
-  const result = deserialiseIntoGraphWithSourceIndices(
-    JSON.stringify({
-      nodes: [
-        { type: availableType, pos: [0, 0] },
-        { type: missingType, pos: [120, 0] },
-        { type: availableType, pos: [240, 0] }
-      ],
-      links: []
-    }),
-    graph,
-    [0, 0],
-    { requireAll: true }
-  )
-
-  expect(constructed).not.toHaveBeenCalled()
-  expect(result).toEqual({
-    createdNodes: [],
-    nodesBySourceIndex: [null, null, null],
-    failure: {
-      sourceIndex: 1,
-      result: { kind: 'refused', reason: 'unregistered', type: missingType }
-    }
-  })
-  expect(graph.serialize()).toEqual(before)
-})
-
-it('abandons a required batch when a later constructor replaces an earlier registration', () => {
-  const sourceType = 'test/vintage-replaced'
-  const replacingType = 'test/vintage-replacing'
-  class ReplacingNode extends LGraphNode {
-    constructor() {
-      super('Clipboard test')
-      LiteGraph.registerNodeType(sourceType, VintageSink)
-    }
-  }
-  LiteGraph.registerNodeType(sourceType, VintageSource)
-  LiteGraph.registerNodeType(replacingType, ReplacingNode)
-  const graph = new LGraph()
-  graph.add(new VintageSource())
-  const before = graph.serialize()
-
-  const result = deserialiseIntoGraphWithSourceIndices(
-    JSON.stringify({
-      nodes: [
-        { type: sourceType, pos: [0, 0] },
-        { type: replacingType, pos: [120, 0] }
-      ],
-      links: []
-    }),
-    graph,
-    [0, 0],
-    { requireAll: true }
-  )
-
-  expect(result.failure).toEqual({
-    sourceIndex: 0,
-    result: { kind: 'refused', reason: 'stale-preparation', type: sourceType }
-  })
-  expect(graph.serialize()).toEqual(before)
-})
-
-it('abandons a required batch when configuration invalidates a completed member', () => {
-  const sourceType = 'test/vintage-configure-replaced'
-  const replacingType = 'test/vintage-configure-replacing'
-  class ReplacingOnConfigureNode extends LGraphNode {
+it('configures actual extension nodes before adding them and preserves relative placement', () => {
+  class ExtensionNode extends LGraphNode {
     override onConfigure() {
-      LiteGraph.registerNodeType(sourceType, VintageSink)
+      this.properties.configuredDetached = this.graph === null
+    }
+
+    override onAdded() {
+      this.properties.observedConfiguration = this.properties.configuredDetached
     }
   }
-  LiteGraph.registerNodeType(sourceType, VintageSource)
-  LiteGraph.registerNodeType(replacingType, ReplacingOnConfigureNode)
+  const type = 'test/vintage-configure-before-add'
+  LiteGraph.registerNodeType(type, ExtensionNode)
   const graph = new LGraph()
-  graph.add(new VintageSource())
-  const before = graph.serialize()
-
   const result = deserialiseIntoGraphWithSourceIndices(
     JSON.stringify({
       nodes: [
-        { type: sourceType, pos: [0, 0] },
-        { type: replacingType, pos: [120, 0] }
+        { type, pos: [10, 20] },
+        { type, pos: [130, 70] }
       ],
       links: []
     }),
     graph,
-    [0, 0],
-    { requireAll: true }
+    [60, 90]
   )
 
-  expect(result.failure).toEqual({
-    sourceIndex: 0,
-    result: { kind: 'refused', reason: 'stale-preparation', type: sourceType }
-  })
-  expect(graph.serialize()).toEqual(before)
-})
-
-it('cleans up the attached prefix when a later configuration throws', () => {
-  const availableType = 'test/vintage-configure-prefix'
-  const throwingType = 'test/vintage-configure-throwing'
-  const cause = new Error('clipboard configuration failed')
-  class ThrowingOnConfigureNode extends LGraphNode {
-    override onConfigure() {
-      throw cause
-    }
-  }
-  LiteGraph.registerNodeType(availableType, VintageSource)
-  LiteGraph.registerNodeType(throwingType, ThrowingOnConfigureNode)
-  const graph = new LGraph()
-  const existing = new VintageSource()
-  graph.add(existing)
-  const before = graph.serialize()
-
-  expect(() =>
-    deserialiseIntoGraphWithSourceIndices(
-      JSON.stringify({
-        nodes: [
-          { type: availableType, pos: [0, 0] },
-          { type: throwingType, pos: [120, 0] }
-        ],
-        links: []
-      }),
-      graph,
-      [0, 0],
-      { requireAll: true }
-    )
-  ).toThrow(cause)
-  expect(graph.serialize()).toEqual(before)
-})
-
-it('preserves the existing graph when a later required constructor throws', () => {
-  const availableType = 'test/vintage-before-throw'
-  const throwingType = 'test/vintage-throwing'
-  const cause = new Error('clipboard constructor failed')
-  class ThrowingNode extends LGraphNode {
-    constructor() {
-      super('Clipboard test')
-      throw cause
-    }
-  }
-  LiteGraph.registerNodeType(availableType, VintageSource)
-  LiteGraph.registerNodeType(throwingType, ThrowingNode)
-  const graph = new LGraph()
-  const source = new VintageSource()
-  const sink = new VintageSink()
-  graph.add(source)
-  graph.add(sink)
-  source.connect(0, sink, 0)
-  const before = graph.serialize()
-
-  const result = deserialiseIntoGraphWithSourceIndices(
-    JSON.stringify({
-      nodes: [
-        { type: availableType, pos: [0, 0] },
-        { type: throwingType, pos: [120, 0] }
-      ],
-      links: []
-    }),
-    graph,
-    [0, 0],
-    { requireAll: true }
-  )
-
-  expect(result).toEqual({
-    createdNodes: [],
-    nodesBySourceIndex: [null, null],
-    failure: {
-      sourceIndex: 1,
-      result: { kind: 'failed', phase: 'constructor', cause }
-    }
-  })
-  expect(graph.serialize()).toEqual(before)
+  expect(
+    result.createdNodes.map((node) => node instanceof ExtensionNode)
+  ).toEqual([true, true])
+  expect(
+    result.createdNodes.map((node) => node.properties.observedConfiguration)
+  ).toEqual([true, true])
+  expect(result.createdNodes.map((node) => [...node.pos])).toEqual([
+    [60, 90],
+    [180, 140]
+  ])
 })

@@ -75,6 +75,7 @@ import type {
   ReservedIdIndex
 } from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
+import { closeSubgraphNodeLifetime } from './subgraph/subgraphNodeLifetime'
 import {
   collectingSeveredLinks,
   emitGraphIntent,
@@ -335,6 +336,7 @@ function groupIdReservations(rootGraph: LGraph): ReservedIdIndex {
 function fireNodeRemovalLifecycle(node: LGraphNode): void {
   const graph: LGraph | null = node.graph
   graph?.events.dispatch('node:before-removed', { node })
+  closeSubgraphNodeLifetime(node)
   node.onRemoved?.()
   clearNodeOwnedStoreState(node)
   graph?.onNodeRemoved?.(node)
@@ -346,7 +348,10 @@ function fireNodeRemovalLifecycles(nodes: LGraphNode[]): void {
   try {
     for (const node of pending) fireNodeRemovalLifecycle(node)
   } finally {
-    for (const node of pending) nodesBeingRemoved.delete(node)
+    for (const node of pending) {
+      closeSubgraphNodeLifetime(node)
+      nodesBeingRemoved.delete(node)
+    }
   }
 }
 
@@ -376,6 +381,7 @@ function teardownOwnedGraphs(owner: LGraph): void {
       for (const node of graph._nodes) nodes.add(node)
     }
     for (const node of nodes) {
+      closeSubgraphNodeLifetime(node)
       const order = node.order
       detachNodeFromStores(owner, node, 'discard-values')
       node.graph = null
@@ -1448,7 +1454,6 @@ export class LGraph
   }
 
   private removeNode(node: LGraphNode, options: GraphRemoveOptions): void {
-    // sure? - almost sure is wrong
     this.beforeChange()
 
     this.events.dispatch('node:before-removed', { node })
@@ -1457,18 +1462,15 @@ export class LGraph
     const { inputs, outputs } = node
 
     collectingSeveredLinks(removedLinkIds, () => {
-      // disconnect inputs
       for (const [i] of inputs.entries()) {
         if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
       }
 
-      // disconnect outputs
       for (const i of outputs.keys()) {
         if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
       }
     })
 
-    // Floating links
     for (const link of this.floatingLinks.values()) {
       if (link.origin_id === node.id || link.target_id === node.id) {
         this.removeFloatingLink(link)
@@ -1480,6 +1482,7 @@ export class LGraph
     }
 
     try {
+      closeSubgraphNodeLifetime(node)
       node.onRemoved?.()
     } finally {
       const order = node.order
@@ -1517,11 +1520,9 @@ export class LGraph
     this.events.dispatch('node:removed', { node })
     emitGraphIntent({ type: 'remove_node', graph: this, node, removedLinkIds })
 
-    // close panels
     this.canvasAction((c) => c.checkPanels())
 
     this.setDirtyCanvas(true, true)
-    // sure? - almost sure is wrong
     this.afterChange()
     this.change()
 

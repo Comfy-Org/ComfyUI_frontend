@@ -8,7 +8,12 @@ import type {
   ExportedSubgraphInstance,
   IContextMenuValue
 } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { prepareNodeConstruction } from '@/lib/litegraph/src/nodeConstruction'
 import {
   createTestRootGraph,
@@ -179,6 +184,7 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
       useNodeDefStore().fromLGraphNode(explicitVisibleNode)?.display_name
     ).toBe('Visible subgraph')
 
+    Reflect.set(app, 'rootGraph', visibleGraph)
     const backgroundClone = backgroundNode.clone()
     assert.instanceOf(backgroundClone, SubgraphNode)
     expect(backgroundClone.subgraph).toBe(backgroundSubgraph)
@@ -204,23 +210,38 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     )
     Reflect.set(app, 'rootGraph', visibleGraph)
     useLitegraphService().registerSubgraphNodeDef(
-      createNodeDefV1({ name: subgraphId }),
+      createNodeDefV1({
+        name: subgraphId,
+        display_name: 'Owner A',
+        output: [],
+        output_name: [],
+        output_is_list: []
+      }),
       visibleSubgraph,
       subgraphInstanceData(subgraphId)
     )
     useLitegraphService().registerSubgraphNodeDef(
-      createNodeDefV1({ name: subgraphId }),
+      createNodeDefV1({
+        name: subgraphId,
+        display_name: 'Owner B',
+        output: [],
+        output_name: [],
+        output_is_list: []
+      }),
       backgroundSubgraph,
       subgraphInstanceData(subgraphId)
     )
     const Registered = LiteGraph.registered_node_types[subgraphId]
     assert.exists(Registered)
     const constructorTitles: string[] = []
+    const constructorOutputs: string[][] = []
     class DerivedSubgraphNode extends Registered {
       constructor(title: string) {
         super(title)
         constructorTitles.push(title)
         this.properties.extensionOwner = this.graph?.id
+        visibleSubgraph.addOutput('extensionResult', 'MASK')
+        constructorOutputs.push(this.outputs.map(({ name }) => name))
       }
 
       override getTitle() {
@@ -237,10 +258,13 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     assert.instanceOf(node, SubgraphNode)
     expect(node).toBeInstanceOf(DerivedSubgraphNode)
     expect(constructorTitles).toEqual(['Explicit A'])
-    expect(node.getTitle()).toBe('Extension: Test Node')
+    expect(constructorOutputs).toEqual([['extensionResult']])
+    expect(visibleGraph.nodes).not.toContain(node)
+    expect(node.getTitle()).toBe('Extension: Owner B')
     expect(node.properties.extensionOwner).toBe(visibleGraph.id)
     expect(node.graph).toBe(visibleGraph)
     expect(node.subgraph).toBe(visibleSubgraph)
+    expect(useNodeDefStore().fromLGraphNode(node)?.display_name).toBe('Owner A')
   })
 
   it('preserves outer ownership across nested factory construction and an inner constructor failure', () => {
@@ -329,7 +353,10 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     const subgraphId = '00000000-0000-4000-8000-000000000127'
     const graph = createTestRootGraph()
     const definition = graph.createSubgraph(
-      createTestSubgraphData({ id: subgraphId })
+      createTestSubgraphData({
+        id: subgraphId,
+        inputs: [{ id: 'value', name: 'value', type: 'INT' }]
+      })
     )
     useLitegraphService().registerSubgraphNodeDef(
       createNodeDefV1({ name: subgraphId, output: [] }),
@@ -369,8 +396,24 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     assert.instanceOf(sibling, SubgraphNode)
     graph.add(sibling)
 
+    const abandonedInput = abandoned.inputs[0]
+    const replacedInput = sibling.inputs[0]
+    assert.exists(abandonedInput)
+    assert.exists(replacedInput)
+    sibling.configure(subgraphInstanceData(subgraphId))
+    const currentInput = sibling.inputs[0]
+    assert.exists(currentInput)
+    const definitionInput = definition.inputNode.slots[0]
+    assert.exists(definitionInput)
+    const interiorInput = new LGraphNode('Interior').addInput('value', 'INT', {
+      shape: RenderShape.GRID
+    })
+    definitionInput.events.dispatch('input-connected', { input: interiorInput })
     definition.addOutput('liveResult', 'MASK')
 
+    expect(currentInput.shape).toBe(RenderShape.GRID)
+    expect(replacedInput.shape).toBeUndefined()
+    expect(abandonedInput.shape).toBeUndefined()
     expect(abandoned.outputs).toEqual([])
     expect(sibling.outputs.map(({ name, type }) => ({ name, type }))).toEqual([
       { name: 'liveResult', type: 'MASK' }
