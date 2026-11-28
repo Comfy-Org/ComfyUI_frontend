@@ -23,6 +23,8 @@ vi.mock(import('@/scripts/app'), async () => {
   }
 })
 
+const EMPTY_COLORS = { node_slot: {}, litegraph_base: {}, comfy_base: {} }
+
 const SHADOW_PROPERTY = '--interface-floating-panel-shadow'
 
 function readRootProperty(property: string) {
@@ -423,6 +425,70 @@ describe('useThemeService', () => {
         description: 'Color palette unknown not found'
       })
     )
+  })
+
+  it('lists a provided theme without saving it and keeps the hidden saved palette from deletion', async () => {
+    const themeStore = useThemeStore()
+    themeStore.customPresets = {
+      chalk: { id: 'chalk', name: 'Saved chalk', colors: EMPTY_COLORS }
+    }
+
+    const service = useThemeService()
+    await service.registerProvidedThemes('Chalk.Extension', [
+      { preset: { id: 'chalk', name: 'Provided chalk', colors: EMPTY_COLORS } }
+    ])
+    await service.deleteCustomThemePreset('chalk')
+
+    expect({
+      listed: themeStore.presetsLookup.chalk?.name,
+      saved: themeStore.customPresets.chalk.name
+    }).toEqual({
+      listed: 'Provided chalk',
+      saved: 'Saved chalk'
+    })
+  })
+
+  it('keeps the first provider of an id and rejects built-in ids with one warning each', async () => {
+    const service = useThemeService()
+
+    await service.registerProvidedThemes('First.Extension', [
+      { preset: { id: 'chalk', name: 'First chalk', colors: EMPTY_COLORS } }
+    ])
+    await service.registerProvidedThemes('Second.Extension', [
+      { preset: { id: 'chalk', name: 'Second chalk', colors: EMPTY_COLORS } },
+      { preset: { id: 'dark', name: 'Fake dark', colors: EMPTY_COLORS } }
+    ])
+
+    expect(useThemeStore().presetsLookup.chalk?.name).toBe('First chalk')
+    expect(useThemeStore().presetsLookup.dark?.name).toBe(
+      BUILT_IN_THEME_PRESETS.dark.name
+    )
+    expect(vi.mocked(console.warn).mock.calls).toEqual([
+      [
+        'Second.Extension provided theme chalk, which First.Extension already provides'
+      ],
+      ['Second.Extension provided theme dark, which core already provides']
+    ])
+  })
+
+  it('drops a pending theme stylesheet as soon as a newer theme switch starts', async () => {
+    clearRootThemeAfterTest()
+    const service = useThemeService()
+    await service.registerProvidedThemes('Chalk.Extension', [
+      {
+        preset: { id: 'chalk', name: 'Chalk', colors: EMPTY_COLORS },
+        stylesheetUrl: '/never-loads.css'
+      }
+    ])
+
+    const superseded = service.setActiveTheme('chalk')
+    await service.setActiveTheme('dark')
+    await superseded
+
+    expect({
+      active: useThemeStore().activePresetId,
+      sheets: document.querySelectorAll('style[data-theme-stylesheet]').length
+    }).toEqual({ active: 'dark', sheets: 0 })
   })
 
   it('removes a custom palette legacy shadow once the next palette omits it', async () => {

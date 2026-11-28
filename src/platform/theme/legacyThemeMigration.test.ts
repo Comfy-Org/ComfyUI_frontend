@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { DEFAULT_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
 import type { Settings } from '@comfyorg/settings-core/types'
@@ -53,7 +53,7 @@ describe('saved legacy theme migration', () => {
     expect(useThemeStore().presetsLookup.spooky).toEqual(custom)
   })
 
-  it('replaces a saved selection absent from the preset registry with Dark', async () => {
+  it('keeps a saved selection absent from the preset registry for an extension that registers later', async () => {
     vi.mocked(api.getSettings).mockResolvedValue(
       fromPartial<Settings>({ 'Comfy.ColorPalette': 'missing-theme' })
     )
@@ -63,11 +63,8 @@ describe('saved legacy theme migration', () => {
 
     await useThemeService().loadCustomThemePresets()
 
-    expect(settings.get('Comfy.ColorPalette')).toBe('dark')
-    expect(api.storeSettings).toHaveBeenCalledWith({
-      'Comfy.CustomColorPalettes': {},
-      'Comfy.ColorPalette': 'dark'
-    })
+    expect(settings.get('Comfy.ColorPalette')).toBe('missing-theme')
+    expect(api.storeSettings).not.toHaveBeenCalled()
   })
 
   it.for(['custom_dark', 'dark', undefined])(
@@ -167,5 +164,69 @@ describe('saved legacy theme migration', () => {
       id: 'dark-custom'
     })
     expect(settings.get('Comfy.ColorPalette')).toBe('dark-custom')
+  })
+
+  it('applies a provided theme that replaces the active saved palette with the same id', async () => {
+    const saved = {
+      ...DEFAULT_THEME_PRESET,
+      id: 'chalk',
+      colors: {
+        ...DEFAULT_THEME_PRESET.colors,
+        theme: { background: '#111111' }
+      }
+    }
+    vi.mocked(api.getSettings).mockResolvedValue(
+      fromPartial<Settings>({
+        'Comfy.CustomColorPalettes': { chalk: saved },
+        'Comfy.ColorPalette': 'chalk'
+      })
+    )
+    const settings = useSettingStore()
+    await settings.load()
+    CORE_SETTINGS.forEach(settings.addSetting)
+    const service = useThemeService()
+    await service.loadCustomThemePresets()
+    await service.setActiveTheme('chalk')
+
+    await service.registerProvidedThemes('Chalk.Extension', [
+      {
+        preset: {
+          ...saved,
+          colors: { ...saved.colors, theme: { background: '#222222' } }
+        }
+      }
+    ])
+
+    expect(
+      document.documentElement.style.getPropertyValue('--background')
+    ).toBe('#222222')
+  })
+
+  it('claims every provided id before waiting for the selected theme stylesheet', async () => {
+    vi.mocked(api.getSettings).mockResolvedValue(
+      fromPartial<Settings>({ 'Comfy.ColorPalette': 'first-a' })
+    )
+    const settings = useSettingStore()
+    await settings.load()
+    CORE_SETTINGS.forEach(settings.addSetting)
+    const service = useThemeService()
+    const preset = (id: string, name: string) => ({
+      preset: { ...DEFAULT_THEME_PRESET, id, name },
+      stylesheetUrl: '/never-loads.css'
+    })
+
+    const first = service.registerProvidedThemes('First.Extension', [
+      preset('first-a', 'First A'),
+      preset('shared', 'First shared')
+    ])
+    onTestFinished(async () => {
+      await service.setActiveTheme('dark')
+      await first
+    })
+    await service.registerProvidedThemes('Second.Extension', [
+      preset('shared', 'Second shared')
+    ])
+
+    expect(useThemeStore().presetsLookup.shared?.name).toBe('First shared')
   })
 })

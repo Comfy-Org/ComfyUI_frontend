@@ -22,8 +22,43 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { applyTheme } from './applyTheme'
 import { useThemeStore } from './themeStore'
+import type { ProvidedTheme } from './themeStore'
 
 let latestThemeSwitch = 0
+let activeStylesheet: HTMLStyleElement | undefined
+let cancelPendingStylesheet: (() => void) | undefined
+
+function loadThemeStylesheet(url: string) {
+  const element = document.createElement('style')
+  element.dataset.themeStylesheet = url
+  element.textContent = `@import url(${JSON.stringify(url)}) layer(presets);`
+  return new Promise<HTMLStyleElement | undefined>((resolve) => {
+    let settled = false
+    const settle = (loaded: HTMLStyleElement | undefined) => {
+      if (settled) return
+      settled = true
+      cancelPendingStylesheet = undefined
+      if (!loaded) element.remove()
+      resolve(loaded)
+    }
+    cancelPendingStylesheet = () => settle(undefined)
+    element.addEventListener('load', () => settle(element), { once: true })
+    element.addEventListener(
+      'error',
+      () => {
+        console.warn(`Theme stylesheet ${url} failed to load`)
+        settle(undefined)
+      },
+      { once: true }
+    )
+    document.head.append(element)
+  })
+}
+
+function replaceActiveStylesheet(next: HTMLStyleElement | undefined) {
+  if (activeStylesheet !== next) activeStylesheet?.remove()
+  activeStylesheet = next
+}
 
 function availableCustomPresetId(id: string, presets: ThemePresets) {
   let candidate = `${id}-custom`
@@ -86,9 +121,6 @@ export const useThemeService = () => {
       if (activeId === id) activeId = newId
     }
     themeStore.customPresets = migrated
-    if (!Object.hasOwn(themeStore.presetsLookup, activeId)) {
-      activeId = DEFAULT_THEME_PRESET.id
-    }
     if (!conflicts.length && activeId === previousId) return
 
     await settingStore.setMany({
@@ -133,7 +165,17 @@ export const useThemeService = () => {
     const theme = resolveTheme(preset)
     const root = document.documentElement
     const themeSwitch = ++latestThemeSwitch
+    cancelPendingStylesheet?.()
+    const stylesheetUrl = themeStore.stylesheetUrlFor(id)
+    const stylesheet = stylesheetUrl
+      ? await loadThemeStylesheet(stylesheetUrl)
+      : undefined
+    if (themeSwitch !== latestThemeSwitch) {
+      stylesheet?.remove()
+      return
+    }
     root.dataset.paletteSwitching = ''
+    let committed = false
     try {
       applyTheme(theme, {
         style: root.style,
@@ -143,8 +185,11 @@ export const useThemeService = () => {
       })
       if (theme.stylesheet) root.dataset.theme = theme.stylesheet
       else delete root.dataset.theme
+      replaceActiveStylesheet(stylesheet)
+      committed = true
       themeStore.activePresetId = id
     } finally {
+      if (!committed) stylesheet?.remove()
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           if (themeSwitch !== latestThemeSwitch) return
@@ -153,6 +198,35 @@ export const useThemeService = () => {
         })
       )
     }
+  }
+
+  async function registerProvidedThemes(
+    source: string,
+    themes: readonly ProvidedTheme[]
+  ) {
+    const accepted = themes.flatMap((theme) => {
+      const parsed = themePresetSchema.safeParse(theme.preset)
+      if (!parsed.success) {
+        console.warn(
+          `${source} provided an invalid theme`,
+          fromZodError(parsed.error).message
+        )
+        return []
+      }
+      const result = themeStore.addProvidedTheme(source, {
+        preset: parsed.data,
+        stylesheetUrl: theme.stylesheetUrl
+      })
+      if (!result.added) {
+        console.warn(
+          `${source} provided theme ${parsed.data.id}, which ${result.owner} already provides`
+        )
+        return []
+      }
+      return [parsed.data.id]
+    })
+    const storedId = settingStore.get('Comfy.ColorPalette')
+    if (accepted.includes(storedId)) await setActiveTheme(storedId)
   }
 
   function exportThemePreset(id: string) {
@@ -184,6 +258,7 @@ export const useThemeService = () => {
       deleteCustomThemePreset
     ),
     setActiveTheme: wrapWithErrorHandlingAsync(setActiveTheme),
+    registerProvidedThemes: wrapWithErrorHandlingAsync(registerProvidedThemes),
     exportThemePreset: wrapWithErrorHandling(exportThemePreset),
     importThemePreset: wrapWithErrorHandlingAsync(importThemePreset)
   }
