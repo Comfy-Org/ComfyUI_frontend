@@ -384,6 +384,23 @@ describe('migrateWidgetsValues', () => {
     expect(migrateWidgetsValues(inputDefs, widgets, [1, 20])).toEqual([20])
   })
 
+  it('keeps the last value when the frontend adds a seed control widget beside a force input', () => {
+    const seedInputDefs = {
+      seed: fromPartial<InputSpec>({ name: 'seed' }),
+      note: fromPartial<InputSpec>({ name: 'note' }),
+      text_in: fromPartial<InputSpec>({ name: 'text_in', forceInput: true })
+    }
+    const widgets = [
+      makeWidget('seed'),
+      makeWidget('control_after_generate'),
+      makeWidget('note')
+    ]
+
+    expect(
+      migrateWidgetsValues(seedInputDefs, widgets, [42, 'randomize', 'test'])
+    ).toEqual([42, 'randomize', 'test'])
+  })
+
   describe('with a non-trailing skipped widget', () => {
     const widgets = [makeWidget('a'), makeWidget('ui', false), makeWidget('c')]
 
