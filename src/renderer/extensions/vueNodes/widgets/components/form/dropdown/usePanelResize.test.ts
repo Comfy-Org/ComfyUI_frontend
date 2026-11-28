@@ -114,13 +114,25 @@ describe('usePanelResize', () => {
     }
   )
 
-  it('resets the size and shift on double-click', async () => {
+  it.for([
+    {
+      gesture: 'double-click',
+      fit: (grip: HTMLElement) => userEvent.dblClick(grip)
+    },
+    {
+      gesture: 'Enter',
+      fit: (grip: HTMLElement) => {
+        grip.focus()
+        return userEvent.keyboard('{Enter}')
+      }
+    }
+  ])('resets the size and shift on $gesture', async ({ fit }) => {
     const { grip, sizes, offsets } = renderPanel('SE', {
       size: { width: 500, height: 700 },
       alignOffset: -100
     })
 
-    await userEvent.dblClick(grip)
+    await fit(grip)
 
     expect(sizes).toEqual([undefined])
     expect(offsets).toEqual([0])

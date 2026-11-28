@@ -247,7 +247,7 @@
           class="pointer-events-auto z-30 -m-1 size-5 opacity-0 group-hover/node:opacity-100 focus-visible:opacity-100"
           @resize="handleResizePointerDown"
           @nudge="handleResizeNudge"
-          @fit="handleResizeDoubleClick"
+          @fit="handleResizeFit"
         />
       </template>
     </div>
@@ -573,7 +573,7 @@ provide(growableRegionsKey, {
   handle: computed(() => (canResizeNode.value ? growable.handle : undefined))
 })
 
-function handleResizeDoubleClick(event: MouseEvent) {
+function handleResizeFit(event: Event) {
   if (!canResizeNode.value) return
   const widget = soleGrowableWidget.value
   const layout = bodyLayout.value

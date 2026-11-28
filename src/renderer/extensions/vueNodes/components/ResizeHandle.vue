@@ -35,7 +35,7 @@ const { direction, class: className } = defineProps<{
 const emit = defineEmits<{
   resize: [event: PointerEvent, direction: D]
   nudge: [event: KeyboardEvent, direction: D, delta: Point2D]
-  fit: [event: MouseEvent]
+  fit: [event: Event]
 }>()
 
 const axes = computed(() => resizeAxes(direction))
@@ -49,12 +49,16 @@ const cursorClass = computed(() => {
   return x === y ? 'cursor-nwse-resize' : 'cursor-nesw-resize'
 })
 
+const FIT_KEYS = new Set(['Enter', ' '])
+
 function onKeydown(event: KeyboardEvent) {
   const delta = ARROW_KEY_DELTAS[event.key]
-  if (!delta) return
+  const fits = FIT_KEYS.has(event.key)
+  if (!delta && !fits) return
   event.preventDefault()
   event.stopPropagation()
-  emit('nudge', event, direction, delta)
+  if (delta) emit('nudge', event, direction, delta)
+  else emit('fit', event)
 }
 </script>
 
