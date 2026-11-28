@@ -4,8 +4,9 @@ import { expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
-import type { SkillPack } from '@/platform/skills/types'
+import type { BuiltinSkill, SkillPack } from '@/platform/skills/types'
 import CatalogSkillReference from './CatalogSkillReference.vue'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
@@ -27,6 +28,12 @@ type ReferenceSetup = {
   catalogConfirmed?: boolean
   scope?: string
   packs?: SkillPack[]
+  builtinSkills?: BuiltinSkill[]
+  builtinLoading?: boolean
+  builtinCatalogConfirmed?: boolean
+  builtinLoadFailed?: boolean
+  builtinRoutesAvailable?: boolean
+  builtinCatalogRequested?: boolean
   description?: string
 }
 
@@ -35,12 +42,26 @@ function renderReference({
   catalogConfirmed = true,
   scope,
   packs = [],
+  builtinSkills = [],
+  builtinLoading = false,
+  builtinCatalogConfirmed = false,
+  builtinLoadFailed = false,
+  builtinRoutesAvailable = true,
+  builtinCatalogRequested = false,
   description = 'Original description'
 }: ReferenceSetup) {
   Object.assign(useSkillPacksStore(), {
     flagsEnabled,
     catalogConfirmed,
     packs
+  })
+  Object.assign(useBuiltinSkillsStore(), {
+    skills: builtinSkills,
+    loading: builtinLoading,
+    catalogConfirmed: builtinCatalogConfirmed,
+    loadFailed: builtinLoadFailed,
+    routesAvailable: builtinRoutesAvailable,
+    catalogRequested: builtinCatalogRequested
   })
   render(CatalogSkillReference, {
     props: {
@@ -54,6 +75,10 @@ function renderReference({
 
 const sameName = pack('current-id', 'old-name')
 const renamed = pack('current-id', 'new-name')
+const builtinSameName: BuiltinSkill = {
+  name: 'old-name',
+  description: 'Built-in description'
+}
 
 it.for([
   {
@@ -97,12 +122,57 @@ it.for([
     scope: 'another-workspace',
     expected: 'checking',
     accessibleDescription: 'Original description'
+  },
+  {
+    when: 'a built-in skill matches its name',
+    builtinSkills: [builtinSameName],
+    builtinCatalogConfirmed: true,
+    expected: 'available',
+    accessibleDescription: 'Original description'
+  },
+  {
+    when: 'built-in skills are still loading',
+    builtinLoading: true,
+    builtinCatalogRequested: true,
+    expected: 'checking',
+    accessibleDescription: 'Original description'
+  },
+  {
+    when: 'built-in skills failed to load',
+    builtinLoadFailed: true,
+    builtinCatalogRequested: true,
+    expected: 'checking',
+    accessibleDescription: 'Original description'
+  },
+  {
+    when: 'built-in skills are unavailable on an older backend',
+    builtinRoutesAvailable: false,
+    expected: 'unavailable',
+    accessibleDescription: 'Not available'
+  },
+  {
+    when: 'both user and built-in catalogs are confirmed without its name',
+    builtinCatalogConfirmed: true,
+    expected: 'unavailable',
+    accessibleDescription: 'Not available'
   }
 ])('shows a reference as $expected when $when', (scenario) => {
   const reference = renderReference(scenario)
   expect(reference).toHaveTextContent(/^\/old-name$/)
   expect(reference).toHaveClass('underline')
   expect(reference).toHaveAccessibleDescription(scenario.accessibleDescription)
+})
+
+it('stays available when a user deletes a shadowing pack for a built-in skill', async () => {
+  const reference = renderReference({
+    packs: [sameName],
+    builtinSkills: [builtinSameName],
+    builtinCatalogConfirmed: true
+  })
+  expect(reference).toHaveAccessibleDescription('Original description')
+  useSkillPacksStore().packs = []
+  await nextTick()
+  expect(reference).toHaveAccessibleDescription('Original description')
 })
 
 it('shows a deleted reference as available again once a skill with its name is recreated', async () => {

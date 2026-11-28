@@ -7,6 +7,10 @@ import type { Ref } from 'vue'
 
 import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
+import MenuGroup from './MenuGroup.vue'
+import MenuItemPrimitive from './MenuItem.vue'
+import MenuLabel from './MenuLabel.vue'
+import MenuSeparator from './MenuSeparator.vue'
 import type { MenuItem } from './types'
 
 describe('Menu', () => {
@@ -582,6 +586,48 @@ describe('Menu', () => {
 
     expect(screen.getByRole('menuitem', { name: 'Child' })).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'More' })).toBeVisible()
+  })
+
+  it('skips MenuLabel during keyboard navigation across MenuGroup sections', async () => {
+    const onSelectFirst = vi.fn()
+    const onSelectSecond = vi.fn()
+    render(Menu, {
+      slots: {
+        trigger: '<button>Open</button>',
+        default: () => [
+          h(MenuGroup, { 'aria-labelledby': 'first-group-label' }, () => [
+            h(MenuLabel, { id: 'first-group-label' }, () => 'Your skills'),
+            h(MenuItemPrimitive, { onSelect: onSelectFirst }, () => 'First')
+          ]),
+          h(MenuSeparator),
+          h(MenuGroup, { 'aria-labelledby': 'second-group-label' }, () => [
+            h(MenuLabel, { id: 'second-group-label' }, () => 'Comfy skills'),
+            h(MenuItemPrimitive, { onSelect: onSelectSecond }, () => 'Second')
+          ])
+        ]
+      }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    const first = await screen.findByRole('menuitem', { name: 'First' })
+    const second = screen.getByRole('menuitem', { name: 'Second' })
+
+    expect(
+      screen.getByRole('group', { name: 'Your skills' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('group', { name: 'Comfy skills' })
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('menuitem')).toEqual([first, second])
+
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => expect(first).toHaveFocus())
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => expect(second).toHaveFocus())
+    await user.keyboard('{Enter}')
+    expect(onSelectSecond).toHaveBeenCalledOnce()
+    expect(onSelectFirst).not.toHaveBeenCalled()
   })
 })
 

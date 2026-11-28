@@ -1,10 +1,13 @@
 import type {
+  AgentBuiltinSkill,
   AgentSkill,
   AgentSkillPublishRequest
 } from '@comfyorg/ingest-types'
 
 /** The list route returns the user's packs with their full instruction bodies. */
 export type SkillPack = AgentSkill
+
+export type BuiltinSkill = AgentBuiltinSkill
 
 export type SkillPackPublishRequest = AgentSkillPublishRequest
 

@@ -18,6 +18,7 @@ import {
 import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import type {
@@ -100,6 +101,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const skillPacks = useSkillPacksStore()
+const builtinSkills = useBuiltinSkillsStore()
 const appContext = getCurrentInstance()?.appContext
 const host = useTemplateRef<HTMLDivElement>('host')
 let view: EditorView | undefined
@@ -162,17 +164,25 @@ function referenceClipboardText(node: Node): string {
     : assetReferenceText(name)
 }
 
+function findCatalogSkill(name: string): SkillReferenceMetadata | undefined {
+  if (!skillPacks.catalogConfirmed) return undefined
+  const pack = skillPacks.packs.find((item) => item.name === name)
+  if (pack) return pack
+  if (!builtinSkills.catalogConfirmed) return undefined
+  return builtinSkills.skills.find((item) => item.name === name)
+}
+
 function resolvePastedSkillDescription(): void {
   if (!view || !skillPacks.enabled || !skillPacks.catalogConfirmed) return
   const transaction = view.state.tr
   view.state.doc.forEach((node, position) => {
     if (!node.attrs.resolvePastedName || node.attrs.scope !== skillPacks.scope)
       return
-    const pack = skillPacks.packs.find((pack) => pack.name === node.attrs.name)
-    if (pack) {
+    const skill = findCatalogSkill(node.attrs.name)
+    if (skill) {
       transaction.setNodeMarkup(position, undefined, {
         ...node.attrs,
-        description: pack.description,
+        description: skill.description,
         resolvePastedName: false
       })
     }
@@ -209,15 +219,14 @@ function insertPastedContent(
     const leading = pastedSkillCommand(state.doc, state.selection.from, text)
     if (leading && !hasSkill && skillPacks.enabled) {
       const { name, suffix } = leading
-      const pack = skillPacks.catalogConfirmed
-        ? skillPacks.packs.find((pack) => pack.name === name)
-        : undefined
-      const description = pack?.description ?? ''
+      const skill = findCatalogSkill(name)
+      if (!skill) void builtinSkills.ensureSkills()
+      const description = skill?.description ?? ''
       const node = inlinePromptSchema.nodes.skill.create({
         name,
         description,
         scope: skillScope,
-        resolvePastedName: !pack
+        resolvePastedName: !skill
       })
       const content = [node]
       if (suffix) content.push(inlinePromptSchema.text(suffix))
@@ -723,7 +732,12 @@ watch(
   () => view?.setProps({})
 )
 watch(
-  [() => skillPacks.catalogConfirmed, () => skillPacks.packs],
+  [
+    () => skillPacks.catalogConfirmed,
+    () => skillPacks.packs,
+    () => builtinSkills.catalogConfirmed,
+    () => builtinSkills.skills
+  ],
   resolvePastedSkillDescription
 )
 onBeforeUnmount(() => {

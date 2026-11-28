@@ -5,6 +5,10 @@ import { ref } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 
 import Menu from './Menu.vue'
+import MenuGroup from './MenuGroup.vue'
+import MenuItem from './MenuItem.vue'
+import MenuLabel from './MenuLabel.vue'
+import MenuSeparator from './MenuSeparator.vue'
 
 const meta: Meta<typeof Menu> = {
   title: 'Components/Menu',
@@ -47,4 +51,33 @@ export const Badges: Story = {
       { label: 'Settings', command: fn() }
     ]
   }
+}
+
+export const Grouped: Story = {
+  args: { items: undefined },
+  render: (args) => ({
+    components: {
+      Button,
+      Menu,
+      MenuGroup,
+      MenuItem,
+      MenuLabel,
+      MenuSeparator
+    },
+    setup: () => ({ args, open: ref(false) }),
+    template: `
+      <Menu v-bind="args" v-model:open="open">
+        <template #trigger><Button>Open menu</Button></template>
+        <MenuGroup aria-labelledby="story-group-1">
+          <MenuLabel id="story-group-1">Your skills</MenuLabel>
+          <MenuItem>my-render-defaults</MenuItem>
+        </MenuGroup>
+        <MenuSeparator />
+        <MenuGroup aria-labelledby="story-group-2">
+          <MenuLabel id="story-group-2">Comfy skills</MenuLabel>
+          <MenuItem>batch-generation</MenuItem>
+        </MenuGroup>
+      </Menu>
+    `
+  })
 }

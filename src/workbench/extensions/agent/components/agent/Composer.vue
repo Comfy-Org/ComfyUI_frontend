@@ -17,7 +17,11 @@ import type {
   AgentStopMethod
 } from '@comfyorg/telemetry/types'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
-import { useSkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
+import {
+  useBuiltinSkillCatalogStatus,
+  useSkillCatalogStatus
+} from '@/platform/skills/composables/useSkillCatalogStatus'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -50,7 +54,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import AssetTray from './composer/AssetTray.vue'
 import ComposerAddMenu from './composer/ComposerAddMenu.vue'
 import ComposerPlaceholder from './composer/ComposerPlaceholder.vue'
-import MentionMenuItem from './composer/MentionMenuItem.vue'
+import MentionMenuList from './composer/MentionMenuList.vue'
 import MentionMenuStatus from './composer/MentionMenuStatus.vue'
 import ComposerSendCluster from './composer/ComposerSendCluster.vue'
 
@@ -108,6 +112,8 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const skills = useSkillPacksStore()
+const builtinSkills = useBuiltinSkillsStore()
+const comfySkillsMenuStatus = useBuiltinSkillCatalogStatus()
 
 const running = computed(() => streaming || submitting)
 const promptQueue = useAgentPromptQueueStore()
@@ -243,6 +249,7 @@ const {
   selectionTags: () => selectionTags,
   workflows: () => eligibleWorkflows.value,
   skills: () => skills.packs,
+  comfySkills: () => builtinSkills.visibleSkills,
   skillsEnabled: () => skills.enabled,
   assets: () =>
     composer.attachments.value.filter((item) => !item.validationError),
@@ -269,7 +276,9 @@ function onSelectNodes(event: Event): void {
 }
 
 watch(mentionSection, (section) => {
-  if (section === 'skills') void skills.refreshPacks()
+  if (section !== 'skills') return
+  void skills.refreshPacks()
+  void builtinSkills.ensureSkills()
 })
 
 type DraftSkillSnapshot = [
@@ -409,16 +418,50 @@ watch(mentionActive, async () => {
 const mentionMenuLabel = computed(() =>
   t(mentionSection.value === 'skills' ? 'agent.skills' : 'agent.addToPrompt')
 )
+const groupedSkillsInMention = computed(
+  () =>
+    mentionSection.value === 'skills' && builtinSkills.visibleSkills.length > 0
+)
 const mentionMenuHeading = computed(() => {
-  if (mentionSection.value === 'skills') return t('agent.skills')
+  if (mentionSection.value === 'skills') {
+    return groupedSkillsInMention.value && mentionHasResults.value
+      ? undefined
+      : t('agent.skills')
+  }
   return mentionSection.value === 'root' ? t('agent.reference') : undefined
 })
-const skillsRetryVisible = computed(
-  () => mentionSection.value === 'skills' && skills.loadFailed
-)
 const skillsMenuStatus = useSkillCatalogStatus()
 const skillsMenuStatusMessage = computed(() =>
   skillsMenuStatus.value === 'failed' ? skills.loadFailureReason : undefined
+)
+const userSkillMentionStatus = computed(() => {
+  if (mentionSection.value !== 'skills') return undefined
+  if (skills.packs.length === 0 && skills.loading) {
+    return { label: t('agent.skillsLoading'), retryable: false }
+  }
+  if (skillsMenuStatus.value === 'failed') {
+    return {
+      label: skills.loadFailureReason ?? t('agent.skillsLoadError'),
+      retryable: true
+    }
+  }
+  return undefined
+})
+const comfySkillMentionStatus = computed(() => {
+  if (mentionSection.value !== 'skills') return undefined
+  if (comfySkillsMenuStatus.value === 'loading') {
+    return { label: t('agent.comfySkillsLoading'), retryable: false }
+  }
+  if (comfySkillsMenuStatus.value === 'failed') {
+    return { label: t('agent.comfySkillsLoadError'), retryable: true }
+  }
+  return undefined
+})
+const showEmptyMentionStatus = computed(
+  () =>
+    !mentionHasResults.value &&
+    !userSkillMentionStatus.value &&
+    !comfySkillMentionStatus.value
 )
 const emptyMentionLabel = computed(() =>
   mentionSection.value === 'skills'
@@ -431,9 +474,6 @@ const emptyMentionLabel = computed(() =>
 )
 
 function skillsEmptyLabel(): string {
-  if (skills.loading) return t('agent.skillsLoading')
-  if (skills.loadFailed)
-    return skills.loadFailureReason ?? t('agent.skillsLoadError')
   if (skills.catalogUnavailable) return t('agent.skillsUnavailable')
   return t('agent.noSkillsFound')
 }
@@ -543,7 +583,14 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
 }
 
 function preloadSkillCatalog(enabled: boolean): void {
-  if (enabled) void skills.ensurePacks()
+  if (!enabled) return
+  void skills.ensurePacks()
+  void builtinSkills.ensureSkills()
+}
+
+function requestSkills(): void {
+  void skills.refreshPacks()
+  void builtinSkills.ensureSkills()
 }
 
 watch(
@@ -655,19 +702,17 @@ defineExpose({
         >
           {{ mentionMenuHeading }}
         </div>
-        <MentionMenuItem
-          v-for="(match, index) in mentionMatches"
-          :key="`${match.kind}:${match.id}`"
-          :match
-          :index
-          :active="index === mentionActive"
-          :disabled="isMentionDisabled(match)"
+        <MentionMenuList
+          :matches="mentionMatches"
+          :grouped-skills="groupedSkillsInMention"
+          :active-index="mentionActive"
+          :is-disabled="isMentionDisabled"
           :node-reference-disabled-reason
           :duplicate-node-titles="graphDupes"
           :described-skill="describedSkill"
           :description-id="SKILL_DESCRIPTION_ID"
-          @highlight="onMentionHover(index)"
-          @pick="pickMention(match)"
+          @highlight="onMentionHover"
+          @pick="pickMention"
           @description-enter="keepDescriptionOpen"
           @description-leave="leaveDescription"
           @description-focusout="onDescriptionFocusOut"
@@ -675,10 +720,20 @@ defineExpose({
           @description-dismiss="onDescriptionDismiss"
         />
         <MentionMenuStatus
-          v-if="!mentionHasResults"
+          v-if="showEmptyMentionStatus"
           :label="emptyMentionLabel"
-          :retryable="skillsRetryVisible"
+        />
+        <MentionMenuStatus
+          v-if="userSkillMentionStatus"
+          :label="userSkillMentionStatus.label"
+          :retryable="userSkillMentionStatus.retryable"
           @retry="skills.ensurePacks()"
+        />
+        <MentionMenuStatus
+          v-if="comfySkillMentionStatus"
+          :label="comfySkillMentionStatus.label"
+          :retryable="comfySkillMentionStatus.retryable"
+          @retry="builtinSkills.refreshSkills()"
         />
       </div>
 
@@ -800,12 +855,15 @@ defineExpose({
               :skills="skills.packs"
               :skills-status="skillsMenuStatus"
               :skills-status-message="skillsMenuStatusMessage"
+              :comfy-skills="builtinSkills.visibleSkills"
+              :comfy-skills-status="comfySkillsMenuStatus"
               @select-nodes="onSelectNodes"
               @attach="emit('attach')"
               @open-assets="emit('openAssets')"
               @request-workflow-references="emit('requestWorkflowReferences')"
-              @request-skills="skills.refreshPacks()"
+              @request-skills="requestSkills"
               @retry-skills="skills.ensurePacks()"
+              @retry-comfy-skills="builtinSkills.refreshSkills()"
               @select-skill="pickSkill($event, 'add_menu')"
               @manage-skills="emit('manageSkills')"
               @focus-prompt="focusEditor"

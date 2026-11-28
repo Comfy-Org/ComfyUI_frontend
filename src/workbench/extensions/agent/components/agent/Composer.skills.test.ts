@@ -7,9 +7,12 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { i18n } from '@/i18n'
 import {
+  listBuiltinSkills,
   listSkillPacks,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
+import type { BuiltinSkillsListResult } from '@/platform/skills/api/skillsApi'
+import { useBuiltinSkillsStore } from '@/platform/skills/stores/builtinSkillsStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 import { api } from '@/scripts/api'
@@ -93,6 +96,7 @@ describe('Composer skill selection', () => {
       pack('landscape', 'Compose a landscape'),
       pack('portrait', PORTRAIT)
     ])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
   })
 
   it('opens a skills-only menu and filters names case-insensitively', async () => {
@@ -692,6 +696,50 @@ describe('Composer skill selection', () => {
     ])
   })
 
+  it('requests built-in skills from an empty store and fills a plain pasted built-in skill description when it resolves', async () => {
+    let resolveBuiltins: (result: BuiltinSkillsListResult) => void = () => {}
+    vi.mocked(listBuiltinSkills).mockReturnValueOnce(
+      new Promise<BuiltinSkillsListResult>((settle) => {
+        resolveBuiltins = settle
+      })
+    )
+    const { composer } = mount()
+    expect(listBuiltinSkills).toHaveBeenCalledOnce()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('/batch-generation now')
+    expect(composer.prompt.references).toMatchObject([
+      { name: 'batch-generation', description: '' }
+    ])
+
+    resolveBuiltins({
+      status: 'ok',
+      skills: [
+        { name: 'batch-generation', description: 'Built-in batch generation' }
+      ]
+    })
+    await waitFor(() =>
+      expect(composer.prompt.references).toMatchObject([
+        { name: 'batch-generation', description: 'Built-in batch generation' }
+      ])
+    )
+  })
+
+  it('prefers the user pack description over a built-in skill of the same name when pasting', async () => {
+    vi.mocked(listBuiltinSkills).mockResolvedValueOnce({
+      status: 'ok',
+      skills: [{ name: 'portrait', description: 'Built-in portrait' }]
+    })
+    const { composer } = mount()
+    const builtinSkills = useBuiltinSkillsStore()
+    await waitFor(() => expect(builtinSkills.catalogConfirmed).toBe(true))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('/portrait now')
+    expect(composer.prompt.references).toMatchObject([
+      { name: 'portrait', description: PORTRAIT }
+    ])
+  })
+
   it('keeps the copied description of a rich in-app paste over the catalog one', async () => {
     const { composer, skills } = mount()
     await userEvent.click(screen.getByRole('textbox'))
@@ -1109,6 +1157,10 @@ describe('Composer skill selection', () => {
 })
 
 describe('Composer skill catalog preload', () => {
+  beforeEach(() => {
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
+  })
+
   it('lists the skills when the composer appears, so the submenu opens with rows and no loading line', async () => {
     vi.mocked(listSkillPacks).mockResolvedValue([
       pack('landscape', 'Compose a landscape')
@@ -1199,6 +1251,7 @@ describe('Composer skill selection telemetry', () => {
       pack('landscape', 'Compose a landscape'),
       pack('portrait', PORTRAIT)
     ])
+    vi.mocked(listBuiltinSkills).mockResolvedValue({ status: 'ok', skills: [] })
   })
 
   it('reports add_menu once with only the source field when picking from the add submenu', async () => {
@@ -1315,6 +1368,40 @@ describe('Composer skill selection telemetry', () => {
 
     expect(await screen.findByTestId('skill-reference')).toBeVisible()
     expect(telemetry.trackAgentSkillSelected).not.toHaveBeenCalled()
+  })
+
+  it('reports add_menu and slash_picker when picking a Comfy skill', async () => {
+    vi.mocked(listBuiltinSkills).mockResolvedValue({
+      status: 'ok',
+      skills: [
+        {
+          name: 'batch-generation',
+          description: 'Generate images in a batch'
+        }
+      ]
+    })
+    const { skills } = mount()
+    const builtin = useBuiltinSkillsStore()
+    await builtin.ensureSkills()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Skills' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'batch-generation' })
+    )
+    expect(telemetry.trackAgentSkillSelected).toHaveBeenCalledExactlyOnceWith({
+      source: 'add_menu'
+    })
+
+    telemetry.trackAgentSkillSelected.mockClear()
+    skills.packs = [pack('portrait', PORTRAIT)]
+    await type('/batch')
+    await userEvent.keyboard('{Enter}')
+    expect(telemetry.trackAgentSkillSelected).toHaveBeenCalledExactlyOnceWith({
+      source: 'slash_picker'
+    })
   })
 
   it('inserts skills from both menus without throwing when telemetry is unavailable', async () => {

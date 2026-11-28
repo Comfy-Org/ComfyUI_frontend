@@ -602,6 +602,21 @@ export const zAgentSkillListResponse = z.object({
 })
 
 /**
+ * One on-demand skill the agent itself ships.
+ */
+export const zAgentBuiltinSkill = z.object({
+  name: z.string(),
+  description: z.string()
+})
+
+/**
+ * The on-demand skills the agent itself ships, ordered by name.
+ */
+export const zAgentBuiltinSkillListResponse = z.object({
+  skills: z.array(zAgentBuiltinSkill)
+})
+
+/**
  * A user-authored skill pack to create or replace. Plain JSON — a pack body is small enough that a signed-URL upload would be pure overhead.
  */
 export const zAgentSkillPublishRequest = z.object({
@@ -7026,6 +7041,11 @@ export const zAgentPublishSkillBody = zAgentSkillPublishRequest
  * An existing pack of the same name was replaced.
  */
 export const zAgentPublishSkillResponse = zAgentSkill
+
+/**
+ * The skills the agent itself ships.
+ */
+export const zAgentListBuiltinSkillsResponse = zAgentBuiltinSkillListResponse
 
 export const zAgentDeleteSkillPath = z.object({
   name: z
