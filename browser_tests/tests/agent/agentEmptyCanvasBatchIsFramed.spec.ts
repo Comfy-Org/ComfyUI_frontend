@@ -5,8 +5,10 @@ import {
   TEMPLATE_NODE_POSITIONS,
   agentEmptyCanvasFramingTest as test,
   nodePositions,
+  renderedNodeVisibility,
   nodeVisibility
 } from '@e2e/fixtures/helpers/AgentEmptyCanvasFramingHarness'
+import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 
 test.describe(
   'Agent batch on an empty canvas',
@@ -21,12 +23,21 @@ test.describe(
         }
       },
       async ({ page, agentEmptyCanvasFraming }, testInfo) => {
-        test.setTimeout(60_000)
         await agentEmptyCanvasFraming.sendPrompt(
           'Build me an image edit workflow'
         )
         await agentEmptyCanvasFraming.insertTemplate()
         await agentEmptyCanvasFraming.waitForTurnComplete()
+
+        const expectedPositions = Object.fromEntries(
+          TEMPLATE_NODE_IDS.map((id) => [
+            String(id),
+            TEMPLATE_NODE_POSITIONS[id]
+          ])
+        )
+        const expectedVisibility = Object.fromEntries(
+          TEMPLATE_NODE_IDS.map((id) => [String(id), true])
+        )
 
         await expect
           .poll(async () => nodePositions(page, TEMPLATE_NODE_IDS), {
@@ -35,14 +46,7 @@ test.describe(
               'node must reach the canvas at the coordinates the template baked in',
             timeout: 10_000
           })
-          .toEqual(
-            Object.fromEntries(
-              TEMPLATE_NODE_IDS.map((id) => [
-                String(id),
-                TEMPLATE_NODE_POSITIONS[id]
-              ])
-            )
-          )
+          .toEqual(expectedPositions)
 
         await expect
           .poll(async () => nodeVisibility(page, TEMPLATE_NODE_IDS), {
@@ -52,25 +56,15 @@ test.describe(
               'is not empty and appears to be',
             timeout: 10_000
           })
-          .toEqual(
-            Object.fromEntries(
-              TEMPLATE_NODE_IDS.map((id) => [String(id), true])
-            )
-          )
+          .toEqual(expectedVisibility)
 
+        await waitForCanvasViewToSettle(page)
         await expect
-          .poll(async () => nodePositions(page, TEMPLATE_NODE_IDS), {
-            message: 'framing must not relocate the template nodes',
-            timeout: 10_000
-          })
-          .toEqual(
-            Object.fromEntries(
-              TEMPLATE_NODE_IDS.map((id) => [
-                String(id),
-                TEMPLATE_NODE_POSITIONS[id]
-              ])
-            )
-          )
+          .poll(() => renderedNodeVisibility(page, TEMPLATE_NODE_IDS))
+          .toEqual(expectedVisibility)
+        await expect
+          .poll(() => nodePositions(page, TEMPLATE_NODE_IDS))
+          .toEqual(expectedPositions)
 
         await testInfo.attach('framed-batch.png', {
           body: await page.screenshot(),

@@ -1,14 +1,16 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import type {
+  AgentTurnAccepted,
+  WorkflowListResponse
+} from '@comfyorg/ingest-types'
 
 import type {
   AgentCancelAccepted,
   AgentMessages,
-  AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
@@ -118,6 +120,27 @@ export async function nodePositions(
   }, ids.map(String))
 }
 
+export async function renderedNodeVisibility(
+  page: Page,
+  ids: readonly number[]
+): Promise<Record<string, boolean | null>> {
+  const panel = await page.locator('.graph-canvas-panel').boundingBox()
+  if (!panel) throw new Error('the graph canvas panel is not rendered')
+  const entries = await Promise.all(
+    ids.map(async (id) => {
+      const node = await page.locator(`[data-node-id="${id}"]`).boundingBox()
+      if (!node) return [String(id), null] as const
+      const visible =
+        node.x < panel.x + panel.width &&
+        panel.x < node.x + node.width &&
+        node.y < panel.y + panel.height &&
+        panel.y < node.y + node.height
+      return [String(id), visible] as const
+    })
+  )
+  return Object.fromEntries(entries)
+}
+
 class AgentEmptyCanvasFramingHarness {
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -199,7 +222,7 @@ class AgentEmptyCanvasFramingHarness {
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'POST') {
-        const accepted: AgentTurnAccepted = {
+        const accepted: AgentTurnAccepted & { workflow_id: string } = {
           thread_id: THREAD_ID,
           message_id: MESSAGE_ID,
           workflow_id: WORKFLOW_ID
@@ -217,13 +240,13 @@ class AgentEmptyCanvasFramingHarness {
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }
       return route.fulfill(jsonRoute(cancelled))
     })
-    const workflows: WorkflowListResponse = {
-      data: [],
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-    }
-    await page.route('**/api/workflows**', (route) =>
-      route.fulfill(jsonRoute(workflows))
-    )
+    await page.route('**/api/workflows**', (route) => {
+      const workflows: WorkflowListResponse = {
+        data: [],
+        pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
+      }
+      return route.fulfill(jsonRoute(workflows))
+    })
   }
 
   private stampEvent(event: {

@@ -74,10 +74,12 @@ than as a comment in the code.
 canvas element extends underneath the side panels — including the docked agent
 panel, which is open during exactly this flow. A batch that landed only under
 that panel would have counted as on screen and never been framed. Both the
-decision and the camera move now use the `.graph-canvas-panel` rect, converted
-to graph coordinates, which is the region the user can actually see and the
-region `animateToBounds` fills. `app.ts`'s `fitViewUnlessGraphInView` is the
-same shape for the human template flow.
+decision and the camera move now use the intersection of the
+`.graph-canvas-panel` rect and `visibleCanvasViewport`, converted to graph
+coordinates. The first excludes layout-taking bottom and side panels; the
+second excludes the responsive Agent overlay that is teleported over the
+canvas without taking layout space. `app.ts`'s `fitViewUnlessGraphInView` is
+the same shape for the human template flow.
 
 **"Measured" is a positive area, not a non-null reference.** `ds.visible_area`
 is a `Rectangle` that starts life as `[0, 0, 0, 0]` and is only recomputed on
@@ -97,13 +99,17 @@ keyed by workflow and graph id and reset whenever the activity state went
 briefly null, which both let the same turn move the camera again after the user
 deliberately panned away, and let a coalesced idle-to-new-turn transition on
 the same target keep the old key so a new off-screen batch was never framed.
-The store now owns a per-turn framing marker that resets on a new turn or
-`dismiss`, so remounting the activity bar does not re-arm the same turn.
-Separately, `viewNodes()` can return without moving
-anything — no `.graph-canvas-panel` (it is absent under `LinearView`, which
-mounts the docked panel while hiding the graph canvas), no measurable bounds,
-or a zero-area panel — so it reports whether it started the animation and the turn is
-marked framed only then. Otherwise a later materialization retries.
+The store now owns a framing bit that resets only when a distinct turn starts
+or the report is dismissed, so remounting the activity bar does not re-arm the
+same turn. Presentation-only phase changes do not schedule another attempt.
+The component reacts to the canvas store's displayed-graph identity and
+revalidates that identity when its debounce fires, so subgraph navigation
+cannot apply cached root-graph bounds to another camera. Separately,
+`viewNodes()` can return without moving anything: no `.graph-canvas-panel`, no
+measurable bounds, or a zero-area panel, including the graph canvas hidden in
+linear mode. It reports whether it started the animation and the turn is marked
+framed only then. Otherwise a later materialization or return to the target
+graph retries.
 
 ## Alternatives considered
 

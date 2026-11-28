@@ -3602,7 +3602,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
 <template>
   <AgentGraphActivityBar
     :canvas="canvasStore.canvas"
-    :current-graph="canvasStore.currentGraph"
+    :graph="canvasStore.currentGraph"
   />
   <div
     id="agent-panel-root"
