@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 import { AgentNonValueWidgetRig } from '@e2e/fixtures/agentNonValueWidgetRig'
 import {
   PROMPT_ONLY_EDITED_SEED,
-  PROMPT_ONLY_NODE_ID,
   promptOnlyWidgetRigConfig
 } from '@e2e/fixtures/data/agent/promptOnlyWidget'
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
@@ -21,28 +20,32 @@ test.describe(
         promptOnlyWidgetRigConfig
       )
 
-      await test.step('give the seed widget the prompt-only production shape', async () => {
-        await rig.markWidgetPromptOnly(PROMPT_ONLY_NODE_ID, 'seed')
-      })
+      const nodeId =
+        await test.step('add a node whose seed is prompt-only from creation', async () => {
+          return await rig.addPromptOnlySampler()
+        })
 
       await test.step('edit the prompt-only value through the live widget API', async () => {
-        await rig.editSeed(PROMPT_ONLY_EDITED_SEED)
+        await rig.editSeedOnNode(nodeId, PROMPT_ONLY_EDITED_SEED)
       })
 
       await test.step('the host applies the semantic write', async () => {
         await expect
           .poll(() => rig.hostSocket.humanOpOutcomes().map((o) => o.outcome))
-          .toEqual(['applied'])
+          .toEqual(['applied', 'applied'])
         expect(
-          rig.host
-            .projection()
-            .nodes.find((node) => node.id === PROMPT_ONLY_NODE_ID)
+          rig.host.projection().nodes.find((node) => String(node.id) === nodeId)
             ?.widgets_values
-        ).toEqual([PROMPT_ONLY_EDITED_SEED, 20])
+        ).toEqual(
+          expect.objectContaining({
+            seed: PROMPT_ONLY_EDITED_SEED,
+            steps: 20
+          })
+        )
       })
 
       await test.step('the edited value remains visible on the canvas', async () => {
-        await expect(rig.seedField()).toHaveValue(
+        await expect(rig.seedField(nodeId)).toHaveValue(
           String(PROMPT_ONLY_EDITED_SEED)
         )
       })

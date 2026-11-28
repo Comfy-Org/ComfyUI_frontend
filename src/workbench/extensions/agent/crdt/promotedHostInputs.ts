@@ -2,6 +2,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+import { isReplicatedValueWidget } from './widgetValuesForm'
+
 interface PromotedHostInput {
   input: INodeInputSlot
   readValue(): unknown
@@ -20,7 +22,7 @@ export function promotedHostInputs(node: LGraphNode): PromotedHostInput[] {
       ]
     if (!input.widget) return []
     const owned = node.getWidgetFromSlot(input)
-    if (!owned || owned.serialize === false) return []
+    if (!owned || !isReplicatedValueWidget(owned)) return []
     return [{ input, readValue: () => owned.value }]
   })
 }

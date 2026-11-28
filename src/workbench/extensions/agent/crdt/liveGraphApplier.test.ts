@@ -99,6 +99,7 @@ class TestOverflowWidgets extends LGraphNode {
     this.addWidget('number', 'known', 10, () => {})
     const transient = this.addWidget('number', 'transient', 20, () => {})
     transient.serialize = false
+    transient.options.serialize = false
     this.addWidget('number', 'overflow', 30, () => {})
     this.serialize_widgets = true
   }
@@ -109,6 +110,17 @@ class TestPlainWidgets extends LGraphNode {
     super('Test Plain Widgets')
     this.addWidget('number', 'known', 10, () => {})
     this.addWidget('number', 'addedAfterCatalog', 20, () => {})
+    this.serialize_widgets = true
+  }
+}
+
+class TestPromptOnlyWidgets extends LGraphNode {
+  constructor() {
+    super('Test Prompt Only Widgets')
+    const prompt = this.addWidget('number', 'prompt', 7, () => {})
+    prompt.serialize = false
+    prompt.options.serialize = true
+    this.addWidget('number', 'saved', 11, () => {})
     this.serialize_widgets = true
   }
 }
@@ -393,6 +405,7 @@ const CATALOG: WidgetCatalog = {
     TestOverflowWidgets: { widget_order: ['known'] },
     [TEST_OVERFLOW_LONG_TYPE]: { widget_order: ['known'] },
     TestPlainWidgets: { widget_order: ['known'] },
+    TestPromptOnlyWidgets: { widget_order: ['prompt', 'saved'] },
     TestRecordRestore: { widget_order: ['known'] },
     TestGrowingWidgets: { widget_order: ['mode'] },
     // The catalog names `mode.a` but not `mode.b`, so the host stores the last
@@ -468,6 +481,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestOverflowWidgets', TestOverflowWidgets)
   LiteGraph.registerNodeType(TEST_OVERFLOW_LONG_TYPE, TestOverflowWidgets)
   LiteGraph.registerNodeType('TestPlainWidgets', TestPlainWidgets)
+  LiteGraph.registerNodeType('TestPromptOnlyWidgets', TestPromptOnlyWidgets)
   LiteGraph.registerNodeType('TestRecordRestore', TestRecordRestore)
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
@@ -1296,6 +1310,33 @@ describe('LiveGraphApplier', () => {
       { name: 'known', value: 11 },
       { name: 'transient', value: 20 },
       { name: 'overflow', value: 42 }
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('restores a prompt-only value by name after positional configure', () => {
+    const { graph, applyCollected } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPromptOnlyWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [17, 19]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    expect(
+      graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.map(({ name, value }) => ({ name, value }))
+    ).toEqual([
+      { name: 'prompt', value: 17 },
+      { name: 'saved', value: 19 }
     ])
     expect(reportError).not.toHaveBeenCalled()
   })

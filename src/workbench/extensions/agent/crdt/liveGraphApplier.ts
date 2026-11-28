@@ -77,6 +77,7 @@ import type {
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
 import { promotedHostInputs } from './promotedHostInputs'
+import { isReplicatedValueWidget } from './widgetValuesForm'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -1555,7 +1556,12 @@ export class LiveGraphApplier {
       } else {
         const constructed = serializableWidgets(node)
         const constructedNames = new Set(
-          node.widgets?.map((widget) => widget.name)
+          (node.widgets ?? [])
+            .filter(
+              (widget) =>
+                widget.serialize !== false || !isReplicatedValueWidget(widget)
+            )
+            .map((widget) => widget.name)
         )
         const deferred = deferredRowCounts(node, constructed, docNode.widgets)
         configureRemoteNode(node, {

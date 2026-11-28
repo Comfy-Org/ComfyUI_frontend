@@ -3,7 +3,7 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import type { NonValueWidgetRigConfig } from '@e2e/fixtures/agentNonValueWidgetRig'
 
-export const PROMPT_ONLY_NODE_ID = 812
+const PROMPT_ONLY_NODE_ID = 812
 export const PROMPT_ONLY_EDITED_SEED = 24680
 const initialSeed = 13579
 

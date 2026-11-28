@@ -3642,6 +3642,31 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('accepts a legacy live widget with no options object', async () => {
+    const { source } = seedGraph(graph)
+    const widget = source.widgets![0]
+    Object.assign(widget, { options: undefined })
+
+    emitGraphIntent({
+      type: 'set_widget',
+      graphId: graph.id,
+      nodeId: source.id,
+      name: 'steps',
+      value: 21,
+      previous: 20
+    })
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: source.id,
+        widget: 'steps',
+        value: 21
+      }
+    ])
+  })
+
   it('uses the same store fallback when filtering an add-node snapshot', () => {
     const { source } = seedGraph(graph)
     const widget = source.widgets![0]
@@ -3650,6 +3675,7 @@ describe('attachDocOpMinter', () => {
     )
     assert.exists(stored)
     stored.serialize = false
+    stored.options = { ...stored.options, serialize: false }
     delete widget.serialize
 
     expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
@@ -4397,6 +4423,57 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     expect(wireNodeSnapshot(node)?.widgets_values_form).toEqual({
       order: ['seed', 'control_after_generate', 'sampler_name']
     })
+  })
+
+  it('declares and applies a prompt-only value present before node creation', () => {
+    const node = nodeWith('Prompt Only', (n) => {
+      const prompt = n.addWidget('number', 'prompt', 7, () => {})
+      prompt.serialize = false
+      prompt.options.serialize = true
+      n.addWidget('number', 'saved', 11, () => {})
+    })
+    const snapshot = wireNodeSnapshot(node)!
+    const catalog: WidgetCatalog = { types: {} }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+
+    expect(snapshot).toMatchObject({
+      widgets_values: { prompt: 7, saved: 11 },
+      widgets_values_form: { order: ['prompt', 'saved'] }
+    })
+    expect(
+      applyOps(
+        doc,
+        mintWireOps(
+          [
+            {
+              op: 'add_node',
+              node_id: snapshot.id,
+              class_type: snapshot.type,
+              pos: [0, 0],
+              node: snapshot
+            },
+            {
+              op: 'set_widget',
+              node_id: snapshot.id,
+              widget: 'prompt',
+              value: 8
+            }
+          ],
+          { actor: 'human:user:tab', baseVersion: 1 }
+        ),
+        catalog
+      ).outcomes
+    ).toEqual([
+      expect.objectContaining({ outcome: 'applied' }),
+      expect.objectContaining({ outcome: 'applied' })
+    ])
+    expect(project(doc, catalog).nodes).toEqual([
+      expect.objectContaining({
+        widgets_values: { prompt: 8, saved: 11 },
+        widgets_values_form: { order: ['prompt', 'saved'] }
+      })
+    ])
+    doc.destroy()
   })
 
   it('replaces a form the node carried in from a loaded projection with its live order', () => {

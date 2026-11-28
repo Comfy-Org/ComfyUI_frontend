@@ -63,7 +63,7 @@ import { reportLostEdit } from './reportLostEdit'
 import {
   isReplicatedValueWidget,
   provenWidgetValuesForm,
-  valueWidgetsOnly
+  replicatedWidgetValues
 } from './widgetValuesForm'
 
 export interface DocOpMinterDeps {
@@ -267,7 +267,7 @@ export function wireNodeSnapshot(
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   if (!named || node.isSubgraphNode()) return snapshot
-  const values = valueWidgetsOnly(node, named)
+  const values = replicatedWidgetValues(node, named)
   const form = provenWidgetValuesForm(node, values, serialized)
   if (!form && node.isVirtualNode) return snapshot
   const positional = serialized.widgets_values

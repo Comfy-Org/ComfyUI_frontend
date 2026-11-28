@@ -164,6 +164,10 @@ export class AgentNonValueWidgetRig {
   }
 
   editSeed(value: number): Promise<void> {
+    return this.editSeedOnNode(String(this.config.samplerNodeId), value)
+  }
+
+  editSeedOnNode(nodeId: string, value: number): Promise<void> {
     return this.page.evaluate(
       ({ nodeId, value }) => {
         const node = window.app!.graph.nodes.find(
@@ -175,31 +179,27 @@ export class AgentNonValueWidgetRig {
         if (!widget) throw new Error(`Expected a seed widget on node ${nodeId}`)
         widget.value = value
       },
-      { nodeId: String(this.config.samplerNodeId), value }
+      { nodeId, value }
     )
   }
 
-  /** Marks a widget for prompt inclusion but not workflow persistence. */
-  markWidgetPromptOnly(nodeId: number, name: string): Promise<void> {
-    return this.page.evaluate(
-      ({ nodeId, name }) => {
-        const node = window.app!.graph.nodes.find(
-          (candidate) => String(candidate.id) === nodeId
-        )
-        const widget = node?.widgets?.find(
-          (candidate) => candidate.name === name
-        )
-        if (!widget) throw new Error(`Expected ${name} on node ${nodeId}`)
-        widget.options.serialize = true
-        widget.serialize = false
-      },
-      { nodeId: String(nodeId), name }
-    )
+  addPromptOnlySampler(): Promise<string> {
+    return this.page.evaluate(() => {
+      const node = window.LiteGraph!.createNode('KSampler')
+      if (!node) throw new Error('KSampler is not a registered node type')
+      const seed = node.widgets?.find((widget) => widget.name === 'seed')
+      if (!seed) throw new Error('Expected seed on KSampler')
+      seed.options.serialize = true
+      seed.serialize = false
+      node.pos = [320, 160]
+      window.app!.graph.add(node)
+      return String(node.id)
+    })
   }
 
-  seedField(): Locator {
+  seedField(nodeId = String(this.config.samplerNodeId)): Locator {
     return this.vueNodes
-      .getNodeLocator(String(this.config.samplerNodeId))
+      .getNodeLocator(nodeId)
       .getByRole('spinbutton', { name: 'seed', exact: true })
   }
 }
