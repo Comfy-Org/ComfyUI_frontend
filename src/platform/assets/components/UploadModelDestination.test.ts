@@ -152,6 +152,62 @@ describe('UploadModelDialog destination', () => {
     expect(library).not.toHaveBeenCalled()
   })
 
+  it('offers this deployment, its build link and a file while the library takes no files', async () => {
+    vi.mocked(useFeatureFlags().flags).modelUploadFolders = []
+    pickDeployment()
+    vi.spyOn(usePlatformFrameStore(), 'isAvailable').mockReturnValue(true)
+    const send = vi
+      .spyOn(deploymentModelUploadApi, 'uploadModelToDeployment')
+      .mockResolvedValue({ ok: false, reason: 'refused', message: 'Busy' })
+    const user = userEvent.setup()
+    renderDialog({ initialDestination: 'deployment' })
+
+    expect(screen.getByRole('radio', { name: copy.toDeployment })).toBeChecked()
+    expect(
+      screen.getByRole('button', { name: copy.addToBuild })
+    ).toBeInTheDocument()
+    expect(linkInput()).not.toBeInTheDocument()
+
+    await user.upload(screen.getByTestId('upload-model-file-input'), lora)
+    const uploadButton = screen.getByRole('button', { name: copy.upload })
+    await vi.waitFor(() => expect(uploadButton).toBeEnabled())
+    await user.click(uploadButton)
+
+    expect(send).toHaveBeenCalledWith(
+      lora,
+      { workspaceId: 'ws-1', deploymentId: 'dep-1' },
+      expect.objectContaining({ type: 'loras' })
+    )
+  })
+
+  it('names this deployment on the button again once it is chosen back after the library fallback', async () => {
+    pickDeployment()
+    vi.spyOn(
+      deploymentModelUploadApi,
+      'uploadModelToDeployment'
+    ).mockResolvedValue({ ok: false, reason: 'notOn' })
+    const user = userEvent.setup()
+    renderDialog({ initialDestination: 'deployment' })
+
+    await user.upload(screen.getByTestId('upload-model-file-input'), lora)
+    const uploadButton = screen.getByRole('button', { name: copy.upload })
+    await vi.waitFor(() => expect(uploadButton).toBeEnabled())
+    await user.click(uploadButton)
+    expect(
+      await screen.findByRole('button', { name: copy.uploadToLibrary })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: copy.toLibrary })).toBeChecked()
+
+    await user.click(screen.getByRole('radio', { name: copy.toDeployment }))
+
+    expect(
+      screen.getByRole('button', { name: copy.tryAgain })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: copy.uploadToLibrary })
+    ).not.toBeInTheDocument()
+  })
+
   it('offers no build link with no deployment picked', () => {
     renderDialog()
 

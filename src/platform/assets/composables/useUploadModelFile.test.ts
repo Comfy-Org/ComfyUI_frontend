@@ -335,7 +335,7 @@ describe('useUploadModelFile', () => {
 
     upload.choose(lora)
 
-    expect(upload.uploadFolders.value).toEqual(['checkpoints', 'loras'])
+    expect(upload.typeFolders.value).toEqual(['checkpoints', 'loras'])
     expect(upload.modelType.value).toBe('loras')
   })
 
@@ -810,7 +810,19 @@ describe('useUploadModelFile', () => {
       })
       Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
       vi.mocked(comfyApp.refreshComboInNodes).mockResolvedValue(true)
+      vi.mocked(api.getModelFolders).mockResolvedValue([
+        { name: 'loras', folders: [] },
+        { name: 'checkpoints', folders: [] }
+      ])
     })
+
+    async function setupOnDeployment() {
+      const mounted = setup('deployment')
+      await vi.waitFor(() =>
+        expect(mounted.upload.typeFolders.value).toContain('loras')
+      )
+      return mounted
+    }
 
     function pendingDeploymentUpload() {
       let options: DeploymentUploadOptions | undefined
@@ -823,7 +835,7 @@ describe('useUploadModelFile', () => {
             finish = resolve
           })
         })
-      let settle!: (outcome: DeploymentModelOutcome) => void
+      let settle!: (outcome: DeploymentModelOutcome | undefined) => void
       const wait = vi
         .spyOn(deploymentModelUploadApi, 'waitForDeploymentModel')
         .mockImplementation(
@@ -840,7 +852,7 @@ describe('useUploadModelFile', () => {
           return options
         },
         finish: (result: DeploymentModelUploadResult) => finish(result),
-        settle: (outcome: DeploymentModelOutcome) => settle(outcome)
+        settle: (outcome: DeploymentModelOutcome | undefined) => settle(outcome)
       }
     }
 
@@ -861,7 +873,7 @@ describe('useUploadModelFile', () => {
     })
 
     it('checks the file, shows bytes sent, then adding, then ready on the deployment', async () => {
-      const { upload } = setup('deployment')
+      const { upload } = await setupOnDeployment()
       const library = vi.spyOn(modelFileUploadApi, 'uploadModelFile')
       const server = pendingDeploymentUpload()
       upload.choose(lora)
@@ -910,7 +922,7 @@ describe('useUploadModelFile', () => {
     it.for([{ outcome: 'failed' as const }, { outcome: 'gone' as const }])(
       'says the file was not added when the row ends $outcome',
       async ({ outcome }) => {
-        const { upload } = setup('deployment')
+        const { upload } = await setupOnDeployment()
         const server = pendingDeploymentUpload()
         upload.choose(lora)
 
@@ -924,15 +936,168 @@ describe('useUploadModelFile', () => {
             status: 'failed',
             file: lora,
             error:
-              'my_style_v2.safetensors was not added to this deployment. Remove it and add it again.'
+              'my_style_v2.safetensors was not added to this deployment. Try again to replace it.',
+            listedModelId: 'model-1'
           })
         )
         expect(comfyApp.refreshComboInNodes).not.toHaveBeenCalled()
       }
     )
 
+    async function failedOnDeployment() {
+      const mounted = await setupOnDeployment()
+      const server = pendingDeploymentUpload()
+      mounted.upload.choose(lora)
+      const first = mounted.upload.upload()
+      server.finish({ ok: true, modelId: 'model-1' })
+      await first
+      server.settle('failed')
+      await vi.waitFor(() =>
+        expect(mounted.upload.state.value.status).toBe('failed')
+      )
+      return { ...mounted, server }
+    }
+
+    it('removes the entry that ended failed, then adds the file again', async () => {
+      const { upload, server } = await failedOnDeployment()
+      let answerClear!: (cleared: boolean) => void
+      const clear = vi
+        .spyOn(deploymentModelUploadApi, 'clearDeploymentModel')
+        .mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              answerClear = resolve
+            })
+        )
+
+      const retry = upload.upload()
+      expect(upload.state.value).toEqual({ status: 'removing', file: lora })
+      expect(clear).toHaveBeenCalledWith(
+        { workspaceId: 'ws-1', deploymentId: 'dep-1' },
+        'model-1',
+        expect.any(AbortSignal)
+      )
+      expect(server.spy).toHaveBeenCalledOnce()
+      answerClear(true)
+      await vi.waitFor(() => expect(server.spy).toHaveBeenCalledTimes(2))
+      server.finish({ ok: true, modelId: 'model-2' })
+
+      await expect(retry).resolves.toMatchObject({ status: 'processing' })
+      expect(upload.state.value).toEqual({ status: 'adding', file: lora })
+    })
+
+    it('adds nothing again and says the file is still listed when its entry cannot be removed', async () => {
+      const { upload, server } = await failedOnDeployment()
+      vi.spyOn(
+        deploymentModelUploadApi,
+        'clearDeploymentModel'
+      ).mockResolvedValue(false)
+
+      await expect(upload.upload()).resolves.toBeNull()
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: "Couldn't remove the file. It's still listed on the deployment.",
+        listedModelId: 'model-1'
+      })
+      expect(server.spy).toHaveBeenCalledOnce()
+    })
+
+    it('says the file is still listed when a canceled upload could not remove its entry', async () => {
+      const { upload } = await setupOnDeployment()
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      const result = upload.upload()
+      upload.cancel()
+      server.finish({
+        ok: false,
+        reason: 'cancelled',
+        modelId: 'model-1',
+        stillListed: true
+      })
+
+      await expect(result).resolves.toBeNull()
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: "Couldn't remove the file. It's still listed on the deployment.",
+        listedModelId: 'model-1'
+      })
+    })
+
+    it('says it is still adding after the wait runs out, and checks again without adding again', async () => {
+      const { upload } = await setupOnDeployment()
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      const result = upload.upload()
+      server.finish({ ok: true, modelId: 'model-1' })
+      await result
+      server.settle(undefined)
+      await vi.waitFor(() =>
+        expect(upload.state.value).toEqual({
+          status: 'stillAdding',
+          file: lora,
+          modelType: 'loras',
+          modelId: 'model-1'
+        })
+      )
+
+      upload.checkAgain()
+      expect(upload.state.value).toEqual({ status: 'adding', file: lora })
+      expect(server.wait).toHaveBeenCalledTimes(2)
+      expect(server.wait).toHaveBeenLastCalledWith(
+        { workspaceId: 'ws-1', deploymentId: 'dep-1' },
+        'model-1',
+        expect.any(AbortSignal)
+      )
+      server.settle('ready')
+
+      await vi.waitFor(() =>
+        expect(upload.state.value).toMatchObject({ status: 'done' })
+      )
+      expect(server.spy).toHaveBeenCalledOnce()
+    })
+
+    it('offers this deployment, with its own folders, while the library takes no files', async () => {
+      vi.mocked(useFeatureFlags().flags).modelUploadFolders = []
+      const { upload } = await setupOnDeployment()
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      expect(upload.canChooseDestination.value).toBe(true)
+      expect(upload.isAvailable.value).toBe(false)
+      expect(upload.typeFolders.value).toEqual(['checkpoints', 'loras'])
+      void upload.upload()
+
+      expect(server.spy).toHaveBeenCalledWith(
+        lora,
+        { workspaceId: 'ws-1', deploymentId: 'dep-1' },
+        expect.objectContaining({ type: 'loras' })
+      )
+    })
+
+    it('offers no library upload when adding is not on and the library takes no files', async () => {
+      vi.mocked(useFeatureFlags().flags).modelUploadFolders = []
+      const { upload } = await setupOnDeployment()
+      const server = pendingDeploymentUpload()
+      upload.choose(lora)
+
+      const result = upload.upload()
+      server.finish({ ok: false, reason: 'notOn' })
+      await result
+
+      expect(upload.state.value).toEqual({
+        status: 'failed',
+        file: lora,
+        error: "Adding models to a deployment isn't on for this workspace yet."
+      })
+      expect(upload.destination.value).toBe('deployment')
+    })
+
     it("shows comfy-deploy's sentence when the add is refused", async () => {
-      const { upload } = setup('deployment')
+      const { upload } = await setupOnDeployment()
       const server = pendingDeploymentUpload()
       upload.choose(lora)
       const message = 'This deployment already has a model named my_style_v2.'
@@ -950,7 +1115,7 @@ describe('useUploadModelFile', () => {
     })
 
     it('turns the choice to the workspace library when adding is not on', async () => {
-      const { upload } = setup('deployment')
+      const { upload } = await setupOnDeployment()
       const server = pendingDeploymentUpload()
       upload.choose(lora)
 
@@ -974,7 +1139,7 @@ describe('useUploadModelFile', () => {
     })
 
     it('stops the deployment upload on cancel', async () => {
-      const { upload } = setup('deployment')
+      const { upload } = await setupOnDeployment()
       const server = pendingDeploymentUpload()
       upload.choose(lora)
 

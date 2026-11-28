@@ -11,9 +11,10 @@
       v-model="fileModelType"
       v-model:destination="fileDestination"
       :state="fileState"
-      :folders="fileUpload.uploadFolders.value"
-      :can-choose-destination="showDestination"
+      :folders="fileUpload.typeFolders.value"
+      :can-choose-destination="showFileDestination"
       @upload="handleUploadFile"
+      @check="fileUpload.checkAgain"
       @cancel="fileUpload.cancel"
       @back="fileUpload.reset"
       @close="handleClose"
@@ -149,10 +150,15 @@ const fileError = computed(() =>
   fileState.value.status === 'idle' ? fileState.value.error : undefined
 )
 const canUploadFile = computed(
-  () => fileUpload.isAvailable.value && !isMissingModelResolution.value
+  () =>
+    (fileUpload.isAvailable.value || fileUpload.goesToDeployment.value) &&
+    !isMissingModelResolution.value
 )
 const showDestination = computed(
   () => fileUpload.canChooseDestination.value && !isMissingModelResolution.value
+)
+const showFileDestination = computed(
+  () => showDestination.value && fileUpload.isAvailable.value
 )
 const showStartDestination = computed(
   () =>

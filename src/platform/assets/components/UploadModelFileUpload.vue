@@ -80,6 +80,24 @@
       >
         {{ $t('g.close') }}
       </Button>
+      <template v-else-if="state.status === 'stillAdding'">
+        <Button
+          variant="muted-textonly"
+          size="lg"
+          data-attr="upload-model-file-close-button"
+          @click="emit('close')"
+        >
+          {{ $t('g.close') }}
+        </Button>
+        <Button
+          variant="secondary"
+          size="lg"
+          data-attr="upload-model-file-check-button"
+          @click="emit('check')"
+        >
+          {{ $t('assetBrowser.fileUpload.checkAgain') }}
+        </Button>
+      </template>
       <template v-else-if="state.status === 'done'">
         <Button
           variant="muted-textonly"
@@ -156,6 +174,7 @@ const emit = defineEmits<{
   cancel: []
   back: []
   close: []
+  check: []
 }>()
 
 const { t, locale } = useI18n()
@@ -176,6 +195,7 @@ const canCancel = computed(
   () =>
     isTransferring.value ||
     state.status === 'stopping' ||
+    state.status === 'removing' ||
     state.status === 'checking'
 )
 
@@ -201,6 +221,10 @@ const statusLine = computed(() => {
   if (state.status === 'saving') return t('assetBrowser.fileUpload.saving')
   if (state.status === 'stopping') return t('assetBrowser.fileUpload.stopping')
   if (state.status === 'checking') return t('assetBrowser.fileUpload.checking')
+  if (state.status === 'removing')
+    return t('assetBrowser.fileUpload.removingEarlier')
+  if (state.status === 'stillAdding')
+    return t('assetBrowser.fileUpload.stillAdding')
   if (state.status === 'adding')
     return t('assetBrowser.fileUpload.addingToDeployment')
   return undefined
@@ -230,7 +254,7 @@ const doneDetail = computed(() =>
 
 const uploadLabel = computed(() => {
   if (state.status !== 'failed') return t('assetBrowser.fileUpload.upload')
-  return state.libraryOffered
+  return state.libraryOffered && destination.value === 'library'
     ? t('assetBrowser.fileUpload.uploadToLibrary')
     : t('assetBrowser.fileUpload.tryAgain')
 })

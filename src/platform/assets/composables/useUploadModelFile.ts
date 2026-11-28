@@ -3,6 +3,7 @@ import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { UploadModelSuccess } from '@/platform/assets/types/modelImport'
 import {
   isSupportedModelFileName,
@@ -54,6 +55,7 @@ export type ModelFileUpload =
   | { status: 'chosen'; file: File }
   | { status: 'stopping'; file: File }
   | { status: 'checking'; file: File }
+  | { status: 'removing'; file: File }
   | {
       status: 'uploading' | 'reconnecting'
       file: File
@@ -62,6 +64,7 @@ export type ModelFileUpload =
     }
   | { status: 'saving'; file: File }
   | { status: 'adding'; file: File }
+  | { status: 'stillAdding'; file: File; modelType: string; modelId: string }
   | { status: 'done'; file: File; modelType: string; onDeployment?: true }
   | {
       status: 'failed'
@@ -69,9 +72,17 @@ export type ModelFileUpload =
       error: string
       taskId?: string
       libraryOffered?: true
+      listedModelId?: string
     }
 
 type ReadyToSend = Extract<ModelFileUpload, { status: 'chosen' | 'failed' }>
+
+type FailedUpload = Extract<ModelFileUpload, { status: 'failed' }>
+
+type DeploymentUploadStopped = Extract<
+  DeploymentModelUploadResult,
+  { ok: false }
+>
 
 interface FollowedTask {
   id: string
@@ -94,7 +105,11 @@ export function useUploadModelFile(
   const downloads = useAssetDownloadStore()
   const deploymentPick = useDeploymentPickStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const { modelTypes, fetchModelTypes } = useModelTypes()
   const uploadFolders = computed(() => flags.modelUploadFolders)
+  const deploymentFolders = computed(() =>
+    modelTypes.value.map(({ value }) => value)
+  )
   const isAvailable = computed(() => uploadFolders.value.length > 0)
   const deploymentTarget = computed<DeploymentModelTarget | undefined>(() => {
     const deploymentId = deploymentPick.bootDeployment?.deployment_id
@@ -104,21 +119,29 @@ export function useUploadModelFile(
       : undefined
   })
   const canChooseDestination = computed(
-    () => isAvailable.value && deploymentTarget.value !== undefined
+    () => deploymentTarget.value !== undefined
   )
   const destination = ref<UploadDestination>(initialDestination)
   const goesToDeployment = computed(
     () => canChooseDestination.value && destination.value === 'deployment'
   )
+  const typeFolders = computed(() =>
+    goesToDeployment.value ? deploymentFolders.value : uploadFolders.value
+  )
 
   function defaultModelType() {
-    return uploadFolders.value.includes(DEFAULT_MODEL_TYPE)
+    return typeFolders.value.includes(DEFAULT_MODEL_TYPE)
       ? DEFAULT_MODEL_TYPE
-      : (uploadFolders.value[0] ?? '')
+      : (typeFolders.value[0] ?? '')
   }
 
   const state = shallowRef<ModelFileUpload>({ status: 'idle' })
   const modelType = ref(defaultModelType())
+
+  watch(typeFolders, (folders) => {
+    if (!folders.includes(modelType.value)) modelType.value = defaultModelType()
+  })
+  void fetchModelTypes()
   let controller: AbortController | undefined
   let task: FollowedTask | undefined
   let stopTaskWatch: WatchStopHandle | undefined
@@ -339,7 +362,7 @@ export function useUploadModelFile(
     file: File,
     result: UploadStopped,
     to: UploadDestination
-  ): ModelFileUpload {
+  ): FailedUpload {
     if (result.reason === 'failed') {
       reportError(result.cause, {
         surface: 'assets',
@@ -349,16 +372,34 @@ export function useUploadModelFile(
       })
     }
     const error = failureText(result)
-    if (result.reason !== 'notOn') return { status: 'failed', file, error }
+    if (result.reason !== 'notOn' || !isAvailable.value) {
+      return { status: 'failed', file, error }
+    }
     destination.value = 'library'
     return { status: 'failed', file, error, libraryOffered: true }
   }
 
-  function outcomeOnDeployment(
-    outcome: DeploymentModelOutcome,
+  function failedOnDeployment(
     file: File,
-    type: string
+    result: DeploymentUploadStopped
   ): ModelFileUpload {
+    const failed = failedUpload(file, result, 'deployment')
+    if (!result.modelId) return failed
+    const error = result.stillListed
+      ? t('assetBrowser.fileUpload.stillListed')
+      : failed.error
+    return { ...failed, error, listedModelId: result.modelId }
+  }
+
+  function outcomeOnDeployment(
+    outcome: DeploymentModelOutcome | undefined,
+    file: File,
+    type: string,
+    modelId: string
+  ): ModelFileUpload {
+    if (outcome === undefined) {
+      return { status: 'stillAdding', file, modelType: type, modelId }
+    }
     if (outcome === 'ready') {
       return { status: 'done', file, modelType: type, onDeployment: true }
     }
@@ -367,7 +408,8 @@ export function useUploadModelFile(
       file,
       error: t('assetBrowser.fileUpload.notAddedToDeployment', {
         name: file.name
-      })
+      }),
+      listedModelId: modelId
     }
   }
 
@@ -394,9 +436,50 @@ export function useUploadModelFile(
           })
         )
     }
-    if (outcome === undefined || run !== generation) return
-    if (state.value.status !== 'adding') return
-    state.value = outcomeOnDeployment(outcome, file, type)
+    if (run !== generation || state.value.status !== 'adding') return
+    state.value = outcomeOnDeployment(outcome, file, type, modelId)
+  }
+
+  function checkAgain() {
+    const current = state.value
+    const target = deploymentTarget.value
+    if (current.status !== 'stillAdding' || !target) return
+    state.value = { status: 'adding', file: current.file }
+    void followDeploymentModel(
+      target,
+      current.modelId,
+      current.file,
+      current.modelType,
+      generation
+    )
+  }
+
+  async function clearListedModel(
+    file: File,
+    target: DeploymentModelTarget,
+    listedModelId: string,
+    run: number,
+    signal: AbortSignal
+  ): Promise<boolean> {
+    state.value = { status: 'removing', file }
+    const cleared = await deploymentModelUploadApi.clearDeploymentModel(
+      target,
+      listedModelId,
+      signal
+    )
+    if (run !== generation) return false
+    if (cleared) return true
+    state.value = {
+      status: 'failed',
+      file,
+      listedModelId,
+      error: t(
+        signal.aborted
+          ? 'assetBrowser.fileUpload.cancelled'
+          : 'assetBrowser.fileUpload.stillListed'
+      )
+    }
+    return false
   }
 
   async function uploadToDeployment(
@@ -404,8 +487,15 @@ export function useUploadModelFile(
     type: string,
     target: DeploymentModelTarget,
     run: number,
-    signal: AbortSignal
+    signal: AbortSignal,
+    listedModelId: string | undefined
   ): Promise<UploadModelSuccess | null> {
+    if (
+      listedModelId &&
+      !(await clearListedModel(file, target, listedModelId, run, signal))
+    ) {
+      return null
+    }
     state.value = { status: 'checking', file }
     const progress = progressHandlers(run, signal, file)
     const result = await deploymentModelUploadApi.uploadModelToDeployment(
@@ -420,7 +510,7 @@ export function useUploadModelFile(
     )
     if (run !== generation) return null
     if (!result.ok) {
-      state.value = failedUpload(file, result, 'deployment')
+      state.value = failedOnDeployment(file, result)
       return null
     }
     state.value = { status: 'adding', file }
@@ -439,7 +529,9 @@ export function useUploadModelFile(
     const target = goesToDeployment.value ? deploymentTarget.value : undefined
     if (target) {
       stopFollowing()
-      return uploadToDeployment(file, type, target, run, signal)
+      const listedModelId =
+        current.status === 'failed' ? current.listedModelId : undefined
+      return uploadToDeployment(file, type, target, run, signal, listedModelId)
     }
 
     const followed = followedTaskOf(current)
@@ -484,7 +576,7 @@ export function useUploadModelFile(
 
   return {
     isAvailable,
-    uploadFolders,
+    typeFolders,
     canChooseDestination,
     destination,
     goesToDeployment,
@@ -492,6 +584,7 @@ export function useUploadModelFile(
     modelType,
     choose,
     upload,
+    checkAgain,
     cancel,
     reset
   }
