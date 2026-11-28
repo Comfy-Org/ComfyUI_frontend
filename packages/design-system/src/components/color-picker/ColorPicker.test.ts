@@ -190,12 +190,12 @@ describe('ColorPickerSaturationValue', () => {
     await user.pointer({
       keys: '[MouseLeft>]',
       target: slider,
-      coords: { clientX: 50, clientY: 50 }
+      coords: { clientX: 25, clientY: 60 }
     })
 
-    expect(emitted('update')).toEqual([[50, 50]])
-    expect(emitted('update:saturation')).toEqual([[50]])
-    expect(emitted('update:value')).toEqual([[50]])
-    expect(slider).toHaveAttribute('aria-valuetext', '50%, 50%')
+    expect(emitted('update')).toEqual([[25, 40]])
+    expect(emitted('update:saturation')).toEqual([[25]])
+    expect(emitted('update:value')).toEqual([[40]])
+    expect(slider).toHaveAttribute('aria-valuetext', '25%, 40%')
   })
 })
