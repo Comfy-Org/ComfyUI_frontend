@@ -36,12 +36,15 @@ const secondNode = createMockLGraphNode({
 for (const graphNode of [node, secondNode]) {
   Object.defineProperties(graphNode, {
     boundingRect: {
-      get: () => [
-        graphNode.pos[0],
-        graphNode.pos[1],
-        graphNode.size[0],
-        graphNode.size[1]
-      ]
+      get: () =>
+        graphNode.flags.collapsed
+          ? [graphNode.pos[0] - 10, graphNode.pos[1] - 20, 40, 30]
+          : [
+              graphNode.pos[0],
+              graphNode.pos[1],
+              graphNode.size[0],
+              graphNode.size[1]
+            ]
     },
     boundingOffset: { value: [0, 0] }
   })
@@ -117,6 +120,8 @@ describe('AgentGraphActivityBar', () => {
     dragAndScale.offset = [0, 0]
     node.pos = [10, 20]
     secondNode.pos = [7400, 6500]
+    node.flags.collapsed = false
+    secondNode.flags.collapsed = false
   })
 
   it('preserves a user pan across component remounts in the same turn', async () => {
@@ -176,6 +181,22 @@ describe('AgentGraphActivityBar', () => {
       Array.from(vi.mocked(canvas.animateToBounds).mock.calls[0][0]),
       'the camera must fit every node of the batch, not only the first to arrive'
     ).toEqual([6960, 6460, 580, 160])
+    view.unmount()
+  })
+
+  it('frames a collapsed node by its rendered bounds', async () => {
+    node.pos = [7000, 6500]
+    node.flags.collapsed = true
+    graph.nodes.splice(0, graph.nodes.length, node)
+    const view = mount()
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn()
+    activity.recordMaterialized(TARGET, [toNodeId(1)])
+    await settle()
+
+    expect(
+      Array.from(vi.mocked(canvas.animateToBounds).mock.calls[0][0])
+    ).toEqual([6950, 6440, 120, 110])
     view.unmount()
   })
 

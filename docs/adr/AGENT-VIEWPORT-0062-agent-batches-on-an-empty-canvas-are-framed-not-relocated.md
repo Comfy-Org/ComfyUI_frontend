@@ -75,7 +75,7 @@ canvas element extends underneath the side panels — including the docked agent
 panel, which is open during exactly this flow. A batch that landed only under
 that panel would have counted as on screen and never been framed. Both the
 decision and the camera move now use the intersection of the
-`.graph-canvas-panel` rect and `visibleCanvasViewport`. Eligibility converts
+`.graph-canvas-panel` rect and `measuredVisibleCanvasViewport`. Eligibility converts
 it to graph coordinates; the animation receives CSS pixels.
 The first excludes layout-taking bottom and side panels; the
 second excludes the responsive Agent overlay that is teleported over the
