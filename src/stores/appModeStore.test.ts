@@ -275,6 +275,27 @@ describe('appModeStore', () => {
       expect(store.selectedInputs).toEqual([[entityPrompt, 'prompt']])
     })
 
+    it('moves entity ids saved under another graph id to the current graph', () => {
+      const node1 = nodeWithWidgets(1, ['prompt'])
+      vi.mocked(app.rootGraph).nodes = [node1]
+      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+        id === toNodeId(1) ? node1 : null
+      )
+      const savedBeforeSaveAs = widgetId(
+        '22222222-2222-4222-8222-222222222222',
+        toNodeId(1),
+        'prompt'
+      )
+
+      store.loadSelections({
+        inputs: [[savedBeforeSaveAs, 'prompt', { height: 150 }]]
+      })
+
+      expect(store.selectedInputs).toEqual([
+        [entityPrompt, 'prompt', { height: 150 }]
+      ])
+    })
+
     it('drops legacy entries whose widget no longer exists', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]

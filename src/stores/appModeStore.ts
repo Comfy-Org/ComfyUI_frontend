@@ -136,10 +136,11 @@ export const useAppModeStore = defineStore('appMode', () => {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
       const { nodeId } = parseWidgetId(storedId)
-      if (rootGraph.getNodeById(nodeId)) {
-        return buildEntry(storedId, widgetName, config)
-      }
-      return null
+      const node = rootGraph.getNodeById(nodeId)
+      if (!node) return null
+      const widgetOnNode = node.widgets?.find((w) => w.name === widgetName)
+      const currentId = widgetOnNode && getWidgetIdForNode(node, widgetOnNode)
+      return buildEntry(currentId ?? storedId, widgetName, config)
     }
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
