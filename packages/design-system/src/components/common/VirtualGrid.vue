@@ -4,7 +4,7 @@
     class="h-full scrollbar-thin scrollbar-thumb-(--muted) scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto [overflow-anchor:none]"
   >
     <div :style="topSpacerStyle" />
-    <div :style="mergedGridStyle">
+    <div ref="grid" :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
         :key="item.key ?? item.id"
@@ -67,6 +67,7 @@ const {
 const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
+const grid = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
 const { y: scrollY } = useScroll(container, {
   eventListenerOptions: { passive: true }
@@ -168,6 +169,22 @@ function focusPoint(el: HTMLElement): { x: number; y: number } {
   return { x: pointer.clientX - rect.left, y: pointer.clientY - rect.top }
 }
 
+function trackGeometry(
+  el: HTMLElement,
+  trackCols: number
+): { trackLeft: number; stride: number } {
+  const firstItem = grid.value?.querySelector('[data-virtual-grid-item]')
+  if (!grid.value || !firstItem) {
+    return { trackLeft: 0, stride: width.value / trackCols }
+  }
+  const itemRect = firstItem.getBoundingClientRect()
+  const columnGap = Number.parseFloat(getComputedStyle(grid.value).columnGap)
+  return {
+    trackLeft: itemRect.left - el.getBoundingClientRect().left,
+    stride: itemRect.width + (Number.isFinite(columnGap) ? columnGap : 0)
+  }
+}
+
 watch([cols, () => maxItemWidth], async ([nextCols], [prevCols]) => {
   const el = container.value
   if (!el || !isValidGrid.value) return
@@ -175,7 +192,7 @@ watch([cols, () => maxItemWidth], async ([nextCols], [prevCols]) => {
     scrollTop: el.scrollTop,
     rowHeight: itemHeight.value,
     cols: prevCols,
-    width: width.value
+    ...trackGeometry(el, prevCols)
   })
   await nextTick()
   updateItemSize()

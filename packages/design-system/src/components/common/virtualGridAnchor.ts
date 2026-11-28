@@ -2,15 +2,21 @@ import { clamp } from 'es-toolkit'
 
 type GridAnchor = { index: number; rowFraction: number; focusY: number }
 
-/** The item under `focus` (relative to the scroller's top-left) and how far into its row the focus sits. */
+/** The item under `focus` (relative to the scroller's top-left), given the first track's left edge and the track-plus-gap stride, and how far into its row the focus sits. */
 export function anchorAt(
   focus: { x: number; y: number },
-  grid: { scrollTop: number; rowHeight: number; cols: number; width: number }
+  grid: {
+    scrollTop: number
+    rowHeight: number
+    cols: number
+    trackLeft: number
+    stride: number
+  }
 ): GridAnchor {
   const rows = (grid.scrollTop + focus.y) / grid.rowHeight
   const row = Math.floor(rows)
   const col = clamp(
-    Math.floor(focus.x / (grid.width / grid.cols)),
+    Math.floor((focus.x - grid.trackLeft) / grid.stride),
     0,
     grid.cols - 1
   )
