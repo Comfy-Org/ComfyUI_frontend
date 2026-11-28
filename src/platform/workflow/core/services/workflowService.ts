@@ -598,14 +598,12 @@ export const useWorkflowService = () => {
       const existing = workflowStore.getWorkflowByPath(expectedPath)
       if (existing && !existing.isTemporary) {
         if ((await confirmOverwrite(expectedPath)) !== true) {
-          await workflowStore.saveWorkflow(workflow)
-          return true
+          return false
         }
         await deleteWorkflow(existing, true)
       }
       if (!(await renameWorkflow(workflow, expectedPath))) {
-        await workflowStore.saveWorkflow(workflow)
-        return true
+        return false
       }
       toast.info(
         t(

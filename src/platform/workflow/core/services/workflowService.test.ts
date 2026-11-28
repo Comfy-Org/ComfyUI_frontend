@@ -6009,8 +6009,9 @@ describe('useWorkflowService', () => {
       vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue(true)
       vi.mocked(useDialogService().confirm).mockResolvedValue(true)
 
-      await service.saveWorkflow(workflow)
+      const result = await service.saveWorkflow(workflow)
 
+      expect(result).toBe(true)
       expect(useDialogService().confirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
         workflow,
@@ -6019,19 +6020,40 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it('saves without renaming when user declines overwrite', async () => {
+    it('aborts and returns false when user declines overwrite', async () => {
       const workflow = createSaveableWorkflow('workflows/test.json')
       workflow.initialMode = 'app'
+      workflow.content = '{"modified": true}'
 
       const existing = createSaveableWorkflow('workflows/test.app.json')
       vi.spyOn(workflowStore, 'getWorkflowByPath').mockReturnValue(existing)
       vi.mocked(useDialogService().confirm).mockResolvedValue(false)
 
-      await service.saveWorkflow(workflow)
+      const result = await service.saveWorkflow(workflow)
 
+      expect(result).toBe(false)
       expect(useDialogService().confirm).toHaveBeenCalled()
       expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
-      expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+      expect(workflow.isModified).toBe(true)
+    })
+
+    it('aborts and returns false when renameWorkflow fails', async () => {
+      const workflow = createSaveableWorkflow('workflows/test.json')
+      workflow.initialMode = 'app'
+      workflow.content = '{"modified": true}'
+
+      vi.spyOn(workflowStore, 'renameWorkflow').mockResolvedValue(false)
+
+      const result = await service.saveWorkflow(workflow)
+
+      expect(result).toBe(false)
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/test.app.json'
+      )
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+      expect(workflow.isModified).toBe(true)
     })
   })
 
