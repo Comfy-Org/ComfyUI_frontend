@@ -668,6 +668,27 @@ describe('useWidgetSelectItems', () => {
       expect(selectedSet.value.size).toBe(1)
       expect(selectedSet.value.has('missing-nonexistent.png')).toBe(true)
     })
+
+    it('selects every listed name, with a placeholder for one no asset matches', () => {
+      const { selectedSet, dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: ref(['hash789.png', 'gone.png', 'img_001.png'])
+        })
+      )
+      expect([...selectedSet.value]).toEqual([
+        'input-2',
+        'missing-gone.png',
+        'input-0'
+      ])
+      expect(pagedItems(dropdownItems.value)[0].name).toBe('gone.png')
+    })
+
+    it('selects nothing for an empty list', () => {
+      const { selectedSet } = useWidgetSelectItems(
+        createDefaultOptions({ modelValue: ref([]) })
+      )
+      expect(selectedSet.value.size).toBe(0)
+    })
   })
 
   describe('missing-media placeholder suppression', () => {

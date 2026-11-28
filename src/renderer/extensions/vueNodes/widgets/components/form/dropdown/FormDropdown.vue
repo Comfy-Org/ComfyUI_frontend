@@ -47,6 +47,8 @@ interface Props {
    * it specifies the maximum number of selections allowed.
    */
   multiple?: boolean | number
+  /** Fewest selections a user can deselect down to. Defaults to 1 for single select and 0 otherwise. */
+  minSelected?: number
 
   uploadable?: boolean
   disabled?: boolean
@@ -75,6 +77,7 @@ const { t } = useI18n()
 const {
   placeholder,
   multiple = false,
+  minSelected,
   uploadable = false,
   disabled = false,
   accept,
@@ -138,6 +141,9 @@ const maxSelectable = computed(() => {
   return 1
 })
 const isSingleSelect = computed(() => maxSelectable.value === 1)
+const minSelectable = computed(
+  () => minSelected ?? (isSingleSelect.value ? 1 : 0)
+)
 
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
@@ -202,6 +208,13 @@ const candidateIndex = computed(() =>
 const candidateLabel = computed(() => {
   const candidate = sortedItems.value[candidateIndex.value]
   return candidate?.label ?? candidate?.name
+})
+
+const selectedItems = computed(() => {
+  const all = pagedItems(items)
+  return [...selected.value].flatMap(
+    (id) => all.find((item) => item.id === id) ?? []
+  )
 })
 
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
@@ -294,12 +307,13 @@ function handleFileChange(event: Event) {
 function handleSelection(item: FormDropdownItem, index: number) {
   if (disabled) return
   const itemIsSelected = internalIsSelected(item, index)
-  if (isSingleSelect.value && itemIsSelected) {
-    closeDropdown({ restoreFocus: true })
+  const sel = selected.value
+  if (itemIsSelected && sel.size <= minSelectable.value) {
+    if (isSingleSelect.value) closeDropdown({ restoreFocus: true })
+    else toast.warning(t('widgets.uploadSelect.minSelectionReached'))
     return
   }
 
-  const sel = selected.value
   if (itemIsSelected) {
     sel.delete(item.id)
   } else {
@@ -318,6 +332,11 @@ function handleSelection(item: FormDropdownItem, index: number) {
   if (isSingleSelect.value) {
     closeDropdown({ restoreFocus: true })
   }
+}
+
+function reorderSelection(ids: string[]) {
+  if (disabled) return
+  selected.value = new Set(ids)
 }
 
 async function getTopSearchResult() {
@@ -376,7 +395,7 @@ const dropdownItems = computed(() =>
       :files
       :is-open
       :placeholder="placeholderText"
-      :selected-items="pagedItems(items).filter(internalIsSelected)"
+      :selected-items
       :max-selectable
       :uploadable
       :disabled
@@ -420,11 +439,13 @@ const dropdownItems = computed(() =>
         :candidate-index
         :candidate-label
         :is-selected="internalIsSelected"
+        :selected-items
         :max-selectable
         @close="closeDropdown"
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"
         @show-picker="showPicker"
+        @reorder="reorderSelection"
       />
     </PopoverContent>
   </PopoverRoot>

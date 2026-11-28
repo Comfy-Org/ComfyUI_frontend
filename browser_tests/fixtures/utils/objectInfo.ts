@@ -6,6 +6,7 @@ import {
   isComboInputSpecV1
 } from '@comfyorg/object-info-parser'
 import type {
+  ComboInputOptions,
   ComboInputSpec,
   ComboInputSpecV2,
   InputSpec,
@@ -94,6 +95,17 @@ export function setComboInputOptions(
   }
 
   input[1] = { ...input[1], options: nextValues }
+}
+
+/** Merges extra options, such as `multi_select`, into a combo input spec. */
+export function mergeComboInputOptions(
+  objectInfo: ObjectInfoResponse,
+  nodeType: string,
+  inputName: string,
+  options: Partial<ComboInputOptions>
+): void {
+  const input = getComboInput(objectInfo, nodeType, inputName)
+  input[1] = { ...input[1], ...options }
 }
 
 export function appendComboInputOptions(

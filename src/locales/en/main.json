@@ -4632,6 +4632,9 @@
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
+      "minSelectionReached": "Minimum selection limit reached",
+      "selectionOrder": "Selection order",
+      "reorderHint": "Drag or use the arrow keys to reorder",
       "thumbnailSize": "Thumbnail size",
       "thumbnailSizes": {
         "compact": "Compact",

@@ -426,6 +426,46 @@ describe('scanNodeMediaCandidates', () => {
     ])
   })
 
+  it('reports each listed file of a multi_select picker and skips an empty list', () => {
+    disableAssetApi()
+    useNodeDefStore().addNodeDef({
+      ...createMediaNodeDef('PickMany', 'images', 'image_upload'),
+      input: {
+        required: {
+          images: [[], { image_upload: true, min: 0, max: 3 }]
+        }
+      }
+    })
+    const withFiles = makeMediaNode(1, 'PickMany', [
+      fromAny<IComboWidget, unknown>({
+        type: 'combo',
+        name: 'images',
+        value: ['kept.png', 'gone.png'],
+        options: { values: ['kept.png'] }
+      })
+    ])
+    const empty = makeMediaNode(2, 'PickMany', [
+      fromAny<IComboWidget, unknown>({
+        type: 'combo',
+        name: 'images',
+        value: [],
+        options: { values: ['kept.png'] }
+      })
+    ])
+    const graph = makeGraph([withFiles, empty])
+
+    expect(
+      scanNodeMediaCandidates(graph, withFiles).map(({ name, isMissing }) => ({
+        name,
+        isMissing
+      }))
+    ).toEqual([
+      { name: 'kept.png', isMissing: false },
+      { name: 'gone.png', isMissing: true }
+    ])
+    expect(scanNodeMediaCandidates(graph, empty)).toEqual([])
+  })
+
   it('marks OSS input annotations missing when the clean option is absent', () => {
     const node = makeMediaNode(
       1,

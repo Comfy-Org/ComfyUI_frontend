@@ -10,6 +10,7 @@
     :upload-subfolder
     :is-asset-mode
     :default-layout-mode
+    :selection-limits
   />
   <WidgetWithControl
     v-else-if="widget.controlWidget"
@@ -90,6 +91,7 @@ const uploadFolder = computed<ResultItemType>(() => {
   return specDescriptor.value.folder ?? 'input'
 })
 const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
+const selectionLimits = computed(() => specDescriptor.value.selectionLimits)
 const defaultLayoutMode = computed<LayoutMode>(() => {
   return isAssetMode.value ? 'list' : 'grid'
 })

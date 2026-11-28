@@ -87,7 +87,7 @@ function getAnnotatedValueMediaUrl(
 
 export interface UseWidgetSelectItemsOptions {
   getOptionLabel: MaybeRefOrGetter<((value: string) => string) | undefined>
-  modelValue: MaybeRefOrGetter<string | undefined>
+  modelValue: MaybeRefOrGetter<string | readonly string[] | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
   assetData: ReturnType<typeof useAssetWidgetData> | null
   isAssetMode: MaybeRefOrGetter<boolean>
@@ -140,25 +140,32 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     }
   })
 
-  const missingValueItem = computed<FormDropdownItem | undefined>(() => {
-    const currentValue = toValue(modelValue)
-    if (!currentValue) return undefined
+  const selectedNames = computed<readonly string[]>(() => {
+    const value = toValue(modelValue)
+    if (value === undefined) return []
+    return typeof value === 'string' ? [value] : value
+  })
+
+  const missingValueItems = computed<FormDropdownItem[]>(() => {
     const labelFn = toValue(options.getOptionLabel)
     const kind = toValue(options.assetKind)
 
-    if (missingMediaValues.value.has(currentValue)) return undefined
-    if (availableItems.value.some((item) => item.name === currentValue))
-      return undefined
-
-    return {
-      id: `missing-${currentValue}`,
-      preview_url:
-        toValue(options.isAssetMode) && assetData
-          ? ''
-          : getAnnotatedValueMediaUrl(currentValue, kind),
-      name: currentValue,
-      label: getDisplayLabel(currentValue, labelFn)
-    }
+    return selectedNames.value
+      .filter(
+        (name) =>
+          name &&
+          !missingMediaValues.value.has(name) &&
+          !availableItems.value.some((item) => item.name === name)
+      )
+      .map((name) => ({
+        id: `missing-${name}`,
+        preview_url:
+          toValue(options.isAssetMode) && assetData
+            ? ''
+            : getAnnotatedValueMediaUrl(name, kind),
+        name,
+        label: getDisplayLabel(name, labelFn)
+      }))
   })
 
   function itemNameFor(asset: AssetItem): string {
@@ -232,23 +239,20 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const dropdownItems = computed<MaybePaged<FormDropdownItem>>(() => {
-    const missingItem = missingValueItem.value
-    const mapped = missingItem
-      ? [missingItem, ...availableItems.value]
-      : availableItems.value
+    const mapped = [...missingValueItems.value, ...availableItems.value]
     if (toValue(options.isAssetMode) && assetData) return mapped
     const base = baseAssets.value
     return new WrappedList(base, () => mapped)
   })
 
   const selectedSet = computed<Set<string>>(() => {
-    const currentValue = toValue(modelValue)
-    if (currentValue === undefined) return new Set()
-
-    const item = pagedItems(dropdownItems.value).find(
-      (item) => item.name === currentValue
+    const items = pagedItems(dropdownItems.value)
+    return new Set(
+      selectedNames.value.flatMap((name) => {
+        const item = items.find((item) => item.name === name)
+        return item ? [item.id] : []
+      })
     )
-    return item ? new Set([item.id]) : new Set()
   })
 
   return {

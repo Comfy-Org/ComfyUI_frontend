@@ -39,7 +39,8 @@ const MockFormDropdownMenu = {
     'showBaseModelFilter',
     'baseModelOptions',
     'candidateIndex',
-    'candidateLabel'
+    'candidateLabel',
+    'selectedItems'
   ],
   template: `<div class="mock-menu" data-testid="dropdown-menu" :data-candidate-index="candidateIndex" :data-candidate-label="candidateLabel ?? ''" :data-items="JSON.stringify(pagedItems(items))">
       <button
@@ -51,6 +52,7 @@ const MockFormDropdownMenu = {
         {{ item.label ?? item.name }}
       </button>
       <button type="button" @click="$emit('search-enter')">Search enter</button>
+      <button type="button" @click="$emit('reorder', selectedItems.map((item) => item.id).reverse())">Reverse selection</button>
     </div>`
 }
 
@@ -77,6 +79,7 @@ interface MountDropdownOptions {
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<readonly FormDropdownItem[]>
   multiple?: boolean | number
+  minSelected?: number
   selected?: Set<string>
   searchQuery?: string
   onUpdateSelected?: (selected: Set<string>) => void
@@ -96,6 +99,7 @@ function mountDropdown(
     props: {
       items,
       multiple: options.multiple,
+      minSelected: options.minSelected,
       selected: options.selected,
       searcher: options.searcher,
       searchQuery: options.searchQuery,
@@ -297,6 +301,81 @@ describe('FormDropdown', () => {
 
     expect(onUpdateSelected).toHaveBeenCalledWith(new Set([secondItem.id]))
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it.for([
+    {
+      name: 'clears a single-select dropdown that allows no selection',
+      multiple: 1,
+      minSelected: 0,
+      selected: ['first'],
+      expected: []
+    },
+    {
+      name: 'deselects while more than the minimum stay selected',
+      multiple: 3,
+      minSelected: 1,
+      selected: ['first', 'second'],
+      expected: ['second']
+    },
+    {
+      name: 'refuses to deselect below the minimum',
+      multiple: 3,
+      minSelected: 1,
+      selected: ['first'],
+      expected: undefined
+    }
+  ])(
+    '$name when a selected item is clicked',
+    async ({ multiple, minSelected, selected, expected }) => {
+      const onUpdateSelected = vi.fn()
+      const { user } = mountDropdown(
+        [createItem('first', 'first.png'), createItem('second', 'second.png')],
+        { multiple, minSelected, selected: new Set(selected), onUpdateSelected }
+      )
+      await openDropdown(user)
+
+      await user.click(screen.getByRole('button', { name: 'first.png' }))
+
+      expect(onUpdateSelected.mock.lastCall).toEqual(
+        expected && [new Set(expected)]
+      )
+    }
+  )
+
+  it('saves the order the selection is rearranged into', async () => {
+    const onUpdateSelected = vi.fn()
+    const { user } = mountDropdown(
+      [
+        createItem('first', 'first.png'),
+        createItem('second', 'second.png'),
+        createItem('third', 'third.png')
+      ],
+      {
+        multiple: 3,
+        selected: new Set(['third', 'first']),
+        onUpdateSelected
+      }
+    )
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: 'Reverse selection' }))
+
+    expect([...onUpdateSelected.mock.lastCall![0]]).toEqual(['first', 'third'])
+  })
+
+  it('ignores a rearranged selection once the dropdown is disabled', async () => {
+    const onUpdateSelected = vi.fn()
+    const { user, rerender } = mountDropdown(
+      [createItem('first', 'first.png'), createItem('second', 'second.png')],
+      { multiple: 2, selected: new Set(['first', 'second']), onUpdateSelected }
+    )
+    await openDropdown(user)
+    await rerender({ disabled: true })
+
+    await user.click(screen.getByRole('button', { name: 'Reverse selection' }))
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
   })
 
   it('does not select when Enter is pressed with an empty search query', async () => {

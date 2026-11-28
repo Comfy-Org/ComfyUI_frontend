@@ -78,6 +78,24 @@ describe('useWidgetSelectActions', () => {
       expect(modelValue.value).toBeUndefined()
       expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
     })
+
+    it('saves every selected name in selection order for a list-valued picker', () => {
+      const modelValue = ref<string | string[] | undefined>([])
+      const items = createItems('a.png', 'b.png', 'c.png')
+      const { updateSelectedItems } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => items),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({ name: 'test' }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        selectionLimits: () => ({ min: 0, max: 3 })
+      })
+
+      updateSelectedItems(new Set(['input-2', 'input-0']))
+
+      expect(modelValue.value).toEqual(['c.png', 'a.png'])
+    })
   })
 
   describe('handleFilesUpdate', () => {
@@ -164,6 +182,96 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('uploaded.png')
       expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
+    })
+
+    it('keeps saved names the dropdown cannot list when a list-valued selection changes', () => {
+      const modelValue = ref<string | string[] | undefined>([
+        'gone.png',
+        'a.png'
+      ])
+      const items = createItems('a.png', 'b.png')
+      const { updateSelectedItems } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => items),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({ name: 'test' }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        selectionLimits: () => ({ min: 0, max: 3 })
+      })
+
+      updateSelectedItems(new Set(['input-0', 'input-1']))
+
+      expect(modelValue.value).toEqual(['gone.png', 'a.png', 'b.png'])
+    })
+
+    it('keeps the list preview when an upload to a list-valued picker has a preview id', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              name: 'uploaded.png',
+              subfolder: '',
+              asset: { preview_id: 'preview-1' }
+            })
+        })
+      )
+      const locatorId = fromPartial<NodeLocatorId>('7')
+      const listPreview = {
+        images: [
+          { filename: 'a.png', subfolder: '', type: 'input' as const },
+          { filename: 'b.png', subfolder: '', type: 'input' as const }
+        ]
+      }
+      useNodeOutputStore().nodeOutputs[locatorId] = listPreview
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | string[] | undefined>(['a.png', 'b.png']),
+        dropdownItems: computed(() => createItems('a.png')),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            options: { values: ['a.png'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        locatorId: () => locatorId,
+        selectionLimits: () => ({ min: 0, max: 2 })
+      })
+
+      await handleFilesUpdate([
+        new File(['test'], 'uploaded.png', { type: 'image/png' })
+      ])
+
+      expect(useNodeOutputStore().nodeOutputs[locatorId]).toEqual(listPreview)
+    })
+
+    it('appends an upload to a list-valued picker and keeps the newest up to max', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 200,
+          json: () => Promise.resolve({ name: 'uploaded.png', subfolder: '' })
+        })
+      )
+      const modelValue = ref<string | string[] | undefined>(['a.png', 'b.png'])
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => createItems('a.png', 'b.png')),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            options: { values: ['a.png', 'b.png'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        selectionLimits: () => ({ min: 0, max: 2 })
+      })
+
+      await handleFilesUpdate([
+        new File(['test'], 'uploaded.png', { type: 'image/png' })
+      ])
+
+      expect(modelValue.value).toEqual(['b.png', 'uploaded.png'])
     })
 
     it('gives each concurrent upload the response timeout of the whole batch', async () => {

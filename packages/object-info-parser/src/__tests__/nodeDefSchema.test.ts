@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateComfyNodeDef } from '#/schemas/nodeDefSchema'
+import {
+  getMediaSelectionLimits,
+  validateComfyNodeDef
+} from '#/schemas/nodeDefSchema'
 import type { ComfyNodeDef } from '#/schemas/nodeDefSchema'
 
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {
@@ -138,5 +141,43 @@ describe('validateNodeDef', () => {
         })
       ).toBeNull()
     })
+  })
+})
+
+describe('getMediaSelectionLimits', () => {
+  it.for([
+    { name: 'no bounds', options: { image_upload: true }, limits: undefined },
+    {
+      name: 'multi_select without bounds',
+      options: { image_upload: true, multi_select: { chip: true } },
+      limits: undefined
+    },
+    {
+      name: 'bounds on a combo without an upload',
+      options: { min: 0, max: 2 },
+      limits: undefined
+    },
+    {
+      name: 'min only',
+      options: { image_upload: true, min: 0 },
+      limits: { min: 0, max: 1 }
+    },
+    {
+      name: 'a min above the single-file default',
+      options: { video_upload: true, min: 3 },
+      limits: { min: 3, max: 3 }
+    },
+    {
+      name: 'max only',
+      options: { animated_image_upload: true, max: 4 },
+      limits: { min: 1, max: 4 }
+    },
+    {
+      name: 'both bounds',
+      options: { image_upload: true, min: 0, max: 9 },
+      limits: { min: 0, max: 9 }
+    }
+  ])('resolves $name', ({ options, limits }) => {
+    expect(getMediaSelectionLimits(options)).toEqual(limits)
   })
 })
