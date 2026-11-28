@@ -183,8 +183,8 @@ export class AgentNonValueWidgetRig {
     )
   }
 
-  addPromptOnlySampler(): Promise<string> {
-    return this.page.evaluate(() => {
+  async addPromptOnlySampler(): Promise<string> {
+    const nodeId = await this.page.evaluate(() => {
       const node = window.LiteGraph!.createNode('KSampler')
       if (!node) throw new Error('KSampler is not a registered node type')
       const seed = node.widgets?.find((widget) => widget.name === 'seed')
@@ -195,6 +195,8 @@ export class AgentNonValueWidgetRig {
       window.app!.graph.add(node)
       return String(node.id)
     })
+    await nextFrame(this.page)
+    return nodeId
   }
 
   seedField(nodeId = String(this.config.samplerNodeId)): Locator {
