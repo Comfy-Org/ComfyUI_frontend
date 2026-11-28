@@ -10,7 +10,7 @@
     :data-slot-type="slotData.type"
     :class="
       cn(
-        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
+        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg pl-(--node-slot-inset) group-data-collapsed/node:pl-0',
         'cursor-crosshair',
         !props.dotOnly && 'h-5',
         effectiveDotOnly ? 'lg-slot--dot-only' : 'pr-2',

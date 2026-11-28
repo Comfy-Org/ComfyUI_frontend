@@ -19,12 +19,12 @@
 
     [data-part='node-frame'] {
       position: relative;
-      border: 2px solid var(--vn-cream);
       background: rgb(20 36 31 / 0.86);
       box-shadow:
         var(--tw-ring-shadow),
-        inset 0 0 0 3px rgb(20 36 31 / 0.9),
-        inset 0 0 0 4px rgb(255 246 228 / 0.35),
+        inset 0 0 0 2px var(--vn-cream),
+        inset 0 0 0 5px rgb(20 36 31 / 0.9),
+        inset 0 0 0 6px rgb(255 246 228 / 0.35),
         0 4px 10px rgb(0 0 0 / 0.35);
     }
 

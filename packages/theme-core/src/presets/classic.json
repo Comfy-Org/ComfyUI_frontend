@@ -69,6 +69,10 @@
     "theme": {
       "node-radius": "8px",
       "node-title-font-size": "14px",
+      "node-header-height": "30px",
+      "node-slot-inset": "10px",
+      "node-slot-block-margin-bottom": "-2px",
+      "node-socket-row-overlap": "0px",
       "node-widget-height": "20px",
       "node-widget-radius": "9999px",
       "node-widget-border-width": "1px",

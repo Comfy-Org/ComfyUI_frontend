@@ -1,9 +1,5 @@
 @layer presets {
   :root[data-theme='classic'] .lg-node {
-    .lg-node-header {
-      min-height: calc(var(--spacing) * 7.5);
-    }
-
     [data-part='node-title'],
     [data-part='widget-label'] {
       color: var(--color-muted-foreground);
@@ -17,22 +13,6 @@
       display: block;
     }
 
-    [data-part='node-slots'] {
-      margin-bottom: calc(var(--spacing) * -0.5);
-    }
-
-    .lg-slot--input {
-      padding-left: calc(var(--spacing) * 2.5);
-    }
-
-    .lg-slot--output {
-      padding-right: calc(var(--spacing) * 2.5);
-    }
-
-    &[data-collapsed] :is(.lg-slot--input, .lg-slot--output) {
-      padding-inline: 0;
-    }
-
     [data-part='slot-dot'] {
       --slot-fallback-color: #778;
     }
@@ -44,10 +24,6 @@
     [data-part='widget-row'],
     [data-part='socket-row'] {
       margin-right: calc(var(--spacing) * 3.75);
-    }
-
-    [data-part='socket-row'] {
-      margin-block: 0;
     }
 
     [data-part='socket-row'][data-linked] [data-part='slot-label'] {

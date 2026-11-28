@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_DARK_THEME_PRESET } from './builtInThemePresets'
+import {
+  BUILT_IN_THEME_PRESETS,
+  DEFAULT_DARK_THEME_PRESET
+} from './builtInThemePresets'
 import { resolveTheme } from './resolveTheme'
 import type { ThemePreset } from './themePresetSchema'
+import { themePx, themeSchema } from './themePresetSchema'
 
 describe('theme resolution', () => {
   it.for<{
@@ -134,4 +138,38 @@ describe('theme resolution', () => {
 
     expect(resolveTheme(savedPalette).stylesheet).toBe(expected)
   })
+
+  it.for([
+    {
+      name: 'the default node geometry',
+      preset: DEFAULT_DARK_THEME_PRESET,
+      px: [28, 0, 0, 2]
+    },
+    {
+      name: 'the node geometry Classic declares in its tokens',
+      preset: BUILT_IN_THEME_PRESETS.classic,
+      px: [30, 10, -2, 0]
+    }
+  ])('resolves $name', ({ preset, px }) => {
+    const tokens = resolveTheme(preset).cssTokens
+    expect(
+      (
+        [
+          'node-header-height',
+          'node-slot-inset',
+          'node-slot-block-margin-bottom',
+          'node-socket-row-overlap'
+        ] as const
+      ).map((name) => themePx(tokens, name))
+    ).toEqual(px)
+  })
+
+  it.for(['2rem', '30', 'calc(28px + 2px)'])(
+    'rejects %s as a node length token',
+    (value) => {
+      expect(
+        themeSchema.safeParse({ 'node-header-height': value }).success
+      ).toBe(false)
+    }
+  )
 })

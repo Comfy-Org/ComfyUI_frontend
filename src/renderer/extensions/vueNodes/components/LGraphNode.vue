@@ -36,7 +36,6 @@
       ...nodeSizeStyle,
       '--min-node-width': `${minNodeWidth}px`,
       '--collapsed-node-max-width': `${MIN_NODE_WIDTH}px`,
-      '--node-header-height': `${VUE_NODE_BODY.headerHeight}px`,
       transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
@@ -279,6 +278,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
+import { themePx } from '@comfyorg/theme-core/themePresetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -404,10 +404,12 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
+const themeTokens = computed(() => themeStore.activeTheme.cssTokens)
 const bodyTop = computed(
   () =>
-    (displayHeader.value ? VUE_NODE_BODY.headerHeight : 0) -
-    LiteGraph.NODE_TITLE_HEIGHT
+    (displayHeader.value
+      ? themePx(themeTokens.value, 'node-header-height')
+      : 0) - LiteGraph.NODE_TITLE_HEIGHT
 )
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
@@ -1006,7 +1008,12 @@ const bodyLayout = computed<VueNodeBodyLayout | undefined>((previous) => {
       ? { ...item, contentHeight: contentHeights.get(item.key) }
       : item
   )
-  const next = layoutVueNodeBody(bodyWidth.value, bodyHeight.value, items)
+  const next = layoutVueNodeBody(
+    bodyWidth.value,
+    bodyHeight.value,
+    items,
+    themeTokens.value
+  )
   return previous && isEqual(previous, next) ? previous : next
 })
 

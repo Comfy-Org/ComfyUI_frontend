@@ -10,6 +10,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -369,6 +370,24 @@ describe('Vue slot geometry', () => {
 
     expect(getSlotPosition(node, 0, true)).toEqual([300, 384])
     expect(getSlotPosition(node, 0, false)).toEqual([380, 384])
+  })
+
+  it('places collapsed and unanchored slots below the active theme header', () => {
+    useThemeStore().activePresetId = 'classic'
+    const collapsed = makeNode({
+      inputs: [makeInput()],
+      collapsed: true,
+      position: [300, 400],
+      renderingSize: [80, 30]
+    })
+    const unanchored = makeNode({
+      inputs: [makeInput()],
+      position: [300, 400],
+      size: [240, 160]
+    })
+
+    expect(getSlotPosition(collapsed, 0, true)).toEqual([300, 385])
+    expect(getSlotPosition(unanchored, 0, true)).toEqual([300, 414])
   })
 
   it('ignores expanded slot anchors after the node collapses', () => {
