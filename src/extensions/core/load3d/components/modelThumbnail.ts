@@ -22,13 +22,16 @@ let rendererKeepAlive: SharedRendererHandle | null = null
 
 /**
  * Outcome of an offscreen thumbnail render. `cancelled` is separated from
- * `failed` so a caller that walked away is not reported as a fault.
+ * `failed` so a caller that walked away is not reported as a fault, and
+ * `tooLarge` marks a model the loader refuses by design (over the preview
+ * size limit), which is neither reported nor worth retrying.
  */
 export type ModelThumbnailResult =
   | { status: 'rendered'; dataUrl: string }
   | { status: 'cancelled' }
   | { status: 'busy' }
   | { status: 'timedOut' }
+  | { status: 'tooLarge' }
   | { status: 'failed' }
 
 /**
@@ -105,6 +108,7 @@ function renderThumbnailWithTimeout(
       (error: unknown): ModelThumbnailResult => {
         if (error === RENDER_CANCELLED) return { status: 'cancelled' }
         if (error instanceof TimeoutError) return { status: 'timedOut' }
+        if (isModelTooLargeError(error)) return { status: 'tooLarge' }
         reportError(redactTelemetryError(error), {
           errorType: 'agent_model_thumbnail_generation_failure',
           surface: 'agent'
@@ -113,6 +117,10 @@ function renderThumbnailWithTimeout(
       }
     )
   }
+}
+
+function isModelTooLargeError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'ModelTooLargeError'
 }
 
 function renderThumbnailJob(

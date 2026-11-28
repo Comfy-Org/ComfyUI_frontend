@@ -1,6 +1,5 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
-import type { z } from 'zod'
 
 import {
   comfyExpect as expect,
@@ -11,10 +10,8 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import type {
   RawJobListItem,
-  zJobsListResponse
+  JobsListResponse
 } from '@comfyorg/api-client/jobTypes'
-
-type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -56,13 +53,15 @@ type Scenario = {
   queueBody: (jobId: string) => string
   /** Whether the active job state should still be reflected after reconnect. */
   expectsActiveAfter: boolean
+  reconnects?: number
 }
 
 const scenarios: Scenario[] = [
   {
     name: 'clears stale active job when queue is empty after reconnect',
     queueBody: () => emptyJobsBody,
-    expectsActiveAfter: false
+    expectsActiveAfter: false,
+    reconnects: 3
   },
   {
     name: 'preserves active job when the job is still in the queue',
@@ -97,6 +96,30 @@ async function triggerReconnect(
   await expect.poll(queueFetches).toBeGreaterThan(fetchesBeforeClose)
 }
 
+async function reconnectScenario(
+  comfyPage: ComfyPage,
+  ws: WebSocketRoute,
+  nextWebSocket: () => Promise<WebSocketRoute>,
+  scenario: Scenario,
+  jobId: string
+): Promise<void> {
+  const detailReads = await mockJobsRoute(
+    comfyPage,
+    new RegExp(`/api/jobs/${jobId}$`),
+    '{}',
+    404
+  )
+  const { reconnects = 1 } = scenario
+  let socket = ws
+  for (let pass = 1; ; pass++) {
+    const nextSocket = pass < reconnects ? nextWebSocket() : undefined
+    await triggerReconnect(comfyPage, socket, scenario, jobId)
+    if (!nextSocket) return
+    await expect.poll(detailReads).toBeGreaterThanOrEqual(2 * pass)
+    socket = await nextSocket
+  }
+}
+
 test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
   test('keeps the visible workflow running status when cleanup forgets one job', async ({
     comfyPage,
@@ -113,15 +136,12 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
         await comfyPage.workflow.waitForWorkflowIdle()
 
         const orphanedJobId = await exec.run()
-        exec.executionStart(orphanedJobId)
 
         await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node')
         await comfyPage.workflow.waitForWorkflowIdle()
 
         const sharedStaleJobId = await exec.run()
         const runningJobId = await exec.run()
-        exec.executionStart(sharedStaleJobId)
-        exec.executionStart(runningJobId)
 
         await comfyPage.workflow.newBlankWorkflow()
         await comfyPage.workflow.waitForWorkflowIdle()
@@ -199,27 +219,29 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
     })
 
     for (const scenario of scenarios) {
-      test(scenario.name, async ({ comfyPage, getWebSocket }) => {
-        const ws = await getWebSocket()
-        const exec = new ExecutionHelper(comfyPage, ws)
+      test(
+        scenario.name,
+        async ({ comfyPage, getWebSocket, nextWebSocket }) => {
+          const ws = await getWebSocket()
+          const exec = new ExecutionHelper(comfyPage, ws)
 
-        const jobId = await exec.run()
-        exec.executionStart(jobId)
+          const jobId = await exec.run()
 
-        // Skeleton visibility is the deterministic sync point: it appears
-        // once both `storeJob` (HTTP) and `executionStart` (WS) have been
-        // processed, regardless of arrival order.
-        const firstSkeleton = comfyPage.appMode.outputHistory.skeletons.first()
-        await expect(firstSkeleton).toBeVisible()
-
-        await triggerReconnect(comfyPage, ws, scenario, jobId)
-
-        if (scenario.expectsActiveAfter) {
+          const firstSkeleton =
+            comfyPage.appMode.outputHistory.skeletons.first()
           await expect(firstSkeleton).toBeVisible()
-        } else {
-          await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
+
+          await reconnectScenario(comfyPage, ws, nextWebSocket, scenario, jobId)
+
+          if (scenario.expectsActiveAfter) {
+            await expect(firstSkeleton).toBeVisible()
+          } else {
+            await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(
+              0
+            )
+          }
         }
-      })
+      )
     }
 
     test('preserves active job when the queue endpoint fails on reconnect', async ({
@@ -230,15 +252,12 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
       const exec = new ExecutionHelper(comfyPage, ws)
 
       const jobId = await exec.run()
-      exec.executionStart(jobId)
 
       const firstSkeleton = comfyPage.appMode.outputHistory.skeletons.first()
       await expect(firstSkeleton).toBeVisible()
 
       await mockJobsRoute(comfyPage, HISTORY_ROUTE, emptyJobsBody)
 
-      // Prime queueStore.runningTasks with the active job — a WS status
-      // event drives GraphView.onStatus -> queueStore.update().
       const primer = await mockJobsRoute(
         comfyPage,
         QUEUE_ROUTE,
@@ -251,9 +270,6 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
       exec.status(1)
       await expect.poll(primer).toBeGreaterThanOrEqual(1)
 
-      // Swap to a failing handler so the reconnect-driven fetch 500s.
-      // The fix should preserve runningTasks from the priming call rather
-      // than overwriting it with empty/error state.
       await comfyPage.page.unroute(QUEUE_ROUTE)
       const failed = await mockJobsRoute(comfyPage, QUEUE_ROUTE, '{}', 500)
 
@@ -267,35 +283,37 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
 
   test.describe('vue node execution indicator', { tag: '@vue-nodes' }, () => {
     for (const scenario of scenarios) {
-      test(scenario.name, async ({ comfyPage, getWebSocket }) => {
-        const ws = await getWebSocket()
-        const exec = new ExecutionHelper(comfyPage, ws)
+      test(
+        scenario.name,
+        async ({ comfyPage, getWebSocket, nextWebSocket }) => {
+          const ws = await getWebSocket()
+          const exec = new ExecutionHelper(comfyPage, ws)
 
-        const ksamplerNode =
-          await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-        await expect(ksamplerNode.root).toBeVisible()
+          const ksamplerNode =
+            await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+          await expect(ksamplerNode.root).toBeVisible()
 
-        const jobId = await exec.run()
-        exec.executionStart(jobId)
-        exec.progressState(jobId, {
-          [KSAMPLER_NODE]: {
-            value: 0,
-            max: 1,
-            state: 'running',
-            node_id: KSAMPLER_NODE,
-            display_node_id: KSAMPLER_NODE,
-            prompt_id: jobId
-          }
-        })
+          const jobId = await exec.run()
+          exec.progressState(jobId, {
+            [KSAMPLER_NODE]: {
+              value: 0,
+              max: 1,
+              state: 'running',
+              node_id: KSAMPLER_NODE,
+              display_node_id: KSAMPLER_NODE,
+              prompt_id: jobId
+            }
+          })
 
-        await expect(ksamplerNode.executionOutline).toBeVisible()
+          await expect(ksamplerNode.executionOutline).toBeVisible()
 
-        await triggerReconnect(comfyPage, ws, scenario, jobId)
+          await reconnectScenario(comfyPage, ws, nextWebSocket, scenario, jobId)
 
-        await expect(ksamplerNode.executionOutline).toBeVisible({
-          visible: scenario.expectsActiveAfter
-        })
-      })
+          await expect(ksamplerNode.executionOutline).toBeVisible({
+            visible: scenario.expectsActiveAfter
+          })
+        }
+      )
     }
   })
 })

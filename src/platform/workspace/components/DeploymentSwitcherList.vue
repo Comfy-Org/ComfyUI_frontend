@@ -61,16 +61,20 @@
         :problem="row.problem"
         :muted="row.muted"
         :switching="row.switching"
+        :building="row.building"
         :disabled="row.disabled"
+        :unpickable="row.unpickable"
         :data-focus-row="row.value"
         :aria-label="row.ariaLabel"
         :data-testid="row.testId"
+        :edit-label="row.editLabel"
         @select="chooseRow($event, row)"
+        @edit="updateRow(row)"
       />
     </DropdownMenuRadioGroup>
   </template>
   <p
-    v-if="deployments.length === 0"
+    v-if="!listsDeployments"
     class="m-0 w-0 min-w-full px-2 py-1.5 text-xs text-pretty text-muted-foreground"
     data-testid="deployment-switcher-empty"
   >
@@ -78,8 +82,9 @@
   </p>
   <MenuSeparator v-else />
   <DeploymentSwitcherDefaultMenu
-    v-if="canSetDefault && (deployments.length > 0 || defaultGone)"
+    v-if="workspaceDefaultOffered && (deployments.length > 0 || defaultGone)"
     :disabled="isSwitching"
+    :clear-only="!onTeamPlan"
     @set-default="emit('setDefault', $event)"
   />
   <DeploymentSwitcherBuildAction
@@ -105,7 +110,6 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherBuildAction from '@/platform/workspace/components/DeploymentSwitcherBuildAction.vue'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
 import DeploymentSwitcherRow from '@/platform/workspace/components/DeploymentSwitcherRow.vue'
@@ -114,7 +118,10 @@ import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploym
 import type { DeploymentRow } from '@/platform/workspace/composables/useDeploymentRows'
 import { useDeploymentRows } from '@/platform/workspace/composables/useDeploymentRows'
 import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocus'
+import { switchReloadNote } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import { usePlatformFrameStore } from '@/platform/workspace/platformFrame/platformFrameStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
 import {
@@ -128,8 +135,9 @@ const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
   'open'
 ])
 
-const { switchingTo } = defineProps<{
+const { switchingTo, onTeamPlan } = defineProps<{
   switchingTo: string | null
+  onTeamPlan: boolean
 }>()
 
 const emit = defineEmits<{
@@ -138,10 +146,10 @@ const emit = defineEmits<{
   reload: []
   setDefault: [deploymentId: string | null]
   createCustomDeployment: []
+  updateDeployment: [deploymentId: string]
 }>()
 
 const { t } = useI18n()
-const settingStore = useSettingStore()
 const {
   deployments,
   pickedDeploymentId,
@@ -153,9 +161,12 @@ const {
   followsWorkspace
 } = storeToRefs(useDeploymentPickStore())
 const { currentLabel, changeSinceBootMessage } = useDeploymentLabels()
-const { sections, pickedValue, pickedRow } = useDeploymentRows()
+const { sections, pickedValue, pickedRow, buildingValue, listsDeployments } =
+  useDeploymentRows()
 const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
+const frames = usePlatformFrameStore()
+const updatesInEditor = computed(() => frames.isAvailable())
 useKeepRowFocus(sections)
 
 const listedSections = computed(() =>
@@ -163,16 +174,40 @@ const listedSections = computed(() =>
     ...section,
     labelId: `${sectionLabelId}-${section.key}`,
     labelClass: index === 0 ? 'pt-1.5' : 'pt-2.5',
-    rows: section.rows.map((row) => ({
-      ...row,
-      testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
-      muted: row.action !== 'pick' && !isSwitching.value,
-      switching: isSwitching.value && switchingTo === row.value,
-      disabled: isSwitching.value || row.action === 'none'
-    }))
+    rows: section.rows.map((row) => {
+      const editLabel = updateLabel(row)
+      const unpickable = row.action === 'none'
+      return {
+        ...row,
+        testId: `deployment-row-${row.deploymentId ?? 'cloud'}`,
+        muted: row.action !== 'pick' && !isSwitching.value,
+        switching: isSwitching.value && switchingTo === row.value,
+        building:
+          row.deploymentId !== null && row.deploymentId === buildingValue.value,
+        disabled: isSwitching.value || (unpickable && editLabel === null),
+        unpickable,
+        editLabel
+      }
+    })
   }))
 )
+
+function updateLabel(row: DeploymentRow): string | null {
+  if (!updatesInEditor.value || !row.updatable) return null
+  return t(
+    'platformFrame.updateDeployment',
+    { deployment: row.title },
+    { escapeParameter: false }
+  )
+}
 const defaultGone = computed(() => goneDefaultDeploymentId.value !== null)
+const workspaceDefaultOffered = computed(() =>
+  pendingServerFact(
+    'BE-20674',
+    canSetDefault.value &&
+      (onTeamPlan || defaultDeploymentId.value !== null || defaultGone.value)
+  )
+)
 
 const notice = computed(() => {
   if (goneDeployment.value === 'pick') return t('deploymentSwitcher.pickGone')
@@ -187,16 +222,12 @@ const notice = computed(() => {
     )
   }
   if (goneDeployment.value !== 'default') return null
-  return canSetDefault.value
+  return workspaceDefaultOffered.value && onTeamPlan
     ? t('deploymentSwitcher.defaultGoneOwner')
     : t('deploymentSwitcher.defaultGone')
 })
 
-const switchingNote = computed(() =>
-  settingStore.get('Comfy.Workflow.Persist')
-    ? t('deploymentSwitcher.switchingNote')
-    : t('deploymentSwitcher.switchingNoteWithoutDrafts')
-)
+const switchingNote = computed(switchReloadNote)
 
 function chooseRow(event: Event, row: DeploymentRow) {
   if (row.action === 'pick') {
@@ -211,6 +242,10 @@ function chooseRow(event: Event, row: DeploymentRow) {
   event.preventDefault()
   if (row.action === 'none') return
   void startStore.start(row.deploymentId)
+}
+
+function updateRow(row: DeploymentRow) {
+  if (row.deploymentId !== null) emit('updateDeployment', row.deploymentId)
 }
 
 function openDeploymentPage(deploymentId: string) {

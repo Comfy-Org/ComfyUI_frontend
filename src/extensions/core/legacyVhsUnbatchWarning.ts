@@ -1,5 +1,6 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import type { ComfyExtension } from '@/types/comfy'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -8,6 +9,9 @@ let warned = false
 export const legacyVhsUnbatchWarningExtension: ComfyExtension = {
   name: 'Comfy.LegacyVhsUnbatchWarning',
   beforeRegisterNodeDef(_nodeType, nodeData) {
+    // Cloud pins the pack version server-side, so users cannot act on the
+    // "update from the Manager" advice and every session would report it.
+    if (isCloud) return
     if (warned || nodeData.name !== 'VHS_Unbatch') return
     if (nodeData.output?.[0] !== '*') return
     warned = true

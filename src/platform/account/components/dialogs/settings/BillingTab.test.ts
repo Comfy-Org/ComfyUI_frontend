@@ -29,13 +29,13 @@ import type {
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import {
   servedBillingNoticeAudience,
   servedEndingNoticeStartsAt
 } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -47,7 +47,7 @@ import { useMessageSupport } from '@/platform/billing/subscription/composables/u
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -68,7 +68,6 @@ vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
-vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/localBillingHandoff'))
@@ -291,13 +290,19 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
-  vi.mocked(useFreeTierQuota).mockReturnValue(
-    fromPartial({
-      quotaEnabled: computed(() => scenario.freeRuns !== undefined),
-      available: ref(scenario.freeRuns?.available ?? 0),
-      maxAvailable: ref(scenario.freeRuns?.max ?? 0)
-    })
-  )
+  if (scenario.freeRuns) {
+    const { available, max } = scenario.freeRuns
+    useRemoteConfigStore().acceptConfig(
+      {
+        free_tier_balance: {
+          allowance: max,
+          remaining: available,
+          used: max - available
+        }
+      },
+      false
+    )
+  }
 
   const { unmount } = mountBillingTab()
 
@@ -448,7 +453,44 @@ describe('BillingTab', () => {
     expect(banner).not.toHaveTextContent('plan ends')
   })
 
-  it('shows free runs and no out of credits on a never-subscribed Cloud workspace the server reports as active', () => {
+  it.for([
+    { amountMicros: 0, hasFunds: false },
+    { amountMicros: 500, hasFunds: true }
+  ])(
+    'shows free runs and hides credit warnings for a never-subscribed workspace with $amountMicros cents',
+    ({ amountMicros, hasFunds }) => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+      arrange({
+        subscription: {
+          ...activeSubscription,
+          tier: 'FREE',
+          planSlug: null,
+          renewalDate: null,
+          hasFunds
+        },
+        subscriptionState: 'never_subscribed',
+        freeRuns: { available: 5, max: 5 },
+        balance: { amountMicros, currency: 'usd', lowBalance: true }
+      })
+
+      expect(screen.getByTestId('billing-plan-row')).toHaveTextContent(
+        'You have 5 of 5 free runs left.'
+      )
+      expect(screen.getByRole('link', { name: 'Subscribe' })).toHaveAttribute(
+        'data-variant',
+        'inverted'
+      )
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+      expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
+    }
+  )
+
+  it('warns a subscribed Cloud workspace when its credit balance is low', () => {
     distribution.isCloud = true
     onTestFinished(() => {
       distribution.isCloud = false
@@ -456,23 +498,18 @@ describe('BillingTab', () => {
     vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     arrange({
-      subscription: {
-        ...activeSubscription,
-        tier: 'FREE',
-        planSlug: null,
-        renewalDate: null,
-        hasFunds: false
-      },
-      subscriptionState: 'never_subscribed',
-      freeRuns: { available: 5, max: 5 },
-      balance: { amountMicros: 0, currency: 'usd', lowBalance: true }
+      balance: { amountMicros: 500, currency: 'usd', lowBalance: true }
     })
 
-    expect(screen.getByTestId('billing-plan-row')).toHaveTextContent(
-      'You have 5 of 5 free runs left.'
-    )
-    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
-    expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
+    const banner = screen.getByTestId('billing-banner-credit')
+    expect(banner).toHaveTextContent('Credits are low')
+    expect(banner).toHaveTextContent('1,055')
+    expect(
+      within(banner).getByRole('button', { name: 'Dismiss' })
+    ).toBeVisible()
+    expect(
+      within(banner).getByRole('button', { name: 'Add credits' })
+    ).toBeVisible()
   })
 
   it('hides local credit banners when unified billing settings is off', () => {
@@ -2368,6 +2405,14 @@ describe('BillingTab', () => {
       ])
     })
 
+    it('reads the saved cards for the Add credits checkbox before Add credits is clicked', () => {
+      vi.mocked(useFeatureFlags().flags).billingAutoTopUpAtCheckoutEnabled =
+        true
+      arrange({})
+
+      expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledOnce()
+    })
+
     it('reads the auto top-up settings once for the card and the banner', async () => {
       arrange({})
       await screen.findByTestId('billing-auto-top-up-status')
@@ -2575,10 +2620,10 @@ describe('BillingTab plan not started banner', () => {
       distribution.isCloud = false
     })
     vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'billing_web'
-    remoteConfig.value = { billing_web_url: 'https://billing.comfy.org' }
-    onTestFinished(() => {
-      remoteConfig.value = {}
-    })
+    useRemoteConfigStore().acceptConfig(
+      { billing_web_url: 'https://billing.comfy.org' },
+      false
+    )
     serveSignupOperation({ payment_intent_client_secret: 'pi_signup_secret' })
     arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
 

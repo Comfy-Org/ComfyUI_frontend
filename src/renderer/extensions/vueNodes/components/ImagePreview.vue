@@ -10,6 +10,10 @@
       v-if="viewMode === 'grid'"
       ref="gridEl"
       data-testid="image-grid"
+      data-image-preview-grid
+      :data-count="items.length"
+      :data-columns="gridCols"
+      :data-thumbnail-aspect-ratio="imageAspectRatio"
       class="relative grid w-full flex-1 gap-1 rounded-sm p-1 contain-size"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
@@ -23,42 +27,29 @@
         "
         @click="openImageInGallery(index)"
       >
-        <div
+        <img
           v-if="url && !failedHdrPreviews[index]"
-          class="pointer-events-none relative size-full"
-        >
-          <img
-            :src="url"
-            :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
-            draggable="false"
-            decoding="async"
-            class="size-full object-contain"
-            @load="updateAspectRatio($event, index)"
-            @error="failedHdrPreviews[index] = isHdrResult(items[index])"
-          />
-        </div>
-        <div
-          v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-foreground"
-        >
-          <i class="icon-[lucide--sun] size-6" />
-        </div>
+          :src="url"
+          :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
+          draggable="false"
+          decoding="async"
+          class="pointer-events-none size-full object-contain"
+          @load="updateAspectRatio($event, index)"
+          @error="handleThumbnailError($event, index)"
+        />
+        <i v-else class="icon-[lucide--sun] size-6 text-foreground" />
       </Button>
-      <div
+      <Button
         v-if="canExportOutputs"
-        class="invisible absolute top-2 right-2 group-focus-within:visible group-hover:visible"
+        variant="inverted"
+        size="icon"
+        class="invisible absolute top-2 right-2 shadow-md group-focus-within:visible group-hover:visible"
+        :title="$t('g.downloadImages')"
+        :aria-label="$t('g.downloadImages')"
+        @click="handleExportOutputs"
       >
-        <Button
-          variant="inverted"
-          size="icon"
-          class="shadow-md"
-          :title="$t('g.downloadImages')"
-          :aria-label="$t('g.downloadImages')"
-          @click="handleExportOutputs"
-        >
-          <i class="icon-[lucide--folder-down]" />
-        </Button>
-      </div>
+        <i class="icon-[lucide--folder-down]" />
+      </Button>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -103,6 +94,7 @@
       <img
         v-if="
           !imageError &&
+          mainImageSrc &&
           displayUrls[currentIndex] &&
           !failedHdrPreviews[currentIndex]
         "
@@ -224,10 +216,13 @@
       >
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="showLoader"> {{ $t('g.loading') }}... </span>
-      <span v-else>
-        {{ actualDimensions || $t('g.calculatingDimensions') }}
-      </span>
+      <template v-else>
+        {{
+          showLoader
+            ? `${$t('g.loading')}...`
+            : actualDimensions || $t('g.calculatingDimensions')
+        }}
+      </template>
     </div>
 
     <!-- Multiple Images Navigation (gallery mode only) -->
@@ -285,7 +280,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
-import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
@@ -301,7 +296,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
-import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
+import {
+  IMAGE_PREVIEW_CONTENT_MIN_HEIGHT,
+  imageGridColumns
+} from './imagePreviewLayout'
 
 const DISPLAY_MAX_EDGE = 1024
 const PRELOAD_MIN_SCALE = 1
@@ -410,10 +408,14 @@ const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
   return !!node && hasMultipleOutputs(node)
 })
-const gridCols = computed(() => {
-  const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
-  return Math.max(Math.round(Math.sqrt(items.length * bias)), 1)
-})
+const gridCols = computed(() =>
+  imageGridColumns({
+    count: items.length,
+    width: gridWidth.value,
+    height: gridHeight.value,
+    aspectRatio: imageAspectRatio.value
+  })
+)
 
 const { camera } = useTransformState()
 const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)
@@ -498,6 +500,12 @@ function updateAspectRatio(event: Event, index: number) {
   }
 }
 
+function handleThumbnailError(event: Event, index: number) {
+  if (!(event.target instanceof HTMLImageElement) || !event.target.isConnected)
+    return
+  failedHdrPreviews.value[index] = isHdrResult(items[index])
+}
+
 async function handleImageError(failedUrl: string) {
   stopDelayedLoader()
   showLoader.value = false
@@ -530,7 +538,11 @@ async function handleOpenLayerEditor() {
 
 function handleDownload() {
   try {
-    downloadFile(resultItemUrl(items[currentIndex.value]))
+    downloadFile(
+      resultItemUrl(items[currentIndex.value]),
+      undefined,
+      'node_preview'
+    )
   } catch {
     toast.error(t('g.error'), {
       description: t('g.failedToDownloadImage')

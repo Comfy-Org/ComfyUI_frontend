@@ -121,6 +121,7 @@ describe('a human-added node across a tab switch', () => {
     const minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => isTargetActive.value,
+      isBoundWorkflow: () => true,
       enqueue: followerApi.enqueueHumanOperations,
       getGraph: () => graph,
       boundRootGraphId: () => null,

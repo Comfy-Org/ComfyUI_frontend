@@ -9,7 +9,10 @@ import type {
   Vector2
 } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
-import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
+import type {
+  MissingNodeType,
+  WorkflowOpening
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import type {
   ComfyApiWorkflow,
@@ -83,6 +86,7 @@ export interface LoadGraphDataOptions {
   openSource?: WorkflowOpenSource
   shareId?: string
   deferWarnings?: boolean
+  opening?: WorkflowOpening
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
   restoreHistory?: boolean
@@ -92,6 +96,7 @@ export interface LoadGraphDataOptions {
   isReady?: () => boolean
   /** Graph to load, produced at the front of the queue; undefined skips the load. */
   resolveGraphData?: () => ComfyWorkflowJSON | undefined
+  initiator?: 'user'
 }
 
 /**
@@ -212,6 +217,7 @@ export interface ComfyApp {
     options?: {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
+      initiator?: 'user'
     }
   ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
@@ -222,8 +228,8 @@ export interface ComfyApp {
   isApiJson(data: unknown): data is ComfyApiWorkflow
   loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
-    options?: { deferWarnings?: boolean }
+    fileName?: string,
+    options?: { deferWarnings?: boolean; initiator?: 'user' }
   ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]

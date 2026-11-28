@@ -29,7 +29,6 @@ test.describe(
       await loadIntoBootWorkflow(page, zComfyWorkflow.parse(workflow))
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
     })
 
     test('refreshes nodes after renaming, deleting and undoing in the target workflow', async ({

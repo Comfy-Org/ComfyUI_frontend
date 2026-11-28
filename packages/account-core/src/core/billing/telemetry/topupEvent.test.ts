@@ -39,4 +39,18 @@ describe('the top-up started event', () => {
       billing_surface: 'cloud_app'
     })
   })
+
+  it('reports the plan line the customer saw before paying', () => {
+    const event: BillingTelemetryEvent = {
+      operation: 'topup',
+      stage: 'started',
+      outcome: 'pending',
+      amount_cents: 2500,
+      plan_line: 'no_plan'
+    }
+
+    expect(getCloudAppBillingTelemetryEventPayload(event)).toMatchObject({
+      plan_line: 'no_plan'
+    })
+  })
 })

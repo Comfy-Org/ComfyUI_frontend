@@ -1006,6 +1006,30 @@ describe('Comfy.Save3DAdvanced.nodeCreated', () => {
       { silentOnNotFound: true }
     )
   })
+
+  it('wires onExecuted before the Load3d viewer mounts, so an execution result that arrives early is not dropped', async () => {
+    const pendingCallbacks: Array<(load3d: FakeLoad3d) => void> = []
+    waitForLoad3dMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
+      pendingCallbacks.push(cb)
+    })
+    const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
+
+    await save3DAdvancedExtension.nodeCreated!(node, app)
+
+    expect(node.onExecuted).toBeTypeOf('function')
+
+    node.onExecuted!({ result: ['3d/ComfyUI_00003_.glb'] })
+
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+
+    pendingCallbacks.at(-1)!(makeLoad3dMock())
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      '3d/ComfyUI_00003_.glb',
+      { silentOnNotFound: true }
+    )
+  })
 })
 
 describe('Comfy.Load3D scene widget serializeValue caching', () => {

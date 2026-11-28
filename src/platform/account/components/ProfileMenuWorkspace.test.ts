@@ -1,5 +1,5 @@
 import type { WorkspacePlanSummary } from '@comfyorg/ingest-types'
-import { render, screen, within } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
@@ -45,6 +45,12 @@ const WorkspaceSwitcherFlyoutStub = defineComponent({
       <button data-testid="stub-create-workspace" @click="$emit('create')" />
     </div>
   `
+})
+
+const WorkspaceProfilePicStub = defineComponent({
+  props: ['subscriptionTier'],
+  template:
+    '<div data-testid="workspace-avatar" :data-tier="subscriptionTier" />'
 })
 
 const ProfileMenuCreditsFlyoutStub = defineComponent({
@@ -95,6 +101,7 @@ function renderMenu(served: Partial<Served> = {}) {
       name: 'Comfy Team',
       type: 'team',
       role,
+      subscription_tier: 'TEAM',
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z',
       ...(planSummary && { plan_summary: planSummary })
@@ -112,7 +119,7 @@ function renderMenu(served: Partial<Served> = {}) {
       stubs: {
         WorkspaceSwitcherFlyout: WorkspaceSwitcherFlyoutStub,
         ProfileMenuCreditsFlyout: ProfileMenuCreditsFlyoutStub,
-        WorkspaceProfilePic: true
+        WorkspaceProfilePic: WorkspaceProfilePicStub
       }
     }
   })
@@ -123,7 +130,18 @@ describe('ProfileMenuWorkspace', () => {
   beforeEach(() => {
     useCurrentUser().userDisplayName = computed(() => 'Mariana Martinho')
     useCurrentUser().userEmail = computed(() => 'mariana@comfy.org')
+    useCurrentUser().userPhotoUrl = computed(() => undefined)
     vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
+  })
+
+  it('uses the workspace plan color in the profile menu header', () => {
+    renderMenu()
+
+    const header = screen.getByTestId('workspace-switcher-trigger')
+    expect(within(header).getByTestId('workspace-avatar')).toHaveAttribute(
+      'data-tier',
+      'TEAM'
+    )
   })
 
   describe('the plan line under the workspace name', () => {
@@ -472,8 +490,36 @@ describe('ProfileMenuWorkspace', () => {
 
     const identity = screen.getByTestId('current-user-identity')
     expect(within(identity).getByText('M')).toBeInTheDocument()
+    expect(within(identity).queryByRole('img')).not.toBeInTheDocument()
     expect(within(identity).getByText('Mariana Martinho')).toBeInTheDocument()
     expect(within(identity).getByText('mariana@comfy.org')).toBeInTheDocument()
+  })
+
+  it('shows the account photo instead of the monogram', () => {
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/mariana.jpg'
+    )
+    renderMenu()
+
+    const identity = screen.getByTestId('current-user-identity')
+    expect(within(identity).getByRole('img')).toHaveAttribute(
+      'src',
+      'https://example.com/mariana.jpg'
+    )
+    expect(within(identity).queryByText('M')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the monogram when the account photo fails to load', async () => {
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/broken.jpg'
+    )
+    renderMenu()
+
+    const identity = screen.getByTestId('current-user-identity')
+    await fireEvent.error(within(identity).getByRole('img'))
+
+    expect(within(identity).getByText('M')).toBeInTheDocument()
+    expect(within(identity).queryByRole('img')).not.toBeInTheDocument()
   })
 
   it('toggles the workspace switcher from the header row', async () => {

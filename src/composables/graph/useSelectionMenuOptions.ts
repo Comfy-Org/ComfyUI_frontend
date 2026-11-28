@@ -1,5 +1,6 @@
 import { useI18n } from 'vue-i18n'
 
+import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { useFrameNodes } from './useFrameNodes'
@@ -18,13 +19,20 @@ export function useSelectionMenuOptions() {
     renameSelection
   } = useSelectionOperations()
 
-  const { alignOptions, distributeOptions, applyAlign, applyDistribute } =
-    useNodeArrangement()
+  const {
+    alignOptions,
+    distributeOptions,
+    applyAlign,
+    applyDistribute,
+    canDistribute
+  } = useNodeArrangement()
 
   const { convertToSubgraph, unpackSubgraph, addSubgraphToLibrary } =
     useSubgraphOperations()
 
   const { frameNodes } = useFrameNodes()
+
+  const { canTidy, tidyUp } = useSelectionGrid()
 
   const getBasicSelectionOptions = (): MenuOption[] => [
     {
@@ -114,6 +122,7 @@ export function useSelectionMenuOptions() {
       id: 'distribute',
       label: t('contextMenu.Distribute Nodes'),
       icon: 'icon-[lucide--align-center-horizontal]',
+      disabled: !canDistribute.value,
       hasSubmenu: true,
       submenu: distributeOptions.map((distribute) => ({
         label: distribute.localizedName,
@@ -121,6 +130,13 @@ export function useSelectionMenuOptions() {
         action: () => applyDistribute(distribute)
       })),
       action: () => {}
+    },
+    {
+      id: 'tidyUp',
+      label: t('g.tidyUp'),
+      icon: 'icon-[lucide--layout-dashboard]',
+      disabled: !canTidy.value,
+      action: () => tidyUp()
     }
   ]
 

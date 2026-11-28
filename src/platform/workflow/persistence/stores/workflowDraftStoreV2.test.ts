@@ -32,6 +32,8 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 const WORKSPACE = 'personal'
+const COLLIDING_PATH_A = 'workflows/ewip.json'
+const COLLIDING_PATH_B = 'workflows/4hbab.json'
 const INDEX_KEY = StorageKeys.draftIndex(WORKSPACE)
 const PAYLOAD_PREFIX = `${StorageKeys.prefixes.draftPayload}${WORKSPACE}:`
 
@@ -135,6 +137,28 @@ describe('workflowDraftStoreV2', () => {
       expect(payloadKeys).toHaveLength(1)
     })
 
+    it('refuses to save when no native storage can be read', () => {
+      const denied = () => {
+        throw new DOMException('Access is denied', 'SecurityError')
+      }
+      const local = vi
+        .spyOn(window, 'localStorage', 'get')
+        .mockImplementation(denied)
+      const session = vi
+        .spyOn(window, 'sessionStorage', 'get')
+        .mockImplementation(denied)
+      const store = useWorkflowDraftStoreV2()
+
+      const saved = store.saveDraft('workflows/volatile.json', '{"nodes":[]}', {
+        name: 'volatile',
+        isTemporary: true
+      })
+      local.mockRestore()
+      session.mockRestore()
+
+      expect(saved).toBe(false)
+    })
+
     it('updates existing draft', () => {
       const store = useWorkflowDraftStoreV2()
 
@@ -173,6 +197,197 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft(path)?.lineage).toEqual({
         workflowId: 'wf-1',
         lineageSeq: 12
+      })
+    })
+
+    it('keeps each colliding path on its own draft', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        name: 'a'
+      })
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b"]}',
+        name: 'b'
+      })
+    })
+
+    it('removes only the named draft of a colliding pair', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.removeDraft(COLLIDING_PATH_A)
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b"]}',
+        name: 'b'
+      })
+    })
+
+    it('writes CRDT lineage to the colliding path it names', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.setLineage(COLLIDING_PATH_B, {
+        workflowId: 'wf-b',
+        lineageSeq: 7
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b","b2"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b","b2"]}',
+        lineage: { workflowId: 'wf-b', lineageSeq: 7 }
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}'
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)?.lineage).toBeUndefined()
+    })
+
+    it('applies a lineage set before the first save to that path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.setLineage(COLLIDING_PATH_A, { workflowId: 'wf-a', lineageSeq: 3 })
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        lineage: { workflowId: 'wf-a', lineageSeq: 3 }
+      })
+    })
+
+    it('does not stamp an undrafted path lineage onto a colliding draft', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.setLineage(COLLIDING_PATH_A, { workflowId: 'wf-a', lineageSeq: 3 })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["b"]}'
+      })
+      expect(store.getDraft(COLLIDING_PATH_B)?.lineage).toBeUndefined()
+    })
+
+    it('leaves a renamed draft lineage off a new workflow at the old path', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.setLineage(COLLIDING_PATH_A, { workflowId: 'wf-a', lineageSeq: 4 })
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.moveDraft(COLLIDING_PATH_A, 'workflows/renamed.json', 'renamed')
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["new"]}', {
+        name: 'new',
+        isTemporary: false
+      })
+      store.reset()
+
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["new"]}'
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)?.lineage).toBeUndefined()
+      expect(store.getDraft('workflows/renamed.json')?.lineage).toEqual({
+        workflowId: 'wf-a',
+        lineageSeq: 4
+      })
+    })
+
+    it('renames onto a free same-hash path without a second payload write', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+
+      const payloadWrites = () =>
+        vi
+          .mocked(localStorage.setItem)
+          .mock.calls.filter(([key]) => key.startsWith(PAYLOAD_PREFIX)).length
+
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      activeSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => realSetItem(key, value))
+
+      store.moveDraft(COLLIDING_PATH_A, COLLIDING_PATH_B, 'renamed')
+
+      expect(payloadWrites()).toBe(0)
+      store.reset()
+      expect(store.getDraft(COLLIDING_PATH_B)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        name: 'renamed'
+      })
+      expect(store.getDraft(COLLIDING_PATH_A)).toBeNull()
+    })
+
+    it('renames a colliding draft without disturbing its neighbour', () => {
+      const store = useWorkflowDraftStoreV2()
+
+      store.saveDraft(COLLIDING_PATH_A, '{"nodes":["a"]}', {
+        name: 'a',
+        isTemporary: false
+      })
+      store.saveDraft(COLLIDING_PATH_B, '{"nodes":["b"]}', {
+        name: 'b',
+        isTemporary: false
+      })
+
+      store.moveDraft(COLLIDING_PATH_B, 'workflows/renamed.json', 'renamed')
+      store.reset()
+
+      expect(store.getDraft('workflows/renamed.json')).toMatchObject({
+        data: '{"nodes":["b"]}',
+        name: 'renamed'
+      })
+      expect(store.getDraft(COLLIDING_PATH_B)).toBeNull()
+      expect(store.getDraft(COLLIDING_PATH_A)).toMatchObject({
+        data: '{"nodes":["a"]}',
+        name: 'a'
       })
     })
 
@@ -447,6 +662,35 @@ describe('workflowDraftStoreV2', () => {
       )
     })
 
+    it('keeps existing drafts when a payload write fails for a non-quota reason', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/existing.json', '{"id":1}', {
+        name: 'existing',
+        isTemporary: true
+      })
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      activeSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (key.startsWith(PAYLOAD_PREFIX))
+            throw new DOMException('Access is denied', 'SecurityError')
+          return realSetItem(key, value)
+        })
+
+      expect(() =>
+        store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+          name: 'incoming',
+          isTemporary: true
+        })
+      ).toThrow(DOMException)
+      expect(
+        localStorage.getItem(payloadKey('workflows/existing.json'))
+      ).not.toBeNull()
+      expect(localStorage.getItem(INDEX_KEY)).toContain(
+        hashPath('workflows/existing.json')
+      )
+    })
+
     it('reports exhaustion without evicting existing drafts', () => {
       const store = useWorkflowDraftStoreV2()
       store.saveDraft('workflows/a.json', '{"id":"a"}', {
@@ -468,12 +712,52 @@ describe('workflowDraftStoreV2', () => {
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },
         context: {
-          evictedDrafts: 0,
           remainingDrafts: 1,
           incomingPayloadBytes: expect.any(Number),
-          writeTarget: 'payload'
+          writeTarget: 'payload',
+          storageTotalBytes: expect.any(Number),
+          storageDraftBytes: expect.any(Number),
+          storageKeyCount: 2,
+          largestOtherStorageKey: null,
+          largestOtherStorageKeyBytes: 0
         }
       })
+    })
+
+    it('reports storage held by drafts and by other keys', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/a.json', '{"id":"a"}', {
+        name: 'a',
+        isTemporary: true
+      })
+      localStorage.setItem('Comfy.Big:client-1', 'x'.repeat(1000))
+      localStorage.setItem('small', 'y')
+      failPayloadWrites()
+
+      store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+        name: 'incoming',
+        isTemporary: true
+      })
+
+      const draftBytes = [INDEX_KEY, payloadKey('workflows/a.json')].reduce(
+        (sum, key) =>
+          sum + (key.length + localStorage.getItem(key)!.length) * 2,
+        0
+      )
+      const bigBytes = ('Comfy.Big:client-1'.length + 1000) * 2
+      const smallBytes = ('small'.length + 1) * 2
+      expect(reportErrorMock).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          context: expect.objectContaining({
+            storageTotalBytes: draftBytes + bigBytes + smallBytes,
+            storageDraftBytes: draftBytes,
+            storageKeyCount: 4,
+            largestOtherStorageKey: 'Comfy.Big',
+            largestOtherStorageKeyBytes: bigBytes
+          })
+        })
+      )
     })
 
     it('reports payload byte size measured against the serialized envelope', () => {

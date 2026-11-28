@@ -29,6 +29,7 @@ sys.path.insert(0, HERE)
 from summarize_matrix import (  # noqa: E402
     CRITERION_LABELS,
     DELTA_CRITERION_LABEL,
+    NEW_HOOK_DELTA_CRITERION_LABEL,
     Verdict,
     evaluate,
 )
@@ -72,6 +73,10 @@ PROOF_EXEMPTIONS = {
         ' sensitivity is unit-tested'
     ),
     DELTA_CRITERION_LABEL: (
+        'requires a prior baseline rather than a poison pack; baseline'
+        ' sensitivity is unit-tested'
+    ),
+    NEW_HOOK_DELTA_CRITERION_LABEL: (
         'requires a prior baseline rather than a poison pack; baseline'
         ' sensitivity is unit-tested'
     ),
@@ -266,7 +271,10 @@ def main() -> int:
         not unmapped,
         'unmapped: ' + ', '.join(unmapped) if unmapped else '',
     )
-    all_criteria = set(CRITERION_LABELS.values()) | {DELTA_CRITERION_LABEL}
+    all_criteria = set(CRITERION_LABELS.values()) | {
+        DELTA_CRITERION_LABEL,
+        NEW_HOOK_DELTA_CRITERION_LABEL,
+    }
     poison_criteria = {
         label for labels in GATES.values() for label in labels
     }

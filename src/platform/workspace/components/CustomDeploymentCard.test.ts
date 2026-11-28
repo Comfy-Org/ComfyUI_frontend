@@ -52,7 +52,7 @@ function renderCard(
     props: {
       pitch: {
         title: 'Deploy Custom Nodes on Comfy Cloud',
-        body: 'Create a custom deployment that runs your custom nodes.',
+        body: 'Create a Custom Build that runs your custom nodes.',
         points: ['Deploy your node packs', 'Work on the GPU you choose'],
         platformLabel: 'Deploy on Platform',
         brief: '# The brief for an agent',
@@ -113,9 +113,7 @@ describe('CustomDeploymentCard', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByText(
-        'Create a custom deployment that runs your custom nodes.'
-      )
+      screen.getByText('Create a Custom Build that runs your custom nodes.')
     ).toBeVisible()
     expect(
       screen.getAllByRole('listitem').map((item) => item.textContent.trim())
@@ -202,20 +200,27 @@ describe('CustomDeploymentCard', () => {
     expect(screen.queryByTestId('custom-deployment-video') !== null).toBe(shows)
   })
 
+  it('offers a play control on its video', () => {
+    renderCard({}, [{ src: 'deploy.mp4', type: 'video/mp4' }])
+
+    expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
+  })
+
   it('lists what the workflow lacks when the pitch names it', () => {
     renderCard({
       missing: [
         {
           label: '2 missing node packs',
-          names: 'comfyui-birefnet, comfyui-rmbg'
+          name: 'comfyui-birefnet',
+          more: '+1 more'
         },
-        { label: '1 missing model', names: 'BiRefNet-general.safetensors' }
+        { label: '1 missing model', name: 'BiRefNet-general.safetensors' }
       ]
     })
 
     const missing = screen.getByTestId('custom-deployment-missing')
     expect(missing).toHaveTextContent(
-      '2 missing node packscomfyui-birefnet, comfyui-rmbg1 missing modelBiRefNet-general.safetensors'
+      '2 missing node packscomfyui-birefnet+1 more1 missing modelBiRefNet-general.safetensors'
     )
   })
 

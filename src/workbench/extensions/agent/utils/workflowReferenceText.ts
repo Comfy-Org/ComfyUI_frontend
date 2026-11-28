@@ -53,3 +53,47 @@ export function parseWorkflowReferences(
     references: [...remaining.values(), ...positioned]
   }
 }
+
+export interface HydratedUserTurn {
+  turnId: string
+  text: string
+  skillName?: string
+  attachmentCount?: number
+}
+
+export interface ExpectedPendingUserTurn {
+  text: string
+  skillName?: string
+  workflowReferences: readonly WorkflowReference[]
+  attachmentCount?: number
+}
+
+function normalizePersistedTurnText(
+  text: string,
+  workflowReferences: readonly WorkflowReference[]
+): string {
+  if (workflowReferences.length === 0) return text
+  return parseWorkflowReferences(
+    text,
+    workflowReferences.map(({ id, name, unavailable }) => ({
+      id,
+      name,
+      unavailable
+    }))
+  ).text
+}
+
+export function matchesHydratedUserTurn(
+  expected: ExpectedPendingUserTurn,
+  turn: HydratedUserTurn
+): boolean {
+  const persistedText = normalizePersistedTurnText(
+    turn.text,
+    expected.workflowReferences
+  )
+  if (persistedText !== expected.text) return false
+  if (turn.skillName !== expected.skillName) return false
+  if (expected.text || expected.skillName) return true
+  const expectedCount = expected.attachmentCount ?? 0
+  return expectedCount > 0 && (turn.attachmentCount ?? 0) === expectedCount
+}

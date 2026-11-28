@@ -31,7 +31,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -628,12 +628,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('says Subscribe keeps runs going while the served free runs remain', () => {
-    remoteConfig.value = {
-      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
-    }
-    onTestFinished(() => {
-      remoteConfig.value = {}
-    })
+    useRemoteConfigStore().acceptConfig(
+      { free_tier_balance: { allowance: 5, remaining: 3, used: 2 } },
+      false
+    )
     const billing = mockBillingContext()
     billing.isInitialized.value = true
     billing.subscriptionState = computed(() => 'never_subscribed')
@@ -731,18 +729,177 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
   })
 
-  it('explains that the top-up covers a negative balance first', () => {
-    renderWithBalance({
+  const NEGATIVE_BALANCE: Partial<BalanceInfo> = {
+    amountMicros: -10_000,
+    effectiveBalanceMicros: -10_000,
+    suggestedTopupAmountCents: 11_400
+  }
+
+  it.for<{
+    name: string
+    quoted: { balance_after_credits: number; runs_paused_after: boolean }
+    afterLine: string
+    warns: boolean
+  }>([
+    {
+      name: 'a top-up that clears the balance',
+      quoted: { balance_after_credits: 2_954, runs_paused_after: false },
+      afterLine: 'After this top-up: 2,954 credits.',
+      warns: false
+    },
+    {
+      name: 'a top-up that leaves runs paused',
+      quoted: { balance_after_credits: -840, runs_paused_after: true },
+      afterLine: 'Still negative after this top-up: −840 credits.',
+      warns: true
+    },
+    {
+      name: 'a non-negative balance that still keeps runs paused',
+      quoted: { balance_after_credits: 5, runs_paused_after: true },
+      afterLine: 'After this top-up: 5 credits.',
+      warns: true
+    }
+  ])(
+    'shows the served balance after $name',
+    async ({ quoted, afterLine, warns }) => {
+      const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
+        amount_cents: 11_400,
+        credits: 24_054,
+        expires_at: '2027-11-02T00:00:00Z',
+        ...quoted
+      })
+      renderWithBalance(NEGATIVE_BALANCE)
+
+      expect(await screen.findByText(afterLine)).toBeInTheDocument()
+      expect(quote).toHaveBeenCalledWith(11_400, expect.any(AbortSignal))
+      expect(
+        screen.getByText('Your balance is −21,100 credits.')
+      ).toBeInTheDocument()
+      expect(
+        screen
+          .getByTestId('topup-negative-balance')
+          .classList.contains('text-warning')
+      ).toBe(warns)
+    }
+  )
+
+  it('requotes the balance after when the current balance changes', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(-840))
+    const balance = ref<BalanceInfo>({
       amountMicros: -10_000,
+      currency: 'usd',
       effectiveBalanceMicros: -10_000,
+      effectiveBalanceAuthoritative: true,
       suggestedTopupAmountCents: 11_400
     })
+    Object.assign(mockBillingContext(), { balance })
+    renderDialog()
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    balance.value = {
+      ...balance.value,
+      amountMicros: -13_794,
+      effectiveBalanceMicros: -13_794
+    }
+
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByText('After this top-up: 2,954 credits.')
+      ).not.toBeInTheDocument()
+    )
+    expect(
+      await screen.findByText('Still negative after this top-up: −840 credits.')
+    ).toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(2)
+  })
+
+  it('requotes the balance after when this tab switches workspace', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(-840))
+    renderWithBalance(NEGATIVE_BALANCE)
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    useTeamWorkspaceStore().resetForIdentityChange()
 
     expect(
-      screen.getByText(
-        'Your balance is −21,100 credits. This top-up covers that first.'
-      )
+      await screen.findByText('Still negative after this top-up: −840 credits.')
     ).toBeInTheDocument()
+    expect(
+      screen.queryByText('After this top-up: 2,954 credits.')
+    ).not.toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(2)
+  })
+
+  it('requotes once the switched workspace is authenticated, not when the switch starts', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(1_111))
+      .mockResolvedValueOnce(quoteFor(-840))
+    renderWithBalance(NEGATIVE_BALANCE)
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    const workspace = useTeamWorkspaceStore()
+    Object.assign(workspace, { workspaceTransitionGeneration: 1 })
+    expect(
+      await screen.findByText('After this top-up: 1,111 credits.')
+    ).toBeInTheDocument()
+
+    Object.assign(workspace, { activeWorkspaceId: 'workspace-2' })
+
+    expect(
+      await screen.findByText('Still negative after this top-up: −840 credits.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('After this top-up: 1,111 credits.')
+    ).not.toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(3)
+  })
+
+  it('shows only the current balance when the quote has no balance after', async () => {
+    const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z'
+    })
+    renderWithBalance(NEGATIVE_BALANCE)
+
+    await vi.waitFor(() => expect(quote).toHaveBeenCalled())
+    expect(screen.getByTestId('topup-negative-balance')).toHaveTextContent(
+      /^Your balance is −21,100 credits\.$/
+    )
   })
 
   it.for<{ name: string; balance: Partial<BalanceInfo> }>([
@@ -758,9 +915,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   ])('says nothing about the balance for $name', ({ balance }) => {
     renderWithBalance(balance)
 
-    expect(
-      screen.queryByText(/This top-up covers that first/)
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/Your balance is/)).not.toBeInTheDocument()
   })
 
   const SERVED_MINIMUM: Partial<BalanceInfo> = {
@@ -1034,7 +1189,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       window.__comfyDesktop2 = {}
-      remoteConfig.value = { billing_web_url: 'https://testbilling.comfy.org' }
+      useRemoteConfigStore().acceptConfig(
+        { billing_web_url: 'https://testbilling.comfy.org' },
+        false
+      )
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const appUrl = window.location.href
 
@@ -1056,7 +1214,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(window.location.href).toBe(appUrl)
       } finally {
         delete window.__comfyDesktop2
-        remoteConfig.value = {}
       }
     })
 

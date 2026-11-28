@@ -9,6 +9,8 @@ vi.mock(import('#/load3d/createViewport3d'), () => ({
   createViewport3d: createViewport3dMock
 }))
 
+import type { Load3dHost } from '#/load3d/interfaces'
+
 import { CameraInfoViewport } from './CameraInfoViewport'
 
 function makeViewportStub() {
@@ -29,9 +31,14 @@ function makeViewportStub() {
   let preRender: (() => void) | null = null
   let postRender: (() => void) | null = null
   return {
-    sceneManager: { scene: new THREE.Scene() },
+    sceneManager: {
+      scene: new THREE.Scene(),
+      gridHelper: new THREE.GridHelper()
+    },
     cameraManager: { activeCamera: new THREE.PerspectiveCamera() },
-    controlsManager: { controls: { enabled: true } },
+    controlsManager: {
+      controls: { enabled: true, target: new THREE.Vector3(), update: vi.fn() }
+    },
     viewHelperManager: { visibleViewHelper: vi.fn() },
     rendererView: {
       setViewport: vi.fn(),
@@ -422,5 +429,165 @@ describe('CameraInfoViewport gizmo drag callbacks', () => {
     expect(stub.controlsManager.controls.enabled).toBe(true)
 
     viewport.remove()
+  })
+})
+
+describe('CameraInfoViewport subject model', () => {
+  const TRIANGLE_STL = `solid triangle
+facet normal 0 0 1
+outer loop
+vertex 0 0 0
+vertex 2 0 0
+vertex 0 2 0
+endloop
+endfacet
+endsolid triangle`
+  const source = { rootFolder: 'input', subfolder: '3d', filename: 'a.stl' }
+
+  let stub: ReturnType<typeof makeViewportStub>
+  let viewport: CameraInfoViewport
+
+  function hostServing(respond: () => Promise<Response>): Load3dHost {
+    return {
+      fetchApi: vi.fn(respond),
+      getPLYEngine: () => 'threejs',
+      resolveImageURL: (path) => path
+    }
+  }
+
+  const servingTriangle = () =>
+    hostServing(async () => new Response(TRIANGLE_STL))
+
+  const subjectModel = () =>
+    stub.sceneManager.scene.getObjectByName('CameraInfoSubjectModel')
+
+  beforeEach(() => {
+    stub = makeViewportStub()
+    createViewport3dMock.mockReturnValue(stub)
+    viewport = new CameraInfoViewport(document.createElement('div'))
+    viewport.overlay.attach(stub.sceneManager.scene)
+  })
+
+  afterEach(() => {
+    viewport.remove()
+  })
+
+  it('shows the loaded model standing on the grid', async () => {
+    const outcome = await viewport.showSubjectModel(servingTriangle(), source)
+
+    expect(outcome).toEqual({ status: 'shown' })
+    stub.sceneManager.scene.updateMatrixWorld(true)
+    const floor = new THREE.Box3().setFromObject(subjectModel()!, true).min.y
+    expect(floor).toBeLessThan(0)
+    expect(stub.sceneManager.gridHelper.position.y).toBeCloseTo(floor)
+    expect(stub.forceRender).toHaveBeenCalled()
+  })
+
+  it('returns to the reference cube and ground when the source is cleared', async () => {
+    await viewport.showSubjectModel(servingTriangle(), source)
+
+    const outcome = await viewport.showSubjectModel(servingTriangle(), null)
+
+    expect(outcome).toEqual({ status: 'cleared' })
+    expect(subjectModel()).toBeUndefined()
+    expect(stub.sceneManager.gridHelper.position.y).toBe(0)
+  })
+
+  it('fits the gizmos, axes and editor view to the model, and back', async () => {
+    const camera = stub.cameraManager.activeCamera
+    camera.position.set(0, 0, 9)
+    const { scene } = stub.sceneManager
+    const worldRadius = (handle: THREE.Object3D) => {
+      scene.updateMatrixWorld(true)
+      return handle.getWorldPosition(new THREE.Vector3()).length()
+    }
+    const yawRadius = () =>
+      worldRadius(
+        viewport.orbitHandles
+          .pickableMeshes()
+          .find((m) => m.userData.handleType === 'yaw')!
+      )
+    const rollRadius = () =>
+      worldRadius(viewport.rollHandle.pickableMeshes()[0])
+    const axesExtent = () => {
+      scene.updateMatrixWorld(true)
+      const axes = scene.getObjectByProperty('type', 'AxesHelper')!
+      return new THREE.Box3().setFromObject(axes, true).max.x
+    }
+    const cube = { yaw: yawRadius(), roll: rollRadius(), axes: axesExtent() }
+    const fitted = 1 / Math.sqrt(3)
+
+    await viewport.showSubjectModel(servingTriangle(), source)
+
+    expect(yawRadius()).toBeCloseTo(cube.yaw * fitted)
+    expect(rollRadius()).toBeCloseTo(cube.roll * fitted)
+    expect(axesExtent()).toBeCloseTo(cube.axes * fitted)
+    expect(camera.position.z).toBeCloseTo(9 * fitted)
+
+    await viewport.showSubjectModel(servingTriangle(), null)
+
+    expect(yawRadius()).toBeCloseTo(cube.yaw)
+    expect(rollRadius()).toBeCloseTo(cube.roll)
+    expect(axesExtent()).toBeCloseTo(cube.axes)
+    expect(camera.position.z).toBeCloseTo(9)
+  })
+
+  it('leaves hidden gizmos hidden when a model arrives or is cleared', async () => {
+    viewport.setGizmosVisible(false)
+
+    await viewport.showSubjectModel(servingTriangle(), source)
+    expect(viewport.orbitHandles.isVisible()).toBe(false)
+
+    await viewport.showSubjectModel(servingTriangle(), null)
+    expect(viewport.orbitHandles.isVisible()).toBe(false)
+  })
+
+  it('keeps the reference cube when the file is missing', async () => {
+    const missing = hostServing(async () => new Response('', { status: 404 }))
+
+    const outcome = await viewport.showSubjectModel(missing, source)
+
+    expect(outcome).toEqual({ status: 'not-found' })
+    expect(subjectModel()).toBeUndefined()
+    expect(stub.sceneManager.gridHelper.position.y).toBe(0)
+  })
+
+  it('returns to the reference cube with the cause when a load fails', async () => {
+    await viewport.showSubjectModel(servingTriangle(), source)
+    const broken = hostServing(async () => new Response('', { status: 500 }))
+
+    const outcome = await viewport.showSubjectModel(broken, source)
+
+    expect(outcome).toEqual({ status: 'failed', cause: expect.any(Error) })
+    expect(subjectModel()).toBeUndefined()
+    expect(stub.sceneManager.gridHelper.position.y).toBe(0)
+  })
+
+  it('drops a load that a newer request replaced', async () => {
+    let release: (response: Response) => void = () => {}
+    const slow = hostServing(
+      () => new Promise<Response>((resolve) => (release = resolve))
+    )
+
+    const stale = viewport.showSubjectModel(slow, source)
+    await viewport.showSubjectModel(servingTriangle(), null)
+    release(new Response(TRIANGLE_STL))
+
+    expect(await stale).toEqual({ status: 'cancelled' })
+    expect(subjectModel()).toBeUndefined()
+  })
+
+  it('drops a load that finishes after the viewport is removed', async () => {
+    let release: (response: Response) => void = () => {}
+    const slow = hostServing(
+      () => new Promise<Response>((resolve) => (release = resolve))
+    )
+
+    const pending = viewport.showSubjectModel(slow, source)
+    viewport.remove()
+    release(new Response(TRIANGLE_STL))
+    await pending
+
+    expect(subjectModel()).toBeUndefined()
   })
 })

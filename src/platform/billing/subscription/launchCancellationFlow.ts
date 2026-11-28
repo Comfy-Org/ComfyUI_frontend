@@ -6,7 +6,7 @@ import type {
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
@@ -137,7 +137,8 @@ async function showCancellationFlow(
   try {
     await showFlow({
       cancelAt,
-      surveyId: remoteConfig.value.cancellation_survey_id || undefined,
+      surveyId:
+        useRemoteConfigStore().config.cancellation_survey_id || undefined,
       flow,
       workspaceId: launchWorkspaceId,
       isScopeCurrent

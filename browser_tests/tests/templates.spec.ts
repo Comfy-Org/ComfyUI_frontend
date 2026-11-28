@@ -9,7 +9,6 @@ import {
   hasElementFlashed,
   trackElementFlash
 } from '@e2e/fixtures/utils/flashDetector'
-import { assetPath } from '@e2e/fixtures/utils/paths'
 import type { WorkflowTemplates } from '@comfyorg/api-client/templateTypes'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
@@ -47,21 +46,10 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   })
 
   test('Can load template workflows', async ({ comfyPage }) => {
-    await comfyPage.page.route(
-      /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/[a-f0-9]{40}\/input\/transparent_rgb_gaming_mouse\.png$/,
-      (route) =>
-        route.fulfill({
-          path: assetPath('test_upload_image.png'),
-          contentType: 'image/png'
-        })
-    )
-
-    // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.expectNodeCount(0)
 
-    // Load a template
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
@@ -69,6 +57,9 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     const firstPopularTemplate = comfyPage.templates.allTemplateCards.first()
     await expect(firstPopularTemplate).toBeVisible()
     await firstPopularTemplate.click()
+    await comfyPage.page
+      .getByRole('button', { name: 'Just open', exact: true })
+      .click()
     await expect(comfyPage.templates.content).toBeHidden()
 
     await comfyPage.expectNodeCountMinimum(1)
@@ -90,6 +81,59 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
           .getByRole('combobox', { name: 'Sort by' })
           .filter({ visible: true })
       ).toHaveText('Popular')
+    })
+
+    test('only the first open lands on Popular, later opens and sessions land on All Templates sorted by Newest', async ({
+      comfyPage
+    }) => {
+      const dialog = comfyPage.templatesDialog
+
+      await test.step('first open lands on Popular', async () => {
+        await expect(dialog.filterByHeading('Popular')).toBeVisible()
+        await expect
+          .poll(() =>
+            comfyPage.settings.getSetting('Comfy.Templates.HasOpenedLibrary')
+          )
+          .toBe(true)
+      })
+
+      await test.step('reopening in the same session lands on All Templates + Newest', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.templates.content).toBeHidden()
+        await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+        await expect(dialog.filterByHeading('All Templates')).toBeVisible()
+        await dialog.openFilters()
+        await expect(dialog.sortSelect).toHaveText('Newest')
+      })
+
+      await test.step('a later session where the user still counts as new lands on All Templates + Newest', async () => {
+        await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+        await comfyPage.page.evaluate(() => {
+          for (const key of Object.keys(localStorage)) {
+            if (key.startsWith('Comfy.Workflow.')) localStorage.removeItem(key)
+          }
+        })
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await expect(comfyPage.templates.content).toBeVisible()
+        await expect(dialog.filterByHeading('All Templates')).toBeVisible()
+        await dialog.openFilters()
+        await expect(dialog.sortSelect).toHaveText('Newest')
+      })
+
+      await test.step('that session still counts the user as new, so only the opened-library flag keeps Popular away', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(comfyPage.templates.content).toBeHidden()
+        await comfyPage.settings.setSetting(
+          'Comfy.Templates.HasOpenedLibrary',
+          false
+        )
+        await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+        await expect(dialog.filterByHeading('Popular')).toBeVisible()
+      })
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.Templates.SortBy'))
+        .toBe('newest')
     })
   })
 

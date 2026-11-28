@@ -17,7 +17,7 @@ import { runWhenGlobalIdle } from '@/base/common/async'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { api as apiMock } from '@/scripts/api'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
@@ -561,7 +561,21 @@ describe('GraphView - missing nodes notice', () => {
 
     expect(noticeMissingNodes).toHaveBeenCalledWith(
       nodeTypes,
-      expect.any(Function)
+      expect.any(Function),
+      'brought_in'
+    )
+  })
+
+  it('tells the deployment offer when a workflow was reopened', () => {
+    distribution.isCloud = true
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    showMissingNodesNotice(nodeTypes, 'reopened')
+
+    expect(noticeMissingNodes).toHaveBeenCalledWith(
+      nodeTypes,
+      expect.any(Function),
+      'reopened'
     )
   })
 

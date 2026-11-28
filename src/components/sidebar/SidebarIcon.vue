@@ -114,7 +114,7 @@ const accessibleName = computed(() =>
 
 <style>
 .side-bar-button-icon {
-  font-size: var(--sidebar-icon-size) !important;
+  font-size: var(--sidebar-icon-size);
 }
 
 .side-bar-button-selected {

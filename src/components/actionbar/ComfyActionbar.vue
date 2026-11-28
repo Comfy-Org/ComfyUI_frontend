@@ -37,7 +37,7 @@
             )
           "
         />
-        <DeploymentSwitcher />
+        <DeploymentSwitcher :on-team-plan="onTeamPlan" />
         <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton />
@@ -106,7 +106,6 @@
 import {
   useDraggable,
   useEventListener,
-  useLocalStorage,
   useResizeObserver,
   watchDebounced
 } from '@vueuse/core'
@@ -124,7 +123,9 @@ import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useInterruptibleJob } from '@/components/queue/useInterruptibleJob'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
+import { useTeamOrEnterprisePlan } from '@/platform/billing/composables/useTeamOrEnterprisePlan'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -152,6 +153,7 @@ const emit = defineEmits<{
 }>()
 
 const settingStore = useSettingStore()
+const onTeamPlan = useTeamOrEnterprisePlan()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const queueStore = useQueueStore()
@@ -168,8 +170,8 @@ const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
 
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
-const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
+const isDocked = useSafeLocalStorage('Comfy.MenuPosition.Docked', true)
+const storedPosition = useSafeLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })

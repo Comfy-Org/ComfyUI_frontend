@@ -1,3 +1,4 @@
+import { isWorkspaceId } from '@comfyorg/account-core/workspaceLink'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -113,7 +114,8 @@ async function openFromDesktop(
   tabs: CloudTabOpener,
   filename: string,
   isAuthorized: () => boolean,
-  revalidate: () => Promise<boolean>
+  revalidate: () => Promise<boolean>,
+  workspaceId?: string
 ): Promise<void> {
   const workflow = await prepareWorkflow()
   if (!isAuthorized()) return
@@ -123,11 +125,12 @@ async function openFromDesktop(
   const relay = await stageDesktopWorkflowHandoff(
     filename,
     workflow,
-    authorize
+    authorize,
+    workspaceId
   ).catch(() => undefined)
   if (!(await authorize()) || !isAuthorized()) return
   if (relay) return tabs.openDisowned(relay)
-  tabs.openDisowned(cloudEditorUrl())
+  tabs.openDisowned(cloudEditorUrl(undefined, workspaceId))
   downloadWorkflow(filename, workflow)
   useToast().info(t('openOnCloud.downloaded'), {
     description: t('openOnCloud.downloadedDetail'),
@@ -136,8 +139,11 @@ async function openFromDesktop(
 }
 
 export async function openWorkflowOnCloud(
-  tabs: CloudTabOpener = browserTabs
+  tabs: CloudTabOpener = browserTabs,
+  workspaceId?: string
 ): Promise<void> {
+  if (workspaceId !== undefined && !isWorkspaceId(workspaceId))
+    return showPrepareFailed()
   const { flags } = useFeatureFlags()
   const origin = trustedCloudHandoffOrigin()
   if (!origin) return
@@ -160,10 +166,16 @@ export async function openWorkflowOnCloud(
   if (!isAuthorized()) return
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
   if (handsPopupsToSystemBrowser())
-    return openFromDesktop(tabs, filename, isAuthorized, revalidate)
+    return openFromDesktop(
+      tabs,
+      filename,
+      isAuthorized,
+      revalidate,
+      workspaceId
+    )
 
   const nonce = handoffNonce()
-  const tab = tabs.open(cloudEditorUrl(nonce))
+  const tab = tabs.open(cloudEditorUrl(nonce, workspaceId))
   if (!tab) {
     useToast().error(t('openOnCloud.popupBlocked'), { duration: NOTICE_MS })
     return

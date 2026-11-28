@@ -3,6 +3,7 @@ set -euo pipefail
 
 base_sha=${1:?base SHA is required}
 head_sha=${2:?PR head SHA is required}
+default_branch_ref=${DEFAULT_BRANCH_REF:-}
 
 for sha in "$base_sha" "$head_sha"; do
   git cat-file -e "${sha}^{commit}" || {
@@ -11,5 +12,30 @@ for sha in "$base_sha" "$head_sha"; do
   }
 done
 
-git diff --name-only --diff-filter=AMR "${base_sha}...${head_sha}" -- \
-  'browser_tests/**/*.spec.ts'
+blob_at() {
+  git rev-parse --quiet --verify "${1}:${2}" || true
+}
+
+candidates=$(git diff --name-only --diff-filter=AMR "${base_sha}...${head_sha}" -- \
+  'browser_tests/**/*.spec.ts')
+
+default_branch_point=
+if [ -n "$default_branch_ref" ] &&
+  git rev-parse --quiet --verify "${default_branch_ref}^{commit}" > /dev/null; then
+  default_branch_point=$(git merge-base "$head_sha" "$default_branch_ref" || true)
+fi
+
+if [ -z "$candidates" ] || [ -z "$default_branch_point" ]; then
+  [ -z "$candidates" ] || printf '%s\n' "$candidates"
+  exit 0
+fi
+
+while IFS= read -r file; do
+  [ -n "$file" ] || continue
+  head_blob=$(blob_at "$head_sha" "$file")
+  default_blob=$(blob_at "$default_branch_point" "$file")
+  if [ -n "$default_blob" ] && [ "$head_blob" = "$default_blob" ]; then
+    continue
+  fi
+  printf '%s\n' "$file"
+done <<< "$candidates"

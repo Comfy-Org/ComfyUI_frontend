@@ -4,7 +4,7 @@
   </div>
   <div
     v-else
-    ref="slots"
+    data-part="node-slots"
     :class="
       cn(
         'flex min-w-0 justify-between',
@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onErrorCaptured, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
@@ -58,13 +58,13 @@ import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   isAdvancedSocketInput,
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import type { BodyItem } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import { vueNodeBodyKey } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -90,7 +90,6 @@ const {
   syncLayout?: boolean
 }>()
 const canvasStore = useCanvasStore()
-const slots = useTemplateRef<HTMLElement>('slots')
 const executionErrorStore = useExecutionErrorStore()
 const linkStore = useLinkStore()
 const nodeLocatorId = computed(() =>
@@ -146,32 +145,23 @@ const filteredInputs = computed(() => {
   return [...nonWidgetedInputs(inputs), ...linkedWidgetInputs.value]
 })
 
-const layoutKey = computed(() =>
-  [
-    ...filteredInputs.value.map((input, index) =>
-      getActualInputIndex(input, index)
-    ),
-    '|',
-    ...nodeData.outputs.keys(),
-    unified
-  ].join(':')
-)
-
-watch(
-  [
-    layoutKey,
-    slots,
-    () => canvasStore.rootGraphId,
-    () => layoutStore.slotOffsetVersion
-  ],
-  () => {
-    const rootGraphId = canvasStore.rootGraphId
-    if (syncLayout && slots.value && rootGraphId) {
-      syncSlotOffsets(slots.value, rootGraphId, nodeData.id)
+const body =
+  syncLayout && !unified ? inject(vueNodeBodyKey, undefined) : undefined
+function slotItems(): BodyItem[] {
+  return [
+    {
+      kind: 'slots',
+      inputs: filteredInputs.value.map((input, index) =>
+        getActualInputIndex(input, index)
+      ),
+      outputs: [...nodeData.outputs.keys()]
     }
-  },
-  { flush: 'post' }
-)
+  ]
+}
+if (body) body.slotItems.value = slotItems
+onBeforeUnmount(() => {
+  if (body?.slotItems.value === slotItems) body.slotItems.value = undefined
+})
 
 function inputHasError(input: INodeSlot): boolean {
   const locatorId = nodeLocatorId.value

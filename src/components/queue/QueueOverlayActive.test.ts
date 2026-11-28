@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import QueueOverlayActive from './QueueOverlayActive.vue'
@@ -28,8 +29,8 @@ const i18n = createI18n({
 })
 
 const defaultProps = {
-  totalProgressStyle: { transform: 'scaleX(0.65)' },
-  currentNodeProgressStyle: { transform: 'scaleX(0.4)' },
+  totalPercent: 65,
+  currentNodePercent: 40,
   totalPercentFormatted: '65%',
   currentNodePercentFormatted: '40%',
   currentNodeName: 'Sampler',
@@ -64,8 +65,9 @@ describe('QueueOverlayActive', () => {
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const progressBars = container.querySelectorAll('.absolute.inset-0')
     expect(progressBars).toHaveLength(2)
-    expect(progressBars[0]).toHaveStyle({ transform: 'scaleX(0.65)' })
-    expect(progressBars[1]).toHaveStyle({ transform: 'scaleX(0.4)' })
+    await nextTick()
+    expect(progressBars[0].getAnimations()[0].currentTime).toBe(650)
+    expect(progressBars[1].getAnimations()[0].currentTime).toBe(400)
 
     expect(screen.getByText('65%')).toBeInTheDocument()
 

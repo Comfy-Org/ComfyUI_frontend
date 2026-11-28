@@ -3,7 +3,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable, until, useDebounceFn } from '@vueuse/core'
 
@@ -168,13 +168,14 @@ function useBillingContextInternal(): BillingContext {
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
   const freeTierQuota = useFreeTierQuota()
+  const remoteConfigStore = useRemoteConfigStore()
 
   const canRunWorkflows = computed(
     () =>
       canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
         !isCloud ||
-        !isAuthenticatedConfigLoaded.value ||
+        !remoteConfigStore.isAuthenticatedConfigLoaded ||
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 
@@ -278,7 +279,10 @@ function useBillingContextInternal(): BillingContext {
       try {
         await initialize()
       } catch (err) {
-        console.error('Failed to initialize billing context:', err)
+        reportError(err, {
+          surface: 'billing',
+          errorType: 'error_initializing_billing_context'
+        })
       }
       await runOwedFreshStatusRead()
     },
@@ -388,6 +392,13 @@ function useBillingContextInternal(): BillingContext {
       return
     }
     return activeContext.value.fetchStatus(options)
+  }
+
+  async function fetchStatusFresh(
+    options?: BillingStatusReadOptions
+  ): Promise<boolean> {
+    if (type.value === 'unknown') return false
+    return (await activeContext.value.fetchStatusFresh?.(options)) ?? false
   }
 
   async function fetchBalance(
@@ -561,6 +572,7 @@ function useBillingContextInternal(): BillingContext {
 
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     reconcileSubscriptionSuccess,
     subscribe,

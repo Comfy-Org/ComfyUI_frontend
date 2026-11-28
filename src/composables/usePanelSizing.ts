@@ -1,7 +1,9 @@
-import { StorageSerializers, useStorage } from '@vueuse/core'
+import { StorageSerializers } from '@vueuse/core'
 import type { SplitterPanel } from 'reka-ui'
 import { computed, nextTick, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
+
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 interface SidePanelSizingConfig {
   id: string
@@ -17,14 +19,9 @@ export function usePanelSizing(
   reservedWidth: MaybeRefOrGetter<number>
 ) {
   function storePanel(config: SidePanelSizingConfig) {
-    const width = useStorage<number | null>(
-      config.storageKey,
-      null,
-      undefined,
-      {
-        serializer: StorageSerializers.number
-      }
-    )
+    const width = useSafeLocalStorage<number | null>(config.storageKey, null, {
+      serializer: StorageSerializers.number
+    })
     watch(
       [width, () => toValue(config.visible)],
       () => {

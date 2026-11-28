@@ -11,6 +11,9 @@ import { legacyVhsUnbatchWarningExtension as extension } from './legacyVhsUnbatc
 
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+
 function register(nodeData: Partial<ComfyNodeDef>) {
   return extension.beforeRegisterNodeDef?.(
     fromPartial<typeof LGraphNode>({}),
@@ -18,6 +21,15 @@ function register(nodeData: Partial<ComfyNodeDef>) {
     fromPartial<ComfyApp>({})
   )
 }
+
+// Runs first: the extension warns at most once per page load.
+it('stays silent on Cloud, where the deployment pins the pack version', async () => {
+  distribution.isCloud = true
+  await register({ name: 'VHS_Unbatch', output: ['*'] })
+  expect(useToast().toasts).toEqual([])
+  expect(reportError).not.toHaveBeenCalled()
+  distribution.isCloud = false
+})
 
 it('warns once, only for the pre-MatchType VHS Unbatch definition', async () => {
   await register({ name: 'VHS_Unbatch', output: ['COMFY_MATCHTYPE_V3'] })

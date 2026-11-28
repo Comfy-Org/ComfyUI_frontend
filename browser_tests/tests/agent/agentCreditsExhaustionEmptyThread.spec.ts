@@ -26,7 +26,6 @@ test.describe(
       await waitForCloudApp(page)
       await exhaustedStatus
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await test.step('stay hidden on the empty thread', async () => {
         await expect(agentPanel.composer).toBeVisible()
@@ -86,7 +85,6 @@ test.describe(
         const paywall = agentPanel.creditsExhaustedPaywall
 
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
         await expect(agentPanel.composer).toBeVisible()
 
         await agentPanel.sendMessage('Generate a realistic portrait')
@@ -111,7 +109,7 @@ test.describe(
         expect(agentBilling.statusRequestCount).toBe(settledStatusRequests)
         await expect(
           agentPanel.root.getByRole('note', { name: 'Free use notice' })
-        ).toBeHidden()
+        ).toBeVisible()
         await expect(paywall).toHaveCount(0)
       })
     })

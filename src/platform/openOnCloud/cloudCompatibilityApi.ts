@@ -1,9 +1,19 @@
-import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
-import type { CompatibilityModel } from '@comfyorg/ingest-types'
+import {
+  awaitWithAbort,
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from '@comfyorg/api-client/abortSignal'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type {
+  CloudWorkflowCompatibility,
+  CompatibilityModel
+} from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   ExecutableLGraphNode,
   ExecutionId,
@@ -11,6 +21,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
+  isComboWidget,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
@@ -19,14 +30,20 @@ import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
-import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudCheckFailureReason,
+  CloudWorkflowBlocker,
+  CloudWorkflowCheckResult,
+  UncheckedModelInput
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { trustedCloudHandoffOrigin } from '@/platform/openOnCloud/localHandoffProtocol'
 
 const LINKED = Symbol('linked')
 
 type CheckedNode = {
   class_type: string
   inputs: Record<string, unknown>
-  pickerInputs: Set<string>
+  pickerInputs: Map<string, IBaseWidget>
   hasUnreadableModels: boolean
 }
 
@@ -71,11 +88,26 @@ function nodeInputs(node: ExecutableLGraphNode): Record<string, unknown> {
   return inputs
 }
 
-function pickerInputs(node: ExecutableLGraphNode): Set<string> {
+function pickerInputs(node: ExecutableLGraphNode): Map<string, IBaseWidget> {
   const widgets = (node.widgets ?? []).filter((widget) =>
     PICKER_WIDGET_TYPES.has(widget.type)
   )
-  return new Set(widgets.map((widget) => widget.name))
+  return new Map(widgets.map((widget) => [widget.name, widget]))
+}
+
+function isPossibleLinkedModel(widget: IBaseWidget | undefined): boolean {
+  if (!widget) return false
+  if (!isComboWidget(widget)) return true
+  const { values } = widget.options
+  return !(
+    Array.isArray(values) &&
+    values.length > 0 &&
+    values.every(
+      (option) =>
+        typeof option === 'number' ||
+        (typeof option === 'string' && !isModelFileName(option))
+    )
+  )
 }
 
 function hasUnreadableModels(node: ExecutableLGraphNode): boolean {
@@ -139,10 +171,19 @@ function loaderFolders(
     .map(([folder]) => folder)
 }
 
+type UnmappedModel = UncheckedModelInput & { name: string }
+
 type ModelScan = {
   mapped: CompatibilityModel[]
-  unmapped: string[]
-  hasLinkedModelInput: boolean
+  unmapped: UnmappedModel[]
+  unchecked: Map<string, UncheckedModelInput>
+}
+
+function markUnchecked(
+  scan: ModelScan,
+  { nodeType, input }: UncheckedModelInput
+) {
+  scan.unchecked.set(JSON.stringify([nodeType, input]), { nodeType, input })
 }
 
 function scanNode(
@@ -152,87 +193,281 @@ function scanNode(
 ) {
   for (const [input, value] of Object.entries(node.inputs)) {
     const folders = loaderFolders(loaderInputs, input)
-    const isModelInput = folders.length > 0 || node.pickerInputs.has(input)
+    const picker = node.pickerInputs.get(input)
     if (value === LINKED) {
-      if (isModelInput) scan.hasLinkedModelInput = true
+      if (folders.length || isPossibleLinkedModel(picker))
+        markUnchecked(scan, { nodeType: node.class_type, input })
       continue
     }
     if (typeof value !== 'string') continue
     scan.mapped.push(...folders.map((folder) => ({ folder, name: value })))
-    if (!folders.length && isModelInput && isModelFileName(value))
-      scan.unmapped.push(value)
+    if (!folders.length && picker && isModelFileName(value))
+      scan.unmapped.push({ nodeType: node.class_type, input, name: value })
   }
 }
 
 function scanModelInputs(nodes: CheckedNode[]): ModelScan {
   const inputsByType = modelInputsByNodeType()
-  const scan: ModelScan = {
-    mapped: [],
-    unmapped: [],
-    hasLinkedModelInput: false
-  }
+  const scan: ModelScan = { mapped: [], unmapped: [], unchecked: new Map() }
   for (const node of nodes)
     scanNode(node, inputsByType.get(node.class_type) ?? [], scan)
   return scan
 }
 
-async function resolveUnmapped(
-  names: string[]
-): Promise<CompatibilityModel[] | null> {
-  if (!names.length) return []
+async function resolveUnmapped(scan: ModelScan): Promise<CompatibilityModel[]> {
+  if (!scan.unmapped.length) return []
   const folderByName = await localModelFolders()
-  const resolved: CompatibilityModel[] = []
-  for (const name of names) {
-    const folder = folderByName.get(name)
-    if (!folder) return null
-    resolved.push({ folder, name })
-  }
-  return resolved
-}
-
-async function collectModels(
-  nodes: CheckedNode[]
-): Promise<CompatibilityModel[] | null> {
-  const { mapped, unmapped, hasLinkedModelInput } = scanModelInputs(nodes)
-  if (hasLinkedModelInput) return null
-  const resolved = await resolveUnmapped(unmapped)
-  if (!resolved) return null
-  const models = new Map<string, CompatibilityModel>()
-  for (const model of [...mapped, ...resolved])
-    models.set(JSON.stringify([model.folder, model.name]), model)
-  return [...models.values()]
-}
-
-async function postCompatibilityCheck(
-  nodes: CheckedNode[]
-): Promise<Response | null> {
-  const models = await collectModels(nodes)
-  if (!models) return null
-  const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
-  const auth = await useAuthStore().getAuthHeader()
-  return fetch(new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...auth },
-    body: JSON.stringify({
-      node_types: nodeTypes,
-      models
-    }),
-    signal: createTimeoutSignal(10_000)
+  return scan.unmapped.flatMap((model) => {
+    const folder = folderByName.get(model.name)
+    if (folder) return [{ folder, name: model.name }]
+    markUnchecked(scan, model)
+    return []
   })
 }
 
-function giveUp(cause: unknown): null {
+type CollectedModels = {
+  models: CompatibilityModel[]
+  unchecked: UncheckedModelInput[]
+}
+
+async function collectModels(nodes: CheckedNode[]): Promise<CollectedModels> {
+  const scan = scanModelInputs(nodes)
+  const resolved = await resolveUnmapped(scan)
+  const models = new Map<string, CompatibilityModel>()
+  for (const model of [...scan.mapped, ...resolved])
+    models.set(JSON.stringify([model.folder, model.name]), model)
+  return {
+    models: [...models.values()],
+    unchecked: [...scan.unchecked.values()]
+  }
+}
+
+async function compatibilityAuth(expectedWorkspaceId?: string) {
+  const authStore = useAuthStore()
+  const { flags } = useFeatureFlags()
+  if (!expectedWorkspaceId && !flags.openOnCloudModelUploadEnabled)
+    return {
+      ok: true,
+      headers: await authStore.getAuthHeader(),
+      workspaceId: undefined
+    } as const
+
+  const { isApiKeyLogin, isLoggedIn } = useCurrentUser()
+  const requireWorkspace =
+    !!expectedWorkspaceId || (isLoggedIn.value && !isApiKeyLogin.value)
+  const { headers, workspaceId } = await authStore.getWorkspaceAuthContext({
+    requireWorkspace
+  })
+  if (expectedWorkspaceId && workspaceId !== expectedWorkspaceId)
+    return { ok: false } as const
+  if (
+    (requireWorkspace && !workspaceId) ||
+    (!headers && (requireWorkspace || isLoggedIn.value))
+  )
+    return { ok: false } as const
+  return {
+    ok: true,
+    headers,
+    workspaceId: headers ? workspaceId : undefined
+  } as const
+}
+
+type CheckFailure = Extract<CloudWorkflowBlocker, { kind: 'checkFailed' }>
+
+type CompatibilityAnswer = {
+  cloud: CloudWorkflowCompatibility
+  workspaceId: string | undefined
+}
+
+async function readJson(
+  response: Response,
+  signal: AbortSignal
+): Promise<unknown> {
+  try {
+    return await response.json()
+  } catch (error) {
+    if (signal.aborted || !(error instanceof SyntaxError)) throw error
+    return undefined
+  }
+}
+
+function stringField(body: unknown, field: 'code' | 'message') {
+  if (!body || typeof body !== 'object' || !(field in body)) return undefined
+  const value: unknown = Reflect.get(body, field)
+  return typeof value === 'string' ? value : undefined
+}
+
+function authFailureReason(cause: unknown): CloudCheckFailureReason {
+  return cause instanceof TypeError ||
+    stringField(cause, 'code') === 'auth/network-request-failed'
+    ? 'unreachable'
+    : 'workspace'
+}
+
+const statusReasons: Partial<Record<number, CloudCheckFailureReason>> = {
+  401: 'workspace',
+  403: 'workspace',
+  408: 'busy',
+  413: 'tooBig',
+  429: 'busy'
+}
+
+function badRequestReason(body: unknown): CloudCheckFailureReason {
+  if (stringField(body, 'code') === 'workspace_id_invalid') return 'workspace'
+  return stringField(body, 'message')?.startsWith('at most ')
+    ? 'tooBig'
+    : 'outdated'
+}
+
+function notFoundReason(body: unknown): CloudCheckFailureReason {
+  return stringField(body, 'code') === 'NOT_FOUND' ? 'switchedOff' : 'busy'
+}
+
+const bodyReasons: Partial<
+  Record<number, (body: unknown) => CloudCheckFailureReason>
+> = { 400: badRequestReason, 404: notFoundReason }
+
+async function refusalReason(
+  response: Response,
+  signal: AbortSignal
+): Promise<CloudCheckFailureReason> {
+  const { status } = response
+  if (status >= 500) return 'busy'
+  const fromBody = bodyReasons[status]
+  if (fromBody) return fromBody(await readJson(response, signal))
+  return statusReasons[status] ?? 'outdated'
+}
+
+type CompatibilityCredential = Extract<
+  Awaited<ReturnType<typeof compatibilityAuth>>,
+  { ok: true }
+>
+
+async function authorize(
+  workspaceId: string | undefined,
+  signal: AbortSignal
+): Promise<CompatibilityCredential | CheckFailure> {
+  const auth = await awaitWithAbort(
+    compatibilityAuth(workspaceId).catch(
+      (cause: unknown) => ({ ok: false, cause }) as const
+    ),
+    signal
+  )
+  throwIfAborted(signal)
+  if (auth.ok) return auth
+  if ('cause' in auth) return giveUp(authFailureReason(auth.cause), auth.cause)
+  return giveUp(
+    navigator.onLine ? 'workspace' : 'unreachable',
+    new Error('Workspace authorization unavailable')
+  )
+}
+
+async function readAnswer(
+  response: Response,
+  signal: AbortSignal,
+  workspaceId: string | undefined
+): Promise<CompatibilityAnswer | CheckFailure> {
+  if (!response.ok)
+    return giveUp(
+      await refusalReason(response, signal),
+      new Error(`Cloud compatibility returned ${response.status}`)
+    )
+  const parsed = zCheckCloudCompatibilityResponse.safeParse(
+    await readJson(response, signal)
+  )
+  if (!parsed.success) return giveUp('outdated', parsed.error)
+  return { cloud: parsed.data.cloud, workspaceId }
+}
+
+function isCheckFailure(value: object): value is CheckFailure {
+  return 'kind' in value && value.kind === 'checkFailed'
+}
+
+async function requestCompatibility(
+  nodeTypes: string[],
+  models: CompatibilityModel[],
+  { workspaceId, signal }: { workspaceId?: string; signal?: AbortSignal } = {}
+): Promise<CompatibilityAnswer | CheckFailure | null> {
+  const timeout = createTimeoutSignal(10_000)
+  const requestSignal = signal
+    ? combineAbortSignals([signal, timeout])
+    : timeout
+  try {
+    const origin = trustedCloudHandoffOrigin()
+    if (!origin)
+      return giveUp('unreachable', new Error('Cloud API origin unavailable'))
+    throwIfAborted(requestSignal)
+    const auth = await authorize(workspaceId, requestSignal)
+    if (isCheckFailure(auth)) return auth
+    const response = await fetch(new URL('/api/cloud/compatibility', origin), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth.headers },
+      body: JSON.stringify({ node_types: nodeTypes, models }),
+      redirect: 'error',
+      signal: requestSignal
+    })
+    return await readAnswer(response, requestSignal, auth.workspaceId)
+  } catch (error) {
+    if (signal?.aborted) return null
+    return giveUp(timeout.aborted ? 'busy' : 'unreachable', error)
+  }
+}
+
+export async function readCloudMissingModels(
+  models: CompatibilityModel[],
+  workspaceId: string,
+  signal?: AbortSignal
+) {
+  const verdict = await requestCompatibility([], models, {
+    workspaceId,
+    signal
+  })
+  return verdict && 'cloud' in verdict
+    ? (verdict.cloud.missing_models ?? null)
+    : null
+}
+
+function giveUp(reason: CloudCheckFailureReason, cause: unknown): CheckFailure {
   reportError(cause, {
     errorType: 'failure_checking_cloud_compatibility',
     surface: 'platform'
   })
-  return null
+  return { kind: 'checkFailed', reason }
+}
+
+function workflowVerdict(
+  verdict: CloudWorkflowCompatibility,
+  requireModelVerdict: boolean,
+  unchecked: UncheckedModelInput[],
+  workspaceId?: string
+): CloudWorkflowCheckResult {
+  const { missing_node_types: nodePacks, missing_models: models } = verdict
+  if (nodePacks.length || models?.length)
+    return { kind: 'missing', gaps: { nodePacks, models: models ?? [] } }
+  if (requireModelVerdict && models === undefined)
+    return giveUp(
+      'outdated',
+      new Error('Cloud compatibility omitted the model verdict')
+    )
+  return {
+    kind: 'canOpen',
+    ...(workspaceId && { workspaceId }),
+    ...(unchecked.length > 0 && { uncheckedInputs: unchecked })
+  }
+}
+
+export interface ConfirmedWorkspaceModels {
+  workspaceId: string
+  models: readonly CompatibilityModel[]
 }
 
 /** Resolves null when no verdict is available. */
-export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
-  let body: unknown
+export async function checkCloudCompatibility(
+  confirmedUploads?: ConfirmedWorkspaceModels,
+  signal?: AbortSignal
+): Promise<CloudWorkflowCheckResult> {
   try {
+    throwIfAborted(signal)
     const nodes = checkedNodes(useApp().rootGraph)
     if (!nodes.length) return { kind: 'emptyWorkflow' }
     const unreadableLoader = nodes.find((node) => node.hasUnreadableModels)
@@ -241,21 +476,37 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
         kind: 'unreadableModelLoader',
         nodeType: unreadableLoader.class_type
       }
-    const response = await postCompatibilityCheck(nodes)
-    if (!response) return null
-    if (!response.ok)
-      return giveUp(
-        new Error(`Cloud compatibility returned ${response.status}`)
+    const { models, unchecked } = await awaitWithAbort(
+      collectModels(nodes),
+      signal
+    )
+    throwIfAborted(signal)
+    const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
+    const workspaceId = confirmedUploads?.models.some((uploaded) =>
+      models.some(
+        ({ folder, name }) =>
+          folder === uploaded.folder && name === uploaded.name
       )
-    body = await response.json()
+    )
+      ? confirmedUploads.workspaceId
+      : undefined
+    const verdict = await requestCompatibility(nodeTypes, models, {
+      workspaceId,
+      signal
+    })
+    if (!verdict || !('cloud' in verdict)) return verdict
+    const requireModelVerdict =
+      models.length > 0 &&
+      (verdict.workspaceId !== undefined ||
+        useFeatureFlags().flags.openOnCloudModelUploadEnabled)
+    return workflowVerdict(
+      verdict.cloud,
+      requireModelVerdict,
+      unchecked,
+      verdict.workspaceId
+    )
   } catch (error) {
-    return giveUp(error)
+    if (signal?.aborted) return null
+    return giveUp('unreadable', error)
   }
-  const parsed = zCheckCloudCompatibilityResponse.safeParse(body)
-  if (!parsed.success) return giveUp(parsed.error)
-  const { missing_node_types: nodePacks, missing_models: models = [] } =
-    parsed.data.cloud
-  return nodePacks.length || models.length
-    ? { kind: 'missing', gaps: { nodePacks, models } }
-    : { kind: 'canOpen' }
 }

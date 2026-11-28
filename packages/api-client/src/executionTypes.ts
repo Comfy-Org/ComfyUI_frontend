@@ -1,5 +1,10 @@
 import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
-import type { BillingStatusResponse, PromptInfo } from '@comfyorg/ingest-types'
+import type {
+  BillingStatusResponse,
+  ExecutionError,
+  PromptInfo
+} from '@comfyorg/ingest-types'
+import { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
@@ -107,10 +112,40 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   executed: NodeId[]
   exception_message: string
   exception_type: string
-  traceback: string[]
+  /** Cloud can send `null` (or omit it) when no traceback was captured. */
+  traceback?: string[] | null
   current_inputs?: unknown
   current_outputs?: unknown
+  node_errors?: ExecutionError['node_errors']
 }
+const zRelayedValidationError =
+  zPromptOutputsSkippedNodeError.shape.errors.element
+
+const zRelayedValidationErrors = z
+  .array(z.unknown())
+  .catch([])
+  .transform((errors) =>
+    errors.flatMap((error) => {
+      const item = zRelayedValidationError.safeParse(error)
+      return item.success ? [item.data] : []
+    })
+  )
+
+const zRelayedNodeError = z
+  .object({
+    class_type: zPromptOutputsSkippedNodeError.shape.class_type.catch(''),
+    dependent_outputs:
+      zPromptOutputsSkippedNodeError.shape.dependent_outputs.catch([]),
+    errors: zRelayedValidationErrors
+  })
+  .catch({ class_type: '', dependent_outputs: [], errors: [] })
+
+/** Relayed `node_errors` with every node kept and each part outside the contract emptied. */
+export const zRelayedNodeErrors = z.record(
+  z.string(),
+  zRelayedNodeError
+) satisfies z.ZodType<NonNullable<ExecutionError['node_errors']>>
+
 export interface ProgressTextWsMessage {
   nodeId: NodeId
   text: string

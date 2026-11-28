@@ -88,7 +88,6 @@ describe('useDeploymentPickStore', () => {
 
   it.for([
     new WorkspaceApiError('Service unavailable', 503),
-    new WorkspaceApiError('Network Error'),
     new WorkspaceApiError('Bad request', 400),
     new TypeError('Network unavailable')
   ])('reports a failed deployment lookup once: %s', async (error) => {
@@ -106,7 +105,28 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
-  it('reports a lookup the server refuses for the session as a denied warning', async () => {
+  it.for([
+    new WorkspaceApiError('Failed to fetch'),
+    new WorkspaceApiError('Load failed'),
+    new WorkspaceApiError('signal timed out'),
+    new WorkspaceApiError('timeout of 30000ms exceeded')
+  ])('keeps a lookup that got no response out of Sentry: %s', async (error) => {
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+    await store.load()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing',
+      sentryMode: 'never'
+    })
+  })
+
+  it('keeps a lookup the server refuses for the session out of Sentry, as a denied warning', async () => {
     const error = new WorkspaceApiError('invalid session cookie', 401)
     mockWorkspaceApi.listDeployments.mockRejectedValue(error)
     const store = useDeploymentPickStore()
@@ -118,8 +138,37 @@ describe('useDeploymentPickStore', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
       surface: 'workspace',
       errorType: 'error_loading_deployment_listing',
+      sentryMode: 'never',
       level: 'warning',
       tags: { status: 401, outcome: 'denied' }
+    })
+  })
+
+  it('still reports a later Sentry-bound failure after a Datadog-only 401 on the same page', async () => {
+    const refused = new WorkspaceApiError('invalid session cookie', 401)
+    const outage = new WorkspaceApiError('Service unavailable', 503)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(refused)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+    mockWorkspaceApi.listDeployments.mockRejectedValue(outage)
+    const reload = store.load()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await reload
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenNthCalledWith(1, refused, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing',
+      sentryMode: 'never',
+      level: 'warning',
+      tags: { status: 401, outcome: 'denied' }
+    })
+    expect(reportError).toHaveBeenNthCalledWith(2, outage, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing'
     })
   })
 
@@ -391,6 +440,234 @@ describe('useDeploymentPickStore', () => {
 
     expect(store.goneDeployment).toBe('pick')
     expect(store.bootDeployment).toBeNull()
+  })
+
+  describe('forgetting a gone pick', () => {
+    const goneListing = {
+      ...listing,
+      picked_deployment_id: undefined,
+      pick_source: undefined,
+      gone_picked_deployment_id: 'dep-gone'
+    }
+
+    it('replaces the gone pick with Comfy Cloud, without a reload', async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(goneListing)
+        .mockResolvedValue({
+          ...goneListing,
+          gone_picked_deployment_id: undefined,
+          pick_source: 'browser'
+        })
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        { signal: expect.any(AbortSignal) }
+      )
+      expect(reload).not.toHaveBeenCalled()
+      expect(store.goneDeployment).toBe('pick')
+      expect(store.followsWorkspace).toBe(false)
+    })
+
+    it('leaves the pick alone when only a listing older than the one shown said it was gone', async () => {
+      let answerOlder: (reply: WorkspaceDeploymentList) => void = () => {}
+      mockWorkspaceApi.listDeployments
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            answerOlder = resolve
+          })
+        )
+        .mockResolvedValue({
+          ...goneListing,
+          gone_picked_deployment_id: undefined
+        })
+      const store = useDeploymentPickStore()
+      const older = store.loadOnce()
+      await store.load()
+      answerOlder(goneListing)
+      await older
+      expect(store.goneDeployment).toBe('pick')
+
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { when: 'its pick is listed', reply: listing },
+      {
+        when: 'only the workspace default is gone',
+        reply: {
+          ...listing,
+          picked_deployment_id: undefined,
+          pick_source: undefined,
+          gone_default_deployment_id: 'dep-gone'
+        }
+      }
+    ] satisfies { when: string; reply: WorkspaceDeploymentList }[])(
+      'leaves the pick alone when $when',
+      async ({ reply }) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(reply)
+        const store = useDeploymentPickStore()
+        await store.loadOnce()
+
+        await store.forgetGonePick()
+
+        expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+      }
+    )
+
+    it('is cancelled, unreported, by a pick the person makes meanwhile', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+      let forgetSignal: AbortSignal | undefined
+      mockWorkspaceApi.clearDeployment.mockImplementation(
+        (_workspaceId: string, options: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            forgetSignal = options.signal
+            options.signal.addEventListener('abort', () =>
+              reject(new WorkspaceApiError('canceled'))
+            )
+          })
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      const forgetting = store.forgetGonePick()
+      await store.pick('dep-1')
+      await forgetting
+
+      expect(forgetSignal?.aborted).toBe(true)
+      expect(reportError).not.toHaveBeenCalled()
+      expect(reload).toHaveBeenCalledOnce()
+    })
+
+    it('sends one request when asked again while the first is in flight', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      let answer: () => void = () => {}
+      mockWorkspaceApi.clearDeployment.mockReturnValue(
+        new Promise<void>((resolve) => {
+          answer = resolve
+        })
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      const first = store.forgetGonePick()
+      await store.forgetGonePick()
+      answer()
+      await first
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
+    })
+
+    it('does not send a second request when the listing after it fails', async () => {
+      mockWorkspaceApi.listDeployments
+        .mockResolvedValueOnce(goneListing)
+        .mockRejectedValue(new WorkspaceApiError('Service unavailable', 503))
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      await store.forgetGonePick()
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
+    })
+
+    it('can be asked again after a request that faile', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.clearDeployment
+        .mockRejectedValueOnce(
+          new WorkspaceApiError('Service unavailable', 503)
+        )
+        .mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      await store.forgetGonePick()
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledTimes(2)
+    })
+
+    it('is cancelled, unreported, when the workspace change', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.clearDeployment.mockImplementation(
+        (_workspaceId: string, options: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            options.signal.addEventListener('abort', () =>
+              reject(new WorkspaceApiError('canceled'))
+            )
+          })
+      )
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      const forgetting = store.forgetGonePick()
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+      await forgetting
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+    })
+
+    it('does not start while a pick is in flight', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.pickDeployment.mockReturnValue(new Promise(() => {}))
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+      void store.pick('dep-1')
+
+      await store.forgetGonePick()
+
+      expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+    })
+
+    it('reports a failure as a warning and keeps the page as it was', async () => {
+      const error = new WorkspaceApiError('Service unavailable', 503)
+      mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+      mockWorkspaceApi.clearDeployment.mockRejectedValue(error)
+      const store = useDeploymentPickStore()
+      await store.loadOnce()
+
+      await store.forgetGonePick()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+        surface: 'workspace',
+        errorType: 'error_forgetting_gone_deployment_pick',
+        level: 'warning'
+      })
+      expect(store.state.phase).toBe('ready')
+    })
+
+    it.for([
+      new WorkspaceApiError('Failed to fetch'),
+      new WorkspaceApiError('Unauthorized', 401),
+      new WorkspaceApiError('Forbidden', 403),
+      new WorkspaceApiError('Not found', 404)
+    ])(
+      'keeps a failure the listing would keep out of Sentry out of it too: %s',
+      async (error) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(goneListing)
+        mockWorkspaceApi.clearDeployment.mockRejectedValue(error)
+        const store = useDeploymentPickStore()
+        await store.loadOnce()
+
+        await store.forgetGonePick()
+
+        expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+          surface: 'workspace',
+          errorType: 'error_forgetting_gone_deployment_pick',
+          level: 'warning',
+          sentryMode: 'never'
+        })
+      }
+    )
   })
 
   it('stops saying the pick is gone once a later listing shows a picked deployment', async () => {

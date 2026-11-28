@@ -119,7 +119,7 @@ test.describe(
       harness.hostSocket.send(runToolCallFrame('running'))
       await execution.enqueueServerRun(JOB_ID)
       await execution.startJob(JOB_ID)
-      harness.hostSocket.send(runToolCallFrame('success'))
+      harness.hostSocket.send(runToolCallFrame('success', JOB_ID))
       await settleStoryTurn(harness)
 
       // "Submits the workflow": the run is a real job the user can see on the

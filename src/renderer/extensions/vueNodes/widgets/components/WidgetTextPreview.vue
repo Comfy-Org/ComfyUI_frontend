@@ -42,7 +42,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
+          'size-full min-h-0 resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           'overflow-y-auto'
         )
       "
@@ -146,7 +146,7 @@ function handleCopy() {
 function handleDownload() {
   if (!downloadUrl.value) return
   try {
-    downloadFile(downloadUrl.value, savedFile.value?.filename)
+    downloadFile(downloadUrl.value, savedFile.value?.filename, 'node_preview')
   } catch {
     useToast().error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }
