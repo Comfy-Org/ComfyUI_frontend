@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { useAudioService } from '@/services/audioService'
 import type { ComfyExtension } from '@/types/comfy'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -178,6 +179,63 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     audioWidget.callback()
     expect(api.apiURL).toHaveBeenCalledWith(
       '/view?filename=none&subfolder=&type=input'
+    )
+  })
+
+  function registerAudioListNode() {
+    useNodeDefStore().addNodeDef({
+      name: 'LoadAudioList',
+      display_name: 'Load Audio List',
+      category: 'audio',
+      python_module: 'custom_nodes.audio_list',
+      description: '',
+      input: {
+        required: {
+          audio: [['a.mp3', 'b.mp3'], { audio_upload: true, min: 0, max: 2 }]
+        }
+      },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false,
+      deprecated: false,
+      experimental: false
+    })
+  }
+
+  function createAudioListNode() {
+    registerAudioListNode()
+    const nodeParts = createAudioNode()
+    Object.assign(nodeParts.audioWidget, { value: ['a.mp3', 'b.mp3'] })
+    Object.assign(nodeParts.node, { type: 'LoadAudioList' })
+    return nodeParts
+  }
+
+  it('previews the newest file of a list-valued audio picker', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { node } = createAudioListNode()
+
+    AUDIOUPLOAD(node, 'upload')
+
+    expect(api.apiURL).toHaveBeenCalledWith(
+      '/view?filename=b.mp3&subfolder=&type=input'
+    )
+  })
+
+  it('appends an upload to a list-valued audio picker within its max', async () => {
+    const AUDIOUPLOAD = await loadAudioUploadWidget()
+    const { audioWidget, node } = createAudioListNode()
+    AUDIOUPLOAD(node, 'upload')
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('c.mp3'))
+
+    await capturedDragDrop!([createFile('c.mp3')])
+
+    expect(audioWidget.value).toEqual(['b.mp3', 'c.mp3'])
+    expect(node.onWidgetChanged).toHaveBeenCalledWith(
+      'audio',
+      ['b.mp3', 'c.mp3'],
+      ['a.mp3', 'b.mp3'],
+      audioWidget
     )
   })
 

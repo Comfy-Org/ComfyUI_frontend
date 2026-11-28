@@ -277,6 +277,35 @@ describe('Load3DConfiguration model load reporting', () => {
     }
   )
 
+  it('loads the newest model of a list-valued model picker', async () => {
+    const load3d = makeLoad3dMock()
+    new Load3DConfiguration(load3d).configure({
+      modelWidget: reactiveWidget(['first.glb', 'second.glb']),
+      loadFolder: 'input'
+    })
+    await flush()
+
+    expect(loadModelSpy).toHaveBeenCalledExactlyOnceWith(
+      expect.any(String),
+      'second.glb'
+    )
+  })
+
+  it('clears the model when a list-valued model picker is emptied', async () => {
+    const load3d = makeLoad3dMock()
+    const modelWidget = reactiveWidget(['model.glb'])
+    new Load3DConfiguration(load3d).configure({
+      modelWidget,
+      loadFolder: 'input'
+    })
+    await flush()
+
+    modelWidget.value = []
+    await flush()
+
+    expect(load3d.clearModel).toHaveBeenCalled()
+  })
+
   describe('while keeping the loaded model', () => {
     const requestedModelUrl = '/view?filename=model.glb'
 

@@ -3,6 +3,10 @@ import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recor
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
+import {
+  chooseMediaFile,
+  getWidgetSelectionLimits
+} from '@/extensions/core/chooseMediaFile'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
@@ -21,6 +25,7 @@ import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { previewedMediaFile } from '@/utils/mediaUploadUtil'
 
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -52,7 +57,6 @@ async function uploadFile(
   pasted: boolean = false
 ): Promise<boolean> {
   try {
-    // Wrap file in formdata so it includes filename
     const body = new FormData()
     body.append('image', file)
     if (pasted) body.append('subfolder', 'pasted')
@@ -63,7 +67,6 @@ async function uploadFile(
 
     if (resp.status === 200) {
       const data: { name: string; subfolder?: string } = await resp.json()
-      // Add the file to the dropdown list and update the widget value
       const path = data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 
       appendWidgetValue(audioWidget, path)
@@ -75,10 +78,14 @@ async function uploadFile(
           api.apiURL(getResourceURL(...splitFilePath(path)))
         )
 
-        audioWidget.value = path
-        // Manually trigger the callback to update VueNodes
-        audioWidget.callback?.(path)
-        node.onWidgetChanged?.(audioWidget.name, path, oldValue, audioWidget)
+        const newValue = chooseMediaFile(node, audioWidget, path)
+        audioWidget.callback?.(newValue)
+        node.onWidgetChanged?.(
+          audioWidget.name,
+          newValue,
+          oldValue,
+          audioWidget
+        )
       }
       return true
     } else {
@@ -226,13 +233,13 @@ export const uploadAudioExtension: ComfyExtension = {
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
-          const value = audioWidget.value
+          const value = previewedMediaFile(audioWidget.value)
           const values = audioWidget.options.values
           const isEmptySentinel =
             value === 'none' && values?.length === 1 && values[0] === value
           updateUIWidget(
             audioUIWidget,
-            value && !isEmptySentinel
+            typeof value === 'string' && value && !isEmptySentinel
               ? api.apiURL(getResourceURL(...splitFilePath(value)))
               : ''
           )
@@ -259,7 +266,8 @@ export const uploadAudioExtension: ComfyExtension = {
 
           node.isUploading = true
           const previousValue = audioWidget.value
-          audioWidget.value = files[0].name
+          if (!getWidgetSelectionLimits(node, audioWidget))
+            audioWidget.value = files[0].name
           try {
             const success = await uploadFile(
               node,

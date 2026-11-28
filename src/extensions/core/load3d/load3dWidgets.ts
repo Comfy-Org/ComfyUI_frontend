@@ -3,6 +3,7 @@ import type { Component } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
+import { chooseMediaFile } from '@/extensions/core/chooseMediaFile'
 import { isViewMode } from '@/extensions/core/load3d/cameraAngle/widgetBridge'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
@@ -93,7 +94,7 @@ async function handleModelUpload(file: File, node: LGraphNode) {
         modelWidget.options.values?.push(uploadPath)
       }
 
-      modelWidget.value = uploadPath
+      chooseMediaFile(node, modelWidget, uploadPath)
       recordModelChange()
     }
 
@@ -149,7 +150,7 @@ function selectModelAsset(item: ResultItem, node: LGraphNode) {
 
   const modelPath = createAnnotatedPath(item)
   addToComboValues(modelWidget, modelPath)
-  modelWidget.value = modelPath
+  chooseMediaFile(node, modelWidget, modelPath)
   recordModelChange()
 }
 

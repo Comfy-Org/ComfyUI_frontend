@@ -39,3 +39,17 @@ export function toMediaSelection(value: unknown): string[] {
     return []
   return [value]
 }
+
+/** A list selection with `added` appended, keeping the newest `max` filenames. */
+export function appendToMediaSelection(
+  value: unknown,
+  added: string[],
+  max: number
+): string[] {
+  return [...toMediaSelection(value), ...added].slice(-max)
+}
+
+/** The file a single-file preview shows for a picker value: the newest entry of a list selection, otherwise the value itself. */
+export function previewedMediaFile(value: unknown): unknown {
+  return Array.isArray(value) ? toMediaSelection(value).at(-1) : value
+}

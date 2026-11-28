@@ -24,10 +24,11 @@ import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IWidget } from '@comfyorg/graph-model/widgets'
+import type { IBaseWidget, IWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
@@ -1581,6 +1582,43 @@ describe('useLoad3d', () => {
         'http://localhost/api/view/uploaded/model.glb'
       )
       expect(modelWidget.value).toBe('uploaded/model.glb')
+    })
+
+    it('appends a dropped model to a list-valued model picker', async () => {
+      useNodeDefStore().addNodeDef({
+        name: 'Load3DList',
+        display_name: 'Load 3D List',
+        category: '3d',
+        python_module: 'custom_nodes.load3d_list',
+        description: '',
+        input: {
+          required: {
+            model_file: [['a.glb'], { mesh_upload: true, min: 0, max: 3 }]
+          }
+        },
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false,
+        deprecated: false,
+        experimental: false
+      })
+      Object.assign(mockNode, { type: 'Load3DList' })
+      const modelWidget = fromPartial<IBaseWidget>({
+        name: 'model_file',
+        value: ['a.glb']
+      })
+      mockNode.widgets ??= []
+      mockNode.widgets.push(modelWidget)
+      vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('3d/b.glb')
+      vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['3d', 'b.glb'])
+      vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view/3d/b.glb')
+
+      const composable = useLoad3d(mockNode)
+      await composable.initializeLoad3d(document.createElement('div'))
+      await composable.handleModelDrop(new File([''], 'b.glb'))
+
+      expect(modelWidget.value).toEqual(['a.glb', '3d/b.glb'])
     })
 
     it('does not commit the model widget when loading is not completed', async () => {

@@ -100,13 +100,14 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   video_upload: z.boolean().optional(),
   audio_upload: z.boolean().optional(),
   mesh_upload: z.boolean().optional(),
+  file_upload: z.boolean().optional(),
   upload_subfolder: z.string().optional(),
   animated_image_upload: z.boolean().optional(),
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
-  /** Fewest files an image or video picker accepts; setting it or `max` makes the value a list. */
+  /** Fewest files an upload picker accepts; setting it or `max` makes the value a list. */
   min: z.number().int().nonnegative().optional(),
-  /** Most files an image or video picker accepts; setting it or `min` makes the value a list. */
+  /** Most files an upload picker accepts; setting it or `min` makes the value a list. */
   max: z.number().int().positive().optional(),
   /** Whether the widget is a multi-select widget. */
   multi_select: zMultiSelectOption.optional()
@@ -192,17 +193,30 @@ export interface MediaSelectionLimits {
   max: number
 }
 
-/** Selection counts for an image or video picker that sets `min` or `max`, making its value a list of filenames. An unset bound keeps the single-file default of 1. */
+/** Selection counts for an upload picker that sets `min` or `max`, making its value a list of filenames. An unset bound keeps the single-file default of 1. */
 export function getMediaSelectionLimits(
   options: Pick<
     ComboInputOptions,
-    'image_upload' | 'animated_image_upload' | 'video_upload' | 'min' | 'max'
+    | 'image_upload'
+    | 'animated_image_upload'
+    | 'video_upload'
+    | 'audio_upload'
+    | 'mesh_upload'
+    | 'file_upload'
+    | 'min'
+    | 'max'
   >
 ): MediaSelectionLimits | undefined {
-  const { image_upload, animated_image_upload, video_upload, min, max } =
-    options
+  const { min, max } = options
   if (min === undefined && max === undefined) return undefined
-  if (!image_upload && !animated_image_upload && !video_upload) return undefined
+  const hasUpload =
+    options.image_upload ||
+    options.animated_image_upload ||
+    options.video_upload ||
+    options.audio_upload ||
+    options.mesh_upload ||
+    options.file_upload
+  if (!hasUpload) return undefined
   const resolvedMin = min ?? 1
   return { min: resolvedMin, max: max ?? Math.max(1, resolvedMin) }
 }
