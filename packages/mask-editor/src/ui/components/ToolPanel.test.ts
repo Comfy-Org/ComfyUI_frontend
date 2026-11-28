@@ -110,12 +110,19 @@ describe('ToolPanel', () => {
       expect(screen.getByTestId('zoom-percentage').textContent).toBe('124%')
     })
 
-    it('should render image dimensions when an image is loaded', () => {
-      mockStore.image = new Image(800, 600)
-      renderPanel()
+    it.for([
+      { dimensions: undefined, expected: '800x600' },
+      { dimensions: { width: 600, height: 800 }, expected: '600x800' }
+    ])(
+      'renders $expected for the current document dimensions $dimensions',
+      ({ dimensions, expected }) => {
+        mockStore.image = new Image(800, 600)
+        mockStore.canvasHistory = { ...mockStore.canvasHistory, dimensions }
+        renderPanel()
 
-      expect(screen.getByTestId('zoom-dimensions').textContent).toBe('800x600')
-    })
+        expect(screen.getByTestId('zoom-dimensions').textContent).toBe(expected)
+      }
+    )
 
     it('should render a single-space placeholder when no image', () => {
       mockStore.image = null

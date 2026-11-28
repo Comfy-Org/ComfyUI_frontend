@@ -1,7 +1,7 @@
 import { useMaskEditorStore } from './maskEditorStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import { effectScope, nextTick, reactive } from 'vue'
 import type { EffectScope } from 'vue'
 
 vi.mock<unknown>(import('typegpu'), () => ({
@@ -33,12 +33,78 @@ let mockStore: ReturnType<typeof useMaskEditorStore>
 
 import { resetDirtyRect } from './brushDrawingUtils'
 import { useGPUResources } from './useGPUResources'
+import { useCanvasHistory } from './useCanvasHistory'
 
 let scope: EffectScope | null = null
 
 function setup() {
   scope = effectScope()
   return scope.run(() => useGPUResources())!
+}
+
+async function initializeGPU() {
+  vi.stubGlobal('GPUTextureUsage', {
+    COPY_DST: 2,
+    COPY_SRC: 1,
+    RENDER_ATTACHMENT: 16,
+    STORAGE_BINDING: 8,
+    TEXTURE_BINDING: 4
+  })
+  vi.stubGlobal('GPUBufferUsage', {
+    COPY_DST: 8,
+    COPY_SRC: 4,
+    STORAGE: 128,
+    MAP_READ: 1
+  })
+  vi.stubGlobal('ImageBitmap', class {})
+  vi.stubGlobal('navigator', {
+    gpu: { getPreferredCanvasFormat: () => 'rgba8unorm' }
+  })
+  const context = fromPartial<CanvasRenderingContext2D>({
+    getImageData: vi.fn(
+      (_x: number, _y: number, width: number, height: number) =>
+        fromPartial<ImageData>({
+          width,
+          height,
+          data: new Uint8ClampedArray(width * height * 4).fill(255)
+        })
+    ),
+    putImageData: vi.fn()
+  })
+  const gpuDevice = {
+    createTexture: vi.fn(({ size }: GPUTextureDescriptor) => {
+      const [width, height] =
+        'width' in size ? [size.width, size.height ?? 1] : [...size]
+      return fromPartial<GPUTexture>({ width, height, destroy: vi.fn() })
+    }),
+    createBuffer: vi.fn(() => fromPartial<GPUBuffer>({ destroy: vi.fn() })),
+    queue: { writeTexture: vi.fn<GPUQueue['writeTexture']>() }
+  }
+  mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>({
+    device: gpuDevice
+  })
+  mockStore.maskCanvas = fromPartial<HTMLCanvasElement>({
+    width: 4,
+    height: 3,
+    getContext: vi.fn(() => context)
+  })
+  mockStore.rgbCanvas = fromPartial<HTMLCanvasElement>({
+    width: 4,
+    height: 3,
+    getContext: vi.fn(() => context)
+  })
+  mockStore.imgCanvas = fromPartial<HTMLCanvasElement>({
+    width: 4,
+    height: 3,
+    getContext: vi.fn(() => context)
+  })
+  mockStore.maskCtx = context
+  mockStore.rgbCtx = context
+  mockStore.imgCtx = context
+  mockStore.canvasHistory = reactive(useCanvasHistory(mockStore, 2))
+  const resources = setup()
+  await resources.initGPUResources()
+  return { resources, gpuDevice }
 }
 
 beforeEach(() => {
@@ -49,7 +115,7 @@ beforeEach(() => {
   mockStore.maskCtx = null
   mockStore.rgbCtx = null
   mockStore.clearTrigger = 0
-  mockStore.canvasHistory.currentStateIndex = 0
+  mockStore.canvasHistory.revision = 0
   mockStore.gpuTexturesNeedRecreation = false
 })
 
@@ -136,17 +202,85 @@ describe('watchers', () => {
     await nextTick()
   })
 
-  it('currentStateIndex watcher short-circuits when isSavingHistory is true', async () => {
-    const { isSavingHistory } = setup()
-    isSavingHistory.value = true
-    mockStore.canvasHistory.currentStateIndex++
-    await nextTick()
-  })
+  it.for([
+    { saving: false, uploads: 2 },
+    { saving: true, uploads: 0 }
+  ])(
+    'uploads $uploads layers for a full-history save when saving=$saving',
+    async ({ saving, uploads }) => {
+      const { resources, gpuDevice } = await initializeGPU()
+      mockStore.canvasHistory.saveInitialState()
+      mockStore.canvasHistory.saveState()
+      await nextTick()
+      expect(mockStore.canvasHistory.currentStateIndex).toBe(1)
+      gpuDevice.queue.writeTexture.mockClear()
+      gpuDevice.createTexture.mockClear()
+      resources.isSavingHistory.value = saving
 
-  it('currentStateIndex watcher calls updateGPUFromCanvas when not saving history', async () => {
-    setup()
-    mockStore.canvasHistory.currentStateIndex++
+      mockStore.canvasHistory.saveState()
+      await nextTick()
+
+      expect(mockStore.canvasHistory.currentStateIndex).toBe(1)
+      expect(gpuDevice.queue.writeTexture).toHaveBeenCalledTimes(uploads)
+      expect(gpuDevice.createTexture).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps uploaded texture dimensions aligned with rotation, undo, and redo', async () => {
+    const { gpuDevice } = await initializeGPU()
+    mockStore.canvasHistory.saveInitialState()
     await nextTick()
+    mockStore.maskCanvas!.width = 3
+    mockStore.maskCanvas!.height = 4
+    mockStore.rgbCanvas!.width = 3
+    mockStore.rgbCanvas!.height = 4
+    mockStore.imgCanvas!.width = 3
+    mockStore.imgCanvas!.height = 4
+    gpuDevice.queue.writeTexture.mockClear()
+
+    mockStore.canvasHistory.saveState()
+    await nextTick()
+
+    expect(
+      gpuDevice.queue.writeTexture.mock.calls.map(([target, , , extent]) => [
+        target.texture.width,
+        target.texture.height,
+        extent
+      ])
+    ).toEqual([
+      [3, 4, { width: 3, height: 4 }],
+      [3, 4, { width: 3, height: 4 }]
+    ])
+    gpuDevice.queue.writeTexture.mockClear()
+
+    mockStore.canvasHistory.undo()
+    await nextTick()
+
+    expect(
+      gpuDevice.queue.writeTexture.mock.calls.map(([target, , , extent]) => [
+        target.texture.width,
+        target.texture.height,
+        extent
+      ])
+    ).toEqual([
+      [4, 3, { width: 4, height: 3 }],
+      [4, 3, { width: 4, height: 3 }]
+    ])
+    gpuDevice.queue.writeTexture.mockClear()
+
+    mockStore.canvasHistory.redo()
+    await nextTick()
+
+    expect(
+      gpuDevice.queue.writeTexture.mock.calls.map(([target, , , extent]) => [
+        target.texture.width,
+        target.texture.height,
+        extent
+      ])
+    ).toEqual([
+      [3, 4, { width: 3, height: 4 }],
+      [3, 4, { width: 3, height: 4 }]
+    ])
   })
 
   it('gpuTexturesNeedRecreation watcher returns early when device is not initialised', async () => {
@@ -176,67 +310,9 @@ describe('initPreviewCanvas', () => {
 })
 
 describe('gpuRender', () => {
-  it('resolves immediately when renderer is not initialised', async () => {
-    const { gpuDrawPoint } = setup()
-    await expect(gpuDrawPoint({ x: 10, y: 20 })).resolves.toBeUndefined()
-  })
-
   it('uses full coverage for GPU stroke paths', async () => {
-    vi.stubGlobal('GPUTextureUsage', {
-      COPY_DST: 0x0002,
-      COPY_SRC: 0x0001,
-      RENDER_ATTACHMENT: 0x0010,
-      STORAGE_BINDING: 0x0008,
-      TEXTURE_BINDING: 0x0004
-    })
-    Object.defineProperty(navigator, 'gpu', {
-      configurable: true,
-      value: { getPreferredCanvasFormat: vi.fn(() => 'rgba8unorm') }
-    })
-
-    const imageData = fromPartial<ImageData>({
-      data: new Uint8ClampedArray(4 * 4 * 4)
-    })
-    const context = fromPartial<CanvasRenderingContext2D>({
-      getImageData: vi.fn(() => imageData),
-      putImageData: vi.fn()
-    })
-    const gpuDevice = {
-      createTexture: vi.fn(() => ({
-        createView: vi.fn(),
-        destroy: vi.fn()
-      })),
-      queue: {
-        writeTexture: vi.fn()
-      }
-    }
-    mockStore.tgpuRoot = fromPartial<NonNullable<typeof mockStore.tgpuRoot>>({
-      device: gpuDevice
-    })
-    mockStore.maskCanvas = fromPartial<HTMLCanvasElement>({
-      getContext: vi.fn().mockReturnValue(context),
-      width: 4,
-      height: 4
-    })
-    mockStore.rgbCanvas = fromPartial<HTMLCanvasElement>({
-      getContext: vi.fn().mockReturnValue(context),
-      width: 4,
-      height: 4
-    })
-    mockStore.maskCtx = context
-    mockStore.rgbCtx = context
-
-    const resources = setup()
-    await resources.initGPUResources()
+    const { resources } = await initializeGPU()
     resources.gpuRender([{ x: 2, y: 2 }])
-
-    expect(mockRenderer.renderStrokeToAccumulator).toHaveBeenCalledWith(
-      expect.any(Array),
-      expect.objectContaining({ coverage: 1 })
-    )
-
-    mockRenderer.renderStrokeToAccumulator.mockClear()
-    await resources.gpuDrawPoint({ x: 2, y: 2 })
 
     expect(mockRenderer.renderStrokeToAccumulator).toHaveBeenCalledWith(
       expect.any(Array),
