@@ -20,7 +20,6 @@ import type {
   WidgetCallbackOptions
 } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import { inputSpecTree } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { useApp } from '@/scripts/appInstance'
 import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
@@ -145,16 +144,14 @@ export function executeWidgetsCallback(
   }
 }
 
+const CHILD_WIDGET_INPUT_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
 /**
- * Since frontend version 1.16, forceInput input is no longer treated
- * as widget. So we need to remove the dummy widget value serialized
- * from workflows prior to v1.16.
- * Ref: https://github.com/Comfy-Org/ComfyUI_frontend/pull/3326
- *
- * @param nodeDef the node definition
- * @param widgets the widgets on the node instance (from node definition)
- * @param widgetsValues the widgets values to populate the node during configuration
- * @returns the widgets values without the dummy widget values
+ * Drops the dummy forceInput values that frontends before 1.16 serialized.
  */
 export function migrateWidgetsValues<TWidgetValue>(
   inputDefs: Record<string, InputSpec>,
@@ -163,7 +160,7 @@ export function migrateWidgetsValues<TWidgetValue>(
 ): TWidgetValue[] {
   if (
     Object.values(inputDefs).some((input) =>
-      inputSpecTree(input).some((spec) => spec.type === 'COMFY_DYNAMICGROUP_V3')
+      CHILD_WIDGET_INPUT_TYPES.has(input.type)
     )
   )
     return widgetsValues
