@@ -339,8 +339,13 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { destroyAgentPageSession } from './agentPageSession'
+import { withAgentAuth } from './services/agent/agentAuth'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
+import {
+  rememberPreviousCredentialForHandoff,
+  takePendingPreviousCredential
+} from './services/agent/agentOwnerHandoff'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import {
   hasUnsyncedHumanOps,
@@ -19354,6 +19359,45 @@ describe('AgentPanelRoot agent socket identity', () => {
       .filter((frame) => frame.type === 'doc_subscribe')
       .map((frame) => frame.data?.workflow_id ?? '')
   }
+
+  it('keeps the outgoing credential when the new account authenticates before deferred listeners', async () => {
+    distribution.isCloud = false
+    useAuthStore().currentUser = null
+    const apiKeyAuth = useApiKeyAuthStore()
+    apiKeyAuth.currentUser = fromPartial({ id: 'account-a' })
+    let credential = 'credential-a'
+    vi.spyOn(apiKeyAuth, 'getAuthHeader').mockImplementation(() => ({
+      'X-API-KEY': credential
+    }))
+    rememberPreviousCredentialForHandoff(null)
+    respondToFetch(/\/agent\/identity$/, (_input, init) => {
+      const apiKey = new Headers(init?.headers).get('X-API-KEY')
+      return json(200, {
+        workspace_id: 'ws-local',
+        user_id: apiKey === 'credential-a' ? 'account-a' : 'account-b'
+      })
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await vi.waitFor(() =>
+      expect(fetchRequests(/\/agent\/identity$/)).toHaveLength(1)
+    )
+
+    credential = 'credential-b'
+    const authenticatingNewAccount = withAgentAuth({ method: 'GET' })
+    apiKeyAuth.currentUser = fromPartial({ id: 'account-b' })
+    await authenticatingNewAccount
+    await vi.waitFor(() =>
+      expect(fetchRequests(/\/agent\/identity$/)).toHaveLength(2)
+    )
+    await nextTick()
+
+    expect(
+      fetchRequests(/\/agent\/identity$/).map(({ headers }) =>
+        headers.get('X-API-KEY')
+      )
+    ).toEqual(['credential-a', 'credential-b'])
+    expect(takePendingPreviousCredential()).toBe('credential-a')
+  })
 
   it('retries a failed identity lookup and activates the follower once it resolves', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
