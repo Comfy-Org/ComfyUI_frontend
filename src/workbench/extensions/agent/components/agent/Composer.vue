@@ -319,9 +319,13 @@ function requestKeyboardDescription(event: KeyboardEvent): void {
     requestDescription('input')
 }
 
+function isModifiedEscape(event: KeyboardEvent): boolean {
+  return event.shiftKey || event.ctrlKey || event.altKey || event.metaKey
+}
+
 function stopRunOnEscape(event: KeyboardEvent): void {
   if (event.key !== 'Escape' || !running.value) return
-  if (event.isComposing || event.repeat) return
+  if (event.isComposing || event.repeat || isModifiedEscape(event)) return
   event.preventDefault()
   event.stopPropagation()
   emit('stop', 'escape')
@@ -463,7 +467,8 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
     openingChat ||
     event.key !== 'Escape' ||
     !running.value ||
-    event.isComposing
+    event.isComposing ||
+    isModifiedEscape(event)
   )
     return false
   if (event.defaultPrevented) return false
