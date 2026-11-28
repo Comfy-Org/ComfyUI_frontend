@@ -127,6 +127,7 @@
           <NodeHeader
             :node-data
             :collapsed="isCollapsed"
+            :recent-press-dragged="recentPressDragged"
             :show-missing-warning="
               errorSeverity === 'missing' && !showErrorsTabEnabled
             "
@@ -518,9 +519,8 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers, isDragging } = useNodePointerInteractions(
-  () => nodeData
-)
+const { pointerHandlers, isDragging, recentPressDragged } =
+  useNodePointerInteractions(() => nodeData)
 useNodeMouseCallbacks(() => nodeData.id, nodeRef)
 const badges = usePartitionedBadges(nodeData)
 
