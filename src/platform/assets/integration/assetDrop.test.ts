@@ -50,11 +50,11 @@ describe('assetDrop', () => {
       expect(actual).toEqual([file1, file2])
     })
 
-    it('should filter out bmp files', async () => {
+    it('should filter out synthetic bmp placeholder files', async () => {
       const jsonFile = new File([new Uint8Array()], 'workflow.json', {
         type: 'application/json'
       })
-      const bmpFile = new File([new Uint8Array()], 'image.bmp', {
+      const bmpFile = new File([''], 'image.bmp', {
         type: 'image/bmp'
       })
       const dataTransfer = new DataTransfer()
@@ -65,6 +65,19 @@ describe('assetDrop', () => {
         new FakeDragEvent('drop', { dataTransfer })
       )
       expect(actual).toEqual([jsonFile])
+    })
+
+    it('should keep real bmp files', async () => {
+      const bmpFile = new File(['bmp-data'], 'image.bmp', {
+        type: 'image/bmp'
+      })
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(bmpFile)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+      expect(actual).toEqual([bmpFile])
     })
 
     it('should return multiple image files from dataTransfer', async () => {
@@ -83,6 +96,25 @@ describe('assetDrop', () => {
         new FakeDragEvent('drop', { dataTransfer })
       )
       expect(actual).toEqual([imageFile1, imageFile2])
+    })
+
+    it('should return files from dataTransfer.items when dataTransfer.files is empty', async () => {
+      const file = new File([new Uint8Array()], 'image.png', {
+        type: 'image/png'
+      })
+
+      const source = new DataTransfer()
+      source.items.add(file)
+
+      Object.defineProperty(source, 'files', {
+        configurable: true,
+        value: new DataTransfer().files
+      })
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer: source })
+      )
+      expect(actual).toEqual([file])
     })
 
     it('should return multiple non-image files from dataTransfer', async () => {
@@ -121,6 +153,26 @@ describe('assetDrop', () => {
       expect(actual).toHaveLength(1)
       expect(actual[0]).toBeInstanceOf(File)
       expect(actual[0].type).toBe('image/png')
+    })
+
+    it('falls back to a Firefox URI when the only file is a synthetic BMP', async () => {
+      const uri = 'https://example.com/api/view?filename=test.png&type=input'
+      const imageBlob = new Blob(['image'], { type: 'image/png' })
+      vi.mocked(fetch).mockResolvedValue(new Response(imageBlob))
+
+      const dataTransfer = new DataTransfer()
+      dataTransfer.items.add(
+        new File([], 'placeholder.bmp', { type: 'image/bmp' })
+      )
+      dataTransfer.setData('text/x-moz-url', uri)
+
+      const actual = await extractFilesFromDragEvent(
+        new FakeDragEvent('drop', { dataTransfer })
+      )
+
+      expect(actual).toHaveLength(1)
+      expect(actual[0].type).toBe('image/png')
+      expect(fetch).toHaveBeenCalledOnce()
     })
 
     it('should handle text/x-moz-url type', async () => {

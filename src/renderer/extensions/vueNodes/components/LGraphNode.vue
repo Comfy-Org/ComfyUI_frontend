@@ -297,6 +297,7 @@ import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composable
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import { useVueNodeDragAndDrop } from '@/renderer/extensions/vueNodes/composables/useVueNodeDragAndDrop'
 import { useMountedNodeSize } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import {
@@ -937,33 +938,12 @@ const nodeMedia = computed(() => {
   return { type, items } as const
 })
 
-// Drag and drop support
-const isDraggingOver = ref(false)
+const { isDraggingOver, handleDragOver, handleDragLeave, handleDrop } =
+  useVueNodeDragAndDrop(lgraphNode, toastErrorHandler)
 
 const badgesStyle = computed(() => ({
   marginBottom: `${4 + (hasAnyError.value || isDraggingOver.value ? 4 : 0) + (isEmphasized.value || executing.value ? 3 : 0)}px`
 }))
-
-function handleDragOver(event: DragEvent) {
-  const node = resolveLGraphNode()
-  if (!node || !node.onDragOver) {
-    isDraggingOver.value = false
-    return
-  }
-
-  // Call the litegraph node's onDragOver callback to check if files are valid
-  const canDrop = node.onDragOver(event)
-  isDraggingOver.value = canDrop
-}
-
-function handleDragLeave() {
-  isDraggingOver.value = false
-}
-
-function handleDrop(event: DragEvent) {
-  isDraggingOver.value = false
-  useApp().dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
-}
 
 const FOOTER_TAB_OVERHANG = 24
 const ERROR_FOOTER_OVERHANG = 20
