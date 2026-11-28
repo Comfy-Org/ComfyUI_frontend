@@ -342,4 +342,69 @@ describe('Composer slash skill picker groups', () => {
     ).toBeVisible()
     expect(within(menu).queryByRole('button', { name: 'Retry' })).toBeNull()
   })
+
+  it('shows Comfy skills loading alongside cached user skills until built-in skills resolve', async () => {
+    let resolveBuiltin: (result: {
+      status: 'ok'
+      skills: BuiltinSkill[]
+    }) => void = () => {}
+    vi.mocked(listBuiltinSkills).mockReturnValueOnce(
+      new Promise((settle) => {
+        resolveBuiltin = settle
+      })
+    )
+    const { builtinStore } = mountComposer({ comfySkills: [] })
+    builtinStore.hasLoaded = false
+    builtinStore.catalogConfirmed = false
+    builtinStore.catalogRequested = false
+
+    await typeInComposer('/')
+
+    const menu = screen.getByRole('menu', { name: 'Skills' })
+    expect(
+      within(menu).getByRole('menuitem', { name: 'portrait' })
+    ).toBeVisible()
+    expect(await within(menu).findByRole('status')).toHaveTextContent(
+      /Loading Comfy skills/i
+    )
+
+    resolveBuiltin({
+      status: 'ok',
+      skills: [builtin('batch-generation', COMFY_BATCH_DESC)]
+    })
+
+    expect(
+      await within(menu).findByRole('menuitem', { name: 'batch-generation' })
+    ).toBeVisible()
+    expect(within(menu).queryByRole('status')).toBeNull()
+  })
+
+  it('shows user skills loading alongside cached Comfy skills until user skills resolve', async () => {
+    let resolvePacks: (packs: SkillPack[]) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise((settle) => {
+        resolvePacks = settle
+      })
+    )
+    const { skills } = mountComposer({ userPacks: [] })
+    skills.hasLoaded = false
+    skills.catalogConfirmed = false
+
+    await typeInComposer('/')
+
+    const menu = screen.getByRole('menu', { name: 'Skills' })
+    expect(
+      within(menu).getByRole('menuitem', { name: 'batch-generation' })
+    ).toBeVisible()
+    expect(await within(menu).findByRole('status')).toHaveTextContent(
+      /Loading skills/i
+    )
+
+    resolvePacks([pack('portrait', 'Compose a portrait')])
+
+    expect(
+      await within(menu).findByRole('menuitem', { name: 'portrait' })
+    ).toBeVisible()
+    expect(within(menu).queryByRole('status')).toBeNull()
+  })
 })

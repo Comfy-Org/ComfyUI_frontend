@@ -434,19 +434,34 @@ const skillsMenuStatus = useSkillCatalogStatus()
 const skillsMenuStatusMessage = computed(() =>
   skillsMenuStatus.value === 'failed' ? skills.loadFailureReason : undefined
 )
-const userSkillFailureInMention = computed(
-  () => mentionSection.value === 'skills' && skillsMenuStatus.value === 'failed'
-)
-const comfySkillFailureInMention = computed(
-  () =>
-    mentionSection.value === 'skills' &&
-    comfySkillsMenuStatus.value === 'failed'
-)
+const userSkillMentionStatus = computed(() => {
+  if (mentionSection.value !== 'skills') return undefined
+  if (skills.packs.length === 0 && skills.loading) {
+    return { label: t('agent.skillsLoading'), retryable: false }
+  }
+  if (skillsMenuStatus.value === 'failed') {
+    return {
+      label: skills.loadFailureReason ?? t('agent.skillsLoadError'),
+      retryable: true
+    }
+  }
+  return undefined
+})
+const comfySkillMentionStatus = computed(() => {
+  if (mentionSection.value !== 'skills') return undefined
+  if (comfySkillsMenuStatus.value === 'loading') {
+    return { label: t('agent.comfySkillsLoading'), retryable: false }
+  }
+  if (comfySkillsMenuStatus.value === 'failed') {
+    return { label: t('agent.comfySkillsLoadError'), retryable: true }
+  }
+  return undefined
+})
 const showEmptyMentionStatus = computed(
   () =>
     !mentionHasResults.value &&
-    !userSkillFailureInMention.value &&
-    !comfySkillFailureInMention.value
+    !userSkillMentionStatus.value &&
+    !comfySkillMentionStatus.value
 )
 const emptyMentionLabel = computed(() =>
   mentionSection.value === 'skills'
@@ -459,8 +474,6 @@ const emptyMentionLabel = computed(() =>
 )
 
 function skillsEmptyLabel(): string {
-  if (skills.loading) return t('agent.skillsLoading')
-  if (builtinSkills.loading) return t('agent.comfySkillsLoading')
   if (skills.catalogUnavailable) return t('agent.skillsUnavailable')
   return t('agent.noSkillsFound')
 }
@@ -711,15 +724,15 @@ defineExpose({
           :label="emptyMentionLabel"
         />
         <MentionMenuStatus
-          v-if="userSkillFailureInMention"
-          :label="skills.loadFailureReason ?? t('agent.skillsLoadError')"
-          retryable
+          v-if="userSkillMentionStatus"
+          :label="userSkillMentionStatus.label"
+          :retryable="userSkillMentionStatus.retryable"
           @retry="skills.ensurePacks()"
         />
         <MentionMenuStatus
-          v-if="comfySkillFailureInMention"
-          :label="t('agent.comfySkillsLoadError')"
-          retryable
+          v-if="comfySkillMentionStatus"
+          :label="comfySkillMentionStatus.label"
+          :retryable="comfySkillMentionStatus.retryable"
           @retry="builtinSkills.refreshSkills()"
         />
       </div>
