@@ -1492,6 +1492,45 @@ describe('legacy group lifecycle ownership', () => {
     expect(target.getInputLink(0)?.origin_id).toBe(group.id)
   })
 
+  it('preserves a callback-owned disconnection when reconnection invalidates another member', () => {
+    const graph = createTestRootGraph()
+    const sourceData = createTestSubgraph({
+      id: crypto.randomUUID(),
+      outputs: [{ name: 'result', type: 'MASK' }]
+    }).asSerialisable()
+    const requiredData = createTestSubgraph({
+      id: crypto.randomUUID()
+    }).asSerialisable()
+    const source = graph.createSubgraph(sourceData)
+    const required = graph.createSubgraph(requiredData)
+    useSubgraphService().registerNewSubgraph(source, sourceData)
+    useSubgraphService().registerNewSubgraph(required, requiredData)
+    const { group, handler } = groupWithMembers(graph, [source.id, required.id])
+    group.addOutput('result', 'MASK')
+    const target = new LGraphNode('External target')
+    target.addInput('result', 'MASK')
+    graph.add(target)
+    group.connect(0, target, 0)
+    handler.groupData.newToOldOutputMap[0] = {
+      node: handler.groupData.nodeData.nodes[0],
+      slot: 0
+    }
+    target.onConnectionsChange = (_side, _slot, connected) => {
+      if (!connected) return
+      target.disconnectInput(0)
+      graph.releaseSubgraphs([required])
+    }
+
+    const result = handler.convertToNodes()
+
+    expect(result).toMatchObject({
+      refused: true,
+      interference: { phase: 'reconnect', cleanupErrors: [] }
+    })
+    expect(graph.nodes).toEqual([group, target])
+    expect(target.getInputLink(0)).toBeNull()
+  })
+
   it('does not remove an unrelated node replacing the original during configuration', () => {
     const graph = new LGraph()
     const { group, handler } = groupWithMembers(graph, [
