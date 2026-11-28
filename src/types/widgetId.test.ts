@@ -5,6 +5,7 @@ import {
   dropUnrenamableDuplicateWidgets,
   ensureUniqueWidgetNames,
   isWidgetId,
+  ownedWidgetNameKey,
   parseWidgetId,
   widgetId
 } from '@comfyorg/graph-model/widgetId'
@@ -338,6 +339,62 @@ describe('dropUnrenamableDuplicateWidgets', () => {
 
     expect(refusedWidgets(widgets)).toEqual([other])
     expect(widgets).toEqual([shared, shared])
+  })
+})
+
+describe('ownedWidgetNameKey', () => {
+  it('gives the name to the first widget holding it, and to no later one', () => {
+    const first = { name: 'seed' }
+    const later = { name: 'seed' }
+    const unrelated = { name: 'cfg' }
+    const widgets = [first, later, unrelated]
+
+    expect(ownedWidgetNameKey(widgets, first)).toBe('seed')
+    expect(ownedWidgetNameKey(widgets, later)).toBeUndefined()
+    expect(ownedWidgetNameKey(widgets, unrelated)).toBe('cfg')
+  })
+
+  it('treats one widget in two array slots as one widget, not a collision', () => {
+    const shared = { name: 'seed' }
+
+    expect(ownedWidgetNameKey([shared, shared], shared)).toBe('seed')
+  })
+
+  it('collides names that differ as values but coincide as id strings', () => {
+    const numeric = { name: 1 }
+    const textual = { name: '1' }
+    const widgets = [numeric, textual]
+
+    expect(ownedWidgetNameKey(widgets, numeric)).toBe('1')
+    expect(ownedWidgetNameKey(widgets, textual)).toBeUndefined()
+  })
+
+  it('refuses a widget whose own name cannot be read', () => {
+    const hostile = {
+      get name(): string {
+        throw new Error('nope')
+      }
+    }
+
+    expect(ownedWidgetNameKey([hostile], hostile)).toBeUndefined()
+  })
+
+  it('does not let an unreadable name on another widget decide this one', () => {
+    const hostile = {
+      get name(): string {
+        throw new Error('nope')
+      }
+    }
+    const ordinary = { name: 'seed' }
+
+    expect(ownedWidgetNameKey([hostile, ordinary], ordinary)).toBe('seed')
+  })
+
+  it('refuses a widget the node does not list, rather than falling open', () => {
+    const stranger = { name: 'seed' }
+
+    expect(ownedWidgetNameKey([{ name: 'cfg' }], stranger)).toBeUndefined()
+    expect(ownedWidgetNameKey([], stranger)).toBeUndefined()
   })
 })
 

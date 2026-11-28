@@ -20,6 +20,14 @@ function storedNames(graph: LGraph, node: LGraphNode): string[] {
     .map((widget) => widget.name)
 }
 
+function ignoreNameWrites(widget: { name: string }, name: string): void {
+  Object.defineProperty(widget, 'name', {
+    get: () => name,
+    set: () => undefined,
+    configurable: true
+  })
+}
+
 describe('unique-name refusal criterion', () => {
   beforeEach(() => {
     LiteGraph.vueNodesMode = false
@@ -46,7 +54,6 @@ describe('unique-name refusal criterion', () => {
     expect(names(node)).toEqual(['seed', 'seed#1'])
     expect(storedNames(graph, node)).toEqual(['seed', 'seed#1'])
     expect(reportedTypes()).toEqual([])
-
     expect(seed.value).toBe(1)
     expect(steps.value).toBe(2)
 
@@ -54,6 +61,132 @@ describe('unique-name refusal criterion', () => {
     steps.value = 222
     expect(seed.value).toBe(111)
     expect(steps.value).toBe(222)
+  })
+
+  it('does not erase the whole widget order over one pair it cannot resolve', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+    const cfg = node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    ignoreNameWrites(steps, 'seed')
+    graph.add(node)
+
+    const store = useWidgetValueStore()
+    expect(store.getNodeWidgetIds(graph.id, node.id)).toEqual([
+      widgetId(graph.id, node.id, 'seed'),
+      widgetId(graph.id, node.id, 'cfg')
+    ])
+
+    expect(node.widgets).toHaveLength(3)
+    expect(seed.value).toBe(1)
+    expect(steps.value).toBe(2)
+    expect(cfg.value).toBe(3)
+  })
+
+  it('resolves the pair when a reorder moves which widget holds the name', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    ignoreNameWrites(steps, 'seed')
+    graph.add(node)
+
+    const store = useWidgetValueStore()
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed'))?.value).toBe(1)
+
+    node.widgets = [steps, seed]
+
+    expect((node.widgets ?? []).map(({ name }) => name)).toEqual([
+      'seed',
+      'seed#1'
+    ])
+    expect(seed.value).toBe(1)
+    expect(steps.value).toBe(2)
+
+    steps.value = 222
+    expect(seed.value).toBe(1)
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed'))?.value).toBe(
+      222
+    )
+    expect(store.getWidget(widgetId(graph.id, node.id, 'seed#1'))?.value).toBe(
+      1
+    )
+  })
+
+  it('still answers with its own entry id once it is spliced off the node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    ignoreNameWrites(steps, 'seed')
+    graph.add(node)
+
+    node.widgets = (node.widgets ?? []).filter((widget) => widget !== seed)
+
+    const id = widgetId(graph.id, node.id, 'seed')
+    expect(seed.widgetId).toBe(id)
+
+    const store = useWidgetValueStore()
+    store.deleteWidget(id)
+    expect(store.getWidget(id)).toBeUndefined()
+    expect(steps.value).toBe(2)
+  })
+
+  it('gives no id to a refused duplicate, which never registered one', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const first = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const refused = node.addWidget('number', 'steps', 2, () => undefined, {})
+    Object.defineProperty(refused, 'name', {
+      value: 'seed',
+      writable: false,
+      configurable: false,
+      enumerable: true
+    })
+    node.addWidget('number', 'cfg', 3, () => undefined, {})
+
+    expect(node.widgets).not.toContain(refused)
+
+    expect(refused.widgetId).toBeUndefined()
+    expect(first.widgetId).toBe(widgetId(graph.id, node.id, 'seed'))
+  })
+
+  it('does not let a kept duplicate adopt the entry of a widget spliced off the node', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const seed = node.addWidget('number', 'seed', 1, () => undefined, {})
+    const steps = node.addWidget('number', 'steps', 2, () => undefined, {})
+
+    graph.remove(node)
+    steps.name = 'seed'
+    ignoreNameWrites(steps, 'seed')
+    graph.add(node)
+
+    node.widgets = (node.widgets ?? []).filter((widget) => widget !== seed)
+
+    const store = useWidgetValueStore()
+    expect(steps.widgetId).toBeUndefined()
+    expect(store.getNodeWidgetIds(graph.id, node.id)).toEqual([])
+    expect(steps.value).toBe(2)
+    expect(seed.value).toBe(1)
+
+    steps.value = 222
+    expect(seed.value).toBe(1)
   })
 
   it('does not let a duplicate rename steal the entry of a widget on another node', () => {

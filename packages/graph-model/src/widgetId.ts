@@ -41,6 +41,27 @@ function nameIsWritable(widget: object): boolean {
   }
 }
 
+/** The key already bound to a widget's current name, when it is readable. */
+export function widgetNameKey(widget: { name: unknown }): string | undefined {
+  const key = readName(widget)
+  return key === UNREADABLE_NAME ? undefined : key
+}
+
+/** Returns the name key this widget owns by position on its node. */
+export function ownedWidgetNameKey(
+  widgets: readonly { name: unknown }[],
+  widget: { name: unknown }
+): string | undefined {
+  const key = readName(widget)
+  if (key === UNREADABLE_NAME) return undefined
+
+  for (const candidate of widgets) {
+    if (candidate === widget) return key
+    if (readName(candidate) === key) return undefined
+  }
+  return undefined
+}
+
 export function ensureUniqueWidgetNames(
   widgets: readonly { name: string }[]
 ): boolean {

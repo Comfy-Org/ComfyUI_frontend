@@ -24,7 +24,9 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   ensureUniqueWidgetNames,
-  widgetId
+  ownedWidgetNameKey,
+  widgetId,
+  widgetNameKey
 } from '@comfyorg/graph-model/widgetId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import {
@@ -402,26 +404,52 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     const graphId = this.node.graph?.rootGraph.id
     const nodeId = this._state.nodeId
     if (!graphId || nodeId === undefined) return undefined
-    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return undefined
-    return widgetId(graphId, nodeId, this.name)
+    const widgets = this.node.widgets ?? [this]
+    ensureUniqueWidgetNames(widgets)
+    const name = ownedWidgetNameKey(widgets, this)
+    if (name !== undefined) {
+      const id = widgetId(graphId, nodeId, name)
+      const occupant = useWidgetValueStore().getWidget(id)
+      return !occupant || occupant === this._state ? id : undefined
+    }
+    return this.boundWidgetId(graphId, nodeId)
   }
 
-  /**
-   * Associates this widget with a node ID and registers it in the WidgetValueStore.
-   * Once set, value reads/writes will be delegated to the store.
-   */
+  private boundWidgetId(graphId: string, nodeId: NodeId): WidgetId | undefined {
+    const name = widgetNameKey(this)
+    if (name === undefined) return undefined
+    const id = widgetId(graphId, nodeId, name)
+    return useWidgetValueStore().getWidget(id) === this._state ? id : undefined
+  }
+
   setNodeId(nodeId: NodeId): void {
     this.installTypeVisibilityShim()
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
-    if (!ensureUniqueWidgetNames(this.node.widgets ?? [this])) return
+    const widgets = this.node.widgets ?? [this]
+    ensureUniqueWidgetNames(widgets)
+    const name = ownedWidgetNameKey(widgets, this)
+    if (name === undefined) return
 
-    const registered = useWidgetValueStore().registerWidget(
-      widgetId(graphId, nodeId, this.name),
+    const store = useWidgetValueStore()
+    const id = widgetId(graphId, nodeId, name)
+
+    const occupant = store.getWidget(id)
+    if (
+      occupant &&
+      occupant !== this._state &&
+      (this._state.nodeId !== undefined ||
+        this.nodeBindsStateElsewhere(widgets, occupant))
+    ) {
+      return
+    }
+
+    const registered = store.registerWidget(
+      id,
       {
         disabled: this.disabled,
         label: this.label,
-        name: this.name,
+        name,
         options: this._state.options,
         serialize: this.serialize,
         type: this.type,
@@ -432,7 +460,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       this._visibility
     )
     if (!registered) return
-    this.bindRegisteredState(nodeId)
+    this.bindRegisteredState(nodeId, name)
+  }
+
+  private nodeBindsStateElsewhere(
+    widgets: readonly IBaseWidget[],
+    state: WidgetState
+  ): boolean {
+    return widgets.some(
+      (candidate) =>
+        candidate !== this &&
+        candidate instanceof BaseWidget &&
+        candidate._state === state
+    )
   }
 
   releaseRegisteredState(): void {
@@ -446,10 +486,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     store.deleteWidget(id)
   }
 
-  bindRegisteredState(nodeId: NodeId): boolean {
+  bindRegisteredState(nodeId: NodeId, name = this.name): boolean {
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return false
-    const id = widgetId(graphId, nodeId, this.name)
+    const id = widgetId(graphId, nodeId, name)
     const state = useWidgetValueStore().getWidget(id)
     if (!state) return false
     this._state = state
