@@ -152,14 +152,18 @@ it.for(publishers)(
 )
 
 it.for(
-  publishers.flatMap((publisher) =>
-    ['scripts/cicd', 'tools/ci/src/cicd'].map((scriptDirectory) => ({
+  publishers.flatMap((publisher) => {
+    const scriptDirectories =
+      publisher.file === 'release-npm-types.yaml'
+        ? ['release-scripts/tools/ci/src/cicd']
+        : ['scripts/cicd', 'tools/ci/src/cicd']
+    return scriptDirectories.map((scriptDirectory) => ({
       ...publisher,
       scriptDirectory
     }))
-  )
+  })
 )(
-  '$file guards the tag when the selected ref stores scripts in $scriptDirectory',
+  '$file guards the tag with publishing helpers in $scriptDirectory',
   async ({ source, scriptDirectory }) => {
     const workflow = z
       .object({

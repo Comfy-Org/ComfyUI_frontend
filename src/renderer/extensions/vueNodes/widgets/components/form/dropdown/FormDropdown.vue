@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import {
+  StorageSerializers,
   computedAsync,
   refDebounced,
   unrefElement,
-  useEventListener
+  useEventListener,
+  whenever
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
@@ -13,6 +15,7 @@ import { useI18n } from 'vue-i18n'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useSafeSessionStorage } from '@/platform/storage/useSafeStorage'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type {
@@ -25,6 +28,9 @@ import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
+import FormDropdownResizeHandle from './FormDropdownResizeHandle.vue'
+import { atLeastMinimumSize } from './resizePanel'
+import type { PanelSide, PanelSize, ResizeHandle } from './resizePanel'
 import {
   DROPDOWN_PANEL_CLASS,
   defaultSearcher,
@@ -128,6 +134,29 @@ const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
 const triggerAnchorRef = computed<HTMLElement | undefined>(
   () => triggerRef.value?.$el
+)
+const panelSize = useSafeSessionStorage<PanelSize | undefined>(
+  'Comfy.FormDropdown.PanelSize',
+  undefined,
+  { serializer: StorageSerializers.object }
+)
+const shownPanelSize = computed(
+  () => panelSize.value && atLeastMinimumSize(panelSize.value)
+)
+const RESIZE_HANDLES: ResizeHandle[] = [
+  'left-edge',
+  'free-edge',
+  'left-corner',
+  'right-corner'
+]
+const alignOffset = ref(0)
+const panelSide = ref<PanelSide>()
+const isResizing = ref(false)
+whenever(
+  () => !isOpen.value,
+  () => {
+    panelSide.value = undefined
+  }
 )
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
@@ -391,10 +420,20 @@ const dropdownItems = computed(() =>
     </FormDropdownInput>
     <PopoverContent
       align="end"
+      :align-offset
+      :side="panelSide"
+      :side-flip="!isResizing"
       update-position-strategy="always"
       :side-offset="12"
       hide-when-detached
-      class="pointer-events-auto flex h-160 w-103 flex-col overflow-hidden rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+      :class="DROPDOWN_PANEL_CLASS"
+      :style="
+        shownPanelSize && {
+          width: `${shownPanelSize.width}px`,
+          height: `${shownPanelSize.height}px`
+        }
+      "
+      class="group/dropdown pointer-events-auto relative flex h-160 w-103 flex-col overflow-visible rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
       @interact-outside.prevent
       @close-auto-focus.prevent="focusTrigger"
     >
@@ -425,6 +464,16 @@ const dropdownItems = computed(() =>
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"
         @show-picker="showPicker"
+      />
+      <FormDropdownResizeHandle
+        v-for="handle in RESIZE_HANDLES"
+        :key="handle"
+        v-model:size="panelSize"
+        v-model:align-offset="alignOffset"
+        v-model:side="panelSide"
+        v-model:resizing="isResizing"
+        :handle
+        :anchor="triggerRef?.anchor"
       />
     </PopoverContent>
   </PopoverRoot>

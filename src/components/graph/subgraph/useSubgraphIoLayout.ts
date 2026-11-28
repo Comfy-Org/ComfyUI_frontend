@@ -70,8 +70,7 @@ export function useSubgraphIoLayout(
           panelRect,
           scale
         )
-      })),
-      'expanded'
+      }))
     )
     node.arrange()
     canvasStore.canvas?.setDirty(true, true)

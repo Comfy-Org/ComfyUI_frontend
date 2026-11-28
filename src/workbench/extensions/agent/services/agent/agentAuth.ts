@@ -1,4 +1,5 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { authCredentialOf } from '@comfyorg/api-client/authCredential'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
@@ -102,7 +103,12 @@ export async function ensureSignedIn(): Promise<boolean> {
   if (devProxySuppliesCredential()) return true
   try {
     if (!(await useAuthDialogs().showSignInDialog())) return false
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_opening_agent_sign_in_dialog',
+      level: 'warning'
+    })
     return false
   }
   return hasAgentCredential() || (await authStore.getUserAuthHeader()) !== null
