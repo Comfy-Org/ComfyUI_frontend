@@ -3,6 +3,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useWidgetAugmentations } from '@/platform/extensions/useWidgetAugmentations'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ComfyExtension } from '@/types/comfy'
+
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('extensionStore', () => {
   describe('registerExtension', () => {
@@ -10,6 +17,68 @@ describe('extensionStore', () => {
       const store = useExtensionStore()
       store.registerExtension({ name: 'test.ext' })
       expect(store.isExtensionInstalled('test.ext')).toBe(true)
+    })
+
+    it('registers immutable extensions with valid augmentations', () => {
+      const store = useExtensionStore()
+      const extension = Object.freeze({
+        name: 'test.immutable',
+        widgetAugmentations: [
+          {
+            id: 'hint',
+            kind: 'hint',
+            target: { nodeType: 'TestNode', widgetName: 'prompt' },
+            text: () => 'Prompt hint'
+          }
+        ]
+      } satisfies ComfyExtension)
+
+      store.registerExtension(extension)
+
+      expect(store.extensions[0]).toBe(extension)
+    })
+
+    it('does not restore removed augmentations when registering the same object again', () => {
+      const store = useExtensionStore()
+      const target = { nodeType: 'TestNode', widgetName: 'prompt' }
+      const extension: ComfyExtension = {
+        name: 'test.reregister',
+        widgetAugmentations: [
+          { id: 'hint', kind: 'hint', target, text: () => 'Prompt hint' }
+        ]
+      }
+      const { contributions } = useWidgetAugmentations(() => target)
+      store.registerExtension(extension)
+      expect(contributions.value.map((item) => item.key)).toEqual([
+        'test.reregister:hint'
+      ])
+
+      store.unregisterExtension(extension.name)
+      delete extension.widgetAugmentations
+      store.registerExtension(extension)
+
+      expect(contributions.value).toEqual([])
+    })
+
+    it('retains prototype hooks when excluding malformed augmentations', () => {
+      class Extension implements ComfyExtension {
+        [key: string]: unknown
+        name = 'test.prototype'
+        widgetAugmentations = []
+        initialized = false
+
+        setup() {
+          this.initialized = true
+        }
+      }
+      const store = useExtensionStore()
+      const extension = new Extension()
+      Reflect.set(extension, 'widgetAugmentations', [null])
+
+      store.registerExtension(extension)
+
+      expect(store.extensions[0]).toBe(extension)
+      expect(store.extensions[0].setup).toBe(extension.setup)
     })
 
     it('throws for extension without name', () => {
@@ -24,6 +93,41 @@ describe('extensionStore', () => {
       store.registerExtension({ name: 'dup' })
       expect(() => store.registerExtension({ name: 'dup' })).toThrow(
         "Extension named 'dup' already registered."
+      )
+    })
+
+    it.for([
+      null,
+      { id: 'missing-target', kind: 'hint', text: () => 'broken' },
+      { id: 'missing-callback', kind: 'hint', target: {} }
+    ])('isolates malformed JavaScript augmentations: %j', (invalid) => {
+      const store = useExtensionStore()
+      const setup = vi.fn()
+      const extension: ComfyExtension = { name: 'test.invalid', setup }
+      const valid = {
+        id: 'valid',
+        kind: 'hint',
+        target: { nodeType: 'TestNode', widgetName: 'prompt' },
+        text: (value: string) => `Length: ${value.length}`
+      }
+      Reflect.set(extension, 'widgetAugmentations', [invalid, valid])
+      Object.freeze(extension)
+
+      store.registerExtension(extension)
+      store.registerExtension({ name: 'test.neighbor' })
+
+      expect(
+        store.getWidgetAugmentations(store.extensions[0]).map((item) => item.id)
+      ).toEqual(['valid'])
+      expect(extension.widgetAugmentations).toEqual([invalid, valid])
+      expect(store.extensions[0].setup).toBe(setup)
+      expect(store.isExtensionInstalled('test.neighbor')).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'error_registering_widget_augmentation',
+          context: { extension: 'test.invalid' }
+        })
       )
     })
 

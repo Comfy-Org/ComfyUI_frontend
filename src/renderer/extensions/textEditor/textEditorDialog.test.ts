@@ -2,21 +2,56 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
-import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import type { ComfyExtension } from '@/types/comfy'
+
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
+
+const widgetAugmentations = {
+  name: 'test.WidgetAugmentations',
+  widgetAugmentations: [
+    {
+      id: 'studio-tags',
+      kind: 'text-completion',
+      target: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      },
+      suggest: (query: string) =>
+        ['studio lighting', 'studio portrait'].filter((tag) =>
+          tag.includes(query)
+        )
+    }
+  ]
+} satisfies ComfyExtension
 
 const captureCanvasState = vi.fn()
 const markModified = vi.fn()
 const updateModified = vi.fn()
 
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 vi.mock(import('@comfyorg/telemetry'))
 
 const telemetry = vi.mocked(useTelemetry)()
@@ -144,6 +179,347 @@ describe('showTextEditor', () => {
     readOnly.value = true
 
     await waitFor(() => expect(editor).toHaveAttribute('readonly'))
+  })
+
+  it('navigates extension suggestions without moving focus before dismissing them', async () => {
+    const user = userEvent.setup()
+    const source = ref('')
+    useExtensionStore().registerExtension(widgetAugmentations)
+    renderDialogHost()
+    openEditor({
+      readText: () => source.value,
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
+    })
+    const editor = await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(screen.queryByLabelText('Import prompt tags')).toBeNull()
+    await user.type(editor, 'a portrait, studio')
+
+    expect(
+      await screen.findByRole('listbox', { name: 'Prompt suggestions' })
+    ).toBeVisible()
+    expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
+      'studio lighting'
+    )
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
+      'studio portrait'
+    )
+    expect(editor).toHaveFocus()
+    expect(editor).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', { selected: true }).id
+    )
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(screen.getByRole('dialog')).toBeVisible()
+    expect(editor).toHaveValue('a portrait, studio')
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  })
+
+  it.for([
+    {
+      nodeType: 'DevToolsNodeWithAugmentedTextarea',
+      widgetName: 'prompt',
+      expected: ['studio lighting', 'studio portrait']
+    },
+    {
+      nodeType: 'DevToolsNodeWithAugmentedTextarea',
+      widgetName: 'notes',
+      expected: []
+    },
+    { nodeType: 'OtherNode', widgetName: 'prompt', expected: [] }
+  ])(
+    'scopes extension completion to $nodeType widget $widgetName',
+    async ({ nodeType, widgetName, expected }) => {
+      const user = userEvent.setup()
+      const source = ref('')
+      useExtensionStore().registerExtension(widgetAugmentations)
+      renderDialogHost()
+      openEditor({
+        readText: () => source.value,
+        onEdit: (value) => (source.value = value),
+        augmentationTarget: { nodeType, widgetName }
+      })
+      const editor = await screen.findByRole('textbox')
+      await user.type(editor, 'studio')
+
+      expect(
+        screen.queryAllByRole('option').map((item) => item.textContent.trim())
+      ).toEqual(expected)
+      expect(editor).toHaveValue('studio')
+      expect(editor).toHaveFocus()
+    }
+  )
+
+  it('removes extension suggestions when the extension unregisters', async () => {
+    const user = userEvent.setup()
+    const source = ref('')
+    const extensions = useExtensionStore()
+    extensions.registerExtension(widgetAugmentations)
+    renderDialogHost()
+    openEditor({
+      readText: () => source.value,
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
+    })
+    const editor = await screen.findByRole('textbox')
+    await user.type(editor, 'studio')
+    expect(
+      await screen.findByRole('option', { name: 'studio lighting' })
+    ).toBeVisible()
+    extensions.unregisterExtension(widgetAugmentations.name)
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+    await user.type(editor, ' ')
+
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(editor).toHaveValue('studio ')
+  })
+
+  it('isolates a failed extension provider while retaining other extension suggestions', async () => {
+    const user = userEvent.setup()
+    const source = ref('')
+    const failure = new Error('Provider unavailable')
+    useExtensionStore().registerExtension(widgetAugmentations)
+    useExtensionStore().registerExtension({
+      name: 'test.failingCompletion',
+      widgetAugmentations: [
+        {
+          id: 'failing-tags',
+          kind: 'text-completion',
+          target: {
+            nodeType: 'DevToolsNodeWithAugmentedTextarea',
+            widgetName: 'prompt'
+          },
+          suggest() {
+            throw failure
+          }
+        }
+      ]
+    })
+    renderDialogHost()
+    openEditor({
+      readText: () => source.value,
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
+    })
+    const editor = await screen.findByRole('textbox')
+    await user.type(editor, 'studio')
+
+    expect(
+      await screen.findByRole('option', { name: 'studio lighting' })
+    ).toBeVisible()
+    expect(editor).toHaveValue('studio')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      errorType: 'error_evaluating_widget_augmentation',
+      surface: 'platform',
+      context: {
+        extension: 'test.failingCompletion',
+        augmentation: 'failing-tags'
+      }
+    })
+  })
+
+  it('updates a widget hint from live text and removes it when its extension is disabled', async () => {
+    const user = userEvent.setup()
+    const source = ref('blue')
+    const extensions = useExtensionStore()
+    extensions.captureCoreExtensions()
+    extensions.registerExtension({
+      name: 'test.hint',
+      widgetAugmentations: [
+        {
+          id: 'length',
+          kind: 'hint',
+          target: { nodeType: 'TestNode', widgetName: 'prompt' },
+          text: (value) => `Length: ${value.length}`
+        }
+      ]
+    })
+    renderDialogHost()
+    openEditor({
+      readText: () => source.value,
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: { nodeType: 'TestNode', widgetName: 'prompt' }
+    })
+    const editor = await screen.findByRole('textbox')
+    expect(await screen.findByText('Length: 4')).toBeVisible()
+    await user.clear(editor)
+    await user.type(editor, 'blue sky')
+    expect(await screen.findByText('Length: 8')).toBeVisible()
+
+    extensions.loadDisabledExtensionNames(['test.hint'])
+
+    await waitFor(() => expect(screen.queryByText('Length: 8')).toBeNull())
+    expect(editor).toHaveValue('blue sky')
+  })
+
+  it('applies a text action through live editing and locks it when read-only', async () => {
+    const insertText: Document['execCommand'] = (_command, _showUI, text) => {
+      editor.setRangeText(text ?? '')
+      editor.dispatchEvent(new Event('input', { bubbles: true }))
+      return true
+    }
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: insertText
+    })
+    onTestFinished(() => {
+      Reflect.deleteProperty(document, 'execCommand')
+    })
+    const user = userEvent.setup()
+    const source = ref('blue_eyes, soft_focus')
+    const readOnly = ref(false)
+    useExtensionStore().registerExtension({
+      name: 'test.action',
+      widgetAugmentations: [
+        {
+          id: 'normalize',
+          kind: 'text-action',
+          target: { nodeType: 'TestNode', widgetName: 'prompt' },
+          label: 'Normalize tags',
+          transform: (value) => value.replaceAll('_', ' ')
+        }
+      ]
+    })
+    renderDialogHost()
+    openEditor({
+      readText: () => source.value,
+      readOnly: () => readOnly.value,
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: { nodeType: 'TestNode', widgetName: 'prompt' }
+    })
+    const editor = await screen.findByRole<HTMLTextAreaElement>('textbox')
+    await user.click(screen.getByRole('button', { name: 'Normalize tags' }))
+
+    expect(source.value).toBe('blue eyes, soft focus')
+    expect(editor).toHaveValue('blue eyes, soft focus')
+    expect(editor).toHaveFocus()
+    expect(markModified).toHaveBeenCalledOnce()
+    readOnly.value = true
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Normalize tags' })
+      ).toBeDisabled()
+    )
+  })
+
+  it.for([
+    {
+      maxlength: 5,
+      message:
+        'The new text is longer than this field allows. Your text is unchanged.'
+    },
+    {
+      maxlength: 100,
+      message:
+        'The text could not be updated. Your text is unchanged; edit it manually instead.'
+    }
+  ])(
+    'explains a refused text action with maxlength $maxlength',
+    async ({ maxlength, message }) => {
+      const user = userEvent.setup()
+      useExtensionStore().registerExtension({
+        name: 'test.expandingAction',
+        widgetAugmentations: [
+          {
+            id: 'expand',
+            kind: 'text-action',
+            target: { nodeType: 'TestNode', widgetName: 'prompt' },
+            label: 'Expand tag',
+            transform: () => 'blue eyes'
+          }
+        ]
+      })
+      renderDialogHost()
+      const { onEdit } = openEditor({
+        readText: () => 'blue',
+        textareaAttributes: () => ({ maxlength }),
+        augmentationTarget: { nodeType: 'TestNode', widgetName: 'prompt' }
+      })
+      const editor = await screen.findByRole('textbox')
+
+      await user.click(screen.getByRole('button', { name: 'Expand tag' }))
+
+      expect(editor).toHaveValue('blue')
+      expect(onEdit).not.toHaveBeenCalled()
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: message
+        })
+      )
+    }
+  )
+
+  it('removes suggestions when the editor becomes read-only', async () => {
+    const user = userEvent.setup()
+    const source = ref('')
+    const readOnly = ref(false)
+    useExtensionStore().registerExtension(widgetAugmentations)
+    renderDialogHost()
+    openEditor({
+      readText: () => source.value,
+      onEdit: (value) => (source.value = value),
+      readOnly: () => readOnly.value,
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
+    })
+    const editor = await screen.findByRole('textbox')
+    await user.type(editor, 'studio')
+    expect(await screen.findByRole('listbox')).toBeVisible()
+
+    readOnly.value = true
+
+    await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+    expect(editor).toHaveValue('studio')
+  })
+
+  it('suspends suggestions during composition and resumes after committed input', async () => {
+    const user = userEvent.setup()
+    const source = ref('')
+    useExtensionStore().registerExtension(widgetAugmentations)
+    renderDialogHost()
+    openEditor({
+      readText: () => source.value,
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
+    })
+    const editor = await screen.findByRole('textbox')
+    await user.type(editor, 'studio')
+    expect(await screen.findByRole('listbox')).toBeVisible()
+
+    editor.dispatchEvent(createEvent.compositionStart(editor))
+    await nextTick()
+    expect(screen.queryByRole('listbox')).toBeNull()
+    editor.dispatchEvent(
+      createEvent.keyDown(editor, { key: 'Enter', isComposing: true })
+    )
+    expect(editor).toHaveValue('studio')
+    editor.dispatchEvent(createEvent.compositionEnd(editor))
+
+    expect(
+      await screen.findByRole('option', { name: 'studio lighting' })
+    ).toBeVisible()
   })
 
   it('keeps the selection and its direction when the text changes elsewhere', async () => {

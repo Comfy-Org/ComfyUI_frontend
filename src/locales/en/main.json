@@ -4661,7 +4661,17 @@
       "editSettings": "Edit control settings"
     }
   },
+  "pathCompletion": {
+    "title": "Choose path",
+    "parent": "Up",
+    "showAllFiles": "Show all files",
+    "suggestions": "Path suggestions",
+    "unavailable": "Suggestions unavailable. You can still enter a path manually.",
+    "empty": "No matching paths. You can still enter a path manually."
+  },
   "textEditor": {
+    "actionTooLong": "The new text is longer than this field allows. Your text is unchanged.",
+    "actionUnavailable": "The text could not be updated. Your text is unchanged; edit it manually instead.",
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
     "focusView": "Expand to focus view",
@@ -4669,6 +4679,8 @@
     "noPromptHint": "Select a node with a text input to edit its prompt here.",
     "nodeSettings": "Node settings",
     "prompt": "Prompt",
+    "suggestionCount": "{count} suggestion available | {count} suggestions available",
+    "suggestions": "Prompt suggestions",
     "title": "{widget} · {node}"
   },
   "widgetFileUpload": {

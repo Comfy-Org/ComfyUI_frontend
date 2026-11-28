@@ -173,6 +173,59 @@ class NodeWithStringInput:
         print(f"string_input: {string_input}")
 
 
+class NodeWithAugmentedTextarea:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"multiline": True}),
+                "notes": ("STRING", {"multiline": True}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools"
+
+    def execute(self, prompt: str, notes: str):
+        return (prompt,)
+
+
+class NodeWithPathCompletion:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "path": ("STRING", {"default": "/media/", "multiline": False}),
+                "notes": ("STRING", {"multiline": False}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools"
+
+    def execute(self, path: str, notes: str):
+        return (path,)
+
+
+class NodeWithImagePathCompletion:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("STRING", {"default": "/images/", "multiline": False}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools"
+
+    def execute(self, image: str):
+        return (image,)
+
+
 class NodeWithUnionInput:
     @classmethod
     def INPUT_TYPES(cls):
@@ -614,6 +667,9 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithForceInput": NodeWithForceInput,
     "DevToolsNodeWithDefaultInput": NodeWithDefaultInput,
     "DevToolsNodeWithStringInput": NodeWithStringInput,
+    "DevToolsNodeWithAugmentedTextarea": NodeWithAugmentedTextarea,
+    "DevToolsNodeWithPathCompletion": NodeWithPathCompletion,
+    "DevToolsNodeWithImagePathCompletion": NodeWithImagePathCompletion,
     "DevToolsNodeWithUnionInput": NodeWithUnionInput,
     "DevToolsNodeWithBooleanInput": NodeWithBooleanInput,
     "DevToolsNodeWithColorInput": NodeWithColorInput,
@@ -649,6 +705,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithForceInput": "Node With Force Input",
     "DevToolsNodeWithDefaultInput": "Node With Default Input",
     "DevToolsNodeWithStringInput": "Node With String Input",
+    "DevToolsNodeWithAugmentedTextarea": "Node With Augmented Textarea",
+    "DevToolsNodeWithPathCompletion": "Node With Path Completion",
+    "DevToolsNodeWithImagePathCompletion": "Node With Image Path Completion",
     "DevToolsNodeWithUnionInput": "Node With Union Input",
     "DevToolsNodeWithBooleanInput": "Node With Boolean Input",
     "DevToolsNodeWithColorInput": "Node With Color Input",

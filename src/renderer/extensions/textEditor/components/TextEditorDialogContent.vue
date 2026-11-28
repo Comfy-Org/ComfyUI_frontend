@@ -11,6 +11,12 @@
     @compositionend="isComposing = false"
     @update:model-value="(value) => onEdit(String(value))"
   />
+  <TextareaAugmentations
+    :element="textareaElement"
+    :enabled="!readOnly() && !attributes().disabled"
+    :target="augmentationTarget"
+    :value="readText()"
+  />
 </template>
 
 <script setup lang="ts">
@@ -18,18 +24,24 @@ import type { TextareaHTMLAttributes } from 'vue'
 import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import type { WidgetAugmentationTarget } from '@/platform/extensions/widgetAugmentation'
+import TextareaAugmentations from '@/renderer/extensions/textEditor/components/TextareaAugmentations.vue'
+
+defineOptions({ inheritAttrs: false })
 
 const {
   readText,
   label,
   readOnly,
   onEdit,
-  attributes = () => ({})
+  augmentationTarget,
+  attributes = (): TextareaHTMLAttributes => ({})
 } = defineProps<{
   readText: () => string
   label: string
   readOnly: () => boolean
   onEdit: (text: string) => void
+  augmentationTarget?: WidgetAugmentationTarget
   attributes?: () => TextareaHTMLAttributes
 }>()
 

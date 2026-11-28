@@ -2,6 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import type { TextareaHTMLAttributes } from 'vue'
 
 import { t } from '@/i18n'
+import type { WidgetAugmentationTarget } from '@/platform/extensions/widgetAugmentation'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   PromptEditorClosedMetadata,
@@ -25,6 +26,7 @@ interface TextEditorOptions {
   readText: () => string
   widgetLabel: string
   nodeTitle?: string
+  augmentationTarget?: WidgetAugmentationTarget
   readOnly: () => boolean
   trigger?: PromptEditorOpenedMetadata['trigger']
   maximized?: boolean
@@ -37,6 +39,7 @@ export function showTextEditor({
   readText,
   widgetLabel,
   nodeTitle,
+  augmentationTarget,
   readOnly,
   trigger = 'expand_button',
   maximized = false,
@@ -88,6 +91,7 @@ export function showTextEditor({
     props: {
       readText,
       label: widgetLabel,
+      augmentationTarget,
       readOnly,
       attributes: textareaAttributes,
       onEdit: (value: string) => {

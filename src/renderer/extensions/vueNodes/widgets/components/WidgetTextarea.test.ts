@@ -11,6 +11,7 @@ import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -408,6 +409,45 @@ describe('WidgetTextarea contextmenu', () => {
 
     expect(preventDefaultSpy).not.toHaveBeenCalled()
     expect(stopPropagationSpy).toHaveBeenCalled()
+  })
+})
+
+describe('WidgetTextarea autocomplete', () => {
+  it('uses targeted extension suggestions and closes them when the node becomes read-only', async () => {
+    const user = userEvent.setup()
+    useExtensionStore().registerExtension({
+      name: 'test.VueWidgetCompletion',
+      widgetAugmentations: [
+        {
+          id: 'tags',
+          kind: 'text-completion',
+          target: { nodeType: 'TestNode', widgetName: 'test_textarea' },
+          suggest: () => ['blue eyes', 'blue hair']
+        }
+      ]
+    })
+    const widget = createTextareaWidget('')
+    widget.nodeType = 'TestNode'
+    const view = renderComponent(widget, '')
+    const textarea = screen.getByRole('textbox')
+
+    await user.type(textarea, 'blue')
+
+    expect(await screen.findByRole('listbox')).toBeVisible()
+    expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
+      'blue eyes'
+    )
+    expect(textarea).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(textarea).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', { name: 'blue hair' }).id
+    )
+
+    await view.rerender({ widget: { ...widget, options: { read_only: true } } })
+
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(textarea).toHaveAttribute('readonly')
   })
 })
 
