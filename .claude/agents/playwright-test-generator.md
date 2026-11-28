@@ -51,10 +51,10 @@ application behavior.
   Following file is generated:
 
   ```ts file=add-valid-todo.spec.ts
-  test.describe('Adding New Todos', () => {
-    test('Add Valid Todo', async { page } => {
+  test.describe('Adding New Todos', { tag: ['@ui'] }, () => {
+    test('Add Valid Todo', async ({ comfyPage }) => {
       await test.step('Click in the "What needs to be done?" input field', async () => {
-        await page.click(...);
+        await comfyPage.page.getByPlaceholder('What needs to be done?').click();
       });
 
       ...
@@ -66,67 +66,19 @@ application behavior.
 
 ## ComfyUI Project Context
 
-### Required Import Pattern
-
-Generated tests MUST use ComfyUI fixtures, not generic `@playwright/test`:
-
-```typescript
-import {
-  comfyPageFixture as test,
-  comfyExpect as expect
-} from '@e2e/fixtures/ComfyPage'
-```
-
-### Fixture Object
-
-Tests receive `comfyPage` (not `page`) as their fixture:
-
-```typescript
-test('my test', async ({ comfyPage }) => {
-  // Access raw page via comfyPage.page if needed
-})
-```
-
-### Key APIs
-
-| Need              | Use                                                  | Notes                                             |
-| ----------------- | ---------------------------------------------------- | ------------------------------------------------- |
-| Canvas element    | `comfyPage.canvas`                                   | Pre-configured Locator                            |
-| Wait for render   | `comfyPage.nextFrame()`                              | After canvas mutations                            |
-| Load workflow     | `comfyPage.workflow.loadWorkflow('name')`            | Assets in `browser_tests/assets/`                 |
-| Get node by type  | `comfyPage.nodeOps.getNodeRefsByType('KSampler')`    | Returns NodeReference[]                           |
-| Search box        | `comfyPage.searchBox.fillAndSelectFirstNode('name')` | Opens on canvas dblclick                          |
-| Starting settings | `test.use({ initialSettings: { key: value } })`      | Fixture resets settings per test                  |
-| Runtime settings  | `comfyPage.settings.setSetting(key, value)`          | Only for changes under test; no settings teardown |
-| Keyboard          | `comfyPage.keyboard.press('Delete')`                 | Focus canvas first                                |
-| Context menu      | `comfyPage.contextMenu`                              | Right-click interactions                          |
-
-Follow [Starting settings and isolation](../../browser_tests/README.md#starting-settings-and-isolation).
-Nested `test.use` replaces the parent's settings object. Include inherited
-overrides and install startup-dependent mocks before `comfyPage` boots.
-Always use `@vue-nodes` for Vue-node tests. Never manually set
-`Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()`; the fixture
-handles renderer selection and initial readiness.
-
-### Mandatory Test Structure
-
-Every generated test must:
-
-1. Be wrapped in `test.describe('Name', { tag: ['<scenario tag>'] }, () => { ... })`, using the tag the plan selected (`@canvas`, `@widget`, `@sidebar`, `@smoke`, `@screenshot`)
-2. Use descriptive test names (not "test" or "test1")
-
-### Anti-Patterns — NEVER Use
-
-- ❌ `page.goto()` — fixture handles navigation
-- ❌ `page.waitForTimeout()` — use `comfyPage.nextFrame()` or retrying assertions
-- ❌ `import from '@playwright/test'` — use `from '@e2e/fixtures/ComfyPage'`
-- ❌ Bare `page.` references — use `comfyPage.page.` if you need raw page access
-
-### Reference
-
-Read the fixture code for full API surface:
-
-- `browser_tests/fixtures/ComfyPage.ts` — main fixture
-- `browser_tests/fixtures/helpers/` — helper classes
-- `browser_tests/fixtures/components/` — page object components
-- See also: `.claude/skills/codegen-transform/SKILL.md` for transform rules
+- Read `docs/guidance/testing-principles.md` and `docs/guidance/playwright.md`
+  before writing or changing a spec. The second holds every Playwright
+  convention for this repository: fixtures, selectors, Vue Nodes, canvas timing,
+  tags, settings isolation, typed mocks, screenshots, and flake patterns.
+- Tests use `comfyPageFixture` and `comfyExpect` from `@e2e/fixtures/ComfyPage`
+  and receive `comfyPage`, not `page`.
+- Read the fixture code in `browser_tests/fixtures/` for available helpers;
+  workflow assets are in `browser_tests/assets/`.
+- `pnpm comfy-test tags` lists the area tags; `docs/guidance/playwright.md` lists
+  the project-routing tags.
+- For raw codegen output, apply `.claude/skills/codegen-transform/SKILL.md`.
+- Backend and dev server setup is in `browser_tests/README.md`.
+- Wrap every test in `test.describe('Name', { tag: [...] }, () => { ... })`
+  with the tags the plan selected, and give it a descriptive title.
+- Never use `page.goto()`, `waitForTimeout()`, or the `test` export of
+  `@playwright/test`.

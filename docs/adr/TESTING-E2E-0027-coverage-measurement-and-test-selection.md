@@ -128,8 +128,8 @@ Neutral:
 
 - Mutation testing stays out of scope for the browser suite. It may be
   applied later to pure, well-unit-tested modules.
-- Existing conventions in `browser_tests/README.md` are unchanged; this ADR
-  adds selection rules on top of them.
+- Existing conventions in `docs/guidance/playwright.md` are unchanged; this
+  ADR adds selection rules on top of them.
 
 ## Implementation
 
