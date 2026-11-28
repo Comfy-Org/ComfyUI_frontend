@@ -11,7 +11,8 @@ export function useFeatureFlags() {
       hostedBillingDestination: 'stripe',
       hostedBillingWebEnabled: false,
       oauthConsentSwitchAccountEnabled: true,
-      v1PaymentRecovery: true
+      v1PaymentRecovery: true,
+      projectsEnabled: false
     }
   }
 }

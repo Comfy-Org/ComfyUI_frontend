@@ -950,6 +950,41 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('projectsEnabled', () => {
+    afterEach(() => {
+      localStorage.removeItem(`ff:${ServerFeatureFlag.PROJECTS_ENABLED}`)
+    })
+
+    it('defaults to off', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.projectsEnabled).toBe(false)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.PROJECTS_ENABLED,
+        false
+      )
+    })
+
+    it('lets a dev override turn it on', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      localStorage.setItem(`ff:${ServerFeatureFlag.PROJECTS_ENABLED}`, 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.projectsEnabled).toBe(true)
+    })
+
+    it('lets a false dev override beat an enabled server value', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      localStorage.setItem(`ff:${ServerFeatureFlag.PROJECTS_ENABLED}`, 'false')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.projectsEnabled).toBe(false)
+    })
+  })
+
   describe('supportsModelTypeTags', () => {
     it('uses the remote config value', () => {
       useRemoteConfigStore().acceptConfig(

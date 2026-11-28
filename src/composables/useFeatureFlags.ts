@@ -410,6 +410,9 @@ export function useFeatureFlags() {
         false
       )
     },
+    get projectsEnabled() {
+      return resolveFlag(ServerFeatureFlag.PROJECTS_ENABLED, undefined, false)
+    },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
     },
@@ -489,6 +492,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
+      [ServerFeatureFlag.PROJECTS_ENABLED]: flags.projectsEnabled,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
       [ServerFeatureFlag.AGENT_CRDT_DEBUG]: flags.agentCrdtDebugEnabled,
