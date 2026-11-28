@@ -31,6 +31,8 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type {
+  CloudCheckFailureReason,
+  CloudWorkflowBlocker,
   CloudWorkflowCheckResult,
   UncheckedModelInput
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
@@ -270,26 +272,133 @@ async function compatibilityAuth(expectedWorkspaceId?: string) {
   } as const
 }
 
+type CheckFailure = Extract<CloudWorkflowBlocker, { kind: 'checkFailed' }>
+
+type CompatibilityAnswer = {
+  cloud: CloudWorkflowCompatibility
+  workspaceId: string | undefined
+}
+
+async function readJson(
+  response: Response,
+  signal: AbortSignal
+): Promise<unknown> {
+  try {
+    return await response.json()
+  } catch (error) {
+    if (signal.aborted || !(error instanceof SyntaxError)) throw error
+    return undefined
+  }
+}
+
+function stringField(body: unknown, field: 'code' | 'message') {
+  if (!body || typeof body !== 'object' || !(field in body)) return undefined
+  const value: unknown = Reflect.get(body, field)
+  return typeof value === 'string' ? value : undefined
+}
+
+function authFailureReason(cause: unknown): CloudCheckFailureReason {
+  return cause instanceof TypeError ||
+    stringField(cause, 'code') === 'auth/network-request-failed'
+    ? 'unreachable'
+    : 'workspace'
+}
+
+const statusReasons: Partial<Record<number, CloudCheckFailureReason>> = {
+  401: 'workspace',
+  403: 'workspace',
+  408: 'busy',
+  413: 'tooBig',
+  429: 'busy'
+}
+
+function badRequestReason(body: unknown): CloudCheckFailureReason {
+  if (stringField(body, 'code') === 'workspace_id_invalid') return 'workspace'
+  return stringField(body, 'message')?.startsWith('at most ')
+    ? 'tooBig'
+    : 'outdated'
+}
+
+function notFoundReason(body: unknown): CloudCheckFailureReason {
+  return stringField(body, 'code') === 'NOT_FOUND' ? 'switchedOff' : 'busy'
+}
+
+const bodyReasons: Partial<
+  Record<number, (body: unknown) => CloudCheckFailureReason>
+> = { 400: badRequestReason, 404: notFoundReason }
+
+async function refusalReason(
+  response: Response,
+  signal: AbortSignal
+): Promise<CloudCheckFailureReason> {
+  const { status } = response
+  if (status >= 500) return 'busy'
+  const fromBody = bodyReasons[status]
+  if (fromBody) return fromBody(await readJson(response, signal))
+  return statusReasons[status] ?? 'outdated'
+}
+
+type CompatibilityCredential = Extract<
+  Awaited<ReturnType<typeof compatibilityAuth>>,
+  { ok: true }
+>
+
+async function authorize(
+  workspaceId: string | undefined,
+  signal: AbortSignal
+): Promise<CompatibilityCredential | CheckFailure> {
+  const auth = await awaitWithAbort(
+    compatibilityAuth(workspaceId).catch(
+      (cause: unknown) => ({ ok: false, cause }) as const
+    ),
+    signal
+  )
+  throwIfAborted(signal)
+  if (auth.ok) return auth
+  if ('cause' in auth) return giveUp(authFailureReason(auth.cause), auth.cause)
+  return giveUp(
+    navigator.onLine ? 'workspace' : 'unreachable',
+    new Error('Workspace authorization unavailable')
+  )
+}
+
+async function readAnswer(
+  response: Response,
+  signal: AbortSignal,
+  workspaceId: string | undefined
+): Promise<CompatibilityAnswer | CheckFailure> {
+  if (!response.ok)
+    return giveUp(
+      await refusalReason(response, signal),
+      new Error(`Cloud compatibility returned ${response.status}`)
+    )
+  const parsed = zCheckCloudCompatibilityResponse.safeParse(
+    await readJson(response, signal)
+  )
+  if (!parsed.success) return giveUp('outdated', parsed.error)
+  return { cloud: parsed.data.cloud, workspaceId }
+}
+
+function isCheckFailure(value: object): value is CheckFailure {
+  return 'kind' in value && value.kind === 'checkFailed'
+}
+
 async function requestCompatibility(
   nodeTypes: string[],
   models: CompatibilityModel[],
   { workspaceId, signal }: { workspaceId?: string; signal?: AbortSignal } = {}
-) {
+): Promise<CompatibilityAnswer | CheckFailure | null> {
+  const timeout = createTimeoutSignal(10_000)
+  const requestSignal = signal
+    ? combineAbortSignals([signal, timeout])
+    : timeout
   try {
     const origin = trustedCloudHandoffOrigin()
-    if (!origin) return giveUp(new Error('Cloud API origin unavailable'))
-    const timeout = createTimeoutSignal(10_000)
-    const requestSignal = signal
-      ? combineAbortSignals([signal, timeout])
-      : timeout
+    if (!origin)
+      return giveUp('unreachable', new Error('Cloud API origin unavailable'))
     throwIfAborted(requestSignal)
-    const auth = await awaitWithAbort(
-      compatibilityAuth(workspaceId),
-      requestSignal
-    )
-    throwIfAborted(requestSignal)
-    if (!auth.ok)
-      return giveUp(new Error('Workspace authorization unavailable'))
+    const auth = await authorize(workspaceId, requestSignal)
+    if (isCheckFailure(auth)) return auth
     const response = await fetch(new URL('/api/cloud/compatibility', origin), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...auth.headers },
@@ -297,18 +406,10 @@ async function requestCompatibility(
       redirect: 'error',
       signal: requestSignal
     })
-    if (!response.ok)
-      return giveUp(
-        new Error(`Cloud compatibility returned ${response.status}`)
-      )
-    const parsed = zCheckCloudCompatibilityResponse.safeParse(
-      await response.json()
-    )
-    if (!parsed.success) return giveUp(parsed.error)
-    return { cloud: parsed.data.cloud, workspaceId: auth.workspaceId }
+    return await readAnswer(response, requestSignal, auth.workspaceId)
   } catch (error) {
     if (signal?.aborted) return null
-    return giveUp(error)
+    return giveUp(timeout.aborted ? 'busy' : 'unreachable', error)
   }
 }
 
@@ -321,15 +422,17 @@ export async function readCloudMissingModels(
     workspaceId,
     signal
   })
-  return verdict?.cloud.missing_models ?? null
+  return verdict && 'cloud' in verdict
+    ? (verdict.cloud.missing_models ?? null)
+    : null
 }
 
-function giveUp(cause: unknown): null {
+function giveUp(reason: CloudCheckFailureReason, cause: unknown): CheckFailure {
   reportError(cause, {
     errorType: 'failure_checking_cloud_compatibility',
     surface: 'platform'
   })
-  return null
+  return { kind: 'checkFailed', reason }
 }
 
 function workflowVerdict(
@@ -342,7 +445,10 @@ function workflowVerdict(
   if (nodePacks.length || models?.length)
     return { kind: 'missing', gaps: { nodePacks, models: models ?? [] } }
   if (requireModelVerdict && models === undefined)
-    return giveUp(new Error('Cloud compatibility omitted the model verdict'))
+    return giveUp(
+      'outdated',
+      new Error('Cloud compatibility omitted the model verdict')
+    )
   return {
     kind: 'canOpen',
     ...(workspaceId && { workspaceId }),
@@ -388,7 +494,7 @@ export async function checkCloudCompatibility(
       workspaceId,
       signal
     })
-    if (!verdict) return null
+    if (!verdict || !('cloud' in verdict)) return verdict
     const requireModelVerdict =
       models.length > 0 &&
       (verdict.workspaceId !== undefined ||
@@ -401,6 +507,6 @@ export async function checkCloudCompatibility(
     )
   } catch (error) {
     if (signal?.aborted) return null
-    return giveUp(error)
+    return giveUp('unreadable', error)
   }
 }

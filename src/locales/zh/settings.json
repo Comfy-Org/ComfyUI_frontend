@@ -59,6 +59,28 @@
     "name": "显示选择工具箱",
     "tooltip": "当选择节点时显示浮动工具栏，便于快速访问常用操作。"
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "拖动和调整大小时吸附到附近的节点、组和连线",
+    "tooltip": "显示参考线，并吸附到对齐的边缘、均匀间距和直线连线。按住 Shift 可改为吸附到网格。"
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "吸附到另一个节点旁边时的间距"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "吸附距离（屏幕像素）"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "吸附到其他节点和组的边缘"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "吸附以使节点之间的间距均匀"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "吸附以使连线变为直线"
+  },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "在发送节点和模型名称以检查 Comfy Cloud 兼容性前询问"
+  },
   "Comfy_ConfirmClear": {
     "name": "清除工作流时需要确认"
   },
@@ -87,6 +109,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "在问题选项卡中显示缺失的模型",
     "tooltip": "禁用后，未找到的模型文件不会列在问题选项卡中，其节点也不会高亮显示。"
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "在问题选项卡中显示缺失的节点",
+    "tooltip": "禁用后，问题选项卡中不会列出缺失的节点包，其节点也不会被高亮显示。在安装这些节点包之前，工作流仍无法运行。"
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "实时预览",
@@ -468,10 +494,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "在问题选项卡中显示缺失的媒体",
     "tooltip": "禁用后，未找到的输入图像、视频和音频不会列在问题选项卡中，其节点也不会高亮显示。"
-  },
-  "Comfy_ErrorSystem_ShowMissingNodes": {
-    "name": "在问题选项卡中显示缺失的节点",
-    "tooltip": "禁用后，缺失的节点包不会列在问题选项卡中，其节点也不会高亮显示。工作流仍无法运行，直到安装这些节点包。"
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "保存节点ID到工作流"

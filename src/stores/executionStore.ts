@@ -1148,7 +1148,7 @@ export const useExecutionStore = defineStore('execution', () => {
     detail: ExecutionErrorWsMessage,
     runErrorKey: string | null | undefined
   ): boolean {
-    const result = classifyCloudValidationError(detail.exception_message)
+    const result = classifyCloudValidationError(detail)
     if (!result) return false
 
     clearInitializationByJobId(detail.prompt_id)

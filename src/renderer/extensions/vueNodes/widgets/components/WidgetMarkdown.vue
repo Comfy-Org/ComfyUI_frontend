@@ -7,7 +7,7 @@
     />
 
     <Textarea
-      v-show="isEditing"
+      v-if="isEditing"
       ref="textareaRef"
       v-model="modelValue"
       :aria-label="`${$t('g.edit')} ${widget.name || $t('g.markdown')} ${$t('g.content')}`"

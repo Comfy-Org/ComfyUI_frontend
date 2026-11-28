@@ -1,5 +1,6 @@
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -42,7 +43,7 @@ function isKeptRelease(value: unknown): value is KeptRelease {
 
 function keepForReload(kept: KeptRelease) {
   try {
-    sessionStorage.setItem(KEPT_RELEASE_KEY, JSON.stringify(kept))
+    safeSessionStorage.setItem(KEPT_RELEASE_KEY, JSON.stringify(kept))
   } catch {
     return
   }
@@ -50,10 +51,11 @@ function keepForReload(kept: KeptRelease) {
 
 export function takeReleaseKeptForReload(): void {
   keptForThisPage = null
+  const outcome = safeSessionStorage.read(KEPT_RELEASE_KEY)
+  if (!outcome.ok || !safeSessionStorage.remove(KEPT_RELEASE_KEY).ok) return
   try {
-    const raw = sessionStorage.getItem(KEPT_RELEASE_KEY)
-    sessionStorage.removeItem(KEPT_RELEASE_KEY)
-    const kept: unknown = raw === null ? null : JSON.parse(raw)
+    const kept: unknown =
+      outcome.value === null ? null : JSON.parse(outcome.value)
     if (isKeptRelease(kept)) keptForThisPage = kept
   } catch {
     return

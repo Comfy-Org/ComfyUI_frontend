@@ -32,6 +32,11 @@ import {
   getWorkspaceId,
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
+import {
+  isStorageAvailable,
+  prepareWorkflowWorkspaceTransition,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import {
   replayIdentityPort,
@@ -69,15 +74,12 @@ const mockCurrentUser = {
 
 const mockEnsureSessionCookie = vi.fn()
 
-const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
 const mockReload = vi.fn()
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
-}))
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), { spy: true })
 
 vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   useSessionCookie: () => ({
@@ -122,6 +124,7 @@ function expectedExpiresAtMs(expiresAt: string): string {
 }
 
 beforeEach(() => {
+  resetStorageAvailable()
   vi.mocked(t).mockImplementation((key: unknown, params?: unknown) => {
     const error =
       params && typeof params === 'object' && 'error' in params
@@ -2450,7 +2453,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
       ).toBeNull()
-      expect(mockPrepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
+      expect(prepareWorkflowWorkspaceTransition).toHaveBeenCalledOnce()
       expect(mockReload).toHaveBeenCalledOnce()
     })
 
@@ -2872,6 +2875,7 @@ describe('useWorkspaceAuthStore', () => {
           shown
         )
         expect(mockReload).toHaveBeenCalledTimes(reloads)
+        if (shown) expect(isStorageAvailable()).toBe(true)
       }
     )
 

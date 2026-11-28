@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "OpenAI'nin GPT modelleriyle metin yanıtları oluşturun. Bir metin istemi ve isteğe bağlı olarak bağlam için görseller veya dosyalar sağlayın.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Yanıtı oluşturmak için kullanılan model."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "OpenAI'nin GPT Görüntü 2 uç noktası aracılığıyla eşzamanlı olarak görüntüler oluşturur.",
     "display_name": "OpenAI GPT Görüntü 2",
@@ -22118,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "fps",
-        "tooltip": "Çıktı kare hızı. 'source', videonun hızını en fazla 60 olacak şekilde korur. Daha yüksek bir hız enterpolasyonla oluşturulur. 30 fps üzerindeki çıktı iki kat maliyetlidir."
+        "tooltip": "Çıkış kare hızı. 'source', videonun hızını 60'a kadar korur. Daha yüksek bir hız enterpole edilir. turbo hariç, 30 fps üzerindeki çıkış iki kat maliyetlidir."
       },
       "target": {
         "name": "hedef",
@@ -22126,7 +22159,7 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Aynı fiyata, daha yumuşak ayrıntılarla daha hızlı yükseltme."
+        "tooltip": "Daha düşük bir fiyatla, daha yumuşak ayrıntılarla daha hızlı büyütme."
       },
       "video": {
         "name": "video",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stille tutarlı oluşturma için geliştirilmiştir ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash en hızlı ve en ucuz modeldir ve hiçbir stili desteklemez."
+        "tooltip": "Oluşturma için kullanılacak model. recraftv4_styles modelleri, stil açısından tutarlı oluşturma için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash, en hızlı ve en ucuz model olan Recraft V4.1 Flash V2'yi çalıştırır ve hiçbir stili desteklemez."
       },
       "model_size": {
         "name": "boyut"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "görüntü"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "hierarchical, şekilleri birbirinin üzerine katmanlar; cut_out ise çakışmayan şekiller oluşturur; çiziciler, vinil kesiciler ve serigrafi baskı için uygundur."
+      },
+      "version": {
+        "name": "sürüm",
+        "tooltip": "v1_pro (Vectorizer Pro), pürüzsüz eğriler, düz çizgiler ve keskin köşeler içeren daha temiz SVG'ler sunar; yazılar ve karmaşık şekiller için en uygunudur."
       }
     },
     "outputs": {
@@ -29256,7 +29297,7 @@
       },
       "face_limit": {
         "name": "yüz_sınırı",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standardında yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500.000, dörtgen ağlarda 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29333,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standard'da yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500,000, quad mesh'lerde 150,000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29476,7 +29517,7 @@
       },
       "face_limit": {
         "name": "yüz_sınırı",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlamalı olarak seçim yapmasını sağlar (v3.x standardında yaklaşık 1,4M yüz, detailed'da 2M). Tripo sessizce sınırlar: v2.5'te 500.000, dörtgen ağlarda 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30248,7 +30289,7 @@
       },
       "face_limit": {
         "name": "yüz_sınırı",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standard için yaklaşık 1,4M yüz, detailed için 2M). Tripo sessizce sınırlar: v2.5 için 500.000, dörtgen ağlar için 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30325,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasını sağlar (v3.x standard sürümünde yaklaşık 1,4M yüz, detailed sürümünde 2M). Tripo sessizce sınırlar: v2.5'te 500.000, quad ağlarda 150.000."
+        "tooltip": "Maksimum yüz sayısı. -1, Tripo'nun uyarlanabilir şekilde seçim yapmasına izin verir (v3.x standardında yaklaşık 1,4 milyon yüz, ayrıntılı modda 2 milyon). Tripo, dörtgen meshleri sessizce 150.000 ile sınırlar."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30392,8 +30433,7 @@
         "name": "model_görev_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Doku modeli: v3.x ile oluşturulmuş ağlar için v3.0, v2.5 ile oluşturulmuş ağlar için v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30456,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Doku modeli: v3.x ile oluşturulan ağlar için v3.0, v2.5 ile oluşturulan ağlar için v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

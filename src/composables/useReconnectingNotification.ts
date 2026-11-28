@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { createToastId } from '@/types/toastId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -15,9 +16,11 @@ export function useReconnectingNotification() {
   const { t } = useI18n()
   const toast = useToast()
   const settingStore = useSettingStore()
+  const { handleSignOut, onUserLogout } = useCurrentUser()
 
   const toastDelayMs = ref(RECONNECT_TOAST_DELAY_MS)
   const reconnectingToastId = createToastId()
+  const sessionRevokedToastId = createToastId()
 
   const { start, stop, isPending } = useTimeoutFn(
     () => {
@@ -45,6 +48,8 @@ export function useReconnectingNotification() {
     if (isPending.value) start()
   })
 
+  onUserLogout(() => toast.dismiss(sessionRevokedToastId))
+
   function onReconnecting() {
     if (settingStore.get('Comfy.Toast.DisableReconnectingToast')) return
     start()
@@ -52,11 +57,21 @@ export function useReconnectingNotification() {
 
   function onReconnected() {
     stop()
+    toast.dismiss(sessionRevokedToastId)
 
     if (toast.dismiss(reconnectingToastId)) {
       toast.success(t('g.reconnected'), { duration: 2000 })
     }
   }
 
-  return { onReconnecting, onReconnected }
+  function onRevokedSocketEnded() {
+    stop()
+    toast.dismiss(reconnectingToastId)
+    toast.error(t('g.sessionRevoked'), {
+      id: sessionRevokedToastId,
+      action: { label: t('auth.signOut.signOut'), onClick: handleSignOut }
+    })
+  }
+
+  return { onReconnecting, onReconnected, onRevokedSocketEnded }
 }

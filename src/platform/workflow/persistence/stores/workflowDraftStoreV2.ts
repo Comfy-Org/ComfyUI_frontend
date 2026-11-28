@@ -396,7 +396,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     try {
       const workflow = JSON.parse(payload)
       if (isCurrent?.() === false) return false
-      await useApp().loadGraphData(workflow, true, true, workflowName)
+      await useApp().loadGraphData(workflow, true, true, workflowName, {
+        opening: 'reopened'
+      })
       return true
     } catch (err) {
       console.error('Failed to load persisted workflow', err)

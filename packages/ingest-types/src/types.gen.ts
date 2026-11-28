@@ -121,20 +121,41 @@ export type AddDeploymentModelRequest = {
  * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
  */
 export type AgentAdmissionError = {
+  /**
+   * All exhausted hard budgets, visible to workspace Owners.
+   */
+  blocking_budgets?: Array<{
+    [key: string]: unknown
+  }>
+  /**
+   * Exhausted budget. Only Owners receive amounts.
+   */
+  budget?: {
+    [key: string]: unknown
+  }
+  denied_reason?: string
   error: {
     /**
      * A human-readable explanation of why the request was declined, suitable for display.
      */
     message: string
     /**
-     * The specific cause of the denial, for choosing what to show the user. `no_funds`: the workspace is out of credits — prompt them to add credits. `manual_block`: the workspace has been blocked — direct them to support. `funds_unavailable`: billing was temporarily unreachable — retry after the delay given in the `Retry-After` response header.
+     * The specific cause of the denial, for choosing what to show the user. `no_funds`: the workspace is out of credits — prompt them to add credits. `manual_block`: the workspace has been blocked — direct them to support. `funds_unavailable`: billing was temporarily unreachable — retry after the delay given in the `Retry-After` response header. `budget_exceeded` means a hard budget prevented the turn from starting.
      */
-    reason: 'no_funds' | 'manual_block' | 'funds_unavailable'
+    reason:
+      | 'budget_exceeded'
+      | 'no_funds'
+      | 'manual_block'
+      | 'funds_unavailable'
     /**
      * The general category of the denial, matching the HTTP status. `PAYMENT_REQUIRED` (402): the workspace cannot currently pay for a turn. `SERVICE_UNAVAILABLE` (503): billing status could not be checked right now and the request can be retried (see the `Retry-After` response header).
      */
     type: 'PAYMENT_REQUIRED' | 'SERVICE_UNAVAILABLE'
   }
+  /**
+   * For budget admission, `budget_exceeded` or `budget_check_unavailable`.
+   */
+  error_type?: string
 }
 
 /**
@@ -633,6 +654,10 @@ export type AgentPendingAskBase = {
    */
   allow_other: boolean
   ask_id: string
+  /**
+   * When the server stops waiting for the answer (RFC 3339, UTC). After it the server closes the card with an agent_ask_resolved event. Present only when the ask was opened with a wait of its own; when absent the server sets no answer deadline for this ask and the client must not assume one.
+   */
+  expires_at?: string
   kind: AgentAskKind
   max_selections: number
   message_id: string
@@ -727,7 +752,7 @@ export type AgentPostMessageRequest = {
    */
   content: string
   /**
-   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and authorized it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
+   * Cloud workflow id of the client's active editor tab; no ordering requirement. Modern clients use workflow_id for the editable target and omit this field. When present and one the caller may change it selects the workflow the turn starts focused on — explicit workflow_id > current_tab > the thread's remembered workflow.
    */
   current_tab?: string
   /**
@@ -747,7 +772,7 @@ export type AgentPostMessageRequest = {
   }
   model_selection?: AgentModelSelection
   /**
-   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries outside the caller's workspace are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
+   * Snapshot of the client's open editor tabs in editor order. Advisory context, not a grant — entries the caller may not read are ignored. With workflow_references present, only the editable target and explicit references enter the model's workflow context.
    */
   open_tabs?: Array<{
     /**
@@ -770,12 +795,22 @@ export type AgentPostMessageRequest = {
    */
   workflow_id?: string
   /**
-   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are workspace-authorized, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
+   * Explicit read-only workflow references for this turn, independent of open_tabs. Omitted preserves legacy open-tab context; an empty array means no additional workflow context. The editable target is selected by workflow_id and excluded from references. Entries are checked against each workflow's read rule, deduplicated, capped at 50, and names truncated to 120 characters. References need not be open in the editor. Unknown or inaccessible references, including authorization lookup failures, are retained as unavailable metadata so the agent can acknowledge missing context; no workflow content or access is granted.
    */
   workflow_references?: Array<{
     name?: string
     workflow_id: string
   }>
+}
+
+/**
+ * User-by-workspace assignment for the proactive greeting experiment.
+ */
+export type AgentProactiveGreetingAssignment = {
+  group_key: string
+  user_id: string
+  variant: 'control' | 'generic' | 'canvas-prefill' | 'canvas-only'
+  workspace_id: string
 }
 
 /**
@@ -1149,9 +1184,13 @@ export type AgentTurnUsage = {
 
 export type AgentUsageStatusResponse = {
   /**
-   * Whether a persisted user-role message exists in a thread owned by this user in the current workspace. Does not imply a successful Agent reply, experiment eligibility or permanent retention of historical usage after server-side deletion.
+   * Whether a retained accepted user-role message exists in the response's history scope. A later failed Agent reply still counts. Does not imply experiment assignment or permanent usage retention.
    */
   has_used_agent: boolean
+  /**
+   * local_installation means this running Local Agent installation's retained message store, across its threads and local identities. It is not canonical user-by-workspace or cross-install history. Cloud omits this field and scopes history to the authenticated user and workspace. Local/Desktop clients require this marker; an absent marker means eligibility is unknown.
+   */
+  scope?: 'local_installation'
 }
 
 /**
@@ -1177,6 +1216,10 @@ export type AgentViewableAttachmentExtension =
  * Represents a user-owned asset (image, video, or other generated output).
  */
 export type Asset = {
+  /**
+   * Set only on a `workspace_library` listing: true when the model policy of the Release that the caller's deployment runs (its own pick or the workspace default) blocks this model, so a Run that names it is refused. Absent when the policy allows it, when there is no policy, and on every other listing.
+   */
+  blocked_by_model_policy?: boolean
   /**
    * Timestamp when the asset was created
    */
@@ -1240,7 +1283,7 @@ export type Asset = {
    */
   project_id?: string
   /**
-   * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled or the asset has no resolvable content hash.
+   * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled, the asset has no resolvable content hash, or the asset is in a project other than the default.
    */
   short_url?: string | null
   /**
@@ -1897,6 +1940,12 @@ export type BillingBalanceResponse = {
    */
   prepaid_balance_micros?: number
   /**
+   * Remaining balance of each product's own scoped pot, in cents of currency, keyed by product name. Today only "agent": the Agent-scoped pot (free Agent allowance and Agent promo credit together) that Agent turns draw before falling back to the shared balance. This is the amount behind billing status scoped_has_funds.agent, so a client can warn before it runs out. A fractional number. A key is absent when the workspace has never held that pot (0 means exhausted). The whole object is omitted when no pot is present, the workspace is unprovisioned, billing is disabled, or the server predates this field. Not included in amount_cents or any other total here.
+   */
+  scoped_balance_cents?: {
+    [key: string]: number
+  }
+  /**
    * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, never below the default amount and never above max_topup_cents. Null when the balance is zero or positive, or not authoritative.
    */
   suggested_topup_amount_cents?: number | null
@@ -1917,7 +1966,8 @@ export type BillingBalanceResponse = {
  * every owner.
  *
  * When the deployment has billing disabled, this endpoint answers without
- * consulting billing-api: can_top_up is true; can_manage_members,
+ * consulting billing-api: can_top_up is true; can_view_workspace_usage
+ * follows the same rule as with billing enabled; can_manage_members,
  * can_invite_members, can_manage_subscription, can_manage_auto_top_up and
  * can_view_auto_top_up follow the owner role, and
  * can_view_auto_top_up_member_notice is true for a non-owner. Other billing-action fields are false. These role
@@ -2022,21 +2072,23 @@ export type BillingCapabilities = {
   /**
    * - Answers: should the client offer sending a new workspace invitation right
    * now?
-   * - True: the user is a workspace owner and the workspace has room: members
-   * plus unexpired pending invitations are below the seat limit, or the limit
-   * is not positive (unlimited).
+   * - True: the user is a workspace owner, or a Workspace admin (a member with
+   * `workspace_admin`, where Projects is enabled for the workspace), and the
+   * workspace has room: members plus unexpired pending invitations are below
+   * the seat limit, or the limit is not positive (unlimited).
    * - False: never explained. There is no denied_reasons key for this field.
    * - Not: authorization (invitation creation enforces the same limit itself).
-   * Not member management (can_manage_members) and not buying seats
+   * Not permission to invite an owner: an invitation sent here always makes a
+   * member. Not member management (can_manage_members) and not buying seats
    * (can_change_seats). Pending invitations count toward capacity. The
    * resolver ignores tier, subscription status, cancellation and past-due
    * payment; only the seat limit, which can come from the active plan, reflects
    * the plan.
-   * - False when: the user is not an owner; the seat limit is 1 (the limit is the
-   * workspace override if set, else the active plan's default max seats, and
-   * defaults to one seat with no active subscription); members plus unexpired
-   * pending invitations have reached the limit; the capacity could not be
-   * read, which fails closed.
+   * - False when: the user is neither an owner nor a Workspace admin; the seat
+   * limit is 1 (the limit is the workspace override if set, else the active
+   * plan's default max seats, and defaults to one seat with no active
+   * subscription); members plus unexpired pending invitations have reached
+   * the limit; the capacity could not be read, which fails closed.
    *
    */
   can_invite_members: boolean
@@ -2091,15 +2143,23 @@ export type BillingCapabilities = {
    */
   can_manage_billing: boolean
   /**
-   * - Answers: should the client offer member-management controls?
-   * - True: the user is a member of the workspace whose role is owner.
+   * - Answers: should the client show the member-management section (the
+   * member list with its per-member actions, and the invitation list)?
+   * - True: the user is a member of the workspace whose role is owner, or a
+   * Workspace admin (a member with `workspace_admin`, where Projects is
+   * enabled for the workspace).
    * - False: never explained. There is no denied_reasons key for this field.
-   * - Not: authorization; individual target restrictions still apply. Not invite
-   * capacity (can_invite_members), seat quantity (can_change_seats) or billing
-   * management (can_manage_billing). Independent of tier, subscription status,
-   * cancellation, past-due payment and billing provisioning.
-   * - False when: the user is not a member, or is a member whose role is not
-   * owner. Nothing else closes it.
+   * - Not: authorization, and not any one action. It does not say the user may
+   * change a role, appoint or remove a Workspace admin, or act on a given
+   * member: a Workspace admin may remove ordinary members only and changes no
+   * role. Offer each per-member action from that member's
+   * `capabilities.can_change_role` and `capabilities.can_remove`, never from
+   * this field. Not invite capacity (can_invite_members), seat quantity
+   * (can_change_seats) or billing management (can_manage_billing).
+   * Independent of tier, subscription status, cancellation, past-due payment
+   * and billing provisioning.
+   * - False when: the user is not a member, or is a member who is neither an
+   * owner nor a Workspace admin. Nothing else closes it.
    *
    */
   can_manage_members: boolean
@@ -2294,13 +2354,33 @@ export type BillingCapabilities = {
    */
   can_view_own_usage?: boolean
   /**
-   * Whether to offer the workspace invitation list. True for a current owner while workspace features are available. A false capability may have its matching denied_reasons key; absence means no recognized explanation. This is not capacity to send another invitation; use can_invite_members. The owner-only list route stays authoritative and can include expired invitations despite the word pending.
+   * Whether to offer the workspace invitation list. True for a current owner, and for a Workspace admin where Projects is enabled for the workspace, while workspace features are available. A false capability may have its matching denied_reasons key; absence means no recognized explanation. This is not capacity to send another invitation; use can_invite_members. It does not say every listed invitation can be resent or revoked: a Workspace admin may act on member invitations only. The list route stays authoritative and can include expired invitations despite the word pending.
    */
   can_view_pending_invites: boolean
   /**
    * Whether to offer whole-workspace usage analytics. True only for a current workspace owner with usage attribution enabled. Members use can_view_own_usage instead. False with no matching denied_reasons key means unknown or unavailable guidance. This does not authorize a read.
    */
   can_view_team_usage: boolean
+  /**
+   * - Answers: should the client show the workspace's credit balance and its
+   * workspace-wide usage totals, and request GET /api/billing/balance at
+   * all?
+   * - True: the user is a member of the workspace and is an owner or a
+   * Workspace admin; or the workspace is personal; or Projects is not
+   * enabled for the workspace, where every member keeps them.
+   * - False: explained by denied_reasons.can_view_workspace_usage.
+   * - Not: the user's own usage, which every member keeps: an ordinary
+   * member's usage reads answer with their own rows. Not whole-workspace
+   * per-person analytics (can_view_team_usage), top-up (can_top_up) or
+   * billing management (can_manage_billing). Independent of tier,
+   * subscription status and billing provisioning. Not authorization: the
+   * balance route refuses on the same rule itself.
+   * - False when: the user is not a member, or is an ordinary member (neither
+   * owner nor Workspace admin) of a team workspace where Projects is
+   * enabled.
+   *
+   */
+  can_view_workspace_usage: boolean
 }
 
 /**
@@ -2699,7 +2779,7 @@ export type BillingCapabilityDenials = {
   /**
    * Why can_invite_members is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
    * - not_a_member: The actor is not a workspace member.
-   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - not_workspace_owner: The actor is neither a workspace owner nor a Workspace admin.
    * - invite_capacity_reached: No invitation capacity is available, including a failed capacity read.
    *
    */
@@ -2757,7 +2837,7 @@ export type BillingCapabilityDenials = {
   /**
    * Why can_manage_members is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
    * - not_a_member: The actor is not a workspace member.
-   * - not_workspace_owner: The actor does not have the workspace owner role.
+   * - not_workspace_owner: The actor is neither a workspace owner nor a Workspace admin.
    *
    */
   can_manage_members?: 'not_a_member' | 'not_workspace_owner'
@@ -2904,7 +2984,7 @@ export type BillingCapabilityDenials = {
    * - not_a_member: The actor is not a workspace member.
    * - not_workspace_owner: The actor is a member whose role is not owner.
    * - creator_only_provisioning: Only the creator can act on this personal workspace's billing until its billing identity is provisioned.
-   * - no_subscription: The workspace has no subscription, so it has no billing period to budget over.
+   * - no_subscription: Setting a budget requires a paid subscription.
    * - free_plan: The plan is FREE, whose usage is not charged spend.
    * - subscription_ended: The subscription has stopped for good, ended or canceled with no end date ahead.
    * - subscription_not_started: The subscription is scheduled and has not started.
@@ -3090,7 +3170,7 @@ export type BillingCapabilityDenials = {
    */
   can_view_own_usage?: 'not_a_member' | 'usage_attribution_unavailable'
   /**
-   * Why can_view_pending_invites is false. Permission refusals precede unavailable feature or entitlement facts; first reached wins in enum order. A present key implies refusal. Missing means unknown, including a disabled team-workspaces feature or an unavailable membership read, never permission. This explains only this capability and does not authorize a mutation.
+   * Why can_view_pending_invites is false. not_workspace_owner here means the actor is neither a workspace owner nor a Workspace admin. Permission refusals precede unavailable feature or entitlement facts; first reached wins in enum order. A present key implies refusal. Missing means unknown, including a disabled team-workspaces feature or an unavailable membership read, never permission. This explains only this capability and does not authorize a mutation.
    */
   can_view_pending_invites?: 'not_a_member' | 'not_workspace_owner'
   /**
@@ -3100,6 +3180,13 @@ export type BillingCapabilityDenials = {
     | 'not_a_member'
     | 'not_workspace_owner'
     | 'usage_attribution_unavailable'
+  /**
+   * Why can_view_workspace_usage is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below; mutually exclusive lifecycle statuses do not compete.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor is neither a workspace owner nor a Workspace admin, in a team workspace where Projects is enabled.
+   *
+   */
+  can_view_workspace_usage?: 'not_a_member' | 'not_workspace_owner'
 }
 
 /**
@@ -3679,6 +3766,32 @@ export type BillingPlansResponse = {
 }
 
 /**
+ * Answers "should this client show and apply a promotion right now?". Non-null means yes: show the offer, put `promotion_code` on plan links and follow `auto_apply` at checkout. Null means no promotion is running, and clients show and apply nothing. It is not a statement about the caller: it does not say this visitor or workspace qualifies, and a code restricted to first-time customers is still refused at checkout for anyone else.
+ */
+export type BillingPromotion = {
+  /**
+   * Answers "may checkout apply `promotion_code` from the link without a click?". True means apply it on load, once per checkout, and respect the customer removing it. False means fill it in and wait for the customer. It is not a promise that Stripe accepts the code for this customer.
+   */
+  auto_apply: boolean
+  /**
+   * When Stripe stops accepting the code, for display ("ends Monday"). Null when the code has no expiry. Always present. Clients do not need to hide the offer at this time themselves: `promotion` turns null when the code expires.
+   */
+  ends_at: string | null
+  /**
+   * The discount of the coupon behind the code, as a percentage (20 for 20% off), for display. Read from Stripe, so the number clients show is the one checkout applies. Null when the coupon takes a fixed amount off: show the offer without a number. Always present. It is not the price the customer pays, and it says nothing about which plans or billing periods the coupon covers.
+   */
+  percent_off: number | null
+  /**
+   * The customer-facing Stripe promotion code of the running campaign. Clients put it on plan links and may show it. It is the only code checkout may apply without a click; any other code in a link waits for the customer to apply it.
+   */
+  promotion_code: string
+} | null
+
+export type BillingPromotionResponse = {
+  promotion: BillingPromotion
+}
+
+/**
  * Payment lifecycle status
  */
 export type BillingStatus =
@@ -3835,7 +3948,7 @@ export type BillingStatusResponse = {
    */
   usage_period_end?: string
   /**
-   * Start of the billing period that current-period usage views and workspace budgets are counted over. Together with usage_period_end it answers "which range is this period's usage?"; request usage for exactly this pair so the usage page and a budget's spend show the same number. On an annual plan it is the monthly anniversary, so it must not be read as the plan's renewal term (that is current_period_start and renewal_date). On a monthly plan the two pairs usually agree, but render each as received: they are resolved separately and can differ for a subscription whose stored period is missing or out of date. Present exactly when usage_period_end is: omitted when the workspace has no subscription, or its subscription is scheduled, ended, or canceled and past its end.
+   * Start of the billing period that current-period usage views and workspace budgets are counted over. Together with usage_period_end it answers "which range is this period's usage?"; request usage for exactly this pair so the usage page and a budget's spend show the same number. On an annual plan it is the monthly anniversary, so it must not be read as the plan's renewal term (that is current_period_start and renewal_date). On a monthly plan the two pairs usually agree, but render each as received: they are resolved separately and can differ for a subscription whose stored period is missing or out of date. Present exactly when usage_period_end is: omitted when the workspace has no subscription, or its subscription is scheduled, ended, or canceled and past its end. Budgets then use the UTC calendar month when the absence of a cycle is known.
    */
   usage_period_start?: string
 }
@@ -3858,7 +3971,7 @@ export type BillingTaxId = {
 }
 
 /**
- * A budget with its spend in the workspace's current billing period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
+ * A budget with its spend in the workspace's current billing period. This is the subscription cycle or, when there is no cycle, the UTC calendar month. Only a workspace whose subscription is unresolved has no budget period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
  *
  */
 export type Budget = {
@@ -3956,7 +4069,7 @@ export type Budget = {
   percent_used: number
   repeat: BudgetRepeat
   /**
-   * When spend next resets to 0: the end of the current billing period. Null when the workspace has no billing period.
+   * When spend next resets to 0: the end of the current billing period. With no subscription cycle, spend resets at 00:00 UTC on the first of the next month. Null when the budget period could not be resolved.
    *
    */
   resets_at: string | null
@@ -4088,6 +4201,24 @@ export type BudgetList = {
    */
   auto_top_up_conflict: boolean
   budgets: Array<Budget>
+  /**
+   * Answers one UI question: which Budgets layout does this caller get?
+   * `owner`: `budgets` is every live budget of the workspace. Show the
+   * full list.
+   * `member`: `budgets` is only the budget set on the caller, if there
+   * is one. Show the member view.
+   * It names the list this response carries, so the layout and the
+   * list always agree. Not permission to edit: `can_set_budgets` on
+   * `GET /api/billing/capabilities` answers that, and an `owner` viewer
+   * can still be refused a write, for example on a plan without
+   * budgets. Render it as received; do not rebuild it from the role or
+   * from the capabilities.
+   * Absent while billing-api does not send it yet (a rollout with an
+   * older billing-api): ingest never guesses it. A client then falls
+   * back to the layout the capabilities imply.
+   *
+   */
+  viewer?: 'owner' | 'member'
 }
 
 /**
@@ -4631,6 +4762,51 @@ export type CccSiteTagUsageItem = {
   tag: string
 }
 
+/**
+ * One app page at its Draft head, with only what a Desktop card shows.
+ */
+export type CccStaffApp = {
+  description: string
+  /**
+   * Show on the Hub in the Draft head; false when unset.
+   */
+  enabled: boolean
+  /**
+   * The Draft head lists desktop_starters in available_surfaces.
+   */
+  on_desktop: boolean
+  /**
+   * The Draft head lists hub in available_surfaces.
+   */
+  on_hub: boolean
+  /**
+   * Path under /api/v1/catalog of the card picture, /staff-apps/{uid}/picture/{version}. Absent when the page has no image picture.
+   */
+  picture?: string
+  /**
+   * Empty when the page has no address yet.
+   */
+  slug: string
+  /**
+   * As on /pages. It does not say whether the app is on the public Desktop list.
+   */
+  status: 'not_live' | 'unpublished' | 'hidden' | 'scheduled' | 'live'
+  title: string
+  uid: string
+}
+
+/**
+ * One page of the comfy.org staff app list.
+ */
+export type CccStaffAppsPage = {
+  has_more: boolean
+  items: Array<CccStaffApp>
+  /**
+   * Opaque; send it back with the same limit.
+   */
+  next_cursor?: string
+}
+
 export type CccStaffPermissions = {
   account_id: string
   /**
@@ -5127,8 +5303,7 @@ export type CreateSessionResponse = {
  */
 export type CreateTopupCheckoutRequest = {
   /**
-   * Amount to charge in cents, before any promotion code the customer
-   * enters. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
+   * Amount to charge in cents, before any discount. Whole dollars only, from $5.00 to `max_topup_cents` on GET /api/billing/balance. The
    * credits granted are derived server-side from this amount and
    * cannot be set by the caller.
    *
@@ -5688,6 +5863,16 @@ export type DesktopLoginCodeRedeemResponse = {
 }
 
 /**
+ * A one-time Firebase custom token for the Desktop grant's user.
+ */
+export type DesktopWebSessionResponse = {
+  /**
+   * Firebase custom token. Valid for one hour; sign in with it at once.
+   */
+  custom_token: string
+}
+
+/**
  * First rejected op in an abort-remainder batch.
  */
 export type DocOpFailure = {
@@ -5899,6 +6084,12 @@ export type ExecutionError = {
    * Python exception type (e.g., "RuntimeError")
    */
   exception_type: string
+  /**
+   * Present when ComfyUI rejected the whole prompt at validation (exception_type ValidationError): the rejected nodes, keyed by node id, in the shape ComfyUI's /prompt returns and cleaned and capped like a prompt_outputs_skipped event's node_errors.
+   */
+  node_errors?: {
+    [key: string]: PromptOutputsSkippedNodeError
+  }
   /**
    * ID of the node that failed
    */
@@ -6862,9 +7053,15 @@ export type JobDetailResponse = {
    */
   queue_reason?: 'concurrency_limit' | 'capacity'
   /**
-   * User-friendly job status
+   * Job status for display. A held_budget job is paused by a budget decision, occupies no worker slot and requires explicit resume or cancellation.
    */
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  status:
+    | 'pending'
+    | 'in_progress'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | 'held_budget'
   /**
    * Last update timestamp (Unix timestamp in milliseconds)
    */
@@ -6966,9 +7163,15 @@ export type JobEntry = {
    */
   project_id?: string
   /**
-   * User-friendly job status
+   * Job status for display. A held_budget job is paused by a budget decision, occupies no worker slot and requires explicit resume or cancellation.
    */
-  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'cancelled'
+  status:
+    | 'pending'
+    | 'in_progress'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | 'held_budget'
   /**
    * UUID identifying the workflow graph definition
    */
@@ -7076,15 +7279,32 @@ export type JobStatusResponse = {
    */
   last_state_update?: string
   /**
-   * Current job status
+   * Raw job lifecycle state. A held_budget job is paused until explicitly resumed or cancelled. Historical schema values waiting_to_dispatch, pending, in_progress and completed are retained for client compatibility.
    */
   status:
+    | 'submitted'
+    | 'preprocessing'
+    | 'queued_limited'
+    | 'queued_waiting'
+    | 'held_budget'
+    | 'allocated'
+    | 'preparing'
+    | 'pending_execution'
+    | 'executing'
+    | 'executed'
+    | 'cancel_requested'
+    | 'cancel_pending'
+    | 'erroring'
+    | 'cancelling_preparing'
+    | 'cancelled'
+    | 'non_retryable_error'
+    | 'error'
+    | 'lost'
+    | 'success'
     | 'waiting_to_dispatch'
     | 'pending'
     | 'in_progress'
     | 'completed'
-    | 'error'
-    | 'cancelled'
   /**
    * When the job was last updated
    */
@@ -8813,6 +9033,34 @@ export type ProviderPolicyEntry = {
   provider_id: string
 }
 
+export type PublicModel = {
+  /**
+   * Path under the models root, as `GET /api/assets` reports it
+   * (e.g. `models/checkpoints/x.safetensors`). Absent when it cannot
+   * be built safely.
+   *
+   */
+  file_path?: string
+  id: string
+  /**
+   * The model's file name, as loaders show it.
+   */
+  name: string
+  /**
+   * Bytes on disk. Absent when never measured, not zero.
+   */
+  size?: number
+  /**
+   * The public http(s) URL the model was downloaded from, when known.
+   */
+  source_url?: string
+  tags: Array<string>
+}
+
+export type PublicModelsResponse = {
+  models: Array<PublicModel>
+}
+
 /**
  * Request body for publishing or updating a workflow on the Hub.
  */
@@ -8930,7 +9178,7 @@ export type QueueInfo = {
  */
 export type QueueManageRequest = {
   /**
-   * If true, clear all pending jobs from the queue
+   * If true, cancel the caller’s pending and budget-held jobs in this workspace
    */
   clear?: boolean
   /**
@@ -9964,6 +10212,17 @@ export type TopupQuoteResponse = {
    */
   amount_cents: number
   /**
+   * The workspace's effective balance (credits minus pending
+   * draft-invoice charges) plus this top-up, in display credits,
+   * rounded to the nearest whole credit. An overrun smaller than half
+   * a credit rounds to 0, so use `runs_paused_after`, not this value's
+   * sign, to tell whether the top-up covers the overrun. Render it as
+   * is; do not recompute it from the balance. Omitted when the balance
+   * cannot be read authoritatively.
+   *
+   */
+  balance_after_credits?: number
+  /**
    * Display credits at 211 per dollar, rounded half up. The top-up
    * itself grants `amount_cents` of balance.
    *
@@ -9989,6 +10248,18 @@ export type TopupQuoteResponse = {
    *
    */
   payment_method_configuration_id?: string
+  /**
+   * Whether the credit funds gate still holds runs after this top-up
+   * settles: its verdict on the unrounded balance, true when it is zero
+   * or below. A `balance_after_credits` of 0 can come with either value,
+   * because Metronome keeps fractional cents; read this field, not the
+   * sign of `balance_after_credits`. It answers only the funds gate:
+   * Cloud checks subscription eligibility separately, so false does not
+   * promise a run is admitted, and it says nothing about whether the
+   * payment succeeds. Omitted with `balance_after_credits`.
+   *
+   */
+  runs_paused_after?: boolean
 }
 
 /**
@@ -10217,7 +10488,7 @@ export type UsageNotAvailable = {
 }
 
 /**
- * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields.
+ * Mixed units, deliberately. `spend_micros` here (and `cost_micros` on UsageBucket / UsageBreakdownRow) is genuinely MICROS -- 1/1,000,000 of the currency unit -- because it comes from Metronome's usage figures. The `balance` breakdown below is CENTS, and its `*_micros` names are a misnomer; use its `*_cents` fields. `balance` is omitted, never null, when it could not be read, the workspace has no billing account, or the caller may not see it (can_view_workspace_usage is false).
  */
 export type UsageSummary = {
   balance?: UsageBalance
@@ -10444,7 +10715,7 @@ export type WorkflowResponse = {
   latest_version: number
   name?: string
   /**
-   * The project this workflow belongs to. Where Projects is enabled for the workspace it is always set, and work in the default project carries the default project's ID. Elsewhere it is absent. It does not say whether the workspace uses Projects; read `projects_in_use` on `GET /api/projects` for that.
+   * The project this workflow belongs to, set only for a workflow in a project other than the default. Absent means the workflow is in the workspace's default project, whether or not Projects is enabled for the workspace: the default project's ID is never sent here. Absent does not mean the caller lacks access to the workflow's project. It does not say whether the workspace uses Projects; read `projects_in_use` on `GET /api/projects` for that.
    */
   project_id?: string
   updated_at: string
@@ -10713,11 +10984,11 @@ export type WorkspaceDeploymentList = {
  */
 export type WorkspaceMemberCapabilities = {
   /**
-   * Whether the actor may switch this member to the other supported role. Requires current owner authority and respects directory management, creator protection and the last-owner guard. Non-creator self-demotion is allowed when another owner remains. Not mutation authorization.
+   * Whether the actor may switch this member to the other supported role. Requires current owner authority and respects directory management, creator protection and the last-owner guard. Non-creator self-demotion is allowed when another owner remains. Always false for a Workspace admin, who changes no role. It does not answer whether the actor may set or clear this member's `workspace_admin`; only an owner may. Not mutation authorization.
    */
   can_change_role: boolean
   /**
-   * Whether the actor may remove this member. Requires current owner authority, refuses self-removal and protects the creator. Directory management alone does not refuse the existing removal route. Not permission to leave the workspace; use can_leave_workspace.
+   * Whether the actor may remove this member. True for a current owner, and for a Workspace admin when this member is an ordinary member: an admin is never offered an owner or another Workspace admin. Refuses self-removal and protects the creator. Directory management alone does not refuse the existing removal route. Not permission to change this member's role (can_change_role) and not permission to leave the workspace; use can_leave_workspace.
    */
   can_remove: boolean
   /**
@@ -10775,6 +11046,10 @@ export type WorkspaceWithRole = {
  */
 export type AssetWritable = {
   /**
+   * Set only on a `workspace_library` listing: true when the model policy of the Release that the caller's deployment runs (its own pick or the workspace default) blocks this model, so a Run that names it is refused. Absent when the policy allows it, when there is no policy, and on every other listing.
+   */
+  blocked_by_model_policy?: boolean
+  /**
    * Timestamp when the asset was created
    */
   created_at: string
@@ -10831,7 +11106,7 @@ export type AssetWritable = {
    */
   project_id?: string
   /**
-   * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled or the asset has no resolvable content hash.
+   * Durable, owner-gated short link to this asset's content (relative `/api/s/{id}` path). Stable across the underlying signed URL's expiry — resolving it re-mints a fresh signed URL on every request — so it is safe to persist or share into chat, unlike `preview_url`. Only the minting user can resolve it. Omitted when the short-link surface is disabled, the asset has no resolvable content hash, or the asset is in a project other than the default.
    */
   short_url?: string | null
   /**
@@ -10956,9 +11231,11 @@ export type MediaWorkspaceId = string
 
 /**
  * The project a request acts in. The operations that list it are the
- * ones that read it: they list workflows, runs or assets, or create
- * one. Absent means the workspace's default project, which is how
- * existing clients keep working.
+ * ones that read it: they list workflows, runs or assets, create one,
+ * export assets, clear the caller's queue or History, or pick the
+ * deployment a browser runs on. Absent means
+ * the workspace's default project, which is how existing clients keep
+ * working.
  *
  * An operation on one existing workflow, run or asset does not take
  * it: the row's own project decides. Any other operation that creates
@@ -11171,7 +11448,7 @@ export type AgentGetDraftErrors = {
    */
   401: ErrorResponse | AgentError
   /**
-   * Forbidden (workflow not found or cross-workspace). An ingest refusal, such as the web session's, is ErrorResponse; the agent service's is AgentError.
+   * Forbidden (workflow not found, or not the caller's to read: one answer, AgentError). An ingest refusal, such as the web session's, is ErrorResponse.
    */
   403: ErrorResponse | AgentError
   /**
@@ -11245,6 +11522,28 @@ export type GetAgentEventsError =
 
 export type AgentGetExecutionsData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: {
     /**
@@ -11485,7 +11784,7 @@ export type AgentLlmMessagesErrors = {
    */
   502: ErrorResponse
   /**
-   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers.
+   * The agent proxy is not configured to forward safely (a non-local agent service URL with no shared machine-to-machine secret), so ingest refuses rather than sending unverifiable identity headers. If a hard budget cannot be checked, the response carries `error_type: budget_check_unavailable`, `denied_reason`, and `Retry-After`.
    */
   503: ErrorResponse
 }
@@ -11843,6 +12142,28 @@ export type AgentDeleteSkillResponse =
 
 export type AgentListThreadsData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: {
     /**
@@ -11916,6 +12237,28 @@ export type AgentListThreadsResponse =
 
 export type AgentCreateThreadData = {
   body?: AgentThreadCreateRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/agent/threads'
@@ -11959,6 +12302,28 @@ export type AgentCreateThreadResponse =
 
 export type AgentAnswerAskData = {
   body: AgentAnswerRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path: {
     /**
      * Thread ID
@@ -12034,6 +12399,28 @@ export type AgentAnswerAskResponse =
 
 export type AgentGetMessagesData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path: {
     /**
      * Thread ID
@@ -12086,6 +12473,28 @@ export type AgentGetMessagesResponse =
 
 export type AgentPostMessageData = {
   body: AgentPostMessageRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path: {
     /**
      * Thread ID. Use the literal "new" to open a fresh thread in the same call.
@@ -12150,6 +12559,28 @@ export type AgentPostMessageResponse =
 
 export type AgentCancelMessageData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path: {
     /**
      * Thread ID
@@ -12272,9 +12703,11 @@ export type ListAssetsData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -12375,8 +12808,14 @@ export type ListAssetsData = {
      * List the workspace's model library: every member's private model
      * rows in this workspace, not only the caller's, and none of the
      * public catalog. A browser that runs on a picked deployment gets the
-     * whole library, not only the Release's models, so its loader
-     * dropdowns can offer a model the deployment downloads for the job.
+     * library, not only the Release's models, so its loader dropdowns can
+     * offer a model the deployment downloads for the job. Every library
+     * row is listed, whatever the Release's model policy says. For a
+     * browser bound to a deployment (its own pick or the workspace
+     * default), each row that policy blocks carries
+     * `blocked_by_model_policy: true`, so a client can show it as blocked
+     * rather than leave it out; a Run that names it is refused. A policy
+     * that cannot be read marks no row.
      * Needs `models` among the tags (`tags_all` or `include_tags`), else
      * 400 `INVALID_TAG_FILTER`. Honoured only while the
      * `runtime_library_models_enabled` flag is on for the caller;
@@ -12499,9 +12938,11 @@ export type CreateAssetData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -13023,6 +13464,28 @@ export type CreateAssetExportData = {
       | 'asset_id'
       | 'group_by_job_time'
   }
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/assets/export'
@@ -13136,9 +13599,11 @@ export type CreateAssetFromHashData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -13910,6 +14375,45 @@ export type RedeemDesktopLoginCodeResponses = {
 export type RedeemDesktopLoginCodeResponse =
   RedeemDesktopLoginCodeResponses[keyof RedeemDesktopLoginCodeResponses]
 
+export type CreateDesktopWebSessionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/desktop-web-session'
+}
+
+export type CreateDesktopWebSessionErrors = {
+  /**
+   * `INVALID_CREDENTIAL`, or `oauth_grant_ended`: the grant was signed out
+   */
+  401: ErrorResponse
+  /**
+   * `auth_type_not_allowed` (not an OAuth access token, or a token derived from one; answered by the auth policy), `CREDENTIAL_UNSUPPORTED` (not the Desktop grant's own access token), `insufficient_scope` (no `comfy-cloud:web-session:mint`), or `web_session_unavailable` (an SSO sign-in, or no single enabled Firebase account)
+   */
+  403: ErrorResponse
+  /**
+   * Too many web sessions issued to this user, or too many refused, in the current clock hour
+   */
+  429: ErrorResponse
+  /**
+   * `desktop_web_session_disabled` (not switched on), or `SERVICE_UNAVAILABLE` (Firebase could not be reached)
+   */
+  503: ErrorResponse
+}
+
+export type CreateDesktopWebSessionError =
+  CreateDesktopWebSessionErrors[keyof CreateDesktopWebSessionErrors]
+
+export type CreateDesktopWebSessionResponses = {
+  /**
+   * Custom token minted
+   */
+  200: DesktopWebSessionResponse
+}
+
+export type CreateDesktopWebSessionResponse =
+  CreateDesktopWebSessionResponses[keyof CreateDesktopWebSessionResponses]
+
 export type CreateBillingHandoffData = {
   body: BillingHandoffCreateRequest
   path?: never
@@ -14648,8 +15152,8 @@ export type CreateBillingBudgetErrors = {
   404: ErrorResponse
   /**
    * `budget_exists` (the scope already has a live budget) or
-   * `no_billing_period` (`repeat: current_period` on a workspace with
-   * no open paid subscription term).
+   * `no_billing_period` (`repeat: current_period` when the budget period
+   * cannot be resolved).
    *
    */
   409: ErrorResponse
@@ -14775,7 +15279,7 @@ export type UpdateBillingBudgetErrors = {
    */
   404: ErrorResponse
   /**
-   * `no_billing_period`: `repeat: current_period` on a workspace with no open paid subscription term.
+   * `no_billing_period`: `repeat: current_period` when the budget period cannot be resolved.
    */
   409: ErrorResponse
   /**
@@ -15404,6 +15908,37 @@ export type PreviewSubscribeResponses = {
 
 export type PreviewSubscribeResponse2 =
   PreviewSubscribeResponses[keyof PreviewSubscribeResponses]
+
+export type GetBillingPromotionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/promotion'
+}
+
+export type GetBillingPromotionErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * `code` is `workspace_access_denied`: the selected workspace is unknown, deleted, or the user is not a member; the three look the same. This route also serves anonymous callers, so the session's other refusals fall back to an anonymous request. See the `WebSessionAuth` scheme.
+   */
+  403: ErrorResponse
+}
+
+export type GetBillingPromotionError =
+  GetBillingPromotionErrors[keyof GetBillingPromotionErrors]
+
+export type GetBillingPromotionResponses = {
+  /**
+   * The promotion running right now, or null
+   */
+  200: BillingPromotionResponse
+}
+
+export type GetBillingPromotionResponse =
+  GetBillingPromotionResponses[keyof GetBillingPromotionResponses]
 
 export type AcceptRetentionOfferData = {
   body: RetentionAcceptRequest
@@ -16704,7 +17239,7 @@ export type GetFeaturesResponses = {
      */
     'agent-credit-usage-summary'?: 'control' | 'treatment'
     /**
-     * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract, as agent-starter-prompt-set does, so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
+     * Authenticated assignment for the Agent free-use notice placement experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments mid-rolling-deploy and partial feature fixtures fail closed rather than decoding an absent field as the empty string, which is not a member of this enum.
      */
     'agent-free-use-message-placement'?:
       | 'control'
@@ -16713,14 +17248,11 @@ export type GetFeaturesResponses = {
       | 'above-input'
       | 'inside-input'
     /**
-     * Authenticated assignment for the Agent starter-prompt experiment. Current Cloud responses include it and default to control when the caller is unauthenticated, evaluation is unavailable, or no treatment is assigned. It remains optional in the client contract so older environments and partial feature fixtures fail closed. Reading this field does not constitute experiment exposure; the frontend emits the custom exposure event only after rendering the starter prompt surface.
-     */
-    'agent-starter-prompt-set'?: 'control' | 'test'
-    /**
      * The signed-in caller's arm in the local agent free-credit experiment (PostHog flag agent-gratis-cents-local-experiment): control or treatment. It answers which arm the caller is in, not whether credit has been granted, and does not depend on the grant being issued.
      * Absent, never null or empty, when no arm is resolved: unauthenticated callers, a failed or unavailable flag evaluation, or no variant assigned yet. It has no default; a consumer treats absence as "no arm known" and shows no free-credit surface, without recording the caller as outside the experiment. Served on this HTTP response only, never in the WebSocket feature_flags push, and dynamic configuration cannot set it.
      */
     agent_gratis_local_arm?: 'control' | 'treatment'
+    agent_proactive_greeting_assignment?: AgentProactiveGreetingAssignment
     /**
      * Origin of the billing-web deployment paired with this Cloud environment (e.g. https://billing.comfy.org). Absent when BILLING_WEB_URL is not configured on the server, so a client can tell "not configured" from "configured as empty".
      */
@@ -16797,6 +17329,14 @@ export type GetFeaturesResponses = {
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
     private_workflow_links_enabled?: boolean
+    /**
+     * Served assignment for the prompt editor surface experiment: where the text widget's Expand opens a long prompt. Control opens a centred dialog; panel opens the prompt in the right side panel. It is omitted while the flag is inactive, evaluation is unavailable, the caller is anonymous, or no valid assignment is present, so clients cannot mistake the off state for a randomized control. Reading this field is not exposure; the frontend records exposure on the first Expand.
+     */
+    'prompt-editor-surface'?: 'control' | 'panel'
+    /**
+     * Local ComfyUI only: a random id that is new on every server start. A client that reconnects and gets a different value knows the server restarted, so node definitions it loaded earlier may be stale. Not settable with --feature-flag.
+     */
+    server_boot_id?: string
     /**
      * Global switch, the same for every caller and readable without credentials. When true, the frontend shows enterprise single sign-on (the SSO sign-in entry and SSO workspace states); when false it shows today's app. It gates no backend behaviour. Defaults to false.
      */
@@ -17170,6 +17710,28 @@ export type GetLegacyHistoryErrors = {
 
 export type ManageHistoryData = {
   body: HistoryManageRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/history'
@@ -17188,6 +17750,10 @@ export type ManageHistoryErrors = {
    * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
+  /**
+   * The project `X-Comfy-Project-ID` names does not exist or the caller may not view it (`not_found`)
+   */
+  404: ErrorResponse
   /**
    * Internal server error
    */
@@ -17926,6 +18492,28 @@ export type CreateInputUploadUrlResponse =
 
 export type InterruptJobData = {
   body?: never
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/interrupt'
@@ -17947,7 +18535,8 @@ export type InterruptJobErrors = {
   /**
    * `prompt_id` is not one of the caller's jobs in this workspace, or
    * is not a job ID (a 36-character UUID) at all. Code NOT_FOUND;
-   * nothing was cancelled.
+   * nothing was cancelled. Or the project `X-Comfy-Project-ID` names
+   * does not exist or the caller may not view it (`not_found`).
    *
    */
   404: ErrorResponse
@@ -18100,9 +18689,11 @@ export type ListJobsData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -18120,7 +18711,7 @@ export type ListJobsData = {
   path?: never
   query?: {
     /**
-     * Filter by one or more statuses (comma-separated). If not provided, returns all jobs.
+     * Filter by one or more statuses (comma-separated). Use held_budget for jobs paused by a budget decision. Omit to return all jobs.
      */
     status?: string
     /**
@@ -18234,11 +18825,11 @@ export type DeleteJobErrors = {
    */
   403: ForbiddenError
   /**
-   * Job not found or does not belong to the user
+   * Job not found, does not belong to the user, or is in a project where the caller may not delete it
    */
   404: ErrorResponse
   /**
-   * A linked asset cannot be deleted because it is referenced by another resource, e.g. a workflow version (error code: ASSET_IN_USE); the job is left in place
+   * A linked asset cannot be deleted because it is referenced by another resource, e.g. a workflow version, or because content moderation still holds it (error code: ASSET_IN_USE for both; a moderation hold is deliberately not distinguishable); the job and every linked asset are left in place
    */
   409: ErrorResponse
   /**
@@ -18268,7 +18859,7 @@ export type GetJobDetailData = {
   }
   query?: {
     /**
-     * When present, each output item in the response receives a `short_url` field containing a short link for that asset. Omit this parameter (the default) to receive a response identical to the no-param baseline. The value selects the link's lifetime and auth model: use `ephemeral_tool_chain` for short-lived (≤5 minute) machine-to-machine handoffs — these are public bearer links where the link ID itself is the credential, so anyone holding the link can resolve it (intended for pasting into an agent/MCP tool chain); use `default` for durable (30 day) human-revisitable links, which are owner-gated and resolvable only by the authenticated owner. Links are always minted under the authenticated request owner's identity; the auth model is selected by the server and is never settable by the caller.
+     * When present, each output item in the response receives a `short_url` field containing a short link for that asset. Omit this parameter (the default) to receive a response identical to the no-param baseline. The value selects the link's lifetime and auth model: use `ephemeral_tool_chain` for short-lived (≤5 minute) machine-to-machine handoffs — these are public bearer links where the link ID itself is the credential, so anyone holding the link can resolve it (intended for pasting into an agent/MCP tool chain); use `default` for durable (30 day) human-revisitable links, which are owner-gated and resolvable only by the authenticated owner. Links are always minted under the authenticated request owner's identity; the auth model is selected by the server and is never settable by the caller. A run in a project other than the default gets no `short_url` whatever the value: its outputs have no short link.
      *
      */
     short_link?: 'ephemeral_tool_chain' | 'default'
@@ -18965,9 +19556,11 @@ export type ExecutePromptData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -18981,6 +19574,10 @@ export type ExecutePromptData = {
      *
      */
     'X-Comfy-Project-ID'?: string
+    /**
+     * The Release the editor loaded its node list from, for a browser that picked a developer-platform deployment. When the deployment runs another Release now, the submission is refused with a 409 `RELEASE_CHANGED` before its workflow is validated, and nothing is queued. Without it the submission is answered as before.
+     */
+    'Comfy-Loaded-Release'?: string
   }
   path?: never
   query?: never
@@ -18989,7 +19586,7 @@ export type ExecutePromptData = {
 
 export type ExecutePromptErrors = {
   /**
-   * Invalid prompt, or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   * Invalid prompt, or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid). An `error` whose `details` is `deployment_not_permitted` says the run's project may not use the target, and nothing ran: `error.deployment_id` names a picked deployment that belongs to another project, and `error.target` `shared_cloud` says the project does not run on Comfy Cloud. The caller picks another target. It says nothing about the caller's role.
    */
   400: PromptErrorResponse
   /**
@@ -18997,13 +19594,17 @@ export type ExecutePromptErrors = {
    */
   401: ErrorResponse
   /**
-   * The account's plan does not allow this submission; nothing was queued and retrying without changing the plan never succeeds. Disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` (no active subscription, no funds, blocked tier), `CLOUD_SUBSCRIPTION_REQUIRED`, `FREE_TIER_EXHAUSTED`, `PARTNER_NODE_PAYMENT_REQUIRED`, or `MODEL_PAYMENT_REQUIRED`. A `PAYMENT_REQUIRED` body may also carry `error.reason`, the billing policy's reason for the refusal, e.g. `subscription_inactive`, `no_funds` or `manual_block`; treat an absent or unknown reason as the generic refusal.
+   * The account's plan does not allow this submission; nothing was queued and retrying without changing the plan never succeeds. Disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` (no active subscription, no funds, blocked tier), `CLOUD_SUBSCRIPTION_REQUIRED`, `FREE_TIER_EXHAUSTED`, `PARTNER_NODE_PAYMENT_REQUIRED`, or `MODEL_PAYMENT_REQUIRED`. A `PAYMENT_REQUIRED` body may also carry `error.reason`, the billing policy's reason for the refusal, e.g. `subscription_inactive`, `no_funds` or `manual_block`; treat an absent or unknown reason as the generic refusal. A hard cap responds with top-level `error_type: budget_exceeded`, `denied_reason` and `budget`. Only workspace Owners receive amounts and `blocking_budgets`.
    */
   402: PromptErrorResponse
   /**
    * Workspace governance policy blocks one or more partner providers (error.type PARTNER_NODE_DISABLED; error.class_types lists the offending nodes, error.providers the disabled providers), or a refused request with `code` and `message` (see SessionWriteForbidden).
    */
   403: PromptErrorResponse
+  /**
+   * The request's `Comfy-Loaded-Release` names a Release other than the one the picked deployment runs now (error.type `RELEASE_CHANGED`; error.release_id is the Release it runs now). Nothing was queued; reload that Release before submitting again. Answered before the workflow is validated.
+   */
+  409: PromptErrorResponse
   /**
    * Workflow JSON too large
    */
@@ -19017,7 +19618,7 @@ export type ExecutePromptErrors = {
    */
   500: PromptErrorResponse
   /**
-   * Service unavailable
+   * Service unavailable. A hard budget check outage carries `error_type: budget_check_unavailable` and `denied_reason`.
    */
   503: PromptErrorResponse
 }
@@ -19088,6 +19689,33 @@ export type GetProvidersResponses = {
 export type GetProvidersResponse =
   GetProvidersResponses[keyof GetProvidersResponses]
 
+export type ListPublicModelsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/public_models'
+}
+
+export type ListPublicModelsErrors = {
+  /**
+   * The catalog could not be read in full
+   */
+  503: ErrorResponse
+}
+
+export type ListPublicModelsError =
+  ListPublicModelsErrors[keyof ListPublicModelsErrors]
+
+export type ListPublicModelsResponses = {
+  /**
+   * The public model catalog
+   */
+  200: PublicModelsResponse
+}
+
+export type ListPublicModelsResponse =
+  ListPublicModelsResponses[keyof ListPublicModelsResponses]
+
 export type GetQueueInfoData = {
   body?: never
   path?: never
@@ -19128,6 +19756,28 @@ export type GetQueueInfoResponse =
 
 export type ManageQueueData = {
   body: QueueManageRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path?: never
   query?: never
   url: '/api/queue'
@@ -19146,6 +19796,10 @@ export type ManageQueueErrors = {
    * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
    */
   403: ForbiddenError
+  /**
+   * The project `X-Comfy-Project-ID` names does not exist or the caller may not view it (`not_found`)
+   */
+  404: ErrorResponse
   /**
    * Internal server error
    */
@@ -19948,9 +20602,11 @@ export type UploadImageData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -20032,9 +20688,11 @@ export type UploadMaskData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -22659,6 +23317,106 @@ export type GetCccTypeSchemaResponses = {
 export type GetCccTypeSchemaResponse =
   GetCccTypeSchemaResponses[keyof GetCccTypeSchemaResponses]
 
+export type ListCccStaffAppsData = {
+  body?: never
+  path?: never
+  query?: {
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/staff-apps'
+}
+
+export type ListCccStaffAppsErrors = {
+  /**
+   * Unknown or repeated parameter, a bad limit or a cursor from another limit; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * The cursor belongs to a stale Draft snapshot
+   */
+  409: unknown
+  /**
+   * Dedicated catalog or account verification unavailable
+   */
+  503: unknown
+}
+
+export type ListCccStaffAppsError =
+  ListCccStaffAppsErrors[keyof ListCccStaffAppsErrors]
+
+export type ListCccStaffAppsResponses = {
+  /**
+   * One page of app rows and the optional opaque next_cursor
+   */
+  200: CccStaffAppsPage
+}
+
+export type ListCccStaffAppsResponse =
+  ListCccStaffAppsResponses[keyof ListCccStaffAppsResponses]
+
+export type GetCccStaffAppPictureData = {
+  body?: never
+  path: {
+    uid: string
+    version: string
+  }
+  query?: never
+  url: '/api/v1/catalog/staff-apps/{uid}/picture/{version}'
+}
+
+export type GetCccStaffAppPictureErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Not an app, no image picture, another version, unavailable, or a query string
+   */
+  404: unknown
+  /**
+   * Requested range is outside the file
+   */
+  416: unknown
+  /**
+   * Account verification unavailable
+   */
+  503: unknown
+}
+
+export type GetCccStaffAppPictureError =
+  GetCccStaffAppPictureErrors[keyof GetCccStaffAppPictureErrors]
+
+export type GetCccStaffAppPictureResponses = {
+  /**
+   * The picture bytes; private no-store
+   */
+  200: Blob | File
+  /**
+   * Requested byte range (Range header) of the same bytes, after the same checks
+   */
+  206: Blob | File
+}
+
+export type GetCccStaffAppPictureResponse =
+  GetCccStaffAppPictureResponses[keyof GetCccStaffAppPictureResponses]
+
 export type GetCccStateData = {
   body?: never
   path?: never
@@ -23207,9 +23965,11 @@ export type ListWorkflowsData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -23284,9 +24044,11 @@ export type CreateWorkflowData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -23542,9 +24304,11 @@ export type ForkWorkflowData = {
   headers?: {
     /**
      * The project a request acts in. The operations that list it are the
-     * ones that read it: they list workflows, runs or assets, or create
-     * one. Absent means the workspace's default project, which is how
-     * existing clients keep working.
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
      *
      * An operation on one existing workflow, run or asset does not take
      * it: the row's own project decides. Any other operation that creates
@@ -24031,7 +24795,7 @@ export type ListWorkspaceInvitesErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required
+   * Owner role, or Workspace admin, required
    */
   403: ErrorResponse
   /**
@@ -24070,7 +24834,7 @@ export type CreateWorkspaceInviteErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required or personal workspace (invites not allowed)
+   * Owner role, or Workspace admin, required; or personal workspace (invites not allowed)
    */
   403: ErrorResponse
   /**
@@ -24126,7 +24890,7 @@ export type RevokeWorkspaceInviteErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required
+   * Owner role, or Workspace admin, required; or the caller is a Workspace admin and the invite is an owner invite
    */
   403: ErrorResponse
   /**
@@ -24174,7 +24938,7 @@ export type ResendWorkspaceInviteErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required
+   * Owner role, or Workspace admin, required; or the caller is a Workspace admin and the invite is an owner invite
    */
   403: ErrorResponse
   /**
@@ -24373,7 +25137,7 @@ export type RemoveWorkspaceMemberErrors = {
    */
   401: ErrorResponse
   /**
-   * Owner role required, cannot remove yourself, the original owner of a personal workspace cannot be removed (`CANNOT_REMOVE_ORIGINAL_OWNER`), or the creator of a team workspace cannot be removed (`CANNOT_REMOVE_CREATOR`)
+   * Owner role, or Workspace admin, required (`FORBIDDEN`); the caller is a Workspace admin and the member is an owner or another Workspace admin (`NOT_OWNER`); cannot remove yourself; the original owner of a personal workspace cannot be removed (`CANNOT_REMOVE_ORIGINAL_OWNER`), or the creator of a team workspace cannot be removed (`CANNOT_REMOVE_CREATOR`)
    */
   403: ErrorResponse
   /**
@@ -24964,7 +25728,7 @@ export type SetWorkspaceDefaultDeploymentErrors = {
    */
   404: ErrorResponse
   /**
-   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted
+   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted. `code` `deployment_not_permitted` is a deployment that belongs to a project other than the default: the workspace default applies in the default project alone.
    */
   422: ErrorResponse
   /**
@@ -25045,6 +25809,28 @@ export type ClearWorkspaceDeploymentResponse =
 
 export type PickWorkspaceDeploymentData = {
   body: PickWorkspaceDeploymentRequest
+  headers?: {
+    /**
+     * The project a request acts in. The operations that list it are the
+     * ones that read it: they list workflows, runs or assets, create one,
+     * export assets, clear the caller's queue or History, or pick the
+     * deployment a browser runs on. Absent means
+     * the workspace's default project, which is how existing clients keep
+     * working.
+     *
+     * An operation on one existing workflow, run or asset does not take
+     * it: the row's own project decides. Any other operation that creates
+     * a workflow, run or asset acts in the default project until it lists
+     * this parameter.
+     *
+     * The project must be in the workspace the request resolves to. A
+     * project that does not exist, or that the caller may not view, is 404
+     * `not_found`; the two look the same. Where Projects is not enabled for
+     * the workspace the header is ignored.
+     *
+     */
+    'X-Comfy-Project-ID'?: string
+  }
   path: {
     /**
      * Workspace ID (w-{uuid} format)
@@ -25069,11 +25855,11 @@ export type PickWorkspaceDeploymentErrors = {
    */
   403: ErrorResponse
   /**
-   * Workspace not found, or the caller is not a member of it
+   * Workspace not found, or the caller is not a member of it; or `code` `not_found` for a project that does not exist or that the caller may not view
    */
   404: ErrorResponse
   /**
-   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted
+   * Validation error, including a deployment_id that is not one of the workspace's deployments or has been deleted. `code` `deployment_not_permitted` is a live deployment that belongs to a project other than the one the pick is made in; nothing is picked. It says which project the deployment is in, not what the caller's role allows.
    */
   422: ErrorResponse
   /**

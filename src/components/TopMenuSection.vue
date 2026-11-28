@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage, useMutationObserver } from '@vueuse/core'
+import { useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -218,6 +218,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { openCloudExtensions } from '@/platform/workspace/platformFrame/openCloudExtensions'
 import { useApp } from '@/scripts/appInstance'
@@ -230,6 +231,7 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
 import CloudButton from '@/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
@@ -242,6 +244,7 @@ import { useManagerState } from '@/platform/customNodes/manager/composables/useM
 import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'
 import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -254,8 +257,15 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
+const cloudWorkflowCheck = isCloud ? undefined : useCloudWorkflowCheckStore()
 const isCloudButtonShown = computed(
-  () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
+  () =>
+    !isCloud &&
+    pendingServerFact(
+      'BE-27740',
+      flags.openOnCloudEnabled && !cloudWorkflowCheck?.isSwitchedOffOnCloud
+    ) &&
+    canHandOffToCloud()
 )
 const localModelUploads = isCloud ? undefined : useLocalModelUploadStore()
 const hasCloudUploadRecovery = computed(
@@ -283,7 +293,7 @@ const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const actionbarCardRef = ref<HTMLElement>()
-const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const isActionbarDocked = useSafeLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
   () => actionbarPosition.value !== 'Disabled'

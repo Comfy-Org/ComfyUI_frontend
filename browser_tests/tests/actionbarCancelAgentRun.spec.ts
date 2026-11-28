@@ -1,8 +1,6 @@
-import type { z } from 'zod'
-
 import type {
-  RawJobListItem,
-  zJobsListResponse
+  JobsListResponse,
+  RawJobListItem
 } from '@comfyorg/api-client/jobTypes'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -10,8 +8,6 @@ import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { QueuedExecution } from '@e2e/fixtures/queuedExecutionFixture'
 import { queuedExecutionFixture as test } from '@e2e/fixtures/queuedExecutionFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-
-type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/

@@ -1,6 +1,7 @@
 import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import {
@@ -21,10 +22,14 @@ export function useAgentTabSignals({
 }: AgentTabSignalsOptions) {
   const { t } = useI18n()
   const conversationStore = useAgentConversationStore()
+  const workflowStore = useWorkflowStore()
   const tabActivity = useWorkflowTabActivityStore()
   const askSeenAt = new Map<string, number>()
 
-  conversationStore.onTurnCompleted((path) => tabActivity.markModified(path))
+  conversationStore.onTurnCompleted((path) => {
+    if (path !== workflowStore.activeWorkflow?.path)
+      tabActivity.markModified(path)
+  })
   watch(
     () => conversationStore.turnTabs,
     (tabs) => tabActivity.setAgentTurnTabs(tabs),

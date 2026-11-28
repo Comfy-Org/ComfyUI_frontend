@@ -20027,6 +20027,39 @@
       }
     }
   },
+  "OpenAIChatNodeV2": {
+    "description": "Générez des réponses textuelles avec les modèles GPT d’OpenAI. Fournissez une invite textuelle et, éventuellement, des images ou des fichiers comme contexte.",
+    "display_name": "OpenAI ChatGPT",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Le modèle utilisé pour générer la réponse."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImage1": {
     "description": "Génère des images de manière synchrone via l'endpoint GPT Image 2 d'OpenAI.",
     "display_name": "OpenAI GPT Image 2",
@@ -22118,7 +22151,7 @@
     "inputs": {
       "fps": {
         "name": "ips",
-        "tooltip": "Fréquence d’images de sortie. « source » conserve la fréquence de la vidéo, jusqu’à 60. Une fréquence plus élevée est interpolée. Une sortie au-delà de 30 ips coûte deux fois plus cher."
+        "tooltip": "Fréquence d’images de sortie. « source » conserve la fréquence de la vidéo, jusqu’à 60. Une fréquence plus élevée est interpolée. Une sortie au-dessus de 30 fps coûte deux fois plus cher, sauf avec turbo."
       },
       "target": {
         "name": "cible",
@@ -22126,7 +22159,7 @@
       },
       "turbo": {
         "name": "turbo",
-        "tooltip": "Agrandissement plus rapide avec des détails plus doux, au même prix."
+        "tooltip": "Mise à l’échelle plus rapide avec des détails plus doux, à un prix inférieur."
       },
       "video": {
         "name": "vidéo",
@@ -23093,7 +23126,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en termes de style et nécessitent toujours un style_id ou des style_references ; recraftv4_1_flash est le modèle le plus rapide et le moins cher et ne prend en charge aucun style."
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references ; recraftv4_1_flash exécute Recraft V4.1 Flash V2, le modèle le plus rapide et le moins cher, et ne prend pas du tout en charge les styles."
       },
       "model_size": {
         "name": "taille"
@@ -23204,6 +23237,14 @@
     "inputs": {
       "image": {
         "name": "image"
+      },
+      "shape_stacking": {
+        "name": "shape_stacking",
+        "tooltip": "superpose les formes en couches hiérarchiques ; cut_out crée des formes qui ne se chevauchent jamais, pour les traceurs, les découpeuses de vinyle et la sérigraphie."
+      },
+      "version": {
+        "name": "version",
+        "tooltip": "v1_pro (Vectorizer Pro) produit des SVG plus nets avec des courbes lisses, des lignes droites et des angles vifs, idéal pour le lettrage et les formes complexes."
       }
     },
     "outputs": {
@@ -29256,7 +29297,7 @@
       },
       "face_limit": {
         "name": "limite_faces",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces avec v3.x standard, 2 M avec detailed). Tripo limite silencieusement : v2.5 à 500 000, maillages en quads à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29333,7 +29374,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M sur detailed). Tripo applique silencieusement une limite : v2.5 à 500 000, les maillages quad à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -29476,7 +29517,7 @@
       },
       "face_limit": {
         "name": "limite_visage",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces avec v3.x standard, 2 M avec detailed). Tripo limite silencieusement : v2.5 à 500 000, maillages en quads à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30248,7 +30289,7 @@
       },
       "face_limit": {
         "name": "limite_visage",
-        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1.4M de faces avec v3.x standard, 2M avec detailed). Tripo limite silencieusement : v2.5 à 500,000, les maillages quad à 150,000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30325,7 +30366,7 @@
       },
       "face_limit": {
         "name": "face_limit",
-        "tooltip": "Nombre maximal de faces. -1 permet à Tripo de choisir de manière adaptative (environ 1,4 M de faces pour la version standard v3.x, 2 M pour detailed). Tripo applique silencieusement des limites : v2.5 à 500 000, les maillages quad à 150 000."
+        "tooltip": "Nombre maximal de faces. -1 laisse Tripo choisir de manière adaptative (environ 1,4 M de faces sur v3.x standard, 2 M en détaillé). Tripo limite silencieusement les maillages quadrilatères à 150 000."
       },
       "geometry_quality": {
         "name": "geometry_quality"
@@ -30392,8 +30433,7 @@
         "name": "modèle_id_tâche"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modèle de texture : v3.0 pour les maillages générés avec v3.x, v2.5 pour les maillages générés avec v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",
@@ -30456,8 +30496,7 @@
         "name": "model_task_id"
       },
       "model_version": {
-        "name": "model_version",
-        "tooltip": "Modèle de texture : v3.0 pour les maillages générés avec v3.x, v2.5 pour les maillages générés avec v2.5."
+        "name": "model_version"
       },
       "part_names": {
         "name": "part_names",

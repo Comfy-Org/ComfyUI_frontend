@@ -8,6 +8,9 @@ describe('readFrameMessage', () => {
     { type: 'ready', signedIn: true, userId: 'uid-ana' },
     { type: 'ready', signedIn: true, userId: null },
     { type: 'token-wanted', userId: 'uid-ana' },
+    { type: 'step-shown', step: 'models' },
+    { type: 'content-height', height: 304 },
+    { type: 'content-height', height: null },
     {
       type: 'build-started',
       kind: 'update',
@@ -48,6 +51,18 @@ describe('readFrameMessage', () => {
       data: { type: 'ready', signedIn: true, userId: 7 }
     },
     { label: 'token-wanted with no userId', data: { type: 'token-wanted' } },
+    {
+      label: 'step-shown with a step the editor does not size',
+      data: { type: 'step-shown', step: 'nodes' }
+    },
+    {
+      label: 'content-height as a string',
+      data: { type: 'content-height', height: '304px' }
+    },
+    {
+      label: 'content-height of no pixels',
+      data: { type: 'content-height', height: 0 }
+    },
     {
       label: 'build-started with an unknown kind',
       data: {

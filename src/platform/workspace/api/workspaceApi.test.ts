@@ -935,6 +935,7 @@ describe('workspaceApi', () => {
           can_manage_partner_node_access: false,
           can_view_pending_invites: false,
           can_view_team_usage: false,
+          can_view_workspace_usage: false,
           can_downgrade_to_personal: false
         }
       }

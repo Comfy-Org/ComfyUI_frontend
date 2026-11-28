@@ -102,15 +102,23 @@ interface RegionTarget {
   nodeElement: HTMLElement
   region: HTMLElement
   key: string
+  declaredMinHeight?: number
+}
+
+interface RegionBounds {
+  minHeight?: number
+  maxHeight?: number
 }
 
 type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> &
   NonNullable<ReturnType<typeof soleMediaAspectRatio>>
 
-function regionAt(event: Event, key: string) {
+function regionAt(event: Event, key: string, declaredMinHeight?: number) {
   const target = closestNodeElement(event)
   const region = target?.handle.parentElement
-  return target && region ? { ...target, region, key } : undefined
+  return target && region
+    ? { ...target, region, key, declaredMinHeight }
+    : undefined
 }
 
 /** Sizes a Vue node's growable regions, each named by its widget or preview and holding the user's height in {@link useWidgetHeightStore}. */
@@ -166,18 +174,20 @@ export function useGrowableRegions({
     onCommit()
   }
 
-  function start(event: PointerEvent, name: string, maxHeight = Infinity) {
+  function start(
+    event: PointerEvent,
+    name: string,
+    { minHeight: declaredMinHeight, maxHeight = Infinity }: RegionBounds = {}
+  ) {
     if (event.button !== 0) return
-    const target = regionAt(event, name)
+    const target = regionAt(event, name, declaredMinHeight)
     if (!target) return
     const { handle, nodeElement, region, key } = target
 
     const startHeight = region.offsetHeight
-    const minHeight = withCollapsedHeights(
-      nodeElement,
-      REGION_FLOOR,
-      () => region.offsetHeight
-    )
+    const minHeight =
+      declaredMinHeight ??
+      withCollapsedHeights(nodeElement, REGION_FLOOR, () => region.offsetHeight)
     const startNodeHeight = nodeElement.offsetHeight
     const startY = event.clientY
 
@@ -252,14 +262,14 @@ export function useGrowableRegions({
   }
 
   function fitText(
-    { nodeElement, region, key }: RegionTarget,
+    { nodeElement, region, key, declaredMinHeight }: RegionTarget,
     text: HTMLElement
   ) {
     const { minHeight, textHeight } = withCollapsedHeights(
       nodeElement,
       REGION_FLOOR,
       () => ({
-        minHeight: region.offsetHeight,
+        minHeight: declaredMinHeight ?? region.offsetHeight,
         textHeight:
           text instanceof HTMLTextAreaElement
             ? textFitHeight(text)
@@ -286,17 +296,23 @@ export function useGrowableRegions({
     onCommit()
   }
 
-  function reset(event: MouseEvent, name: string) {
-    const target = regionAt(event, name)
+  function reset(event: MouseEvent, name: string, minHeight?: number) {
+    const target = regionAt(event, name, minHeight)
     if (target) resetRegion(target)
   }
 
-  function resetWidget(event: MouseEvent, name: string) {
+  function resetWidget(event: MouseEvent, name: string, minHeight?: number) {
     const nodeElement = closestNodeElement(event)?.nodeElement
     const region = nodeElement?.querySelector<HTMLElement>(
       `[data-widget-name="${CSS.escape(name)}"]`
     )
-    if (nodeElement && region) resetRegion({ nodeElement, region, key: name })
+    if (nodeElement && region)
+      resetRegion({
+        nodeElement,
+        region,
+        key: name,
+        declaredMinHeight: minHeight
+      })
   }
 
   return { heightOf, fitNode, resetWidget, handle: { start, reset } }

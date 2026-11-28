@@ -50,9 +50,14 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { provideAuthStore } from '@/platform/auth/authStoreAccess'
+import type { AuthTokenRequest } from '@comfyorg/api-client/apiAuthProvider'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  fenceWorkflowStorageForAuthState,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
@@ -467,14 +472,28 @@ export const useAuthStore = defineStore('auth', () => {
     return useWorkspaceAuthStore().getUnifiedToken()
   }
 
+  const getRemintedUnifiedAuthToken = async (): Promise<string | undefined> => {
+    const cached = await getUnifiedAuthToken()
+    if (!cached) return undefined
+    return (
+      (await useWorkspaceAuthStore().remintUnifiedOnce(cached)) ?? undefined
+    )
+  }
+
   /** The raw auth token for WebSocket connections and backend node auth: the unified Cloud JWT on Cloud, else the Firebase token. */
-  const getAccountAuthToken = async (): Promise<string | undefined> => {
+  const getAccountAuthToken = async ({
+    forceRefresh = false
+  }: AuthTokenRequest = {}): Promise<string | undefined> => {
     const sessionOnly = sessionOnlyRequests()
     if (sessionOnly) return webSessionRunToken(sessionOnly)
 
-    if (isCloud) return getUnifiedAuthToken()
+    if (isCloud) {
+      return forceRefresh
+        ? getRemintedUnifiedAuthToken()
+        : getUnifiedAuthToken()
+    }
 
-    return await getIdToken()
+    return forceRefresh ? await getFreshIdToken() : await getIdToken()
   }
 
   /**
@@ -549,10 +568,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
   const getWorkspaceAuthHeader = async (): Promise<AuthHeader | null> =>
     (await getWorkspaceAuthContext()).headers
-  const getAuthToken = preferDesktopHost(
-    () => desktopHostTabToken(),
-    getAccountAuthToken
-  )
+  const getAuthToken = (request?: AuthTokenRequest) =>
+    isDesktopHostSignedIn()
+      ? desktopHostTabToken()
+      : getAccountAuthToken(request)
   const getWorkspaceAuthToken = preferDesktopHost(
     () => desktopHostTabToken(),
     getAccountWorkspaceAuthToken
@@ -815,21 +834,44 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction(async () => {
-      await revokePartnerNodeLogin()
-      const signsOutDesktopHost = isDesktopHostSignedIn()
-      if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
-        throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+  async function logout(): Promise<void> {
+    const persistenceFence = isCloud
+      ? prepareWorkflowLogoutTransition()
+      : undefined
+    try {
+      await executeAuthAction(async () => {
+        await revokePartnerNodeLogin()
+        const signsOutDesktopHost = isDesktopHostSignedIn()
+        if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
+          throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+        }
+        const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
+        const apiKeyStore = useApiKeyAuthStore()
+        if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
+          await apiKeyStore.clearStoredApiKey()
+        }
+        await useCloudWebSessionStore().signOut()
+        if (currentUser.value) await firebaseIdentity.signOut()
+      })
+      persistenceFence?.release()
+    } catch (error) {
+      if (persistenceFence) {
+        if (!userId.value) fenceWorkflowStorageForAuthState()
+        const persistenceResumed =
+          persistenceFence.releaseAndResumePersistence()
+        reportError(error, {
+          surface: 'auth',
+          errorType: 'failure_logging_out_user',
+          level: 'warning',
+          tags: {
+            outcome: 'degraded',
+            persistence_resumed: persistenceResumed
+          }
+        })
       }
-      const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
-      const apiKeyStore = useApiKeyAuthStore()
-      if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
-        await apiKeyStore.clearStoredApiKey()
-      }
-      await useCloudWebSessionStore().signOut()
-      if (currentUser.value) await firebaseIdentity.signOut()
-    })
+      throw error
+    }
+  }
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))

@@ -409,6 +409,38 @@ test(
   }
 )
 
+test(
+  'double-clicking a resize corner shrinks a node whose last row is an unsized legacy widget',
+  { tag: ['@vue-nodes', '@canvas', '@node'] },
+  async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.page.evaluate(() => {
+      const checkpoint = window.app!.graph.nodes.find(
+        ({ type }) => type === 'CheckpointLoaderSimple'
+      )
+      checkpoint?.addCustomWidget({
+        name: 'legacy',
+        type: 'legacy-canvas',
+        value: 0,
+        y: 0,
+        options: {},
+        draw: () => {}
+      })
+    })
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
+    await expect(node.root.getByTestId('node-widget')).toHaveCount(2)
+    const getHeight = () => heightOf(node.root)
+    const initialHeight = await getHeight()
+
+    await node.resizeFromCorner('SE', 0, 100)
+    await expect.poll(getHeight).toBeCloseTo(initialHeight + 100, 0)
+
+    await node.getResizeHandle('SE').dblclick()
+
+    await expect.poll(getHeight).toBeLessThan(initialHeight + 20)
+  }
+)
+
 test.describe(
   'Vue node media preview aspect fit',
   { tag: ['@vue-nodes', '@canvas', '@node'] },
@@ -531,6 +563,32 @@ test.describe(
       const after = await requireBoundingBox(node.root)
       expect(after.width).toBeCloseTo(before.width, 0)
       expect(after.height).toBeGreaterThan(before.height + 100)
+    })
+
+    test('a subgraph node shares a resize between its promoted preview and promoted textarea', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-preview-and-textarea'
+      )
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      const host = new VueNodeFixture(comfyPage.vueNodes.getNodeLocator('8'))
+      await expect(host.imagePreview.locator('img')).toHaveCount(1, {
+        timeout: 30_000
+      })
+      await expect(host.widgetRow('value')).toBeVisible()
+      const getPreviewHeight = () => heightOf(host.imagePreview)
+      const getTextHeight = () => heightOf(host.widgetRow('value'))
+      const getHeight = () => heightOf(host.root)
+      const initialPreview = await getPreviewHeight()
+      const initialText = await getTextHeight()
+      const initialHeight = await getHeight()
+
+      await host.resizeFromCorner('SE', 0, 200)
+
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 200, 0)
+      await expect.poll(getPreviewHeight).toBeGreaterThan(initialPreview + 50)
+      await expect.poll(getTextHeight).toBeGreaterThan(initialText + 50)
     })
 
     test('each preview promoted to a subgraph node resizes on its own', async ({

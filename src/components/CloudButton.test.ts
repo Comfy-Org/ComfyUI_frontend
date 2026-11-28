@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -21,6 +22,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
@@ -48,6 +50,7 @@ vi.mock(
 )
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -67,6 +70,18 @@ function renderCloudButton() {
     {
       components: { CloudButton, GlobalDialog },
       template: '<CloudButton /><GlobalDialog />'
+    },
+    { global: { plugins: [testI18n] } }
+  )
+}
+
+function renderCloudButtonHiddenWhenSwitchedOff() {
+  return render(
+    {
+      components: { CloudButton, GlobalDialog },
+      setup: () => ({ checkStore: useCloudWorkflowCheckStore() }),
+      template:
+        '<CloudButton v-if="!checkStore.isSwitchedOffOnCloud" /><GlobalDialog />'
     },
     { global: { plugins: [testI18n] } }
   )
@@ -92,6 +107,7 @@ function deferredVerdict() {
 describe('Cloud button compatibility checks', () => {
   beforeEach(() => {
     vi.mocked(openWorkflowOnCloud).mockResolvedValue(undefined)
+    vi.mocked(api.storeSetting).mockResolvedValue(new Response())
     Object.assign(useFeatureFlags().flags, {
       openOnCloudModelUploadEnabled: true
     })
@@ -590,6 +606,115 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
   })
 
+  it("checks directly on the next Cloud click after Don't ask again", async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    renderCloudButton()
+    const user = userEvent.setup()
+    const settings = useSettingStore()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const consent = await screen.findByRole('dialog', { name: dialogName })
+    await user.click(
+      within(consent).getByRole('checkbox', { name: "Don't ask again" })
+    )
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+    expect(settings.get('Comfy.Cloud.AskBeforeCompatibilityCheck')).not.toBe(
+      false
+    )
+    await user.click(within(consent).getByRole('button', { name: checkLabel }))
+    await openCheckedWorkflow(user)
+
+    expect(settings.get('Comfy.Cloud.AskBeforeCompatibilityCheck')).toBe(false)
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    expect(
+      await within(dialog).findByRole('button', { name: openLabel })
+    ).toBeVisible()
+    expect(
+      within(dialog).queryByRole('button', { name: checkLabel })
+    ).toBeNull()
+    expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
+  })
+
+  it("reports a failed save of Don't ask again", async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const failure = new Error('offline')
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const consent = await screen.findByRole('dialog', { name: dialogName })
+    await user.click(
+      within(consent).getByRole('checkbox', { name: "Don't ask again" })
+    )
+    await user.click(within(consent).getByRole('button', { name: checkLabel }))
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        failure,
+        expect.objectContaining({
+          errorType: 'error_saving_cloud_check_consent'
+        })
+      )
+    )
+  })
+
+  it("keeps asking when Don't ask again is left unchecked", async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await requestCloudCheck(user)
+    await openCheckedWorkflow(user)
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    expect(
+      within(dialog).getByRole('button', { name: checkLabel })
+    ).toBeVisible()
+    expect(
+      useSettingStore().get('Comfy.Cloud.AskBeforeCompatibilityCheck')
+    ).not.toBe(false)
+    expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+  })
+
+  it("stores nothing when the disclosure closes with Don't ask again ticked", async () => {
+    renderCloudButton()
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    await user.click(
+      within(dialog).getByRole('checkbox', { name: "Don't ask again" })
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+
+    expect(
+      useSettingStore().get('Comfy.Cloud.AskBeforeCompatibilityCheck')
+    ).not.toBe(false)
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+  })
+
+  it('asks again once the setting is turned back on', async () => {
+    const settings = useSettingStore()
+    await settings.set('Comfy.Cloud.AskBeforeCompatibilityCheck', false)
+    await settings.set('Comfy.Cloud.AskBeforeCompatibilityCheck', true)
+    renderCloudButton()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByTestId('cloud-button'))
+    const dialog = await screen.findByRole('dialog', { name: dialogName })
+
+    expect(
+      within(dialog).getByRole('button', { name: checkLabel })
+    ).toBeVisible()
+    expect(checkCloudCompatibility).not.toHaveBeenCalled()
+  })
+
   it('dismisses the disclosure without sending a request', async () => {
     renderCloudButton()
     const user = userEvent.setup()
@@ -748,10 +873,45 @@ describe('Cloud button compatibility checks', () => {
       }
     },
     {
-      name: 'asks to try again when Comfy Cloud gives no answer',
-      result: null,
-      message: 'Could not check this workflow on Comfy Cloud. Try again.',
-      properties: { reason: 'no_verdict' }
+      name: 'says Comfy Cloud could not be reached',
+      result: { kind: 'checkFailed', reason: 'unreachable' },
+      message:
+        'Could not reach Comfy Cloud. Check your internet connection, then try again.',
+      properties: { reason: 'unreachable' }
+    },
+    {
+      name: 'asks to wait a minute when Comfy Cloud is busy',
+      result: { kind: 'checkFailed', reason: 'busy' },
+      message: 'Comfy Cloud is busy right now. Try again in a minute.',
+      properties: { reason: 'busy' }
+    },
+    {
+      name: 'asks to sign in again when the workspace cannot be used',
+      result: { kind: 'checkFailed', reason: 'workspace' },
+      message:
+        'Could not use your Comfy Cloud workspace. Try again in a minute, or sign out and back in.',
+      properties: { reason: 'workspace' }
+    },
+    {
+      name: 'names the limits when the workflow is too big',
+      result: { kind: 'checkFailed', reason: 'tooBig' },
+      message:
+        'This workflow is too big to check on Comfy Cloud. It can have up to 2,000 node types and 500 models.',
+      properties: { reason: 'too_big' }
+    },
+    {
+      name: 'asks to update when the answer cannot be read',
+      result: { kind: 'checkFailed', reason: 'outdated' },
+      message:
+        "This version of ComfyUI can't read Comfy Cloud's answer. Update ComfyUI, then try again.",
+      properties: { reason: 'outdated' }
+    },
+    {
+      name: 'asks to reload when the workflow cannot be read',
+      result: { kind: 'checkFailed', reason: 'unreadable' },
+      message:
+        'Could not read this workflow to check it. Reload ComfyUI, then try again.',
+      properties: { reason: 'unreadable' }
     }
   ])('$name', async ({ result, message, properties }) => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
@@ -771,6 +931,60 @@ describe('Cloud button compatibility checks', () => {
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       false
     )
+  })
+
+  it('shows no toast, records the switch-off and then hides the button when Comfy Cloud has switched the check off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+
+    await requestCloudCheck(userEvent.setup())
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+    expect(useToast().toasts).toEqual([])
+    expect(
+      useTelemetry()?.trackRunOnCloudEvent
+    ).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:run_on_cloud_check_failed',
+      properties: { reason: 'switched_off' }
+    })
+  })
+
+  it('shows the button again once the workspace changes after a switch-off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+    await requestCloudCheck(userEvent.setup())
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-team' })
+
+    expect(await screen.findByTestId('cloud-button')).toBeInTheDocument()
+  })
+
+  it('shows the button again once a later check gets an answer after a switch-off', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'checkFailed',
+      reason: 'switchedOff'
+    })
+    renderCloudButtonHiddenWhenSwitchedOff()
+    await requestCloudCheck(userEvent.setup())
+    await waitFor(() =>
+      expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
+    )
+
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    await useCloudWorkflowCheckStore().check()
+
+    expect(await screen.findByTestId('cloud-button')).toBeInTheDocument()
   })
 
   it('says nodes are missing and offers a Build when Cloud lacks a node pack', async () => {
