@@ -16,7 +16,6 @@ test.describe(
   () => {
     test.beforeEach(async ({ agentPanel }) => {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
     })
 
     test('keeps the card hidden until the first reply, then explains credits on the refusal', async ({
@@ -42,13 +41,19 @@ test.describe(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText([FIRST_REPLY])
         await expect(paywall).toBeVisible()
-        await expect(paywall).toContainText(NO_FUNDS_MESSAGE)
+        await expect(paywall).toContainText(
+          enMessages.agent.paywall.body.subscribed
+        )
+        await expect(paywall).not.toContainText(NO_FUNDS_MESSAGE)
         await expect(
           paywall.getByRole('button', {
             name: enMessages.agent.paywall.addCredits
           })
         ).toBeVisible()
-        await expect(agentPanel.root.getByRole('alert')).toHaveCount(1)
+        await expect(agentPanel.creditsExhaustedPaywall).toHaveCount(1)
+        await expect(
+          agentPanel.root.getByTestId('agent-credits-exhausted-paywall')
+        ).toHaveCount(0)
       })
     })
 

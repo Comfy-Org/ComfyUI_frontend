@@ -41,8 +41,16 @@ export const referenceWorkflow: ComfyWorkflowJSON = {
 const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 
 export const inlineReferencesTest = base.extend<{
+  ensureWorkflowSelection: void
   assetUpload: { finish: () => void }
 }>({
+  ensureWorkflowSelection: [
+    async ({ workflowSelection }, use) => {
+      void workflowSelection
+      await use()
+    },
+    { auto: true }
+  ],
   assetUpload: async ({ page }, use) => {
     let finish = () => {}
     const pending = new Promise<void>((resolve) => {

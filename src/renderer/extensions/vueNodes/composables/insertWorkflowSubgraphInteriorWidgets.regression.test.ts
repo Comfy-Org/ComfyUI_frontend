@@ -145,9 +145,9 @@ it('produces a live Vue widget model for an inserted subgraph-interior node', ()
   })
 
   expect(
-    processed.map(({ visible, simplified }) => ({
-      name: simplified.name,
-      value: simplified.value,
+    processed.map(({ visible, name, value }) => ({
+      name,
+      value,
       visible
     }))
   ).toEqual([{ name: 'prompt', value: 'after insert', visible: true }])

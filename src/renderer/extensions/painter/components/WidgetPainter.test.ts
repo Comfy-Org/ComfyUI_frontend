@@ -1,19 +1,23 @@
 import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-const sizeHolder = vi.hoisted(() => ({ width: 0, height: 0 }))
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  reactiveOmit: (value: object) => value,
-  createSharedComposable: <T>(composable: T) => composable,
-  useElementSize: () => ({
+const sizeHolder = { width: 0, height: 0 }
+
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(VueUse.useElementSize).mockImplementation(() => ({
     width: ref(sizeHolder.width),
-    height: ref(sizeHolder.height)
-  })
-}))
+    height: ref(sizeHolder.height),
+    stop: vi.fn()
+  }))
+})
 
 const painterHolder = vi.hoisted(() => ({
   state: null as Record<string, unknown> | null
@@ -87,15 +91,17 @@ function primePainterState(overrides: Record<string, unknown> = {}) {
   painterHolder.state = { ...createDefaultPainterState(), ...overrides }
 }
 
-function renderWidget(
-  initialModel = '',
-  widget: { name: string; type: string } = { name: 'mask', type: 'painter' }
-) {
+function renderWidget(initialModel = '') {
   const value = ref(initialModel)
+  const widgetId = registerTestWidget({
+    name: 'mask',
+    type: 'painter',
+    value: initialModel
+  })
   const Harness = defineComponent({
     components: { WidgetPainter },
-    setup: () => ({ value, widget }),
-    template: '<WidgetPainter v-model="value" node-id="42" :widget />'
+    setup: () => ({ value, widgetId }),
+    template: '<WidgetPainter v-model="value" node-id="42" :widget-id />'
   })
   return render(Harness, {
     global: {

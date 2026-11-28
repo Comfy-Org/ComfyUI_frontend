@@ -3,8 +3,16 @@ import { useElementSize, useEventBus } from '@vueuse/core'
 import type { EventBusKey } from '@vueuse/core'
 import { cloneDeep, isEqual } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
-import type { Ref, ShallowRef } from 'vue'
-import { computed, nextTick, onBeforeUnmount, readonly, ref, watch } from 'vue'
+import type { MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  readonly,
+  ref,
+  toValue,
+  watch
+} from 'vue'
 
 import {
   applyDrag,
@@ -31,7 +39,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   readableTextColor,
   textOnColor
@@ -62,7 +70,7 @@ interface UseBoundingBoxesOptions {
   canvasEl: Readonly<ShallowRef<HTMLCanvasElement | null>>
   inlineEditorEl: Readonly<ShallowRef<HTMLTextAreaElement | null>>
   modelValue: Ref<BoundingBox[]>
-  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
+  widgetId: MaybeRefOrGetter<WidgetId>
   alwaysShowActive?: boolean
   maxBoxes?: number
 }
@@ -73,7 +81,7 @@ export function useBoundingBoxes(
     canvasEl,
     inlineEditorEl,
     modelValue,
-    widget,
+    widgetId: id,
     alwaysShowActive = false,
     maxBoxes
   }: UseBoundingBoxesOptions
@@ -94,7 +102,7 @@ export function useBoundingBoxes(
   const { width: canvasWidth, height: canvasHeight } = useElementSize(canvasEl)
 
   const litegraphNode = useLiveGraphNode(() => {
-    const location = locateWidgetNode(widget, nodeId)
+    const location = locateWidgetNode(toValue(id), nodeId)
     return location?.graph.getNodeById(location.nodeId)
   })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
@@ -555,7 +563,9 @@ export function useBoundingBoxes(
       H,
       activeIndex.value
     )
-    const target = cands.find((c) => c.index === activeIndex.value) || cands[0]
+    const target =
+      cands.find((c) => c.index === activeIndex.value) ?? cands.at(0)
+    if (!target) return
     openInlineEditor(target.index)
   }
 
@@ -702,7 +712,7 @@ export function useBoundingBoxes(
 
   const { canUndo, canRedo, undo, redo, commit, syncBaseline } =
     useWidgetValueHistory({
-      scope: () => widgetHistoryScope(widget, nodeId),
+      scope: () => widgetHistoryScope(toValue(id), nodeId),
       read: () => state.value.regions,
       apply: restoreRegions
     })
@@ -732,7 +742,7 @@ export function useBoundingBoxes(
   )
   const gridBus = useEventBus(gridBusKey)
   gridBus.on(({ widgetId, enabled }) => {
-    if (widgetId === widgetHistoryScope(widget, nodeId)?.widgetId)
+    if (widgetId === widgetHistoryScope(toValue(id), nodeId)?.widgetId)
       grid.value = enabled
   })
   watch(grid, (enabled) => {
@@ -740,7 +750,7 @@ export function useBoundingBoxes(
       | Record<string, unknown>
       | undefined
     if (props) props.bboxGrid = enabled
-    const widgetId = widgetHistoryScope(widget, nodeId)?.widgetId
+    const widgetId = widgetHistoryScope(toValue(id), nodeId)?.widgetId
     if (widgetId) gridBus.emit({ widgetId, enabled })
     requestDraw()
   })

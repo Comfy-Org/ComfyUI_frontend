@@ -46,6 +46,9 @@ export type HostedBillingRouteFields = Pick<
   | 'correlationId'
   | 'source'
   | 'operationId'
+  | 'amountCents'
+  | 'autoTopUp'
+  | 'purchaseId'
 >
 
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }

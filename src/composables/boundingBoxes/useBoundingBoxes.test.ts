@@ -14,8 +14,8 @@ import {
 import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
 const appState = vi.hoisted(() => ({
   node: null as MockNode | null,
@@ -157,9 +157,13 @@ interface Captured extends Api {
 
 const modelBoxes = (c: Captured) => c.modelValue.value
 
+function bboxesWidget(name: string): WidgetId {
+  return registerTestWidget({ name, nodeId: toNodeId('1'), value: [] })
+}
+
 function setup(
   initial: BoundingBox[] = [],
-  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'> = { name: 'bboxes' },
+  widgetId: WidgetId = bboxesWidget('bboxes'),
   maxBoxes?: number
 ) {
   let captured: Captured | undefined
@@ -172,7 +176,7 @@ function setup(
         canvasEl,
         inlineEditorEl,
         modelValue,
-        widget,
+        widgetId,
         maxBoxes
       })
       captured = { canvasEl, modelValue, ...api }
@@ -293,10 +297,7 @@ describe('useBoundingBoxes in app mode', () => {
     appState.canvasGraphId = '00000000-0000-4000-8000-0000000000aa'
     appState.canvasNode = otherNode
 
-    const c = setup([], {
-      name: 'bboxes',
-      nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
-    })
+    const c = setup([], bboxesWidget('bboxes'))
 
     expect(c.canvasStyle.value).toEqual({ aspectRatio: '512 / 512' })
   })
@@ -485,8 +486,8 @@ describe('useBoundingBoxes node history', () => {
   })
 
   it('keeps separate histories for two widgets on the same node', async () => {
-    const first = setup([box()], { name: 'boxes_a' })
-    const second = setup([box()], { name: 'boxes_b' })
+    const first = setup([box()], bboxesWidget('boxes_a'))
+    const second = setup([box()], bboxesWidget('boxes_b'))
     first.updateRegion(first.activeIndex.value, 'type', 'text')
     await flush()
 
@@ -511,10 +512,7 @@ describe('useBoundingBoxes node history', () => {
   })
 
   it('shares history between the canvas and app mode while the canvas shows a subgraph', async () => {
-    const located = {
-      name: 'bboxes',
-      nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
-    }
+    const located = bboxesWidget('bboxes')
     const onCanvas = setup([box()], located)
     onCanvas.updateRegion(onCanvas.activeIndex.value, 'type', 'text')
     await flush()
@@ -541,6 +539,16 @@ describe('useBoundingBoxes inline editor', () => {
     expect(modelBoxes(c)[0].metadata.desc).toBe('a label')
     expect(c.inlineEditor.value).toBeNull()
   })
+
+  it.for([{ regions: [] }, { regions: [box()] }])(
+    'ignores a double click that hits no box with $regions.length regions',
+    async ({ regions }) => {
+      const c = setup(regions)
+      expect(() => c.onDoubleClick(pe(90, 90))).not.toThrow()
+      await flush()
+      expect(c.inlineEditor.value).toBeNull()
+    }
+  )
 
   it('closes the inline editor on Escape', async () => {
     const c = setup([box()])
@@ -845,7 +853,7 @@ describe('useBoundingBoxes max boxes', () => {
     async ({ existing, maxBoxes, expected }) => {
       const c = setup(
         Array.from({ length: existing }, () => box()),
-        { name: 'bboxes' },
+        bboxesWidget('bboxes'),
         maxBoxes
       )
       await drawInEmptyArea(c)
@@ -854,7 +862,7 @@ describe('useBoundingBoxes max boxes', () => {
   )
 
   it('still moves an existing box at the limit', async () => {
-    const c = setup([box()], { name: 'bboxes' }, 1)
+    const c = setup([box()], bboxesWidget('bboxes'), 1)
     c.onPointerDown(pe(30, 30))
     c.onCanvasPointerMove(pe(40, 40))
     c.onDocPointerUp(pe(40, 40))
@@ -870,7 +878,7 @@ describe('useBoundingBoxes max boxes', () => {
   ])(
     'shows a $cursor cursor at x=$x with a limit of $maxBoxes',
     async ({ maxBoxes, x, cursor }) => {
-      const c = setup([box()], { name: 'bboxes' }, maxBoxes)
+      const c = setup([box()], bboxesWidget('bboxes'), maxBoxes)
       c.onCanvasPointerMove(pe(x, x))
       await flush()
       expect(c.canvasCursor.value).toBe(cursor)
@@ -882,12 +890,12 @@ describe('useBoundingBoxes max boxes', () => {
   }
 
   it('keeps the first boxes of an over-limit value it loads', () => {
-    const c = setup(numbered(3), { name: 'bboxes' }, 2)
+    const c = setup(numbered(3), bboxesWidget('bboxes'), 2)
     expect(modelBoxes(c).map((b) => b.x)).toEqual([16, 32])
   })
 
   it('keeps the first boxes of an over-limit value written to the model', async () => {
-    const c = setup([], { name: 'bboxes' }, 2)
+    const c = setup([], bboxesWidget('bboxes'), 2)
     c.modelValue.value = numbered(3)
     await flush()
     expect(c.regions.value).toHaveLength(2)
@@ -895,14 +903,14 @@ describe('useBoundingBoxes max boxes', () => {
   })
 
   it('keeps the first incoming boxes up to the limit', async () => {
-    const c = setup([], { name: 'bboxes' }, 2)
+    const c = setup([], bboxesWidget('bboxes'), 2)
     incomingBoxes.value = numbered(3)
     await flush()
     expect(modelBoxes(c).map((b) => b.x)).toEqual([16, 32])
   })
 
   it('remembers the full incoming value so the same upstream is not re-applied', async () => {
-    const c = setup([], { name: 'bboxes' }, 2)
+    const c = setup([], bboxesWidget('bboxes'), 2)
     const incoming = numbered(3)
     incomingBoxes.value = incoming
     await flush()
@@ -951,7 +959,7 @@ describe('useBoundingBoxes shared between editors of one widget', () => {
   it('mirrors the grid toggle to the other editor of the same widget', async () => {
     const node = setup()
     const fullscreen = setup()
-    const otherWidget = setup([], { name: 'other' })
+    const otherWidget = setup([], bboxesWidget('other'))
 
     fullscreen.grid.value = false
     await flush()

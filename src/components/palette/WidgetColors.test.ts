@@ -5,8 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
 import WidgetColors from './WidgetColors.vue'
 
@@ -23,9 +22,12 @@ const i18n = createI18n({
 
 vi.mock(import('@/scripts/app'))
 
-function renderWidget(modelValue: string[], widget?: { name: string }) {
+function renderWidget(modelValue: string[], name = 'colors') {
   return render(WidgetColors, {
-    props: { modelValue, widget },
+    props: {
+      modelValue,
+      widgetId: registerTestWidget({ name, type: 'colors', value: modelValue })
+    },
     global: { plugins: [i18n] }
   })
 }
@@ -43,7 +45,7 @@ describe('WidgetColors', () => {
   })
 
   it('shows the widget name as an inline label', () => {
-    renderWidget(['#ff0000'], { name: 'color_palette' })
+    renderWidget(['#ff0000'], 'color_palette')
     expect(screen.getByText('color_palette')).toBeInTheDocument()
   })
 
@@ -91,14 +93,15 @@ const SwatchRowStub = defineComponent({
 
 function renderWithHistory(initial: string[]) {
   const value = ref(initial)
-  const widget = {
+  const widgetId = registerTestWidget({
     name: 'palette',
-    nodeLocatorId: createNodeLocatorId(null, toNodeId('1'))
-  }
+    type: 'colors',
+    value: initial
+  })
   const Harness = defineComponent({
     components: { WidgetColors },
-    setup: () => ({ value, widget }),
-    template: '<WidgetColors v-model="value" :widget="widget" />'
+    setup: () => ({ value, widgetId }),
+    template: '<WidgetColors v-model="value" :widget-id="widgetId" />'
   })
   render(Harness, {
     global: { plugins: [i18n], stubs: { PaletteSwatchRow: SwatchRowStub } }

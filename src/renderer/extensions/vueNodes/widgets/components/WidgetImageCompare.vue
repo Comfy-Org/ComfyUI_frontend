@@ -26,6 +26,7 @@
     <div
       v-if="beforeImage || afterImage"
       ref="containerRef"
+      data-media-overlay
       data-testid="image-compare-viewport"
       class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node py-4"
     >
@@ -50,7 +51,6 @@
         "
       />
 
-      <!-- Circular drag handle -->
       <div
         v-if="hasCompareImages"
         class="pointer-events-none absolute top-0 z-10 h-full w-6"
@@ -86,18 +86,19 @@ import { computed, ref, watch } from 'vue'
 import { useImageCompareImages } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareImages'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetNodeLocatorId } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import BatchNavigation from './BatchNavigation.vue'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<string[]>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId: NodeId
 }>()
 
 const node = useWidgetHostNode(
   () => nodeId,
-  () => widget.nodeLocatorId
+  () => widgetNodeLocatorId(widgetId)
 )
 
 const { beforeImages, afterImages } = useImageCompareImages(node, nodeId)

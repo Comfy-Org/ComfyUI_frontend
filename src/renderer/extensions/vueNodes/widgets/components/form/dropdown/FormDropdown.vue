@@ -1,36 +1,48 @@
 <script setup lang="ts">
 import {
+  StorageSerializers,
   computedAsync,
   refDebounced,
   unrefElement,
-  useEventListener
+  useEventListener,
+  whenever
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, inject, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
+import { useSafeSessionStorage } from '@/platform/storage/useSafeStorage'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
-} from '@/platform/assets/types/filterTypes'
+} from '@comfyorg/assets-core/filtering'
 import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
+import FormDropdownResizeHandle from './FormDropdownResizeHandle.vue'
+import { atLeastMinimumSize } from './resizePanel'
+import type { PanelSide, PanelSize, ResizeHandle } from './resizePanel'
 import {
   DROPDOWN_PANEL_CLASS,
   defaultSearcher,
   getDefaultSortOptions
 } from './shared'
-import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import { AssetKindKey } from './types'
+import type {
+  FormDropdownItem,
+  LayoutMode,
+  SortOption,
+  ThumbnailSize
+} from './types'
 
 interface Props {
   inputId?: string
@@ -107,11 +119,45 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
+defineOptions({ inheritAttrs: false })
+
 const toast = useToast()
-const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
+const canvasStore = useCanvasStore()
+const assetKind = inject(AssetKindKey)
+const hasThumbnailSizes = computed(
+  () => assetKind?.value === 'image' || assetKind?.value === 'video'
+)
+const thumbnailSize = ref<ThumbnailSize>('standard')
+let canvasPointerId: number | undefined
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
+const triggerAnchorRef = computed<HTMLElement | undefined>(
+  () => triggerRef.value?.$el
+)
+const panelSize = useSafeSessionStorage<PanelSize | undefined>(
+  'Comfy.FormDropdown.PanelSize',
+  undefined,
+  { serializer: StorageSerializers.object }
+)
+const shownPanelSize = computed(
+  () => panelSize.value && atLeastMinimumSize(panelSize.value)
+)
+const RESIZE_HANDLES: ResizeHandle[] = [
+  'left-edge',
+  'free-edge',
+  'left-corner',
+  'right-corner'
+]
+const alignOffset = ref(0)
+const panelSide = ref<PanelSide>()
+const isResizing = ref(false)
+whenever(
+  () => !isOpen.value,
+  () => {
+    panelSide.value = undefined
+  }
+)
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
 
@@ -217,6 +263,17 @@ useEventListener(
     if (menuEl && path.includes(menuEl)) return
     if (triggerEl && path.includes(triggerEl)) return
     if (path.some(isInsideDropdownPanel)) return
+    const canvas = canvasStore.canvas?.canvas
+    if (
+      canvas &&
+      ((event.button === 0 && path.includes(canvas)) ||
+        (event.button === 1 &&
+          canvas.parentElement &&
+          path.includes(canvas.parentElement)))
+    ) {
+      canvasPointerId = event.pointerId
+      return
+    }
     closeDropdown()
   },
   { capture: true }
@@ -229,7 +286,27 @@ function isInsideDropdownPanel(target: EventTarget): boolean {
   )
 }
 
-useDismissOnCanvasGesture(isOpen, () => closeDropdown())
+useEventListener(
+  window,
+  'pointerup',
+  (event) => {
+    if (event.pointerId !== canvasPointerId) return
+    canvasPointerId = undefined
+    const canvas = canvasStore.canvas
+    const wasPan = canvas?.dragging_canvas && canvas.pointer.dragStarted
+    if (isOpen.value && !wasPan) closeDropdown()
+  },
+  { capture: true }
+)
+
+useEventListener(
+  window,
+  'pointercancel',
+  (event) => {
+    if (event.pointerId === canvasPointerId) canvasPointerId = undefined
+  },
+  { capture: true }
+)
 
 usePopoverViewportDismiss(isOpen, triggerAnchorRef)
 
@@ -320,60 +397,84 @@ const dropdownItems = computed(() =>
 </script>
 
 <template>
-  <div ref="triggerAnchorRef">
-    <PopoverRoot v-model:open="isOpen">
-      <FormDropdownInput
-        ref="triggerRef"
-        :input-id
-        :files
-        :is-open
-        :placeholder="placeholderText"
-        :selected-items="pagedItems(items).filter(internalIsSelected)"
-        :max-selectable
+  <PopoverRoot v-model:open="isOpen">
+    <FormDropdownInput
+      ref="triggerRef"
+      v-bind="$attrs"
+      :input-id
+      :files
+      :is-open
+      :placeholder="placeholderText"
+      :selected-items="pagedItems(items).filter(internalIsSelected)"
+      :max-selectable
+      :uploadable
+      :disabled
+      :accept
+      :is-uploading
+      @select-click="toggleDropdown"
+      @file-change="handleFileChange"
+    >
+      <template #anchor="{ element }">
+        <PopoverAnchor as="template" :reference="element" />
+      </template>
+    </FormDropdownInput>
+    <PopoverContent
+      align="end"
+      :align-offset
+      :side="panelSide"
+      :side-flip="!isResizing"
+      update-position-strategy="always"
+      :side-offset="12"
+      hide-when-detached
+      :class="DROPDOWN_PANEL_CLASS"
+      :style="
+        shownPanelSize && {
+          width: `${shownPanelSize.width}px`,
+          height: `${shownPanelSize.height}px`
+        }
+      "
+      class="group/dropdown pointer-events-auto relative flex h-160 w-103 flex-col overflow-visible rounded-lg border-none bg-transparent p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+      @interact-outside.prevent
+      @close-auto-focus.prevent="focusTrigger"
+    >
+      <FormDropdownMenu
+        ref="menuRef"
+        v-model:filter-selected="filterSelected"
+        v-model:layout-mode="layoutMode"
+        v-model:sort-selected="sortSelected"
+        v-model:search-query="searchQuery"
+        v-model:ownership-selected="ownershipSelected"
+        v-model:base-model-selected="baseModelSelected"
+        v-model:thumbnail-size="thumbnailSize"
+        :has-thumbnail-sizes
         :uploadable
+        :filter-options
+        :sort-options
+        :show-ownership-filter
+        :ownership-options
+        :show-base-model-filter
+        :base-model-options
         :disabled
-        :accept
-        :is-uploading
-        @select-click="toggleDropdown"
-        @file-change="handleFileChange"
-      >
-        <template #anchor="{ element }">
-          <PopoverAnchor as="template" :reference="element" />
-        </template>
-      </FormDropdownInput>
-      <PopoverContent
-        align="end"
-        class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
-        @interact-outside.prevent
-        @close-auto-focus.prevent="focusTrigger"
-      >
-        <FormDropdownMenu
-          ref="menuRef"
-          v-model:filter-selected="filterSelected"
-          v-model:layout-mode="layoutMode"
-          v-model:sort-selected="sortSelected"
-          v-model:search-query="searchQuery"
-          v-model:ownership-selected="ownershipSelected"
-          v-model:base-model-selected="baseModelSelected"
-          :uploadable
-          :filter-options
-          :sort-options
-          :show-ownership-filter
-          :ownership-options
-          :show-base-model-filter
-          :base-model-options
-          :disabled
-          :items="dropdownItems"
-          :candidate-index
-          :candidate-label
-          :is-selected="internalIsSelected"
-          :max-selectable
-          @close="closeDropdown"
-          @search-enter="handleSearchEnter"
-          @item-click="handleSelection"
-          @show-picker="showPicker"
-        />
-      </PopoverContent>
-    </PopoverRoot>
-  </div>
+        :items="dropdownItems"
+        :candidate-index
+        :candidate-label
+        :is-selected="internalIsSelected"
+        :max-selectable
+        @close="closeDropdown"
+        @search-enter="handleSearchEnter"
+        @item-click="handleSelection"
+        @show-picker="showPicker"
+      />
+      <FormDropdownResizeHandle
+        v-for="handle in RESIZE_HANDLES"
+        :key="handle"
+        v-model:size="panelSize"
+        v-model:align-offset="alignOffset"
+        v-model:side="panelSide"
+        v-model:resizing="isResizing"
+        :handle
+        :anchor="triggerRef?.anchor"
+      />
+    </PopoverContent>
+  </PopoverRoot>
 </template>

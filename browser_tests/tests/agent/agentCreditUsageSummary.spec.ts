@@ -15,7 +15,7 @@ test.use({
 test(
   'shows server-reported Agent credits when a turn completes',
   { tag: ['@cloud', '@ui'] },
-  async ({ page, promptHistory, workflowSelection }) => {
+  async ({ page, promptHistory }) => {
     await expect(
       page.getByTestId('integrated-tab-bar-actions')
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
@@ -27,12 +27,6 @@ test(
         exact: true
       })
       .click()
-    await agentPanel.workflowPicker.click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     await agentPanel.composer.fill('Add a KSampler node.')
     await agentPanel.sendButton.click()

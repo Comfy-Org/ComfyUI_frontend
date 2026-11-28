@@ -8,22 +8,32 @@ import {
   h,
   markRaw,
   nextTick,
-  ref
+  ref,
+  shallowRef,
+  watchEffect
 } from 'vue'
+import type { Component } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { testI18n } from '@/utils/__tests__/testI18n'
 import WidgetDynamicGroupRow from '@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import type { BodyItem } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayout'
+import type { VueNodeBodyContext } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
+import { vueNodeBodyKey } from '@/renderer/extensions/vueNodes/layout/vueNodeBodyLayoutRegistry'
+import SharedNodeTooltip from '@/renderer/extensions/vueNodes/components/SharedNodeTooltip.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { growableRegionsKey } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
 const observers: TestResizeObserver[] = []
 class TestResizeObserver implements ResizeObserver {
@@ -40,10 +50,15 @@ class TestResizeObserver implements ResizeObserver {
   disconnect() {
     this.elements.clear()
   }
-  resize(element: Element) {
+  resize(element: Element, blockSize = 0) {
     if (this.elements.has(element)) {
       this.callback(
-        [fromPartial<ResizeObserverEntry>({ target: element })],
+        [
+          fromPartial<ResizeObserverEntry>({
+            target: element,
+            borderBoxSize: [{ blockSize, inlineSize: 0 }]
+          })
+        ],
         this
       )
     }
@@ -67,6 +82,50 @@ const WidgetStub = markRaw(
     template:
       '<div data-testid="widget-wrapper"><input data-testid="widget-control" :aria-invalid="invalid || undefined" /></div>'
   })
+)
+
+it.for([false, true])(
+  'updates error accessibility from a lazy getter with grouped=%s',
+  async (grouped) => {
+    const missing = ref(false)
+    const error = computed(() => missing.value)
+    const name = grouped ? 'loras.0.model' : 'file'
+    const row: WidgetGridItem = {
+      ...widget(name, 'string', 0),
+      value: '',
+      label: grouped ? 'LoRA #1 model' : 'File',
+      get hasError() {
+        return error.value
+      }
+    }
+    const header = registeredRow(
+      {
+        name: 'loras.0',
+        type: 'dynamic_group_row',
+        value: undefined,
+        label: 'LoRA #1'
+      },
+      WidgetDynamicGroupRow
+    )
+    const { unmount } = renderGrid(grouped ? [header, row] : [row], false)
+    expect(screen.getByTestId('widget-control')).not.toHaveAttribute(
+      'aria-invalid'
+    )
+
+    missing.value = true
+    await nextTick()
+    expect(screen.getByTestId('widget-control')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+
+    missing.value = false
+    await nextTick()
+    expect(screen.getByTestId('widget-control')).not.toHaveAttribute(
+      'aria-invalid'
+    )
+    unmount()
+  }
 )
 
 const AttrsDroppingWidgetStub = defineComponent({
@@ -94,10 +153,32 @@ const AppInputStub = defineComponent({
   `
 })
 
+function registeredRow(
+  init: Parameters<typeof registerTestWidget>[0] & {
+    name: string
+    type: string
+  },
+  vueComponent: Component
+): WidgetGridItem {
+  return {
+    renderKey: init.name,
+    visible: true,
+    widgetId: registerTestWidget(init),
+    name: init.name,
+    type: init.type,
+    value: init.value,
+    label: init.label,
+    disabled: init.disabled,
+    vueComponent: markRaw(vueComponent)
+  }
+}
+
 function widget(name: string, type: string, index: number): WidgetGridItem {
   return {
     renderKey: name,
-    simplified: { name, type, value: 0 },
+    name,
+    type,
+    value: 0,
     slotMetadata: {
       index,
       linked: false,
@@ -130,39 +211,33 @@ function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
   })
 }
 
-function renderLayoutGrid(syncLayout = true) {
-  const { container, rerender } = renderGrid(
-    [widget('width', 'number', 0)],
-    syncLayout
-  )
-  assert.instanceOf(container, HTMLElement)
-  container.dataset.nodeId = '1'
-  Object.defineProperty(container, 'offsetWidth', { value: 200 })
-  container.getBoundingClientRect = () => new DOMRect(0, 0, 200, 300)
-  const grid = screen.getByTestId('node-widgets')
-  grid.getBoundingClientRect = () => new DOMRect(0, 30, 200, 270)
-  let socketTop = 140
-  const socket = screen.getByTestId('slot-dot')
-  socket.getBoundingClientRect = () => new DOMRect(0, socketTop, 8, 8)
-  const moveSocket = (top: number) => {
-    socketTop = top
+function renderBodyGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
+  const widgetItems = shallowRef<(() => BodyItem[]) | undefined>()
+  const reportContentHeight = vi.fn()
+  const body: VueNodeBodyContext = {
+    slotItems: shallowRef(),
+    widgetItems,
+    rowOf: () => ({ y: 40, height: 57 }),
+    reportContentHeight
   }
-  const resizeGrid = () => {
-    for (const observer of observers) observer.resize(grid)
+  const result = render(WidgetGrid, {
+    props: {
+      nodeId: toNodeId(1),
+      nodeType: 'TestNode',
+      syncLayout,
+      processedWidgets
+    },
+    global: {
+      plugins: [testI18n],
+      provide: { [vueNodeBodyKey]: body },
+      stubs: { AppInput: AppInputStub }
+    }
+  })
+  return {
+    ...result,
+    bodyItems: () => widgetItems.value?.(),
+    reportContentHeight
   }
-  const resizeRow = () => {
-    const row = screen.getByTestId('node-widget')
-    for (const observer of observers) observer.resize(row)
-  }
-  const stored = () =>
-    layoutStore.getSlotOffset(
-      'widget-grid-graph',
-      toNodeId(1),
-      0,
-      'input',
-      'expanded'
-    )
-  return { rerender, stored, moveSocket, resizeGrid, resizeRow }
 }
 
 describe('WidgetGrid', () => {
@@ -187,12 +262,7 @@ describe('WidgetGrid', () => {
         processedWidgets: [
           {
             ...widget('size', 'unknown', 0),
-            simplified: {
-              name: 'size',
-              label: 'Width & "Height"',
-              type: 'unknown',
-              value: 0
-            },
+            label: 'Width & "Height"',
             sizing: { kind: 'growable', minHeight: 60, minWidth: 0 }
           }
         ]
@@ -234,6 +304,7 @@ describe('WidgetGrid', () => {
     ])
 
     const [fixedRow, declaredRow] = screen.getAllByTestId('node-widget')
+    expect(fixedRow).toHaveAttribute('data-widget-type', 'textarea')
     expect(fixedRow.style.minHeight).toBe('23px')
     expect(declaredRow.style.minHeight).toBe('60px')
 
@@ -243,12 +314,23 @@ describe('WidgetGrid', () => {
     expect(declaredRow.style.minHeight).toBe('87px')
   })
 
-  it('resyncs slot offsets when a connected row swaps its control for a label', async () => {
-    const { rerender, stored, moveSocket, resizeGrid } = renderLayoutGrid()
-    resizeGrid()
-    expect(stored()).toEqual({ x: 0, y: 114 })
+  it('hands its rows to the node body, as a socket once a connection hides the control', async () => {
+    const sizing = { kind: 'fixed' as const, height: 24 }
+    const { bodyItems, rerender } = renderBodyGrid([
+      { ...widget('width', 'number', 0), sizing }
+    ])
 
-    moveSocket(100)
+    expect(bodyItems()).toEqual([
+      {
+        kind: 'control',
+        key: 'width',
+        input: 0,
+        growable: false,
+        sizing,
+        userHeight: undefined
+      }
+    ])
+
     await rerender({
       processedWidgets: [
         {
@@ -259,25 +341,42 @@ describe('WidgetGrid', () => {
       ]
     })
 
-    expect(stored()).toEqual({ x: 0, y: 74 })
+    expect(bodyItems()).toEqual([{ kind: 'socket', key: 'width', input: 0 }])
   })
 
-  it('resyncs slot offsets when a row resizes inside a grid that keeps its size', async () => {
-    const { stored, moveSocket, resizeGrid, resizeRow } = renderLayoutGrid()
+  it('renders a declared row at the height the node body allocates', () => {
+    renderBodyGrid([
+      {
+        ...widget('text', 'unknown', 0),
+        sizing: { kind: 'growable', minHeight: 30, minWidth: 0 }
+      }
+    ])
+
+    expect(screen.getByTestId('node-widget').style.height).toBe('57px')
+  })
+
+  it('reports the content height of a control that declares no sizing, until it detaches', async () => {
+    const { reportContentHeight } = renderBodyGrid([
+      widget('width', 'number', 0)
+    ])
     await nextTick()
-    resizeGrid()
-    expect(stored()).toEqual({ x: 0, y: 114 })
+    const observer = observers.find(({ elements }) => elements.size > 0)
+    assert.isDefined(observer)
+    const [control] = observer.elements
+    assert.instanceOf(control, HTMLElement)
+    expect(control.dataset.contentKey).toBe('width')
 
-    moveSocket(100)
-    resizeRow()
+    observer.resize(control, 31)
+    expect(reportContentHeight).toHaveBeenCalledExactlyOnceWith('width', 31)
 
-    expect(stored()).toEqual({ x: 0, y: 74 })
+    control.remove()
+    observer.resize(control, 12)
+    expect(reportContentHeight).toHaveBeenCalledOnce()
   })
 
-  it('does not track layout when syncLayout is disabled', () => {
-    const { stored, resizeGrid } = renderLayoutGrid(false)
-    resizeGrid()
-    expect(stored()).toBeNull()
+  it('hands no rows to the node body when syncLayout is disabled', () => {
+    const { bodyItems } = renderBodyGrid([widget('width', 'number', 0)], false)
+    expect(bodyItems()).toBeUndefined()
   })
 
   it('restores controls when disconnected', async () => {
@@ -301,29 +400,25 @@ describe('WidgetGrid', () => {
     'displays $displayed while keeping the accessible name $label',
     ({ label, displayed, first }) => {
       const items: WidgetGridItem[] = [
-        {
-          renderKey: 'header',
-          visible: true,
-          simplified: {
+        registeredRow(
+          {
             name: 'loras.0',
             type: 'dynamic_group_row',
             value: undefined,
             label: 'LoRA #1'
           },
-          vueComponent: markRaw(WidgetDynamicGroupRow)
-        },
-        {
-          renderKey: 'model',
-          visible: true,
-          simplified: {
+          WidgetDynamicGroupRow
+        ),
+        registeredRow(
+          {
             name: 'loras.0.model',
             type: 'combo',
             value: 'A',
             label,
             options: { values: ['A', 'B'] }
           },
-          vueComponent: markRaw(WidgetSelectDefault)
-        }
+          WidgetSelectDefault
+        )
       ]
       renderGrid(items.slice(first), false)
 
@@ -339,48 +434,51 @@ describe('WidgetGrid', () => {
     async (min) => {
       const user = userEvent.setup()
       const rows = ref(['A', 'B', 'C'])
-      const items = computed<WidgetGridItem[]>(() => [
-        ...rows.value.flatMap((id, index) => [
-          {
-            renderKey: `${id}-header`,
-            visible: true,
-            simplified: {
-              name: `loras.${index}`,
-              type: 'dynamic_group_row',
-              value: undefined,
-              label: `LoRA #${index + 1}`,
-              options: { disabled: rows.value.length <= min },
-              callback: () => {
+      const items = shallowRef<WidgetGridItem[]>([])
+      watchEffect(() => {
+        items.value = [
+          ...rows.value.flatMap((id, index) => [
+            {
+              ...registeredRow(
+                {
+                  name: `loras.${index}`,
+                  type: 'dynamic_group_row',
+                  value: undefined,
+                  label: `LoRA #${index + 1}`,
+                  disabled: rows.value.length <= min
+                },
+                WidgetDynamicGroupRow
+              ),
+              renderKey: `${id}-header`,
+              updateHandler: () => {
                 rows.value = rows.value.filter((row) => row !== id)
               }
             },
-            vueComponent: markRaw(WidgetDynamicGroupRow)
-          },
-          {
-            renderKey: `${id}-model`,
-            visible: true,
-            simplified: {
-              name: `loras.${index}.model`,
-              type: 'combo',
-              value: id,
-              label: 'Model',
-              options: { values: ['A', 'B', 'C'] }
+            {
+              ...registeredRow(
+                {
+                  name: `loras.${index}.model`,
+                  type: 'combo',
+                  value: id,
+                  label: 'Model',
+                  options: { values: ['A', 'B', 'C'] }
+                },
+                WidgetSelectDefault
+              ),
+              renderKey: `${id}-model`
+            }
+          ]),
+          registeredRow(
+            {
+              name: 'loras.$add',
+              type: 'button',
+              value: undefined,
+              label: 'Add LoRA'
             },
-            vueComponent: markRaw(WidgetSelectDefault)
-          }
-        ]),
-        {
-          renderKey: 'add',
-          visible: true,
-          simplified: {
-            name: 'loras.$add',
-            type: 'button',
-            value: undefined,
-            label: 'Add LoRA'
-          },
-          vueComponent: markRaw(WidgetButton)
-        }
-      ])
+            WidgetButton
+          )
+        ]
+      })
       const Host = defineComponent({
         setup: () => () =>
           h(WidgetGrid, {
@@ -421,6 +519,31 @@ describe('WidgetGrid', () => {
       expect(screen.queryAllByRole('group')).toHaveLength(min)
     }
   )
+
+  it('rings advanced widgets on the node but not where the same widget renders alone', () => {
+    const row = registeredRow(
+      {
+        name: 'cfg',
+        type: 'number',
+        value: 7,
+        options: { advanced: true }
+      },
+      WidgetInputNumberInput
+    )
+    assert.exists(row.widgetId)
+    const { unmount } = renderGrid([row], false)
+    expect(screen.getByTestId('widget-number-row')).toHaveClass('ring-primary')
+    unmount()
+
+    render(WidgetInputNumberInput, {
+      props: { widgetId: row.widgetId, modelValue: 7 },
+      global: { plugins: [testI18n] }
+    })
+
+    expect(screen.getByTestId('widget-number-row')).not.toHaveClass(
+      'ring-primary'
+    )
+  })
 
   it('renders hidden converted widgets as input sockets without controls', () => {
     render(WidgetGrid, {
@@ -465,31 +588,42 @@ describe('WidgetGrid', () => {
 
   it('anchors widget tooltips to async widgets that drop attrs inside fragment-root AppInputs', async () => {
     const user = userEvent.setup()
-    render(WidgetGrid, {
-      props: {
-        nodeId: toNodeId(1),
-        nodeType: 'TestNode',
-        processedWidgets: [
-          {
-            ...widget('seed', 'number', 0),
-            tooltipText: 'Widget value',
-            vueComponent: markRaw(
-              defineAsyncComponent(async () => AttrsDroppingWidgetStub)
-            )
+    const processedWidgets = [
+      {
+        ...widget('seed', 'number', 0),
+        tooltipText: 'Widget value',
+        vueComponent: markRaw(
+          defineAsyncComponent(async () => AttrsDroppingWidgetStub)
+        )
+      }
+    ]
+    render(
+      () =>
+        h(TooltipProvider, { delayDuration: 0 }, () => [
+          h(WidgetGrid, {
+            nodeId: toNodeId(1),
+            nodeType: 'TestNode',
+            processedWidgets
+          }),
+          h(SharedNodeTooltip)
+        ]),
+      {
+        global: {
+          stubs: {
+            AppInput: AppInputStub,
+            InputSlot: InputSlotStub
           }
-        ]
-      },
-      global: {
-        stubs: {
-          AppInput: AppInputStub,
-          InputSlot: InputSlotStub
         }
       }
-    })
+    )
 
     await user.hover(await screen.findByTestId('widget-control'))
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'top'
+    )
     await waitFor(() =>
       expect(screen.getByTestId('tooltip-content').style.animation).toBe('')
     )
@@ -522,12 +656,7 @@ describe('WidgetGrid', () => {
     renderGrid([
       {
         ...widget('value_1', 'text', 0),
-        simplified: {
-          name: 'value_1',
-          label: 'duration',
-          type: 'text',
-          value: 0
-        },
+        label: 'duration',
         visible: false,
         suppressedByConnection: true
       },

@@ -6,10 +6,10 @@ import { createI18n } from 'vue-i18n'
 
 import type { ColorStop } from '@comfyorg/graph-model/interfaces'
 import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
@@ -40,19 +40,16 @@ const WidgetLayoutFieldStub = defineComponent({
 function makeWidget(
   value: number,
   options: Partial<IWidgetGradientSliderOptions> = {}
-): SimplifiedWidget<number, IWidgetGradientSliderOptions> {
-  return createMockWidget<number>({
+): WidgetId {
+  return registerTestWidget({
     value,
     name: 'grad',
     type: 'gradientslider',
-    options: options
-  }) as SimplifiedWidget<number, IWidgetGradientSliderOptions>
+    options
+  })
 }
 
-function renderComponent(
-  widget: SimplifiedWidget<number, IWidgetGradientSliderOptions>,
-  modelValue: number
-) {
+function renderComponent(widgetId: WidgetId, modelValue: number) {
   return render(WidgetInputNumberGradientSlider, {
     global: {
       plugins: [i18n],
@@ -61,7 +58,7 @@ function renderComponent(
         WidgetLayoutField: WidgetLayoutFieldStub
       }
     },
-    props: { widget, modelValue }
+    props: { widgetId, modelValue }
   })
 }
 
@@ -88,7 +85,7 @@ describe('WidgetInputNumberGradientSlider', () => {
           plugins: [i18n],
           stubs: { WidgetLayoutField: WidgetLayoutFieldStub }
         },
-        props: { widget: makeWidget(42), modelValue: 42 }
+        props: { widgetId: makeWidget(42), modelValue: 42 }
       })
 
       const slider = await screen.findByRole('slider', { name: 'grad' })

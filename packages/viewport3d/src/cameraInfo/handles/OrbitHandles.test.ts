@@ -149,4 +149,55 @@ describe('OrbitHandles', () => {
     expect(Math.abs(plane.normal.x)).toBeCloseTo(1)
     expect(plane.normal.y).toBeCloseTo(0)
   })
+
+  describe('setScale', () => {
+    const orbit = { yaw: 0, pitch: 0, distance: 5 }
+    const handleOf = (type: string) =>
+      handles.pickableMeshes().find((m) => m.userData.handleType === type)!
+
+    beforeEach(() => {
+      handles.setScale(0.5)
+      handles.update({ ...DEFAULT_CAMERA_INFO_STATE, mode: 'orbit', orbit })
+    })
+
+    function drawnExtent(orbitHandles: OrbitHandles, geometryType: string) {
+      const root = orbitHandles.pickableMeshes()[0].parent!
+      root.updateMatrixWorld(true)
+      const drawn: THREE.Mesh[] = []
+      root.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.geometry.type === geometryType)
+          drawn.push(child)
+      })
+      expect(drawn).toHaveLength(1)
+      return new THREE.Box3().setFromObject(drawn[0], true).max.z
+    }
+
+    it('shrinks the drawn rings and keeps their handles on them', () => {
+      const unscaled = new OrbitHandles()
+      unscaled.update({ ...DEFAULT_CAMERA_INFO_STATE, mode: 'orbit', orbit })
+
+      expect(handleOf('yaw').position.z).toBeCloseTo(0.75)
+      expect(handleOf('pitch').position.z).toBeCloseTo(0.75)
+      expect(drawnExtent(handles, 'TorusGeometry')).toBeCloseTo(
+        drawnExtent(unscaled, 'TorusGeometry') / 2
+      )
+      expect(drawnExtent(handles, 'TubeGeometry')).toBeCloseTo(
+        drawnExtent(unscaled, 'TubeGeometry') / 2
+      )
+      unscaled.dispose()
+    })
+
+    it('shrinks the handle spheres, hovered or not', () => {
+      expect(handleOf('yaw').scale.x).toBeCloseTo(0.5)
+
+      handles.setHovered('yaw')
+
+      expect(handleOf('yaw').scale.x).toBeGreaterThan(0.5)
+      expect(handleOf('yaw').scale.x).toBeLessThan(1)
+    })
+
+    it('leaves the distance handle at the camera', () => {
+      expect(handleOf('distance').position.z).toBeCloseTo(5)
+    })
+  })
 })

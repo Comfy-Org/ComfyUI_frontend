@@ -108,7 +108,6 @@
       </div>
     </div>
 
-    <!-- Video Dimensions -->
     <div class="mt-2 text-center text-muted-foreground">
       <span
         v-if="videoError"
@@ -117,10 +116,13 @@
       >
         {{ $t('g.errorLoadingVideo') }}
       </span>
-      <span v-else-if="showLoader"> {{ $t('g.loading') }}... </span>
-      <span v-else>
-        {{ actualDimensions || $t('g.calculatingDimensions') }}
-      </span>
+      <template v-else>
+        {{
+          showLoader
+            ? `${$t('g.loading')}...`
+            : actualDimensions || $t('g.calculatingDimensions')
+        }}
+      </template>
     </div>
   </div>
 </template>
@@ -283,7 +285,7 @@ watch(videoError, (hasError, hadError) => {
 
 const handleDownload = () => {
   try {
-    downloadFile(currentVideoUrl.value)
+    downloadFile(currentVideoUrl.value, undefined, 'node_preview')
   } catch (error) {
     useToast().error(t('g.error'), {
       description: t('g.failedToDownloadVideo'),

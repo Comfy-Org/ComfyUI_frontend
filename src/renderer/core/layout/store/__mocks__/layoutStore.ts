@@ -19,7 +19,6 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   getNodeLayout: vi.fn(() => null),
   getNodeLayoutRef: vi.fn(() => ({ value: null })),
   getRerouteLayout: vi.fn(() => null),
-  getSlotOffset: vi.fn(() => null),
   getVersion: vi.fn(() => ({ value: 0 })),
   onChange: vi.fn(() => () => {}),
   onGeometryChange: vi.fn(() => () => {}),
@@ -29,5 +28,7 @@ export const layoutStore = fromPartial<typeof RealLayoutStore>({
   queryRerouteAtPoint: vi.fn(() => null),
   readNodeRect: vi.fn(() => false),
   contentSizeOf: vi.fn(() => undefined),
+  derivedSlotAnchorOf: vi.fn(() => undefined),
+  setDerivedSlotAnchors: vi.fn(),
   updateNodeSlotOffsets: vi.fn()
 })

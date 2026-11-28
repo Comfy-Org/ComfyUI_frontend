@@ -4,26 +4,19 @@ import { describe, expect, it, vi } from 'vitest'
 import Input from '@comfyorg/design-system/input/Input'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputText from './WidgetInputText.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 describe('WidgetInputText Value Binding', () => {
   const createInputTextWidget = (
     value: string = 'default',
-    options: IWidgetOptions = {},
-    callback?: (value: string) => void
-  ) =>
-    createMockWidget({
-      value,
-      name: 'test_input',
-      options,
-      callback
-    })
+    options: IWidgetOptions = {}
+  ) => registerTestWidget({ value, name: 'test_input', options })
 
   const renderComponent = (
-    widget: SimplifiedWidget<string>,
+    widgetId: WidgetId,
     modelValue: string,
     extraProps: Record<string, unknown> = {}
   ) => {
@@ -32,7 +25,7 @@ describe('WidgetInputText Value Binding', () => {
         components: { Input, Textarea }
       },
       props: {
-        widget,
+        widgetId,
         modelValue,
         ...extraProps
       }
@@ -106,20 +99,6 @@ describe('WidgetInputText Value Binding', () => {
       await setInputValueAndTrigger(input, specialText)
 
       expect(onUpdateModelValue).toHaveBeenCalledWith(specialText)
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createInputTextWidget('test', {}, undefined)
-      const onUpdateModelValue = vi.fn()
-      renderComponent(widget, 'test', {
-        'onUpdate:modelValue': onUpdateModelValue
-      })
-
-      const input = screen.getByRole('textbox')
-      await setInputValueAndTrigger(input, 'new value')
-
-      // Should still emit Vue event
-      expect(onUpdateModelValue).toHaveBeenCalledWith('new value')
     })
   })
 

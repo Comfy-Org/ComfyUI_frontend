@@ -1,4 +1,5 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { authCredentialOf } from '@comfyorg/api-client/authCredential'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
@@ -13,6 +14,17 @@ function credentialValue(header: AuthHeader): string {
   return 'X-API-KEY' in header
     ? header['X-API-KEY']
     : header.Authorization.slice('Bearer '.length)
+}
+
+let lastAgentCredential: string | null = null
+
+/**
+ * The most recent credential a local (non-cloud) agent request actually
+ * attached, kept so an account switch can snapshot the outgoing account's
+ * value before anything else overwrites it. See `agentOwnerHandoff.ts`.
+ */
+export function peekLastAgentCredential(): string | null {
+  return lastAgentCredential
 }
 
 function isApiKeySession(): boolean {
@@ -53,6 +65,7 @@ export async function withAgentAuth(
   const headers = new Headers(init.headers)
   for (const [name, value] of Object.entries(header)) headers.set(name, value)
   const attached = authCredentialOf(header)
+  lastAgentCredential = credentialValue(header)
   return {
     ...init,
     headers,
@@ -90,7 +103,12 @@ export async function ensureSignedIn(): Promise<boolean> {
   if (devProxySuppliesCredential()) return true
   try {
     if (!(await useAuthDialogs().showSignInDialog())) return false
-  } catch {
+  } catch (error) {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'failure_opening_agent_sign_in_dialog',
+      level: 'warning'
+    })
     return false
   }
   return hasAgentCredential() || (await authStore.getUserAuthHeader()) !== null

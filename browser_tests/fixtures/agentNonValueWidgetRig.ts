@@ -27,7 +27,7 @@ export function progressTextFrame(nodeId: string, text: string): Buffer {
   return frame
 }
 
-interface NonValueWidgetRigConfig {
+export interface NonValueWidgetRigConfig {
   catalog: WidgetCatalog
   messageId: string
   nodeDefs: Record<string, ComfyNodeDef>
@@ -83,7 +83,6 @@ export class AgentNonValueWidgetRig {
 
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('hello')
     hostSocket.send({
       type: 'agent_message_done',
@@ -134,6 +133,26 @@ export class AgentNonValueWidgetRig {
     )
   }
 
+  startRun(jobId: string): void {
+    this.hostSocket.sendExecution({
+      type: 'execution_start',
+      data: { prompt_id: jobId, timestamp: Date.now() }
+    })
+    this.hostSocket.send({
+      type: 'agent_tool_call',
+      data: {
+        thread_id: this.config.threadId,
+        message_id: this.config.messageId,
+        tool_call_id: `call-run-${jobId}`,
+        tool_name: 'run',
+        status: 'success',
+        duration_ms: 40,
+        job_id: jobId,
+        job_workflow_id: this.config.workflowId
+      }
+    })
+  }
+
   widgetValue(nodeId: number, name: string): Promise<unknown> {
     return this.page.evaluate(
       ({ nodeId, name }) =>
@@ -145,6 +164,10 @@ export class AgentNonValueWidgetRig {
   }
 
   editSeed(value: number): Promise<void> {
+    return this.editSeedOnNode(String(this.config.samplerNodeId), value)
+  }
+
+  editSeedOnNode(nodeId: string, value: number): Promise<void> {
     return this.page.evaluate(
       ({ nodeId, value }) => {
         const node = window.app!.graph.nodes.find(
@@ -156,13 +179,27 @@ export class AgentNonValueWidgetRig {
         if (!widget) throw new Error(`Expected a seed widget on node ${nodeId}`)
         widget.value = value
       },
-      { nodeId: String(this.config.samplerNodeId), value }
+      { nodeId, value }
     )
   }
 
-  seedField(): Locator {
+  addPromptOnlySampler(): Promise<string> {
+    return this.page.evaluate(() => {
+      const node = window.LiteGraph!.createNode('KSampler')
+      if (!node) throw new Error('KSampler is not a registered node type')
+      const seed = node.widgets?.find((widget) => widget.name === 'seed')
+      if (!seed) throw new Error('Expected seed on KSampler')
+      seed.options.serialize = true
+      seed.serialize = false
+      node.pos = [320, 160]
+      window.app!.graph.add(node)
+      return String(node.id)
+    })
+  }
+
+  seedField(nodeId = String(this.config.samplerNodeId)): Locator {
     return this.vueNodes
-      .getNodeLocator(String(this.config.samplerNodeId))
+      .getNodeLocator(nodeId)
       .getByRole('spinbutton', { name: 'seed', exact: true })
   }
 }

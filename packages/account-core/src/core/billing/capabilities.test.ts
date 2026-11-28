@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from '#/core/session'
 import type { AccountCredential } from '#/core/sessionContracts'
@@ -50,6 +50,7 @@ const CAPABILITIES = {
   can_manage_partner_node_access: false,
   can_view_pending_invites: false,
   can_view_team_usage: false,
+  can_view_workspace_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
   can_edit_workspace: false,
@@ -128,8 +129,7 @@ describe('createCapabilitiesReader', () => {
 
     const result = await reader.read()
 
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
+    assert.isOk(result.status === 'ok')
     expect(result.value.capabilities.can_top_up).toBe(true)
     expect(result.value.revision).toBe(42)
     expect(result.value.scope).toEqual({
@@ -159,8 +159,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.paymentRecoveryAvailable).toBe(expected)
     }
   )
@@ -182,8 +181,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.planKind).toBe(expected)
     }
   )
@@ -215,8 +213,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value).toMatchObject(expected)
     }
   )
@@ -243,8 +240,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.autoTopUpSetup).toEqual(expected)
     }
   )
@@ -287,8 +283,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.autoTopUpMemberView).toEqual(served)
     }
   )
@@ -319,8 +314,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.autoTopUpMemberView).toBeUndefined()
     }
   )
@@ -344,8 +338,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.hasParkedBillingOperation).toBe(expected)
     }
   )
@@ -371,8 +364,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.cancelTakesEffectImmediately).toBe(expected)
     }
   )
@@ -393,8 +385,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.capabilities.can_manage_members).toBe(allowed)
     }
   )
@@ -568,8 +559,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.freshUntil).toBe(clock + 60_000)
     })
   })
@@ -588,8 +578,7 @@ describe('createCapabilitiesReader', () => {
 
       expect(reader.getSnapshot()).toBeUndefined()
       const result = await reader.read()
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.scope.role).toBe('member')
       expect(transport).toHaveBeenCalledTimes(2)
     })
@@ -671,8 +660,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.denials['can_subscribe_self_serve']).toBe(
         'not_workspace_owner'
       )
@@ -695,8 +683,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.denials['can_subscribe_self_serve']).toBe(
         'unspecified'
       )
@@ -723,8 +710,7 @@ describe('createCapabilitiesReader', () => {
           scopeSource
         }).read()
 
-        expect(result.status).toBe('ok')
-        if (result.status !== 'ok') return
+        assert.isOk(result.status === 'ok')
         expect(result.value.capabilities.can_top_up).toBe(true)
         expect(result.value.denials.can_top_up).toBe(decoded)
       }
@@ -739,8 +725,7 @@ describe('createCapabilitiesReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert.isOk(result.status === 'ok')
       expect(result.value.denials).toEqual({})
       expect(result.value.capabilities.can_subscribe_self_serve).toBe(false)
     })

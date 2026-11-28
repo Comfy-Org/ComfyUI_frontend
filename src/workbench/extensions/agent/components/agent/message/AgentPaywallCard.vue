@@ -29,7 +29,8 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   member: 'agent.paywall.body.member',
   salesManaged: 'agent.paywall.body.salesManaged',
   local: 'agent.paywall.body.local',
-  unavailable: 'agent.paywall.body.subscriptionRequired'
+  unavailable: 'agent.paywall.body.subscriptionRequired',
+  unresolved: 'agent.paywall.body.subscriptionRequired'
 }
 const hasNoPlan = computed(
   () => presentation.kind === 'subscribed' && !!presentation.planCreditLine
@@ -63,7 +64,11 @@ const showAddCredits = computed(() => remediation.value === 'addCredits')
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="m-0 text-muted-foreground">
-          {{ message || $t(bodyKey) }}
+          {{
+            presentation.kind === 'unavailable' && message
+              ? message
+              : $t(bodyKey)
+          }}
         </p>
         <AgentPaywallPlanNote :presentation />
       </div>

@@ -1,8 +1,9 @@
 import * as THREE from 'three'
 
+import { disposeObject3D } from '#/load3d/SceneModelManager'
 import type { Viewport3d } from '#/load3d/Viewport3d'
 import { createViewport3d } from '#/load3d/createViewport3d'
-import type { Load3DOptions } from '#/load3d/interfaces'
+import type { Load3DOptions, Load3dHost } from '#/load3d/interfaces'
 
 import { CameraInfoOverlay } from './CameraInfoOverlay'
 import { computeSubjectTransform } from './cameraTransform'
@@ -27,6 +28,12 @@ import { pointToRollAngle } from './handles/rollDragMath'
 import { dollySubjectByWheel, rotateSubjectByDrag } from './lookThroughDragMath'
 import type { LookThroughResult } from './lookThroughDragMath'
 import { fitCameraAspect, renderInsetPreview } from './subjectCameraPreview'
+import {
+  loadSubjectModel,
+  placeInMeshFrame,
+  SUBJECT_MODEL_SCENE_SCALE
+} from './subjectModel'
+import type { SubjectModelLoad, SubjectModelSource } from './subjectModel'
 import { DEFAULT_CAMERA_INFO_STATE } from './types'
 import type {
   CameraInfoFieldName,
@@ -58,6 +65,10 @@ const FIELD_NAME_FOR: Record<OrbitHandleType, CameraInfoFieldName> = {
   distance: 'mode.distance'
 }
 
+export type SubjectModelOutcome =
+  | { status: 'shown' | 'cleared' }
+  | Exclude<SubjectModelLoad, { status: 'loaded' }>
+
 export interface CameraInfoViewportOptions extends Load3DOptions {
   onHandleDrag?: (fieldName: CameraInfoFieldName, value: number) => void
 }
@@ -80,6 +91,8 @@ export class CameraInfoViewport {
   private gizmosOn = true
   private lookingThrough = false
   private transformGizmoMode: TransformGizmoMode = 'none'
+  private subjectModelLoad: AbortController | null = null
+  private sceneScale = 1
 
   constructor(
     container: HTMLElement,
@@ -203,7 +216,34 @@ export class CameraInfoViewport {
     if (!on) this.viewport.viewHelperManager.visibleViewHelper(false)
   }
 
+  async showSubjectModel(
+    host: Load3dHost,
+    source: SubjectModelSource | null
+  ): Promise<SubjectModelOutcome> {
+    this.subjectModelLoad?.abort()
+    const load = new AbortController()
+    this.subjectModelLoad = load
+    if (!source) {
+      this.setSubjectModel(null)
+      return { status: 'cleared' }
+    }
+
+    const loaded = await loadSubjectModel(host, source, load.signal)
+    if (load.signal.aborted) {
+      if (loaded.status === 'loaded') disposeObject3D(loaded.object, new Set())
+      return { status: 'cancelled' }
+    }
+    if (loaded.status !== 'loaded') {
+      this.setSubjectModel(null)
+      return loaded
+    }
+    return this.setSubjectModel(loaded.object)
+      ? { status: 'shown' }
+      : { status: 'empty' }
+  }
+
   remove(): void {
+    this.subjectModelLoad?.abort()
     this.input.detach()
     this.input.cancel()
     this.canvas.style.cursor = ''
@@ -214,6 +254,34 @@ export class CameraInfoViewport {
     this.targetHandle.dispose()
     this.cameraHandle.dispose()
     this.viewport.remove()
+  }
+
+  private setSubjectModel(object: THREE.Object3D | null): boolean {
+    const subject = object ? placeInMeshFrame(object) : null
+    if (object && !subject) disposeObject3D(object, new Set())
+    this.overlay.setSubjectModel(subject?.root ?? null)
+    this.viewport.sceneManager.gridHelper.position.y = subject?.floorY ?? 0
+    this.rescaleScene(subject ? SUBJECT_MODEL_SCENE_SCALE : 1)
+    this.viewport.forceRender()
+    return subject !== null
+  }
+
+  private rescaleScene(scale: number): void {
+    if (scale === this.sceneScale) return
+    const ratio = scale / this.sceneScale
+    this.sceneScale = scale
+
+    this.orbitHandles.setScale(scale)
+    this.orbitHandles.update(this.overlay.getState())
+    this.rollHandle.setScale(scale)
+    this.refreshGizmoVisibility()
+
+    const { controls } = this.viewport.controlsManager
+    this.viewport.cameraManager.activeCamera.position
+      .sub(controls.target)
+      .multiplyScalar(ratio)
+      .add(controls.target)
+    controls.update()
   }
 
   private refreshGizmoVisibility(): void {

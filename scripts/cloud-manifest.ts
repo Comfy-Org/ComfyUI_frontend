@@ -14,7 +14,7 @@ import type {
 import { assertCloudEntry } from '../browser_tests/fixtures/customNode/manifest'
 import type { RawNodeDef } from '../browser_tests/fixtures/customNode/typePairing'
 import { packOf } from '../browser_tests/fixtures/customNode/typePairing'
-import { isMainModule } from './isMainModule'
+import { isMainModule } from '@comfyorg/ci/isMainModule'
 
 export interface SupportedNodesPack {
   name: string

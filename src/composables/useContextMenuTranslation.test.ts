@@ -25,7 +25,7 @@ describe('translateContextMenuItems', () => {
   it.for([
     ['Convert seed to input', 'Convert Seed label to input'],
     ['Convert seed to widget', 'Convert Seed label to widget']
-  ])('prefers a label over the internal name', ([content, expected]) => {
+  ])('prefers a label over the internal name in %s', ([content, expected]) => {
     const values = [fromPartial<IContextMenuValue>({ content })]
     const options = fromPartial<IContextMenuOptions>({
       extra: {

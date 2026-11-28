@@ -1,17 +1,18 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { useElementSize } from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, toRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { LocatedWidget } from '@/composables/widgetHistoryScope'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import {
   ExecutableNodeDTO,
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -25,8 +26,9 @@ import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
 
 import { usePainter } from './usePainter'
 
@@ -119,7 +121,20 @@ function hostedPainterWithImageSource() {
   subgraph.add(interior)
   subgraph.inputNode.slots[0].connect(imageInput, interior)
   useNodeOutputStore().setNodeOutputs(source, 'photo.png')
-  return { subgraph, host, interior }
+  return { host, maskWidgetId: promotedMaskWidget(interior, host) }
+}
+
+function promotedMaskWidget(
+  interior: LGraphNode,
+  host: SubgraphNode
+): WidgetId {
+  const maskInput = interior.addInput('mask', 'STRING')
+  const mask = interior.addWidget('text', 'mask', '', () => {})
+  maskInput.widget = { name: mask.name }
+  expect(promoteValueWidgetViaSubgraphInput(host, interior, mask).ok).toBe(true)
+  const id = host.inputs.find((input) => input.name === 'mask')?.widgetId
+  assert.exists(id)
+  return id
 }
 
 type PainterResult = ReturnType<typeof usePainter>
@@ -130,7 +145,11 @@ type PainterResult = ReturnType<typeof usePainter>
 function mountPainter(
   nodeId: NodeId = toNodeId('test-node'),
   initialModelValue = '',
-  widget: LocatedWidget = { name: 'mask' },
+  maskWidgetId: WidgetId = registerTestWidget({
+    name: 'mask',
+    nodeId,
+    value: ''
+  }),
   historyScope?: () => WidgetHistoryScope | null
 ) {
   let painter!: PainterResult
@@ -141,7 +160,7 @@ function mountPainter(
   const Wrapper = defineComponent({
     setup() {
       painter = usePainter(nodeId, {
-        widget,
+        widgetId: maskWidgetId,
         canvasEl,
         cursorEl,
         modelValue,
@@ -185,16 +204,20 @@ describe('usePainter', () => {
     })
 
     it('reads the interior node when the widget is promoted out of a subgraph', () => {
+      vi.mocked(app.rootGraph.getNodeById).mockRestore()
       const subgraph = createTestSubgraph({ rootGraph: app.rootGraph })
       app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+      const host = createTestSubgraphNode(subgraph)
+      app.rootGraph.add(host)
       const interior = new LGraphNode('Painter')
       subgraph.add(interior)
       interior.addWidget('number', 'width', 300, () => {})
 
-      const { painter } = mountPainter(toNodeId('host-node'), '', {
-        name: 'mask',
-        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
-      })
+      const { painter } = mountPainter(
+        host.id,
+        '',
+        promotedMaskWidget(interior, host)
+      )
 
       expect(painter.canvasWidth.value).toBe(300)
     })
@@ -404,22 +427,16 @@ describe('usePainter', () => {
     })
 
     it('shows the image fed into the subgraph input of a promoted painter', () => {
-      const { subgraph, host, interior } = hostedPainterWithImageSource()
+      const { host, maskWidgetId } = hostedPainterWithImageSource()
 
-      const { painter } = mountPainter(host.id, '', {
-        name: 'mask',
-        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
-      })
+      const { painter } = mountPainter(host.id, '', maskWidgetId)
 
       expect(painter.inputImageUrl.value).toContain('filename=photo.png')
     })
 
     it('reports a promoted painter disconnected once the subgraph node input is unlinked', () => {
-      const { subgraph, host, interior } = hostedPainterWithImageSource()
-      const { painter } = mountPainter(host.id, '', {
-        name: 'mask',
-        nodeLocatorId: createNodeLocatorId(subgraph.id, interior.id)
-      })
+      const { host, maskWidgetId } = hostedPainterWithImageSource()
+      const { painter } = mountPainter(host.id, '', maskWidgetId)
       expect(painter.isImageInputConnected.value).toBe(true)
 
       host.disconnectInput(0)
@@ -743,7 +760,11 @@ describe('usePainter', () => {
       const mounted = mountPainter(
         toNodeId('test-node'),
         mask,
-        { name: 'mask' },
+        registerTestWidget({
+          name: 'mask',
+          nodeId: toNodeId('test-node'),
+          value: ''
+        }),
         () => historyScope
       )
       const canvas = fromPartial<HTMLCanvasElement>({

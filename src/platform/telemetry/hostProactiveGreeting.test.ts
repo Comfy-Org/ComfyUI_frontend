@@ -1,14 +1,10 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 beforeEach(() => {
-  remoteConfig.value = { enable_telemetry: true }
   distribution.isCloud = true
 })
 
@@ -135,10 +131,9 @@ it('leaves the subscription unavailable and warns once when the bridge throws', 
   )
 })
 
-it('uses live Desktop admission after frontend config clears the boot-time telemetry flag', async () => {
+it('uses live Desktop admission regardless of frontend telemetry config', async () => {
   const getProactiveGreetingAdmission = vi.fn().mockResolvedValue('allowed')
   installHost(getProactiveGreetingAdmission)
-  remoteConfig.value = {}
   expect(await getHostProactiveGreetingAdmission('user-a')).toBe('allowed')
   expect(getProactiveGreetingAdmission).toHaveBeenCalledExactlyOnceWith(
     'user-a',

@@ -59,6 +59,28 @@
     "name": "Afficher la boîte à outils de sélection",
     "tooltip": "Affiche une barre d’outils flottante lorsque des nœuds sont sélectionnés, offrant un accès rapide aux actions courantes."
   },
+  "Comfy_Canvas_SmartGuides_Enabled": {
+    "name": "Aligner sur les nœuds, groupes et connexions proches lors du déplacement et du redimensionnement",
+    "tooltip": "Affiche des lignes de repère et aligne sur les bords alignés, les espacements réguliers et les connexions droites. Maintenez Maj pour aligner sur la grille à la place."
+  },
+  "Comfy_Canvas_SmartGuides_Gap": {
+    "name": "Écart lors de l’alignement à côté d’un autre nœud"
+  },
+  "Comfy_Canvas_SmartGuides_SnapDistance": {
+    "name": "Distance d’alignement (pixels à l’écran)"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToEdges": {
+    "name": "Aligner sur les bords des autres nœuds et groupes"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToSpacing": {
+    "name": "Aligner sur un espacement régulier entre les nœuds"
+  },
+  "Comfy_Canvas_SmartGuides_SnapToWires": {
+    "name": "Aligner de sorte que les connexions deviennent droites"
+  },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "Demander avant d’envoyer les noms des nœuds et des modèles afin de vérifier la compatibilité avec Comfy Cloud"
+  },
   "Comfy_ConfirmClear": {
     "name": "Demander une confirmation lors de l'effacement du flux de travail"
   },
@@ -69,8 +91,8 @@
     "name": "Activer les options du mode développeur (sauvegarde API, etc.)"
   },
   "Comfy_DisableFloatRounding": {
-    "name": "Désactiver l'arrondi par défaut du widget flottant.",
-    "tooltip": "(nécessite le rechargement de la page) Impossible de désactiver l'arrondi lorsque l'arrondi est défini par le nœud dans le backend."
+    "name": "Désactiver l’arrondi par défaut des widgets de nombres à virgule flottante (obsolète).",
+    "tooltip": "(nécessite de recharger la page) Obsolète et activé par défaut. Le désactiver arrondit les valeurs flottantes modifiées au nombre de décimales correspondant au pas du widget. L’arrondi défini par le nœud s’applique toujours."
   },
   "Comfy_DisableSliders": {
     "name": "Désactiver les curseurs du widget de nœud"
@@ -87,6 +109,10 @@
   "Comfy_ErrorSystem_ShowMissingModels": {
     "name": "Afficher les modèles manquants dans l’onglet Problèmes",
     "tooltip": "Lorsqu’ils sont désactivés, les fichiers de modèles introuvables ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence."
+  },
+  "Comfy_ErrorSystem_ShowMissingNodes": {
+    "name": "Afficher les nœuds manquants dans l’onglet des problèmes",
+    "tooltip": "Lorsque cette option est désactivée, les packs de nœuds manquants ne sont pas répertoriés dans l’onglet des problèmes et leurs nœuds ne sont pas mis en évidence. Le workflow ne peut toujours pas s’exécuter tant qu’ils ne sont pas installés."
   },
   "Comfy_Execution_PreviewMethod": {
     "name": "Méthode d’aperçu en direct",
@@ -434,6 +460,10 @@
     "name": "Design moderne des nœuds (nœuds Vue)",
     "tooltip": "Moderne : rendu basé sur DOM avec interactivité améliorée, fonctionnalités natives du navigateur et design visuel actualisé. Classique : rendu traditionnel sur toile."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "Masquer les extensions .safetensors et .sft",
+    "tooltip": "Nœuds 2.0 uniquement. Masquer ces extensions dans les widgets de modèle fermés. Les autres extensions restent visibles ; les options des listes déroulantes et les valeurs enregistrées conservent les noms de fichiers complets."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Mode de contrôle du widget",
     "options": {
@@ -468,10 +498,6 @@
   "Comfy_Workflow_ShowMissingMediaWarning": {
     "name": "Afficher les médias manquants dans l’onglet Problèmes",
     "tooltip": "Lorsqu’ils sont désactivés, les images, vidéos et fichiers audio d’entrée introuvables ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence."
-  },
-  "Comfy_Workflow_ShowMissingNodesWarning": {
-    "name": "Afficher les nœuds manquants dans l’onglet Problèmes",
-    "tooltip": "Lorsqu’ils sont désactivés, les packs de nœuds manquants ne sont pas répertoriés dans l’onglet Problèmes et leurs nœuds ne sont pas mis en évidence. Le workflow ne peut toujours pas s’exécuter tant qu’ils ne sont pas installés."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Trier les ID de nœuds lors de l'enregistrement du flux de travail"

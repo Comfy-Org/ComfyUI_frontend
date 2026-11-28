@@ -1,0 +1,67 @@
+name: Feature regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature:
+        description: Feature to run
+        type: choice
+        default: billing
+        options:
+          - billing
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    name: Billing M4 / Cloud regression
+    if: inputs.feature == 'billing'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Build Cloud frontend
+        run: pnpm build:cloud
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+          VITE_BILLING_WEB_URL: https://billing-web.example
+
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
+
+      - name: Run Cloud Billing checks
+        run: >-
+          pnpm exec playwright test --project=cloud --retries=0 --reporter=line,html
+          browser_tests/tests/billing/cloudPlansEntry.spec.ts
+          browser_tests/tests/cloudSubscribeDeepLink.spec.ts
+          browser_tests/tests/billing/cloudCreditsLockedRefusal.spec.ts
+        env:
+          DISTRIBUTION: cloud
+          PLAYWRIGHT_HTML_OPEN: never
+
+      - name: Upload Cloud Billing report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: billing-cloud-plans-report
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore

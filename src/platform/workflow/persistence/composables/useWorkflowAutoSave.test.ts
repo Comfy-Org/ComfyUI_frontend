@@ -11,6 +11,12 @@ vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
+const modifiedWorkflow = {
+  isModified: true,
+  isPersisted: true,
+  changeTracker: { hasPreview: false }
+}
+
 function fireGraphChanged() {
   const listener = vi
     .mocked(api.addEventListener)
@@ -42,7 +48,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -64,7 +70,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: false, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow, isModified: false }
     })
 
     render({
@@ -82,11 +88,27 @@ describe('useWorkflowAutoSave', () => {
     )
   })
 
+  it('saves a pending edit after a layout preview ends without a graph change', () => {
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    const changeTracker = { hasPreview: true }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { ...modifiedWorkflow, changeTracker }
+    })
+    render({ setup: useWorkflowAutoSave, render: () => null })
+
+    vi.advanceTimersByTime(1000)
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
+
+    changeTracker.hasPreview = false
+    vi.advanceTimersByTime(1000)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
+  })
+
   it('should not auto save workflow when autosave is off', async () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -106,7 +128,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 2000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -130,7 +152,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 2000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -158,7 +180,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     try {
@@ -190,7 +212,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -241,7 +263,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 0
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -270,7 +292,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: false }
+      activeWorkflow: { ...modifiedWorkflow, isPersisted: false }
     })
 
     render({

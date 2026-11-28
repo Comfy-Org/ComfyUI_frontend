@@ -12,6 +12,7 @@ import {
 import { i18n } from '@/i18n'
 import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
 import { applyTheme } from '@/platform/theme/applyTheme'
+import { registerStorybookApp } from '@/storybook/mocks/app'
 import '@/lib/litegraph/public/css/litegraph.css'
 import '@/assets/css/style.css'
 
@@ -22,6 +23,7 @@ setup((app) => {
 
   app.use(pinia)
   app.use(i18n)
+  registerStorybookApp()
 })
 
 export const withTheme = (Story: StoryFn, context: StoryContext) => {

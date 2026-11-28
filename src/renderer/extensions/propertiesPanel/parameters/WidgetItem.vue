@@ -13,20 +13,8 @@ import {
   getComponent,
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import {
-  stripGraphPrefix,
-  useWidgetValueStore
-} from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
-import { getControlWidget } from '@/types/simplifiedWidget'
-import type {
-  SimplifiedWidget,
-  WidgetValue as SimplifiedWidgetValue
-} from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getWidgetIdForNode } from '@/utils/litegraphUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
@@ -62,10 +50,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const canvasStore = useCanvasStore()
-const nodeDefStore = useNodeDefStore()
-const widgetValueStore = useWidgetValueStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const linkStore = useLinkStore()
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
@@ -73,43 +58,7 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
-const isLinked = computed(() => {
-  const graph = node.graph
-  const slot = node.inputs?.findIndex((i) => i.widget?.name === widget.name)
-  if (!graph || slot === undefined || slot < 0) return false
-  return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
-})
-
-const simplifiedWidget = computed((): SimplifiedWidget => {
-  const graphId = node.graph?.rootGraph.id
-  const bareNodeId = stripGraphPrefix(node.id)
-  const widgetState = widget.widgetId
-    ? useWidgetValueStore().getWidget(widget.widgetId)
-    : graphId && bareNodeId
-      ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
-      : undefined
-  const widgetName = widgetState?.name ?? widget.name
-  const widgetType = widgetState?.type ?? widget.type
-
-  const baseOptions = widgetState?.options ?? widget.options
-  const disabled = isLinked.value || !!widget.disabled || undefined
-  return {
-    name: widgetName,
-    type: widgetType,
-    value: (widgetState
-      ? widgetState.value
-      : widget.value) as SimplifiedWidgetValue,
-    label: widgetState?.label ?? widget.label,
-    options: { ...baseOptions, disabled },
-    callback:
-      typeof widgetType === 'string' && widgetType.toLowerCase() === 'button'
-        ? (value) =>
-            widget.callback?.(value, canvasStore.canvas ?? undefined, node)
-        : undefined,
-    spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
-    controlWidget: getControlWidget(widget)
-  }
-})
+const itemWidgetId = computed(() => getWidgetIdForNode(node, widget))
 
 const displayNodeName = computed((): string | null => {
   if (!node) return null
@@ -218,8 +167,9 @@ const displayLabel = customRef((track, trigger) => {
     </div>
     <component
       :is="widgetComponent"
+      v-if="itemWidgetId"
       v-model="widgetValue"
-      :widget="simplifiedWidget"
+      :widget-id="itemWidgetId"
       :node-id="node.id"
       :node-type="node.type"
       :node-title="displayNodeName ?? undefined"

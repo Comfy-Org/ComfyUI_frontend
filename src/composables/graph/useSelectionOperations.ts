@@ -1,6 +1,13 @@
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { writeClipboardStorage } from '@/lib/litegraph/src/canvas/clipboardStorage'
+import {
+  copyToCanvasClipboard,
+  pasteFromCanvasClipboard
+} from '@/core/graph/clipboard/canvasClipboard'
+import {
+  insertItems,
+  serializeItems
+} from '@/core/graph/clipboard/graphTransfer'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -11,9 +18,6 @@ import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 
-/**
- * Composable for handling basic selection operations like copy, paste, duplicate, delete, rename
- */
 export function useSelectionOperations() {
   const canvasStore = useCanvasStore()
   const toast = useToast()
@@ -31,7 +35,7 @@ export function useSelectionOperations() {
       return
     }
 
-    if (!writeClipboardStorage(JSON.stringify(canvas._serializeItems()))) {
+    if (!copyToCanvasClipboard(canvas).stored) {
       toast.error(t('g.error'), {
         description: t('clipboard.errorMessage')
       })
@@ -45,7 +49,7 @@ export function useSelectionOperations() {
 
   const pasteSelection = () => {
     const canvas = useApp().canvas
-    canvas.pasteFromClipboard({ connectInputs: false })
+    pasteFromCanvasClipboard(canvas, { connectInputs: false })
 
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
@@ -60,7 +64,7 @@ export function useSelectionOperations() {
       return
     }
 
-    canvas._deserializeItems(canvas._serializeItems(), { connectInputs: false })
+    insertItems(canvas, serializeItems(canvas), { connectInputs: false })
 
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }

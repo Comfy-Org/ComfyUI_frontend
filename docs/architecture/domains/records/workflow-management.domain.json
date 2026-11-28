@@ -43,9 +43,6 @@
       "path": "src/platform/workflow/core/utils/workflowId.ts"
     },
     {
-      "path": "src/platform/workflow/core/utils/workflowToClipboardItems.ts"
-    },
-    {
       "path": "src/platform/workflow/management/composables/**"
     },
     {
@@ -90,11 +87,9 @@
       ]
     },
     {
-      "name": "Workflow actions, ids, and clipboard conversion act on the active workflow",
+      "name": "Workflow actions and ids act on the active workflow",
       "checks": [
         "src/platform/workflow/core/services/workflowActionsService.test.ts",
-        "src/platform/workflow/core/utils/workflowToClipboardItems.test.ts",
-        "src/platform/workflow/core/utils/workflowToClipboardItems.integration.test.ts",
         "src/platform/workflow/core/utils/workflowId.test.ts"
       ]
     },

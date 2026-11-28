@@ -23,6 +23,7 @@ export type OptionalEntryKey =
   | 'teamCreditStopId'
   | 'promotionCode'
   | 'operationId'
+  | 'purchaseId'
 
 export type InvalidIdentifierCode =
   | 'INVALID_PLAN'
@@ -31,6 +32,7 @@ export type InvalidIdentifierCode =
   | 'INVALID_TEAM_CREDIT_STOP_ID'
   | 'INVALID_PROMOTION_CODE'
   | 'INVALID_OPERATION_ID'
+  | 'INVALID_PURCHASE_ID'
 
 interface OptionalEntryField {
   readonly key: OptionalEntryKey
@@ -55,14 +57,16 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     param: 'team_credit_stop_id',
     code: 'INVALID_TEAM_CREDIT_STOP_ID'
   },
-  /** Prefills checkout's promo field; billing applies it only on the customer's Apply. */
+  /** Prefills checkout's promo field; billing applies it on the customer's Apply, or on load under `billing_web_promo_auto_apply`. */
   { key: 'promotionCode', param: 'promo', code: 'INVALID_PROMOTION_CODE' },
   /** An unfinished operation checkout resumes instead of whatever the status reports pending. */
   {
     key: 'operationId',
     param: ENTRY_PARAM_OPERATION,
     code: 'INVALID_OPERATION_ID'
-  }
+  },
+  /** The server-owned purchase a top-up pays; every Pay on the page goes through it. */
+  { key: 'purchaseId', param: 'purchase', code: 'INVALID_PURCHASE_ID' }
 ]
 
 export type OptionalEntryValues = {

@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
-import { computed, ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
@@ -42,22 +45,31 @@ const meta: Meta<{
           value.value = next
         }
       )
-      const widget = computed<SimplifiedWidget<string>>(() => ({
-        name: 'ckpt_name',
-        type: 'COMBO',
-        value: value.value,
-        borderStyle: args.advanced ? 'ring ring-primary' : undefined,
-        options: {
-          values: args.options,
-          disabled: args.disabled
-        }
-      }))
-      return { args, widget, value }
+      const graphId = createUuidv4()
+      const widgetId = toWidgetId(graphId, toNodeId(1), 'ckpt_name')
+      const store = useWidgetValueStore()
+      watch(
+        () => ({
+          value: value.value,
+          options: {
+            values: args.options,
+            disabled: args.disabled,
+            advanced: args.advanced
+          }
+        }),
+        ({ value, options }) => {
+          store.registerWidget(widgetId, { type: 'COMBO', value, options })
+          store.setValue(widgetId, value)
+        },
+        { immediate: true }
+      )
+      onBeforeUnmount(() => store.clearGraph(graphId))
+      return { args, widgetId, value }
     },
     template: `
       <div class="flex flex-col gap-4 rounded-lg bg-node p-4 text-xs" :style="{ width: args.width + 'px' }">
         <output aria-label="Selected model" class="break-all text-muted-foreground">{{ value }}</output>
-        <WidgetSelectDefault v-model="value" :widget :filename-summary="args.filenameSummary" @update:model-value="args.onChange" />
+        <WidgetSelectDefault v-model="value" :widget-id :filename-summary="args.filenameSummary" @update:model-value="args.onChange" />
       </div>
     `
   })
@@ -65,6 +77,49 @@ const meta: Meta<{
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+function labyrinthBranch(directory: string, depth: number): string[] {
+  return [
+    ...Array.from(
+      { length: 3 },
+      (_, index) => `${directory}/model-${index}.safetensors`
+    ),
+    ...(depth === 0
+      ? []
+      : Array.from({ length: 3 }, (_, index) =>
+          labyrinthBranch(`${directory}/door-${index}`, depth - 1)
+        ).flat())
+  ]
+}
+
+const labyrinthCorridor = Array.from(
+  { length: 48 },
+  (_, index) => `turn-${String(index + 1).padStart(2, '0')}`
+)
+const labyrinthDeepFolder = [
+  'Labyrinth',
+  'vault',
+  ...labyrinthCorridor.slice(0, 40)
+].join('/')
+const labyrinthOptions = [
+  'None',
+  ...labyrinthBranch('Labyrinth/atrium', 7),
+  ...labyrinthCorridor.flatMap((_, index) => {
+    const directory = [
+      'Labyrinth',
+      'vault',
+      ...labyrinthCorridor.slice(0, index + 1)
+    ].join('/')
+    return [
+      `${directory}/anchor.safetensors`,
+      `${directory}/exit.safetensors`,
+      ...Array.from({ length: 3 }, (_, branch) => [
+        `${directory}/detour-${branch}/portrait.safetensors`,
+        `${directory}/detour-${branch}/landscape.safetensors`
+      ]).flat()
+    ]
+  })
+]
 
 export const Default: Story = {
   args: {
@@ -103,7 +158,7 @@ export const NestedFolder: Story = {
     await userEvent.click(popup.getByRole('option', { name: 'Folder: studio' }))
     await userEvent.click(popup.getByRole('option', { name: 'Folder: models' }))
     await userEvent.click(
-      popup.getByRole('option', { name: 'Back: studio / models' })
+      popup.getByRole('button', { name: 'Back: studio / models' })
     )
     await expect(
       popup.getByRole('option', { name: 'Folder: models' })
@@ -245,5 +300,54 @@ export const ManyOptions: Story = {
       await expect(option.top).toBeGreaterThanOrEqual(viewport.top)
       await expect(option.bottom).toBeLessThanOrEqual(viewport.bottom)
     })
+  }
+}
+
+export const Labyrinth: Story = {
+  args: {
+    value: `${labyrinthDeepFolder}/anchor.safetensors`,
+    options: labyrinthOptions
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const popup = within(canvasElement.ownerDocument.body)
+    const trigger = canvas.getByRole('combobox', { name: 'ckpt_name' })
+    const previous = canvas.getByRole('button', { name: 'ckpt_name: Previous' })
+    const next = canvas.getByRole('button', { name: 'ckpt_name: Next' })
+    await userEvent.click(trigger)
+    await userEvent.click(popup.getByRole('button', { name: /^Lock folder:/ }))
+    await expect(previous).toBeDisabled()
+    await expect(next).toBeEnabled()
+    const search = popup.getByRole('combobox', { name: 'Search' })
+    await userEvent.type(search, 'atrium')
+    await expect(popup.getByRole('status', { name: '' })).toHaveTextContent(
+      'No Results Found'
+    )
+    await userEvent.tab()
+    await expect(
+      popup.getByRole('button', { name: /^Unlock folder:/ })
+    ).toHaveFocus()
+    await userEvent.keyboard(' ')
+    await expect(search).toHaveFocus()
+    await expect(search).toHaveValue('atrium')
+    await expect(
+      await popup.findByRole('option', {
+        name: 'Labyrinth/atrium/model-0.safetensors'
+      })
+    ).toBeVisible()
+    await userEvent.clear(search)
+    await userEvent.click(popup.getByRole('button', { name: /^Lock folder:/ }))
+    await userEvent.click(
+      popup.getByRole('option', { name: 'exit.safetensors' })
+    )
+    await userEvent.click(previous)
+    await expect(canvas.getByLabelText('Selected model')).toHaveTextContent(
+      `${labyrinthDeepFolder}/anchor.safetensors`
+    )
+    await expect(previous).toBeDisabled()
+    await userEvent.click(trigger)
+    await expect(
+      popup.getByRole('option', { name: 'Folder: turn-41' })
+    ).toBeVisible()
+    await expect(popup.queryByRole('button', { name: /^Back:/ })).toBeNull()
   }
 }

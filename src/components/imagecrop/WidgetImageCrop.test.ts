@@ -6,8 +6,12 @@ import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Ref } from 'vue'
 
 const cropHolder = vi.hoisted(() => ({
@@ -58,11 +62,11 @@ const upstreamHolder = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(import('@/composables/useUpstreamValue'), async () => {
-  const { ref } = await import('vue')
+  const { computed, ref } = await import('vue')
   return {
-    useUpstreamValue: () => {
-      upstreamHolder.ref = upstreamHolder.ref ?? ref<unknown>(undefined)
-      return upstreamHolder.ref
+    useUpstreamValue: (getLinkedUpstream: () => unknown) => {
+      const upstream = (upstreamHolder.ref ??= ref<unknown>(undefined))
+      return computed(() => (getLinkedUpstream() ? upstream.value : undefined))
     },
     boundsExtractor: () => () => undefined
   }
@@ -117,30 +121,45 @@ function primeCropState(overrides: Record<string, unknown> = {}) {
   }
 }
 
-function makeWidget(
-  overrides: Partial<SimplifiedWidget<Bounds>> = {}
-): SimplifiedWidget<Bounds> {
-  return {
+function makeWidget({ disabled = false } = {}): WidgetId {
+  return registerTestWidget({
     name: 'crop',
     type: 'imagecrop',
     value: { x: 0, y: 0, width: 512, height: 512 },
-    options: {},
-    nodeLocatorId: createNodeLocatorId(null, toNodeId('1')),
-    ...overrides
-  }
+    options: { disabled }
+  })
+}
+
+function makeLinkedWidget() {
+  const graph = new LGraph()
+  vi.mocked(app).rootGraph = graph
+  const source = new LGraphNode('Source')
+  source.addOutput('bounds', 'BOUNDING_BOX')
+  graph.add(source)
+  const target = new LGraphNode('Target')
+  target.addInput('crop', 'BOUNDING_BOX', { widget: { name: 'crop' } })
+  graph.add(target)
+  const id = widgetId(graph.id, target.id, 'crop')
+  useWidgetValueStore().registerWidget(id, {
+    type: 'imagecrop',
+    value: { x: 0, y: 0, width: 512, height: 512 },
+    options: {}
+  })
+  source.connect(0, target, 0)
+  return id
 }
 
 function renderWidget(
-  widget: SimplifiedWidget<Bounds> = makeWidget(),
+  widgetId: WidgetId = makeWidget(),
   initialModel: Bounds = { x: 0, y: 0, width: 512, height: 512 }
 ) {
   const value = ref<Bounds>(initialModel)
   const nodeId = toNodeId(1)
   const Harness = defineComponent({
     components: { WidgetImageCrop },
-    setup: () => ({ value, widget, nodeId }),
+    setup: () => ({ value, widgetId, nodeId }),
     template:
-      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="nodeId" />'
+      '<WidgetImageCrop v-model="value" :widget-id="widgetId" :node-id="nodeId" />'
   })
   const utils = render(Harness, {
     global: {
@@ -192,7 +211,7 @@ describe('WidgetImageCrop', () => {
 
   describe('Disabled state', () => {
     it('hides the ratio controls when widget is disabled', () => {
-      renderWidget(makeWidget({ options: { disabled: true } }))
+      renderWidget(makeWidget({ disabled: true }))
       expect(screen.queryByText('Ratio')).toBeNull()
     })
 
@@ -202,7 +221,7 @@ describe('WidgetImageCrop', () => {
     })
 
     it('passes disabled=true to the bounding box child when disabled', () => {
-      renderWidget(makeWidget({ options: { disabled: true } }))
+      renderWidget(makeWidget({ disabled: true }))
       expect(screen.getByTestId('bbox-child').dataset.disabled).toBe('true')
     })
   })
@@ -253,20 +272,19 @@ describe('WidgetImageCrop', () => {
       expect(value.value).toEqual({ x: 1, y: 2, width: 3, height: 4 })
     })
 
-    it('uses upstream bounds when disabled and upstream is available', () => {
+    it('uses the upstream bounds while linked to an upstream node', () => {
       upstreamHolder.ref = ref<unknown>({
         x: 7,
         y: 8,
         width: 20,
         height: 30
       })
-      renderWidget(
-        makeWidget({
-          options: { disabled: true },
-          linkedUpstream: { nodeId: toNodeId('n1') }
-        }),
-        { x: 0, y: 0, width: 512, height: 512 }
-      )
+      renderWidget(makeLinkedWidget(), {
+        x: 0,
+        y: 0,
+        width: 512,
+        height: 512
+      })
       const parsed = JSON.parse(screen.getByTestId('bbox-child').dataset.model!)
       expect(parsed).toEqual({ x: 7, y: 8, width: 20, height: 30 })
     })

@@ -262,7 +262,6 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
@@ -291,6 +290,7 @@ import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -334,11 +334,11 @@ onMounted(() => {
   searchBoxRef.value?.focus()
 })
 
-const selectedGroupingId = useLocalStorage<GroupingStrategyId>(
+const selectedGroupingId = useSafeLocalStorage<GroupingStrategyId>(
   'Comfy.NodeLibrary.GroupBy',
   DEFAULT_GROUPING_ID
 )
-const selectedSortingId = useLocalStorage<SortingStrategyId>(
+const selectedSortingId = useSafeLocalStorage<SortingStrategyId>(
   'Comfy.NodeLibrary.SortBy',
   DEFAULT_SORTING_ID
 )

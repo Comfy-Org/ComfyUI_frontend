@@ -124,6 +124,11 @@ export interface WebSessionRequests {
     init: RequestInit,
     scope: WebSessionRequestScope
   ) => Promise<Response>
+  /** The headers `send` attaches to an ingest request with this method. */
+  readonly ingestHeaders: (
+    scope: WebSessionRequestScope,
+    method: string
+  ) => Promise<Readonly<Record<string, string>>>
   /** The web session's token for this scope's workspace; never rejects. */
   readonly workspaceToken: (
     scope: WebSessionRequestScope

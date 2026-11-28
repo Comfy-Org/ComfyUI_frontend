@@ -31,18 +31,18 @@
     <MarkdownView
       v-if="showMarkdown"
       class="text-sm"
-      :aria-label="widget.name"
+      :aria-label="previewName"
       :markdown="modelValue"
     />
     <Textarea
       v-else
       :model-value="modelValue"
       readonly
-      :aria-label="widget.name"
+      :aria-label="previewName"
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
+          'size-full min-h-0 resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           'overflow-y-auto'
         )
       "
@@ -76,8 +76,9 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetName } from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import { widgetId as toWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -90,10 +91,12 @@ type SaveTextOutput = NodeOutputWith<{
 
 const MODE_WIDGET_NAME = 'preview_mode'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget<string>
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId?: NodeId
 }>()
+
+const previewName = computed(() => widgetName(widgetId))
 
 const modelValue = defineModel<string>({ default: '' })
 
@@ -113,7 +116,7 @@ const showMarkdown = computed<boolean>(() => {
   if (!graphId || localNodeId.value === null) return false
   return (
     widgetValueStore.getWidget(
-      widgetId(graphId, localNodeId.value, MODE_WIDGET_NAME)
+      toWidgetId(graphId, localNodeId.value, MODE_WIDGET_NAME)
     )?.value === true
   )
 })
@@ -146,7 +149,7 @@ function handleCopy() {
 function handleDownload() {
   if (!downloadUrl.value) return
   try {
-    downloadFile(downloadUrl.value, savedFile.value?.filename)
+    downloadFile(downloadUrl.value, savedFile.value?.filename, 'node_preview')
   } catch {
     useToast().error(t('g.error'), { description: t('g.failedToDownloadFile') })
   }

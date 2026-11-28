@@ -25,8 +25,10 @@ async function triggerConfigureError(
   message = 'Error on configure!'
 ) {
   await comfyPage.page.evaluate((msg: string) => {
-    const graph = window.graph!
-    ;(graph as { configure: () => void }).configure = () => {
+    const graphPrototype: { configure: () => void } = Object.getPrototypeOf(
+      window.graph!
+    )
+    graphPrototype.configure = () => {
       throw new Error(msg)
     }
   }, message)
@@ -484,7 +486,6 @@ test.describe('Error dialog', () => {
           const ws = await getWebSocket()
           const execution = new ExecutionHelper(comfyPage, ws)
           const jobId = await execution.run()
-          execution.executionStart(jobId)
           ws.send(
             JSON.stringify({
               type: 'execution_error',

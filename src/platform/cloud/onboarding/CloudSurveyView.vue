@@ -17,7 +17,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { isNavigationFailure, useRouter } from 'vue-router'
+import {
+  isNavigationFailure,
+  NavigationFailureType,
+  useRouter
+} from 'vue-router'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -29,7 +33,7 @@ import {
   isSurveyReplayRequested,
   restoreSurveyReplayRequest
 } from '@/platform/onboarding/onboardingReplay'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAuthStore } from '@/stores/authStore'
@@ -42,8 +46,9 @@ const { t } = useI18n()
 const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(() => flags.onboardingSurveyEnabled)
 
+const remoteConfigStore = useRemoteConfigStore()
 const activeSurvey = computed(
-  () => remoteConfig.value.onboarding_survey ?? defaultOnboardingSurvey
+  () => remoteConfigStore.config.onboarding_survey ?? defaultOnboardingSurvey
 )
 
 const isSubmitting = ref(false)
@@ -69,6 +74,7 @@ onMounted(async () => {
 })
 
 const onSubmitSurvey = async (payload: Record<string, unknown>) => {
+  if (isSubmitting.value) return
   if (!onboardingSurveyEnabled.value) {
     await router.replace({ name: 'cloud-user-check' })
     return
@@ -103,6 +109,7 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
 async function advanceFromSurvey(replaying: boolean, replayOwner: string) {
   try {
     const failure = await router.push({ name: 'cloud-user-check' })
+    if (isNavigationFailure(failure, NavigationFailureType.cancelled)) return
     if (isNavigationFailure(failure)) throw failure
   } catch (error) {
     if (replaying && useAuthStore().userId === replayOwner)

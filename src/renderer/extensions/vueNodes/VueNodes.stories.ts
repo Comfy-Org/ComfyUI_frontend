@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { useArgs } from 'storybook/preview-api'
 import { fn } from 'storybook/test'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, onScopeDispose, ref, watch, watchEffect } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -18,8 +18,19 @@ import {
   ModelNodeProvider,
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
-import { CONTROL_OPTIONS, isControlOption } from '@/types/simplifiedWidget'
-import type { ControlOptions, SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  CONTROL_OPTIONS,
+  isControlOption
+} from '@/core/graph/widgets/controlWidget'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
+import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { registerStorybookApp } from '@/storybook/mocks/app'
+import { createUuidv4 } from '@/utils/uuid'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import NodeHeader from './components/NodeHeader.vue'
 import SlotConnectionDot from './components/SlotConnectionDot.vue'
@@ -183,91 +194,127 @@ const meta: Meta<StoryArgs> = {
           ]
         }))
 
-        const widgets = computed<WidgetGridItem[]>(() => {
-          const definitions: (SimplifiedWidget & { arg: keyof StoryArgs })[] = [
-            {
-              arg: 'seed',
-              name: 'seed',
-              type: 'INT',
-              value: args.seed,
-              options: {
-                min: 0,
-                max: Number.MAX_SAFE_INTEGER,
-                step: 10,
-                precision: 0
-              },
-              controlWidget: {
-                value: args.seedMode,
-                update(value) {
-                  if (isControlOption(value)) updateArgs({ seedMode: value })
-                }
-              }
-            },
-            {
-              arg: 'steps',
-              name: 'steps',
-              type: 'INT',
-              value: args.steps,
-              options: { min: 1, max: 100, step: 10, precision: 0 }
-            },
-            {
-              arg: 'cfg',
-              name: 'cfg',
-              type: 'FLOAT',
-              value: args.cfg,
-              options: { min: 0, max: 20, step: 5, precision: 1 }
-            },
-            {
-              arg: 'sampler',
-              name: 'sampler_name',
-              type: 'COMBO',
-              value: args.sampler,
-              options: { values: samplerOptions }
-            },
-            {
-              arg: 'model',
-              name: 'ckpt_name',
-              type: 'COMBO',
-              value: args.model,
-              options: { values: modelOptions }
-            },
-            {
-              arg: 'text',
-              name: 'filename_prefix',
-              type: 'STRING',
-              value: args.text
-            },
-            {
-              arg: 'prompt',
-              name: 'prompt',
-              type: 'customtext',
-              value: args.prompt
-            },
-            {
-              arg: 'enabled',
-              name: 'enabled',
-              type: 'BOOLEAN',
-              value: args.enabled
+        const graph = new LGraph()
+        registerStorybookApp(graph)
+        const node = new LGraphNode('CheckpointLoaderSimple')
+        graph.add(node)
+        const seed = node.addWidget('number', 'seed', args.seed, () => {})
+        const seedControl = addValueControlWidget(node, seed, args.seedMode)
+        seed.linkedWidgets = [seedControl]
+        const widgetValueStore = useWidgetValueStore()
+        const idOf = (name: string) => widgetId(graph.id, node.id, name)
+        onScopeDispose(() => {
+          widgetValueStore.clearGraph(graph.id)
+          registerStorybookApp()
+        })
+
+        const definitions = computed<
+          {
+            arg: keyof StoryArgs
+            name: string
+            type: string
+            value: WidgetValue
+            options?: IWidgetOptions
+          }[]
+        >(() => [
+          {
+            arg: 'seed',
+            name: 'seed',
+            type: 'number',
+            value: args.seed,
+            options: {
+              min: 0,
+              max: Number.MAX_SAFE_INTEGER,
+              step: 10,
+              precision: 0
             }
-          ]
-          return definitions.map(({ arg, ...widget }) => ({
-            renderKey:
-              widget.name === 'seed'
-                ? `${widget.name}:${args.seedMode}`
-                : widget.name,
+          },
+          {
+            arg: 'steps',
+            name: 'steps',
+            type: 'INT',
+            value: args.steps,
+            options: { min: 1, max: 100, step: 10, precision: 0 }
+          },
+          {
+            arg: 'cfg',
+            name: 'cfg',
+            type: 'FLOAT',
+            value: args.cfg,
+            options: { min: 0, max: 20, step: 5, precision: 1 }
+          },
+          {
+            arg: 'sampler',
+            name: 'sampler_name',
+            type: 'COMBO',
+            value: args.sampler,
+            options: { values: samplerOptions }
+          },
+          {
+            arg: 'model',
+            name: 'ckpt_name',
+            type: 'COMBO',
+            value: args.model,
+            options: { values: modelOptions }
+          },
+          {
+            arg: 'text',
+            name: 'filename_prefix',
+            type: 'STRING',
+            value: args.text
+          },
+          {
+            arg: 'prompt',
+            name: 'prompt',
+            type: 'customtext',
+            value: args.prompt
+          },
+          {
+            arg: 'enabled',
+            name: 'enabled',
+            type: 'BOOLEAN',
+            value: args.enabled
+          }
+        ])
+
+        watchEffect(() => {
+          for (const { name, type, value, options = {} } of definitions.value) {
+            widgetValueStore.registerWidget(idOf(name), {
+              type,
+              value,
+              label: args.labels[name] ?? name,
+              disabled: args.disabled,
+              options
+            })
+            widgetValueStore.setValue(idOf(name), value)
+          }
+          seedControl.value = args.seedMode
+        })
+        watch(
+          () => widgetValueStore.getWidget(idOf(seedControl.name))?.value,
+          (mode) => {
+            if (isControlOption(mode) && mode !== args.seedMode)
+              updateArgs({ seedMode: mode })
+          }
+        )
+
+        const widgets = computed<WidgetGridItem[]>(() =>
+          definitions.value.map(({ arg, name, type, value }) => ({
+            renderKey: name === 'seed' ? `${name}:${args.seedMode}` : name,
             visible: true,
-            simplified: {
-              ...widget,
-              label: args.labels[widget.name] ?? widget.name,
-              options: { ...widget.options, disabled: args.disabled }
-            },
-            vueComponent: getComponent(widget.type) ?? WidgetLegacy,
-            updateHandler(value) {
-              args.onWidgetChange(widget.name, value)
-              updateArgs({ [arg]: value })
+            widgetId: idOf(name),
+            name,
+            type,
+            value,
+            label: args.labels[name] ?? name,
+            disabled: args.disabled,
+            vueComponent: getComponent(type) ?? WidgetLegacy,
+            updateHandler(next) {
+              args.onWidgetChange(name, next)
+              updateArgs({ [arg]: next })
             }
           }))
-        })
+        )
 
         return { args, nodeData, widgets, updateArgs }
       },
@@ -347,47 +394,59 @@ export const OtherControlTypes: Story = {
       const color = ref('#E06CBD')
       const enabled = ref(true)
       const labelled = ref(false)
-      const widgets = computed(() => ({
-        slider: {
-          name: 'slider',
+      const graphId = createUuidv4()
+      const widgetValueStore = useWidgetValueStore()
+      const idOf = (name: string) => widgetId(graphId, toNodeId(1), name)
+      const widgets = {
+        slider: idOf('slider'),
+        gradient: idOf('gradient'),
+        color: idOf('color'),
+        enabled: idOf('enabled'),
+        labelled: idOf('labelled_boolean')
+      }
+      watchEffect(() => {
+        const disabled = args.disabled
+        widgetValueStore.registerWidget(widgets.slider, {
           type: 'slider',
           value: 37,
-          options: { min: 0, max: 100, step2: 1, disabled: args.disabled }
-        },
-        gradient: {
-          name: 'gradient',
+          disabled,
+          options: { min: 0, max: 100, step2: 1 }
+        })
+        widgetValueStore.registerWidget(widgets.gradient, {
           type: 'gradientslider',
           value: 63,
-          options: { min: 0, max: 100, step2: 1, disabled: args.disabled }
-        },
-        color: {
-          name: 'color',
+          disabled,
+          options: { min: 0, max: 100, step2: 1 }
+        })
+        widgetValueStore.registerWidget(widgets.color, {
           type: 'STRING',
           value: '#E06CBD',
-          options: { disabled: args.disabled }
-        },
-        enabled: {
-          name: 'enabled',
+          disabled,
+          options: {}
+        })
+        widgetValueStore.registerWidget(widgets.enabled, {
           type: 'BOOLEAN',
           value: true,
-          options: { disabled: args.disabled }
-        },
-        labelled: {
-          name: 'labelled_boolean',
+          disabled,
+          options: {}
+        })
+        widgetValueStore.registerWidget(widgets.labelled, {
           type: 'BOOLEAN',
           value: false,
-          options: { on: 'On', off: 'Off', disabled: args.disabled }
-        }
-      }))
+          disabled,
+          options: { on: 'On', off: 'Off' }
+        })
+      })
+      onScopeDispose(() => widgetValueStore.clearGraph(graphId))
       return { args, widgets, slider, gradient, color, enabled, labelled }
     },
     template: `
       <div class="lg-node flex flex-col gap-3 rounded-2xl bg-node p-3 text-xs text-node-foreground" :style="{ width: args.width + 'px' }">
-        <WidgetInputNumberSlider v-model="slider" :widget="widgets.slider" />
-        <WidgetInputNumberGradientSlider v-model="gradient" :widget="widgets.gradient" />
-        <WidgetColorPicker v-model="color" :widget="widgets.color" />
-        <WidgetToggleSwitch v-model="enabled" :widget="widgets.enabled" />
-        <WidgetToggleSwitch v-model="labelled" :widget="widgets.labelled" />
+        <WidgetInputNumberSlider v-model="slider" :widget-id="widgets.slider" />
+        <WidgetInputNumberGradientSlider v-model="gradient" :widget-id="widgets.gradient" />
+        <WidgetColorPicker v-model="color" :widget-id="widgets.color" />
+        <WidgetToggleSwitch v-model="enabled" :widget-id="widgets.enabled" />
+        <WidgetToggleSwitch v-model="labelled" :widget-id="widgets.labelled" />
       </div>
     `
   })

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import * as VueUse from '@vueuse/core'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -6,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import { resolveSubjectModelFile } from '@/extensions/core/load3d/cameraInfo/subjectModelFile'
 import type { ComponentWidget } from '@/types/domWidget'
 
 const i18n = createI18n({
@@ -48,7 +50,8 @@ vi.mock<unknown>(
       handleMouseLeave: vi.fn(),
       setGizmosVisible: vi.fn(),
       setTransformGizmoMode: vi.fn(),
-      setLookThrough: vi.fn()
+      setLookThrough: vi.fn(),
+      showSubjectModel: vi.fn()
     }
     holder.modeRef = modeRef
     holder.api = api
@@ -56,12 +59,17 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  createSharedComposable: (composable: () => unknown) => composable,
-  useDocumentVisibility: () => ref('visible'),
-  useElementSize: () => ({ width: ref(600), height: ref(400) }),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+vi.mock(import('@/extensions/core/load3d/cameraInfo/subjectModelFile'))
+
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(VueUse.useElementSize).mockReturnValue({
+    width: ref(600),
+    height: ref(400),
+    stop: vi.fn()
+  })
+})
 
 const liveGraphNodes = vi.hoisted(() => ({
   reloads: new Set<() => void>()
@@ -171,6 +179,35 @@ describe('CameraInfo toolbar', () => {
     await nextTick()
 
     expect(api().cleanup).toHaveBeenCalledOnce()
+  })
+})
+
+describe('CameraInfo subject model', () => {
+  beforeEach(() => {
+    setMode('orbit')
+  })
+
+  it('shows the model file feeding the mesh input on mount', () => {
+    vi.mocked(resolveSubjectModelFile).mockReturnValue('3d/frog.obj')
+
+    renderComponent()
+
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith('3d/frog.obj')
+  })
+
+  it('follows the model file as it changes and clears', async () => {
+    const modelFile = ref<string>()
+    vi.mocked(resolveSubjectModelFile).mockImplementation(() => modelFile.value)
+    renderComponent()
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith(undefined)
+
+    modelFile.value = 'robot.glb'
+    await nextTick()
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith('robot.glb')
+
+    modelFile.value = undefined
+    await nextTick()
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith(undefined)
   })
 })
 

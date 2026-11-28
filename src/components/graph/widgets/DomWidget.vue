@@ -13,6 +13,7 @@
       class="size-full"
       :model-value="widget.value"
       :widget="widget"
+      :widget-id="widget.widgetId"
       :node-id="widget.node.id"
       v-bind="widget.props"
       @update:model-value="emit('update:widgetValue', $event)"

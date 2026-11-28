@@ -6,7 +6,7 @@ import { useApp } from '@/scripts/appInstance'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 type SourceNode = Pick<LGraphNode, 'id' | 'graph' | 'widgets'>
 

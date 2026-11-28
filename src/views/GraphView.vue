@@ -30,6 +30,7 @@
     <ManagerProgressToast />
   </ToastDock>
   <PartnerNodesEducationCard v-if="!isCloud" />
+  <PlatformFrameHost v-if="isCloud" />
   <UnloadWindowConfirmDialog v-if="!isDesktop" />
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
@@ -58,6 +59,7 @@ import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducat
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
+import PlatformFrameHost from '@/platform/workspace/platformFrame/PlatformFrameHost.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
@@ -81,6 +83,7 @@ import AssetExportProgressDialog from '@/platform/assets/components/AssetExportP
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { registerAssetBrowserModalComponent } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { useDesktopCloudNotification } from '@/platform/cloud/notification/composables/useDesktopCloudNotification'
+import { useSafeExtensionBootNotice } from '@/platform/customNodes/useSafeExtensionBootNotice'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
@@ -106,7 +109,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useAuthStore } from '@/stores/authStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -133,11 +136,13 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
+useSafeExtensionBootNotice()
 if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
   onBeforeUnmount(
     setMissingNodesNotice(
-      (nodeTypes) => void noticeMissingNodes(nodeTypes, markFor)
+      (nodeTypes, opening) =>
+        void noticeMissingNodes(nodeTypes, markFor, opening)
     )
   )
 }

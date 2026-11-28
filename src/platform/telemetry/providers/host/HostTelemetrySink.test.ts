@@ -2,9 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyDesktop2TelemetryBridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type {
+  AgentMessageSentMetadata,
+  LocalMcpTelemetryEvent,
+  RunOnCloudTelemetryEvent
+} from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
-import type { AgentMessageSentMetadata } from '@comfyorg/telemetry/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import {
   HostTelemetrySink,
@@ -12,7 +15,6 @@ import {
   trackHostProactiveGreetingMessage
 } from './HostTelemetrySink'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const state = vi.hoisted(() => ({
@@ -308,6 +310,7 @@ describe('HostTelemetrySink', () => {
         sink.trackAgentMessageSent({
           attachment_count: 2,
           node_tag_count: 1,
+          skill_count: 1,
           thread_id: 'thread-1',
           workflow_id: 'workflow-1',
           client_message_id: 'client-message-1',
@@ -318,6 +321,7 @@ describe('HostTelemetrySink', () => {
       properties: {
         attachment_count: 2,
         node_tag_count: 1,
+        skill_count: 1,
         thread_id: 'thread-1',
         workflow_id: 'workflow-1',
         client_message_id: 'client-message-1',
@@ -332,6 +336,7 @@ describe('HostTelemetrySink', () => {
         sink.trackAgentMessageSent({
           attachment_count: 0,
           node_tag_count: 0,
+          skill_count: 0,
           thread_id: null,
           workflow_id: null,
           client_message_id: 'client-message-2',
@@ -342,6 +347,7 @@ describe('HostTelemetrySink', () => {
       properties: {
         attachment_count: 0,
         node_tag_count: 0,
+        skill_count: 0,
         thread_id: null,
         workflow_id: null,
         client_message_id: 'client-message-2',
@@ -408,6 +414,47 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.PROMPT_EDITOR_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackPromptEditorExposure({
+          variant: 'control',
+          '$feature/prompt-editor-surface': 'control'
+        }),
+      properties: {
+        variant: 'control',
+        '$feature/prompt-editor-surface': 'control'
+      }
+    },
+    {
+      name: TelemetryEvents.PROMPT_EDITOR_OPENED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackPromptEditorOpened({
+          surface: 'dialog',
+          trigger: 'expand_button'
+        }),
+      properties: { surface: 'dialog', trigger: 'expand_button' }
+    },
+    {
+      name: TelemetryEvents.PROMPT_EDITOR_CLOSED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackPromptEditorClosed({
+          surface: 'dialog',
+          trigger: 'expand_button',
+          end_reason: 'close',
+          duration_ms: 900,
+          input_count: 3,
+          node_switch_count: 0
+        }),
+      properties: {
+        surface: 'dialog',
+        trigger: 'expand_button',
+        end_reason: 'close',
+        duration_ms: 900,
+        input_count: 3,
+        node_switch_count: 0
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),
@@ -441,8 +488,20 @@ describe('HostTelemetrySink', () => {
     {
       name: TelemetryEvents.AGENT_NODE_TAGGED,
       track: (sink: HostTelemetrySink) =>
-        sink.trackAgentNodeTagged({ source: 'mention_picker' }),
-      properties: { source: 'mention_picker' }
+        sink.trackAgentNodeTagged({ source: 'plus_menu', node_count: 2 }),
+      properties: { source: 'plus_menu', node_count: 2 }
+    },
+    {
+      name: TelemetryEvents.AGENT_SKILL_SELECTED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSkillSelected({ source: 'add_menu' }),
+      properties: { source: 'add_menu' }
+    },
+    {
+      name: TelemetryEvents.AGENT_SKILL_SAVED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentSkillSaved({ mode: 'edit', outcome: 'budget_full' }),
+      properties: { mode: 'edit', outcome: 'budget_full' }
     },
     {
       name: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
@@ -504,19 +563,66 @@ describe('HostTelemetrySink', () => {
       name: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentRunApprovalShown({
+          ask_id: 'ask-1',
           turn_id: 'turn-1',
           workflow_id: 'workflow-1'
         }),
-      properties: { turn_id: 'turn-1', workflow_id: 'workflow-1' }
+      properties: {
+        ask_id: 'ask-1',
+        turn_id: 'turn-1',
+        workflow_id: 'workflow-1'
+      }
     },
     {
       name: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentRunApprovalResolved({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
           decision: 'cancel',
           time_to_decide_ms: 300
         }),
-      properties: { decision: 'cancel', time_to_decide_ms: 300 }
+      properties: {
+        ask_id: 'ask-1',
+        turn_id: 'turn-1',
+        decision: 'cancel',
+        time_to_decide_ms: 300
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_ANSWER_FAILED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalAnswerFailed({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1'
+        }),
+      properties: { ask_id: 'ask-1', turn_id: 'turn-1' }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_ATTEMPTED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalRecoveryAttempted({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
+          cause: 'hydrate'
+        }),
+      properties: { ask_id: 'ask-1', turn_id: 'turn-1', cause: 'hydrate' }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_RECOVERY_OUTCOME,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalRecoveryOutcome({
+          ask_id: 'ask-1',
+          turn_id: 'turn-1',
+          cause: 'hydrate',
+          outcome: 'not_found'
+        }),
+      properties: {
+        ask_id: 'ask-1',
+        turn_id: 'turn-1',
+        cause: 'hydrate',
+        outcome: 'not_found'
+      }
     },
     {
       name: TelemetryEvents.AGENT_RUN_MODE_CHANGED,
@@ -588,6 +694,20 @@ describe('HostTelemetrySink', () => {
       properties: { reason: 'target_missing', step: 2 }
     },
     {
+      name: TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentTargetUnavailable({
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        }),
+      properties: {
+        cause: 'restore_not_listed',
+        workflow_id: 'wf-1',
+        startup_tab_restore_settled: false
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_SEND_GATED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentSendGated({
@@ -609,11 +729,14 @@ describe('HostTelemetrySink', () => {
         client_session_id: 'client-session-1'
       }
     }
-  ])('forwards $name to the host bridge', ({ name, track, properties }) => {
-    track(new HostTelemetrySink())
+  ])(
+    'forwards $name with properties $properties to the host bridge',
+    ({ name, track, properties }) => {
+      track(new HostTelemetrySink())
 
-    expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
-  })
+      expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
+    }
+  )
 
   it('forwards link dedup drops to the host bridge', () => {
     new HostTelemetrySink().trackLinkDedupDrop({
@@ -632,6 +755,59 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it.for<RunOnCloudTelemetryEvent>([
+    {
+      name: 'app:run_on_cloud_dialog_shown',
+      properties: {
+        state: 'ready',
+        source: 'cloud_button',
+        asks_to_sign_in: true,
+        unchecked_input_count: 0
+      }
+    },
+    {
+      name: 'app:run_on_cloud_check_failed',
+      properties: {
+        reason: 'unreadable_model_loader',
+        node_type: 'ImpactCheckpointLoader'
+      }
+    },
+    {
+      name: 'app:run_on_cloud_save_first_blocked',
+      properties: { action: 'open_in_codex', reason: 'modified' }
+    }
+  ])('forwards the Run on Cloud event $name to the host bridge', (event) => {
+    new HostTelemetrySink().trackRunOnCloudEvent(event)
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
+  it.for<LocalMcpTelemetryEvent>([
+    { name: 'app:local_mcp_exposed', properties: {} },
+    { name: 'app:local_mcp_opened', properties: {} },
+    {
+      name: 'app:local_mcp_path_selected',
+      properties: { client: 'cursor', action: 'copy_config' }
+    },
+    {
+      name: 'app:local_mcp_connected',
+      properties: {
+        usage_source: 'comfy-cli/comfy-mcp',
+        panel_opened_this_session: true
+      }
+    }
+  ])('forwards the Comfy MCP event $name to the host bridge', (event) => {
+    new HostTelemetrySink().trackLocalMcpEvent(event)
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
   it('does nothing when the host bridge is absent', () => {
     delete window.__comfyDesktop2
 
@@ -647,7 +823,7 @@ describe('proactive greeting host delivery', () => {
     delete window.__comfyDesktop2
   })
 
-  it('uses acknowledged enrollment and sends flat pair attribution to Desktop despite absent boot config', async () => {
+  it('uses acknowledged enrollment and sends flat pair attribution to Desktop', async () => {
     const capture = vi.fn()
     const enrollProactiveGreeting = vi.fn().mockResolvedValue(true)
     window.__comfyDesktop2 = {
@@ -673,7 +849,6 @@ describe('proactive greeting host delivery', () => {
       canvas_state: 'empty' as const,
       copy_locale: 'zh'
     }
-    remoteConfig.value = {}
     expect(await enrollHostProactiveGreeting(enrollment)).toBe(true)
     expect(enrollProactiveGreeting).toHaveBeenCalledExactlyOnceWith({
       proactive_greeting_user_id: 'user-a',
@@ -692,6 +867,7 @@ describe('proactive greeting host delivery', () => {
       input_method: 'typed',
       starter_prompt_id: null,
       starter_prompt_click_id: null,
+      skill_count: 0,
       proactive_greeting: context
     })
     expect(sent).toBe(true)
@@ -707,6 +883,7 @@ describe('proactive greeting host delivery', () => {
           input_method: 'typed',
           starter_prompt_id: null,
           starter_prompt_click_id: null,
+          skill_count: 0,
           proactive_greeting_user_id: 'user-a',
           proactive_greeting_workspace_id: 'workspace-a',
           proactive_greeting_group_key: '["user-a","workspace-a"]',
@@ -744,9 +921,9 @@ describe('proactive greeting host delivery', () => {
       input_method: 'typed',
       starter_prompt_id: null,
       starter_prompt_click_id: null,
+      skill_count: 0,
       proactive_greeting: context
     }
-    remoteConfig.value = { enable_telemetry: true }
     provider.trackAgentMessageSent(pendingSend)
     expect(
       await provider.trackProactiveGreetingEnrolled({
@@ -762,7 +939,8 @@ describe('proactive greeting host delivery', () => {
       client_message_id: 'message-a',
       input_method: 'typed',
       starter_prompt_id: null,
-      starter_prompt_click_id: null
+      starter_prompt_click_id: null,
+      skill_count: 0
     })
   })
 
@@ -844,6 +1022,7 @@ describe('proactive greeting host delivery', () => {
       input_method: 'typed',
       starter_prompt_id: null,
       starter_prompt_click_id: null,
+      skill_count: 0,
       proactive_greeting: context
     }
 

@@ -2,12 +2,11 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import {
-  RESIZE_HANDLES,
   hasNorthEdge,
   hasWestEdge
-} from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+} from '@comfyorg/graph-model/arrange/cornerResize'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 test.describe(
   'Vue Node Resizing',
@@ -133,8 +132,15 @@ test.describe(
 
         await node.resizeFromCorner('SW', box.width + 100, 0)
 
+        const minScreenWidth = await comfyPage.page.evaluate(() => {
+          const node = window.app!.graph.nodes.find(
+            (n) => n.title === 'KSampler'
+          )!
+          return Math.ceil(node.computeSize()[0]) * window.app!.canvas.ds.scale
+        })
+
         await expect.poll(getRight).toBeCloseTo(initialRight, 0)
-        await expect.poll(getWidth).toBeGreaterThanOrEqual(MIN_NODE_WIDTH)
+        await expect.poll(getWidth).toBeCloseTo(minScreenWidth, 0)
       })
 
       test('NE resize clamps height at its lower bound', async ({

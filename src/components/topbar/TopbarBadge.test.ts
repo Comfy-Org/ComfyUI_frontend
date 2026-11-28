@@ -201,7 +201,7 @@ describe('TopbarBadge', () => {
       ['WARN', 'Warning Message'],
       ['PREVIEW', 'Preview Environment'],
       ['PREVIEW', '(PREVIEW) Environment']
-    ])('drops %s beside its own text', ([label, text]) => {
+    ])('drops %s beside its own text "%s"', ([label, text]) => {
       renderTopbarBadge({ text, label }, 'full')
 
       expect(screen.queryByText(label)).not.toBeInTheDocument()

@@ -287,13 +287,13 @@ import {
 } from '@/renderer/extensions/painter/composables/usePainter'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { toHexFromFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { nodeId, widget } = defineProps<{
+const { nodeId, widgetId } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget
+  widgetId: WidgetId
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
@@ -331,11 +331,11 @@ const {
   undo,
   redo
 } = usePainter(nodeId, {
-  widget,
+  widgetId: () => widgetId,
   canvasEl,
   cursorEl,
   modelValue,
-  historyScope: () => widgetHistoryScope(widget, nodeId)
+  historyScope: () => widgetHistoryScope(widgetId, nodeId)
 })
 
 const canvasContainerStyle = computed(() => ({

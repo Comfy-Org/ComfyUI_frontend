@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ControlOptions } from '@/types/simplifiedWidget'
+import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
 
 import ValueControlPopover from './ValueControlPopover.vue'
 

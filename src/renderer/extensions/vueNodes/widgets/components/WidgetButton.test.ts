@@ -2,11 +2,16 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { app } from '@/scripts/app'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
+
+vi.mock(import('@/scripts/app'))
 
 type ButtonWidgetOptions = IWidgetOptions & {
   variant?: string
@@ -21,14 +26,27 @@ const BUTTON_DEFAULTS = {
 
 describe('WidgetButton Interactions', () => {
   const createButtonWidget = (
-    overrides: Partial<SimplifiedWidget<undefined, ButtonWidgetOptions>> = {}
-  ) => createMockWidget<undefined>({ ...BUTTON_DEFAULTS, ...overrides })
+    overrides: {
+      name?: string
+      label?: string
+      options?: ButtonWidgetOptions
+    } = {}
+  ) => registerTestWidget({ ...BUTTON_DEFAULTS, ...overrides })
 
-  const mountComponent = (widget: SimplifiedWidget<undefined>) => {
+  const createButtonWidgetWithCallback = (callback: () => void) => {
+    const graph = new LGraph()
+    vi.mocked(app).rootGraph = graph
+    const node = new LGraphNode('Host')
+    node.addWidget('button', BUTTON_DEFAULTS.name, undefined, callback)
+    graph.add(node)
+    return widgetId(graph.id, node.id, BUTTON_DEFAULTS.name)
+  }
+
+  const mountComponent = (widgetId: WidgetId) => {
     const user = userEvent.setup()
     const result = render(WidgetButton, {
       props: {
-        widget
+        widgetId
       }
     })
     return { ...result, user }
@@ -43,7 +61,7 @@ describe('WidgetButton Interactions', () => {
   describe('Click Handling', () => {
     it('calls callback when button is clicked', async () => {
       const mockCallback = vi.fn()
-      const widget = createButtonWidget({ callback: mockCallback })
+      const widget = createButtonWidgetWithCallback(mockCallback)
       const { user } = mountComponent(widget)
 
       await clickButton(user)
@@ -51,16 +69,31 @@ describe('WidgetButton Interactions', () => {
       expect(mockCallback).toHaveBeenCalledTimes(1)
     })
 
-    it('handles missing callback gracefully', async () => {
-      const widget = createButtonWidget()
-      const { user } = mountComponent(widget)
+    it('keeps the value an extension stores on the button', async () => {
+      const graph = new LGraph()
+      vi.mocked(app).rootGraph = graph
+      const node = new LGraphNode('Host')
+      const received: unknown[] = []
+      const button = node.addWidget(
+        'button',
+        BUTTON_DEFAULTS.name,
+        'armed',
+        (value) => received.push(value)
+      )
+      graph.add(node)
+      const { user } = mountComponent(
+        widgetId(graph.id, node.id, BUTTON_DEFAULTS.name)
+      )
 
-      await expect(clickButton(user)).resolves.toBeDefined()
+      await clickButton(user)
+
+      expect(received).toEqual(['armed'])
+      expect(button.value).toBe('armed')
     })
 
     it('calls callback multiple times when clicked multiple times', async () => {
       const mockCallback = vi.fn()
-      const widget = createButtonWidget({ callback: mockCallback })
+      const widget = createButtonWidgetWithCallback(mockCallback)
       const { user } = mountComponent(widget)
 
       const numClicks = 8
@@ -140,7 +173,7 @@ describe('WidgetButton Interactions', () => {
       const mockCallback = vi.fn(() => {
         throw new Error('Callback error')
       })
-      const widget = createButtonWidget({ callback: mockCallback })
+      const widget = createButtonWidgetWithCallback(mockCallback)
       const { user } = mountComponent(widget)
 
       await expect(clickButton(user)).rejects.toThrow('Callback error')

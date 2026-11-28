@@ -3,30 +3,28 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { registerTestWidget } from '@/renderer/extensions/vueNodes/widgets/components/widgetTestUtils'
+import { AdvancedWidgetRingKey, HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetLayoutField from './WidgetLayoutField.vue'
 
-type WidgetShape = Pick<
-  SimplifiedWidget<string>,
-  'name' | 'label' | 'borderStyle'
->
-
 function renderField(
-  widget: WidgetShape,
+  widget: { name: string; label?: string },
   {
     hideLayoutField = false,
+    displayLabel,
     slotContent = '<span data-testid="slot">content</span>'
   }: {
     hideLayoutField?: boolean
+    displayLabel?: string
     slotContent?: string
   } = {}
 ) {
+  const widgetId = registerTestWidget({ ...widget, value: undefined })
   const Harness = defineComponent({
     components: { WidgetLayoutField },
-    setup: () => ({ widget }),
-    template: `<WidgetLayoutField :widget input-id="field-input">${slotContent}</WidgetLayoutField>`
+    setup: () => ({ widgetId, displayLabel }),
+    template: `<WidgetLayoutField :widget-id :display-label input-id="field-input">${slotContent}</WidgetLayoutField>`
   })
   return render(Harness, {
     global: {
@@ -49,9 +47,13 @@ describe('WidgetLayoutField', () => {
       const user = userEvent.setup()
       const Harness = defineComponent({
         components: { WidgetLayoutField },
-        setup: () => ({ count: ref(0), disabled, widget: { name: 'field' } }),
+        setup: () => ({
+          count: ref(0),
+          disabled,
+          widgetId: registerTestWidget({ name: 'field', value: undefined })
+        }),
         template: `
-          <WidgetLayoutField data-testid="row" :widget="widget" input-id="primary">
+          <WidgetLayoutField data-testid="row" :widget-id input-id="primary">
             <button id="primary" :disabled="disabled" @click="count++">Primary</button>
             <button>Secondary</button>
             <output data-testid="count">{{ count }}</output>
@@ -83,8 +85,8 @@ describe('WidgetLayoutField', () => {
       expect(screen.queryByText('seed')).toBeNull()
     })
 
-    it('renders the label area without text when widget.name is empty', () => {
-      renderField({ name: '' })
+    it('renders the label area without text when the display label is empty', () => {
+      renderField({ name: 'seed' }, { displayLabel: '' })
       expect(screen.getByTestId('widget-layout-field-label')).toHaveTextContent(
         ''
       )
@@ -120,39 +122,39 @@ describe('WidgetLayoutField', () => {
   })
 
   describe('Slot content', () => {
-    it('passes borderStyle to the default slot', () => {
+    it('passes the advanced ring borderStyle to the default slot', () => {
       const Harness = defineComponent({
         components: { WidgetLayoutField },
         setup: () => ({
-          widget: { name: 'seed', borderStyle: 'custom-border' }
+          widgetId: registerTestWidget({
+            name: 'seed',
+            value: undefined,
+            options: { advanced: true }
+          })
         }),
         template: `
-          <WidgetLayoutField :widget="widget">
+          <WidgetLayoutField :widget-id>
             <template #default="{ borderStyle }">
               <span data-testid="slot-border" :data-border="borderStyle" />
             </template>
           </WidgetLayoutField>
         `
       })
-      render(Harness)
+      render(Harness, {
+        global: { provide: { [AdvancedWidgetRingKey]: true } }
+      })
       const el = screen.getByTestId('slot-border')
-      expect(el.dataset.border).toContain('custom-border')
+      expect(el.dataset.border).toContain('ring-primary')
     })
   })
 
-  // user-event models clicks/keyboard but not raw pointerdown/move/up.
-  // fireEvent is the correct primitive for testing propagation stops on
-  // pointer events, so the testing-library/prefer-user-event rule is
-  // disabled within this block.
   /* oxlint-disable testing-library/prefer-user-event */
   describe('Pointer-event isolation', () => {
-    // The slot wrapper stops pointerdown/move/up so inner controls can capture
-    // drags without triggering node selection/drag on the outer canvas.
     function renderInsideParent(onParentPointer: (type: string) => void) {
       const Harness = defineComponent({
         components: { WidgetLayoutField },
         setup: () => ({
-          widget: { name: 'seed' },
+          widgetId: registerTestWidget({ name: 'seed', value: undefined }),
           onDown: () => onParentPointer('pointerdown'),
           onMove: () => onParentPointer('pointermove'),
           onUp: () => onParentPointer('pointerup')
@@ -164,7 +166,7 @@ describe('WidgetLayoutField', () => {
             @pointermove="onMove"
             @pointerup="onUp"
           >
-            <WidgetLayoutField :widget="widget">
+            <WidgetLayoutField :widget-id>
               <input data-testid="inner-input" />
             </WidgetLayoutField>
           </div>
@@ -196,13 +198,13 @@ describe('WidgetLayoutField', () => {
       const Harness = defineComponent({
         components: { WidgetLayoutField },
         setup: () => ({
-          widget: { name: 'seed' },
+          widgetId: registerTestWidget({ name: 'seed', value: undefined }),
           onParent: (t: string) => parentSpy(t),
           onInner: () => innerSpy()
         }),
         template: `
           <div data-testid="parent" @pointerdown="onParent('pointerdown')">
-            <WidgetLayoutField :widget="widget">
+            <WidgetLayoutField :widget-id>
               <input data-testid="inner-input" @pointerdown="onInner" />
             </WidgetLayoutField>
           </div>

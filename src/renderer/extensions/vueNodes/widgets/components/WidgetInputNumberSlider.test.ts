@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetInputNumberSlider from './WidgetInputNumberSlider.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
@@ -17,17 +17,18 @@ const i18n = createI18n({
 
 function renderComponent(
   value: number,
-  options: SimplifiedWidget['options'] = {}
+  options: IWidgetOptions = {},
+  name = 'test_slider'
 ) {
-  const widget = createMockWidget<number>({
+  const widgetId = registerTestWidget({
     value,
-    name: 'test_slider',
+    name,
     type: 'float',
     options: { min: 0, max: 100, step: 1, precision: 0, ...options }
   })
   return render(WidgetInputNumberSlider, {
     global: { plugins: [i18n] },
-    props: { widget, modelValue: value }
+    props: { widgetId, modelValue: value }
   })
 }
 
@@ -46,8 +47,8 @@ describe('WidgetInputNumberSlider', () => {
   )
 
   it('keeps separate instances bound to their own values', async () => {
-    renderComponent(5)
-    renderComponent(10)
+    renderComponent(5, {}, 'first_slider')
+    renderComponent(10, {}, 'second_slider')
 
     expect(
       (await screen.findAllByRole('slider')).map((slider) =>
@@ -69,7 +70,7 @@ describe('WidgetInputNumberSlider', () => {
 
   it.for<{
     name: string
-    options: SimplifiedWidget['options']
+    options: IWidgetOptions
     expected: number
   }>([
     { name: 'default', options: {}, expected: 6 },

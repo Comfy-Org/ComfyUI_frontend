@@ -39,10 +39,12 @@ describe('useLongDate', () => {
     )
   })
 
-  it.for([null, undefined, '', 'not-a-date'])(
-    'returns an empty string for %s',
-    (raw) => {
-      expect(useLongDate().longDate(raw)).toBe('')
-    }
-  )
+  it.for([
+    { case: 'null', raw: null },
+    { case: 'undefined', raw: undefined },
+    { case: 'an empty string', raw: '' },
+    { case: 'an unparseable date', raw: 'not-a-date' }
+  ])('returns an empty string for $case', ({ raw }) => {
+    expect(useLongDate().longDate(raw)).toBe('')
+  })
 })

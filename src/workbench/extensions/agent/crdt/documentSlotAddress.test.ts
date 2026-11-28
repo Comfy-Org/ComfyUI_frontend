@@ -292,6 +292,7 @@ describe('a local link edit lands on the document slot that carries its input', 
     minter = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => binding.delivers,
+      isBoundWorkflow: () => true,
       enqueue: (operations) => unsent.push(...operations),
       getGraph: () => graph,
       boundRootGraphId: () =>

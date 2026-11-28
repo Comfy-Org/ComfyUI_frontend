@@ -1,4 +1,5 @@
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
@@ -7,22 +8,22 @@ import { createI18n } from 'vue-i18n'
 import FreeTierQuota from './FreeTierQuota.vue'
 
 const mockIsFreeTier = ref(true)
-const mockAvailable = ref(3)
 
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'cloud' as const,
+  isCloud: true,
+  isDesktop: false,
+  isNightly: false
+}))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
-vi.mock<unknown>(
-  import('@/platform/billing/subscription/composables/useFreeTierQuota'),
-  () => ({
-    useFreeTierQuota: () => ({
-      available: computed(() => mockAvailable.value),
-      hasInvalidNodes: computed(() => false),
-      maxAvailable: computed(() => 5),
-      quotaEnabled: computed(() => true)
-    })
-  })
-)
+function serveFreeTierBalance(remaining: number) {
+  useRemoteConfigStore().acceptConfig(
+    { free_tier_balance: { allowance: 5, remaining, used: 5 - remaining } },
+    false
+  )
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -43,7 +44,7 @@ describe('FreeTierQuota', () => {
     vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockIsFreeTier.value = true
-    mockAvailable.value = 3
+    serveFreeTierBalance(3)
   })
 
   it('hides the displayed quota when the user leaves the free tier', async () => {
@@ -58,7 +59,7 @@ describe('FreeTierQuota', () => {
   })
 
   it('shows an explicit zero count when the quota is exhausted', async () => {
-    mockAvailable.value = 0
+    serveFreeTierBalance(0)
     render(FreeTierQuota, { global: { plugins: [i18n] } })
 
     expect(await screen.findByText('0 / 5 runs left')).toBeInTheDocument()

@@ -5,7 +5,13 @@ import { useI18n } from 'vue-i18n'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import { useNumberStepCalculation } from '@/renderer/extensions/vueNodes/widgets/composables/useNumberStepCalculation'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  useWidgetBorderStyle,
+  widgetLabel,
+  widgetName,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   INPUT_EXCLUDED_PROPS,
@@ -17,10 +23,14 @@ import WidgetLayoutFieldLabel from './layout/WidgetLayoutFieldLabel.vue'
 const { locale } = useI18n()
 const inputId = useId()
 
-const props = defineProps<{
-  widget: SimplifiedWidget<number>
+const { widgetId, displayLabel, rootClass } = defineProps<{
+  widgetId: WidgetId
+  displayLabel?: string
   rootClass?: string
 }>()
+
+const options = computed(() => widgetOptions(widgetId))
+const borderStyle = useWidgetBorderStyle(() => widgetId)
 
 function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
   return new Intl.NumberFormat(locale.value, options).format(value)
@@ -69,24 +79,24 @@ interface NumericWidgetOptions {
 }
 
 const filteredProps = computed(() => {
-  const filtered = filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  const filtered = filterWidgetProps(options.value, INPUT_EXCLUDED_PROPS)
   return filtered as Partial<NumericWidgetOptions>
 })
 
-const disabled = computed(() => props.widget.options?.disabled ?? false)
+const disabled = computed(() => options.value.disabled ?? false)
 
 const precision = computed(() => {
-  const p = props.widget.options?.precision
+  const p = options.value.precision
   return typeof p === 'number' && p >= 0 ? p : undefined
 })
 
-const step = useNumberStepCalculation(() => props.widget.options, precision)
+const step = useNumberStepCalculation(options, precision)
 
 const useGrouping = computed(() => {
-  return props.widget.options?.useGrouping === true
+  return options.value.useGrouping === true
 })
 
-const sliderWidth = computed(() => {
+const sliderClip = computed(() => {
   const { max, min, step } = filteredProps.value
   if (
     min === undefined ||
@@ -94,14 +104,14 @@ const sliderWidth = computed(() => {
     step === undefined ||
     (max - min) / step >= 100
   )
-    return 0
+    return undefined
   const ratio = (modelValue.value - min) / (max - min)
-  return (ratio * 100).toFixed(0)
+  return `inset(0 ${100 - Math.round(ratio * 100)}% 0 0)`
 })
 
 const inputAttrs = computed(() => ({
   id: inputId,
-  'aria-label': props.widget.label || props.widget.name,
+  'aria-label': widgetLabel(widgetId) || widgetName(widgetId),
   'aria-valuenow': modelValue.value,
   'aria-valuemin': filteredProps.value.min,
   'aria-valuemax': filteredProps.value.max,
@@ -121,26 +131,27 @@ const inputAttrs = computed(() => ({
     :disabled
     :parse-value
     :input-attrs
-    :class="
-      cn('cursor-ew-resize touch-pan-y', widget.borderStyle, props.rootClass)
-    "
+    :class="cn('cursor-ew-resize touch-pan-y', borderStyle, rootClass)"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
   >
     <template #label>
-      <WidgetLayoutFieldLabel :widget :input-id class="pl-2" />
+      <WidgetLayoutFieldLabel
+        :widget-id
+        :display-label
+        :input-id
+        class="pl-2"
+        data-leading
+      />
     </template>
     <template #between><slot name="between" /></template>
     <template #background>
       <div
-        class="pointer-events-none absolute inset-0 -z-10 overflow-clip rounded-md"
-      >
-        <div
-          class="size-full bg-foreground/10"
-          :style="{ width: `${sliderWidth}%` }"
-        />
-      </div>
+        v-if="sliderClip !== undefined"
+        class="pointer-events-none absolute inset-0 -z-10 rounded-md bg-foreground/10"
+        :style="{ clipPath: sliderClip }"
+      />
     </template>
     <slot />
   </ScrubableNumberInput>

@@ -107,7 +107,7 @@ describe('useKeybindingStore', () => {
     expect(store.keybindings).toHaveLength(0)
   })
 
-  it('should throw an error when adding duplicate default keybindings', () => {
+  it('should ignore re-adding an identical default keybinding', () => {
     const store = useKeybindingStore()
     const keybinding = new KeybindingImpl({
       commandId: 'test.command',
@@ -115,8 +115,70 @@ describe('useKeybindingStore', () => {
     })
 
     store.addDefaultKeybinding(keybinding)
-    expect(() => store.addDefaultKeybinding(keybinding)).toThrow()
+    expect(() =>
+      store.addDefaultKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.command',
+          combo: { key: 'F', shift: true }
+        })
+      )
+    ).not.toThrow()
+    expect(store.keybindings).toHaveLength(1)
   })
+
+  it('should keep a default unset when it is registered again', () => {
+    const store = useKeybindingStore()
+    const keybinding = new KeybindingImpl({
+      commandId: 'test.command',
+      combo: { key: 'F', shift: true }
+    })
+    store.addDefaultKeybinding(keybinding)
+    store.unsetKeybinding(keybinding)
+
+    store.addDefaultKeybinding(
+      new KeybindingImpl({
+        commandId: 'test.command',
+        combo: { key: 'F', shift: true }
+      })
+    )
+
+    expect(store.keybindings).toEqual([])
+  })
+
+  it.for([
+    {
+      name: 'another command',
+      commandId: 'test.other',
+      targetElementId: 'graph-canvas-container'
+    },
+    {
+      name: 'another target',
+      commandId: 'test.command',
+      targetElementId: undefined
+    }
+  ])(
+    'should reject a default combo taken by $name',
+    ({ commandId, targetElementId }) => {
+      const store = useKeybindingStore()
+      store.addDefaultKeybinding(
+        new KeybindingImpl({
+          commandId: 'test.command',
+          combo: { key: 'F', shift: true },
+          targetElementId: 'graph-canvas-container'
+        })
+      )
+
+      expect(() =>
+        store.addDefaultKeybinding(
+          new KeybindingImpl({
+            commandId,
+            combo: { key: 'F', shift: true },
+            targetElementId
+          })
+        )
+      ).toThrow('Keybinding on Shift + F already exists on test.command')
+    }
+  )
 
   it('should allow adding duplicate user keybindings', () => {
     const store = useKeybindingStore()

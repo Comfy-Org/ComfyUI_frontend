@@ -43,7 +43,12 @@ import {
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  widgetLinkedUpstream,
+  widgetNodeLocatorId,
+  widgetOptions
+} from '@/renderer/extensions/vueNodes/widgets/widgetEntity'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 
@@ -59,8 +64,8 @@ import { CURVE_INTERPOLATIONS } from '@comfyorg/graph-model/curve'
 import type { CurveData, CurveInterpolation } from '@comfyorg/graph-model/curve'
 import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 
-const { widget, nodeId } = defineProps<{
-  widget: SimplifiedWidget
+const { widgetId, nodeId } = defineProps<{
+  widgetId: WidgetId
   nodeId?: NodeId
 }>()
 
@@ -74,11 +79,11 @@ const modelValue = defineModel<CurveData>({
   })
 })
 
-const isDisabled = computed(() => !!widget.options?.disabled)
+const isDisabled = computed(() => !!widgetOptions(widgetId).disabled)
 
 const nodeOutputStore = useNodeOutputStore()
 const histogram = computed(() => {
-  const locatorId = widget.nodeLocatorId
+  const locatorId = widgetNodeLocatorId(widgetId)
   if (!locatorId) return null
   const output = nodeOutputStore.nodeOutputs[locatorId]
   const data = output?.histogram
@@ -87,13 +92,13 @@ const histogram = computed(() => {
 })
 
 const upstreamValue = useUpstreamValue(
-  () => widget.linkedUpstream,
+  () => widgetLinkedUpstream(widgetId),
   singleValueExtractor(isCurveData)
 )
 
 const { canUndo, canRedo, undo, redo, commit, discardHistory } =
   useWidgetValueHistory({
-    scope: () => widgetHistoryScope(widget, nodeId),
+    scope: () => widgetHistoryScope(widgetId, nodeId),
     read: () => modelValue.value,
     apply: (value) => {
       if (isCurveData(value)) modelValue.value = value

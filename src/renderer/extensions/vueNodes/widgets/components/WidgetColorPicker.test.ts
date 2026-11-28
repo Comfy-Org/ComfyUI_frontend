@@ -2,19 +2,11 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IColorWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetColorPicker from './WidgetColorPicker.vue'
-import { createMockWidget } from './widgetTestUtils'
-
-const WidgetLayoutFieldStub = defineComponent({
-  name: 'WidgetLayoutField',
-  props: {
-    widget: { type: Object, default: () => ({}) }
-  },
-  template:
-    '<div data-testid="layout-field" :data-widget-name="widget.name"><slot /></div>'
-})
+import { registerTestWidget } from './widgetTestUtils'
 
 const AppColorPickerStub = defineComponent({
   name: 'AppColorPicker',
@@ -34,31 +26,28 @@ const AppColorPickerStub = defineComponent({
 describe('WidgetColorPicker Value Binding', () => {
   const createColorWidget = (
     value: string | number = '#000000',
-    options: Record<string, unknown> = {},
-    callback?: (value: string | number) => void
+    options: IColorWidgetOptions = {}
   ) =>
-    createMockWidget({
+    registerTestWidget({
       value,
       name: 'test_color_picker',
       type: 'color',
-      options,
-      callback
+      options
     })
 
   const renderComponent = (
-    widget: SimplifiedWidget<string | number>,
+    widgetId: WidgetId,
     modelValue: string | number,
     extraProps: Record<string, unknown> = {}
   ) => {
     return render(WidgetColorPicker, {
       global: {
         stubs: {
-          AppColorPicker: AppColorPickerStub,
-          WidgetLayoutField: WidgetLayoutFieldStub
+          AppColorPicker: AppColorPickerStub
         }
       },
       props: {
-        widget,
+        widgetId,
         modelValue,
         ...extraProps
       }
@@ -99,12 +88,11 @@ describe('WidgetColorPicker Value Binding', () => {
   })
 
   describe('Widget Layout Integration', () => {
-    it('passes widget to layout field', () => {
+    it('labels the layout field with the widget name', () => {
       const widget = createColorWidget('#ff0000')
       renderComponent(widget, '#ff0000')
 
-      const layoutField = screen.getByTestId('layout-field')
-      expect(layoutField.getAttribute('data-widget-name')).toBe(
+      expect(screen.getByTestId('widget-layout-field-label')).toHaveTextContent(
         'test_color_picker'
       )
     })

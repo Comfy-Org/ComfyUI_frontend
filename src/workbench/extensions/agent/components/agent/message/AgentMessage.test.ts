@@ -4,10 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import { i18n, loadLocale } from '@/i18n'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
@@ -48,8 +45,10 @@ function paywallMessage(message?: string): AssistantMessage {
 
 describe('AgentMessage credit usage', () => {
   beforeEach(() => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { 'agent-credit-usage-summary': 'treatment' }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-credit-usage-summary': 'treatment' },
+      true
+    )
   })
 
   it('shows the completed turn charge without presenting it as a session total', () => {
@@ -196,7 +195,10 @@ describe('AgentMessage credit usage', () => {
   })
 
   it('hides usage in the control arm', () => {
-    remoteConfig.value = { 'agent-credit-usage-summary': 'control' }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-credit-usage-summary': 'control' },
+      true
+    )
     render(AgentMessage, {
       props: {
         message: {
@@ -237,13 +239,14 @@ describe('AgentMessage paywall reply', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the server denial reason from the part through to the card', () => {
-    const serverMessage =
-      'Your workspace spent its September credits on 2026-09-18; billing owner must top up.'
+  const serverMessage =
+    'Your workspace spent its September credits on 2026-09-18; billing owner must top up.'
+
+  it('renders the server denial reason from the part through to the card when capabilities are unknown', () => {
     render(AgentMessage, {
       props: {
         message: paywallMessage(serverMessage),
-        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+        paywallPresentation: { kind: 'unavailable' }
       },
       global: { plugins: [i18n] }
     })
@@ -256,6 +259,32 @@ describe('AgentMessage paywall reply', () => {
       )
     ).not.toBeInTheDocument()
   })
+
+  it.for([
+    {
+      paywallPresentation: { kind: 'subscribed' as const, showUpgrade: true },
+      body: 'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+    },
+    {
+      paywallPresentation: { kind: 'unresolved' as const },
+      body: "You've run out of available credits."
+    }
+  ])(
+    'prefers the localized $paywallPresentation.kind body over the server denial reason',
+    ({ paywallPresentation, body }) => {
+      render(AgentMessage, {
+        props: {
+          message: paywallMessage(serverMessage),
+          paywallPresentation
+        },
+        global: { plugins: [i18n] }
+      })
+
+      const card = screen.getByRole('alert')
+      expect(within(card).getByText(body)).toBeInTheDocument()
+      expect(card).not.toHaveTextContent(serverMessage)
+    }
+  )
 
   it('exposes distinct actions for adding credits and upgrading', async () => {
     const user = userEvent.setup()
@@ -487,7 +516,9 @@ describe('AgentMessage thinking narration', () => {
     })
     await rerender({ message })
 
-    const summary = screen.getByRole('button', { name: /^worked$/i })
+    const summary = screen.getByRole('button', {
+      name: 'Worked for 3 seconds'
+    })
     expect(summary).toHaveAttribute('aria-expanded', 'false')
     expect(screen.queryByText('Set widget')).not.toBeInTheDocument()
 

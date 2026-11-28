@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { vi } from 'vitest'
 import type { billingApi as realBillingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
@@ -19,7 +20,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       currency: 'USD'
     }),
     getBillingCapabilities: async (signal) => {
-      signal?.throwIfAborted()
+      throwIfAborted(signal)
       return {
         auto_top_up_enabled: false,
         billing_web_checkout_ui: 'full_page',
@@ -35,6 +36,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
           can_manage_partner_node_access: false,
           can_view_pending_invites: false,
           can_view_team_usage: false,
+          can_view_workspace_usage: false,
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
           can_view_auto_top_up: false,
@@ -142,6 +144,12 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
     }),
     createTopupCheckout: async () => ({
       checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
+    }),
+    createTopupPurchase: async (amount_cents) => ({
+      purchase_id: 'tpp_mock',
+      status: 'open',
+      amount_cents,
+      expires_at: '2027-11-02T00:00:00Z'
     }),
     quoteTopup: async (amount_cents) => ({
       amount_cents,

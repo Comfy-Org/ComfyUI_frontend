@@ -1,5 +1,6 @@
 import { getPreservedQueryParam } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const COMFY_CLOUD = 'cloud'
@@ -18,15 +19,11 @@ function unconfirmedCloudKey(workspaceId: string): string {
 /** Reads this browser's deployment hint for the workspace; `unknown` when none is recorded or storage is unreadable. */
 export function readDeploymentHint(workspaceId: string | null): DeploymentHint {
   if (workspaceId === null) return 'unknown'
-  try {
-    const hint = localStorage.getItem(hintKey(workspaceId))
-    if (hint !== null) return hint === COMFY_CLOUD ? 'cloud' : 'deployment'
-    return localStorage.getItem(unconfirmedCloudKey(workspaceId)) === null
-      ? 'unknown'
-      : 'unconfirmed'
-  } catch {
-    return 'unknown'
-  }
+  const hint = safeLocalStorage.getItem(hintKey(workspaceId))
+  if (hint !== null) return hint === COMFY_CLOUD ? 'cloud' : 'deployment'
+  return safeLocalStorage.getItem(unconfirmedCloudKey(workspaceId)) === null
+    ? 'unknown'
+    : 'unconfirmed'
 }
 
 /** Records the workspace's next boot target (null for Comfy Cloud), clearing any unconfirmed hint. */
@@ -34,19 +31,21 @@ export function setDeploymentHint(
   workspaceId: string,
   deploymentId: string | null
 ): void {
-  try {
-    localStorage.setItem(hintKey(workspaceId), deploymentId ?? COMFY_CLOUD)
-    localStorage.removeItem(unconfirmedCloudKey(workspaceId))
-  } catch {
+  const result = safeLocalStorage.setItem(
+    hintKey(workspaceId),
+    deploymentId ?? COMFY_CLOUD
+  )
+  if (result !== 'ok') {
     console.warn('Failed to persist the deployment hint')
+    return
   }
+  safeLocalStorage.removeItem(unconfirmedCloudKey(workspaceId))
 }
 
 /** Records Comfy Cloud as the workspace's next boot target until a listing says otherwise. */
 export function setUnconfirmedCloudHint(workspaceId: string): void {
-  try {
-    localStorage.setItem(unconfirmedCloudKey(workspaceId), '1')
-  } catch {
+  const result = safeLocalStorage.setItem(unconfirmedCloudKey(workspaceId), '1')
+  if (result !== 'ok') {
     console.warn('Failed to persist the deployment hint')
   }
 }

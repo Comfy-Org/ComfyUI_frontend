@@ -9,6 +9,7 @@ import {
   writeHandoffState,
   writeTabMarker
 } from '@/handoff/handoffTab'
+import { createTimeoutSignal } from '@/handoff/timeoutSignal'
 
 export interface HandoffBootEnv {
   readonly capture: Extract<HandoffCapture, { kind: 'captured' }>
@@ -54,7 +55,7 @@ async function exchange(
         body: JSON.stringify({ token }),
         credentials: 'omit',
         cache: 'no-store',
-        signal: AbortSignal.timeout(env.exchangeTimeoutMs)
+        signal: createTimeoutSignal(env.exchangeTimeoutMs)
       }
     )
     if (!response.ok)

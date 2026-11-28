@@ -158,21 +158,59 @@
         @edit-end="emit('editEnd')"
       />
 
-      <WidgetInputNumberInput
+      <ScrubableNumberInput
         v-if="hasTrim"
         v-model="startFrame"
-        root-class="col-span-full"
-        :widget="startFrameWidget"
+        class="col-span-full cursor-ew-resize touch-pan-y"
+        :min="0"
+        :max="Math.max(endFrame - 1, 0)"
+        :disabled="!hasSource || loading"
+        :parse-value="evaluateInput"
+        :input-attrs="{
+          id: startFrameInputId,
+          role: 'spinbutton',
+          'aria-valuenow': startFrame,
+          'aria-valuemin': 0,
+          'aria-valuemax': Math.max(endFrame - 1, 0)
+        }"
         @update:model-value="emit('editEnd', 'trim:start')"
-      />
+        @pointerdown.stop
+        @pointermove.stop
+        @pointerup.stop
+      >
+        <template #label>
+          <label :for="startFrameInputId" :class="trimLabelClass">
+            {{ t('videoEdit.startFrame') }}
+          </label>
+        </template>
+      </ScrubableNumberInput>
 
-      <WidgetInputNumberInput
+      <ScrubableNumberInput
         v-if="hasTrim"
         v-model="endFrame"
-        root-class="col-span-full"
-        :widget="endFrameWidget"
+        class="col-span-full cursor-ew-resize touch-pan-y"
+        :min="Math.min(startFrame + 1, effectiveTotalFrames - 1)"
+        :max="Math.max(effectiveTotalFrames - 1, 0)"
+        :disabled="!hasSource || loading"
+        :parse-value="evaluateInput"
+        :input-attrs="{
+          id: endFrameInputId,
+          role: 'spinbutton',
+          'aria-valuenow': endFrame,
+          'aria-valuemin': Math.min(startFrame + 1, effectiveTotalFrames - 1),
+          'aria-valuemax': Math.max(effectiveTotalFrames - 1, 0)
+        }"
         @update:model-value="emit('editEnd', 'trim:end')"
-      />
+        @pointerdown.stop
+        @pointermove.stop
+        @pointerup.stop
+      >
+        <template #label>
+          <label :for="endFrameInputId" :class="trimLabelClass">
+            {{ t('videoEdit.endFrame') }}
+          </label>
+        </template>
+      </ScrubableNumberInput>
 
       <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
         <label :for="ratioSelectId">
@@ -264,8 +302,8 @@ import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { DEFAULT_VIDEO_FPS } from '@/composables/video/useVideoFilmstrip'
 import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type { VideoEditFeature } from '@comfyorg/graph-model/widgets'
-import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -369,35 +407,11 @@ const { lockedRatio, ratioKeys, selectedRatio, isLockEnabled, canLockRatio } =
     onEditEnd: () => emit('editEnd')
   })
 
-const startFrameWidget = computed((): SimplifiedWidget<number> => ({
-  name: 'start_frame',
-  label: t('videoEdit.startFrame'),
-  type: 'number',
-  value: startFrame.value,
-  options: {
-    min: 0,
-    max: Math.max(endFrame.value - 1, 0),
-    step: 1,
-    step2: 1,
-    precision: 0,
-    disabled: !hasSource || loading
-  }
-}))
+const startFrameInputId = useId()
+const endFrameInputId = useId()
 
-const endFrameWidget = computed((): SimplifiedWidget<number> => ({
-  name: 'end_frame',
-  label: t('videoEdit.endFrame'),
-  type: 'number',
-  value: endFrame.value,
-  options: {
-    min: Math.min(startFrame.value + 1, effectiveTotalFrames.value - 1),
-    max: Math.max(effectiveTotalFrames.value - 1, 0),
-    step: 1,
-    step2: 1,
-    precision: 0,
-    disabled: !hasSource || loading
-  }
-}))
+const trimLabelClass =
+  'min-w-0 flex-1 content-center-safe truncate pl-2 text-node-foreground select-none triangle-icons:pl-0 triangle-icons:text-muted-foreground'
 
 const videoAspectRatioStyle = computed(() => {
   const intrinsic = videoIntrinsicSize.value

@@ -7,10 +7,11 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 
 import WidgetMarkdown from './WidgetMarkdown.vue'
-import { createMockWidget } from './widgetTestUtils'
+import { registerTestWidget } from './widgetTestUtils'
 
 // Mock the markdown renderer utility
 vi.mock(import('@/utils/markdownRendererUtil'), () => ({
@@ -28,19 +29,17 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
 describe('WidgetMarkdown Dual Mode Display', () => {
   const createMarkdownWidget = (
     value: string = '# Default Heading\nSome **bold** text.',
-    options: SimplifiedWidget<string>['options'] = {},
-    callback?: (value: string) => void
+    options: IWidgetOptions = {}
   ) =>
-    createMockWidget({
+    registerTestWidget({
       value,
       name: 'test_markdown',
       type: 'string',
-      options,
-      callback
+      options
     })
 
   function renderComponent(
-    widget: SimplifiedWidget<string>,
+    widgetId: WidgetId,
     modelValue: string,
     onUpdateModelValue?: (...args: unknown[]) => void
   ) {
@@ -59,7 +58,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
         plugins: [i18n]
       },
       props: {
-        widget,
+        widgetId,
         modelValue,
         ...(onUpdateModelValue
           ? { 'onUpdate:modelValue': onUpdateModelValue }
@@ -282,9 +281,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       await fireEvent.update(textarea, '## New Heading\nWith **bold** text')
       await fireEvent.input(textarea)
 
-      // Simulate parent updating the prop after receiving the emitted value
       await rerender({
-        widget,
         modelValue: '## New Heading\nWith **bold** text'
       })
 
@@ -295,7 +292,7 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(displayDiv.innerHTML).toContain('<strong>bold</strong>')
     })
 
-    it('emits update:modelValue for callback handling at parent level', async () => {
+    it('emits the edited text as update:modelValue', async () => {
       const widget = createMarkdownWidget('# Test', {})
       const onUpdateModelValue = vi.fn()
       const { container } = renderComponent(
@@ -314,26 +311,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       const lastCall =
         onUpdateModelValue.mock.calls[onUpdateModelValue.mock.calls.length - 1]
       expect(lastCall).toEqual(['# Changed'])
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createMarkdownWidget('# Test', {}, undefined)
-      const onUpdateModelValue = vi.fn()
-      const { container } = renderComponent(
-        widget,
-        '# Test',
-        onUpdateModelValue
-      )
-
-      await dblClickToEdit(container)
-
-      const textarea = screen.getByRole('textbox')
-      await fireEvent.update(textarea, '# Changed')
-
-      // Should not throw error and should still emit Vue event
-      await expect(fireEvent.input(textarea)).resolves.not.toThrow()
-
-      expect(onUpdateModelValue).toHaveBeenCalled()
     })
   })
 
