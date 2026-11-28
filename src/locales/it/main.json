@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "Meta",
@@ -4499,7 +4500,14 @@
       "saveFirst": "Salva questo workflow prima di inviarlo a un agente.",
       "useLocalAgent": "Usa agente locale"
     },
-    "checkFailed": "Impossibile verificare questo workflow su Comfy Cloud. Riprova.",
+    "checkFailure": {
+      "busy": "Comfy Cloud è occupato in questo momento. Riprova tra un minuto.",
+      "outdated": "Questa versione di ComfyUI non riesce a leggere la risposta di Comfy Cloud. Aggiorna ComfyUI, quindi riprova.",
+      "tooBig": "Questo workflow è troppo grande per essere verificato su Comfy Cloud. Può contenere fino a 2.000 tipi di nodi e 500 modelli.",
+      "unreachable": "Impossibile raggiungere Comfy Cloud. Controlla la connessione a Internet, quindi riprova.",
+      "unreadable": "Impossibile leggere questo workflow per verificarlo. Ricarica ComfyUI, quindi riprova.",
+      "workspace": "Impossibile usare il tuo spazio di lavoro Comfy Cloud. Riprova tra un minuto oppure disconnettiti e accedi di nuovo."
+    },
     "cloudButton": {
       "checking": "Verifica di Comfy Cloud in corso…",
       "resumeUpload": "Riprendi il caricamento del modello",
@@ -4750,6 +4758,7 @@
       "reportError": "Segnala errore"
     },
     "jobQueueing": "Lavoro in coda",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "Mostra/Nascondi cronologia lavori"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} carattere | {count} caratteri",
     "expand": "Espandi",
+    "focusView": "Espandi alla vista focalizzata",
+    "noPrompt": "{node} non ha alcun prompt.",
+    "noPromptHint": "Seleziona un nodo con un input di testo per modificarne qui il prompt.",
+    "nodeSettings": "Impostazioni del nodo",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

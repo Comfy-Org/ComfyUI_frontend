@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "中繼資料",
@@ -4499,7 +4500,14 @@
       "saveFirst": "傳送至代理程式前，請先儲存此工作流程。",
       "useLocalAgent": "使用本機代理程式"
     },
-    "checkFailed": "無法在 Comfy Cloud 上檢查此工作流程。請再試一次。",
+    "checkFailure": {
+      "busy": "Comfy Cloud 目前忙碌中。請稍後一分鐘再試。",
+      "outdated": "此版本的 ComfyUI 無法讀取 Comfy Cloud 的回應。請更新 ComfyUI 後再試一次。",
+      "tooBig": "此工作流程過大，無法在 Comfy Cloud 上檢查。最多可包含 2,000 種節點類型與 500 個模型。",
+      "unreachable": "無法連線至 Comfy Cloud。請檢查您的網際網路連線後再試一次。",
+      "unreadable": "無法讀取此工作流程以進行檢查。請重新載入 ComfyUI 後再試一次。",
+      "workspace": "無法使用您的 Comfy Cloud 工作區。請稍後一分鐘再試，或先登出再重新登入。"
+    },
     "cloudButton": {
       "checking": "正在檢查 Comfy Cloud…",
       "resumeUpload": "繼續上傳模型",
@@ -4750,6 +4758,7 @@
       "reportError": "回報錯誤"
     },
     "jobQueueing": "任務排入佇列中",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "切換工作歷史"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} 個字元 | {count} 個字元",
     "expand": "展開",
+    "focusView": "展開至專注檢視",
+    "noPrompt": "{node} 沒有提示詞。",
+    "noPromptHint": "選取具有文字輸入的節點，即可在此編輯其提示詞。",
+    "nodeSettings": "節點設定",
+    "prompt": "提示詞",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

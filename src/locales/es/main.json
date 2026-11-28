@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "Meta",
@@ -4499,7 +4500,14 @@
       "saveFirst": "Guarda este flujo de trabajo antes de enviarlo a un agente.",
       "useLocalAgent": "Usar agente local"
     },
-    "checkFailed": "No se pudo comprobar este flujo de trabajo en Comfy Cloud. Inténtalo de nuevo.",
+    "checkFailure": {
+      "busy": "Comfy Cloud está ocupado en este momento. Vuelve a intentarlo dentro de un minuto.",
+      "outdated": "Esta versión de ComfyUI no puede leer la respuesta de Comfy Cloud. Actualiza ComfyUI y vuelve a intentarlo.",
+      "tooBig": "Este flujo de trabajo es demasiado grande para comprobarlo en Comfy Cloud. Puede tener hasta 2.000 tipos de nodos y 500 modelos.",
+      "unreachable": "No se pudo acceder a Comfy Cloud. Comprueba tu conexión a internet y vuelve a intentarlo.",
+      "unreadable": "No se pudo leer este flujo de trabajo para comprobarlo. Recarga ComfyUI y vuelve a intentarlo.",
+      "workspace": "No se pudo usar tu espacio de trabajo de Comfy Cloud. Vuelve a intentarlo dentro de un minuto o cierra sesión y vuelve a iniciarla."
+    },
     "cloudButton": {
       "checking": "Comprobando Comfy Cloud…",
       "resumeUpload": "Reanudar la subida de modelos",
@@ -4750,6 +4758,7 @@
       "reportError": "Reportar error"
     },
     "jobQueueing": "Encolando trabajo",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "Alternar historial de trabajos"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} carácter | {count} caracteres",
     "expand": "Expandir",
+    "focusView": "Expandir a la vista de enfoque",
+    "noPrompt": "{node} no tiene prompt.",
+    "noPromptHint": "Selecciona un nodo con una entrada de texto para editar aquí su prompt.",
+    "nodeSettings": "Configuración del nodo",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "Meta",
@@ -4499,7 +4500,14 @@
       "saveFirst": "Speichern Sie diesen Workflow, bevor Sie ihn an einen Agent senden.",
       "useLocalAgent": "Lokalen Agent verwenden"
     },
-    "checkFailed": "Dieser Workflow konnte nicht auf Comfy Cloud überprüft werden. Versuchen Sie es erneut.",
+    "checkFailure": {
+      "busy": "Comfy Cloud ist momentan ausgelastet. Versuchen Sie es in einer Minute erneut.",
+      "outdated": "Diese Version von ComfyUI kann die Antwort von Comfy Cloud nicht lesen. Aktualisieren Sie ComfyUI und versuchen Sie es dann erneut.",
+      "tooBig": "Dieser Workflow ist zu groß, um ihn auf Comfy Cloud zu überprüfen. Er kann bis zu 2.000 Nodetypen und 500 Modelle enthalten.",
+      "unreachable": "Comfy Cloud konnte nicht erreicht werden. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es dann erneut.",
+      "unreadable": "Dieser Workflow konnte zum Überprüfen nicht gelesen werden. Laden Sie ComfyUI neu und versuchen Sie es dann erneut.",
+      "workspace": "Ihr Comfy Cloud-Workspace konnte nicht verwendet werden. Versuchen Sie es in einer Minute erneut oder melden Sie sich ab und wieder an."
+    },
     "cloudButton": {
       "checking": "Comfy Cloud wird überprüft …",
       "resumeUpload": "Modell-Upload fortsetzen",
@@ -4750,6 +4758,7 @@
       "reportError": "Fehler melden"
     },
     "jobQueueing": "Auftrag wird eingereiht",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "Auftragshistorie ein-/ausblenden"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} Zeichen | {count} Zeichen",
     "expand": "Erweitern",
+    "focusView": "Für Fokusansicht erweitern",
+    "noPrompt": "{node} hat keinen Prompt.",
+    "noPromptHint": "Wählen Sie einen Node mit Texteingabe aus, um seinen Prompt hier zu bearbeiten.",
+    "nodeSettings": "Node-Einstellungen",
+    "prompt": "Prompt",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

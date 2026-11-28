@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "Meta",
@@ -4499,7 +4500,14 @@
       "saveFirst": "Bir aracıya göndermeden önce bu iş akışını kaydedin.",
       "useLocalAgent": "Yerel aracıyı kullan"
     },
-    "checkFailed": "Bu iş akışı Comfy Cloud'da denetlenemedi. Tekrar deneyin.",
+    "checkFailure": {
+      "busy": "Comfy Cloud şu anda meşgul. Bir dakika sonra tekrar deneyin.",
+      "outdated": "ComfyUI'nin bu sürümü Comfy Cloud'un yanıtını okuyamıyor. ComfyUI'yi güncelleyip tekrar deneyin.",
+      "tooBig": "Bu iş akışı Comfy Cloud'da denetlenemeyecek kadar büyük. En fazla 2.000 düğüm türü ve 500 model içerebilir.",
+      "unreachable": "Comfy Cloud'a ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin.",
+      "unreadable": "Bu iş akışı kontrol etmek için okunamadı. ComfyUI'yi yeniden yükleyip tekrar deneyin.",
+      "workspace": "Comfy Cloud çalışma alanınız kullanılamadı. Bir dakika sonra tekrar deneyin veya çıkış yapıp yeniden giriş yapın."
+    },
     "cloudButton": {
       "checking": "Comfy Cloud denetleniyor…",
       "resumeUpload": "Model yüklemeye devam et",
@@ -4750,6 +4758,7 @@
       "reportError": "Hata bildir"
     },
     "jobQueueing": "İşlem kuyruğa alınıyor",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "İş Geçmişini Aç/Kapat"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "{count} karakter | {count} karakter",
     "expand": "Genişlet",
+    "focusView": "Odak görünümüne genişlet",
+    "noPrompt": "{node} için istem yok.",
+    "noPromptHint": "İstemini burada düzenlemek için metin girişi olan bir düğüm seçin.",
+    "nodeSettings": "Düğüm ayarları",
+    "prompt": "İstem",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

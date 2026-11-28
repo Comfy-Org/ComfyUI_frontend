@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "Anime une première image, ou passe d’une première image à une dernière image, pour créer une vidéo 1080p de 4 à 30 secondes avec audio natif.",
+    "display_name": "MAGI-2 Image vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto choisit le ratio le plus proche de celui de la première image. MAGI-2 étire les images au ratio choisi."
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Modifier le seed relance le nœud ; les résultats de MAGI-2 varient même avec le même seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "Génère une vidéo 1080p de 4 à 30 secondes avec audio natif, guidée par des images, vidéos et fichiers audio de référence afin de conserver la cohérence des personnages, lieux, mouvements de caméra ou voix.",
+    "display_name": "MAGI-2 Référence vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Référez-vous aux références en tant que @Image1, @Video1, @Audio1 (numérotées par type, dans l’ordre des entrées ; chaque image d’un lot compte)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Les clips de plus de 30 s sont tronqués à leurs 30 premières secondes, et chaque type est limité à 30 s au total. Les fichiers audio de moins de 2 s sont complétés par du silence ; les vidéos doivent durer au moins 2 s."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu’à 10 images au total."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Les clips de plus de 30 s sont tronqués à leurs 30 premières secondes, et chaque type est limité à 30 s au total. Les fichiers audio de moins de 2 s sont complétés par du silence ; les vidéos doivent durer au moins 2 s."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Modifier le seed relance le nœud ; les résultats de MAGI-2 varient même avec le même seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "Génère une vidéo 1080p de 4 à 30 secondes avec audio natif à partir d’un prompt textuel.",
+    "display_name": "MAGI-2 Texte vers vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Modifier le seed relance le nœud ; les résultats de MAGI-2 varient même avec le même seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "Reluminez une image avec des ajustements de lumière et un transfert de lumière basé sur une référence en option.",
     "display_name": "Magnific Relumination d’Image",

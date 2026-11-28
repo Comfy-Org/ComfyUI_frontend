@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "将首帧制作成动画，或从首帧过渡到末帧，生成 4 至 30 秒、带原生音频的 1080p 视频。",
+    "display_name": "MAGI-2 图像转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "自动选择最接近首帧的比例。MAGI-2 会将帧拉伸至所选比例。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "更改 seed 会重新运行节点；即使使用相同的 seed，MAGI-2 的结果也会有所不同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "根据参考图像、视频和音频生成 4 至 30 秒、带原生音频的 1080p 视频，以保持角色、地点、镜头运动或声音的一致性。",
+    "display_name": "MAGI-2 参考转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "在提示词中以 @Image1、@Video1、@Audio1 的形式引用参考内容（按类型分别编号，并按输入顺序排列；批次中的每张图像均计入）。"
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "时长超过 30 秒的片段将裁剪为前 30 秒，且每种类型的总时长也会裁剪至 30 秒。时长不足 2 秒的音频会补充静音；视频时长必须至少为 2 秒。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "总共最多 10 张图像。"
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "时长超过 30 秒的片段将裁剪为前 30 秒，且每种类型的总时长也会裁剪至 30 秒。时长不足 2 秒的音频会补充静音；视频时长必须至少为 2 秒。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "更改 seed 会重新运行节点；即使使用相同的 seed，MAGI-2 的结果也会有所不同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "根据文本提示词生成 4 至 30 秒、带原生音频的 1080p 视频。",
+    "display_name": "MAGI-2 文本转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "更改 seed 会重新运行节点；即使使用相同的 seed，MAGI-2 的结果也会有所不同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "通过光照调整和可选的参考光照迁移对图像进行重光照。",
     "display_name": "Magnific图像重光照",

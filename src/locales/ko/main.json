@@ -4101,6 +4101,7 @@
     "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "MAGI": "MAGI",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "Meta": "메타",
@@ -4499,7 +4500,14 @@
       "saveFirst": "에이전트로 보내기 전에 이 워크플로를 저장하세요.",
       "useLocalAgent": "로컬 에이전트 사용"
     },
-    "checkFailed": "Comfy Cloud에서 이 워크플로를 확인할 수 없습니다. 다시 시도하세요.",
+    "checkFailure": {
+      "busy": "현재 Comfy Cloud가 사용 중입니다. 1분 후 다시 시도하세요.",
+      "outdated": "이 버전의 ComfyUI는 Comfy Cloud의 응답을 읽을 수 없습니다. ComfyUI를 업데이트한 후 다시 시도하세요.",
+      "tooBig": "이 워크플로는 Comfy Cloud에서 확인하기에 너무 큽니다. 최대 2,000개의 노드 유형과 500개의 모델을 포함할 수 있습니다.",
+      "unreachable": "Comfy Cloud에 연결할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.",
+      "unreadable": "확인하기 위해 이 워크플로를 읽을 수 없습니다. ComfyUI를 새로고침한 후 다시 시도하세요.",
+      "workspace": "Comfy Cloud 작업 공간을 사용할 수 없습니다. 1분 후 다시 시도하거나 로그아웃한 후 다시 로그인하세요."
+    },
     "cloudButton": {
       "checking": "Comfy Cloud 확인 중…",
       "resumeUpload": "모델 업로드 재개",
@@ -4750,6 +4758,7 @@
       "reportError": "오류 신고"
     },
     "jobQueueing": "작업 대기 중",
+    "onBuild": "{detail} · {build}",
     "toggleJobHistory": "작업 기록 전환"
   },
   "releaseToast": {
@@ -6200,6 +6209,11 @@
   "textEditor": {
     "characterCount": "문자 {count}개 | 문자 {count}개",
     "expand": "확장",
+    "focusView": "집중 보기로 확장",
+    "noPrompt": "{node}에 프롬프트가 없습니다.",
+    "noPromptHint": "여기에서 프롬프트를 편집하려면 텍스트 입력이 있는 노드를 선택하세요.",
+    "nodeSettings": "노드 설정",
+    "prompt": "프롬프트",
     "title": "{widget} · {node}"
   },
   "toastMessages": {

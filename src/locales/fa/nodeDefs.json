@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "یک فریم اول را متحرک کنید، یا از یک فریم اول به یک فریم آخر بروید، و ویدیویی ۱۰۸۰p با صدای بومی به مدت ۴ تا ۳۰ ثانیه بسازید.",
+    "display_name": "MAGI-2 تصویر به ویدیو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto نزدیک‌ترین نسبت به فریم اول را انتخاب می‌کند. MAGI-2 فریم‌ها را به نسبت انتخاب‌شده می‌کشد."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تغییر seed، node را دوباره اجرا می‌کند؛ نتایج MAGI-2 حتی با seed یکسان نیز متفاوت‌اند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "ویدیویی ۱۰۸۰p با صدای بومی به مدت ۴ تا ۳۰ ثانیه تولید کنید که با تصاویر، ویدیوها و صداهای مرجع هدایت می‌شود تا شخصیت‌ها، مکان‌ها، حرکت‌های دوربین یا صداها یکپارچه بمانند.",
+    "display_name": "MAGI-2 مرجع به ویدیو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "در prompt به مراجع با @Image1، @Video1، @Audio1 اشاره کنید (برای هر نوع شماره‌گذاری می‌شوند، بر اساس ترتیب ورودی؛ هر تصویر در یک batch شمارش می‌شود)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "کلیپ‌های بلندتر از ۳۰ s به ۳۰ s اولشان کوتاه می‌شوند و مجموع هر نوع نیز به ۳۰ s کوتاه می‌شود. صدای کوتاه‌تر از ۲ s با سکوت پُر می‌شود؛ ویدیو باید دست‌کم ۲ s باشد."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "در مجموع حداکثر ۱۰ تصویر."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "کلیپ‌های بلندتر از ۳۰ s به ۳۰ s اولشان کوتاه می‌شوند و مجموع هر نوع نیز به ۳۰ s کوتاه می‌شود. صدای کوتاه‌تر از ۲ s با سکوت پُر می‌شود؛ ویدیو باید دست‌کم ۲ s باشد."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تغییر seed، node را دوباره اجرا می‌کند؛ نتایج MAGI-2 حتی با seed یکسان نیز متفاوت‌اند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "از یک prompt متنی، ویدیویی ۱۰۸۰p با صدای بومی به مدت ۴ تا ۳۰ ثانیه تولید کنید.",
+    "display_name": "MAGI-2 متن به ویدیو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تغییر seed، node را دوباره اجرا می‌کند؛ نتایج MAGI-2 حتی با seed یکسان نیز متفاوت‌اند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "بازنورپردازی تصویر با تنظیمات نور و انتقال نور مبتنی بر مرجع (اختیاری).",
     "display_name": "بازنورپردازی تصویر Magnific",

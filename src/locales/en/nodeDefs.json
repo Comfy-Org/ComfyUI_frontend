@@ -14692,6 +14692,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "display_name": "MAGI-2 Image to Video",
+    "description": "Animate a first frame, or move from a first frame to a last frame, into a 1080p video of 4 to 30 seconds with native audio.",
+    "inputs": {
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto picks the ratio closest to the first frame. MAGI-2 stretches the frames to the chosen ratio."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Changing the seed re-runs the node; MAGI-2 results vary even with the same seed."
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "display_name": "MAGI-2 Reference to Video",
+    "description": "Generate a 1080p video of 4 to 30 seconds with native audio, guided by reference images, videos and audio to keep characters, locations, camera moves or voices consistent.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Refer to references as @Image1, @Video1, @Audio1 (numbered per type, in input order; every image of a batch counts)."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Up to 10 images in total."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Clips longer than 30 s are trimmed to their first 30 s, and each type is trimmed to 30 s in total. Audio shorter than 2 s is padded with silence; video must be at least 2 s."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Clips longer than 30 s are trimmed to their first 30 s, and each type is trimmed to 30 s in total. Audio shorter than 2 s is padded with silence; video must be at least 2 s."
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Changing the seed re-runs the node; MAGI-2 results vary even with the same seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "display_name": "MAGI-2 Text to Video",
+    "description": "Generate a 1080p video of 4 to 30 seconds with native audio from a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Changing the seed re-runs the node; MAGI-2 results vary even with the same seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "display_name": "Magnific Image Relight",
     "description": "Relight an image with lighting adjustments and optional reference-based light transfer.",

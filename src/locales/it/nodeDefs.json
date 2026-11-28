@@ -14769,6 +14769,125 @@
       }
     }
   },
+  "Magi2ImageToVideoApi": {
+    "description": "Anima un primo fotogramma, oppure passa da un primo fotogramma a un ultimo fotogramma, in un video 1080p da 4 a 30 secondi con audio nativo.",
+    "display_name": "MAGI-2 da immagine a video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto seleziona il rapporto più vicino al primo fotogramma. MAGI-2 adatta i fotogrammi al rapporto scelto."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "risoluzione"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La modifica del seed riesegue il nodo; i risultati di MAGI-2 variano anche con lo stesso seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2ReferenceToVideoApi": {
+    "description": "Genera un video 1080p da 4 a 30 secondi con audio nativo, guidato da immagini, video e audio di riferimento per mantenere coerenti personaggi, luoghi, movimenti di camera o voci.",
+    "display_name": "MAGI-2 da riferimento a video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Fai riferimento alle risorse come @Image1, @Video1, @Audio1 (numerate per tipo, nell'ordine di input; ogni immagine di un batch viene conteggiata)."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "I clip più lunghi di 30 s vengono tagliati ai primi 30 s e ogni tipo viene limitato a 30 s in totale. L'audio più corto di 2 s viene riempito con silenzio; il video deve durare almeno 2 s."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Fino a 10 immagini in totale."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "I clip più lunghi di 30 s vengono tagliati ai primi 30 s e ogni tipo viene limitato a 30 s in totale. L'audio più corto di 2 s viene riempito con silenzio; il video deve durare almeno 2 s."
+      },
+      "resolution": {
+        "name": "risoluzione"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La modifica del seed riesegue il nodo; i risultati di MAGI-2 variano anche con lo stesso seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Magi2TextToVideoApi": {
+    "description": "Genera un video 1080p da 4 a 30 secondi con audio nativo a partire da un prompt di testo.",
+    "display_name": "MAGI-2 da testo a video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "duration": {
+        "name": "durata"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "risoluzione"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La modifica del seed riesegue il nodo; i risultati di MAGI-2 variano anche con lo stesso seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MagnificImageRelightNode": {
     "description": "Rilluminazione di un'immagine con regolazioni della luce e trasferimento opzionale della luce da riferimento.",
     "display_name": "Magnific Image Relight",
