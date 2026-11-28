@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -9,7 +9,6 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
-import { setDerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -54,11 +53,10 @@ function publishAnchors(
     output?: [number, { x: number; y: number }][]
   }
 ) {
-  setDerivedSlotAnchors('root-graph', node.id, {
+  layoutStore.setDerivedSlotAnchors('root-graph', node.id, {
     input: new Map(anchors.input),
     output: new Map(anchors.output)
   })
-  onTestFinished(() => setDerivedSlotAnchors('root-graph', node.id, undefined))
 }
 
 function makeInput(overrides: Partial<INodeInputSlot> = {}): INodeInputSlot {
