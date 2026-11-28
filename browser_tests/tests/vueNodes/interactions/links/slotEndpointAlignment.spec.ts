@@ -112,6 +112,54 @@ test.describe(
       }
     })
 
+    for (const palette of ['classic', 'morning-class']) {
+      test.describe(`with the ${palette} theme`, () => {
+        test.use({
+          initialSettings: {
+            'Comfy.Minimap.Visible': false,
+            'Comfy.ColorPalette': palette
+          }
+        })
+
+        test('link endpoints sit on every expanded and collapsed slot dot', async ({
+          comfyPage
+        }) => {
+          await expect(comfyPage.page.locator(':root')).toHaveAttribute(
+            'data-theme',
+            palette
+          )
+          const nodes = NODE_IDS.map(
+            (id) => new VueNodeFixture(comfyPage.vueNodes.getNodeLocator(id))
+          )
+
+          await test.step('expanded', async () => {
+            for (const [i, node] of nodes.entries()) {
+              await expect
+                .poll(() => maxEndpointDeviation(node), {
+                  message: `node ${NODE_IDS[i]}`
+                })
+                .toBeLessThan(1)
+            }
+          })
+
+          await test.step('collapsed', async () => {
+            await comfyPage.keyboard.selectAll()
+            await comfyPage.canvas.press('Alt+c')
+            await expect(
+              comfyPage.page.locator('[data-collapsed]')
+            ).toHaveCount(3)
+            for (const [i, node] of nodes.entries()) {
+              await expect
+                .poll(() => maxEndpointDeviation(node), {
+                  message: `node ${NODE_IDS[i]}`
+                })
+                .toBeLessThan(1)
+            }
+          })
+        })
+      })
+    }
+
     test.describe('without a header', () => {
       let nodeId: string
 

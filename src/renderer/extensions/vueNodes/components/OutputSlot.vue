@@ -95,7 +95,7 @@ const shouldDim = computed(() => {
 
 const slotWrapperClass = computed(() =>
   cn(
-    'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg',
+    'lg-slot lg-slot--output group flex h-5 items-center justify-end rounded-l-lg pr-(--node-slot-inset) group-data-collapsed/node:pr-0',
     'cursor-crosshair',
     effectiveDotOnly.value ? 'lg-slot--dot-only justify-center' : 'pl-2',
     {

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_DARK_THEME_PRESET } from './builtInThemePresets'
+import {
+  BUILT_IN_THEME_PRESETS,
+  DEFAULT_DARK_THEME_PRESET
+} from './builtInThemePresets'
 import { resolveTheme } from './resolveTheme'
 import type { ThemePreset } from './themePresetSchema'
 
@@ -133,5 +136,30 @@ describe('theme resolution', () => {
     }
 
     expect(resolveTheme(savedPalette).stylesheet).toBe(expected)
+  })
+
+  it.for([
+    {
+      name: 'the default node geometry',
+      preset: DEFAULT_DARK_THEME_PRESET,
+      geometry: {
+        headerHeight: 28,
+        slotInset: 0,
+        slotBlockMarginBottom: 0,
+        socketRowOverlap: 2
+      }
+    },
+    {
+      name: 'the node geometry Classic declares in its tokens',
+      preset: BUILT_IN_THEME_PRESETS.classic,
+      geometry: {
+        headerHeight: 30,
+        slotInset: 10,
+        slotBlockMarginBottom: -2,
+        socketRowOverlap: 0
+      }
+    }
+  ])('resolves $name', ({ preset, geometry }) => {
+    expect(resolveTheme(preset).nodeGeometry).toEqual(geometry)
   })
 })
