@@ -125,7 +125,14 @@ export class VueNodeFixture {
                 .and(this.root.getByLabel(nameOrLocator, { exact: true }))
             )
         : slotLocators.filter({ has: nameOrLocator })
-    return filteredLocator.getByTestId('slot-dot').locator('..')
+    return filteredLocator.getByTestId('slot-connection-dot')
+  }
+
+  /** Container of a widget row's input slot, which hides the slot until it is revealed. */
+  getWidgetSlotContainer(widgetName: string): Locator {
+    return this.root
+      .locator(`[data-widget-name="${widgetName}"]`)
+      .locator('[data-part="row-slot"]')
   }
 
   /** Locator for the resize handle at the given corner, scoped to this node. */

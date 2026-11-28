@@ -863,9 +863,11 @@ export function useSlotLinkInteraction({
         capture: true
       })
     )
-    const targetType: 'input' | 'output' = type === 'input' ? 'output' : 'input'
-    clearCompatible()
-    for (const candidateNode of graph.nodes) {
+    const targetType =
+      activeAdapter.linkConnector.state.connectingTo ??
+      (type === 'input' ? 'output' : 'input')
+    const adapter = activeAdapter
+    const markCompatibleSlots = (candidateNode: LGraphNode) => {
       const slots =
         targetType === 'input' ? candidateNode.inputs : candidateNode.outputs
       for (const [slotIndex] of slots.entries()) {
@@ -876,11 +878,24 @@ export function useSlotLinkInteraction({
         )
         const compatible =
           targetType === 'input'
-            ? activeAdapter.isInputValidDrop(candidateNode.id, slotIndex)
-            : activeAdapter.isOutputValidDrop(candidateNode.id, slotIndex)
+            ? adapter.isInputValidDrop(candidateNode.id, slotIndex)
+            : adapter.isOutputValidDrop(candidateNode.id, slotIndex)
         setCompatibleForKey(key, compatible)
       }
     }
+    clearCompatible()
+    for (const candidateNode of graph.nodes) markCompatibleSlots(candidateNode)
+    const onNodeAdded = ({
+      detail: { node: addedNode }
+    }: CustomEvent<{ node: LGraphNode }>) =>
+      queueMicrotask(() => {
+        if (pointerSession.isActive()) markCompatibleSlots(addedNode)
+      })
+    const graphEvents: LGraph['events'] = graph.events
+    graphEvents.addEventListener('node:added', onNodeAdded)
+    pointerSession.register(() =>
+      graphEvents.removeEventListener('node:added', onNodeAdded)
+    )
     autoPan = new AutoPanController({
       canvas,
       maxPanSpeed: canvas.auto_pan_speed,

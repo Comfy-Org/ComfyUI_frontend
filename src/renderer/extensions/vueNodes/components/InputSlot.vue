@@ -16,7 +16,7 @@
         effectiveDotOnly ? 'lg-slot--dot-only' : 'pr-2',
         {
           'lg-slot--connected': props.connected,
-          'lg-slot--compatible': props.compatible,
+          'lg-slot--compatible': isCompatible,
           'opacity-40': shouldDim
         },
         props.socketless && 'pointer-events-none invisible'
@@ -72,8 +72,10 @@ import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { autogrowIoInputDragType } from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -143,11 +145,15 @@ const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
   props.nodeId ? getSlotKey(props.nodeId, props.index, true) : undefined
 )
-const shouldDim = computed(() => {
-  if (!dragState.active) return false
-  if (!slotKey.value) return false
-  return !dragState.compatible.get(slotKey.value)
+const dragCompatible = computed(() => {
+  if (!slotKey.value) return undefined
+  if (dragState.active) return !!dragState.compatible.get(slotKey.value)
+  const ioInputType = autogrowIoInputDragType.value
+  if (ioInputType === undefined) return undefined
+  return LiteGraph.isValidConnection(ioInputType, props.slotData.type)
 })
+const isCompatible = computed(() => props.compatible || dragCompatible.value)
+const shouldDim = computed(() => dragCompatible.value === false)
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId,
