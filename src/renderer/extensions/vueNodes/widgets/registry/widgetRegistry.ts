@@ -114,6 +114,9 @@ const WidgetResolutionPreview = defineAsyncComponent(
   () =>
     import('@/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue')
 )
+const WidgetTextOverlayPreview = defineAsyncComponent(
+  () => import('@/components/textOverlay/WidgetTextOverlayPreview.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -355,6 +358,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['RESOLUTION_PREVIEW'],
       essential: false
     }
+  ],
+  [
+    'textoverlaypreview',
+    {
+      component: WidgetTextOverlayPreview,
+      aliases: [],
+      essential: false
+    }
   ]
 ]
 
@@ -398,7 +409,8 @@ const EXPANDING_TYPES = [
   'range',
   'boundingboxes',
   'videoedit',
-  'videoconcat'
+  'videoconcat',
+  'textoverlaypreview'
 ] as const
 
 export function shouldExpand(type: string, sizing?: WidgetSizing): boolean {
