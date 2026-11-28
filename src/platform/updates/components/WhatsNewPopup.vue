@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import { default as DOMPurify } from 'dompurify'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
@@ -67,6 +67,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 const { buildDocsUrl } = useExternalLink()
 const releaseStore = useReleaseStore()
 const { t } = useI18n()
+const { isVisible = true } = defineProps<{ isVisible?: boolean }>()
 
 // Define emits
 const emit = defineEmits<{
@@ -83,7 +84,15 @@ const latestRelease = computed<ReleaseNote | null>(() => {
 
 // Show popup when on latest version and not dismissed
 const shouldShow = computed(
-  () => releaseStore.shouldShowPopup && !isDismissed.value
+  () => releaseStore.shouldShowPopup && !isDismissed.value && isVisible
+)
+
+watch(
+  () => (shouldShow.value ? latestRelease.value?.version : undefined),
+  (version) => {
+    if (version) releaseStore.reportSurfaceShown('whats_new_popup', version)
+  },
+  { immediate: true }
 )
 
 // Generate changelog URL with version anchor (language-aware)

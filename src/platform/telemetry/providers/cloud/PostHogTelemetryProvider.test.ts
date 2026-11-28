@@ -829,13 +829,18 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       provider.trackVersionUpdateSurfaceResolved({
+        surface: 'release_toast',
         release_version: '1.2.0',
         action: 'update_clicked'
       })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.VERSION_UPDATE_SURFACE_RESOLVED,
-        { release_version: '1.2.0', action: 'update_clicked' }
+        {
+          surface: 'release_toast',
+          release_version: '1.2.0',
+          action: 'update_clicked'
+        }
       )
     })
 

@@ -52,7 +52,7 @@
 
       <div ref="bottomToolbarRef" :class="cn('mt-auto', groupClasses)">
         <SidebarLogoutIcon v-if="userStore.isMultiUserServer" :is-small />
-        <SidebarHelpCenterIcon :is-small />
+        <SidebarHelpCenterIcon :is-small :is-visible="!isHidden" />
         <SidebarBottomPanelToggleButton
           v-if="!isCloud && !hideWorkspaceToggles"
           :is-small

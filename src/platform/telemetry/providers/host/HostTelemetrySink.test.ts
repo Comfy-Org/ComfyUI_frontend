@@ -767,13 +767,18 @@ describe('HostTelemetrySink', () => {
 
   it('forwards version update surface resolutions to the host bridge', () => {
     new HostTelemetrySink().trackVersionUpdateSurfaceResolved({
+      surface: 'release_toast',
       release_version: '1.2.0',
       action: 'skipped'
     })
 
     expect(state.capture).toHaveBeenCalledExactlyOnceWith(
       TelemetryEvents.VERSION_UPDATE_SURFACE_RESOLVED,
-      { release_version: '1.2.0', action: 'skipped' }
+      {
+        surface: 'release_toast',
+        release_version: '1.2.0',
+        action: 'skipped'
+      }
     )
   })
 

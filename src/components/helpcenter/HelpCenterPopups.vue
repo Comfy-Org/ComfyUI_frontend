@@ -40,7 +40,7 @@
   <!-- WhatsNew Popup positioned within canvas area -->
   <Teleport to="#graph-canvas-container">
     <WhatsNewPopup
-      v-show="!canvasStore.isPickingNodes"
+      :is-visible="!canvasStore.isPickingNodes"
       :class="{
         'sidebar-left': sidebarLocation === 'left',
         'sidebar-right': sidebarLocation === 'right',

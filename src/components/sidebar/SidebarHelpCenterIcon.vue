@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, useTemplateRef } from 'vue'
+import { computed, useTemplateRef, watch } from 'vue'
 
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
@@ -56,16 +56,32 @@ import { useHelpCenter } from '@/composables/useHelpCenter'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { APP_MODE_FEEDBACK_TYPEFORM_ID } from '@/platform/surveys/appModeFeedback'
 import { useTypeformEmbed } from '@/platform/surveys/useTypeformEmbed'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SidebarIcon from './SidebarIcon.vue'
 
-defineProps<{
+const { isVisible = true } = defineProps<{
   isSmall: boolean
+  isVisible?: boolean
 }>()
 
 const { shouldShowRedDot, toggleHelpCenter } = useHelpCenter()
 const { linearMode } = storeToRefs(useCanvasStore())
+const releaseStore = useReleaseStore()
+const { recentRelease, shouldShowRedDot: shouldShowReleaseRedDot } =
+  storeToRefs(releaseStore)
+
+watch(
+  () =>
+    isVisible && !linearMode.value && shouldShowReleaseRedDot.value
+      ? recentRelease.value?.version
+      : undefined,
+  (version) => {
+    if (version) releaseStore.reportSurfaceShown('red_dot', version)
+  },
+  { immediate: true }
+)
 
 const settingStore = useSettingStore()
 const sidebarOnLeft = computed(

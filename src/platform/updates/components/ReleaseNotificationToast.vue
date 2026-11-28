@@ -161,9 +161,11 @@ const handleSkip = () => {
 
 const handleLearnMore = () => {
   if (latestRelease.value) {
-    void releaseStore.handleShowChangelog(latestRelease.value.version)
+    void releaseStore.handleShowChangelog(
+      latestRelease.value.version,
+      'release_toast'
+    )
   }
-  // Do not dismiss; anchor will navigate in new tab but keep toast? spec maybe wants dismiss? We'll dismiss.
   dismissToast()
 }
 
@@ -188,14 +190,18 @@ const handleUpdate = async () => {
   dismissToast()
 }
 
-// Start auto-hide when toast becomes visible
-watch(shouldShow, (isVisible) => {
-  if (isVisible) {
-    startAutoHide()
-  } else {
-    clearAutoHide()
-  }
-})
+watch(
+  () => (shouldShow.value ? latestRelease.value?.version : undefined),
+  (version) => {
+    if (version) {
+      releaseStore.reportSurfaceShown('release_toast', version)
+      startAutoHide()
+    } else {
+      clearAutoHide()
+    }
+  },
+  { immediate: true }
+)
 
 // Initialize on mount
 onMounted(async () => {

@@ -1627,11 +1627,22 @@ export interface NamedValuesShadowDiffSummaryMetadata {
   distinct_pack_ids: string[]
 }
 
+export type VersionUpdateSurface =
+  | 'red_dot'
+  | 'whats_new_popup'
+  | 'release_toast'
+
+export type VersionUpdateSurfaceAction =
+  | 'changelog_opened'
+  | 'skipped'
+  | 'whats_new_seen'
+  | 'update_clicked'
+
 /**
  * Version-update surface shown metadata
  */
 export interface VersionUpdateSurfaceShownMetadata {
-  surface: 'red_dot' | 'whats_new_popup' | 'release_toast'
+  surface: VersionUpdateSurface
   release_version: string
   current_version: string
   attention: 'low' | 'medium' | 'high'
@@ -1641,8 +1652,9 @@ export interface VersionUpdateSurfaceShownMetadata {
  * Version-update surface resolved metadata
  */
 export interface VersionUpdateSurfaceResolvedMetadata {
+  surface: VersionUpdateSurface
   release_version: string
-  action: 'changelog_opened' | 'skipped' | 'whats_new_seen' | 'update_clicked'
+  action: VersionUpdateSurfaceAction
 }
 
 /**
@@ -2290,7 +2302,6 @@ export const TelemetryEvents = {
   // Link deduplication diagnostics
   LINK_DEDUP_DROP: 'app:link_dedup_drop',
 
-  // Version update surfaces (red dot, What's New popup, release toast)
   VERSION_UPDATE_SURFACE_SHOWN: 'app:version_update_surface_shown',
   VERSION_UPDATE_SURFACE_RESOLVED: 'app:version_update_surface_resolved',
 

@@ -58,10 +58,6 @@ beforeEach(() => {
   vi.mocked(useSettingStore().get).mockImplementation(get)
   vi.mocked(useSettingStore().set).mockResolvedValue(undefined)
   vi.mocked(useSettingStore().setMany).mockResolvedValue(undefined)
-  // `mockReset: true` clears the service mock's implementation before every
-  // test, and a bare `vi.fn()` resolves `undefined` — a value `getReleases`
-  // never returns. Default it to the real "no data" result so a test that
-  // reaches the fetch does not write a nullish array into `releases`.
   vi.mocked(useReleaseService().getReleases).mockResolvedValue(null)
   const getFormFactor = vi.fn(() => 'git-windows')
   useSystemStatsStore().systemStats = fromPartial({
@@ -462,10 +458,6 @@ describe('useReleaseStore', () => {
 
     it('should not set loading state when notifications disabled', async () => {
       const settingStore = useSettingStore()
-      // Mocked before the store exists: the surface watchers read
-      // `Comfy.Notification.ShowVersionUpdates` while the store is being set
-      // up, and a mocked getter is not reactive, so a later override would
-      // never reach the computed.
       vi.mocked(settingStore.get).mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return false
         return null
@@ -571,7 +563,7 @@ describe('useReleaseStore', () => {
       const store = useReleaseStore()
       store.releases = [mockRelease]
       const settingStore = useSettingStore()
-      await store.handleShowChangelog('1.2.0')
+      await store.handleShowChangelog('1.2.0', 'red_dot')
 
       expect(settingStore.setMany).toHaveBeenCalledWith({
         'Comfy.Release.Version': '1.2.0',
@@ -854,113 +846,51 @@ describe('useReleaseStore', () => {
   describe('telemetry', () => {
     const telemetryOf = () => vi.mocked(useTelemetry())!
 
-    beforeEach(() => {
-      mockData.isDesktop = false
-    })
-
-    it('reports the red dot once per release, not once per read', async () => {
+    it('reports a visible surface once per release', () => {
       const store = useReleaseStore()
-      vi.mocked(compare).mockReturnValue(1)
-
       store.releases = [mockRelease]
-      await nextTick()
 
-      void store.shouldShowRedDot
-      void store.shouldShowRedDot
-      await nextTick()
+      store.reportSurfaceShown('red_dot', mockRelease.version)
+      store.reportSurfaceShown('red_dot', mockRelease.version)
 
       expect(
         telemetryOf().trackVersionUpdateSurfaceShown
       ).toHaveBeenCalledTimes(1)
-      expect(telemetryOf().trackVersionUpdateSurfaceShown).toHaveBeenCalledWith(
-        expect.objectContaining({
-          surface: 'red_dot',
-          release_version: mockRelease.version
-        })
-      )
-    })
-
-    it('reports the same release once even if the surface reappears', async () => {
-      const store = useReleaseStore()
-      vi.mocked(compare).mockReturnValue(1)
-
-      store.releases = [mockRelease]
-      await nextTick()
-
-      store.releases = []
-      await nextTick()
-
-      store.releases = [mockRelease]
-      await nextTick()
-
-      expect(
-        telemetryOf().trackVersionUpdateSurfaceShown
-      ).toHaveBeenCalledTimes(1)
-    })
-
-    it("reports the What's New popup under its own surface label", async () => {
-      const store = useReleaseStore()
-      const systemStatsStore = useSystemStatsStore()
-      systemStatsStore.systemStats!.system.comfyui_version = mockRelease.version
-      vi.mocked(compare).mockReturnValue(0)
-
-      store.releases = [mockRelease]
-      await nextTick()
-
-      expect(store.shouldShowPopup).toBe(true)
       expect(
         telemetryOf().trackVersionUpdateSurfaceShown
       ).toHaveBeenCalledExactlyOnceWith({
-        surface: 'whats_new_popup',
+        surface: 'red_dot',
         release_version: mockRelease.version,
-        current_version: mockRelease.version,
+        current_version: '1.0.0',
         attention: 'high'
       })
     })
 
-    it('reports the release toast under its own surface label', async () => {
-      mockData.isDesktop = true
+    it('reports each visible surface and release separately', () => {
       const store = useReleaseStore()
-      vi.mocked(compare).mockReturnValue(1)
-
       store.releases = [mockRelease]
-      await nextTick()
 
-      expect(store.shouldShowToast).toBe(true)
-      expect(telemetryOf().trackVersionUpdateSurfaceShown).toHaveBeenCalledWith(
-        {
-          surface: 'release_toast',
-          release_version: mockRelease.version,
-          current_version: '1.0.0',
-          attention: 'high'
-        }
-      )
-    })
-
-    it('reports a second release separately', async () => {
-      const store = useReleaseStore()
-      vi.mocked(compare).mockReturnValue(1)
-
-      store.releases = [mockRelease]
-      await nextTick()
-
+      store.reportSurfaceShown('red_dot', mockRelease.version)
+      store.reportSurfaceShown('release_toast', mockRelease.version)
       store.releases = [{ ...mockRelease, version: '9.9.9' }]
-      await nextTick()
+      store.reportSurfaceShown('red_dot', '9.9.9')
 
       expect(
         telemetryOf().trackVersionUpdateSurfaceShown
-      ).toHaveBeenCalledTimes(2)
+      ).toHaveBeenCalledTimes(3)
     })
 
     it('reports skipping a release', async () => {
       const store = useReleaseStore()
       store.releases = [mockRelease]
+      store.reportSurfaceShown('release_toast', mockRelease.version)
 
       await store.handleSkipRelease(mockRelease.version)
 
       expect(
         telemetryOf().trackVersionUpdateSurfaceResolved
       ).toHaveBeenCalledWith({
+        surface: 'release_toast',
         release_version: mockRelease.version,
         action: 'skipped'
       })
@@ -969,12 +899,14 @@ describe('useReleaseStore', () => {
     it('reports opening the changelog', async () => {
       const store = useReleaseStore()
       store.releases = [mockRelease]
+      store.reportSurfaceShown('red_dot', mockRelease.version)
 
-      await store.handleShowChangelog(mockRelease.version)
+      await store.handleShowChangelog(mockRelease.version, 'red_dot')
 
       expect(
         telemetryOf().trackVersionUpdateSurfaceResolved
       ).toHaveBeenCalledWith({
+        surface: 'red_dot',
         release_version: mockRelease.version,
         action: 'changelog_opened'
       })
@@ -983,12 +915,14 @@ describe('useReleaseStore', () => {
     it("reports seeing what's new", async () => {
       const store = useReleaseStore()
       store.releases = [mockRelease]
+      store.reportSurfaceShown('whats_new_popup', mockRelease.version)
 
       await store.handleWhatsNewSeen(mockRelease.version)
 
       expect(
         telemetryOf().trackVersionUpdateSurfaceResolved
       ).toHaveBeenCalledWith({
+        surface: 'whats_new_popup',
         release_version: mockRelease.version,
         action: 'whats_new_seen'
       })
@@ -997,26 +931,41 @@ describe('useReleaseStore', () => {
     it('reports clicking update', () => {
       const store = useReleaseStore()
       store.releases = [mockRelease]
+      store.reportSurfaceShown('release_toast', mockRelease.version)
 
       store.handleUpdateClicked(mockRelease.version)
 
       expect(
         telemetryOf().trackVersionUpdateSurfaceResolved
       ).toHaveBeenCalledWith({
+        surface: 'release_toast',
         release_version: mockRelease.version,
         action: 'update_clicked'
       })
     })
 
-    it('withholds an update click for a release that is not the current one', () => {
+    it('withholds a resolution for a surface that was never shown', () => {
       const store = useReleaseStore()
       store.releases = [mockRelease]
 
-      store.handleUpdateClicked('0.0.1')
+      store.handleUpdateClicked(mockRelease.version)
 
       expect(
         telemetryOf().trackVersionUpdateSurfaceResolved
       ).not.toHaveBeenCalled()
+    })
+
+    it('reports only the first resolution for a shown surface', async () => {
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      store.reportSurfaceShown('release_toast', mockRelease.version)
+
+      store.handleUpdateClicked(mockRelease.version)
+      await store.handleSkipRelease(mockRelease.version)
+
+      expect(
+        telemetryOf().trackVersionUpdateSurfaceResolved
+      ).toHaveBeenCalledTimes(1)
     })
   })
 
