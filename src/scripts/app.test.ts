@@ -4737,6 +4737,7 @@ describe('ComfyApp', () => {
     it.for([
       { cnr_id: 'some-pack', ver: '9.9.9' },
       { aux_id: 'someuser/some-repo', ver: 'abcdef12' },
+      { aux_id: 'private-node-pack.git', ver: 'abcdef12' },
       { cnr_id: 'some-pack', aux_id: 'someuser/some-repo', ver: '9.9.9' }
     ])(
       'preserves pack identity through API import and workflow reload: %j',
@@ -4782,7 +4783,16 @@ describe('ComfyApp', () => {
       }
     )
 
+    const gitRemoteAuxId =
+      'https://git.example.test/team/private-node-pack.git?token=example-token#revision'
+
     it.for([
+      {
+        name: 'HTTP(S) aux_id with a query and fragment',
+        metadata: { aux_id: gitRemoteAuxId },
+        expectedProperties: { aux_id: gitRemoteAuxId },
+        expectedCnrId: gitRemoteAuxId
+      },
       {
         name: 'non-string fields',
         metadata: { cnr_id: {}, aux_id: {}, ver: [] },
@@ -4799,7 +4809,7 @@ describe('ComfyApp', () => {
         name: 'invalid formats',
         metadata: {
           cnr_id: 'owner/repo',
-          aux_id: 'missing-slash',
+          aux_id: 'invalid aux id',
           ver: 'not a version'
         },
         expectedProperties: {},
