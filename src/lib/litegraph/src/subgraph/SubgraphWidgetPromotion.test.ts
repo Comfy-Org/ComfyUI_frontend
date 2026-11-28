@@ -1775,6 +1775,57 @@ describe('SubgraphWidgetPromotion', () => {
 
         expect(promotedWidgetStateByName(reloaded, 'value').value).toBeNull()
       })
+
+      it('keeps an edit made after migration when the workflow is saved and reopened', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'prompt', type: 'STRING' }]
+        })
+        const { node: interiorNode } = createNodeWithWidget(
+          'Interior',
+          'text',
+          'interior default',
+          'STRING'
+        )
+        subgraph.add(interiorNode)
+        subgraph.inputNode.slots[0].connect(
+          interiorNode.inputs[0],
+          interiorNode
+        )
+
+        const hostNode = createTestSubgraphNode(subgraph)
+        const migrated = hostNode.serialize()
+        migrated.widgets_values = ['value at migration']
+        migrated.properties = {
+          ...migrated.properties,
+          proxyWidgetErrorQuarantine: [
+            {
+              originalEntry: ['-1', 'prompt'] as SerializedProxyWidgetTuple,
+              reason: 'missingSourceNode',
+              hostValue: 'value at migration',
+              attemptedAtVersion: 1
+            }
+          ]
+        }
+
+        const opened = createTestSubgraphNode(subgraph)
+        opened.configure(migrated)
+        writePromotedWidgetValue(opened, 0, 'edited prompt')
+        const saved = opened.serialize()
+
+        const reopened = createTestSubgraphNode(subgraph)
+        reopened.configure(saved)
+
+        expect(promotedWidgetStateByName(reopened, 'prompt').value).toBe(
+          'edited prompt'
+        )
+        expect(saved.properties?.proxyWidgetErrorQuarantine).toEqual([
+          {
+            originalEntry: ['-1', 'prompt'],
+            reason: 'missingSourceNode',
+            attemptedAtVersion: 1
+          }
+        ])
+      })
     })
   })
 })

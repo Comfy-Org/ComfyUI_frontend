@@ -1139,6 +1139,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ...entry
     }))
 
+    const serializedInputs = this._serializedInputWidgets()
+    const widgetValues = serializedInputs.map(({ value }) =>
+      isWidgetValue(value) ? value : undefined
+    )
+
+    const inputNamesWithSavedValue = new Set(
+      serializedInputs.flatMap(({ input }, index) =>
+        input.widgetId && widgetValues[index] !== undefined ? [input.name] : []
+      )
+    )
     const quarantine = parseProxyWidgetErrorQuarantine(
       this.properties.proxyWidgetErrorQuarantine
     )
@@ -1146,15 +1156,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       delete serializedProperties.proxyWidgetErrorQuarantine
     } else {
       serializedProperties.proxyWidgetErrorQuarantine = quarantine.map(
-        (entry) => ({ ...entry })
+        (entry) => {
+          const [sourceNodeId, inputName] = entry.originalEntry
+          if (sourceNodeId !== '-1' || !inputNamesWithSavedValue.has(inputName))
+            return { ...entry }
+          const { hostValue: _hostValueNowSaved, ...rest } = entry
+          return rest
+        }
       )
     }
 
     serialized.properties = serializedProperties
-
-    const widgetValues = this._serializedInputWidgets().map(({ value }) =>
-      isWidgetValue(value) ? value : undefined
-    )
 
     if (widgetValues.some((value) => value !== undefined)) {
       serialized.widgets_values = widgetValues
