@@ -71,7 +71,8 @@ describe('useMaskEditor', () => {
         expect.objectContaining({
           dialogComponentProps: expect.objectContaining({
             maximizable: true,
-            closable: true
+            closable: true,
+            dismissOnPointerDownOutside: false
           })
         })
       )

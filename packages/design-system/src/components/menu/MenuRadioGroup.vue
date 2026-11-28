@@ -2,7 +2,7 @@
 import { createReusableTemplate } from '@vueuse/core'
 import { DropdownMenuRadioGroup } from 'reka-ui'
 
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip.vue'
 
 import MenuItemContent from './MenuItemContent.vue'
 import MenuRadioItem from './MenuRadioItem.vue'

@@ -1,14 +1,9 @@
 <template>
   <div
-    class="flex h-full w-55 flex-col items-stretch! gap-3 overflow-y-auto bg-background px-2.5 pb-3"
+    class="flex h-full w-56 flex-col divide-y divide-border/50 overflow-y-auto border-l border-border/50 bg-background px-3"
   >
-    <div class="min-h-full w-full">
-      <SettingsPanelContainer />
-
-      <div class="mt-6 mb-1.5 h-0.5 w-full bg-border" />
-
-      <ImageLayerSettingsPanel :tool-manager="toolManager" />
-    </div>
+    <SettingsPanelContainer />
+    <ImageLayerSettingsPanel :tool-manager="toolManager" />
   </div>
 </template>
 

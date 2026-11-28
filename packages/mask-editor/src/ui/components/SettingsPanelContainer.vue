@@ -1,9 +1,5 @@
 <template>
-  <div class="maskEditor_sidePanel">
-    <div class="maskEditor_sidePanelContainer">
-      <component :is="currentPanelComponent" />
-    </div>
-  </div>
+  <component :is="currentPanelComponent" />
 </template>
 
 <script setup lang="ts">

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import Badge from '@comfyorg/design-system/badge/Badge'
+import Badge from '@comfyorg/design-system/badge/Badge.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { toValue } from 'vue'
 
-import OverlayIcon from '@comfyorg/design-system/common/OverlayIcon'
-import Switch from '@comfyorg/design-system/switch/Switch'
+import OverlayIcon from '@comfyorg/design-system/common/OverlayIcon.vue'
+import Switch from '@comfyorg/design-system/switch/Switch.vue'
 
 import type { MenuItem } from './types'
 
