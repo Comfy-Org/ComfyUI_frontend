@@ -8,6 +8,8 @@ export const THUMBNAIL_SIZE = { min: 64, default: 96, max: 400 } as const
 
 const LINE_DELTA_MODE = 1
 const LINE_HEIGHT_PX = 16
+const PAGE_DELTA_MODE = 2
+const PAGE_HEIGHT_PX = 800
 const MAX_WHEEL_STEP_PX = 50
 const WHEEL_PX_PER_E_FOLD = 200
 
@@ -32,8 +34,13 @@ export function wheelZoomFactor({
   deltaY,
   deltaMode
 }: Pick<WheelEvent, 'deltaY' | 'deltaMode'>): number {
-  const pixels =
-    deltaMode === LINE_DELTA_MODE ? deltaY * LINE_HEIGHT_PX : deltaY
+  const pixelsPerUnit =
+    deltaMode === PAGE_DELTA_MODE
+      ? PAGE_HEIGHT_PX
+      : deltaMode === LINE_DELTA_MODE
+        ? LINE_HEIGHT_PX
+        : 1
+  const pixels = deltaY * pixelsPerUnit
   const step = clamp(pixels, -MAX_WHEEL_STEP_PX, MAX_WHEEL_STEP_PX)
   return Math.exp(-step / WHEEL_PX_PER_E_FOLD)
 }

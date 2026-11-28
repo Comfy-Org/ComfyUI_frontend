@@ -25,6 +25,15 @@ describe('wheelZoomFactor', () => {
     )
   })
 
+  it('treats a page delta as a full step', () => {
+    expect(wheelZoomFactor({ deltaY: 1, deltaMode: 2 })).toBe(
+      wheelZoomFactor({ deltaY: 500, deltaMode: 0 })
+    )
+    expect(wheelZoomFactor({ deltaY: -1, deltaMode: 2 })).toBe(
+      wheelZoomFactor({ deltaY: -500, deltaMode: 0 })
+    )
+  })
+
   it('limits a single mouse notch to the same step as a large pixel delta', () => {
     expect(wheelZoomFactor({ deltaY: 4, deltaMode: 1 })).toBe(
       wheelZoomFactor({ deltaY: 500, deltaMode: 0 })
