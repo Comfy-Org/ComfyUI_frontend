@@ -19,6 +19,9 @@
       "path": "src/composables/useExternalLink.ts"
     },
     {
+      "path": "src/platform/links/**"
+    },
+    {
       "path": "src/composables/useUrlActionLoaders.ts"
     },
     {
