@@ -404,6 +404,7 @@ describe('useSettingUI', () => {
           'secrets',
           'root/LiteGraph',
           'root/Appearance',
+          'prompt-tags',
           'keybinding',
           'extension',
           'about'

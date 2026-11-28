@@ -41,6 +41,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   Members: 'icon-[lucide--users]',
   Other: 'icon-[lucide--ellipsis]',
   PlanCredits: 'icon-[lucide--receipt-text]',
+  'prompt-tags': 'icon-[lucide--tags]',
   secrets: 'icon-[lucide--key-round]',
   'server-config': 'icon-[lucide--server]',
   user: 'icon-[lucide--user]',
@@ -98,8 +99,6 @@ export function useSettingUI(
     () => settingRoot.value.children ?? []
   )
 
-  // Core setting categories (built-in to ComfyUI) in display order
-  // 'Other' includes floating settings that don't have a specific category
   const CORE_CATEGORIES_ORDER = [
     'Comfy',
     'LiteGraph',
@@ -125,7 +124,6 @@ export function useSettingUI(
     settingCategories.value.filter((node) => !CORE_CATEGORIES.has(node.label))
   )
 
-  // Define panel items
   const aboutPanel: SettingPanelItem = {
     node: {
       key: 'about',
@@ -178,7 +176,6 @@ export function useSettingUI(
     () =>
       import('@/platform/account/components/dialogs/settings/BillingTab.vue')
   )
-  // shortcut: the 1.60 tab, kept whole for the billing_new_ux_enabled rollback; delete with the flag.
   const BillingTabLegacy = defineAsyncComponent(
     () =>
       import('@/platform/account/components/dialogs/settings/BillingTabLegacy.vue')
@@ -291,6 +288,17 @@ export function useSettingUI(
     )
   }
 
+  const promptTagsPanel: SettingPanelItem = {
+    node: {
+      key: 'prompt-tags',
+      label: 'PromptTags',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/settings/components/PromptTagCatalogPanel.vue')
+    )
+  }
+
   const panels = computed<SettingPanelItem[]>(() => [
     aboutPanel,
     creditsPanel,
@@ -298,13 +306,11 @@ export function useSettingUI(
     ...visibleWorkspacePanels.value,
     keybindingPanel,
     extensionPanel,
+    promptTagsPanel,
     ...(isDesktop ? [serverConfigPanel] : []),
     ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
   ])
 
-  /**
-   * The default category to show when the dialog is opened.
-   */
   const defaultCategory = computed<SettingTreeNode>(() => {
     if (defaultPanel) {
       for (const group of groupedMenuTreeNodes.value) {
@@ -356,6 +362,7 @@ export function useSettingUI(
           ? [translateCategory(secretsPanel.node)]
           : []),
         ...coreSettingCategories.value.slice(1).map(translateCategory),
+        translateCategory(promptTagsPanel.node),
         translateCategory(keybindingPanel.node),
         translateCategory(extensionPanel.node),
         translateCategory(aboutPanel.node),

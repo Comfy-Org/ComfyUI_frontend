@@ -1779,6 +1779,7 @@
     "confirmQuit": "There are unsaved workflows open; any unsaved changes will be lost.  Ignore this and quit?"
   },
   "settingsCategories": {
+    "PromptTags": "Prompt tags",
     "Comfy-Desktop": "Comfy-Desktop",
     "General": "General",
     "Appearance": "Appearance",
@@ -4675,12 +4676,16 @@
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
     "focusView": "Expand to focus view",
+    "importTags": "Import prompt tags",
+    "importTagsError": "Could not load tags. Choose a TXT list or a tag CSV (name, category, count, aliases), up to 10 MB. Your previous catalog is unchanged.",
+    "importTagsHint": "CSV or TXT · local to this session",
     "noPrompt": "{node} has no prompt.",
     "noPromptHint": "Select a node with a text input to edit its prompt here.",
     "nodeSettings": "Node settings",
     "prompt": "Prompt",
     "suggestionCount": "{count} suggestion available | {count} suggestions available",
     "suggestions": "Prompt suggestions",
+    "tagsLoaded": "{count} tag loaded for this session | {count} tags loaded for this session",
     "title": "{widget} · {node}"
   },
   "widgetFileUpload": {
