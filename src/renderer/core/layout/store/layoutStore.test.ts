@@ -950,8 +950,9 @@ describe('root-scoped node layouts', () => {
       layoutStore.getSlotBounds(FIRST_GRAPH, nodeId, 0, 'input')
     ).toBeNull()
     expect(
-      layoutStore.derivedSlotAnchorOf(FIRST_GRAPH, nodeId, 0, 'input')
-    ).toBeUndefined()
+      layoutStore.derivedSlotAnchorOf(FIRST_GRAPH, nodeId, 0, 'input'),
+      'a still-mounted node keeps its anchors through an undo clear'
+    ).toEqual({ x: -6, y: 14 })
     expect(layoutStore.getGroupLayout(FIRST_GRAPH, GROUP_ID)).toBeNull()
     expect(layoutStore.getRerouteLayout(FIRST_GRAPH, REROUTE_ID)).toBeNull()
 

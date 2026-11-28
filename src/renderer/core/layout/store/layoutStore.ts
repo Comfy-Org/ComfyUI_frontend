@@ -214,7 +214,7 @@ class LayoutStoreImpl {
   private linkLayouts = new Map<LinkId, LinkLayout>()
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
-  private derivedSlotAnchors = new Map<ScopedLayoutKey, DerivedSlotAnchors>()
+  private derivedSlotAnchors = new Map<UUID, Map<NodeId, DerivedSlotAnchors>>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
@@ -518,15 +518,21 @@ class LayoutStoreImpl {
     )
   }
 
-  /** Publishes a node's derived slot anchors for link endpoints, or forgets them when `anchors` is undefined. */
+  /** Publishes a node's derived slot anchors for link endpoints, or forgets them when `anchors` is undefined. The rendering node owns them, so graph clears leave them alone. */
   setDerivedSlotAnchors(
     rootGraphId: UUID,
     nodeId: NodeId,
     anchors: DerivedSlotAnchors | undefined
   ): void {
-    const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    if (anchors) this.derivedSlotAnchors.set(key, anchors)
-    else this.derivedSlotAnchors.delete(key)
+    const graphAnchors = this.derivedSlotAnchors.get(rootGraphId)
+    if (anchors) {
+      if (graphAnchors) graphAnchors.set(nodeId, anchors)
+      else
+        this.derivedSlotAnchors.set(rootGraphId, new Map([[nodeId, anchors]]))
+      return
+    }
+    graphAnchors?.delete(nodeId)
+    if (graphAnchors?.size === 0) this.derivedSlotAnchors.delete(rootGraphId)
   }
 
   /** An expanded slot's anchor relative to `node.pos`, from the node's derived body layout. */
@@ -537,7 +543,8 @@ class LayoutStoreImpl {
     direction: SlotDirection
   ): Point | undefined {
     return this.derivedSlotAnchors
-      .get(makeScopedLayoutKey(rootGraphId, nodeId))
+      .get(rootGraphId)
+      ?.get(nodeId)
       ?.[direction].get(index)
   }
 
@@ -873,10 +880,6 @@ class LayoutStoreImpl {
     for (const key of this.slotOffsets.keys()) {
       if (!key.startsWith(prefix)) continue
       this.slotOffsets.delete(key)
-    }
-    for (const key of this.derivedSlotAnchors.keys()) {
-      if (!key.startsWith(prefix)) continue
-      this.derivedSlotAnchors.delete(key)
     }
     for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
