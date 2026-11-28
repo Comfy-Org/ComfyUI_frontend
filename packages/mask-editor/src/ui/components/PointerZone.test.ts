@@ -54,7 +54,9 @@ describe('PointerZone', () => {
     it.for([
       ['pointerdown', 'handlePointerDown'],
       ['pointermove', 'handlePointerMove'],
-      ['pointerup', 'handlePointerUp']
+      ['pointerup', 'handlePointerUp'],
+      ['pointercancel', 'handlePointerUp'],
+      ['lostpointercapture', 'handlePointerUp']
     ] as const)(
       'should forward %s to toolManager.%s',
       async ([eventName, handlerName]) => {
@@ -87,6 +89,19 @@ describe('PointerZone', () => {
       zone.dispatchEvent(new Event('pointerenter', { bubbles: true }))
 
       expect(mockToolManager.updateCursor).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('pointer capture', () => {
+    it('should capture the pointer on pointerdown so a stroke released outside the zone still ends', () => {
+      renderZone()
+      const zone = getZone()
+
+      zone.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, pointerId: 7 })
+      )
+
+      expect(zone.hasPointerCapture(7)).toBe(true)
     })
   })
 

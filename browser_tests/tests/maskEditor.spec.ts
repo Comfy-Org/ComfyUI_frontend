@@ -189,6 +189,35 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await maskEditor.drawStrokeAndExpectPixels(dialog)
   })
 
+  test('ends a stroke released outside the drawing area as its own undo step', async ({
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+
+    await maskEditor.dragAcrossPointerZone(
+      dialog,
+      { x: 0.2, y: 0.3 },
+      { x: 1.05, y: 0.3 }
+    )
+    await expect.poll(() => maskEditor.pollMaskPixelCount()).toBeGreaterThan(0)
+    const firstStrokePixels = await maskEditor.pollMaskPixelCount()
+
+    await maskEditor.dragAcrossPointerZone(
+      dialog,
+      { x: 0.45, y: 0.7 },
+      { x: 0.55, y: 0.7 }
+    )
+    await expect
+      .poll(() => maskEditor.pollMaskPixelCount())
+      .toBeGreaterThan(firstStrokePixels)
+
+    await dialog.locator('button[title="Undo"]').click()
+
+    await expect
+      .poll(() => maskEditor.pollMaskPixelCount())
+      .toBe(firstStrokePixels)
+  })
+
   test(
     'Middle-click drag should pan the mask editor canvas',
     { tag: ['@canvas'] },

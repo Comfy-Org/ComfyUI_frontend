@@ -6,6 +6,8 @@
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"
+    @pointercancel="handlePointerUp"
+    @lostpointercapture="handlePointerUp"
     @pointerleave="handlePointerLeave"
     @pointerenter="handlePointerEnter"
     @touchstart="handleTouchStart"
@@ -54,6 +56,7 @@ watch(
 )
 
 const handlePointerDown = async (event: PointerEvent) => {
+  pointerZoneRef.value?.setPointerCapture(event.pointerId)
   await toolManager.handlePointerDown(event)
 }
 

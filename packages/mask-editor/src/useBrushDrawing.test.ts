@@ -325,6 +325,28 @@ describe('drawEnd', () => {
     expect(saveStateSpy).toHaveBeenCalledOnce()
   })
 
+  it('draws moves still waiting for an animation frame before ending the stroke', async () => {
+    const frames: FrameRequestCallback[] = []
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      frames.push(cb)
+      return frames.length
+    })
+    const { startDrawing, handleDrawing, drawEnd } = setup()
+    await startDrawing(makePointerEvent(50, 50))
+    await handleDrawing(makePointerEvent(150, 50))
+    await drawEnd(makePointerEvent(150, 50))
+
+    const arc = vi.mocked(mockStoreDef.maskCtx!.arc)
+    const drawnX = arc.mock.calls.map(([x]) => x)
+    expect(Math.max(...drawnX)).toBeGreaterThan(140)
+
+    expect(frames).toHaveLength(1)
+    const callsBeforeFrame = arc.mock.calls.length
+    frames[0](0)
+    expect(arc).toHaveBeenCalledTimes(callsBeforeFrame)
+    vi.restoreAllMocks()
+  })
+
   it('is a no-op when drawing was never started', async () => {
     const { drawEnd } = setup()
     await drawEnd(makePointerEvent(60, 60))

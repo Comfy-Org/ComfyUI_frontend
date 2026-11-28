@@ -9,6 +9,11 @@ const RGB_CANVAS_INDEX = 1
 
 type BrushSliderLabel = 'thickness'
 
+interface PointerZoneFraction {
+  x: number
+  y: number
+}
+
 class MaskEditorHelper {
   public readonly dialog: Locator
   public readonly previewImage: Locator
@@ -94,6 +99,27 @@ class MaskEditorHelper {
     await this.page.mouse.up()
 
     return { startX, startY, endX, endY, box }
+  }
+
+  async dragAcrossPointerZone(
+    dialog: Locator,
+    from: PointerZoneFraction,
+    to: PointerZoneFraction
+  ) {
+    const box = await dialog.getByTestId('pointer-zone').boundingBox()
+    if (!box) throw new Error('Pointer zone bounding box not found')
+    const toPage = (point: PointerZoneFraction) => ({
+      x: box.x + box.width * point.x,
+      y: box.y + box.height * point.y
+    })
+    const start = toPage(from)
+    const end = toPage(to)
+
+    await this.page.mouse.move(start.x, start.y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(end.x, end.y, { steps: 10 })
+    await this.page.mouse.up()
+    await this.comfyPage.nextFrame()
   }
 
   async drawStrokeAndExpectPixels(dialog: Locator) {
