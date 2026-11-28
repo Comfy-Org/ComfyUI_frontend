@@ -59,6 +59,115 @@ describe('credential-shaped values', () => {
   })
 })
 
+describe('api-key formats', () => {
+  const filler = (chars: string, n: number) => chars.repeat(n).slice(0, n)
+
+  it.for([
+    [
+      'OpenAI sk-proj-',
+      () => `const key = "sk-proj-${filler('Ab1', 48)}"`,
+      () => `sk-proj-${filler('Ab1', 48)}`
+    ],
+    [
+      'Anthropic sk-ant-',
+      () => `const key = "sk-ant-api03-${filler('Ab1', 48)}"`,
+      () => `sk-ant-api03-${filler('Ab1', 48)}`
+    ],
+    [
+      'GitHub ghp_',
+      () => `const token = 'ghp_${filler('Ab1', 36)}'`,
+      () => `ghp_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub fine-grained',
+      () => `const token = 'github_pat_${filler('Ab1', 40)}'`,
+      () => `github_pat_${filler('Ab1', 40)}`
+    ],
+    [
+      'GitLab glpat-',
+      () => `const token = 'glpat-${filler('Ab1', 20)}'`,
+      () => `glpat-${filler('Ab1', 20)}`
+    ],
+    [
+      'AWS AKIA',
+      () => `await page.getByLabel('AWS key').fill('AKIA${filler('AB1', 16)}')`,
+      () => `AKIA${filler('AB1', 16)}`
+    ],
+    [
+      'Slack xoxb-',
+      () => `const token = 'xoxb-123456789012-${filler('Ab1', 16)}'`,
+      () => `xoxb-123456789012-${filler('Ab1', 16)}`
+    ],
+    [
+      'Google AIza',
+      () => `const token = 'AIza${filler('Ab1', 35)}'`,
+      () => `AIza${filler('Ab1', 35)}`
+    ],
+    [
+      'Shopify shpat_',
+      () => `const token = 'shpat_${filler('Ab1', 32)}'`,
+      () => `shpat_${filler('Ab1', 32)}`
+    ],
+    [
+      'GitHub installation ghs_',
+      () => `const token = 'ghs_${filler('Ab1', 36)}'`,
+      () => `ghs_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub user-to-server ghu_',
+      () => `const token = 'ghu_${filler('Ab1', 36)}'`,
+      () => `ghu_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub refresh ghr_',
+      () => `const token = 'ghr_${filler('Ab1', 36)}'`,
+      () => `ghr_${filler('Ab1', 36)}`
+    ],
+    [
+      'Slack app-level xapp-',
+      () => `const token = 'xapp-1-AbCdEf-${filler('Ab1', 20)}'`,
+      () => `xapp-1-AbCdEf-${filler('Ab1', 20)}`
+    ],
+    [
+      'GitHub PAT after an underscore',
+      () =>
+        `await page.getByTestId('token').type('value_ghp_${filler('Ab1', 36)}')`,
+      () => `value_ghp_${filler('Ab1', 36)}`,
+      () => `ghp_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub JWT-style installation ghs_',
+      () =>
+        `const token = 'ghs_123_eyJ${filler('Ab1', 24)}.${filler('Ey1', 24)}.${filler('Ab1', 20)}'`,
+      () =>
+        `ghs_123_eyJ${filler('Ab1', 24)}.${filler('Ey1', 24)}.${filler('Ab1', 20)}`
+    ],
+    [
+      'JWT after an underscore',
+      () =>
+        `await page.getByTestId('token').fill('value_eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}')`,
+      () =>
+        `value_eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}`,
+      () => `eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}`
+    ]
+  ] as const)('redacts the %sformat', ([, makeCode, makeSecret, makeMatch]) => {
+    const code = makeCode()
+    const result = scrubSecrets(code)
+    const match = (makeMatch ?? makeSecret)()
+
+    expect(result.code).toBe(code.replace(match, '[REDACTED]'))
+    expect(result.findings).toEqual([
+      'Redacted a credential-shaped token (line 1)'
+    ])
+  })
+
+  it('leaves hyphenated identifiers that only start with sk- alone', () => {
+    const code = "const model = 'sk-learn-gradient-boosting-config'"
+
+    expect(scrubSecrets(code)).toEqual({ code, findings: [] })
+  })
+})
+
 describe('result metadata', () => {
   it('reports input line numbers', () => {
     const code = [
