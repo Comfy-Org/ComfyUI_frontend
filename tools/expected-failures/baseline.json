@@ -1,9 +1,5 @@
 [
   {
-    "id": "playwright:browser_tests/tests/agent/agentJobReopenedAsWorkflow.spec.ts:says why it cannot, when the agent ran a graph it cannot rebuild:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/agent/agentTwoSessionCrdtSubscription.spec.ts:returning to the displaced build shows it on the canvas:1",
     "classification": "live-defect"
   },
@@ -48,19 +44,31 @@
     "classification": "infrastructure-assertion"
   },
   {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemConfigureHooks.spec.ts:Lora-Manager-style afterConfigureGraph registry follows a switch back to a retained workflow:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemConfigureHooks.spec.ts:Lora-Manager-style afterConfigureGraph registry reads the graph the undo configured:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:a finished background job reaches the nodes of the workflow that queued it:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:a type change queued in one workflow leaves links of the workflow on screen alone:1",
+    "classification": "live-defect"
+  },
+  {
+    "id": "playwright:browser_tests/tests/legacyDoNotReplicate/legacyEcosystemVhsActiveGraph.spec.ts:turning the setting off removes preview widgets from every open workflow:1",
+    "classification": "live-defect"
+  },
+  {
     "id": "playwright:browser_tests/tests/sidebar/assetPanelDragOntoLoadImageWidget.spec.ts:<expression:title>:1",
     "classification": "live-defect"
   },
   {
-    "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/workflow/persistence/base/hashUtil.test.ts:produces different hashes for known collision paths:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   },
   {
