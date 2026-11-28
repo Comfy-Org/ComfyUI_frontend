@@ -10,7 +10,7 @@
     <div
       id="maskEditorCanvasContainer"
       ref="canvasContainerRef"
-      class="absolute inset-0 isolate"
+      class="maskEditor_canvasContainer absolute inset-0 isolate"
       @contextmenu.prevent
     >
       <canvas

@@ -82,13 +82,21 @@ describe('findModelReplacements', () => {
       expected: []
     },
     {
-      case: 'nothing for a name whose own words read like quantization',
+      case: 'nothing when mixed is part of the model name',
       missing: 'mixed_style_lora.safetensors',
-      options: [
-        'style_lora.safetensors',
-        'detail_tweaker.safetensors',
-        'detail_tweaker_quant.safetensors'
-      ],
+      options: ['style_lora.safetensors'],
+      expected: []
+    },
+    {
+      case: 'nothing when quant is part of the model name',
+      missing: 'detail_tweaker_quant.safetensors',
+      options: ['detail_tweaker.safetensors'],
+      expected: []
+    },
+    {
+      case: 'nothing when scaled is part of the model name',
+      missing: 'detail_tweaker.safetensors',
+      options: ['detail_tweaker_scaled.safetensors'],
       expected: []
     },
     {

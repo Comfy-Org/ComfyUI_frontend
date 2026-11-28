@@ -50,5 +50,40 @@ test.describe(
       await expect(retry).toBeHidden()
       expect(skillRequests.length).toBeGreaterThan(askedWhileFailing)
     })
+
+    test.describe('when skills are off for the account', () => {
+      test.use({ skillFailureStatus: 404 })
+
+      test('says skills are unavailable after a 404 and lists them when the menu reopens', async ({
+        page,
+        agentPanel,
+        skillCatalog
+      }) => {
+        const menu = page.getByRole('menu', {
+          name: enMessages.agent.skills,
+          exact: true
+        })
+
+        await test.step('Opening skills explains unavailability', async () => {
+          await agentPanel.open()
+          await agentPanel.composer.fill('/')
+          await expect(menu.getByRole('status')).toContainText(
+            enMessages.agent.skillsUnavailable
+          )
+          await expect(
+            menu.getByRole('button', { name: enMessages.g.retry, exact: true })
+          ).toBeHidden()
+        })
+
+        await test.step('Reopening skills loads the catalog', async () => {
+          skillCatalog.healthy = true
+          await agentPanel.composer.fill('')
+          await agentPanel.composer.fill('/')
+          await expect(
+            menu.getByRole('menuitem', { name: SKILL_NAME, exact: true })
+          ).toBeVisible()
+        })
+      })
+    })
   }
 )

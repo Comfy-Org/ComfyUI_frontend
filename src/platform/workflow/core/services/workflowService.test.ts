@@ -61,6 +61,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
+import { cancelGhostPlacement } from '@/lib/litegraph/src/canvas/ghostPlacement'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   bindCanvasTracker,
@@ -90,6 +91,7 @@ vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
   stubFirebaseAuthHarness()
+  vi.mocked(cancelGhostPlacement).mockImplementation(() => {})
 })
 
 function isDefaultWorkflow(data: unknown): boolean {
@@ -148,6 +150,7 @@ vi.mock(import('@/base/common/downloadUtil'))
 vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/lib/litegraph/src/canvas/ghostPlacement'), { spy: true })
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -449,6 +452,39 @@ describe('useWorkflowService', () => {
       expect(
         useSubgraphNavigationStore().saveCurrentViewport
       ).toHaveBeenCalledWith(false)
+    })
+
+    it('excludes an unplaced node from the outgoing graph and captured workflow', () => {
+      vi.mocked(cancelGhostPlacement).mockRestore()
+      const activeWorkflow = createModeTestWorkflow()
+      const tracker = new ChangeTracker(activeWorkflow, makeWorkflowData())
+      activeWorkflow.changeTracker = tracker
+      workflowStore.activeWorkflow = activeWorkflow
+
+      const graph = app.rootGraph
+      activeWorkflow.adoptGraph(graph)
+      createTestNode(graph, [], [], 'Kept')
+      const node = createTestNode(graph, [], [], 'Unplaced')
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      app.canvas = canvas
+      document.body.appendChild(canvas.canvas)
+      try {
+        canvas.startGhostPlacement(node)
+
+        useWorkflowService().beforeLoadNewGraph()
+
+        expect(graph.nodes.map((node) => node.title)).toEqual(['Kept'])
+        expect(tracker.activeState.nodes.map((node) => node.title)).toEqual([
+          'Kept'
+        ])
+      } finally {
+        canvas.finalizeGhostPlacement(true)
+        canvas.unbindEvents()
+        canvas.canvas.remove()
+      }
     })
 
     it('arms suppression by default for a clean workflow load', () => {

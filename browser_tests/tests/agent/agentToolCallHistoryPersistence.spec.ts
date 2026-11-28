@@ -143,8 +143,7 @@ test(
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
     const summary = reopenedPanel.getByRole('button', {
-      name: enMessages.agent.worked,
-      exact: true
+      name: new RegExp(`^${enMessages.agent.worked}(?: for .+)?$`)
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
     await expect(

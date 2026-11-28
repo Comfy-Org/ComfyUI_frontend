@@ -21,7 +21,10 @@ import { provideCanvasClass } from './canvas/canvasClassAccess'
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
+import {
+  onCanvasFrame,
+  runCanvasFramePhase
+} from '@/lib/litegraph/src/canvas/canvasFrame'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import {
   findAutogrowGroupDropRow,
@@ -102,7 +105,6 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import { markNodeMenuCallback } from './types/nodeMenu'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
-import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
 import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
@@ -136,6 +138,7 @@ import {
   showLink,
   showLinks
 } from './canvas/linkVisibility'
+import { cancelGhostPlacement } from './canvas/ghostPlacement'
 import {
   clearLinkSelection,
   getSelectedLinkIds,
@@ -1074,8 +1077,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctrlKey: false,
     metaKey: false
   }
-  private _ghostPointerHandler: ((e: PointerEvent) => void) | null = null
-  private _ghostKeyHandler: ((e: KeyboardEvent) => void) | null = null
+  private _finishGhostPlacement: ((cancelled: boolean) => void) | undefined
+  private _ghostPlacementBlocked = false
 
   dirty_canvas: boolean = true
   dirty_bgcanvas: boolean = true
@@ -1249,6 +1252,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE
 
     this.ds = new DragAndScale(canvas)
+    onCanvasFrame(this, 'update', () =>
+      this.ds.advanceAnimation(performance.now())
+    )
     this.pointer = new CanvasPointer(canvas)
     // Set up zoom change handler for efficient LOD updates
     this.ds.onChanged = (scale: number, _offset: Point) => {
@@ -2184,11 +2190,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   clear(): void {
-    collapseLinkBadgeStacks(this)
-    releaseCanvasSelection(this)
-    applyCanvasSelection(this, { type: 'selection.clear' })
-    this.resetTransientState()
-    this.onClear?.()
+    const wasBlocked = this._ghostPlacementBlocked
+    this._ghostPlacementBlocked = true
+    try {
+      try {
+        this.finalizeGhostPlacement(true)
+      } finally {
+        collapseLinkBadgeStacks(this)
+        releaseCanvasSelection(this)
+        applyCanvasSelection(this, { type: 'selection.clear' })
+        this.resetTransientState()
+        this.onClear?.()
+      }
+    } finally {
+      this._ghostPlacementBlocked = wasBlocked
+    }
   }
 
   private resetTransientState(): void {
@@ -2238,7 +2254,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.ds.stopAnimation()
     if (newGraph === graph) return
 
-    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+    cancelGhostPlacement(this)
 
     releaseCanvasSelection(this)
     clearLinkSelection(this)
@@ -2418,40 +2434,58 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
-    cancelPendingLinkBadgeStackExpansion(this)
-    if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
-    if (!this._events_binded) {
-      console.warn('LGraphCanvas: no events bound')
-      return
-    }
-
-    const { document } = this.getCanvasWindow()
-    const { canvas } = this
-    this._finishDragZoom()
+    this.ds.stopAnimation()
+    const wasBlocked = this._ghostPlacementBlocked
+    this._ghostPlacementBlocked = true
     try {
-      this.pointer.reset()
+      try {
+        this.finalizeGhostPlacement(true)
+      } finally {
+        cancelPendingLinkBadgeStackExpansion(this)
+        if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
+        if (this._events_binded) {
+          const { document } = this.getCanvasWindow()
+          const { canvas } = this
+          this._finishDragZoom()
+          try {
+            this.pointer.reset()
+          } finally {
+            canvas.removeEventListener(
+              'pointercancel',
+              this._mousecancel_callback!,
+              true
+            )
+            canvas.removeEventListener('pointerout', this._mouseout_callback!)
+            canvas.removeEventListener('pointermove', this._mousemove_callback!)
+            canvas.removeEventListener(
+              'pointerup',
+              this._mouseup_callback!,
+              true
+            )
+            canvas.removeEventListener(
+              'pointerdown',
+              this._mousedown_callback!,
+              true
+            )
+            canvas.removeEventListener('wheel', this._mousewheel_callback!)
+            canvas.removeEventListener('keydown', this._key_callback!, true)
+            document.removeEventListener('keyup', this._key_callback!, true)
+            canvas.removeEventListener('contextmenu', this._doNothing)
+            canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
+            canvas.removeEventListener('dragenter', this._doReturnTrue)
+
+            this._mousedown_callback = undefined
+            this._mousewheel_callback = undefined
+            this._key_callback = undefined
+
+            this._events_binded = false
+          }
+        } else {
+          console.warn('LGraphCanvas: no events bound')
+        }
+      }
     } finally {
-      canvas.removeEventListener(
-        'pointercancel',
-        this._mousecancel_callback!,
-        true
-      )
-      canvas.removeEventListener('pointerout', this._mouseout_callback!)
-      canvas.removeEventListener('pointermove', this._mousemove_callback!)
-      canvas.removeEventListener('pointerup', this._mouseup_callback!, true)
-      canvas.removeEventListener('pointerdown', this._mousedown_callback!, true)
-      canvas.removeEventListener('wheel', this._mousewheel_callback!)
-      canvas.removeEventListener('keydown', this._key_callback!, true)
-      document.removeEventListener('keyup', this._key_callback!, true)
-      canvas.removeEventListener('contextmenu', this._doNothing)
-      canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
-      canvas.removeEventListener('dragenter', this._doReturnTrue)
-
-      this._mousedown_callback = undefined
-      this._mousewheel_callback = undefined
-      this._key_callback = undefined
-
-      this._events_binded = false
+      this._ghostPlacementBlocked = wasBlocked
     }
   }
 
@@ -4047,122 +4081,157 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param dragEvent Optional mouse event for positioning under cursor
    */
   startGhostPlacement(node: LGraphNode, dragEvent?: MouseEvent): void {
-    // Cancel any in-flight ghost so we don't leak its listeners
-    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
+    const { graph } = this
+    this.finalizeGhostPlacement(true)
 
-    this.emitBeforeChange()
-    this.graph?.beforeChange()
+    const input = new AbortController()
+    const isCancelled = () => input.signal.aborted
+    let autoPan: AutoPanController | undefined
+    let canvasChangeStarted = false
+    let graphChangeStarted = false
+    let finishAfterStartup: (() => void) | undefined
 
-    if (dragEvent) {
-      this.adjustMouseEvent(dragEvent)
-      node.setPos(dragEvent.canvasX - node.size[0] / 2, dragEvent.canvasY + 10)
-      // Update last_mouse to prevent jump on first drag move
-      this.last_mouse = [dragEvent.clientX, dragEvent.clientY]
-    } else {
-      node.setPos(
-        this.graph_mouse[0] - node.size[0] / 2,
-        this.graph_mouse[1] + 10
-      )
-    }
-
-    this.state.ghostNodeId = node.id
-    this.dispatchEvent('litegraph:ghost-placement', {
-      active: true,
-      nodeId: node.id
-    })
-
-    this.selectItems([node])
-    this.isDragging = true
-
-    this._startNodeAutoPan()
-
-    // Listen on document so autopan works when the pointer is over DOM elements.
-    this._ghostPointerHandler = (e: PointerEvent) => {
-      // Trigger mouse move so the ghost node follows the cursor the same as when dragging a node.
-      this.processMouseMove(e)
-    }
-    document.addEventListener('pointermove', this._ghostPointerHandler)
-    // When the pointer leaves the viewport quickly, ensure we still trigger auto-pan.
-    document.documentElement.addEventListener(
-      'pointerleave',
-      this._ghostPointerHandler
-    )
-
-    // Listen on document so cancellation works even when the canvas isnt focused
-    // e.g. the search dialog just closed.
-    // stopPropagation prevents window-level keybindings (like Comfy.Graph.ExitSubgraph on Escape) from firing alongside the cancel.
-    this._ghostKeyHandler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' && e.key !== 'Delete' && e.key !== 'Backspace') {
-        return
+    const finish = (cancelled: boolean) => {
+      input.abort()
+      autoPan?.stop()
+      if (autoPan && this._autoPan === autoPan) this._autoPan = null
+      if (!this._finishGhostPlacement) {
+        this.state.ghostNodeId = null
+        this.isDragging = false
       }
-      this.finalizeGhostPlacement(true)
-      e.stopPropagation()
-      e.preventDefault()
+
+      try {
+        if (!graph || graph.getNodeById(node.id) !== node) return
+
+        if (cancelled) {
+          this.deselect(node)
+          try {
+            graph.remove(node)
+          } catch (cause) {
+            reportError(cause, {
+              errorType: 'error_removing_ghost_node',
+              surface: 'graph'
+            })
+          }
+        } else {
+          delete node.flags.ghost
+          graph.trigger('node:property:changed', {
+            nodeId: node.id,
+            property: 'flags.ghost',
+            oldValue: true,
+            newValue: false
+          })
+          this.notifySelectionChange()
+        }
+      } finally {
+        this.dirty_canvas = true
+        this.dirty_bgcanvas = true
+        try {
+          try {
+            if (graphChangeStarted) graph?.afterChange()
+          } finally {
+            if (canvasChangeStarted) this.emitAfterChange()
+          }
+        } finally {
+          if (canvasChangeStarted && !this._finishGhostPlacement) {
+            this.dispatchEvent('litegraph:ghost-placement', {
+              active: false,
+              nodeId: node.id
+            })
+          }
+        }
+      }
     }
-    document.addEventListener('keydown', this._ghostKeyHandler, true)
+
+    if (
+      this._ghostPlacementBlocked ||
+      this._finishGhostPlacement ||
+      this.graph !== graph
+    ) {
+      finish(true)
+      return
+    }
+
+    this._finishGhostPlacement = (cancelled) => {
+      input.abort()
+      const blockReplacement = this._ghostPlacementBlocked
+      finishAfterStartup = () => {
+        const wasBlocked = this._ghostPlacementBlocked
+        this._ghostPlacementBlocked = wasBlocked || blockReplacement
+        try {
+          finish(cancelled)
+        } finally {
+          this._ghostPlacementBlocked = wasBlocked
+        }
+      }
+    }
+
+    try {
+      canvasChangeStarted = true
+      this.emitBeforeChange()
+      if (isCancelled()) return
+      graphChangeStarted = true
+      graph?.beforeChange()
+      if (isCancelled()) return
+
+      if (dragEvent) {
+        this.adjustMouseEvent(dragEvent)
+        node.setPos(
+          dragEvent.canvasX - node.size[0] / 2,
+          dragEvent.canvasY + 10
+        )
+        this.last_mouse = [dragEvent.clientX, dragEvent.clientY]
+      } else {
+        node.setPos(
+          this.graph_mouse[0] - node.size[0] / 2,
+          this.graph_mouse[1] + 10
+        )
+      }
+      if (isCancelled()) return
+
+      this.state.ghostNodeId = node.id
+      this.dispatchEvent('litegraph:ghost-placement', {
+        active: true,
+        nodeId: node.id
+      })
+      if (isCancelled()) return
+
+      this.selectItems([node])
+      if (isCancelled()) return
+      this.isDragging = true
+      if (isCancelled()) return
+
+      this._startNodeAutoPan()
+      autoPan = this._autoPan ?? undefined
+
+      const onPointerMove = (event: PointerEvent) =>
+        this.processMouseMove(event)
+      document.addEventListener('pointermove', onPointerMove, {
+        signal: input.signal
+      })
+      document.documentElement.addEventListener('pointerleave', onPointerMove, {
+        signal: input.signal
+      })
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (!['Escape', 'Delete', 'Backspace'].includes(event.key)) return
+          this.finalizeGhostPlacement(true)
+          event.stopPropagation()
+          event.preventDefault()
+        },
+        { capture: true, signal: input.signal }
+      )
+    } finally {
+      if (finishAfterStartup) finishAfterStartup()
+      else this._finishGhostPlacement = finish
+    }
   }
 
-  /**
-   * Finalizes ghost placement mode.
-   * @param cancelled If true, the node is removed; otherwise it's placed
-   */
   finalizeGhostPlacement(cancelled: boolean): void {
-    const ownedGhostState =
-      this._ghostPointerHandler != null || this._ghostKeyHandler != null
-
-    if (this._ghostPointerHandler) {
-      document.removeEventListener('pointermove', this._ghostPointerHandler)
-      document.documentElement.removeEventListener(
-        'pointerleave',
-        this._ghostPointerHandler
-      )
-      this._ghostPointerHandler = null
-    }
-
-    if (this._ghostKeyHandler) {
-      document.removeEventListener('keydown', this._ghostKeyHandler, true)
-      this._ghostKeyHandler = null
-    }
-
-    if (ownedGhostState) {
-      this.isDragging = false
-      this._autoPan?.stop()
-      this._autoPan = null
-    }
-
-    const nodeId = this.state.ghostNodeId
-    if (nodeId == null) return
-
-    this.state.ghostNodeId = null
-    this.dispatchEvent('litegraph:ghost-placement', {
-      active: false,
-      nodeId
-    })
-
-    const parsedNodeId = parseNodeId(nodeId)
-    const node = parsedNodeId ? this.graph?.getNodeById(parsedNodeId) : null
-    if (!node) return
-
-    if (cancelled) {
-      this.deselect(node)
-      this.graph?.remove(node)
-    } else {
-      delete node.flags.ghost
-      this.graph?.trigger('node:property:changed', {
-        nodeId: node.id,
-        property: 'flags.ghost',
-        oldValue: true,
-        newValue: false
-      })
-
-      this.notifySelectionChange()
-    }
-
-    this.dirty_canvas = true
-    this.dirty_bgcanvas = true
-
-    this.graph?.afterChange()
-    this.emitAfterChange()
+    const finish = this._finishGhostPlacement
+    this._finishGhostPlacement = undefined
+    finish?.(cancelled)
   }
 
   /**
@@ -8472,7 +8541,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       })
     }
 
-    if (selectedCanvasNodes(this).length > 1) {
+    const selectedNodes = selectedCanvasNodes(this)
+    if (selectedNodes.length > 1) {
       options.push(
         {
           content: 'Align Selected To',
@@ -8482,6 +8552,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         {
           content: 'Distribute Nodes',
           has_submenu: true,
+          disabled: selectedNodes.some((selected) => selected.pinned),
           callback: LGraphCanvas.createDistributeMenu
         }
       )

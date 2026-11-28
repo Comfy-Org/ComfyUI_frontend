@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "הצמדה כך שהחיבורים יהיו ישרים"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "שאל לפני שליחת שמות הצמתים והמודלים לצורך בדיקת התאימות ל-Comfy Cloud"
+  },
   "Comfy_ConfirmClear": {
     "name": "דרישת אישור בעת ניקוי תהליך העבודה"
   },

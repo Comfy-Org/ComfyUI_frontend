@@ -107,4 +107,20 @@ describe('RollHandle', () => {
     expect(plane.normal.y).toBeCloseTo(0)
     expect(Math.abs(plane.normal.z)).toBeCloseTo(1)
   })
+
+  it('setScale shrinks the ring around the target', () => {
+    handle.update({ ...DEFAULT_CAMERA_INFO_STATE, roll: 0 })
+    const [pickable] = handle.pickableMeshes()
+    const target = new THREE.Vector3()
+    const before = pickable
+      .getWorldPosition(new THREE.Vector3())
+      .distanceTo(target)
+
+    handle.setScale(0.5)
+
+    const after = pickable
+      .getWorldPosition(new THREE.Vector3())
+      .distanceTo(target)
+    expect(after).toBeCloseTo(before / 2)
+  })
 })

@@ -451,6 +451,46 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher-default')).toBeNull()
   })
 
+  it('names the Build beside the icon on a deployment', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    renderSwitcher()
+
+    expect(
+      await screen.findByTestId('deployment-switcher-build-name')
+    ).toHaveTextContent(/^Studio Build$/)
+  })
+
+  it('shows only the icon on a deployment without a Build name', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2,
+      items: [
+        { ...listing.items[0], build_name: undefined },
+        ...listing.items.slice(1)
+      ]
+    })
+    renderSwitcher()
+
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/production/))
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows only the icon on Comfy Cloud', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+
+    await screen.findByTestId('deployment-switcher-trigger')
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
+
   it('marks the engine button until its first open closes, and remembers it on every device as soon as it opens', async () => {
     useSettingStore().$patch({
       settingValues: { 'Comfy.DeploymentSwitcher.Seen': false }
@@ -2701,6 +2741,24 @@ describe('DeploymentSwitcher with Platform in the editor', () => {
       } satisfies FollowedBuild
     })
   }
+
+  it('drops the Build name while the spinner follows a build', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    following('building', null)
+    renderSwitcher()
+
+    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await waitFor(() => expect(trigger).toHaveAccessibleName(/Studio Build/))
+    expect(
+      screen.getByTestId('deployment-switcher-building')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('deployment-switcher-build-name')
+    ).not.toBeInTheDocument()
+  })
 
   it.for([
     {
