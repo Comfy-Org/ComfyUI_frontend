@@ -20,8 +20,7 @@ const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
 type CloudExecutionErrorFrame = {
   type: 'execution_error'
-  data: Omit<ExecutionErrorWsMessage, 'executed'> &
-    Partial<Pick<ExecutionErrorWsMessage, 'executed'>>
+  data: ExecutionErrorWsMessage
 }
 
 type RunOptions = {
@@ -283,6 +282,7 @@ export class ExecutionHelper {
           timestamp: Date.now(),
           node_id: nodeId,
           node_type: nodeErrors[nodeId].class_type,
+          executed: [],
           exception_message: summary,
           exception_type: 'ValidationError',
           traceback: [],

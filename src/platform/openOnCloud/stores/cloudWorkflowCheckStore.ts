@@ -1,6 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { shallowRef, watch } from 'vue'
+import { nextTick, shallowRef, watch } from 'vue'
 
 import { api } from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -24,8 +24,10 @@ export const useCloudWorkflowCheckStore = defineStore(
     const { flags } = useFeatureFlags()
     const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
+    const isSwitchedOffOnCloud = shallowRef(false)
     const workflowRevision = shallowRef(0)
     let lastRun = 0
+    let identityRevision = 0
     let activeCheck:
       | { controller: AbortController; refreshingGrant: boolean }
       | undefined
@@ -71,15 +73,32 @@ export const useCloudWorkflowCheckStore = defineStore(
           controller.signal
         )
         if (controller.signal.aborted) return
-        if (result?.kind === 'canOpen' || result?.kind === 'missing') {
-          dispatch({ type: 'answered', run, verdict: result })
-        } else {
-          dispatch({ type: 'failed', run, blocker: result })
-        }
+        await settle(run, result)
       } finally {
         signal?.removeEventListener('abort', cancelPendingCheck)
         if (activeCheck === pending) activeCheck = undefined
       }
+    }
+
+    async function settle(
+      run: number,
+      result: Awaited<ReturnType<typeof checkCloudCompatibility>>
+    ) {
+      if (result?.kind === 'canOpen' || result?.kind === 'missing') {
+        isSwitchedOffOnCloud.value = false
+        dispatch({ type: 'answered', run, verdict: result })
+        return
+      }
+      dispatch({ type: 'failed', run, blocker: result })
+      if (result?.kind === 'checkFailed' && result.reason === 'switchedOff')
+        await hideAfterFailureIsShown(run)
+    }
+
+    async function hideAfterFailureIsShown(run: number) {
+      const identity = identityRevision
+      await nextTick()
+      if (run === lastRun && identity === identityRevision)
+        isSwitchedOffOnCloud.value = true
     }
 
     function invalidate() {
@@ -133,8 +152,11 @@ export const useCloudWorkflowCheckStore = defineStore(
       ) => {
         const identityChanged =
           signedIn !== wasSignedIn || userId !== previousUser
-        if (identityChanged || workspaceId !== previousWorkspace)
+        if (identityChanged || workspaceId !== previousWorkspace) {
           confirmedUploads = undefined
+          identityRevision++
+          isSwitchedOffOnCloud.value = false
+        }
 
         const initializingWorkspaceForCheck =
           !identityChanged &&
@@ -160,6 +182,7 @@ export const useCloudWorkflowCheckStore = defineStore(
 
     return {
       state,
+      isSwitchedOffOnCloud,
       check,
       invalidate,
       bindWorkflowRevision,

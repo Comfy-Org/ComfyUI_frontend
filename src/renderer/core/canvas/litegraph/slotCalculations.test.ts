@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -9,6 +9,7 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import { setDerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -46,6 +47,20 @@ function makeContext(
   }
 }
 
+function publishAnchors(
+  node: LGraphNode,
+  anchors: {
+    input?: [number, { x: number; y: number }][]
+    output?: [number, { x: number; y: number }][]
+  }
+) {
+  setDerivedSlotAnchors('root-graph', node.id, {
+    input: new Map(anchors.input),
+    output: new Map(anchors.output)
+  })
+  onTestFinished(() => setDerivedSlotAnchors('root-graph', node.id, undefined))
+}
+
 function makeInput(overrides: Partial<INodeInputSlot> = {}): INodeInputSlot {
   return { name: 'input', type: 'INT', ...overrides } as INodeInputSlot
 }
@@ -64,6 +79,7 @@ function makeNode(
     id: number
     position: [number, number]
     size: [number, number]
+    renderingSize: [number, number]
   }> = {}
 ): LGraphNode {
   const position = overrides.position ?? [100, 200]
@@ -72,7 +88,7 @@ function makeNode(
     id: toNodeId(overrides.id ?? 1),
     pos: position,
     size,
-    renderingSize: size,
+    renderingSize: overrides.renderingSize ?? size,
     flags: { collapsed: overrides.collapsed ?? false },
     title_mode: overrides.titleMode ?? TitleMode.NORMAL_TITLE,
     type: overrides.type ?? 'TestNode',
@@ -226,24 +242,12 @@ describe('Vue slot geometry', () => {
     layoutStore.resetForTests()
   })
 
-  it('combines measured render offsets with the current node position', () => {
+  it('combines derived slot anchors with the current node position', () => {
     const node = makeNode({
       inputs: [makeInput()],
       position: [300, 400]
     })
-    if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(
-      node.graph.rootGraph.id,
-      node.id,
-      [
-        {
-          index: 0,
-          type: 'input',
-          bounds: { x: 0, y: 73, width: 0, height: 0 }
-        }
-      ],
-      'expanded'
-    )
+    publishAnchors(node, { input: [[0, { x: 0, y: 73 }]] })
 
     expect(getSlotPosition(node, 0, true)).toEqual([300, 473])
     const graph = fromPartial<LGraph>({
@@ -259,7 +263,7 @@ describe('Vue slot geometry', () => {
     expect(getSlotPosition(node, 0, true)).toEqual([450, 573])
   })
 
-  it('derives slot positions from the current node layout', () => {
+  it('places slots below the Vue header before the node publishes anchors', () => {
     const node = makeNode({
       inputs: [makeInput()],
       outputs: [makeOutput()],
@@ -267,32 +271,20 @@ describe('Vue slot geometry', () => {
       size: [240, 160]
     })
 
-    expect(getSlotPosition(node, 0, true)).toEqual([300, 414])
-    expect(getSlotPosition(node, 0, false)).toEqual([540, 414])
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 412])
+    expect(getSlotPosition(node, 0, false)).toEqual([540, 412])
 
     node.pos[0] = 320
     node.pos[1] = 450
     node.size[0] = 300
 
-    expect(getSlotPosition(node, 0, true)).toEqual([320, 464])
-    expect(getSlotPosition(node, 0, false)).toEqual([620, 464])
+    expect(getSlotPosition(node, 0, true)).toEqual([320, 462])
+    expect(getSlotPosition(node, 0, false)).toEqual([620, 462])
   })
 
-  it('finds a measured slot immediately outside node bounds', () => {
+  it('finds an anchored slot immediately outside node bounds', () => {
     const node = makeNode({ inputs: [makeInput()], position: [300, 400] })
-    if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(
-      node.graph.rootGraph.id,
-      node.id,
-      [
-        {
-          index: 0,
-          type: 'input',
-          bounds: { x: -6, y: 14, width: 0, height: 0 }
-        }
-      ],
-      'expanded'
-    )
+    publishAnchors(node, { input: [[0, { x: -6, y: 14 }]] })
     const graph = fromPartial<LGraph>({
       _nodes: [node],
       rootGraph: { id: 'root-graph' }
@@ -305,19 +297,7 @@ describe('Vue slot geometry', () => {
 
   it('finds protruding slots without relying on nearby node bounds', () => {
     const node = makeNode({ inputs: [makeInput()], position: [300, 400] })
-    if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(
-      node.graph.rootGraph.id,
-      node.id,
-      [
-        {
-          index: 0,
-          type: 'input',
-          bounds: { x: -6, y: 14, width: 0, height: 0 }
-        }
-      ],
-      'expanded'
-    )
+    publishAnchors(node, { input: [[0, { x: -6, y: 14 }]] })
     const overlappingNode = makeNode({ position: [280, 390] })
     const graph = fromPartial<LGraph>({
       _nodes: [node, overlappingNode],
@@ -374,82 +354,40 @@ describe('Vue slot geometry', () => {
     })
     const graph = fromPartial<LGraph>({ nodes: [node] })
 
-    expect(getSlotPosition(node, 0, true)).toEqual([300, 488])
-    expect(getSlotLayoutAtPoint(graph, { x: 300, y: 488 }, node)).toEqual(
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 486])
+    expect(getSlotLayoutAtPoint(graph, { x: 300, y: 486 }, node)).toEqual(
       getSlotLayout(node, 0, true)
     )
   })
 
-  it('uses collapsed node anchors', () => {
+  it('centres collapsed slots on the Vue header at the rendered collapsed width', () => {
     const node = makeNode({
       inputs: [makeInput()],
       outputs: [makeOutput()],
       collapsed: true,
-      position: [300, 400]
+      position: [300, 400],
+      renderingSize: [80, 28]
     })
 
-    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
-    expect(getSlotPosition(node, 0, false)).toEqual([380, 385])
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 384])
+    expect(getSlotPosition(node, 0, false)).toEqual([380, 384])
   })
 
-  it('ignores expanded slot offsets after the node collapses', () => {
+  it('ignores expanded slot anchors after the node collapses', () => {
     const node = makeNode({
       inputs: [makeInput()],
       outputs: [makeOutput()],
       collapsed: true,
-      position: [300, 400]
+      position: [300, 400],
+      renderingSize: [80, 28]
     })
-    if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(
-      node.graph.rootGraph.id,
-      node.id,
-      [
-        {
-          index: 0,
-          type: 'input',
-          bounds: { x: 0, y: 73, width: 0, height: 0 }
-        },
-        {
-          index: 0,
-          type: 'output',
-          bounds: { x: 180, y: 73, width: 0, height: 0 }
-        }
-      ],
-      'expanded'
-    )
-
-    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
-    expect(getSlotPosition(node, 0, false)).toEqual([380, 385])
-  })
-
-  it('uses collapsed slot offsets from the rendered node width', () => {
-    const node = makeNode({
-      inputs: [makeInput()],
-      outputs: [makeOutput()],
-      collapsed: true,
-      position: [300, 400]
+    publishAnchors(node, {
+      input: [[0, { x: 0, y: 73 }]],
+      output: [[0, { x: 180, y: 73 }]]
     })
-    if (!node.graph) throw new Error('Expected node graph')
-    layoutStore.updateNodeSlotOffsets(
-      node.graph.rootGraph.id,
-      node.id,
-      [
-        {
-          index: 0,
-          type: 'input',
-          bounds: { x: 0, y: -15, width: 0, height: 0 }
-        },
-        {
-          index: 0,
-          type: 'output',
-          bounds: { x: 280, y: -15, width: 0, height: 0 }
-        }
-      ],
-      'collapsed'
-    )
 
-    expect(getSlotPosition(node, 0, true)).toEqual([300, 385])
-    expect(getSlotPosition(node, 0, false)).toEqual([580, 385])
+    expect(getSlotPosition(node, 0, true)).toEqual([300, 384])
+    expect(getSlotPosition(node, 0, false)).toEqual([380, 384])
   })
 
   it('accounts for headerless and reroute node structure', () => {

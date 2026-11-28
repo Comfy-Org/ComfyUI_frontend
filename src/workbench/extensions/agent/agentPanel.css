@@ -55,9 +55,7 @@
   animation: agent-shimmer 1.8s linear infinite;
 }
 
-.disable-animations
-  :where(#agent-panel-root, .agent-scope)
-  .agent-shimmer-text {
+.disable-animations :where(.agent-scope) .agent-shimmer-text {
   animation: none;
   color: var(--muted-foreground);
   -webkit-text-fill-color: currentcolor;
@@ -93,21 +91,21 @@
   /* Thin the scrollbar and drop the UA track fill, leaving the thumb as the
      only mark on the surface. The scope carriers themselves scroll too (the
      portaled menus), so they are part of the selector, not just ancestors. */
-  :where(#agent-panel-root, .agent-scope),
-  :where(#agent-panel-root, .agent-scope) :where(*) {
+  :where(.agent-scope),
+  :where(.agent-scope) :where(*) {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
 
-  :where(#agent-panel-root, .agent-scope)
+  :where(.agent-scope)
     :where(button, [type='button'], [type='reset'], [type='submit']) {
     appearance: none;
     background-color: transparent;
     border: 0 solid;
   }
 
-  :where(#agent-panel-root, .agent-scope) :where(textarea, input),
-  :where(#agent-panel-root, .agent-scope) :where(select) {
+  :where(.agent-scope) :where(textarea, input),
+  :where(.agent-scope) :where(select) {
     appearance: none;
     border: 0 solid;
     background-color: transparent;
@@ -137,7 +135,7 @@
 }
 
 .disable-animations
-  :where(#agent-panel-root, .agent-scope)
+  :where(.agent-scope)
   :is(.agent-talk-word, .agent-talk-fade) {
   animation: none;
 }

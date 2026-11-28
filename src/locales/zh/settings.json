@@ -78,6 +78,9 @@
   "Comfy_Canvas_SmartGuides_SnapToWires": {
     "name": "吸附以使连线变为直线"
   },
+  "Comfy_Cloud_AskBeforeCompatibilityCheck": {
+    "name": "在发送节点和模型名称以检查 Comfy Cloud 兼容性前询问"
+  },
   "Comfy_ConfirmClear": {
     "name": "清除工作流时需要确认"
   },

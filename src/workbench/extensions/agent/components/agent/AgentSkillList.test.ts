@@ -194,6 +194,62 @@ describe('AgentSkillList', () => {
     expect(screen.queryByRole('alert')).toBeNull()
   })
 
+  it('keeps the live region mounted while a first-listing 404 changes loading to unavailable', async () => {
+    let rejectListing: (error: unknown) => void = () => {}
+    vi.mocked(listSkillPacks).mockReturnValueOnce(
+      new Promise<SkillPack[]>((_resolve, reject) => {
+        rejectListing = reject
+      })
+    )
+    forgetCatalog()
+    mount()
+
+    const liveRegion = screen.getByRole('status')
+    expect(liveRegion).toHaveTextContent('Loading skills')
+
+    rejectListing(new SkillPacksApiError('not found', 404))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        "Skills aren't available right now."
+      )
+    )
+    expect(screen.getByRole('status')).toBe(liveRegion)
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Add skill' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Back to chat' })).toBeVisible()
+  })
+
+  it('shows why the local agent refused the page instead of the generic error', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError(
+        'Open http://127.0.0.1:8188 to use the agent.',
+        403,
+        'agent_loopback_only'
+      )
+    )
+    forgetCatalog()
+    mount()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Open http://127.0.0.1:8188 to use the agent.'
+    )
+    expect(screen.queryByText('Could not load skills. Try again.')).toBeNull()
+  })
+
+  it('uses the generic error when the local refusal reason is blank', async () => {
+    vi.mocked(listSkillPacks).mockRejectedValueOnce(
+      new SkillPacksApiError('   ', 403, 'agent_loopback_only')
+    )
+    forgetCatalog()
+    mount()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not load skills. Try again.'
+    )
+  })
+
   it('does not ask the server when skills are not enabled', () => {
     useSkillPacksStore().flagsEnabled = false
     mount()
