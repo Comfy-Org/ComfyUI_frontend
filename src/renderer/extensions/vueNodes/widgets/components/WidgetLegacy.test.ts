@@ -323,6 +323,27 @@ describe('WidgetLegacy in the properties panel beside the LiteGraph canvas', () 
     expect(readGeometry(widget, node)).toEqual(canvasGeometry)
   })
 
+  it('restores the canvas geometry from before Vue nodes when the first Vue draw redraws itself', async () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+    let redrawn = false
+    const { node, widget } = await renderInPanel({
+      draw(this: IBaseWidget) {
+        if (redrawn) return
+        redrawn = true
+        this.triggerDraw?.()
+      }
+    })
+    expect(redrawn).toBe(true)
+
+    LiteGraph.vueNodesMode = false
+    restoreGeometryBeforeVueNodes(node)
+
+    expect(readGeometry(widget, node)).toEqual(canvasGeometry)
+  })
+
   it('restores the canvas geometry from before Vue nodes when the renderer switches back to LiteGraph', async () => {
     LiteGraph.vueNodesMode = true
     onTestFinished(() => {
