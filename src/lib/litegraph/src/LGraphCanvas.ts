@@ -21,7 +21,10 @@ import { provideCanvasClass } from './canvas/canvasClassAccess'
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
+import {
+  onCanvasFrame,
+  runCanvasFramePhase
+} from '@/lib/litegraph/src/canvas/canvasFrame'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import {
   findAutogrowGroupDropRow,
@@ -1249,6 +1252,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.background_image = LGraphCanvas.DEFAULT_BACKGROUND_IMAGE
 
     this.ds = new DragAndScale(canvas)
+    onCanvasFrame(this, 'update', () =>
+      this.ds.advanceAnimation(performance.now())
+    )
     this.pointer = new CanvasPointer(canvas)
     // Set up zoom change handler for efficient LOD updates
     this.ds.onChanged = (scale: number, _offset: Point) => {
@@ -2428,6 +2434,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
+    this.ds.stopAnimation()
     const wasBlocked = this._ghostPlacementBlocked
     this._ghostPlacementBlocked = true
     try {

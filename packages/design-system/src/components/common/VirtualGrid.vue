@@ -54,7 +54,6 @@ const {
   defaultItemHeight?: number
   defaultItemWidth?: number
   maxColumns?: number
-  /** Container width each column needs; columns drop below `maxColumns` when the grid is narrower. */
   minItemWidth?: number
   onLoadMore?: () => unknown
   canLoadMore?: boolean

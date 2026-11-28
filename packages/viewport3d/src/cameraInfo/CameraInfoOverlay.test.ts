@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CameraInfoOverlay } from './CameraInfoOverlay'
 import { DEFAULT_CAMERA_INFO_STATE } from './types'
@@ -157,6 +157,60 @@ describe('CameraInfoOverlay', () => {
       const next = ctx.overlay.getState()
       expect(next.orbit.yaw).not.toBe(999)
       expect(next.target).not.toBe(snapshot.target)
+    })
+  })
+
+  describe('subject model', () => {
+    const referenceCube = () =>
+      findByName(ctx.scene, 'CameraInfoReference')!.children.find(
+        (child) =>
+          child instanceof THREE.Mesh &&
+          child.geometry instanceof THREE.BoxGeometry
+      )!
+
+    it('shows the model in place of the reference cube', () => {
+      const model = new THREE.Group()
+
+      ctx.overlay.setSubjectModel(model)
+
+      expect(model.parent?.name).toBe('CameraInfoReference')
+      expect(referenceCube().visible).toBe(false)
+    })
+
+    it('brings the reference cube back when the model is cleared', () => {
+      const model = new THREE.Group()
+      ctx.overlay.setSubjectModel(model)
+
+      ctx.overlay.setSubjectModel(null)
+
+      expect(model.parent).toBeNull()
+      expect(referenceCube().visible).toBe(true)
+    })
+
+    it('releases the previous model when another one replaces it', () => {
+      const geometry = new THREE.BoxGeometry()
+      const disposed = vi.fn()
+      geometry.addEventListener('dispose', disposed)
+      const first = new THREE.Mesh(geometry)
+      ctx.overlay.setSubjectModel(first)
+
+      ctx.overlay.setSubjectModel(new THREE.Group())
+
+      expect(first.parent).toBeNull()
+      expect(disposed).toHaveBeenCalledOnce()
+    })
+
+    it('releases a model that arrives after the overlay is disposed', () => {
+      const geometry = new THREE.BoxGeometry()
+      const disposed = vi.fn()
+      geometry.addEventListener('dispose', disposed)
+      const late = new THREE.Mesh(geometry)
+      ctx.overlay.dispose()
+
+      ctx.overlay.setSubjectModel(late)
+
+      expect(late.parent).toBeNull()
+      expect(disposed).toHaveBeenCalledOnce()
     })
   })
 })

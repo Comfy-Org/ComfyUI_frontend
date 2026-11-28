@@ -1,10 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
-import { setDerivedSlotAnchors } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLayout } from '@comfyorg/graph-model/layout'
@@ -113,13 +112,10 @@ describe('resolveSlotTargetCandidate', () => {
     expect(isInputValidDrop).not.toHaveBeenCalled()
     expect(getGraphSlotLayout).not.toHaveBeenCalled()
 
-    setDerivedSlotAnchors(graph.rootGraph.id, NODE_ID, {
+    layoutStore.setDerivedSlotAnchors(graph.rootGraph.id, NODE_ID, {
       input: new Map([[0, { x: 0, y: 40 }]]),
       output: new Map()
     })
-    onTestFinished(() =>
-      setDerivedSlotAnchors(graph.rootGraph.id, NODE_ID, undefined)
-    )
     getGraphSlotLayout.mockReturnValue(createSlotLayout())
 
     expect(

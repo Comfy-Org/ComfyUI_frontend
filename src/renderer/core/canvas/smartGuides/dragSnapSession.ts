@@ -15,6 +15,8 @@ import { getLinkEndpointPositions } from '@/lib/litegraph/src/canvas/linkGeometr
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { containsRect, overlapBounding } from '@/lib/litegraph/src/measure'
+import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { positionableBox, unionBox } from '@/lib/litegraph/src/utils/arrange'
 import type { VisualBox } from '@comfyorg/graph-model/arrange/arrange'
 
@@ -87,22 +89,41 @@ function wireAnchor(
   return { mine: toPoint(mine), theirs: toPoint(reroute?.pos ?? theirs) }
 }
 
+function linksOf(graph: LGraph, ids: (LinkId | null | undefined)[]) {
+  return ids.flatMap((id) => (id == null ? [] : (graph.links.get(id) ?? [])))
+}
+
 function wiresOf(
   graph: LGraph,
   node: LGraphNode,
   moving: ReadonlySet<unknown>
 ): WireAnchor[] {
-  function links(ids: (LinkId | null | undefined)[]) {
-    return ids.flatMap((id) => (id == null ? [] : (graph.links.get(id) ?? [])))
-  }
   return [
-    ...links(node.inputs.map((input) => input.link)).map((link) =>
-      wireAnchor(graph, link, 'input', moving)
-    ),
-    ...links(node.outputs.flatMap((output) => output.links ?? [])).map((link) =>
-      wireAnchor(graph, link, 'output', moving)
-    )
+    ...linksOf(
+      graph,
+      node.inputs.map((input) => input.link)
+    ).map((link) => wireAnchor(graph, link, 'input', moving)),
+    ...linksOf(
+      graph,
+      node.outputs.flatMap((output) => output.links ?? [])
+    ).map((link) => wireAnchor(graph, link, 'output', moving))
   ].filter((wire) => wire !== undefined)
+}
+
+function ioWiresOf(
+  graph: LGraph,
+  ioNode: SubgraphInputNode | SubgraphOutputNode,
+  moving: ReadonlySet<unknown>
+): WireAnchor[] {
+  ioNode.arrange()
+  const side = ioNode instanceof SubgraphInputNode ? 'output' : 'input'
+  const slots: readonly { linkIds: LinkId[] }[] = ioNode.slots
+  return linksOf(
+    graph,
+    slots.flatMap((slot) => slot.linkIds)
+  )
+    .map((link) => wireAnchor(graph, link, side, moving))
+    .filter((wire) => wire !== undefined)
 }
 
 function clearGuides() {
@@ -121,9 +142,18 @@ function moveSnap(
   const start = unionBox(movingItems)
   if (!start) return
   const moving = new Set<unknown>(movingItems)
-  const wires = graph.nodes
-    .filter((node) => moving.has(node))
-    .flatMap((node) => wiresOf(graph, node, moving))
+  const ioNodes = movingItems.filter(
+    (item) =>
+      item instanceof SubgraphInputNode || item instanceof SubgraphOutputNode
+  )
+  const wires = [
+    ...graph.nodes
+      .filter((node) => moving.has(node))
+      .flatMap((node) => wiresOf(graph, node, moving)),
+    ...ioNodes.flatMap((ioNode) => ioWiresOf(graph, ioNode, moving))
+  ]
+  const options =
+    ioNodes.length > 0 ? { ...config, edges: false, spacing: false } : config
   function buildScene(
     graph: LGraph,
     start: VisualBox
@@ -131,7 +161,7 @@ function moveSnap(
     const area = snapSearchArea(canvas.visible_area)
     return {
       area,
-      index: buildSnapIndex(targetsIn(graph, area, moving), config, {
+      index: buildSnapIndex(targetsIn(graph, area, moving), options, {
         movingStart: start,
         wires
       })

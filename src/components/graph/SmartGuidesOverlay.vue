@@ -8,11 +8,10 @@
 <script setup lang="ts">
 import { useTemplateRef, watch } from 'vue'
 
-import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
-
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { drawSmartGuides } from '@/renderer/core/canvas/smartGuides/drawSmartGuides'
 import { activeGuides } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 import type { SmartGuide } from '@comfyorg/graph-model/arrange/snapSolver'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -57,64 +56,6 @@ function present(canvas: LGraphCanvas) {
   const pixelRatio = width / (el.clientWidth || 1)
   ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   syncWithCanvas(canvas)
-  for (const guide of guides) drawGuide(ctx, guide)
-}
-
-function stroke(
-  ctx: CanvasRenderingContext2D,
-  from: Point2D,
-  to: Point2D,
-  lineWidth: number
-) {
-  ctx.lineWidth = lineWidth
-  ctx.beginPath()
-  ctx.moveTo(from.x, from.y)
-  ctx.lineTo(to.x, to.y)
-  ctx.stroke()
-}
-
-function drawGuide(ctx: CanvasRenderingContext2D, guide: SmartGuide) {
-  if (guide.kind === 'wire') {
-    ctx.lineCap = 'round'
-    stroke(ctx, canvasToScreen(guide.from), canvasToScreen(guide.to), 3)
-    ctx.lineCap = 'butt'
-    return
-  }
-  if (guide.kind === 'line') {
-    const { axis, at, from, to } = guide
-    const [start, end] =
-      axis === 'x'
-        ? [
-            { x: at, y: from },
-            { x: at, y: to }
-          ]
-        : [
-            { x: from, y: at },
-            { x: to, y: at }
-          ]
-    stroke(ctx, canvasToScreen(start), canvasToScreen(end), 1)
-    return
-  }
-  const { axis, from, to, cross } = guide
-  const [start, end, middle] =
-    axis === 'x'
-      ? [
-          { x: from, y: cross },
-          { x: to, y: cross },
-          { x: (from + to) / 2, y: cross }
-        ]
-      : [
-          { x: cross, y: from },
-          { x: cross, y: to },
-          { x: cross, y: (from + to) / 2 }
-        ]
-  stroke(ctx, canvasToScreen(start), canvasToScreen(end), 1)
-  const label = canvasToScreen(middle)
-  ctx.textAlign = 'center'
-  ctx.fillText(
-    String(Math.round(to - from)),
-    axis === 'x' ? label.x : label.x + 14,
-    axis === 'x' ? label.y - 4 : label.y + 4
-  )
+  drawSmartGuides(ctx, guides, canvasToScreen)
 }
 </script>

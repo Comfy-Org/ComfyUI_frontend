@@ -31,7 +31,7 @@ The system's inputs are:
 
 The system allocates rows with the same `layoutNodeBody` the canvas uses, with the gaps between items expressed as fixed rows, and returns each row's offset and height plus each expanded slot's anchor. A collapsed node needs no allocation: every input anchors at the left edge and every output at the right edge of the collapsed title, half a header height above the body origin.
 
-The result is a transient, per-node derivation keyed by root graph and node ID. It is never persisted and never written by a renderer. Its upstream inputs are not stable: the widget grid's row model and the node's layout object are rebuilt on every frame of a node drag. The derivation therefore keeps its previous value when the new one is structurally equal, so a rebuilt input that changes nothing invalidates neither the canvas nor the rendered rows. Link endpoints read the derivation's slot anchors from a plain map that a watcher publishes, not by reading the reactive value, because they are read about twice per link per frame.
+The result is a transient, per-node derivation keyed by root graph and node ID. It is never persisted and never written by a renderer. Its upstream inputs are not stable: the widget grid's row model and the node's layout object are rebuilt on every frame of a node drag. The derivation therefore keeps its previous value when the new one is structurally equal, so a rebuilt input that changes nothing invalidates neither the canvas nor the rendered rows. Link endpoints read the derivation's slot anchors from the layout store, where a watcher publishes them, not by reading the reactive value, because they are read about twice per link per frame. The store keys them by root graph and node like its other transient geometry, so clearing a graph drops them.
 
 Vue renders rows at the allocated heights. A fixed, user-sized or growable row is a `height` with a `minmax(0, 1fr)` grid track, not a `min-content` minimum, because an `auto` track lets content (for example a textarea's intrinsic height) push the row past its allocation. Renderer constants are defined once in TypeScript and reach the DOM as inline styles or custom properties, so the two cannot disagree silently. The header height is fixed by the same constant rather than left to its content, and every row of the slot block is one slot row tall whether or not its slot has a label. A label-less input row used to take the height of its dot, which put a reroute's input 2 px below its output; measurement hid that offset.
 
@@ -68,7 +68,7 @@ Fitting a node to its content (double-clicking a resize corner) becomes a comput
 
 The node's footer tabs overlap the body bottom by a constant that depends on which tab shows; the derivation subtracts it. Any new footer variant must add its overhang there.
 
-This advances [ADR-ECS-0008](ECS-0008-entity-component-system.md): row and slot geometry become a plain-data derivation produced by a system, rather than state written back from the renderer. The spike keeps it as a per-node computed registered for link endpoints; promoting it to a store keyed by `(rootGraphId, nodeId)` is the remaining step and does not change the contract.
+This advances [ADR-ECS-0008](ECS-0008-entity-component-system.md): row and slot geometry become a plain-data derivation produced by a system, rather than state written back from the renderer. Each node computes it and publishes the anchors to the layout store under `(rootGraphId, nodeId)`.
 
 ## Extension impact
 
