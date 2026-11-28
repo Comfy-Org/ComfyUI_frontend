@@ -129,7 +129,16 @@ export async function runRecording(
     '5. When done, just close the window — everything is saved',
     '   automatically as you go, no copying needed.'
   ])
-  console.log()
+  if (target === 'cloud') {
+    info([
+      'Cloud sign-in notes: SSO may be rejected in this separate browser',
+      'profile — expect a 2FA prompt and fall back to email + password.',
+      'Sign in BEFORE pressing Record, then give it a few seconds so a',
+      'session save completes — later recordings reuse the persisted',
+      'session.'
+    ])
+    console.log()
+  }
 
   const cleanUp = () => {
     cleanupRecordingTemplate(browserTestsDir)
