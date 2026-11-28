@@ -42,6 +42,8 @@ export function disposeObject3D(
       : preservedMaterials
   object.traverse((child) => {
     if (!isResourceRenderable(child)) return
+    if (child instanceof THREE.SkinnedMesh) child.skeleton.dispose()
+    if (child instanceof THREE.InstancedMesh) child.dispose()
     child.geometry.dispose()
     const materials = Array.isArray(child.material)
       ? child.material

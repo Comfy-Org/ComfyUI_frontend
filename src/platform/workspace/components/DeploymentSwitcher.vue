@@ -43,6 +43,12 @@
               data-testid="deployment-switcher-new"
             />
           </span>
+          <span
+            v-if="triggerBuildName"
+            class="ml-1 max-w-24 truncate text-sm"
+            data-testid="deployment-switcher-build-name"
+            >{{ triggerBuildName }}</span
+          >
           <i
             class="icon-[lucide--chevron-down] size-3 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180"
             aria-hidden="true"
@@ -344,6 +350,10 @@ const buildStatus = computed(() => {
   const step = progress ? t('platformFrame.buildStep', progress) : null
   return { stage, step, text: step ? `${stage} ${step}` : stage }
 })
+
+const triggerBuildName = computed(() =>
+  buildStatus.value ? null : pickedDeployment.value?.build_name
+)
 
 const switcher = useTemplateRef<HTMLElement>('switcher')
 

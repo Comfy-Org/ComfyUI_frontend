@@ -99,6 +99,8 @@ export class OrbitHandles {
 
   private scene: THREE.Scene | null = null
   private disposed = false
+  private scale = 1
+  private hovered: OrbitHandleType | null = null
 
   constructor({
     pitchLimits = { min: -ARC_PITCH_LIMIT, max: ARC_PITCH_LIMIT },
@@ -215,6 +217,14 @@ export class OrbitHandles {
     return this.root.visible
   }
 
+  setScale(scale: number): void {
+    this.scale = scale
+    this.yawRing.scale.setScalar(scale)
+    this.yawRing.position.y = this.yawRingHeight * scale
+    this.pitchArc.scale.setScalar(scale)
+    this.setHovered(this.hovered)
+  }
+
   update(state: CameraInfoState): void {
     const visible = state.mode === 'orbit'
     this.root.visible = visible
@@ -229,13 +239,15 @@ export class OrbitHandles {
 
     this.yawGroup.rotation.y = yawRad
 
+    const yawRadius = this.yawRingRadius * this.scale
     this.yawHandle.position.set(
-      this.yawRingRadius * Math.sin(yawRad),
-      this.yawRingHeight,
-      this.yawRingRadius * Math.cos(yawRad)
+      yawRadius * Math.sin(yawRad),
+      this.yawRingHeight * this.scale,
+      yawRadius * Math.cos(yawRad)
     )
 
-    this.pitchHandle.position.set(0, RING_RADIUS * sinP, RING_RADIUS * cosP)
+    const pitchRadius = RING_RADIUS * this.scale
+    this.pitchHandle.position.set(0, pitchRadius * sinP, pitchRadius * cosP)
 
     const endY = state.orbit.distance * sinP
     const endZ = state.orbit.distance * cosP
@@ -252,6 +264,7 @@ export class OrbitHandles {
   }
 
   setHovered(type: OrbitHandleType | null): void {
+    this.hovered = type
     const entries: [THREE.Mesh, THREE.Mesh, OrbitHandleType][] = [
       [this.yawHandle, this.yawHandleGlow, 'yaw'],
       [this.pitchHandle, this.pitchHandleGlow, 'pitch'],
@@ -259,7 +272,7 @@ export class OrbitHandles {
     ]
     for (const [handle, glow, handleType] of entries) {
       const active = handleType === type
-      handle.scale.setScalar(active ? HOVER_SCALE : 1)
+      handle.scale.setScalar((active ? HOVER_SCALE : 1) * this.scale)
       ;(glow.material as THREE.MeshBasicMaterial).opacity = active
         ? HOVER_GLOW_OPACITY
         : BASE_GLOW_OPACITY
@@ -270,7 +283,7 @@ export class OrbitHandles {
     if (type === 'yaw') {
       return new THREE.Plane(
         new THREE.Vector3(0, 1, 0),
-        -(state.target.y + this.yawRingHeight)
+        -(state.target.y + this.yawRingHeight * this.scale)
       )
     }
     const yawRad = state.orbit.yaw * DEG2RAD

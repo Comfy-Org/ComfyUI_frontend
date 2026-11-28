@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { isEqual } from 'es-toolkit'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
 import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
@@ -394,7 +395,8 @@ export const useQueueStore = defineStore('queue', () => {
           if (
             existing.outputsCount !== (job.outputs_count ?? undefined) ||
             existing.previewableOutputsCount !==
-              (job.previewable_outputs_count ?? undefined)
+              (job.previewable_outputs_count ?? undefined) ||
+            !isEqual(existing.job.deployment, job.deployment)
           ) {
             return new TaskItemImpl(job)
           }

@@ -405,6 +405,47 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.PROMPT_EDITOR_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackPromptEditorExposure({
+          variant: 'control',
+          '$feature/prompt-editor-surface': 'control'
+        }),
+      properties: {
+        variant: 'control',
+        '$feature/prompt-editor-surface': 'control'
+      }
+    },
+    {
+      name: TelemetryEvents.PROMPT_EDITOR_OPENED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackPromptEditorOpened({
+          surface: 'dialog',
+          trigger: 'expand_button'
+        }),
+      properties: { surface: 'dialog', trigger: 'expand_button' }
+    },
+    {
+      name: TelemetryEvents.PROMPT_EDITOR_CLOSED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackPromptEditorClosed({
+          surface: 'dialog',
+          trigger: 'expand_button',
+          end_reason: 'close',
+          duration_ms: 900,
+          input_count: 3,
+          node_switch_count: 0
+        }),
+      properties: {
+        surface: 'dialog',
+        trigger: 'expand_button',
+        end_reason: 'close',
+        duration_ms: 900,
+        input_count: 3,
+        node_switch_count: 0
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_SHOWN,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentShown({ trigger: 'first_load' }),

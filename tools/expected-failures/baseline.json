@@ -1,6 +1,6 @@
 [
   {
-    "id": "playwright:browser_tests/tests/agent/agentTurnProgressIsLegible.spec.ts:names how long the finished turn took:1",
+    "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
     "classification": "live-defect"
   },
   {
@@ -76,7 +76,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   },
   {
