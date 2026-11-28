@@ -1,5 +1,9 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  clearJobsAuthBackoff,
+  fetchHistory
+} from '@comfyorg/api-client/fetchJobs'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
@@ -117,6 +121,15 @@ const mockTokenResponse = {
   workspace: mockWorkspace,
   role: 'owner' as const,
   permissions: ['owner:*']
+}
+
+async function openJobsAuthBackoff() {
+  clearJobsAuthBackoff()
+  const jobsFetch = vi.fn(async () => new Response(null, { status: 401 }))
+  await fetchHistory(jobsFetch)
+  await fetchHistory(jobsFetch)
+  expect(jobsFetch).toHaveBeenCalledOnce()
+  return jobsFetch
 }
 
 function expectedExpiresAtMs(expiresAt: string): string {
@@ -478,6 +491,23 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.OWNER_UID)).toBe(
         'user-a'
       )
+    })
+
+    it('lets the next /jobs poll reach the server after switching workspaces', async () => {
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
+      )
+      const store = useWorkspaceAuthStore()
+      const jobsFetch = await openJobsAuthBackoff()
+
+      await store.switchWorkspace('workspace-123')
+      await nextTick()
+      await fetchHistory(jobsFetch)
+
+      expect(jobsFetch).toHaveBeenCalledTimes(2)
     })
 
     it('sets isLoading to true during operation', async () => {

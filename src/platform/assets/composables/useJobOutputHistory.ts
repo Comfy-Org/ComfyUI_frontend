@@ -1,3 +1,4 @@
+import { JobsAuthSuppressedError } from '@comfyorg/api-client/fetchJobs'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { createSharedComposable, useEventListener } from '@vueuse/core'
@@ -90,10 +91,12 @@ export const useJobOutputHistory = createSharedComposable(
           try {
             historyAssets.value = await fetchHistoryAssets(false)
           } catch (err) {
-            reportError(err, {
-              errorType: 'failure_loading_job_history',
-              surface: 'assets'
-            })
+            if (!(err instanceof JobsAuthSuppressedError)) {
+              reportError(err, {
+                errorType: 'failure_loading_job_history',
+                surface: 'assets'
+              })
+            }
           }
         } while (refreshedRequest !== refreshRequest)
       } finally {
@@ -118,10 +121,12 @@ export const useJobOutputHistory = createSharedComposable(
         historyAssets.value = await fetchHistoryAssets(true)
         return true
       } catch (err) {
-        reportError(err, {
-          errorType: 'failure_loading_job_history',
-          surface: 'assets'
-        })
+        if (!(err instanceof JobsAuthSuppressedError)) {
+          reportError(err, {
+            errorType: 'failure_loading_job_history',
+            surface: 'assets'
+          })
+        }
         return false
       } finally {
         isLoadingMore.value = false

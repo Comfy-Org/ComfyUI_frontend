@@ -1,6 +1,6 @@
 import type { User } from 'firebase/auth'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import type {
   ScheduledRefreshReport,
@@ -46,6 +46,7 @@ import { provideUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
+import { clearJobsAuthBackoff } from '@comfyorg/api-client/fetchJobs'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -198,6 +199,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // Getters
   const isAuthenticated = computed(
     () => currentWorkspace.value !== null && hasValidWorkspaceToken()
+  )
+
+  watch([() => currentWorkspace.value?.id, workspaceToken, unifiedToken], () =>
+    clearJobsAuthBackoff()
   )
 
   function currentUserUid(): string | null {

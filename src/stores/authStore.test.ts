@@ -1,5 +1,9 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  clearJobsAuthBackoff,
+  fetchHistory
+} from '@comfyorg/api-client/fetchJobs'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
@@ -94,6 +98,15 @@ vi.mock(import('@/composables/useFeatureFlags'))
 beforeEach(() => {
   vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
 })
+
+async function openJobsAuthBackoff() {
+  clearJobsAuthBackoff()
+  const jobsFetch = vi.fn(async () => new Response(null, { status: 401 }))
+  await fetchHistory(jobsFetch)
+  await fetchHistory(jobsFetch)
+  expect(jobsFetch).toHaveBeenCalledOnce()
+  return jobsFetch
+}
 
 describe('useAuthStore', () => {
   let store: ReturnType<typeof useAuthStore>
@@ -1360,6 +1373,34 @@ describe('useAuthStore', () => {
         })
       })
     })
+  })
+
+  describe('jobs auth backoff', () => {
+    const accountB: MockUser = {
+      ...mockUser,
+      uid: 'account-b-id',
+      email: 'b@example.com'
+    }
+
+    it.for([
+      { change: 'a token refresh', apply: () => store.notifyTokenRefreshed() },
+      {
+        change: 'a direct account switch',
+        apply: () => authStateCallback(accountB)
+      },
+      { change: 'sign-out', apply: () => authStateCallback(null) }
+    ])(
+      'lets the next /jobs poll reach the server after $change',
+      async ({ apply }) => {
+        const jobsFetch = await openJobsAuthBackoff()
+
+        apply()
+        await nextTick()
+        await fetchHistory(jobsFetch)
+
+        expect(jobsFetch).toHaveBeenCalledTimes(2)
+      }
+    )
   })
 
   describe('socket credential refresh', () => {

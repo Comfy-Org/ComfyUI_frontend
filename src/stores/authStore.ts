@@ -16,6 +16,8 @@ import {
   socialSignInWithProvisioning
 } from '@comfyorg/account-core/provisioning'
 
+import { clearJobsAuthBackoff } from '@comfyorg/api-client/fetchJobs'
+
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import {
@@ -284,6 +286,13 @@ export const useAuthStore = defineStore('auth', () => {
   const notifyTokenRefreshed = (): void => {
     tokenRefreshTrigger.value++
   }
+
+  // A new identity or token can resolve a permanent auth failure, so the next
+  // jobs poll probes at once. Workspace and API-key stores reset their own.
+  watch(
+    [currentUser, () => desktopHostUser.value?.id ?? null, tokenRefreshTrigger],
+    () => clearJobsAuthBackoff()
+  )
 
   /**
    * While Desktop shares its session, every credential comes from Desktop;

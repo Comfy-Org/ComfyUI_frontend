@@ -1,5 +1,7 @@
 import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
 import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { clearJobsAuthBackoff } from '@comfyorg/api-client/fetchJobs'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import {
   assert,
@@ -26,6 +28,7 @@ import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 describe('assetsStore - resolved history outputs', () => {
   beforeEach(() => {
@@ -143,6 +146,39 @@ describe('assetsStore - resolved history outputs', () => {
     await history.invalidate()
 
     expect(toValue(history.items)).toEqual([])
+  })
+
+  it('retains history through an auth failure and reports only the first', async () => {
+    clearJobsAuthBackoff()
+    const client = new ComfyApi({
+      isCloud: false,
+      featureFlagOverride: () => undefined,
+      onFreeMemory: () => {}
+    })
+    vi.mocked(api.getHistory).mockImplementation((limit, options) =>
+      client.getHistory(limit, options)
+    )
+    const fetchApi = vi
+      .spyOn(client, 'fetchApi')
+      .mockResolvedValueOnce(
+        Response.json({
+          jobs: [job('retained')],
+          pagination: { total: 1, offset: 0, limit: 200, has_more: false }
+        })
+      )
+      .mockResolvedValue(new Response(null, { status: 401 }))
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const history = scope.run(useJobOutputHistory)
+    assert(history)
+    await history.loadMore()
+
+    await history.invalidate()
+    await history.invalidate()
+
+    expect(fetchApi).toHaveBeenCalledTimes(2)
+    expect(toValue(history.items).map(({ id }) => id)).toEqual(['retained'])
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('retains both jobs when a second completion arrives during a refresh', async () => {
