@@ -460,6 +460,7 @@ const dropdownItems = computed(() =>
         v-model:size="panelSize"
         v-model:align-offset="alignOffset"
         :handle
+        :anchor="triggerRef?.anchor"
       />
     </PopoverContent>
   </PopoverRoot>

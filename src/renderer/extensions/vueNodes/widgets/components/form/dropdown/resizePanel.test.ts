@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resizePanel } from './resizePanel'
+import { resizePanel, roomInViewport } from './resizePanel'
 
 const start = { width: 400, height: 600 }
 const roomy = { width: 2000, height: 2000 }
@@ -73,6 +73,42 @@ describe('resizePanel', () => {
     }
   ] as const)('$name', ({ handle, pointer, growsUp, max, expected }) => {
     expect(resizePanel(start, pointer, { handle, growsUp, max })).toEqual(
+      expected
+    )
+  })
+})
+
+describe('roomInViewport', () => {
+  const rect = { left: 300, right: 700, top: 100, bottom: 640 }
+  const viewport = { width: 1280, height: 900 }
+
+  it.for([
+    {
+      name: 'left corner below the trigger reaches the left and bottom edges',
+      handle: 'left-corner',
+      growsUp: false,
+      expected: { width: 692, height: 792 }
+    },
+    {
+      name: 'right corner above the trigger reaches the right and top edges',
+      handle: 'right-corner',
+      growsUp: true,
+      expected: { width: 972, height: 632 }
+    },
+    {
+      name: 'left edge leaves the height unbounded',
+      handle: 'left-edge',
+      growsUp: false,
+      expected: { width: 692, height: Infinity }
+    },
+    {
+      name: 'free edge leaves the width unbounded',
+      handle: 'free-edge',
+      growsUp: true,
+      expected: { width: Infinity, height: 632 }
+    }
+  ] as const)('$name', ({ handle, growsUp, expected }) => {
+    expect(roomInViewport(rect, viewport, { handle, growsUp })).toEqual(
       expected
     )
   })

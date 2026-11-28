@@ -10,6 +10,7 @@ export type ResizeHandle =
   | 'free-edge'
 
 const MIN_PANEL_SIZE: PanelSize = { width: 320, height: 320 }
+const VIEWPORT_PADDING = 8
 
 const HANDLE_AXES: Record<ResizeHandle, { x: -1 | 0 | 1; y: boolean }> = {
   'left-corner': { x: -1, y: true },
@@ -41,6 +42,26 @@ export function resizePanel(
     ),
     height: clamp(start.height + dy, MIN_PANEL_SIZE.height, max.height)
   }
+}
+
+/** Largest size `handle` can drag the panel at `rect` to while its moving edges stay inside the viewport. */
+export function roomInViewport(
+  rect: Pick<DOMRect, 'left' | 'right' | 'top' | 'bottom'>,
+  viewport: PanelSize,
+  { handle, growsUp }: { handle: ResizeHandle; growsUp: boolean }
+): PanelSize {
+  const axes = HANDLE_AXES[handle]
+  const widthRoom = {
+    [-1]: rect.right - VIEWPORT_PADDING,
+    0: Infinity,
+    1: viewport.width - VIEWPORT_PADDING - rect.left
+  }[axes.x]
+  const heightRoom = !axes.y
+    ? Infinity
+    : growsUp
+      ? rect.bottom - VIEWPORT_PADDING
+      : viewport.height - VIEWPORT_PADDING - rect.top
+  return { width: widthRoom, height: heightRoom }
 }
 
 /** `size` raised to the minimum panel size, for sizes saved under an older minimum. */

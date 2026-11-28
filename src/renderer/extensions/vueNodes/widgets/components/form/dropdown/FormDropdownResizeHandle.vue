@@ -3,7 +3,7 @@ import { useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { growsRight, resizePanel } from './resizePanel'
+import { growsRight, resizePanel, roomInViewport } from './resizePanel'
 import type { PanelSize, ResizeHandle } from './resizePanel'
 
 const KEYBOARD_STEP = 16
@@ -29,7 +29,10 @@ const CORNER_LABELS: Partial<Record<ResizeHandle, string>> = {
   'right-corner': 'widgets.uploadSelect.resizeRightCorner'
 }
 
-const { handle } = defineProps<{ handle: ResizeHandle }>()
+const { handle, anchor } = defineProps<{
+  handle: ResizeHandle
+  anchor?: HTMLElement
+}>()
 const cornerLabel = CORNER_LABELS[handle]
 const size = defineModel<PanelSize>('size')
 const alignOffset = defineModel<number>('alignOffset', { default: 0 })
@@ -49,25 +52,33 @@ let drag:
 function measurePanel(): PanelMeasure | undefined {
   const panel = handleRef.value?.parentElement
   if (!panel) return
-  const { width, height } = panel.getBoundingClientRect()
+  const rect = panel.getBoundingClientRect()
   const style = getComputedStyle(panel)
+  const growsUp = panel.dataset.side === 'top'
+  const room = roomInViewport(
+    rect,
+    { width: window.innerWidth, height: window.innerHeight },
+    { handle, growsUp }
+  )
   return {
-    start: { width, height },
-    startOffset: alignOffset.value,
+    start: { width: rect.width, height: rect.height },
+    startOffset: anchor
+      ? anchor.getBoundingClientRect().right - rect.right
+      : alignOffset.value,
     max: {
-      width: parseFloat(style.maxWidth) || Infinity,
-      height: parseFloat(style.maxHeight) || Infinity
+      width: Math.min(parseFloat(style.maxWidth) || Infinity, room.width),
+      height: Math.min(parseFloat(style.maxHeight) || Infinity, room.height)
     },
-    growsUp: panel.dataset.side === 'top'
+    growsUp
   }
 }
 
 function resizeFrom(panel: PanelMeasure, pointer: { x: number; y: number }) {
   const next = resizePanel(panel.start, pointer, { ...panel, handle })
   size.value = next
-  if (growsRight(handle)) {
-    alignOffset.value = panel.startOffset - (next.width - panel.start.width)
-  }
+  alignOffset.value = growsRight(handle)
+    ? panel.startOffset - (next.width - panel.start.width)
+    : panel.startOffset
 }
 
 function onPointerDown(event: PointerEvent) {

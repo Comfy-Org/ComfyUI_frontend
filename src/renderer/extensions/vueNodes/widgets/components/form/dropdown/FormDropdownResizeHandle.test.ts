@@ -8,13 +8,15 @@ import type { PanelSize, ResizeHandle } from './resizePanel'
 
 function renderHandle(
   handle: ResizeHandle,
-  resized?: { size: PanelSize; alignOffset: number }
+  resized?: { size: PanelSize; alignOffset: number },
+  anchor?: HTMLElement
 ) {
   const sizes: (PanelSize | undefined)[] = []
   const offsets: number[] = []
   render(FormDropdownResizeHandle, {
     props: {
       handle,
+      anchor,
       ...resized,
       'onUpdate:size': (size: PanelSize | undefined) => sizes.push(size),
       'onUpdate:alignOffset': (offset: number) => offsets.push(offset)
@@ -29,7 +31,7 @@ function renderHandle(
 describe('FormDropdownResizeHandle', () => {
   beforeEach(() => {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
-      DOMRect.fromRect({ width: 400, height: 600 })
+      DOMRect.fromRect({ x: 400, y: 100, width: 400, height: 600 })
     )
   })
 
@@ -72,6 +74,24 @@ describe('FormDropdownResizeHandle', () => {
       await userEvent.keyboard(key)
 
       expect(rendered.sizes.map((size) => size?.width)).toEqual([width])
+      expect(rendered.offsets).toEqual(offsets)
+    }
+  )
+
+  it.for([
+    { handle: 'left-corner', key: '{ArrowLeft}', offsets: [20] },
+    { handle: 'right-corner', key: '{ArrowRight}', offsets: [4] }
+  ] as const)(
+    '$handle keeps the panel where the viewport pushed it, off its anchor by 20px',
+    async ({ handle, key, offsets }) => {
+      const anchor = document.createElement('button')
+      Object.defineProperty(anchor, 'getBoundingClientRect', {
+        value: () => DOMRect.fromRect({ x: 700, y: 60, width: 120, height: 30 })
+      })
+      const rendered = renderHandle(handle, undefined, anchor)
+      rendered.grip.focus()
+      await userEvent.keyboard(key)
+
       expect(rendered.offsets).toEqual(offsets)
     }
   )

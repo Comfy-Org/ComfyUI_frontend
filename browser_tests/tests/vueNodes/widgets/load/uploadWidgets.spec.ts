@@ -142,17 +142,15 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
         const box = async () => (await dropdown.popover.boundingBox())!
         const before = await box()
 
-        await test.step('dragging the left corner grows the panel left and down', async () => {
+        await test.step('dragging the left corner past the viewport edge grows only down', async () => {
           await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
             x: -120,
             y: 80
           })
           await expect
-            .poll(async () => (await box()).width)
-            .toBeCloseTo(before.width + 120, 0)
-          await expect
             .poll(async () => (await box()).height)
             .toBeCloseTo(before.height + 80, 0)
+          expect((await box()).width).toBeCloseTo(before.width, 0)
           await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
           await expect(dropdown.menu).toBeVisible()
         })
@@ -176,6 +174,31 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
           await expect
             .poll(async () => (await box()).width)
             .toBeCloseTo(resized.width - 16, 0)
+        })
+
+        await test.step('dragging past the viewport stops at its edge', async () => {
+          await dropdown.dragResizeCorner(dropdown.rightResizeCorner, {
+            x: 2000,
+            y: 2000
+          })
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+          await expect(dropdown.popover).toHaveAttribute('data-side', 'bottom')
+        })
+
+        await test.step('the other corner then shrinks the panel in place', async () => {
+          const stretched = await box()
+          await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+            x: 100,
+            y: 0
+          })
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(stretched.width - 100, 0)
+          const shrunk = await box()
+          expect(shrunk.x + shrunk.width).toBeCloseTo(
+            stretched.x + stretched.width,
+            0
+          )
         })
 
         await test.step('double-clicking a corner restores the default size', async () => {
