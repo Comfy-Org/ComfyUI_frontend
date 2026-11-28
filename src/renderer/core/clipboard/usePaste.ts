@@ -15,6 +15,13 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
+  getFilesFromItems,
+  hasAudioType,
+  hasImageType,
+  hasVideoType,
+  isSyntheticImageBmpPlaceholder
+} from '@/utils/eventUtils'
+import {
   isAudioNode,
   isImageNode,
   isSelectOnly,
@@ -101,27 +108,30 @@ function isWorkflow(
 function pasteMediaFile(
   canvas: LGraphCanvas,
   items: DataTransferItemList,
-  selectedNode: LGraphNode | undefined
+  selectedNode: LGraphNode | undefined,
+  files: File[]
 ): Promise<LGraphNode | null> | undefined {
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      return pasteImageNode(
-        canvas,
-        items,
-        isImageNode(selectedNode) ? selectedNode : null
-      )
-    } else if (item.type.startsWith('video/')) {
-      return pasteVideoNode(
-        canvas,
-        items,
-        isVideoNode(selectedNode) ? selectedNode : null
-      )
-    } else if (item.type.startsWith('audio/')) {
-      return pasteAudioNode(
-        canvas,
-        items,
-        isAudioNode(selectedNode) ? selectedNode : null
-      )
+  const imageFiles = files.filter(hasImageType)
+  const audioFiles = files.filter(hasAudioType)
+  const videoFiles = files.filter(hasVideoType)
+
+  if (isImageNode(selectedNode) && imageFiles.length > 0) {
+    return pasteImageNode(canvas, items, selectedNode, imageFiles)
+  }
+  if (isVideoNode(selectedNode) && videoFiles.length > 0) {
+    return pasteVideoNode(canvas, items, selectedNode, videoFiles)
+  }
+  if (isAudioNode(selectedNode) && audioFiles.length > 0) {
+    return pasteAudioNode(canvas, items, selectedNode, audioFiles)
+  }
+
+  for (const file of files) {
+    if (hasImageType(file)) {
+      return pasteImageNode(canvas, items, null, imageFiles)
+    } else if (hasVideoType(file)) {
+      return pasteVideoNode(canvas, items, null, videoFiles)
+    } else if (hasAudioType(file)) {
+      return pasteAudioNode(canvas, items, null, audioFiles)
     }
   }
 }
@@ -186,11 +196,14 @@ export const usePaste = () => {
       console.error('No clipboard data on clipboard event')
       return
     }
+    const files = getFilesFromItems(e.clipboardData.items).filter(
+      (file) => !isSyntheticImageBmpPlaceholder(file)
+    )
     const data = cloneDataTransfer(e.clipboardData)
     const selectedNode = canvas.current_node?.is_selected
       ? canvas.current_node
       : undefined
-    const mediaPaste = pasteMediaFile(canvas, data.items, selectedNode)
+    const mediaPaste = pasteMediaFile(canvas, data.items, selectedNode, files)
     if (mediaPaste) {
       await mediaPaste
       return

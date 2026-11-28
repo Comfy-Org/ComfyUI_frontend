@@ -182,3 +182,49 @@ describe('fetchDroppedFile', () => {
     expect(file?.name).toBe('display label')
   })
 })
+
+describe('media type helpers', () => {
+  it('falls back to filename extension when image MIME type is empty', () => {
+    const file = new File([''], 'example.jpg', { type: '' })
+    expect(hasImageType(file)).toBe(true)
+    expect(isMediaFile(file)).toBe(true)
+  })
+
+  it('falls back to extended filename extensions when MIME type is empty', () => {
+    expect(hasImageType(new File([''], 'example.heic', { type: '' }))).toBe(
+      true
+    )
+    expect(hasAudioType(new File([''], 'example.m4a', { type: '' }))).toBe(
+      true
+    )
+    expect(hasVideoType(new File([''], 'example.mkv', { type: '' }))).toBe(
+      true
+    )
+  })
+
+  it('falls back to filename extension when audio MIME type is empty', () => {
+    const file = new File([''], 'example.mp3', { type: '' })
+    expect(hasAudioType(file)).toBe(true)
+    expect(isMediaFile(file)).toBe(true)
+  })
+
+  it('falls back to filename extension when video MIME type is empty', () => {
+    const file = new File([''], 'example.mp4', { type: '' })
+    expect(hasVideoType(file)).toBe(true)
+    expect(isMediaFile(file)).toBe(true)
+  })
+
+  it('does not classify unknown extensions as media when MIME type is empty', () => {
+    expect(isMediaFile(new File([''], 'example.bin', { type: '' }))).toBe(
+      false
+    )
+  })
+
+  it('does not override an explicit non-media MIME with the filename extension', () => {
+    const file = new File([''], 'report.jpg', { type: 'application/pdf' })
+    expect(hasImageType(file)).toBe(false)
+    expect(hasAudioType(file)).toBe(false)
+    expect(hasVideoType(file)).toBe(false)
+    expect(isMediaFile(file)).toBe(false)
+  })
+})

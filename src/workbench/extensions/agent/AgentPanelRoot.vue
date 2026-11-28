@@ -53,7 +53,7 @@ import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
 import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
 import type { DroppedAsset } from '@/platform/assets/integration/assetDrop'
-import { fetchDroppedFile } from '@/utils/eventUtils'
+import { fetchDroppedFile, markDropEventHandled } from '@/utils/eventUtils'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import {
@@ -3591,6 +3591,12 @@ function onPanelDragOver(event: DragEvent): void {
   if (isAttachableDrag(event)) event.preventDefault()
 }
 
+function claimPanelDrop(event: DragEvent): void {
+  event.preventDefault()
+  event.stopPropagation()
+  markDropEventHandled(event)
+}
+
 async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
   if (hostFenced.value) {
@@ -3599,7 +3605,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     return
   }
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
-    event.preventDefault()
+    claimPanelDrop(event)
     void attachDroppedAsset(event).then((attached) => {
       if (attached)
         useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
@@ -3608,7 +3614,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   }
   const files = Array.from(event.dataTransfer?.files ?? [])
   if (files.length === 0) return
-  event.preventDefault()
+  claimPanelDrop(event)
   if (await attachment.addFiles(files))
     useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
 }

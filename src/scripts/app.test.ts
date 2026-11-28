@@ -45,6 +45,10 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasPointerEvent,
+  CanvasPointerExtensions
+} from '@comfyorg/graph-model/events'
 import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type {
@@ -121,7 +125,7 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   createTestRootGraph,
@@ -131,6 +135,7 @@ import {
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import { extractFilesFromDragEvent } from '@/platform/assets/integration/assetDrop'
+import { markDropEventHandled } from '@/utils/eventUtils'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -246,11 +251,13 @@ function createMockNode(
 
 function createMockCanvas(): Partial<LGraphCanvas> {
   const mockGraph: Partial<LGraph> = {
-    change: vi.fn()
+    change: vi.fn(),
+    getNodeOnPos: vi.fn(() => null)
   }
 
   return {
     graph: mockGraph as LGraph,
+    graph_mouse: [0, 0],
     draw: vi.fn(),
     selectItems: vi.fn(),
     setDirty: vi.fn(),
@@ -261,6 +268,47 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
 function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
+}
+
+function createDropEvent(
+  dataTransfer = new DataTransfer(),
+  target?: EventTarget
+): DragEvent {
+  const event = new Event('drop', { bubbles: true, cancelable: true })
+  Object.defineProperty(event, 'dataTransfer', {
+    configurable: true,
+    value: dataTransfer
+  })
+  if (target) {
+    Object.defineProperty(event, 'target', {
+      configurable: true,
+      value: target
+    })
+  }
+  return event as DragEvent
+}
+
+function installDocumentDropHandler(app: ComfyApp) {
+  const addEventListenerSpy = vi.spyOn(document, 'addEventListener')
+  const scope = effectScope()
+  scope.run(() => app['addDropHandler']())
+  const dropListenerCall = addEventListenerSpy.mock.calls.find(
+    ([event]) => event === 'drop'
+  )
+  addEventListenerSpy.mockRestore()
+  scope.stop()
+
+  if (!dropListenerCall) throw new Error('Drop handler was not installed')
+
+  const [, listener] = dropListenerCall
+  return listener as unknown as (event: DragEvent) => Promise<void>
+}
+
+function setCanvasEventPosition<T extends MouseEvent>(
+  event: T & Partial<CanvasPointerExtensions>
+): asserts event is T & CanvasPointerEvent {
+  Object.defineProperty(event, 'canvasX', { value: 10 })
+  Object.defineProperty(event, 'canvasY', { value: 20 })
 }
 
 /**
@@ -7056,6 +7104,18 @@ describe('ComfyApp', () => {
       expect(pasteImageNodes).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
     })
+
+    it('should process image files with empty MIME type when extension is recognized', async () => {
+      const mockNode = createMockNode({ id: 1 })
+      vi.mocked(pasteImageNodes).mockResolvedValue([mockNode])
+
+      await app.handleFileList([createTestFile('test.jpg', '')])
+
+      expect(pasteImageNodes).toHaveBeenCalledWith(mockCanvas, [
+        expect.any(File)
+      ])
+      expect(mockCanvas.selectItems).toHaveBeenCalledWith([mockNode])
+    })
   })
 
   describe('handleAudioFileList', () => {
@@ -7164,6 +7224,22 @@ describe('ComfyApp', () => {
       const imageFile = createTestFile('test.png', 'image/png')
 
       await app.handleFile(imageFile)
+
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+      expect(pasteImageNode).toHaveBeenCalledWith(
+        mockCanvas,
+        expect.any(DataTransferItemList),
+        mockNode
+      )
+    })
+
+    it('should handle image files with empty MIME type by extension', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
+
+      const mockNode = createMockNode()
+      vi.mocked(createNode).mockResolvedValue(mockNode)
+
+      await app.handleFile(createTestFile('test.jpg', ''))
 
       expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
       expect(pasteImageNode).toHaveBeenCalledWith(
@@ -7569,36 +7645,355 @@ describe('ComfyApp', () => {
       }
     })
 
-    it('tells the warnings a dropped workflow was brought in', async () => {
-      app.canvas = fromPartial<LGraphCanvas>({
-        ...createMockCanvas(),
-        graph_mouse: [0, 0],
-        adjustMouseEvent: vi.fn()
-      })
-      Reflect.set(app, 'rootGraphInternal', new LGraph())
-      await useRealWorkflowService()
-      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
-        prompt: { '1': { class_type: 'test/DroppedNode', inputs: {} } }
-      })
-      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
-        createTestFile('workflow.json', 'application/json')
-      ])
-      vi.mocked(useWorkflowStore().openWorkflow).mockImplementation(
-        async (workflow: ComfyWorkflow) => {
-          useWorkflowStore().activeWorkflow = markLoaded(workflow)
-          return markLoaded(workflow)
-        }
-      )
-      addScopedDropHandler()
-
-      document.dispatchEvent(new DragEvent('drop'))
-
-      await vi.waitFor(() => {
-        expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledWith(
-          undefined,
-          { opening: 'brought_in' }
+    it.for([
+      { route: 'document drop', skipNodeRouting: false },
+      { route: 'Vue node fallback', skipNodeRouting: true }
+    ])(
+      'tells the warnings a workflow from $route was brought in',
+      async ({ skipNodeRouting }) => {
+        app.canvas = fromPartial<LGraphCanvas>({
+          ...createMockCanvas(),
+          graph_mouse: [0, 0],
+          adjustMouseEvent: vi.fn()
+        })
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        await useRealWorkflowService()
+        vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+          prompt: { '1': { class_type: 'test/DroppedNode', inputs: {} } }
+        })
+        vi.mocked(extractFilesFromDragEvent).mockResolvedValue([
+          createTestFile('workflow.json', 'application/json')
+        ])
+        vi.mocked(useWorkflowStore().openWorkflow).mockImplementation(
+          async (workflow: ComfyWorkflow) => {
+            useWorkflowStore().activeWorkflow = markLoaded(workflow)
+            return markLoaded(workflow)
+          }
         )
+        if (skipNodeRouting) {
+          const event = createDropEvent()
+          event.preventDefault()
+          await app.handleFileDrop(event, { skipNodeRouting: true })
+        } else {
+          addScopedDropHandler()
+          document.dispatchEvent(new DragEvent('drop'))
+        }
+
+        await vi.waitFor(() => {
+          expect(mockWorkflowService.showPendingWarnings).toHaveBeenCalledWith(
+            undefined,
+            { opening: 'brought_in' }
+          )
+        })
+      }
+    )
+
+    it('ignores drop events already handled by a Vue node', async () => {
+      const dragOverNode = createMockNode({
+        id: 1,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(true)
       })
+      const positionNode = createMockNode({
+        id: 2,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const canvasContainer = document.createElement('div')
+      const canvasChild = document.createElement('canvas')
+      canvasContainer.append(canvasChild)
+      document.body.append(canvasContainer)
+
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = dragOverNode
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos: vi.fn(() => positionNode)
+      } as unknown as LGraph
+
+      try {
+        const handleDrop = installDocumentDropHandler(app)
+        const event = createDropEvent(new DataTransfer(), canvasChild)
+        markDropEventHandled(event)
+        await handleDrop(event)
+
+        expect(mockCanvas.adjustMouseEvent).not.toHaveBeenCalled()
+        expect(dragOverNode.onDragOver).not.toHaveBeenCalled()
+        expect(dragOverNode.onDragDrop).not.toHaveBeenCalled()
+        expect(positionNode.onDragOver).not.toHaveBeenCalled()
+        expect(positionNode.onDragDrop).not.toHaveBeenCalled()
+        expect(extractFilesFromDragEvent).not.toHaveBeenCalled()
+      } finally {
+        canvasContainer.remove()
+      }
+    })
+
+    it('ignores default-prevented drops outside the graph canvas', async () => {
+      const dragOverNode = createMockNode({
+        id: 1,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const canvasContainer = document.createElement('div')
+      const outsideTarget = document.createElement('div')
+      document.body.append(canvasContainer, outsideTarget)
+
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = dragOverNode
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+
+      try {
+        const handleDrop = installDocumentDropHandler(app)
+        const event = createDropEvent(new DataTransfer(), outsideTarget)
+        event.preventDefault()
+        await handleDrop(event)
+
+        expect(mockCanvas.adjustMouseEvent).not.toHaveBeenCalled()
+        expect(dragOverNode.onDragOver).not.toHaveBeenCalled()
+        expect(dragOverNode.onDragDrop).not.toHaveBeenCalled()
+        expect(extractFilesFromDragEvent).not.toHaveBeenCalled()
+      } finally {
+        canvasContainer.remove()
+        outsideTarget.remove()
+      }
+    })
+
+    it('routes a topbar drop to file fallback without probing graph nodes', async () => {
+      const node = createMockNode({
+        id: 1,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const canvasContainer = document.createElement('div')
+      const topbar = document.createElement('div')
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = node
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      const getNodeOnPos = vi.fn(() => node)
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos
+      } as unknown as LGraph
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
+
+      const handleDrop = installDocumentDropHandler(app)
+      const event = createDropEvent(new DataTransfer(), topbar)
+      await handleDrop(event)
+
+      expect(app.dragOverNode).toBeNull()
+      expect(getNodeOnPos).not.toHaveBeenCalled()
+      expect(node.onDragOver).not.toHaveBeenCalled()
+      expect(node.onDragDrop).not.toHaveBeenCalled()
+      expect(extractFilesFromDragEvent).toHaveBeenCalledWith(event)
+    })
+
+    it('routes default-prevented canvas drops to the previous drag-over node', async () => {
+      const dragOverNode = createMockNode({
+        id: 1,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const positionNode = createMockNode({
+        id: 2,
+        onDragOver: vi.fn(() => false),
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const canvasContainer = document.createElement('div')
+      const canvasChild = document.createElement('canvas')
+      canvasContainer.append(canvasChild)
+      document.body.append(canvasContainer)
+
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = dragOverNode
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos: vi.fn(() => positionNode)
+      } as unknown as LGraph
+
+      try {
+        const handleDrop = installDocumentDropHandler(app)
+        const event = createDropEvent(new DataTransfer(), canvasChild)
+        event.preventDefault()
+        await handleDrop(event)
+
+        expect(dragOverNode.onDragDrop).toHaveBeenCalledWith(event)
+        expect(positionNode.onDragDrop).not.toHaveBeenCalled()
+
+        app.dragOverNode = null
+        const rejectedEvent = createDropEvent(new DataTransfer(), canvasChild)
+        await handleDrop(rejectedEvent)
+
+        expect(positionNode.onDragOver).toHaveBeenCalledWith(rejectedEvent)
+        expect(positionNode.onDragDrop).not.toHaveBeenCalled()
+      } finally {
+        canvasContainer.remove()
+      }
+    })
+
+    it('routes drops to an accepting node at the final canvas position', async () => {
+      const positionNode = createMockNode({
+        id: 2,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const canvasContainer = document.createElement('div')
+      const canvasChild = document.createElement('canvas')
+      canvasContainer.append(canvasChild)
+      document.body.append(canvasContainer)
+
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = null
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos: vi.fn(() => positionNode)
+      } as unknown as LGraph
+
+      try {
+        const handleDrop = installDocumentDropHandler(app)
+        const event = createDropEvent(new DataTransfer(), canvasChild)
+        await handleDrop(event)
+
+        expect(positionNode.onDragOver).toHaveBeenCalledWith(event)
+        expect(positionNode.onDragDrop).toHaveBeenCalledWith(event)
+        expect(extractFilesFromDragEvent).not.toHaveBeenCalled()
+      } finally {
+        canvasContainer.remove()
+      }
+    })
+
+    it('skips node routing when continuing a declined Vue-node drop', async () => {
+      const dragOverNode = createMockNode({
+        id: 1,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(false)
+      })
+      const positionNode = createMockNode({
+        id: 2,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const canvasContainer = document.createElement('div')
+      const canvasChild = document.createElement('canvas')
+      canvasContainer.append(canvasChild)
+      document.body.append(canvasContainer)
+
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = dragOverNode
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos: vi.fn(() => positionNode)
+      } as unknown as LGraph
+      vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
+
+      try {
+        const event = createDropEvent(new DataTransfer(), canvasChild)
+        event.preventDefault()
+        await app.handleFileDrop(event, { skipNodeRouting: true })
+
+        expect(dragOverNode.onDragOver).not.toHaveBeenCalled()
+        expect(dragOverNode.onDragDrop).not.toHaveBeenCalled()
+        expect(positionNode.onDragOver).not.toHaveBeenCalled()
+        expect(positionNode.onDragDrop).not.toHaveBeenCalled()
+        expect(extractFilesFromDragEvent).toHaveBeenCalledWith(event)
+      } finally {
+        canvasContainer.remove()
+      }
+    })
+
+    it('ignores a cached node from an inactive workflow graph', async () => {
+      const oldGraph = new LGraph()
+      const oldNode = new LGraphNode('Old upload')
+      oldGraph.add(oldNode)
+      oldNode.onDragOver = vi.fn(() => true)
+      oldNode.onDragDrop = vi.fn(() => true)
+      const activeNode = createMockNode({
+        id: oldNode.id,
+        onDragOver: vi.fn(() => true),
+        onDragDrop: vi.fn(() => true)
+      })
+
+      const canvasContainer = document.createElement('div')
+      const canvasChild = document.createElement('canvas')
+      canvasContainer.append(canvasChild)
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = oldNode
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos: vi.fn(() => activeNode)
+      } as unknown as LGraph
+
+      const handleDrop = installDocumentDropHandler(app)
+      const event = createDropEvent(new DataTransfer(), canvasChild)
+      await handleDrop(event)
+
+      expect(oldNode.onDragOver).not.toHaveBeenCalled()
+      expect(oldNode.onDragDrop).not.toHaveBeenCalled()
+      expect(activeNode.onDragDrop).toHaveBeenCalledWith(event)
+      expect(extractFilesFromDragEvent).not.toHaveBeenCalled()
+    })
+
+    it('routes the App mode aggregate outside the graph without hit testing', async () => {
+      const aggregate = {
+        id: UNASSIGNED_NODE_ID,
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      }
+      const canvasContainer = document.createElement('div')
+      const appMode = document.createElement('div')
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = aggregate
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      const getNodeOnPos = vi.fn()
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos
+      } as unknown as LGraph
+
+      const handleDrop = installDocumentDropHandler(app)
+      const event = createDropEvent(new DataTransfer(), appMode)
+      await handleDrop(event)
+
+      expect(aggregate.onDragDrop).toHaveBeenCalledWith(event)
+      expect(getNodeOnPos).not.toHaveBeenCalled()
+      expect(extractFilesFromDragEvent).not.toHaveBeenCalled()
+    })
+
+    it('preserves aggregate drag-over targets without onDragOver', async () => {
+      const aggregateDragOverNode = {
+        id: UNASSIGNED_NODE_ID,
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      }
+      const positionNode = createMockNode({
+        id: 2,
+        onDragDrop: vi.fn().mockResolvedValue(true)
+      })
+      const canvasContainer = document.createElement('div')
+      const canvasChild = document.createElement('canvas')
+      canvasContainer.append(canvasChild)
+      document.body.append(canvasContainer)
+
+      app.canvasContainer = canvasContainer
+      app.dragOverNode = aggregateDragOverNode
+      mockCanvas.adjustMouseEvent = vi.fn(setCanvasEventPosition)
+      mockCanvas.graph = {
+        change: vi.fn(),
+        getNodeOnPos: vi.fn(() => positionNode)
+      } as unknown as LGraph
+
+      try {
+        const handleDrop = installDocumentDropHandler(app)
+        const event = createDropEvent(new DataTransfer(), canvasChild)
+        await handleDrop(event)
+
+        expect(aggregateDragOverNode.onDragDrop).toHaveBeenCalledWith(event)
+        expect(positionNode.onDragDrop).not.toHaveBeenCalled()
+      } finally {
+        canvasContainer.remove()
+      }
     })
 
     it('claims but ignores a drop while the canvas is select-only', async () => {

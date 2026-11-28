@@ -1,4 +1,14 @@
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+
+export const URI_DROP_TYPES = ['text/uri-list', 'text/x-moz-url']
+const handledDropEvents = new WeakSet<DragEvent>()
+
+const fallbackMediaExtensions = {
+  image: new Set(['heic', 'heif', 'jxl', 'exr', 'hdr']),
+  audio: new Set(['aac', 'm4a', 'opus']),
+  video: new Set(['flv', 'm4v', 'mkv', 'wmv'])
+} as const
 
 export interface DroppedFile {
   name: string
@@ -6,10 +16,31 @@ export interface DroppedFile {
   ref?: string
 }
 
+export function getFilesFromItems(
+  items: DataTransferItemList | undefined
+): File[] {
+  if (!items) return []
+  return Array.from(items)
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter((file): file is File => !!file)
+}
+
+export function isSyntheticImageBmpPlaceholder(file: File): boolean {
+  return file.type === 'image/bmp' && file.size === 0
+}
+
+export function markDropEventHandled(event: DragEvent): void {
+  handledDropEvents.add(event)
+}
+
+export function isDropEventHandled(event: DragEvent): boolean {
+  return handledDropEvents.has(event)
+}
+
 export function getDroppedUri(dataTransfer: DataTransfer): string | undefined {
-  const validTypes = ['text/uri-list', 'text/x-moz-url']
   const match = [...dataTransfer.types].find((type) =>
-    validTypes.includes(type)
+    URI_DROP_TYPES.includes(type)
   )
   return match && dataTransfer.getData(match).split('\n')[0]
 }
@@ -63,8 +94,13 @@ export async function fetchDroppedFile(
 }
 
 export function getDroppedFiles(dataTransfer: DataTransfer): File[] {
+  const itemFiles = getFilesFromItems(dataTransfer.items).filter(
+    (file) => !isSyntheticImageBmpPlaceholder(file)
+  )
+  if (itemFiles.length > 0) return itemFiles.map(withHdrImageType)
+
   return Array.from(dataTransfer.files)
-    .filter((file) => file.type !== 'image/bmp')
+    .filter((file) => !isSyntheticImageBmpPlaceholder(file))
     .map(withHdrImageType)
 }
 
@@ -76,16 +112,45 @@ export function withHdrImageType(file: File): File {
   return new File([file], file.name, { type, lastModified: file.lastModified })
 }
 
-export function hasImageType({ type }: File): boolean {
-  return type.startsWith('image')
+type SupportedMediaType = 'image' | 'audio' | 'video'
+
+function getFallbackMediaTypeFromFilename(
+  name: string
+): SupportedMediaType | null {
+  const extension = name.split('.').pop()?.toLowerCase()
+  if (!extension) return null
+
+  if (fallbackMediaExtensions.image.has(extension)) return 'image'
+  if (fallbackMediaExtensions.audio.has(extension)) return 'audio'
+  if (fallbackMediaExtensions.video.has(extension)) return 'video'
+
+  return null
 }
 
-export function hasAudioType({ type }: File): boolean {
-  return type.startsWith('audio')
+function getMediaTypeFromFile({ name, type }: File): SupportedMediaType | null {
+  if (type.startsWith('image/')) return 'image'
+  if (type.startsWith('audio/')) return 'audio'
+  if (type.startsWith('video/')) return 'video'
+  if (type) return null
+
+  const mediaType = getMediaTypeFromFilename(name)
+  if (mediaType === 'image' || mediaType === 'audio' || mediaType === 'video') {
+    return mediaType
+  }
+
+  return getFallbackMediaTypeFromFilename(name)
 }
 
-export function hasVideoType({ type }: File): boolean {
-  return type.startsWith('video')
+export function hasImageType(file: File): boolean {
+  return getMediaTypeFromFile(file) === 'image'
+}
+
+export function hasAudioType(file: File): boolean {
+  return getMediaTypeFromFile(file) === 'audio'
+}
+
+export function hasVideoType(file: File): boolean {
+  return getMediaTypeFromFile(file) === 'video'
 }
 
 export function isMediaFile(file: File): boolean {
