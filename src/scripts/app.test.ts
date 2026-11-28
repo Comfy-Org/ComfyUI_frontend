@@ -106,6 +106,7 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import { ClickHouseTelemetryProvider } from '@/platform/telemetry/providers/cloud/ClickHouseTelemetryProvider'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
@@ -619,6 +620,107 @@ describe('ComfyApp', () => {
       expect(store.lastNodeErrors).toEqual({
         '1': nodeError([unrelated]),
         '2': nodeError([mediaError])
+      })
+    })
+
+    describe('ClickHouse node_missing reporting', () => {
+      function workflowWithNodeTypes(types: string[]): ComfyWorkflowJSON {
+        return {
+          ...createWorkflowGraphData(),
+          nodes: types.map((type, index) => ({
+            id: index + 1,
+            type,
+            pos: [0, 0],
+            size: [100, 100],
+            flags: {},
+            order: index,
+            mode: 0,
+            properties: {}
+          }))
+        }
+      }
+
+      function prepareClickHouseReporting() {
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        vi.spyOn(useNodeReplacementStore(), 'load').mockResolvedValue()
+        vi.spyOn(
+          useNodeReplacementStore(),
+          'getReplacementFor'
+        ).mockReturnValue(null)
+        const registry = new TelemetryRegistry()
+        registry.registerProvider(new ClickHouseTelemetryProvider())
+        setTelemetryRegistry(registry)
+        onTestFinished(() => setTelemetryRegistry(null))
+        const fetchApi = vi
+          .spyOn(api, 'fetchApi')
+          .mockResolvedValue(new Response())
+        return () =>
+          fetchApi.mock.calls
+            .filter(([route]) => route === '/internal/cloud_analytics')
+            .map(([, init]) => JSON.parse(String(init?.body)))
+      }
+
+      it('reports one node_missing event for one load with missing nodes', async () => {
+        const reportedEvents = prepareClickHouseReporting()
+
+        await app.loadGraphData(
+          workflowWithNodeTypes(['test/UninstalledClickHouseNode']),
+          true,
+          true,
+          null,
+          { openSource: 'file_drop' }
+        )
+
+        expect(reportedEvents()).toEqual([
+          {
+            event_name: 'node_missing',
+            event_data: {
+              missing_class_types: ['test/UninstalledClickHouseNode'],
+              missing_count: 1,
+              source: 'file_drop'
+            }
+          }
+        ])
+      })
+
+      it('reports nothing for a load without missing nodes', async () => {
+        const reportedEvents = prepareClickHouseReporting()
+
+        await app.loadGraphData(createWorkflowGraphData(), true, true, null, {
+          openSource: 'file_drop'
+        })
+
+        expect(reportedEvents()).toEqual([])
+      })
+
+      it('reports each distinct load separately', async () => {
+        const reportedEvents = prepareClickHouseReporting()
+
+        await app.loadGraphData(
+          workflowWithNodeTypes(['test/UninstalledFirstNode']),
+          true,
+          true,
+          null,
+          { openSource: 'file_button' }
+        )
+        await app.loadGraphData(
+          workflowWithNodeTypes(['test/UninstalledSecondNode']),
+          true,
+          true,
+          null,
+          { openSource: 'template' }
+        )
+
+        expect(
+          reportedEvents().map(({ event_data }) => [
+            event_data.missing_class_types,
+            event_data.source
+          ])
+        ).toEqual([
+          [['test/UninstalledFirstNode'], 'file_button'],
+          [['test/UninstalledSecondNode'], 'template']
+        ])
       })
     })
 
