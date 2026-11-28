@@ -86,6 +86,19 @@ function toUserAttachments(
   }))
 }
 
+export interface DirectSubmissionInput {
+  text: string
+  nodes: SelectedNode[]
+  inputMethod: AgentInputMethod
+}
+
+export type DirectSubmissionOutcome =
+  | 'sent'
+  | 'rejected'
+  | 'withdrawn'
+  | 'withdrawn_unrestored'
+  | 'failed'
+
 export function useAgentDraftSubmission(
   options: UseAgentDraftSubmissionOptions
 ) {
@@ -110,7 +123,11 @@ export function useAgentDraftSubmission(
     return true
   }
 
-  function canRestoreOnScreen(expectedRevision: number | undefined): boolean {
+  function canRestoreOnScreen(
+    expectedRevision: number | undefined,
+    external = false
+  ): boolean {
+    if (external && composer.hasDraft) return false
     const revisionMatches =
       expectedRevision === undefined ||
       composer.draftRevision === expectedRevision
@@ -121,12 +138,12 @@ export function useAgentDraftSubmission(
     clientMessageId: string,
     snapshot?: GateHoldSnapshot,
     expectedRevision?: number
-  ): void {
+  ): boolean {
     const pending = conversation.takePendingSend(clientMessageId)
     composer.clearPendingSendDraft(clientMessageId)
     if (!pending || !snapshot) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
-      return
+      return false
     }
     if (!conversation.isOriginOnScreen(pending.origin)) {
       composer.restoreKeptDraftSnapshot(
@@ -134,11 +151,11 @@ export function useAgentDraftSubmission(
         snapshot
       )
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
-      return
+      return true
     }
-    if (!canRestoreOnScreen(expectedRevision)) {
+    if (!canRestoreOnScreen(expectedRevision, snapshot.external)) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
-      return
+      return false
     }
     const targetInstanceId = options.target()?.instanceId ?? null
     composer.restorePrompt(
@@ -154,10 +171,17 @@ export function useAgentDraftSubmission(
       snapshot.promptOrigin,
       snapshot.starterPrompt
     )
-    if (targetInstanceId === snapshot.targetInstanceId)
+    if (targetInstanceId === snapshot.targetInstanceId) {
+      if (
+        snapshot.nodes.length > 0 &&
+        !snapshot.prompt.references.some((item) => item.kind === 'node')
+      )
+        composer.setInsertionPoint({ textOffset: 0, referenceIndex: 0 })
       selection.replace(snapshot.nodes)
+    }
     composer.markRejectedDraft()
     composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+    return true
   }
 
   function validateSubmissionTarget(
@@ -245,38 +269,92 @@ export function useAgentDraftSubmission(
     }
   }
 
+  function stageDirectSubmission(
+    input: DirectSubmissionInput,
+    target: ComfyWorkflow
+  ): ReturnType<typeof stageSubmission> {
+    options.onSubmit()
+    selection.exit()
+    const nodes = [...input.nodes]
+    const clientMessageId = uuidv4()
+    const pending = conversation.startPendingSend({
+      clientMessageId,
+      workspaceId: options.workspaceId?.() ?? null,
+      rawText: input.text,
+      text: input.text,
+      attachments: [],
+      sentAttachments: [],
+      sentTags: nodes,
+      tags: nodes.map((tag) => `${tag.title} #${tag.id}`),
+      workflowReferences: [],
+      assetIds: [],
+      targetTabPath: target.path,
+      targetTabInstanceId: target.instanceId,
+      tab: { status: 'known', workflowInstanceId: target.instanceId },
+      inputMethod: input.inputMethod,
+      starterPrompt: null
+    })
+    const snapshot: GateHoldSnapshot = {
+      prompt: { text: input.text, references: [] },
+      attachments: [],
+      nodes,
+      targetInstanceId: target.instanceId,
+      promptOrigin: input.inputMethod,
+      starterPrompt: null,
+      external: true
+    }
+    const gateId = composer.startExternalGateHold(clientMessageId, snapshot, {
+      tabPath: options.activeTabPath?.() ?? target.path,
+      text: input.text,
+      workflowReferences: [],
+      expectedText: pending.text,
+      knownTurnIds: conversation.knownUserTurnIds()
+    })
+    return {
+      clientMessageId,
+      gateId,
+      gateRevision: composer.draftRevision,
+      snapshot,
+      target,
+      sentAttachments: [],
+      sentReferences: [],
+      nodes,
+      inputMethod: input.inputMethod,
+      starterPrompt: null,
+      skillCount: 0
+    }
+  }
+
   function settleSubmissionOutcome(
     outcome: DraftSendOutcome,
     staged: ReturnType<typeof stageSubmission>
-  ): void {
+  ): DirectSubmissionOutcome {
     composer.releaseGateHold(staged.gateId)
     if (outcome === 'withdrawn') {
-      withdrawSubmission(
+      const restored = withdrawSubmission(
         staged.clientMessageId,
         staged.snapshot,
         staged.gateRevision
       )
-      return
+      return restored ? 'withdrawn' : 'withdrawn_unrestored'
     }
     if (!conversation.getPendingSend(staged.clientMessageId)) {
       composer.clearPendingSendDraft(staged.clientMessageId)
       composer.releaseRetainedAssets(
         pendingAssetOwnerKey(staged.clientMessageId)
       )
-      return
+      return outcome
     }
     composer.releaseUnusedAssets()
+    return outcome
   }
 
-  async function submit(
+  async function runStagedSubmission(
     text: string,
-    attachments: ComposerAttachment[],
-    references: WorkflowReference[] = []
-  ): Promise<boolean> {
-    const target = validateSubmissionTarget(text, attachments)
-    if (target === null) return false
-    const staged = stageSubmission(text, attachments, references, target)
+    staged: ReturnType<typeof stageSubmission>
+  ): Promise<DirectSubmissionOutcome> {
     let outcome: DraftSendOutcome = 'failed'
+    let settled: DirectSubmissionOutcome
     let threw = false
     try {
       outcome = await options.send(
@@ -303,10 +381,30 @@ export function useAgentDraftSubmission(
           'sending'
           ? 'withdrawn'
           : outcome
-      settleSubmissionOutcome(effectiveOutcome, staged)
+      settled = settleSubmissionOutcome(effectiveOutcome, staged)
     }
-    return outcome === 'sent'
+    return settled
   }
 
-  return { submit, withdrawSubmission }
+  async function submit(
+    text: string,
+    attachments: ComposerAttachment[],
+    references: WorkflowReference[] = []
+  ): Promise<boolean> {
+    const target = validateSubmissionTarget(text, attachments)
+    if (target === null) return false
+    const staged = stageSubmission(text, attachments, references, target)
+    return (await runStagedSubmission(text, staged)) === 'sent'
+  }
+
+  async function submitDirect(
+    input: DirectSubmissionInput
+  ): Promise<DirectSubmissionOutcome> {
+    const target = validateSubmissionTarget(input.text, [])
+    if (target === null) return 'rejected'
+    const staged = stageDirectSubmission(input, target)
+    return runStagedSubmission(input.text, staged)
+  }
+
+  return { submit, submitDirect, withdrawSubmission }
 }

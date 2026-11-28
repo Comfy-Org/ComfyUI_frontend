@@ -21,6 +21,7 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type { NodeAskInputMethod } from '@/workbench/extensions/agent/types/agentNodeAsk'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
@@ -130,6 +131,7 @@ export interface GateHoldSnapshot {
   targetInstanceId: string | null
   promptOrigin: AgentInputMethod
   starterPrompt: AgentStarterPromptSource | null
+  external?: boolean
 }
 
 interface GateHold {
@@ -414,7 +416,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     if (
       !next.text.trim() &&
       references.length === 0 &&
-      promptOrigin.value === 'suggestion'
+      (promptOrigin.value === 'suggestion' ||
+        promptOrigin.value === 'selection_toolbox' ||
+        promptOrigin.value === 'selection_toolbox_suggestion')
     ) {
       promptOrigin.value = 'typed'
       starterPrompt.value = null
@@ -870,6 +874,22 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
         assetsById.delete(id)
         retiredAssets.add(id)
       }
+  }
+
+  function markNodeAskPrompt(origin: NodeAskInputMethod): void {
+    promptOrigin.value = origin
+    starterPrompt.value = null
+  }
+
+  function startExternalGateHold(
+    clientMessageId: string,
+    snapshot: GateHoldSnapshot,
+    backup: PendingSendBackupInput = {}
+  ): number {
+    holdPendingSendDraft(clientMessageId, backup)
+    const id = ++nextGateHoldId
+    gateHold.value = { id, clientMessageId, revision: revision.value, snapshot }
+    return id
   }
 
   function startGateHold(
@@ -1458,6 +1478,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     applyEditorPrompt,
     resolveSkillMetadata,
     markSuggestedPrompt,
+    markNodeAskPrompt,
     replacePrompt,
     restorePrompt,
     replaceDraft,
@@ -1480,6 +1501,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     onAssetPreviewUpdated: assetPreviewUpdated.on,
     releaseUnusedAssets,
     startGateHold,
+    startExternalGateHold,
     releaseGateHold,
     cancelGateHold,
     restoreSubmissionMeta,

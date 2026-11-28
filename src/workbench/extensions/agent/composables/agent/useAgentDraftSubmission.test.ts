@@ -150,7 +150,14 @@ function setup() {
           snapshot,
           expectedRevision
         )
-      }
+      },
+      submitDirect: (
+        text: string,
+        nodes: SelectedNode[],
+        inputMethod:
+          | 'selection_toolbox'
+          | 'selection_toolbox_suggestion' = 'selection_toolbox'
+      ) => submission.submitDirect({ text, nodes, inputMethod })
     }
   })
   if (!fixture) throw new Error('Draft submission scope did not run')
@@ -827,5 +834,83 @@ describe('Agent draft submission', () => {
 
     expect(conversation.hasSendingPendingSend).toBe(false)
     expect(composer.draft).toBe('pre-admission throw')
+  })
+
+  it('sends a direct submission without clobbering an existing panel draft or its origin', async () => {
+    const {
+      composer,
+      selection,
+      original,
+      target,
+      submitDirect,
+      send,
+      pending
+    } = setup()
+    composer.markSuggestedPrompt({ id: 'slot_1', clickId: 'click-9' })
+    const sending = submitDirect(
+      'What does this node do?',
+      [{ id: '99', title: 'SaveImage' }],
+      'selection_toolbox_suggestion'
+    )
+
+    expect(send).toHaveBeenCalledWith(
+      'What does this node do?',
+      [],
+      [{ id: '99', title: 'SaveImage' }],
+      [],
+      {
+        clientMessageId: expect.any(String),
+        inputMethod: 'selection_toolbox_suggestion',
+        starterPrompt: null,
+        skillCount: 0
+      },
+      expect.any(Function),
+      target.value
+    )
+    expect(composer.draft).toBe(original.draft)
+    expect(composer.attachments).toEqual(original.attachments)
+    expect(selection.staged.value).toEqual(original.nodes)
+    expect(composer.promptOrigin).toBe('suggestion')
+    expect(composer.starterPrompt).toEqual({ id: 'slot_1', clickId: 'click-9' })
+
+    pending.resolve('sent')
+    expect(await sending).toBe('sent')
+    expect(composer.draft).toBe(original.draft)
+    expect(composer.promptOrigin).toBe('suggestion')
+  })
+
+  it('recovers a withdrawn direct submission into an empty panel composer with its nodes and origin', async () => {
+    const { composer, selection, submitDirect, send } = setup()
+    composer.clearDraft()
+    selection.replace([])
+    send.mockResolvedValue('withdrawn')
+
+    const outcome = await submitDirect(
+      'Why is this failing?',
+      [{ id: '99', title: 'KSampler' }],
+      'selection_toolbox'
+    )
+
+    expect(outcome).toBe('withdrawn')
+    expect(composer.draft.trim()).toBe('Why is this failing?')
+    expect(selection.staged.value).toEqual([{ id: '99', title: 'KSampler' }])
+    expect(composer.promptOrigin).toBe('selection_toolbox')
+  })
+
+  it('keeps an existing panel draft intact when a direct submission withdraws', async () => {
+    const { composer, original, submitDirect, send } = setup()
+    composer.markSuggestedPrompt({ id: 'slot_2', clickId: 'click-4' })
+    send.mockResolvedValue('withdrawn')
+
+    const outcome = await submitDirect(
+      'Why is this failing?',
+      [{ id: '99', title: 'KSampler' }],
+      'selection_toolbox'
+    )
+
+    expect(outcome).toBe('withdrawn_unrestored')
+    expect(composer.draft).toBe(original.draft)
+    expect(composer.promptOrigin).toBe('suggestion')
+    expect(composer.starterPrompt).toEqual({ id: 'slot_2', clickId: 'click-4' })
   })
 })

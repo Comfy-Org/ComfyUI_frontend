@@ -21239,3 +21239,509 @@ describe('AgentPanelRoot proactive qualification', () => {
     expect(fetchRequests('/api/agent/usage-status')).toHaveLength(1)
   })
 })
+
+describe('AgentPanelRoot node ask from the selection toolbox', () => {
+  const KSAMPLER = { id: '7', title: 'KSampler' }
+
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+  })
+
+  function makeBoundTab(
+    path = 'workflows/current.json',
+    id = 'wf-42'
+  ): LoadedComfyWorkflow {
+    const tab = addTab(path, {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id })
+    })
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind(id, tab.path)
+    return tab
+  }
+
+  it.for([
+    { inputMethod: 'selection_toolbox' as const },
+    { inputMethod: 'selection_toolbox_suggestion' as const }
+  ])(
+    'sends the question to the current chat with nodes and reports $inputMethod telemetry',
+    async ({ inputMethod }) => {
+      const tab = makeBoundTab()
+      useAgentConversationStore().setThreadId('th-1')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+
+      useAgentPanelStore().pendingNodeAsk = {
+        text: 'What does this node do?',
+        nodes: [KSAMPLER],
+        workflowPath: tab.path,
+        inputMethod
+      }
+
+      await waitFor(() => expect(bodies).toHaveLength(1))
+      expect(
+        vi
+          .mocked(fetch)
+          .mock.calls.filter(([, init]) => init?.method === 'POST')
+          .map(([url]) => String(url))
+      ).toEqual(['/api/agent/threads/th-1/messages'])
+      expect(bodies[0]).toMatchObject({
+        content: 'What does this node do?',
+        selection: { node_ids: ['7'] }
+      })
+      expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input_method: inputMethod,
+          node_tag_count: 1
+        })
+      )
+      expect(useAgentPanelStore().pendingNodeAsk).toBeNull()
+    }
+  )
+
+  it('keeps the draft and its origin in the panel composer', async () => {
+    const tab = makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    useAgentComposerStore().setText('half-written thought')
+    useAgentComposerStore().markSuggestedPrompt({
+      id: 'slot_1',
+      clickId: 'click-1'
+    })
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'Explain these settings',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      inputMethod: 'selection_toolbox_suggestion'
+    }
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ content: 'Explain these settings' })
+    expect(useAgentComposerStore().draft).toBe('half-written thought')
+    expect(useAgentComposerStore().promptOrigin).toBe('suggestion')
+  })
+
+  it('sends nothing when the workflow with the nodes is no longer open', async () => {
+    makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: 'workflows/closed.json',
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these nodes is no longer open, so nothing was sent.'
+      )
+    )
+    expect(bodies).toHaveLength(0)
+  })
+
+  it('follows the active tab when sending a node ask from another tab and preserves the previous tab draft', async () => {
+    const tabA = makeBoundTab('workflows/a.json', 'wf-a')
+    const tabB = addTab('workflows/b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-b', tabB.path)
+    const bodies = mockMessagesEndpoint('wf-b')
+    renderWithSelectedTarget()
+    useAgentComposerStore().setText('draft on A')
+
+    await activateTabAsUser(tabB)
+    await settleFollow()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: tabB.path,
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: 'What does this node do?',
+      selection: { node_ids: ['7'] }
+    })
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(tabB.path)
+
+    await activateTabAsUser(tabA)
+    await settleFollow()
+    expect(useAgentComposerStore().draft).toBe('draft on A')
+  })
+
+  it('sends a pending node ask that is already queued when the panel mounts', async () => {
+    const tab = makeBoundTab()
+    useAgentConversationStore().setThreadId('th-1')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panel = useAgentPanelStore()
+    panel.setWorkflowTarget(fromPartial<ComfyWorkflow>(tab))
+    panel.pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: 'What does this node do?',
+      selection: { node_ids: ['7'] }
+    })
+  })
+
+  it('sends nothing when a different workflow instance is open at the same path', async () => {
+    const tab = makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: 'replaced-instance-id',
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these nodes is no longer open, so nothing was sent.'
+      )
+    )
+    expect(bodies).toHaveLength(0)
+  })
+})
+
+describe('AgentPanelRoot node ask while the chat is busy', () => {
+  const KSAMPLER = { id: '7', title: 'KSampler' }
+  const QUESTION = 'What does this node do?'
+
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+  })
+
+  function makeBoundTab(): LoadedComfyWorkflow {
+    const tab = addTab('workflows/current.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-42' })
+    })
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+    useAgentConversationStore().setThreadId('th-1')
+    return tab
+  }
+
+  function posts(): string[] {
+    return vi
+      .mocked(fetch)
+      .mock.calls.filter(([, init]) => init?.method === 'POST')
+      .map(([url]) => String(url))
+  }
+
+  async function waitForInitialHydration(): Promise<void> {
+    await waitFor(() =>
+      expect(
+        vi
+          .mocked(fetch)
+          .mock.calls.some(([url]) =>
+            String(url).includes('/api/agent/threads/th-1/messages')
+          )
+      ).toBe(true)
+    )
+    await settleFollow()
+  }
+
+  it('puts the question in the panel composer with its nodes and input method while the agent works', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    await waitForInitialHydration()
+    useAgentConversationStore().startTurn(toTurnId('m-live'))
+    await nextTick()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      inputMethod: 'selection_toolbox_suggestion'
+    }
+
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe(QUESTION)
+    )
+    expect(useAgentComposerStore().nodes).toEqual([
+      expect.objectContaining({ id: '7', title: 'KSampler' })
+    ])
+    expect(useAgentComposerStore().promptOrigin).toBe(
+      'selection_toolbox_suggestion'
+    )
+    expect(posts()).toEqual([])
+  })
+
+  it('keeps an existing panel draft and says the question was not sent', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    await waitForInitialHydration()
+    useAgentComposerStore().setText('half-written thought')
+    useAgentConversationStore().startTurn(toTurnId('m-live'))
+    await nextTick()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        "Comfy Agent is still working. Send your question when it's done."
+      )
+    )
+    expect(useAgentComposerStore().draft).toBe('half-written thought')
+    expect(useAgentComposerStore().nodes).toEqual([])
+    expect(posts()).toEqual([])
+  })
+
+  it('holds a second question while the first one is still being sent', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    const base = vi.mocked(fetch).getMockImplementation()!
+    let releaseFirstPost: ((response: Response) => void) | undefined
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      if (String(input).includes('/messages') && init?.method === 'POST') {
+        return new Promise<Response>((resolve) => {
+          releaseFirstPost = resolve
+        })
+      }
+      return base(input, init)
+    })
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'Explain these settings',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      inputMethod: 'selection_toolbox_suggestion'
+    }
+    await waitFor(() => expect(posts()).toHaveLength(1))
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [{ id: '8', title: 'VAE Decode' }],
+      workflowPath: tab.path,
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe(QUESTION)
+    )
+    expect(posts()).toHaveLength(1)
+
+    releaseFirstPost?.(
+      new Response(JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }), {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    await waitFor(() =>
+      expect(useAgentConversationStore().hasSendingPendingSend).toBe(false)
+    )
+  })
+
+  it('keeps a failed direct node ask as a retryable pending send in the transcript without clobbering panel drafts', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    const base = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      if (String(input).includes('/messages') && init?.method === 'POST') {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: 'server error' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        )
+      }
+      return base(input, init)
+    })
+    renderWithSelectedTarget()
+    await waitForInitialHydration()
+    useAgentComposerStore().setText('existing panel draft')
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      inputMethod: 'selection_toolbox'
+    }
+
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeVisible()
+    const failedEntry = useAgentConversationStore().entries.find(
+      (entry) => entry.role === 'user' && entry.pending?.status === 'failed'
+    )
+    const pendingSend =
+      failedEntry?.role === 'user' && failedEntry.pending
+        ? useAgentConversationStore().getPendingSend(
+            failedEntry.pending.clientMessageId
+          )
+        : undefined
+    expect(pendingSend).toMatchObject({
+      rawText: QUESTION,
+      sentTags: [KSAMPLER],
+      inputMethod: 'selection_toolbox'
+    })
+    expect(useAgentComposerStore().draft).toBe('existing panel draft')
+  })
+
+  it('puts the question in the panel composer when the send is refused', async () => {
+    workflowStore.activeWorkflow = null
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe(QUESTION)
+    )
+    expect(posts()).toEqual([])
+  })
+
+  it('keeps both asks when a second ask arrives while hydration is still pending', async () => {
+    const tab = makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    let releaseHydration: ((response: Response) => void) | undefined
+    let releaseFirstPost: ((response: Response) => void) | undefined
+    const base = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      const url = String(input)
+      if (
+        url.includes('/api/agent/threads/th-1/messages') &&
+        init?.method !== 'POST'
+      ) {
+        return new Promise<Response>((resolve) => {
+          releaseHydration = resolve
+        })
+      }
+      if (url.includes('/messages') && init?.method === 'POST') {
+        bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
+        return new Promise<Response>((resolve) => {
+          releaseFirstPost = resolve
+        })
+      }
+      return base(input, init)
+    })
+    renderWithSelectedTarget()
+
+    await waitFor(() => expect(releaseHydration).toBeDefined())
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'First question',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+    await nextTick()
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'Second question',
+      nodes: [{ id: '8', title: 'VAE Decode' }],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox_suggestion'
+    }
+    await nextTick()
+
+    releaseHydration!(
+      new Response(JSON.stringify({ messages: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ content: 'First question' })
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe('Second question')
+    )
+    expect(bodies).toHaveLength(1)
+
+    releaseFirstPost?.(
+      new Response(JSON.stringify({ thread_id: 'th-1', message_id: 'm-1' }), {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    await waitFor(() =>
+      expect(useAgentConversationStore().hasSendingPendingSend).toBe(false)
+    )
+  })
+
+  it('warns without replacing an existing panel draft when a direct node ask withdraws', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    await waitForInitialHydration()
+    useAgentComposerStore().setText('half-written thought')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    withConsent.mockResolvedValueOnce(undefined)
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        "Your question wasn't sent because you already have a draft in the chat."
+      )
+    )
+    expect(useAgentComposerStore().draft).toBe('half-written thought')
+    expect(posts()).toEqual([])
+  })
+
+  it('does not stage a withdrawn direct node ask into a new chat after switching chats at a gate', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    await waitForInitialHydration()
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let releaseConsent: (() => void) | undefined
+    withConsent.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseConsent = resolve
+        })
+    )
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path,
+      workflowInstanceId: tab.instanceId,
+      inputMethod: 'selection_toolbox'
+    }
+
+    await waitFor(() => expect(releaseConsent).toBeDefined())
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    releaseConsent!()
+    await settleFollow()
+
+    expect(useAgentComposerStore().draft).toBe('')
+    expect(useAgentComposerStore().nodes).toEqual([])
+    expect(useToast().toasts.map((toast) => toast.title)).not.toContain(
+      "Your question wasn't sent because you already have a draft in the chat."
+    )
+    expect(posts()).toEqual([])
+  })
+})

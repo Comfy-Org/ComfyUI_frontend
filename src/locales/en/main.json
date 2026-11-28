@@ -6867,6 +6867,38 @@
       "addCredits": "Add credits",
       "subscribe": "Subscribe",
       "upgradePlan": "Upgrade plan"
+    },
+    "nodeAsk": {
+      "button": "Ask agent",
+      "placeholder": "Ask about the selected nodes",
+      "send": "Send",
+      "workflowChanged": "The workflow with these nodes is no longer open, so nothing was sent.",
+      "examplePrompts": "Example prompts",
+      "examples": {
+        "whatDoesNode": "What does this node do?",
+        "explainSettings": "Explain these settings",
+        "suggestSettings": "Suggest better settings",
+        "whyFailing": "Why is this failing?",
+        "fixError": "Fix this error",
+        "whatMissing": "What am I missing?",
+        "upscale": "Upscale this",
+        "editImage": "Edit this image",
+        "animate": "Animate this",
+        "improvePrompt": "Improve this prompt",
+        "moreCinematic": "Make it more cinematic",
+        "shorten": "Shorten it",
+        "buildAround": "Build a workflow around this",
+        "whatCanIDo": "What can I do with this model?",
+        "rightModel": "Is this the right model for me?",
+        "describeResult": "Describe this result",
+        "makeSharper": "Make it sharper",
+        "looksOff": "Why does it look off?",
+        "howConnect": "How do these connect?",
+        "combine": "Combine these into one workflow",
+        "explainGroup": "Explain this group"
+      },
+      "busy": "Comfy Agent is still working. Send your question when it's done.",
+      "notSent": "Your question wasn't sent because you already have a draft in the chat."
     }
   },
   "skillPacks": {

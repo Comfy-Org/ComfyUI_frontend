@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type { AgentNodeAsk } from '@/workbench/extensions/agent/types/agentNodeAsk'
 import './agentPanel.css'
 import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
@@ -251,8 +252,18 @@ const { proactiveAssignment } = defineProps<{
 const { t } = useI18n()
 const toast = useToast()
 let errorAttachRun = 0
+let nodeAskScope = 0
+const nodeAskQueue: AgentNodeAsk[] = []
+let drainingNodeAsks = false
+
+function invalidateNodeAsks(): void {
+  nodeAskScope++
+  nodeAskQueue.length = 0
+}
+
 onBeforeUnmount(() => {
   errorAttachRun++
+  invalidateNodeAsks()
 })
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
@@ -2381,6 +2392,7 @@ async function onSelectHistory(
       cancelled.revision
     )
   errorAttachRun++
+  invalidateNodeAsks()
   composerStore.clearErrorContext()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
@@ -2751,7 +2763,11 @@ async function sendTurn(
   }
 }
 
-const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
+const {
+  submit: submitDraft,
+  submitDirect: onSendDirect,
+  withdrawSubmission
+} = useAgentDraftSubmission({
   canSubmit: () =>
     !savingReferenceForCurrentDraft.value &&
     !isSending.value &&
@@ -3011,6 +3027,121 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
   await dispatchRetryPendingSend(retryClientMessageId, retried)
 }
 
+function matchesNodeAskWorkflow(
+  workflow: ComfyWorkflow | null,
+  ask: AgentNodeAsk
+): boolean {
+  const pathMatches = workflow?.path === ask.workflowPath
+  const instanceMatches =
+    ask.workflowInstanceId === undefined ||
+    workflow?.instanceId === ask.workflowInstanceId
+  return pathMatches && instanceMatches
+}
+
+function nodeAskWorkflowOpen(ask: AgentNodeAsk): boolean {
+  if (matchesNodeAskWorkflow(workflowStore.activeWorkflow, ask)) return true
+  toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
+  return false
+}
+
+function holdNodeAsk(
+  ask: AgentNodeAsk,
+  warningKey:
+    | 'agent.nodeAsk.busy'
+    | 'agent.nodeAsk.notSent' = 'agent.nodeAsk.busy'
+): void {
+  if (composerStore.hasDraft) {
+    toast.warning(t(warningKey), { duration: 5000 })
+    return
+  }
+  replaceSelectionTags(ask.nodes)
+  const staged = composerStore.prompt
+  const gap = !staged.text || staged.text.endsWith(' ') ? '' : ' '
+  composerStore.restorePrompt(
+    { text: `${staged.text}${gap}${ask.text}`, references: staged.references },
+    []
+  )
+  composerStore.markNodeAskPrompt(ask.inputMethod)
+}
+
+function nodeAskTargetMismatch(ask: AgentNodeAsk): boolean {
+  if (ask.workflowPath === undefined && ask.workflowInstanceId === undefined)
+    return false
+  if (matchesNodeAskWorkflow(selectedTarget.value, ask)) return false
+  toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
+  return true
+}
+
+function isChatBusyForNodeAsk(): boolean {
+  return isStreaming.value || isSending.value || status.value === 'thinking'
+}
+
+function needsNodeAskFollow(workflow: ComfyWorkflow | null): boolean {
+  if (workflow === null) return false
+  if (
+    selectedTarget.value?.path !== workflow.path ||
+    selectedTarget.value?.instanceId !== workflow.instanceId
+  )
+    return true
+  return (
+    threadId.value === null &&
+    conversationStore.activeBlankChatId !== blankChatIdFor(workflow)
+  )
+}
+
+function isNodeAskScopeCurrent(ask: AgentNodeAsk, scope: number): boolean {
+  if (scope !== nodeAskScope) return false
+  if (!matchesNodeAskWorkflow(workflowStore.activeWorkflow, ask)) return false
+  return (
+    (ask.workflowPath === undefined && ask.workflowInstanceId === undefined) ||
+    matchesNodeAskWorkflow(selectedTarget.value, ask)
+  )
+}
+
+async function submitPreparedNodeAsk(
+  ask: AgentNodeAsk,
+  scope: number
+): Promise<void> {
+  const outcome = await onSendDirect({
+    text: ask.text,
+    nodes: ask.nodes,
+    inputMethod: ask.inputMethod
+  })
+  if (!isNodeAskScopeCurrent(ask, scope)) return
+  if (outcome === 'rejected') holdNodeAsk(ask)
+  else if (outcome === 'withdrawn_unrestored')
+    holdNodeAsk(ask, 'agent.nodeAsk.notSent')
+}
+
+async function sendNodeAsk(ask: AgentNodeAsk, scope: number): Promise<void> {
+  const workflow = workflowStore.activeWorkflow
+  if (!nodeAskWorkflowOpen(ask)) return
+  if (needsNodeAskFollow(workflow) && workflow !== null)
+    await followTab(workflow)
+  if (isHydrating.value) await until(isHydrating).toBe(false)
+  if (scope !== nodeAskScope || !nodeAskWorkflowOpen(ask)) return
+  agentPanelStore.retainWorkflowTarget()
+  if (nodeAskTargetMismatch(ask)) return
+  if (isChatBusyForNodeAsk()) {
+    holdNodeAsk(ask)
+    return
+  }
+  void submitPreparedNodeAsk(ask, scope)
+}
+
+async function drainNodeAskQueue(): Promise<void> {
+  if (drainingNodeAsks) return
+  drainingNodeAsks = true
+  try {
+    while (nodeAskQueue.length > 0) {
+      const ask = nodeAskQueue.shift()
+      if (!ask) continue
+      await sendNodeAsk(ask, nodeAskScope)
+    }
+  } finally {
+    drainingNodeAsks = false
+  }
+}
 function onStop(method: AgentStopMethod): void {
   if (gateHoldOnCurrentChat.value) {
     const cancelled = composerStore.cancelGateHold()
@@ -3071,6 +3202,7 @@ function resetComposerForChatSwitch(): void {
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
   errorAttachRun++
+  invalidateNodeAsks()
 }
 
 function openFailedBlankTab(blankChatId: string): ComfyWorkflow | undefined {
@@ -3615,6 +3747,17 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
 
 const agentPanelRenderStore = useAgentPanelRenderStore()
 onMounted(() => agentPanelRenderStore.reach('drawn'))
+
+watch(
+  () => agentPanelStore.pendingNodeAsk,
+  (ask) => {
+    if (!ask) return
+    agentPanelStore.pendingNodeAsk = null
+    nodeAskQueue.push(ask)
+    void drainNodeAskQueue()
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

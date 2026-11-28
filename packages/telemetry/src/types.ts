@@ -876,6 +876,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'activation'
     | 'error_context'
     | 'cloud_button'
+    | 'selection_toolbox'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -1181,6 +1182,8 @@ export type AgentInputMethod =
   | 'suggestion'
   | 'edited'
   | 'error_context'
+  | 'selection_toolbox'
+  | 'selection_toolbox_suggestion'
 /**
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel
