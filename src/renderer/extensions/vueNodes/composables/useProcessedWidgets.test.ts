@@ -26,6 +26,7 @@ import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
@@ -823,6 +824,92 @@ describe('computeProcessedWidgets', () => {
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe('after')
     expect(clearErrorSpy).not.toHaveBeenCalled()
+  })
+
+  it('serializes folder locks per input without changing widget values or sibling metadata', () => {
+    const id = widgetId(GRAPH_ID, toNodeId(1), 'model')
+    registerWidgetState(id, { type: 'combo', value: 'Other/model.safetensors' })
+    const { node } = createGraphWithNode([
+      createMockWidget({
+        widgetId: id,
+        name: 'model',
+        value: 'Other/model.safetensors'
+      })
+    ])
+    node.serialize_widgets = true
+    const store = useWidgetValueStore()
+    const sibling = widgetId(GRAPH_ID, node.id, 'sibling')
+    useWidgetFolderLockStore().set(sibling, { directory: ['SDXL'] })
+
+    useWidgetFolderLockStore().set(id, { directory: ['MOSS', 'image'] })
+    const saved = node.serialize()
+    expect(saved).toMatchObject({
+      properties: {
+        widget_folder_locks: { model: ['MOSS', 'image'], sibling: ['SDXL'] }
+      },
+      widgets_values: ['Other/model.safetensors']
+    })
+    store.clearNode(GRAPH_ID, node.id)
+    node.configure(saved)
+    expect(useWidgetFolderLockStore().get(id)?.directory).toEqual([
+      'MOSS',
+      'image'
+    ])
+    expect(node.properties).not.toHaveProperty('widget_folder_locks')
+    useWidgetFolderLockStore().set(id, undefined)
+    expect(node.serialize().properties?.widget_folder_locks).toEqual({
+      sibling: ['SDXL']
+    })
+    expect(useWidgetFolderLockStore().get(id)).toBeUndefined()
+  })
+
+  it('restores a detached copy under its new node identity without sharing the lock', () => {
+    const { graph, node } = createGraphWithNode([])
+    const originalId = widgetId(GRAPH_ID, node.id, 'model')
+    useWidgetFolderLockStore().set(originalId, { directory: ['MOSS', 'image'] })
+    const saved = node.serialize()
+    const copy = createNode([])
+
+    copy.configure(saved)
+    expect(copy.serialize().properties?.widget_folder_locks).toEqual({
+      model: ['MOSS', 'image']
+    })
+    graph.add(copy)
+    const copyId = widgetId(GRAPH_ID, copy.id, 'model')
+
+    expect(copyId).not.toBe(originalId)
+    expect(useWidgetFolderLockStore().get(copyId)).toEqual({
+      directory: ['MOSS', 'image']
+    })
+    expect(copy.properties).not.toHaveProperty('widget_folder_locks')
+    graph.remove(copy)
+    expect(copy.serialize().properties?.widget_folder_locks).toEqual({
+      model: ['MOSS', 'image']
+    })
+    graph.add(copy)
+    useWidgetFolderLockStore().set(copyId, undefined)
+    expect(copy.serialize().properties).not.toHaveProperty(
+      'widget_folder_locks'
+    )
+    expect(useWidgetFolderLockStore().get(originalId)).toEqual({
+      directory: ['MOSS', 'image']
+    })
+  })
+
+  it('does not resurrect a detached lock when configuring an unlocked snapshot', () => {
+    const { graph, node } = createGraphWithNode([])
+    const id = widgetId(GRAPH_ID, node.id, 'model')
+    const unlocked = node.serialize()
+    useWidgetFolderLockStore().set(id, { directory: ['MOSS', 'image'] })
+    graph.remove(node)
+
+    node.configure(unlocked)
+    graph.add(node)
+
+    expect(useWidgetFolderLockStore().get(id)).toBeUndefined()
+    expect(node.serialize().properties).not.toHaveProperty(
+      'widget_folder_locks'
+    )
   })
 
   it('reads widget identity, value, and label from widgetId state', () => {

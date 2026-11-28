@@ -1,12 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { assert, describe, expect, it, vi } from 'vitest'
+import { defineComponent, markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
 import { app } from '@/scripts/app'
 import type { ControlOptions } from '@/core/graph/widgets/controlWidget'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'
@@ -69,7 +70,7 @@ const mount = (widgetId: WidgetId, modelValue = 0) =>
         ValueControlPopover: ValueControlPopoverStub
       }
     },
-    props: { widgetId, modelValue, component: RenderedComponent }
+    props: { widgetId, modelValue, component: markRaw(RenderedComponent) }
   })
 
 describe('WidgetWithControl', () => {
@@ -139,6 +140,46 @@ describe('WidgetWithControl', () => {
       'data-mode',
       'increment'
     )
+  })
+
+  it('reflects external mode changes from the store', async () => {
+    const { widgetId, control } = makeControlWidget('fixed')
+    assert.exists(control.widgetId)
+    mount(widgetId)
+
+    useWidgetValueStore().setValue(control.widgetId, 'decrement')
+    await nextTick()
+
+    expect(screen.getByTestId('control-button')).toHaveAttribute(
+      'data-mode',
+      'decrement'
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('control-button'))
+    await user.click(screen.getByTestId('set-fixed'))
+    expect(control.value).toBe('fixed')
+    expect(screen.getByTestId('control-button')).toHaveAttribute(
+      'data-mode',
+      'fixed'
+    )
+  })
+
+  it('uses the current control binding after the widget is replaced', async () => {
+    const original = makeControlWidget('randomize')
+    const { rerender } = mount(original.widgetId)
+    const replacement = makeControlWidget('increment')
+
+    await rerender({ widgetId: replacement.widgetId })
+    expect(screen.getByTestId('control-button')).toHaveAttribute(
+      'data-mode',
+      'increment'
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('control-button'))
+    await user.click(screen.getByTestId('set-fixed'))
+
+    expect(replacement.control.value).toBe('fixed')
+    expect(original.control.value).toBe('randomize')
   })
 
   it('writes the chosen mode to the control widget', async () => {

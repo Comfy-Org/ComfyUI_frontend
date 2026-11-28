@@ -3,11 +3,12 @@
     :widget-id
     :display-label
     :input-id
-    :value-text="selectedSummary"
+    :value-text="selection.summary"
     :root-class="
       cn(
         !disabled && 'cursor-pointer',
-        isInvalid && 'ring-1 ring-destructive focus-within:ring-destructive'
+        selection.invalid &&
+          'ring-1 ring-destructive focus-within:ring-destructive'
       )
     "
   >
@@ -36,7 +37,7 @@
       ref="combobox"
       as-child
       :open="isOpen"
-      :model-value="selectedOption ?? null"
+      :model-value="selection.option ?? null"
       by="key"
       :disabled
       ignore-filter
@@ -65,7 +66,8 @@
               aria-haspopup="listbox"
               :aria-controls="listboxId"
               :aria-label="fieldLabel"
-              :aria-invalid="isInvalid || undefined"
+              :aria-description="lockedDescription"
+              :aria-invalid="selection.invalid || undefined"
               :aria-expanded="isOpen"
               :disabled
               tabindex="0"
@@ -79,8 +81,13 @@
                 class="min-w-[4ch] flex-1 truncate px-2 text-right"
                 data-part="widget-value"
               >
-                {{ selectedSummary || placeholder || '\u00a0' }}
+                {{ displayValue }}
               </span>
+              <i
+                v-if="lockedDirectory"
+                class="mr-1 icon-[lucide--lock] text-muted-foreground"
+                aria-hidden="true"
+              />
             </Button>
           </ComboboxTrigger>
           <slot />
@@ -130,7 +137,7 @@
           @focus-outside="handleFocusOutside"
         >
           <div
-            v-if="isFilterable"
+            v-if="isFilterable || retainSearchInput"
             ref="searchInputContainerRef"
             class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
           >
@@ -151,11 +158,54 @@
           </div>
 
           <div
+            v-if="showFolderHeader"
+            class="flex min-w-0 items-center gap-1 border-b border-border px-1 py-1 text-xs"
+          >
+            <Button
+              v-if="parentDirectory"
+              type="button"
+              variant="muted-textonly"
+              :aria-label="backLabel"
+              :tooltip="backLabel"
+              class="size-8 shrink-0 p-0"
+              @keydown.stop
+              @keydown.escape="handleOpenChange(false)"
+              @click="browseDirectory(parentDirectory)"
+            >
+              <i class="icon-[lucide--arrow-left]" aria-hidden="true" />
+            </Button>
+            <span
+              class="min-w-0 flex-1 truncate px-1 text-muted-foreground"
+              :title="folderPath"
+              >{{ folderPath }}</span
+            >
+            <Button
+              type="button"
+              variant="muted-textonly"
+              :disabled="!canLockDirectory"
+              :aria-label="lockLabel"
+              :aria-pressed="Boolean(lockedDirectory)"
+              :tooltip="lockLabel"
+              class="size-8 shrink-0 p-0 aria-pressed:bg-secondary aria-pressed:text-foreground"
+              @keydown.stop
+              @keydown.escape="handleOpenChange(false)"
+              @click="toggleFolderLock"
+            >
+              <i :class="lockIcon" aria-hidden="true" />
+            </Button>
+          </div>
+          <div
             :id="listboxId"
             data-testid="widget-select-default-viewport"
             role="listbox"
             :aria-label="fieldLabel"
-            class="max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-3rem)))] min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
+            :class="
+              cn(
+                'max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-3rem)))] min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs',
+                showFolderHeader &&
+                  'max-h-[min(30.5rem,max(2rem,calc(var(--reka-combobox-content-available-height,100dvh)-5.5rem)))]'
+              )
+            "
             @pointerdown.capture.self="handleViewportPointerDown"
           >
             <div
@@ -175,17 +225,7 @@
               <ComboboxItem
                 :value="option"
                 :text-value="option.label"
-                :aria-label="
-                  option.kind === 'value'
-                    ? option.label
-                    : $t(
-                        option.kind === 'folder'
-                          ? 'widgets.selectFolder'
-                          : 'widgets.backFromFolder',
-                        { name: option.label },
-                        { escapeParameter: false }
-                      )
-                "
+                :aria-label="accessibleOptionLabel(option)"
                 :class="
                   cn(
                     'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
@@ -196,15 +236,8 @@
                 @select="handleOptionSelect($event, option)"
               >
                 <i
-                  v-if="option.kind !== 'value'"
-                  :class="
-                    cn(
-                      'text-muted-foreground',
-                      option.kind === 'back'
-                        ? 'icon-[lucide--arrow-left]'
-                        : 'icon-[lucide--folder]'
-                    )
-                  "
+                  v-if="option.kind === 'folder'"
+                  class="icon-[lucide--folder] text-muted-foreground"
                   aria-hidden="true"
                 />
                 <span class="min-w-0 flex-1 truncate">{{ option.label }}</span>
@@ -239,7 +272,6 @@
 </template>
 
 <script setup lang="ts">
-import { countBy } from 'es-toolkit'
 import {
   ComboboxPortal,
   ComboboxAnchor,
@@ -252,10 +284,16 @@ import {
   ComboboxVirtualizer
 } from 'reka-ui'
 import { computed, nextTick, ref, useId, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
+import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
+import {
+  resolveComboValues,
+  useComboOptions
+} from '@/renderer/extensions/vueNodes/widgets/composables/useComboOptions'
+import type { ComboItem } from '@/renderer/extensions/vueNodes/widgets/composables/useComboOptions'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import {
   widgetLabel,
@@ -266,10 +304,10 @@ import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import { useWidgetHeight } from '@/types/widgetTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 import { isWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
@@ -280,202 +318,110 @@ interface Props {
   filenameSummary?: boolean
 }
 
-interface SelectOption {
-  kind: 'value'
-  key: string
-  label: string
-  rawValue: NonNullable<WidgetValue>
-  value: string
-}
-
-interface SelectFolder {
-  kind: 'folder' | 'back'
-  key: string
-  label: string
-  directory: string[]
-}
-
 type SelectWidgetOptions = IWidgetOptions & {
   filterPlaceholder?: string
 }
 
 const { widgetId, displayLabel, filenameSummary = false } = defineProps<Props>()
+const { t } = useI18n()
 const inputId = useId()
 const fieldLabel = computed(() => widgetLabel(widgetId) || widgetName(widgetId))
 const listboxId = useId()
 
-function resolveRawValues(values: unknown): unknown[] {
-  try {
-    const resolved = typeof values === 'function' ? values() : values
-    return Array.isArray(resolved) ? resolved : []
-  } catch (error) {
-    console.error('[WidgetSelectDefault] Failed to resolve options', error)
-    return []
-  }
-}
-
-function toWidgetValue(value: unknown): NonNullable<WidgetValue> {
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    (typeof value === 'object' && value !== null)
-  ) {
-    return value
-  }
-
-  return String(value)
-}
-
-function resolveValues(values: unknown) {
-  return resolveRawValues(values)
-    .filter((value) => value !== null && value !== undefined)
-    .map((rawValue) => ({
-      rawValue: toWidgetValue(rawValue),
-      value: String(rawValue)
-    }))
-}
-
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
-    try {
-      const id = modelProps.widgetId
-      const values = isWidgetId(id)
-        ? useWidgetValueStore().getWidget(id)?.options.values
-        : undefined
-      const resolved = typeof values === 'function' ? values() : values
-      const firstValue = Array.isArray(resolved)
-        ? resolved.find((value) => value !== null && value !== undefined)
-        : undefined
-      return firstValue === undefined ? '' : firstValue
-    } catch (error) {
-      console.error('[WidgetSelectDefault] Failed to resolve options', error)
-      return ''
-    }
+    const id = modelProps.widgetId
+    const values = isWidgetId(id)
+      ? useWidgetValueStore().getWidget(id)?.options.values
+      : undefined
+    return resolveComboValues(values)[0] ?? ''
   }
 })
 
-const searchQuery = ref('')
-const directory = ref<string[]>([])
+const folderLocks = useWidgetFolderLockStore()
+const lockedDirectory = computed(() => folderLocks.get(widgetId)?.directory)
 const combobox = useTemplateRef('combobox')
 const popup = useTemplateRef('popup')
-const optionsRefreshKey = ref(0)
 const isOpen = ref(false)
+const retainSearchInput = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
   useRestoreFocusOnViewportPointer(focusSearchInput)
 
 const options = computed<SelectWidgetOptions>(() => widgetOptions(widgetId))
 
-const dynamicOptions = computed(
-  () => typeof options.value.values === 'function'
-)
+const {
+  searchQuery,
+  directory,
+  hasFolders,
+  isFilterable,
+  selection,
+  longestLabel,
+  isStepDisabled,
+  stepOption,
+  openingDirectory,
+  browseOptions,
+  parentDirectory,
+  refreshOptions
+} = useComboOptions(() => options.value, modelValue, {
+  filenameSummary: () => filenameSummary,
+  lockedDirectory,
+  onSelect: selectOption
+})
 const disabled = computed(() => Boolean(options.value.disabled))
 const placeholder = computed(() => options.value.placeholder ?? '')
 const filterPlaceholder = computed(
   () => options.value.filterPlaceholder ?? placeholder.value
 )
 
-function refreshOptions() {
-  optionsRefreshKey.value++
-}
-
-function getOptionLabel(value: string) {
-  const labeler = options.value.getOptionLabel
-  if (!labeler) return value
-
-  try {
-    return labeler(value) || value
-  } catch (error) {
-    console.error('[WidgetSelectDefault] Failed to map option label', error)
-    return value
-  }
-}
-
-const normalizedOptions = computed<SelectOption[]>(() => {
-  void optionsRefreshKey.value
-
-  return resolveValues(options.value.values).map(({ rawValue, value }) => ({
-    kind: 'value',
-    key: `value:${value}`,
-    label: getOptionLabel(value),
-    rawValue,
-    value
-  }))
-})
-
-const hasFolders = computed(
-  () =>
-    !options.value.getOptionLabel &&
-    normalizedOptions.value.some((option) => isFilePath(option.value))
+const folderPath = computed(
+  () => directory.value.join(' / ') || t('widgets.allFolders')
+)
+const lockIcon = computed(() =>
+  lockedDirectory.value ? 'icon-[lucide--lock]' : 'icon-[lucide--lock-open]'
+)
+const showFolderHeader = computed(
+  () => hasFolders.value || Boolean(lockedDirectory.value)
+)
+const canLockDirectory = computed(
+  () => Boolean(lockedDirectory.value) || directory.value.length > 0
+)
+const lockedDescription = computed(() =>
+  lockedDirectory.value
+    ? t(
+        'widgets.folderLocked',
+        { name: lockedDirectory.value.join(' / ') },
+        { escapeParameter: false }
+      )
+    : undefined
+)
+const displayValue = computed(
+  () => selection.value.summary || placeholder.value || '\u00a0'
+)
+const lockLabel = computed(() =>
+  lockedDirectory.value
+    ? t(
+        'widgets.unlockFolder',
+        { name: lockedDirectory.value.join(' / ') },
+        { escapeParameter: false }
+      )
+    : directory.value.length
+      ? t(
+          'widgets.lockFolder',
+          { name: folderPath.value },
+          { escapeParameter: false }
+        )
+      : t('widgets.browseToLockFolder')
 )
 
-function isFilePath(value: string) {
-  return /[/\\][^/\\]+\.[a-z][a-z0-9]{0,15}$/i.test(value)
+async function toggleFolderLock() {
+  retainSearchInput.value = true
+  const path = lockedDirectory.value ? undefined : [...directory.value]
+  folderLocks.set(widgetId, path ? { directory: path } : undefined)
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  await nextTick()
+  focusSearchInput()
 }
-
-const isFilterable = computed(
-  () => hasFolders.value || normalizedOptions.value.length > 4
-)
-
-const filteredOptions = computed(() => {
-  if (!isFilterable.value) return normalizedOptions.value
-
-  const query = searchQuery.value.trim().toLocaleLowerCase()
-  if (!query) return normalizedOptions.value
-
-  return normalizedOptions.value.filter(
-    (option) =>
-      option.value.toLocaleLowerCase().includes(query) ||
-      option.label.toLocaleLowerCase().includes(query)
-  )
-})
-
-const browseOptions = computed<Array<SelectOption | SelectFolder>>(() => {
-  if (!hasFolders.value || searchQuery.value.trim())
-    return filteredOptions.value
-
-  const folders = new Map<string, SelectFolder>()
-  const files: SelectOption[] = []
-  for (const option of normalizedOptions.value) {
-    const parts = isFilePath(option.value)
-      ? option.value.split(/[/\\]/).filter(Boolean)
-      : [option.value]
-    if (!directory.value.every((part, index) => parts[index] === part)) continue
-    const label = parts[directory.value.length]
-    if (label === undefined) continue
-    if (parts.length === directory.value.length + 1) {
-      files.push({ ...option, label })
-    } else if (!folders.has(label)) {
-      const path = [...directory.value, label]
-      folders.set(label, {
-        kind: 'folder',
-        key: `folder:${path.join('/')}`,
-        label,
-        directory: path
-      })
-    }
-  }
-  const labelCounts = countBy(files, (option) => option.label)
-  return [
-    ...(directory.value.length
-      ? [
-          {
-            kind: 'back' as const,
-            key: 'back',
-            label: directory.value.join(' / '),
-            directory: directory.value.slice(0, -1)
-          }
-        ]
-      : []),
-    ...folders.values(),
-    ...files.map((option) =>
-      labelCounts[option.label] > 1
-        ? { ...option, label: option.value }
-        : option
-    )
-  ]
-})
 
 const activeDescendant = computed((): string | undefined =>
   browseOptions.value.length
@@ -483,71 +429,43 @@ const activeDescendant = computed((): string | undefined =>
     : undefined
 )
 
-const normalizedModelValue = computed(() =>
-  modelValue.value == null ? undefined : String(modelValue.value)
-)
-
-const selectedOption = computed(() =>
-  normalizedOptions.value.find(
-    (option) => option.value === normalizedModelValue.value
+const backLabel = computed(() =>
+  t(
+    'widgets.backFromFolder',
+    { name: folderPath.value },
+    { escapeParameter: false }
   )
 )
 
-const longestLabel = computed(() =>
-  normalizedOptions.value.reduce(
-    (longest, { label }) => (label.length > longest.length ? label : longest),
-    ''
+function accessibleOptionLabel(option: ComboItem) {
+  if (option.kind === 'value') return option.label
+  return t(
+    'widgets.selectFolder',
+    { name: option.label },
+    { escapeParameter: false }
   )
-)
+}
 
-const isInvalid = computed(
-  () =>
-    options.value.values !== undefined &&
-    modelValue.value != null &&
-    modelValue.value !== '' &&
-    !selectedOption.value
-)
-
-const selectedLabel = computed(() => {
-  if (selectedOption.value) return selectedOption.value.label
-  if (isInvalid.value) return String(modelValue.value)
-  return ''
-})
-
-const selectedSummary = computed(() =>
-  filenameSummary && !options.value.getOptionLabel
-    ? selectedLabel.value.split(/[/\\]/).at(-1)
-    : selectedLabel.value
-)
-
-async function handleOptionSelect(
-  event: Event,
-  option: SelectOption | SelectFolder
-) {
+async function handleOptionSelect(event: Event, option: ComboItem) {
   if (option.kind === 'value') return
   event.preventDefault()
-  directory.value = option.directory
+  await browseDirectory(option.directory)
+}
+
+async function browseDirectory(path: string[]) {
+  directory.value = path
   await nextTick()
   focusSearchInput()
   combobox.value?.highlightFirstItem?.()
 }
 
-function selectOption(option: SelectOption | SelectFolder | null) {
+function selectOption(option: ComboItem | null) {
   if (!option || option.kind !== 'value') return
 
   modelValue.value = option.rawValue
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   void handleOpenChange(false)
 }
-
-const { isStepDisabled, stepOption } = useComboStepping({
-  options: normalizedOptions,
-  selectedOption,
-  disabled,
-  dynamicOptions,
-  refreshOptions,
-  onSelect: selectOption
-})
 
 function focusSearchInput() {
   const input =
@@ -564,13 +482,10 @@ async function handleOpenChange(open: boolean) {
 
   if (open) {
     refreshOptions()
-    const value = selectedOption.value?.value ?? ''
-    directory.value =
-      hasFolders.value && isFilePath(value)
-        ? value.split(/[/\\]/).filter(Boolean).slice(0, -1)
-        : []
+    directory.value = openingDirectory.value
   } else {
     searchQuery.value = ''
+    retainSearchInput.value = false
     const element: unknown = popup.value?.$el
     if (
       !(element instanceof Element && element.contains(document.activeElement))
