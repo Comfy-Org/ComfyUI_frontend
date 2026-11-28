@@ -1,4 +1,6 @@
 export const PRESERVED_QUERY_NAMESPACES = {
+  ASSET_WORKFLOW: 'asset_workflow',
+  APP_JOB: 'app_job',
   TEMPLATE: 'template',
   INVITE: 'invite',
   SHARE: 'share',

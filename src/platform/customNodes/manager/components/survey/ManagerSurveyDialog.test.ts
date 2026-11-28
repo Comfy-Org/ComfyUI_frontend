@@ -31,7 +31,7 @@ describe('ManagerSurveyDialog', () => {
     )
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-123' }))
 
-    renderDialog()
+    const dialog = renderDialog()
 
     const src = new URL(
       screen.getByTestId('manager-survey-iframe').getAttribute('src')!
@@ -39,6 +39,20 @@ describe('ManagerSurveyDialog', () => {
     expect(src.origin + src.pathname).toBe(SURVEY_URL)
     expect(src.searchParams.has('embed')).toBe(false)
     expect(src.searchParams.get('distinct_id')).toBe('user-123')
+
+    dialog.unmount()
+    vi.stubEnv('VITE_WORKSPACE_PROVIDER_NAVIGATION', 'top-level')
+    try {
+      renderDialog()
+      const link = screen.getByRole('link', { name: 'Join the waitlist' })
+      expect(link.getAttribute('href')).toBe(src.href)
+      expect(link.getAttribute('target')).toBe('_blank')
+      expect(link.getAttribute('rel')).toContain('noopener')
+      expect(screen.queryByTestId('manager-survey-iframe')).toBeNull()
+      expect(screen.queryByTestId('manager-survey-loading')).toBeNull()
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('omits distinct_id when there is no logged-in user', () => {

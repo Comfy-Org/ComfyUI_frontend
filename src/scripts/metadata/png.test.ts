@@ -60,6 +60,13 @@ function createPngWithChunk(
     pos += transBytes.length
     chunkData[pos++] = 0
     chunkData.set(contentBytes, pos)
+  } else if (chunkType === 'zTXt') {
+    chunkData = new Uint8Array([
+      ...keywordBytes,
+      0,
+      compressionMethod,
+      ...contentBytes
+    ])
   } else {
     chunkData = new Uint8Array(keywordBytes.length + 1 + contentBytes.length)
     chunkData.set(keywordBytes, 0)
@@ -175,7 +182,7 @@ describe('getFromPngBuffer', () => {
     )
   })
 
-  it('parses compressed iTXt chunk', async () => {
+  it.for(['iTXt', 'zTXt'])('parses compressed %s chunk', async (type) => {
     const workflow = '{"nodes":[{"id":1,"type":"KSampler"}]}'
     const contentBytes = new TextEncoder().encode(workflow)
 
@@ -200,7 +207,7 @@ describe('getFromPngBuffer', () => {
       pos += chunk.length
     }
 
-    const buffer = createPngWithChunk('iTXt', 'workflow', compressedBytes, {
+    const buffer = createPngWithChunk(type, 'workflow', compressedBytes, {
       compressionFlag: 1,
       compressionMethod: 0
     })

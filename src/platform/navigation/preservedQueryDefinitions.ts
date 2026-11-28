@@ -10,6 +10,18 @@ import type { PreservedQueryDefinition } from '@/platform/navigation/preservedQu
  */
 export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
   {
+    namespace: PRESERVED_QUERY_NAMESPACES.ASSET_WORKFLOW,
+    keys: ['assetWorkflow', 'assetWorkspace'],
+    requiredKey: 'assetWorkflow',
+    rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.APP_JOB,
+    keys: ['appJob', 'appWorkflowName', 'appJobWorkspace'],
+    requiredKey: 'appJob',
+    rejectRepeated: true
+  },
+  {
     namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
     keys: ['workflowId'],
     rejectRepeated: true,

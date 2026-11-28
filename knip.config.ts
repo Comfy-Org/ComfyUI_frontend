@@ -9,6 +9,8 @@ const config: KnipConfig = {
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
         'vitest.census.config.mts',
+        // Loaded by the static OAuth callback page rather than a Vite entry.
+        'public/oauth/editor-callback.js',
         'src/assets/css/style.css',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',

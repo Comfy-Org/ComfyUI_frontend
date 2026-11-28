@@ -25,6 +25,8 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useLocalHandoffUrlLoader } from '@/platform/openOnCloud/composables/useLocalHandoffUrlLoader'
 import { LOCAL_HANDOFF_PARAM } from '@/platform/openOnCloud/localHandoffProtocol'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
+import { useAssetWorkflowUrlLoader } from '@/platform/workflow/management/composables/useAssetWorkflowUrlLoader'
+import { useAppJobUrlLoader } from '@/platform/workflow/management/composables/useAppJobUrlLoader'
 import { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useCreateWorkspaceUrlLoader'
@@ -312,52 +314,43 @@ function schedulePendingCheckoutRecovery(
   )
 }
 
-/** Calls a composable only on the cloud distribution; `null` off it. */
-function useIfCloud<T>(create: () => T): T | null {
-  return isCloud ? create() : null
+function useCloudUrlActions(router: ReturnType<typeof useRouter>) {
+  if (!isCloud) return { steps: [], subscriptionDialog: null }
+
+  const loaders = {
+    workflowLinkUrlLoader: useWorkflowLinkUrlLoader(),
+    deploymentUrlLoader: useDeploymentUrlLoader(),
+    workspaceUrlLoader: useWorkspaceUrlLoader(),
+    inviteUrlLoader: useInviteUrlLoader(),
+    createWorkspaceUrlLoader: useCreateWorkspaceUrlLoader(),
+    pricingTableUrlLoader: usePricingTableUrlLoader(),
+    topUpUrlLoader: useTopUpUrlLoader(),
+    settingsUrlLoader: useSettingsUrlLoader(),
+    assetsUrlLoader: useAssetsUrlLoader(),
+    localHandoffUrlLoader: useLocalHandoffUrlLoader()
+  }
+  const subscriptionDialog = useSubscriptionDialog()
+  const workspaceStore = useTeamWorkspaceStore()
+  return {
+    steps: buildUrlActionSteps(
+      loaders,
+      router,
+      () => workspaceStore.activeWorkspace?.id
+    ),
+    subscriptionDialog
+  }
 }
 
 /**
- * Aggregates the query-param "deep link" loaders the cloud app checks on mount
- * (`?deployment`, `?workspace`, `?workflowId`, `?invite`, `?create_workspace`, `?pricing`,
- * `?topup`, `?settings`, `?assets`), then recovers an interrupted checkout. The loaders
- * are instantiated in setup so their `useRoute`/`useRouter` resolve; call
- * `runUrlActionLoaders()` from `onMounted` once the app is ready.
+ * Aggregates the deep-link loaders the editor checks on mount and recovers an
+ * interrupted checkout. Instantiate the loaders in setup, then call
+ * `runUrlActionLoaders()` from `onMounted` once the editor is ready.
  */
 export function useUrlActionLoaders() {
-  const router = useRouter()
+  const { steps, subscriptionDialog } = useCloudUrlActions(useRouter())
 
-  const workflowLinkUrlLoader = useIfCloud(useWorkflowLinkUrlLoader)
-  const deploymentUrlLoader = useIfCloud(useDeploymentUrlLoader)
-  const workspaceUrlLoader = useIfCloud(useWorkspaceUrlLoader)
-  const inviteUrlLoader = useIfCloud(useInviteUrlLoader)
-  const createWorkspaceUrlLoader = useIfCloud(useCreateWorkspaceUrlLoader)
-  const pricingTableUrlLoader = useIfCloud(usePricingTableUrlLoader)
-  const topUpUrlLoader = useIfCloud(useTopUpUrlLoader)
-  const settingsUrlLoader = useIfCloud(useSettingsUrlLoader)
-  const assetsUrlLoader = useIfCloud(useAssetsUrlLoader)
-  const localHandoffUrlLoader = useIfCloud(useLocalHandoffUrlLoader)
-  const subscriptionDialog = useIfCloud(useSubscriptionDialog)
-  const workspaceStore = useIfCloud(useTeamWorkspaceStore)
-
-  const steps = isCloud
-    ? buildUrlActionSteps(
-        {
-          workflowLinkUrlLoader,
-          deploymentUrlLoader,
-          workspaceUrlLoader,
-          inviteUrlLoader,
-          createWorkspaceUrlLoader,
-          pricingTableUrlLoader,
-          topUpUrlLoader,
-          settingsUrlLoader,
-          assetsUrlLoader,
-          localHandoffUrlLoader
-        },
-        router,
-        () => workspaceStore?.activeWorkspace?.id
-      )
-    : []
+  const loadAppJob = useAppJobUrlLoader()
+  const loadAssetWorkflow = useAssetWorkflowUrlLoader()
 
   async function runUrlActionLoaders() {
     const reloading = await runUrlActionSteps(steps)
@@ -366,6 +359,8 @@ export function useUrlActionLoaders() {
     // poll the old workspace's pending checkout. The next boot, once the
     // reload lands, gets a clean pass at it.
     if (reloading) return
+    await loadAppJob()
+    await loadAssetWorkflow()
     schedulePendingCheckoutRecovery(subscriptionDialog)
   }
 

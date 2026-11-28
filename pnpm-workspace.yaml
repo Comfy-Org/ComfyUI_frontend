@@ -196,4 +196,5 @@ minimumReleaseAgeExclude:
   - '@comfyorg/comfy-multi-player@0.3.14'
 
 patchedDependencies:
+  '@datadog/browser-core@6.33.0': patches/@datadog__browser-core@6.33.0.patch
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch

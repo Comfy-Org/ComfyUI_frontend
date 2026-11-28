@@ -54,6 +54,126 @@ const readUint32 = (data: Uint8Array, pos: number): number => {
   )
 }
 
+function topLevelBox(window: Uint8Array, at: number, remaining: number) {
+  if (at + 8 > window.byteLength) return
+  const view = new DataView(window.buffer, window.byteOffset + at)
+  const length32 = view.getUint32(0)
+  const header = length32 === 1 ? 16 : 8
+  if (view.byteLength < header) return
+  const length =
+    length32 === 1 ? Number(view.getBigUint64(8)) : length32 || remaining
+  if (!Number.isSafeInteger(length) || length < header || length > remaining)
+    return
+  return { length, header }
+}
+
+function isMetadataBox(window: Uint8Array, at: number) {
+  return (
+    bufferMatchesBoxType(window, at + 4, BOX_TYPES.MOVIE) ||
+    bufferMatchesBoxType(window, at + 4, BOX_TYPES.USER_DATA)
+  )
+}
+
+function readFromWindow(
+  window: Uint8Array,
+  windowAt: number,
+  offset: number,
+  size: number
+) {
+  return (
+    offset >= windowAt &&
+    offset + Math.min(16, size - offset) <= windowAt + window.byteLength
+  )
+}
+
+function parseTopLevelMetadata(type: Uint8Array, payload: Uint8Array) {
+  const box = new Uint8Array(8 + payload.length)
+  new DataView(box.buffer).setUint32(0, box.length)
+  box.set(type, 4)
+  box.set(payload, 8)
+  const metadata = parseIsobmffMetadata(box)
+  return metadata.prompt || metadata.workflow ? metadata : undefined
+}
+
+type ReadMovieRange = (
+  start: number,
+  end: number
+) => Promise<ArrayBuffer | undefined>
+
+function createMovieHeaderReader(size: number, read: ReadMovieRange) {
+  if (!Number.isSafeInteger(size) || size < 8) return
+  let windowAt = 0
+  let window = new Uint8Array()
+  return async (offset: number) => {
+    if (readFromWindow(window, windowAt, offset, size))
+      return { window, at: offset - windowAt, bytesRead: 0 }
+    const buffer = await read(offset, Math.min(size, offset + 64 * 1024))
+    if (!buffer) return
+    windowAt = offset
+    window = new Uint8Array(buffer)
+    return { window, at: 0, bytesRead: window.byteLength }
+  }
+}
+
+async function readBoxPayload(
+  window: Uint8Array,
+  at: number,
+  offset: number,
+  { header, length }: { header: number; length: number },
+  read: ReadMovieRange
+) {
+  if (at + length <= window.byteLength)
+    return { payload: window.subarray(at + header, at + length), bytesRead: 0 }
+  const buffer = await read(offset + header, offset + length)
+  if (!buffer) return
+  return { payload: new Uint8Array(buffer), bytesRead: buffer.byteLength }
+}
+
+function metadataBoxFits(
+  window: Uint8Array,
+  at: number,
+  length: number,
+  budget: number
+) {
+  return (
+    isMetadataBox(window, at) &&
+    (at + length <= window.byteLength || length <= budget)
+  )
+}
+
+/** Reads top-level box headers so a large media payload can be skipped. End offsets are exclusive. */
+export async function getMovieMetadataFromRanges(
+  size: number,
+  read: ReadMovieRange
+): Promise<ComfyMetadata | undefined> {
+  const readHeader = createMovieHeaderReader(size, read)
+  if (!readHeader) return {}
+  let offset = 0
+  let bytesRead = 0
+  while (offset + 8 <= size && bytesRead < MAX_READ_BYTES) {
+    const header = await readHeader(offset)
+    if (!header) return
+    const { window, at } = header
+    bytesRead += header.bytesRead
+    const box = topLevelBox(window, at, size - offset)
+    if (!box) return {}
+    const boxOffset = offset
+    offset += box.length
+    if (!metadataBoxFits(window, at, box.length, MAX_READ_BYTES - bytesRead))
+      continue
+    const content = await readBoxPayload(window, at, boxOffset, box, read)
+    if (!content) return
+    bytesRead += content.bytesRead
+    if (content.payload.length !== box.length - box.header) return {}
+    const metadata = parseTopLevelMetadata(
+      window.subarray(at + 4, at + 8),
+      content.payload
+    )
+    if (metadata) return metadata
+  }
+  return {}
+}
+
 const findIsobmffBoxByType = (
   data: Uint8Array,
   startPos: number,

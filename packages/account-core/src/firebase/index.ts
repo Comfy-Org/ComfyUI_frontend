@@ -55,6 +55,8 @@ export interface FirebaseIdentityAppConfig {
    * would pick, plus `watchedPopupRedirectResolver`.
    */
   readonly watchPopupSignIn?: boolean
+  /** Hosts handling OAuth in the top-level tab can omit Firebase’s embedded popup helper. */
+  readonly disablePopupResolver?: boolean
   /** A host-owned `Auth` and package-owned app options are exclusive. */
   readonly auth?: never
 }
@@ -243,12 +245,15 @@ function authResolver(config: FirebaseIdentityConfig): AuthResolver {
     const existing = getApps().find((app) => app.name === appName)
     if (existing) assertSameProject(existing.options, options, appName)
     const app = existing ?? initializeApp(options, appName)
-    const dependencies = authDependencies(
-      config.persistence,
-      config.watchPopupSignIn
-    )
+    const dependencies = config.disablePopupResolver
+      ? { persistence: config.persistence ?? getAuthPersistence() }
+      : authDependencies(config.persistence, config.watchPopupSignIn)
     resolved = dependencies
-      ? initializeOrReuse(app, dependencies, !config.persistence)
+      ? initializeOrReuse(
+          app,
+          dependencies,
+          !config.persistence && !config.disablePopupResolver
+        )
       : getAuth(app)
     return resolved
   }

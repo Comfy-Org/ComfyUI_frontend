@@ -9,7 +9,7 @@ import {
   mockFileReaderAbort,
   mockFileReaderError
 } from './__fixtures__/helpers'
-import { getFromIsobmffFile } from './isobmff'
+import { getFromIsobmffFile, getMovieMetadataFromRanges } from './isobmff'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.mp4')
 const nanFixturePath = path.resolve(
@@ -22,6 +22,34 @@ const legacyCommentFixturePath = path.resolve(
 )
 
 describe('ISOBMFF (MP4) metadata', () => {
+  it('skips a 64-bit box and reads metadata beyond 4 GiB in two small ranges', async () => {
+    const movie = fs.readFileSync(fixturePath)
+    const gap = 2 ** 32 + 1024
+    const ranges: number[][] = []
+    const result = await getMovieMetadataFromRanges(
+      gap + movie.length,
+      async (start, end) => {
+        ranges.push([start, end])
+        const bytes = new Uint8Array(end - start)
+        if (start === 0) {
+          const view = new DataView(bytes.buffer)
+          view.setUint32(0, 1)
+          bytes.set(new TextEncoder().encode('free'), 4)
+          view.setBigUint64(8, BigInt(gap))
+        } else {
+          expect(start).toBe(gap)
+          bytes.set(movie)
+        }
+        return bytes.buffer
+      }
+    )
+    expect(result).toMatchObject({ prompt: EXPECTED_PROMPT })
+    expect(ranges).toEqual([
+      [0, 65536],
+      [gap, gap + movie.length]
+    ])
+  })
+
   it('extracts workflow and prompt from QuickTime keys/ilst boxes', async () => {
     const bytes = fs.readFileSync(fixturePath)
     const file = new File([bytes], 'test.mp4', { type: 'video/mp4' })

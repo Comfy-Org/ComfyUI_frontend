@@ -37,11 +37,16 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
       captureCheckoutAttributionFromSearch(window.location.search)
     }
 
-    void this.identifyCurrentUser()
+    if (this.initialized) void this.identifyCurrentUser()
   }
 
   private initialize(): void {
-    if (typeof window === 'undefined' || this.initialized) return
+    if (
+      typeof window === 'undefined' ||
+      this.initialized ||
+      import.meta.env.VITE_WORKSPACE_PROVIDER_NAVIGATION === 'top-level'
+    )
+      return
 
     window.ire_o = IMPACT_QUEUE_NAME
 

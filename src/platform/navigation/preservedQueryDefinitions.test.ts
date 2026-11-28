@@ -21,6 +21,8 @@ describe('PRESERVED_QUERY_DEFINITIONS', () => {
   // empty stash, so the deep link dies at the sign-in redirect with nothing to
   // show for it.
   it.for([
+    [PRESERVED_QUERY_NAMESPACES.ASSET_WORKFLOW, 'assetWorkflow'],
+    [PRESERVED_QUERY_NAMESPACES.APP_JOB, 'appJob'],
     [PRESERVED_QUERY_NAMESPACES.ASSETS, 'assets'],
     [PRESERVED_QUERY_NAMESPACES.SETTINGS, 'settings'],
     [PRESERVED_QUERY_NAMESPACES.TOPUP, 'topup'],
