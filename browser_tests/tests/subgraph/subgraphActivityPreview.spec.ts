@@ -77,15 +77,19 @@ test.describe(
           const layoutBefore = await hostLayoutSize(comfyPage)
           const boxBefore = await host.boundingBox()
 
+          const firstRun = await execution.run()
+
           await test.step('a frame arrives from inside', async () => {
-            execution.latentPreview('first-run', INTERIOR_SAMPLER)
+            execution.latentPreview(firstRun, INTERIOR_SAMPLER)
             await expect(liveFrame).toBeVisible()
             expect(await host.boundingBox()).toEqual(boxBefore)
             expect(await hostLayoutSize(comfyPage)).toEqual(layoutBefore)
           })
 
           await test.step('the frame goes away when the inner node runs again', async () => {
-            execution.nodeRunning('second-run', INTERIOR_SAMPLER, 0, 1)
+            execution.executionSuccess(firstRun)
+            await expect(liveFrame).toBeVisible()
+            execution.nodeRunning(await execution.run(), INTERIOR_SAMPLER, 0, 1)
             await expect(liveFrame).toBeHidden()
             expect(await host.boundingBox()).toEqual(boxBefore)
             expect(await hostLayoutSize(comfyPage)).toEqual(layoutBefore)
@@ -104,8 +108,9 @@ test.describe(
           const execution = new ExecutionHelper(comfyPage, await getWebSocket())
           const boxBefore = await host.boundingBox()
 
-          execution.latentPreview('parallel-run', INTERIOR_SAMPLER)
-          execution.latentPreview('parallel-run', INTERIOR_ENCODER)
+          const run = await execution.run()
+          execution.latentPreview(run, INTERIOR_SAMPLER)
+          execution.latentPreview(run, INTERIOR_ENCODER)
 
           await expect(liveFrames).toHaveCount(2)
           expect(await host.boundingBox()).toEqual(boxBefore)
@@ -120,18 +125,22 @@ test.describe(
         const layoutBefore = await hostLayoutSize(comfyPage)
         await expect.poll(() => liveFramesDrawnOnCanvas(comfyPage)).toBe(0)
 
+        const firstRun = await execution.run()
+
         await test.step('a frame arrives from inside', async () => {
-          execution.latentPreview('first-run', INTERIOR_SAMPLER)
-          execution.nodeRunning('first-run', INTERIOR_SAMPLER, 1, 10)
+          execution.latentPreview(firstRun, INTERIOR_SAMPLER)
+          execution.nodeRunning(firstRun, INTERIOR_SAMPLER, 1, 10)
           await expect.poll(() => liveFramesDrawnOnCanvas(comfyPage)).toBe(1)
           expect(await hostLayoutSize(comfyPage)).toEqual(layoutBefore)
         })
 
         await test.step('the frame goes away when the inner node runs again', async () => {
-          execution.nodeRunning('second-run', INTERIOR_SAMPLER, 0, 2)
+          execution.executionSuccess(firstRun)
+          const secondRun = await execution.run()
+          execution.nodeRunning(secondRun, INTERIOR_SAMPLER, 0, 2)
           await expect
             .poll(() => {
-              execution.progress('second-run', INTERIOR_SAMPLER, 1, 2)
+              execution.progress(secondRun, INTERIOR_SAMPLER, 1, 2)
               return liveFramesDrawnOnCanvas(comfyPage)
             })
             .toBe(0)
@@ -146,8 +155,9 @@ test.describe(
         const execution = new ExecutionHelper(comfyPage, await getWebSocket())
         const layoutBefore = await hostLayoutSize(comfyPage)
 
-        execution.latentPreview('parallel-run', INTERIOR_SAMPLER)
-        execution.latentPreview('parallel-run', INTERIOR_ENCODER)
+        const run = await execution.run()
+        execution.latentPreview(run, INTERIOR_SAMPLER)
+        execution.latentPreview(run, INTERIOR_ENCODER)
 
         await expect.poll(() => liveFramesDrawnOnCanvas(comfyPage)).toBe(2)
         expect(await hostLayoutSize(comfyPage)).toEqual(layoutBefore)
@@ -167,7 +177,7 @@ test.describe(
             .getNodeLocator(hostId)
             .getByRole('img', { name: 'Live sampling preview' })
 
-        execution.latentPreview('exposed-run', '5:10')
+        execution.latentPreview(await execution.run(), '5:10')
 
         await expect(liveFramesIn('5')).toHaveCount(1)
         await expect(liveFramesIn('6')).toHaveCount(0)
