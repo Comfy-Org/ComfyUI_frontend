@@ -68,7 +68,7 @@ must not do is assert that an internal helper was called on the way.
 ## Compatibility tests: proactive for public contracts, reactive for internal behavior
 
 The reactive rule ("add one only after an observed breakage") comes from
-[`e2e-coverage-strategy.md`](./e2e-coverage-strategy.md), where it governs
+[ADR-TESTING-E2E-0027](../adr/TESTING-E2E-0027-coverage-measurement-and-test-selection.md), where it governs
 E2E pins under `legacyDoNotReplicate`. Those pins protect behavior nobody
 designed, so evidence of breakage is the only justification for one.
 
@@ -122,8 +122,8 @@ interaction faults (NIST); an explicit list catches the rest.
 Control flow in a test is code that can itself be wrong, and it has no test.
 A loop that never iterates passes. A branch that is never taken passes. The
 rule is absolute; every case people raise has a remedy that is also a better
-test. Around 400 `for … of` lines exist in this repository's tests today. They
-are the reason the rule is written down, and they get fixed when touched.
+test. Existing loops in this repository's tests are the reason the rule is
+written down, and they get fixed when touched.
 
 **A loop over inputs is a table.** Which surface failed?
 
@@ -182,9 +182,10 @@ and `assert.isNotNull` narrow one side each. When several tests need the same
 narrowed object, a typed builder that constructs it is better still, because
 then there is nothing to narrow.
 
-**Cleanup is `afterEach`.** A loop that disposes resources at the end of a
-test runs only if every assertion before it passed. `afterEach` runs
-regardless, and it is where readers look for it.
+**Cleanup is `onTestFinished` or a function returned from `beforeEach`.** A
+loop that disposes resources at the end of a test runs only if every
+assertion before it passed. Registered cleanup runs regardless, and it stays
+next to the setup that created the resource.
 
 **Property-based tests are tables with a generator.** `fc.assert(fc.property(
 arbitrary, (input) => …))` has no loop in the test body; fast-check owns the
