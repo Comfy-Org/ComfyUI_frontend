@@ -449,10 +449,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         const ds = useApp().canvas.ds
-        ds.changeScale(ds.scale * 1.1, [
-          ds.element.width / 2,
-          ds.element.height / 2
-        ])
+        ds.changeScale(ds.scale * 1.1)
         useApp().canvas.setDirty(true, true)
       }
     },
@@ -463,10 +460,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'view-controls' as const,
       function: () => {
         const ds = useApp().canvas.ds
-        ds.changeScale(ds.scale / 1.1, [
-          ds.element.width / 2,
-          ds.element.height / 2
-        ])
+        ds.changeScale(ds.scale / 1.1)
         useApp().canvas.setDirty(true, true)
       }
     },

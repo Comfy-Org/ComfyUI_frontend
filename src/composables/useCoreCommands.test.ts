@@ -848,10 +848,7 @@ describe('useCoreCommands', () => {
       app.canvas.ds.scale = 1
       await findCmd('Comfy.Canvas.ZoomIn').function()
 
-      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
-        1.1,
-        expect.any(Array)
-      )
+      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(1.1)
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
@@ -859,10 +856,7 @@ describe('useCoreCommands', () => {
       app.canvas.ds.scale = 1
       await findCmd('Comfy.Canvas.ZoomOut').function()
 
-      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(
-        1 / 1.1,
-        expect.any(Array)
-      )
+      expect(app.canvas.ds.changeScale).toHaveBeenCalledWith(1 / 1.1)
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 

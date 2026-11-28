@@ -165,6 +165,11 @@ export class DragAndScale {
     this.onredraw?.(this)
   }
 
+  /**
+   * Sets the scale, keeping the canvas point under `zooming_center` in place.
+   * @param zooming_center The pivot in client coordinates (like
+   * `MouseEvent.clientX`/`clientY`). Defaults to the centre of the element.
+   */
   changeScale(
     value: number,
     zooming_center?: Point,
@@ -178,7 +183,10 @@ export class DragAndScale {
     if (value == this.scale) return
 
     const rect = this.element.getBoundingClientRect()
-    zooming_center = zooming_center ?? [rect.width * 0.5, rect.height * 0.5]
+    zooming_center = zooming_center ?? [
+      rect.x + rect.width * 0.5,
+      rect.y + rect.height * 0.5
+    ]
 
     const normalizedCenter: Point = [
       zooming_center[0] - rect.x,

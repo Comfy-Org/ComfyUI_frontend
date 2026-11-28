@@ -77,4 +77,25 @@ describe('DragAndScale anchored zoom', () => {
       expect(ds.offset[1]).toBeCloseTo(-9, 5)
     }
   )
+
+  it('keeps the centre of an offset, high-DPI element in place by default', () => {
+    // Backing store at DPR 2, laid out 13px from the left and 29px from the top
+    const element = createTestCanvasElement({
+      width: 1600,
+      height: 1200,
+      cssSize: [800, 600]
+    })
+    vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(13, 29, 800, 600)
+    )
+    const ds = new DragAndScale(element)
+    ds.offset = [17, -9]
+    const centre = ds.convertCanvasToOffset([400, 300])
+
+    ds.changeScale(2)
+
+    const after = ds.convertOffsetToCanvas(centre)
+    expect(after[0]).toBeCloseTo(400, 5)
+    expect(after[1]).toBeCloseTo(300, 5)
+  })
 })

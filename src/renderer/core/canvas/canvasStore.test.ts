@@ -115,7 +115,7 @@ describe('useCanvasStore', () => {
 
       store.setAppZoomFromPercentage(150)
 
-      expect(canvas.ds.changeScale).toHaveBeenCalledWith(1.5, [200, 100])
+      expect(canvas.ds.changeScale).toHaveBeenCalledWith(1.5)
       expect(canvas.setDirty).toHaveBeenCalledWith(true, true)
       expect(store.appScalePercentage).toBe(150)
     })
