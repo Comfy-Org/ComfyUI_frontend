@@ -22,8 +22,10 @@ returns early, preventing cross-workflow data corruption.
 workflow's own `LGraph`, not whichever graph `app.rootGraph` currently shows.
 Until the workflow has adopted a graph (`adoptGraph()` runs at the end of its
 first load) there is nothing to serialize and both return without capturing.
-The node-history helpers read `app.rootGraph`, so they assume the tracker's
-workflow is the one on screen.
+`keepingLiveNodeHistoryValues()` and `forgetRemovedNodeHistories()` take the
+tracker's own graph, so they also hold for a workflow that is not on screen.
+`differsOnlyInNodeHistoryWidgets()` still reads `app.rootGraph`, so the
+undo-coalescing comparison assumes the tracker's workflow is the visible one.
 
 ## Automatic Triggers
 
