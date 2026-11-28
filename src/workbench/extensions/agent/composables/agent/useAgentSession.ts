@@ -151,6 +151,7 @@ export interface AgentSessionDeps {
   ) => void
   onBlankTurnAccepted?: (ack: AgentTurnAccepted, blankChatId: string) => void
   onOffscreenBlankSendFailed?: (failure: OffscreenBlankSendFailure) => void
+  onTargetRefused?: (clientMessageId?: string) => void
   isDeletedThread?: (threadId: string) => boolean
   onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
@@ -172,6 +173,7 @@ export interface AgentSessionDeps {
     // describe the pre-await originating tab, not a later switch. See
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
+    ambiguousTarget?(origin?: TurnOrigin): boolean
     adopted(
       workflowId: string,
       sent: WorkflowTurnContext | undefined,
@@ -181,7 +183,7 @@ export interface AgentSessionDeps {
       workflowId: string | undefined,
       isCurrent: () => boolean
     ): Promise<boolean> | boolean
-    prepare?(clientMessageId?: string): Promise<void>
+    prepare?(clientMessageId?: string): Promise<boolean | void>
     /** The server refused this workflow id; forget every cached trace of it. */
     disowned?(workflowId: string): void
     /** Whether another saved workflow already owns this id. */
@@ -556,6 +558,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onBackgroundTurnAccepted,
     onBlankTurnAccepted,
     onOffscreenBlankSendFailed,
+    onTargetRefused,
     isDeletedThread,
     onAgentEvent,
     onThreadActivated,
@@ -1757,11 +1760,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  async function prepareWorkflow(clientMessageId?: string): Promise<void> {
-    if (!workflow?.prepare) return
-    await Promise.race([
-      workflow.prepare(clientMessageId).catch(() => undefined),
-      new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
+  async function prepareWorkflow(clientMessageId?: string): Promise<boolean> {
+    if (!workflow?.prepare) return false
+    return await Promise.race([
+      workflow
+        .prepare(clientMessageId)
+        .then((complete) => complete === true)
+        .catch(() => false),
+      new Promise<false>((resolve) =>
+        setTimeout(() => resolve(false), PREPARE_TIMEOUT_MS)
+      )
     ])
   }
 
@@ -1810,6 +1818,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId: string | undefined,
     noticeKey: string
   ): void {
+    onTargetRefused?.(clientMessageId)
     trackSendRefused('target_unavailable', clientMessageId, origin)
     recordFailedPendingSend(sendId, origin, {
       kind: 'target_unavailable',
@@ -1825,7 +1834,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined,
     clientMessageId: string | undefined,
     boundAtSend: string | null,
-    tabStillOpen: boolean
+    tabStillOpen: boolean,
+    turnOrigin: TurnOrigin
   ): boolean {
     if (workflowTargetChanged(originContext, wfContext, tabStillOpen)) {
       failTargetUnavailable(
@@ -1833,6 +1843,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
         origin,
         clientMessageId,
         'agent.targetNavigationUnavailable'
+      )
+      return true
+    }
+    if (
+      wfContext?.id === undefined &&
+      workflow?.ambiguousTarget?.(turnOrigin)
+    ) {
+      failTargetUnavailable(
+        sendId,
+        origin,
+        clientMessageId,
+        'agent.ambiguousWorkflowTarget'
       )
       return true
     }
@@ -2902,7 +2924,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           draft,
           clientMessageId,
           boundAtSend,
-          workflow?.hasTab?.(resolved.turnOrigin) ?? false
+          workflow?.hasTab?.(resolved.turnOrigin) ?? false,
+          resolved.turnOrigin
         )
       )
         return false

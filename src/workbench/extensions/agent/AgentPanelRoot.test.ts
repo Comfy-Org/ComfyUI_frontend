@@ -736,6 +736,16 @@ async function renderAndSend(text: string): Promise<void> {
   await sendFromComposer(text)
 }
 
+async function renderAndRefuseAmbiguousTarget(text: string): Promise<void> {
+  renderWithSelectedTarget()
+  const textbox = screen.getByRole('textbox')
+  await userEvent.click(textbox)
+  await userEvent.keyboard('{ArrowRight}')
+  await userEvent.paste(text)
+  await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+  await screen.findByText(i18n.global.t('agent.ambiguousWorkflowTarget'))
+}
+
 async function activateTabAsUser(tab: ComfyWorkflow): Promise<void> {
   await useWorkflowService().openWorkflow(tab, { initiator: 'user' })
 }
@@ -16029,17 +16039,21 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('does not resolve two same-named open saved tabs to one cloud id', async () => {
+  it('refuses a send it cannot resolve between two same-named open saved tabs', async () => {
     const current = makeTab()
     const archived = addTab('workflows/archive/current.json')
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-cloud-current', name: 'current' }
     ])
 
-    await renderAndSend('first message')
+    vi.mocked(useTelemetry()!.trackAgentMessageSent).mockClear()
+    await renderAndRefuseAmbiguousTarget('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(bodies).toEqual([])
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'first message'
+    )
+    expect(useTelemetry()!.trackAgentMessageSent).not.toHaveBeenCalled()
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
     ).toBeUndefined()
@@ -16048,18 +16062,78 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('excludes ambiguous and nameless cloud records from resolution', async () => {
+  it('sends from two same-named saved tabs when the cloud listing has no match', async () => {
     makeTab()
+    addTab('workflows/archive/current.json')
+    const bodies = mockMessagesEndpoint('wf-fresh', [])
+
+    await renderAndSend('first message')
+
+    expect(bodies).toHaveLength(1)
+    expect(bodies[0]).not.toHaveProperty('workflow_id')
+  })
+
+  it('refuses a send whose target name is duplicated in the cloud index', async () => {
+    const tab = makeTab()
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-a', name: 'current' },
       { id: 'wf-b', name: 'current' },
       { id: 'wf-nameless' } as { id: string; name: string }
     ])
 
-    await renderAndSend('first message')
+    await renderAndRefuseAmbiguousTarget('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(bodies).toEqual([])
+    expect(
+      useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
+    ).toBeUndefined()
+  })
+
+  it('refuses an origin-identified ambiguous send after the selected target is cleared', async () => {
+    makeTab()
+    const bodies: unknown[] = []
+    let workflowRequests = 0
+    let resolveListing!: (response: Response) => void
+    const pendingListing = new Promise<Response>((resolve) => {
+      resolveListing = resolve
+    })
+    const duplicateListing = {
+      data: [
+        { id: 'wf-a', name: 'current' },
+        { id: 'wf-b', name: 'current' }
+      ],
+      pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+    }
+    vi.mocked(fetch).mockImplementation(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)))
+          return json(202, ack('wf-fresh'))
+        }
+        if (url.includes('/workflows')) {
+          workflowRequests++
+          return workflowRequests === 1
+            ? json(200, duplicateListing)
+            : pendingListing
+        }
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return json(200, [])
+      }
+    )
+
+    renderWithSelectedTarget()
+    await vi.waitFor(() => expect(workflowRequests).toBe(1))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('first message')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(workflowRequests).toBe(2))
+    useAgentPanelStore().setWorkflowTarget(null)
+    resolveListing(json(200, duplicateListing))
+
+    await screen.findByText(i18n.global.t('agent.ambiguousWorkflowTarget'))
+    expect(bodies).toEqual([])
   })
 
   it('falls back to bindings when the cloud index request fails', async () => {
@@ -16091,7 +16165,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('does not adopt a minted workflow when a saved tab cloud lookup fails', async () => {
+  it('sends from a saved tab whose cloud lookup failed without minting', async () => {
     const tab = makeTab()
     const bodies: unknown[] = []
     vi.mocked(fetch).mockImplementation(
@@ -16110,6 +16184,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('first message')
 
+    expect(bodies).toHaveLength(1)
     expect(bodies[0]).not.toHaveProperty('workflow_id')
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)

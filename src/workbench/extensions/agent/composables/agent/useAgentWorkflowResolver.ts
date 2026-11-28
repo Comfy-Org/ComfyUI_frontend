@@ -47,6 +47,14 @@ export type SidebarWorkflowResolution =
 /** How a refresh of the cloud workflow list ended: last page reached, stopped early, or no answer. */
 export type CloudWorkflowRefreshOutcome = 'complete' | 'incomplete' | 'failed'
 
+function updatedAmbiguousNames(
+  current: ReadonlySet<string>,
+  observed: ReadonlySet<string>,
+  complete: boolean
+): ReadonlySet<string> {
+  return complete ? observed : new Set([...current, ...observed])
+}
+
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
@@ -90,10 +98,15 @@ export function useAgentWorkflowResolver({
         const nameCounts = new Map<string, number>()
         for (const { name } of nextIndex)
           nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
-        ambiguousCloudNames.value = new Set(
+        const nextAmbiguousNames = new Set(
           Array.from(nameCounts.entries()).flatMap(([name, count]) =>
             count > 1 ? [name] : []
           )
+        )
+        ambiguousCloudNames.value = updatedAmbiguousNames(
+          ambiguousCloudNames.value,
+          nextAmbiguousNames,
+          complete
         )
         cloudIndex.value = nextIndex
         return complete ? 'complete' : 'incomplete'
@@ -168,6 +181,20 @@ export function useAgentWorkflowResolver({
       if (saved !== undefined) return saved
     }
     return boundCloudIdFor(workflow)
+  }
+
+  function cloudIdAmbiguous(workflow: ComfyWorkflow): boolean {
+    if (workflow.isTemporary || cloudIdFor(workflow) !== undefined) return false
+    const name = cloudWorkflowName(workflow)
+    const cloudMatches = cloudIndex.value.filter(
+      (entry) => entry.name === name
+    ).length
+    return (
+      ambiguousCloudNames.value.has(name) ||
+      cloudMatches > 1 ||
+      (cloudMatches > 0 &&
+        savedMatches(name, workflows.openWorkflows).length > 1)
+    )
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
@@ -378,6 +405,7 @@ export function useAgentWorkflowResolver({
     forgetCloudWorkflowId,
     cloudIdFor,
     authoritativeCloudIdFor,
+    cloudIdAmbiguous,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,

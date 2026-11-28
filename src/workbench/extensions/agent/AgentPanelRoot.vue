@@ -647,6 +647,7 @@ const {
   forgetCloudWorkflowId,
   cloudIdFor,
   authoritativeCloudIdFor,
+  cloudIdAmbiguous,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
@@ -1026,6 +1027,12 @@ function serializedCanvas(target: ComfyWorkflow) {
   return target.activeState
 }
 
+function targetWorkflowAmbiguous(origin?: TurnOrigin): boolean {
+  if (origin === undefined && workflowDetached.value) return false
+  const target = originWorkflow(origin)
+  return target !== undefined && cloudIdAmbiguous(target)
+}
+
 function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (origin === undefined && workflowDetached.value) return undefined
   const target = originWorkflow(origin)
@@ -1287,6 +1294,9 @@ const {
     }
   },
   onOffscreenBlankSendFailed: notifyOffscreenBlankSendFailed,
+  onTargetRefused: (clientMessageId) => {
+    if (clientMessageId !== undefined) pendingTelemetry.delete(clientMessageId)
+  },
   isDeletedThread: history.isDeleted,
   onAgentEvent: observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
@@ -1296,17 +1306,10 @@ const {
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
+    ambiguousTarget: targetWorkflowAmbiguous,
     adopted: onWorkflowAdopted,
     restored: restoreChatWorkflow,
-    prepare: async (clientMessageId) => {
-      try {
-        await refreshCloudWorkflowIds()
-      } finally {
-        // In `finally` so a refresh that fails still reports the send, with
-        // whichever id the client already had, rather than losing the event.
-        reportPendingSend(clientMessageId)
-      }
-    },
+    prepare: async () => (await refreshCloudWorkflowListing()) === 'complete',
     disowned: forgetCloudWorkflowId,
     ownsWorkflowId: (workflowId) => storedWorkflowFor(workflowId) !== null,
     tabs: openTabsSnapshot,
