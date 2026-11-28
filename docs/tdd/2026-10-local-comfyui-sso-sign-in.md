@@ -4,7 +4,7 @@
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status       | Draft. Not in the SSO pilot scope (Cloud + Desktop); this records the work so it can be scheduled.                                                |
 | Linear       | FE-3099 (local sign-in), FE-2170 (execution token). Action items: see below.                                                                      |
-| Decision     | [ADR-AUTH-LOCAL-0043](../adr/AUTH-LOCAL-0043-local-comfyui-signs-in-through-cloud-oauth.md)                                                       |
+| Decision     | [ADR-AUTH-LOCAL-local-comfyui-signs-in-through-cloud-oauth](../adr/AUTH-LOCAL-local-comfyui-signs-in-through-cloud-oauth.md)                      |
 | Repos        | `Comfy-Org/cloud` (ingest, comfy-api), `comfyanonymous/ComfyUI` (core), `Comfy-Org/ComfyUI_frontend`                                              |
 | Out of scope | `--listen` over the LAN and remote hosts (no loopback redirect possible); Desktop local (already shipped behind `desktop_embedded_oauth_session`) |
 

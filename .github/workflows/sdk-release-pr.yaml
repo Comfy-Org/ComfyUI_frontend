@@ -94,7 +94,7 @@ jobs:
             cat <<'MD'
           Opened by `sdk-release-plan.ts`: these packages changed since their last release. Merging publishes them, `ingest-types` first.
 
-          `ingest-types` defaults to a patch; raise it on this PR for an added field (minor) or a removed or renamed one (major), per ADR-RELEASES-PACKAGES-0033. A later refresh keeps the raised version.
+          `ingest-types` defaults to a patch; raise it on this PR for an added field (minor) or a removed or renamed one (major), per ADR-RELEASES-PACKAGES-sdk-packages-release-through-version-bump-prs. A later refresh keeps the raised version.
 
           MD
           } >> "$GITHUB_OUTPUT"

@@ -49,7 +49,7 @@ treating schema conformance as a prerequisite for adapter acceptance.
 
 - Cloud PR [#7730](https://github.com/Comfy-Org/cloud/pull/7730) — generated CRDT doc-frame wire types.
 - `docs/guidance/typescript.md` — server/API response types come from the generated shared packages.
-- `docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md` —
+- `docs/adr/CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md` —
   frontend follower boundary.
 
 ### Glossary

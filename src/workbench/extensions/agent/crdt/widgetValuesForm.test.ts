@@ -401,7 +401,7 @@ describe('the invariant channel', () => {
     )
     const [message] = reporter.mock.calls[0] as [string]
     expect(message).toContain(
-      'docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md'
+      'docs/adr/WIDGET-SERIALIZATION-agent-wire-widget-form-is-proven-not-derived.md'
     )
     expect(message).not.toContain('Shrinking')
   })

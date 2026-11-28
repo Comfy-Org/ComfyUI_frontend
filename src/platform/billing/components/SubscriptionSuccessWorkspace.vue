@@ -66,7 +66,7 @@
 <script setup lang="ts">
 /**
  * The cloud app's binding of the shared success step, plus the team invite
- * that follows a multi-seat upgrade (ADR BILLING-WEB-0038).
+ * that follows a multi-seat upgrade (ADR BILLING-WEB-checkout-only-hosts-own-plan-selection).
  */
 import { CheckoutSuccess } from '@comfyorg/account-ui/billing/checkout'
 import { computed, nextTick, ref } from 'vue'

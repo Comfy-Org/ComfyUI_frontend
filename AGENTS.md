@@ -229,9 +229,9 @@ All architectural decisions are documented in `docs/adr/`. Code changes must be 
 
 When working from a TDD or design doc, record its tradeoffs, alternatives considered, and rejected options as a new ADR, keeping only the context a future maintainer cannot read off the code, and model its structure on an existing ADR in `docs/adr/`.
 
-ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at most two tags ordered broad-to-narrow, the first naming the subsystem that owns the invariant, then the next unused four-digit sequence number. Each ADR opens with `# ADR-<IDENTIFIER>: Title`, a `Date: YYYY-MM-DD` line, and a `## Status` section (`Proposed`, `Accepted`, `Rejected`, `Deprecated`, or `Superseded`). `pnpm adr:check` enforces the filename, heading, date, status, and identifier uniqueness. There is no index file; list the directory to find ADRs.
+ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-descriptive-title.md`: at most two tags ordered broad-to-narrow, the first naming the subsystem that owns the invariant, then a lowercase title slug. The filename stem is the ADR's identifier, as in `ADR-API-SERVER-FACTS-server-facts-are-rendered-not-derived`. Add a four-digit sequence number after the tags only when two ADRs would otherwise share tags and slug, and then number both. Each ADR opens with `# ADR-<IDENTIFIER>: Title`, a `Date: YYYY-MM-DD` line, and a `## Status` section (`Proposed`, `Accepted`, `Rejected`, `Deprecated`, or `Superseded`). `pnpm adr:check` enforces the filename, the heading matching the stem, the date, the status, and numbers only where names collide. There is no index file; list the directory to find ADRs.
 
-### Entity Architecture Constraints (ADR-CRDT-LAYOUT-0003 + ADR-ECS-0008)
+### Entity Architecture Constraints (ADR-ECS-entity-data-lives-in-dedicated-stores-as-plain-data)
 
 1. **Command pattern for durable layout mutations**: Persistent node, group, and reroute geometry changes must flow through serializable `LayoutOperation` objects rather than direct property access. Transient renderer measurements remain outside that command stream. Do not generalize layout command coverage to all ECS mutations; non-layout stores currently expose direct actions, and graph operations still coordinate imperative class callbacks.
 2. **Dedicated stores over instance state**: Entity data lives in dedicated Pinia stores keyed by each concern's established ID type. Most entity IDs are branded numbers; node IDs may be numbers or strings, graph IDs are UUID strings, and scoped concerns may use composite string keys such as `WidgetId` (`graphId:nodeId:name`, see `src/types/widgetId.ts`). Prefer a focused store to a single unified registry. Do not add new instance properties/methods to entity classes for data that belongs in a store. Do not use OOP inheritance for entity modeling.
@@ -246,7 +246,7 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
   `isCloud`. Local UI state (loading, in-flight, form validity) may only
   disable the control, never grant it. A missing fact is a backend ticket plus
   `pendingServerFact('BE-xxxx', expr)`, never another field. See
-  `docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md`
+  `docs/adr/API-SERVER-FACTS-server-facts-are-rendered-not-derived.md`
 - NEVER change the `@comfyorg/comfy-multi-player` pin in `pnpm-workspace.yaml` by hand. Cloud opens the
   `sync-multiplayer-pin-*` PR that moves it
 - NEVER approve or merge any PR that changes the `@comfyorg/comfy-multi-player` pin, manual or automated, unless its

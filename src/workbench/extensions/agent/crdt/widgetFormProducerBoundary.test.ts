@@ -7,9 +7,9 @@ const CRDT_DIR = dirname(fileURLToPath(import.meta.url))
 const SRC_DIR = resolve(CRDT_DIR, '../../../..')
 
 const WIRE_ADR =
-  'docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md'
+  'docs/adr/WIDGET-SERIALIZATION-agent-wire-widget-form-is-proven-not-derived.md'
 const CENSUS_ADR =
-  'docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md (2026-10-26 amendment)'
+  'docs/adr/ECS-WIDGETS-widget-entities-with-a-legacy-layer.md (2026-10-26 amendment)'
 
 const WIRE_PRODUCER = 'workbench/extensions/agent/crdt/widgetValuesForm.ts'
 const WIRE_CALL_SITE = 'workbench/extensions/agent/crdt/docOpMinter.ts'

@@ -5,7 +5,7 @@ export type BackendTicket = `BE-${number}`
 /**
  * Interim bridge for a server fact the API does not emit yet. It expires with
  * the ticket: CI fails once the backend ticket closes, until the shipped field
- * is rendered and the wrapper deleted. See ADR-API-SERVER-FACTS-0042.
+ * is rendered and the wrapper deleted. See ADR-API-SERVER-FACTS-server-facts-are-rendered-not-derived.
  *
  * `Field` is inferred from the gate it fills; without one it widens to
  * `string`, which no gate accepts.

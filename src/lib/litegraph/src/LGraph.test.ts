@@ -785,7 +785,7 @@ describe('Floating Links / Reroutes', () => {
   })
 })
 
-describe('Link serialization goldens (ADR-ECS-0008 topology-store migration)', () => {
+describe('Link serialization goldens (ADR-ECS-entity-component-system topology-store migration)', () => {
   const LINK_KEYS = [
     'id',
     'origin_id',

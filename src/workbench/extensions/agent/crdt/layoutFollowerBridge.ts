@@ -199,7 +199,7 @@ export class LayoutFollowerBridge extends EventTarget {
    * socket — so consumers rebind their observers to the new doc rather than
    * staying attached to the destroyed one. Re-subscribing to the SAME
    * workflow keeps the doc: that is the same-lineage catch-up path
-   * (ADR-GRAPH-DOCUMENT-0024), where the state vector makes the delta cheap.
+   * (ADR-GRAPH-DOCUMENT-graph-activation-and-document-objects-for-in-app-agent-targets), where the state vector makes the delta cheap.
    */
   subscribe(workflowId: string, knownLineageSeq: number | null = null): void {
     const lineage = this.lineageWorkflowId
@@ -276,7 +276,7 @@ export class LayoutFollowerBridge extends EventTarget {
     if (expectedSeq === null) {
       assert(
         false,
-        'followers send a whole canvas only to answer a current stale-schema refusal — see ADR-CRDT-FOLLOWER-0025',
+        'followers send a whole canvas only to answer a current stale-schema refusal — see ADR-CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries',
         { workflowId }
       )
       return false

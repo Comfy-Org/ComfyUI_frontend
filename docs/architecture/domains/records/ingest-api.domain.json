@@ -53,9 +53,7 @@
       "checks": ["src/platform/remote/ingest/ingestTypesContract.test.ts"]
     }
   ],
-  "adrs": [
-    "docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md"
-  ],
+  "adrs": ["docs/adr/AUTH-SESSION-shared-web-session-on-a-host-only-cookie.md"],
   "compatibilityPromises": [
     "WorkspaceApiError and NoWorkspaceAccessError retain shared runtime identity across billing and workspace clients.",
     "Other domains import only the characterized public contracts: the ingest error, URL, web-session, and capability-revision modules, and the @comfyorg/ingest-types type and Zod entries. Other ingest modules are not opened by this record."

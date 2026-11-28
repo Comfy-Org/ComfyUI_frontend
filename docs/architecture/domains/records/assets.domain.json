@@ -152,9 +152,9 @@
     }
   ],
   "adrs": [
-    "docs/adr/ASSETS-BOUNDARY-0045-portable-data-and-application-integration.md",
-    "docs/adr/ASSETS-DRAG-DROP-0035-asset-card-drag-uses-file-url.md",
-    "docs/adr/ASSETS-LIFECYCLE-0030-asset-record-and-content-lifecycles.md"
+    "docs/adr/ASSETS-BOUNDARY-portable-data-and-application-integration.md",
+    "docs/adr/ASSETS-DRAG-DROP-asset-card-drag-uses-file-url.md",
+    "docs/adr/ASSETS-LIFECYCLE-asset-record-and-content-lifecycles.md"
   ],
   "compatibilityPromises": [
     "External callers use explicit portable package entries or characterized application modules. Internal implementation files are not supported imports.",

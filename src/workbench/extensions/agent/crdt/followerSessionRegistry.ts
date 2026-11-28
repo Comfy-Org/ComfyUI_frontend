@@ -1,7 +1,7 @@
 import { assert } from '@/base/assert'
 
 const ADR =
-  'docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md'
+  'docs/adr/CRDT-FOLLOWER-the-workflow-document-owns-the-follower-session.md'
 
 const REENTRANT_CLAIM = `claimed a follower session from inside the call that was still minting one — the inner claim sees no session yet, so minting for it subscribes a second replica for the same document that the outer claim overwrites and nothing can release, see ${ADR} Decision 3`
 

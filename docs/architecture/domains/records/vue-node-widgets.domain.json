@@ -271,11 +271,11 @@
     }
   ],
   "adrs": [
-    "docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md",
-    "docs/adr/WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md",
-    "docs/adr/WIDGET-GROUP-0031-dynamic-group-widget-lifecycle.md",
-    "docs/adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md",
-    "docs/adr/SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md"
+    "docs/adr/ECS-WIDGETS-widget-entities-with-a-legacy-layer.md",
+    "docs/adr/WIDGET-SERIALIZATION-preserve-primitive-widget-values-across-copy-and-paste.md",
+    "docs/adr/WIDGET-GROUP-dynamic-group-widget-lifecycle.md",
+    "docs/adr/SUBGRAPH-PROMOTION-represent-promoted-widgets-as-linked-inputs.md",
+    "docs/adr/SUBGRAPH-PROMOTION-defer-promoted-widget-registration-to-onadded.md"
   ],
   "compatibilityPromises": [
     "Existing widget registration, Vue node renderer, linear mode, properties panel, asset, and capability callers may continue importing widget runtime internals during inventory; this record grants no new cross-domain permissions.",

@@ -283,11 +283,11 @@
     }
   ],
   "adrs": [
-    "docs/adr/AUTH-IDENTITY-0033-account-package-owns-identity-taken-at-construction.md",
-    "docs/adr/AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md",
-    "docs/adr/AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md",
-    "docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md",
-    "docs/adr/AUTH-LOCAL-0043-local-comfyui-signs-in-through-cloud-oauth.md"
+    "docs/adr/AUTH-IDENTITY-account-package-owns-identity-taken-at-construction.md",
+    "docs/adr/AUTH-IDENTITY-account-package-firebase-entry-delivers-cloud-identity.md",
+    "docs/adr/AUTH-CREDENTIALS-cloud-credential-lifecycle-invariants.md",
+    "docs/adr/AUTH-SESSION-shared-web-session-on-a-host-only-cookie.md",
+    "docs/adr/AUTH-LOCAL-local-comfyui-signs-in-through-cloud-oauth.md"
   ],
   "compatibilityPromises": [
     "Unclassified callers, the cloud record, workspace, billing, and app bootstrap code may continue importing authentication internals during inventory; imports from classified domains remain subject to cross-domain rules.",

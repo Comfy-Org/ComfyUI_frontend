@@ -60,7 +60,7 @@
       ]
     }
   ],
-  "adrs": ["docs/adr/MASKEDITOR-0001-reusable-editor-and-host-ownership.md"],
+  "adrs": ["docs/adr/MASKEDITOR-reusable-editor-and-host-ownership.md"],
   "compatibilityPromises": [
     "The core extension remains the host integration seam for opening the editor.",
     "Image widget values and layer output remain covered by loader and saver characterization tests."

@@ -437,7 +437,7 @@ The producer is `classifyWidgetValuesForm` in
 it directly rather than keeping its own copy, so the census always measures the
 code that ships. It declares `widgets_values_form.order` only when it can prove
 the order against the post-hook serialisation (see
-`docs/adr/WIDGET-SERIALIZATION-0047-agent-wire-widget-form-is-proven-not-derived.md`),
+`docs/adr/WIDGET-SERIALIZATION-agent-wire-widget-form-is-proven-not-derived.md`),
 and otherwise returns a suppression reason. A node that carries a form consults
 no catalogue on any leg, so a wrong form is authoritative and strictly worse
 than no form. **That asymmetry is why this is a breakdown and not a pass rate**:

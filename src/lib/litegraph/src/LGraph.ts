@@ -3032,7 +3032,7 @@ export class LGraph
         /**
          * Links restored from this payload, in case node-id remints during the
          * node-creation pass require their endpoints to be remapped
-         * (ADR-CRDT-MINT-0018). Only payload links are candidates; incumbent links are
+         * (ADR-CRDT-MINT-merge-identity-for-node-transfers). Only payload links are candidates; incumbent links are
          * never touched.
          */
         const addedLinkIds: LinkId[] = []
@@ -3156,7 +3156,7 @@ export class LGraph
 
         /**
          * Requested (serialized) id → final id for nodes whose id was
-         * reminted on collision during `this.add` (ADR-CRDT-MINT-0018). Payload links
+         * reminted on collision during `this.add` (ADR-CRDT-MINT-merge-identity-for-node-transfers). Payload links
          * name nodes by requested id, so their endpoints must follow the
          * remint. Ambiguous requested ids (claimed by >1 payload node) are
          * never recorded — see {@link recordUnambiguousRemint}.

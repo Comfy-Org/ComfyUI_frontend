@@ -48,7 +48,7 @@ export function releaseVersion(
   current: string,
   open?: string
 ): string {
-  // ADR-RELEASES-PACKAGES-0033 holds the hand-written packages on 1.0.0-alpha.N.
+  // ADR-RELEASES-PACKAGES-sdk-packages-release-through-version-bump-prs holds the hand-written packages on 1.0.0-alpha.N.
   const next =
     name === 'ingest-types'
       ? inc(current, 'patch')

@@ -1,7 +1,7 @@
 {
   "id": "graph-layout",
   "capability": "Graph layout store and spatial index (shared technical module)",
-  "description": "Shared technical module, not a business domain. The Yjs-backed layout store that owns durable node, group, reroute, link, and slot geometry under ADR-CRDT-LAYOUT-0003, its LayoutOperation mutations and actor attribution, hit-target authority, pure geometry and layout math, Yjs mappers, the QuadTree spatial index used for hit testing and culling, the TransformPane and transform-state helpers that map canvas space to DOM space, and adapters that attach LiteGraph graphs, node sizes, and slot offsets to the store. Graph topology and entity stores remain with the graph core.",
+  "description": "Shared technical module, not a business domain. The Yjs-backed layout store that owns durable node, group, reroute, link, and slot geometry under ADR-CRDT-LAYOUT-crdt-layout-intent-and-local-measurement, its LayoutOperation mutations and actor attribution, hit-target authority, pure geometry and layout math, Yjs mappers, the QuadTree spatial index used for hit testing and culling, the TransformPane and transform-state helpers that map canvas space to DOM space, and adapters that attach LiteGraph graphs, node sizes, and slot offsets to the store. Graph topology and entity stores remain with the graph core.",
   "modules": [
     {
       "path": "src/renderer/core/layout/**"
@@ -56,10 +56,10 @@
     }
   ],
   "adrs": [
-    "docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md",
-    "docs/adr/ECS-0008-entity-component-system.md",
-    "docs/adr/ECS-SLOTS-0017-slot-records-as-the-source-of-truth.md",
-    "docs/adr/CANVAS-VIEWPORT-0009-canvas-viewport-system.md"
+    "docs/adr/CRDT-LAYOUT-crdt-layout-intent-and-local-measurement.md",
+    "docs/adr/ECS-entity-component-system.md",
+    "docs/adr/ECS-SLOTS-slot-records-as-the-source-of-truth.md",
+    "docs/adr/CANVAS-VIEWPORT-canvas-viewport-system.md"
   ],
   "compatibilityPromises": [
     "Existing callers in the canvas renderer, Vue node renderer, minimap, onboarding, agent CRDT, workflow, and graph core may continue importing layout internals during inventory; this record grants no new cross-domain permissions.",

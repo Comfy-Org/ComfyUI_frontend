@@ -86,7 +86,7 @@ if (closed.length || unknown.length) {
     ]),
     '',
     'Render the field the backend now ships and delete the pendingServerFact wrapper.',
-    'For an unknown ticket, fix the identifier. See ADR-API-SERVER-FACTS-0042.'
+    'For an unknown ticket, fix the identifier. See ADR-API-SERVER-FACTS-server-facts-are-rendered-not-derived.'
   ])
 }
 

@@ -145,7 +145,7 @@
     }
   ],
   "adrs": [
-    "docs/adr/EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md"
+    "docs/adr/EXTENSIONS-PUBLIC-API-bundle-vue-dependencies-in-extensions.md"
   ],
   "compatibilityPromises": [
     "Inventory preserves existing exports and runtime behavior without granting public entry points."

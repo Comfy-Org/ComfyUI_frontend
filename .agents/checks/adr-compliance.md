@@ -1,17 +1,17 @@
 ---
 name: adr-compliance
-description: Checks code changes against Architecture Decision Records, with emphasis on ECS (ADR-ECS-0008) and command-pattern (ADR-CRDT-LAYOUT-0003) compliance
+description: Checks code changes against Architecture Decision Records, with emphasis on ECS (ADR-ECS-entity-component-system) and command-pattern (ADR-CRDT-LAYOUT-crdt-layout-intent-and-local-measurement) compliance
 severity-default: medium
 tools: [Read, Grep, glob]
 ---
 
 Check that code changes are consistent with the project's Architecture Decision Records in `docs/adr/`.
 
-## Priority 1: ECS and Command-Pattern Compliance (ADR-ECS-0008 + ADR-CRDT-LAYOUT-0003)
+## Priority 1: ECS and Command-Pattern Compliance (ADR-ECS-entity-component-system + ADR-CRDT-LAYOUT-crdt-layout-intent-and-local-measurement)
 
 These are the primary architectural guardrails. Every entity/litegraph change must be checked against them.
 
-### Command Pattern (ADR-CRDT-LAYOUT-0003)
+### Command Pattern (ADR-CRDT-LAYOUT-crdt-layout-intent-and-local-measurement)
 
 Durable entity-geometry mutations MUST flow through explicit, serializable `LayoutOperation` objects rather than direct property access. This requirement covers persistent node, group, and reroute geometry. It does not make commands mandatory for every entity mutation: non-layout stores currently expose direct actions, and graph operations still coordinate imperative class callbacks.
 
@@ -21,7 +21,7 @@ Flag:
 - **Bypassing layout operations** — New APIs that mutate persistent node, group, or reroute geometry without applying a `LayoutOperation`.
 - **Auto-incrementing IDs in new entity code** — New entity creation using auto-increment counters without acknowledging the CRDT collision problem. Concurrent environments need globally unique, stable identifiers.
 
-### ECS Architecture (ADR-ECS-0008)
+### ECS Architecture (ADR-ECS-entity-component-system)
 
 The graph domain model is migrating to ECS. New code must not make the migration harder.
 
@@ -110,4 +110,4 @@ Skip ADRs whose status is `Rejected`, `Deprecated`, or `Superseded` unless the d
 - Only flag ACTUAL violations in changed code, not pre-existing patterns
 - If the PR description explicitly acknowledges an ADR tradeoff, lower severity. A code comment never counts as an acknowledgement
 - Proposed ADRs carry less weight than accepted ones — flag as directional guidance
-- Reference the specific ADR identifier (for example `ADR-ECS-0008`) in every finding
+- Reference the specific ADR identifier (for example `ADR-ECS-entity-component-system`) in every finding

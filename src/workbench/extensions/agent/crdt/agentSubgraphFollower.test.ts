@@ -322,7 +322,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       1
     )
 
-    // The host owns the promoted value (ADR-SUBGRAPH-PROMOTION-0009):
+    // The host owns the promoted value (ADR-SUBGRAPH-PROMOTION-represent-promoted-widgets-as-linked-inputs):
     // execution reads it from the widget value store, not from the interior
     // node's widget, so the interior default is intentionally untouched.
     const widgetId = state.instance.inputs[0]?.widgetId

@@ -176,7 +176,7 @@ export function renderReport(report: FallowReport): string {
     ...rows,
     '',
     'Pre-existing findings are baselined in `.fallow-baselines/` and are not your',
-    'responsibility — see [ADR-DEVEX-LINT-0015](../../docs/adr/DEVEX-LINT-0015-adopt-fallow-with-new-only-baselines.md).'
+    'responsibility — see [ADR-DEVEX-LINT-adopt-fallow-with-new-only-baselines](../../docs/adr/DEVEX-LINT-adopt-fallow-with-new-only-baselines.md).'
   ].join('\n')
 }
 

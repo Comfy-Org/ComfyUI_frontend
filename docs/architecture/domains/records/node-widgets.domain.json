@@ -180,9 +180,9 @@
     }
   ],
   "adrs": [
-    "docs/adr/ECS-WIDGETS-0023-widget-entities-with-a-legacy-layer.md",
-    "docs/adr/WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md",
-    "docs/adr/WIDGET-GROUP-0031-dynamic-group-widget-lifecycle.md"
+    "docs/adr/ECS-WIDGETS-widget-entities-with-a-legacy-layer.md",
+    "docs/adr/WIDGET-SERIALIZATION-preserve-primitive-widget-values-across-copy-and-paste.md",
+    "docs/adr/WIDGET-GROUP-dynamic-group-widget-lifecycle.md"
   ],
   "compatibilityPromises": [
     "widget.value, widget.callback, node.widgets array access, and widgets_values serialisation keep their extension-facing behaviour.",

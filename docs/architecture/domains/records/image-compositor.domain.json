@@ -94,7 +94,7 @@
       ]
     }
   ],
-  "adrs": ["docs/adr/LAYEREDITOR-0055-optional-vue-session.md"],
+  "adrs": ["docs/adr/LAYEREDITOR-optional-vue-session.md"],
   "compatibilityPromises": [
     "The core extension, Vue-node adapter, and LiteGraph widget remain the host integration seams.",
     "Layer state and save behavior remain characterized independently of presentation."

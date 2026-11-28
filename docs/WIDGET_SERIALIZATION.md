@@ -46,7 +46,7 @@ But `control_after_generate` is a **secondary** widget, created by `_createWidge
 
 `PrimitiveNode` does keep a `controlValues` array that preserves secondary widget values across a disconnect/reconnect, but it is deleted on a 15ms timer and lives only on the in-memory instance, so it does not survive the clipboard round trip.
 
-See [ADR-WIDGET-SERIALIZATION-0006](adr/WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) for proposed fixes and design tradeoffs.
+See [ADR-WIDGET-SERIALIZATION-preserve-primitive-widget-values-across-copy-and-paste](adr/WIDGET-SERIALIZATION-preserve-primitive-widget-values-across-copy-and-paste.md) for proposed fixes and design tradeoffs.
 
 ## Code references
 

@@ -72,7 +72,7 @@ let session: PageSessionInternals | null = null
 function create(readIdentity: SocketIdentitySource): PageSessionInternals {
   assert(
     session === null,
-    'minted a second agent event source while one already exists for this page — the page session owns exactly one event source and one doc-frame transport for the page lifetime, see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decision 2'
+    'minted a second agent event source while one already exists for this page — the page session owns exactly one event source and one doc-frame transport for the page lifetime, see docs/adr/CRDT-FOLLOWER-the-workflow-document-owns-the-follower-session.md Decision 2'
   )
   const listeners = new Set<() => void>()
 
@@ -101,7 +101,7 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
   })
   assert(
     built !== undefined,
-    'the agent page session scope was already stopped before it built the transport — see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 1a'
+    'the agent page session scope was already stopped before it built the transport — see docs/adr/CRDT-FOLLOWER-the-workflow-document-owns-the-follower-session.md Stage 1a'
   )
   const { events, docTransport } = built
 

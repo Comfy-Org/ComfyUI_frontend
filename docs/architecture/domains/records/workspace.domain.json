@@ -122,13 +122,13 @@
     }
   ],
   "adrs": [
-    "docs/adr/AUTH-WORKSPACE-0036-workspace-deep-link-contract.md",
-    "docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
+    "docs/adr/AUTH-WORKSPACE-workspace-deep-link-contract.md",
+    "docs/adr/API-SERVER-FACTS-server-facts-are-rendered-not-derived.md"
   ],
   "compatibilityPromises": [
     "Unclassified callers, authentication, billing, and the cloud record may continue importing workspace internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "teamWorkspaceStore and workspaceApi remain the shared seams for the active workspace id, workspace list, and membership calls; billing endpoints and types have moved to the billing client and billing-core package.",
-    "Mixed menus, member settings, and auth bootstrap belong to account under ADR-BILLING-0049. Membership mutation views remain in workspace, and classification grants no billing or account reverse dependency."
+    "Mixed menus, member settings, and auth bootstrap belong to account under ADR-BILLING-billing-and-workspace-ownership. Membership mutation views remain in workspace, and classification grants no billing or account reverse dependency."
   ],
   "deepImports": "inventory"
 }

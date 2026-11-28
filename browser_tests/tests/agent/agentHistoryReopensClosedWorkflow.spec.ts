@@ -75,7 +75,7 @@ const SAVED_WORKFLOW: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-// ADR-AGENT-HISTORY-0038: selecting a historical chat whose saved target
+// ADR-AGENT-HISTORY-wait-for-chat-and-workflow-readiness: selecting a historical chat whose saved target
 // workflow has no open tab reopens that saved workflow, and the history list
 // stays on screen with a loading row until both the transcript and the
 // workflow are ready. Only then is the conversation revealed, with the saved

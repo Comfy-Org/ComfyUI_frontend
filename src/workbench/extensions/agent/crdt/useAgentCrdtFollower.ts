@@ -356,7 +356,7 @@ function createOwner(
     const creator = consumer.value
     assert(
       creator !== null,
-      'minted a follower session with no consumer installed — a session is created on a consumer claim and reads its inputs through the live consumer, see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decision 2'
+      'minted a follower session with no consumer installed — a session is created on a consumer claim and reads its inputs through the live consumer, see docs/adr/CRDT-FOLLOWER-the-workflow-document-owns-the-follower-session.md Decision 2'
     )
     binding.boundBy = creator
     documentId.value = creator.workflowId.value
@@ -410,7 +410,7 @@ function createOwner(
     })
     assert(
       session !== undefined,
-      'the follower session scope was stopped before it built the seam — see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Stage 1b'
+      'the follower session scope was stopped before it built the seam — see docs/adr/CRDT-FOLLOWER-the-workflow-document-owns-the-follower-session.md Stage 1b'
     )
     return { session, dispose: () => scope.stop() }
   })
@@ -1412,7 +1412,7 @@ function startAgentCrdtFollower(
   // The bound workflow whose tab went inactive while the sender still held
   // batches for it. Leaving its tab—or detaching while unconfirmed edits
   // remain—suspends the sender instead of aborting those batches (see
-  // ADR-CRDT-WRITE-0035); retargeting to another workflow releases them into
+  // ADR-CRDT-WRITE-hold-pending-human-ops-across-tab-suspension); retargeting to another workflow releases them into
   // the normal abort path.
   let heldForWorkflowId: string | null = null
   const releaseHeldOps = (): void => {

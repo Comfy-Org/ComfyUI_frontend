@@ -18,7 +18,7 @@ undoing its work. Those three properties make `throw` the wrong tool for
 every failure a caller could handle.
 
 This document is the guidance half of
-[ADR-TELEMETRY-DIAGNOSTICS-0019](../adr/TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md)
+[ADR-TELEMETRY-DIAGNOSTICS-recoverable-event-diagnostics](../adr/TELEMETRY-DIAGNOSTICS-recoverable-event-diagnostics.md)
 and of the principles recorded on
 [FE-1859](https://linear.app/comfyorg/issue/FE-1859/audit-and-replace-unsafe-throw-new-error-paths-with-fail-safe-handling).
 The lint rule `comfy/no-new-error-throw` enforces the mechanically checkable

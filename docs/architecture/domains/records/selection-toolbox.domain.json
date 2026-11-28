@@ -126,7 +126,7 @@
       ]
     }
   ],
-  "adrs": ["docs/adr/CANVAS-SELECTION-0028-single-selection-store.md"],
+  "adrs": ["docs/adr/CANVAS-SELECTION-single-selection-store.md"],
   "compatibilityPromises": [
     "Toolbox integration composes existing canvas actions, panel navigation, translation, and telemetry without changing their contracts."
   ],

@@ -78,12 +78,12 @@
     }
   ],
   "adrs": [
-    "docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md",
-    "docs/adr/ECS-0008-entity-component-system.md",
-    "docs/adr/ECS-LINK-PRESENTATION-0028-link-presentation-store-ownership.md",
-    "docs/adr/CANVAS-GESTURE-0029-pointer-gesture-state-machine.md",
-    "docs/adr/CANVAS-INTERACTION-0035-agent-node-picking-policy.md",
-    "docs/adr/RENDERING-ATOMICITY-0020-frame-atomic-rendering.md"
+    "docs/adr/CRDT-LAYOUT-crdt-layout-intent-and-local-measurement.md",
+    "docs/adr/ECS-entity-component-system.md",
+    "docs/adr/ECS-LINK-PRESENTATION-link-presentation-store-ownership.md",
+    "docs/adr/CANVAS-GESTURE-pointer-gesture-state-machine.md",
+    "docs/adr/CANVAS-INTERACTION-agent-node-picking-policy.md",
+    "docs/adr/RENDERING-ATOMICITY-frame-atomic-rendering.md"
   ],
   "compatibilityPromises": [
     "Existing graph canvas, linear mode, properties panel, node library preview, agent, and capability callers may continue importing Vue node renderer internals during inventory; this record grants no new cross-domain permissions.",

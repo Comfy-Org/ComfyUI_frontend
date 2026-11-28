@@ -11,7 +11,7 @@ export const noNewErrorThrow: Rule = {
     schema: [],
     messages: {
       forbidden:
-        'Do not add `throw new Error(...)` in production code. Return the failure as a value and report it at the ownership boundary; see docs/guidance/error-handling.md and ADR-TELEMETRY-DIAGNOSTICS-0019.'
+        'Do not add `throw new Error(...)` in production code. Return the failure as a value and report it at the ownership boundary; see docs/guidance/error-handling.md and ADR-TELEMETRY-DIAGNOSTICS-recoverable-event-diagnostics.'
     }
   },
   create(context) {

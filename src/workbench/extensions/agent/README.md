@@ -64,7 +64,7 @@ and, in development mode, force the panel on; consent is still required. A
 plain `pnpm dev` shows the panel only when the ComfyUI it proxies publishes the
 feature. A restored open intent cannot bypass consent.
 
-Cloud and Desktop share one onboarding rule (ADR-AGENT-CONSENT-0045). On the
+Cloud and Desktop share one onboarding rule (ADR-AGENT-CONSENT-desktop-introduction-response-is-not-consent). On the
 first two launches the panel opens by itself, with the consent card over it
 until the user answers. After that, **Agent** asks for consent before it opens
 a closed panel, and Send asks before the first message. Signed-out users see

@@ -56,14 +56,14 @@
 # Assets
 /src/platform/assets/                             @austinmroz @synap5e @Comfy-Org/comfy_frontend_devs
 
-# Billing and account boundary - see ADR-AUTH-BILLING-0032.
+# Billing and account boundary - see ADR-AUTH-BILLING-billing-stays-outside-the-account-package-in-v1.
 # The billing half only. The account layer's session and identity paths are
 # deliberately unlisted until their owner claims them; until then a change
 # crossing that side of the boundary still has no required reviewer.
 /packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
 
-# Workspace members and billing gates - see ADR-API-SERVER-FACTS-0042.
+# Workspace members and billing gates - see ADR-API-SERVER-FACTS-server-facts-are-rendered-not-derived.
 /src/platform/workspace/                          @dante01yoon @Comfy-Org/comfy_frontend_devs
 
 /src/workbench/extensions/agent/                  @Comfy-Org/comfy-standard-approver @Comfy-Org/comfy_frontend_devs @Comfy-Org/agent_devs

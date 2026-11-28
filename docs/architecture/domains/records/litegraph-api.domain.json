@@ -39,9 +39,7 @@
       "checks": ["browser_tests/tests/litegraphEvent.spec.ts"]
     }
   ],
-  "adrs": [
-    "docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md"
-  ],
+  "adrs": ["docs/adr/DEPS-LITEGRAPH-integrate-litegraph-into-the-frontend.md"],
   "compatibilityPromises": [
     "Names exported from src/lib/litegraph/src/litegraph.ts and the LiteGraph global stay available to extensions; removals need deprecation warnings.",
     "Model, canvas, and widget modules may keep importing the barrel during inventory to avoid the LGraph and Subgraph initialisation cycle."

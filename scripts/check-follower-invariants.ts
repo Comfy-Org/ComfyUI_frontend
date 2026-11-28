@@ -480,7 +480,7 @@ function sessionOwnsFollowerLifetime(
       file,
       line: lineOf(parsed.sourceFile, node),
       rule: 'session-owns-follower-lifetime',
-      message: `constructs ${name} outside ${owner} — the workflow document owns the follower session, so only the session owner creates and disposes the replica, the projection and the seam; see docs/adr/CRDT-FOLLOWER-0052-the-workflow-document-owns-the-follower-session.md Decisions 1 to 3`
+      message: `constructs ${name} outside ${owner} — the workflow document owns the follower session, so only the session owner creates and disposes the replica, the projection and the seam; see docs/adr/CRDT-FOLLOWER-the-workflow-document-owns-the-follower-session.md Decisions 1 to 3`
     })
   })
   return violations
@@ -593,7 +593,7 @@ function main(): void {
         )
         .join('\n') +
       '\n\nSee .agents/checks/follower-boundary.md and ' +
-      'docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md\n'
+      'docs/adr/CRDT-FOLLOWER-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md\n'
   )
   process.exitCode = 1
 }

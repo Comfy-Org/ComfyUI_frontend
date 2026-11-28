@@ -21,7 +21,7 @@ import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/p
  * by both rollout arms. The journey identity and its server-assigned arm are
  * captured once at entry and preserved across reload; a later flag refresh
  * changes observed behaviour but never the frozen assignment. See
- * ADR-AUTH-BILLING-0014 for the rail-neutral attempt context this extends.
+ * ADR-AUTH-BILLING-billing-attempt-context-and-workspace-scope for the rail-neutral attempt context this extends.
  */
 
 const CHECKOUT_JOURNEY_MAX_AGE_MS = 24 * 60 * 60 * 1000
