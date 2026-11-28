@@ -22,9 +22,21 @@ This document is the guidance half of
 and of the principles recorded on
 [FE-1859](https://linear.app/comfyorg/issue/FE-1859/audit-and-replace-unsafe-throw-new-error-paths-with-fail-safe-handling).
 The lint rule `comfy/no-new-error-throw` enforces the mechanically checkable
-part: no new `throw new Error(...)` in production code under `src/`. The rule
-matches only that literal form. The guidance applies to every `throw`, including
-`TypeError`, custom subclasses, and re-throws.
+part: no new `throw` statements in production code under `src/`. It reports
+every thrown expression, including built-in and custom errors, aliased or
+qualified constructors, factory results, variables, rethrows, and non-Error
+values. Changing the constructor or moving construction elsewhere does not
+exempt a throw.
+
+The existing exclusions in `.oxlintrc.json` still apply to declarations, tests,
+stories, fixtures, generated code, and vendor directories. Existing entries in
+`oxlint-suppressions.json` are migration debt tracked by FE-1859, not permission
+to add throws. Do not increase those counts to pass lint.
+
+Run `pnpm exec tsx scripts/audit-error-throws.ts` to list reported throw sites
+and each file's excess over its existing suppression count. Pass paths to
+audit one migration, for example `src/platform/missingModel`. The command
+prints JSON without changing the baseline; it is an inventory, not a lint gate.
 
 ## 1. Return the outcome instead of throwing it
 
@@ -168,6 +180,20 @@ Name the handler in your head before you write the `throw`. If you cannot
 (it is "whoever calls this"), return a value instead. Parsers at a trust
 boundary may throw as part of their documented contract, provided the boundary
 code catches and converts.
+
+The lint rule has no automatic invariant-violation exception. Retaining a new
+throw requires an explicitly reviewed suppression scoped to that statement.
+The PR must name the invariant, the handler, and why a returned failure cannot
+preserve the contract. Test that the handler stops dependent work and reports
+the failure. A constructor name or a claim that the state is impossible is not
+an exception.
+
+The `useApp` boot-order exception and its handler are documented in
+[ADR-BOOTSTRAP-0044](../adr/BOOTSTRAP-0044-initialization-contracts.md).
+
+Do not replace a throw with `assert` just to pass lint. `assert` throws only in
+development; its reporter does not stop production execution. A caller must
+still receive a valid success value or an explicit failure result.
 
 Never throw from reporting, cleanup, or teardown. Never throw across an
 extension-facing API where custom-node code is the caller; code in 40+

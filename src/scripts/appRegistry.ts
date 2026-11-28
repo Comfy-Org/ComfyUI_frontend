@@ -1,4 +1,3 @@
-import { assert } from '@/base/assert'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { ComfyApp } from '@/types/comfy'
 
@@ -13,6 +12,7 @@ export function registerApp(app: InternalComfyApp) {
 }
 
 export function useApp(): InternalComfyApp {
-  assert(instance, 'ComfyApp accessed before registerApp')
+  // oxlint-disable-next-line comfy/no-new-error-throw
+  if (!instance) throw new Error('ComfyApp accessed before registerApp')
   return instance
 }

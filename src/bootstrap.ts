@@ -7,6 +7,22 @@ if (__DISTRIBUTION__ === 'cloud') {
     .catch(() => {})
 }
 
-await import('./main')
+try {
+  await import('./main')
+} catch (error) {
+  try {
+    const { reportError } = await import('@comfyorg/telemetry/reportError')
+    reportError(error, {
+      errorType: 'failure_initializing_app',
+      surface: 'platform'
+    })
+  } catch (reporterFailure) {
+    console.error(
+      '[bootstrap] failed to report app initialization failure',
+      error,
+      reporterFailure
+    )
+  }
+}
 
 export {}

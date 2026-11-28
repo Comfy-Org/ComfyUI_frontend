@@ -14,7 +14,7 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted, provide, watch } from 'vue'
+import { computed, markRaw, onMounted, provide, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
@@ -31,7 +31,6 @@ import {
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
-import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
@@ -41,10 +40,11 @@ import {
 } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
-registerExtensionDialogService(createExtensionDialogService())
 provide(AskAgentPortKey, createAskAgentPort())
 const workspaceStore = useWorkspaceStore()
-useApp().extensionManager = useWorkspaceStore()
+useApp().extensionManager = Object.assign(workspaceStore, {
+  dialog: markRaw(createExtensionDialogService())
+})
 
 const conflictDetection = useConflictDetection()
 useAgentExtensionNotices()

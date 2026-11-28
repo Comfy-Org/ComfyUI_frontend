@@ -5,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { App } from 'vue'
 
 /**
@@ -156,4 +157,5 @@ declare global {
  * })
  * ```
  */
-export type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
+export type WorkspaceStore = ReturnType<typeof useWorkspaceStore> &
+  ExtensionManager
