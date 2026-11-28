@@ -130,4 +130,6 @@ browser_tests/fixtures/data/agent/conversations/recordings/
 # benjcooley, Willie, Dante, claude[bot]. Don't add your name to this list.
 .github/pr-images/
 
+# Nodes 2.0 acceptance suite report and data
+/nodes2-acceptance-report/
 __pycache__/

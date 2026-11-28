@@ -1,0 +1,349 @@
+{
+  "packs": [
+    {
+      "directory": "rgthree-comfy",
+      "repo": "https://github.com/rgthree/rgthree-comfy",
+      "commit": "bc48c6aaeca87bedbc14245d89f9bc6be37a630e",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": [
+        "Image Comparer (rgthree)",
+        "Power Lora Loader (rgthree)"
+      ],
+      "frontendNodeTypes": [
+        "Reroute (rgthree)",
+        "Mute / Bypass Relay (rgthree)",
+        "Label (rgthree)",
+        "Fast Groups Bypasser (rgthree)"
+      ],
+      "extensions": [
+        "rgthree.ImageComparer",
+        "rgthree.Reroute",
+        "rgthree.NodeModeRepeaterHelper",
+        "rgthree.Label",
+        "rgthree.PowerLoraLoader",
+        "rgthree.FastGroupsBypasser"
+      ]
+    },
+    {
+      "directory": "ComfyUI-mxToolkit",
+      "repo": "https://github.com/Smirnov75/ComfyUI-mxToolkit",
+      "commit": "7f7a0e584f12078a1c589645d866ae96bad0cc35",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["mxSlider", "mxSlider2D", "mxSeed", "mxStop"],
+      "frontendNodeTypes": ["mxReroute"],
+      "extensions": [
+        "mxSlider",
+        "mxSlider2D",
+        "mxSeed",
+        "mxStop",
+        "Comfy.MxRerouteNode"
+      ]
+    },
+    {
+      "directory": "comfy_mtb",
+      "repo": "https://github.com/melMass/comfy_mtb",
+      "commit": "b35b5d8a17c0d59e80a8b3627b679c2c1003d04f",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["Stack Images (mtb)"],
+      "frontendNodeTypes": ["Note Plus (mtb)"],
+      "extensions": ["mtb.noteplus", "mtb.widgets"]
+    },
+    {
+      "directory": "ComfyUI_Fill-Nodes",
+      "repo": "https://github.com/filliptm/ComfyUI_Fill-Nodes",
+      "commit": "a32f9b6a5a55528731d9e6c38a2fd2ce89cb2819",
+      "extraPythonModules": [],
+      "initStub": {
+        "reason": "The original __init__.py imports about 300 nodes whose dependencies (pymupdf, open_clip_torch, timm, glfw and more) are not needed here; the stub registers only the five nodes under test and serves ./web.",
+        "source": [
+          "from .nodes.experiments.FL_GradGen import FL_GradGenerator",
+          "from .nodes.games.FL_BulletHellGame import FL_BulletHellGame",
+          "from .nodes.games.FL_TetrisGame import FL_TetrisGame",
+          "from .nodes.image.FL_ImageAdjuster import FL_ImageAdjuster",
+          "from .nodes.image.FL_SaveImages import FL_SaveImages",
+          "",
+          "NODE_CLASS_MAPPINGS = {",
+          "    \"FL_GradGenerator\": FL_GradGenerator,",
+          "    \"FL_BulletHellGame\": FL_BulletHellGame,",
+          "    \"FL_TetrisGame\": FL_TetrisGame,",
+          "    \"FL_ImageAdjuster\": FL_ImageAdjuster,",
+          "    \"FL_SaveImages\": FL_SaveImages,",
+          "}",
+          "NODE_DISPLAY_NAME_MAPPINGS = {",
+          "    \"FL_GradGenerator\": \"FL Grad Generator\",",
+          "    \"FL_BulletHellGame\": \"FL BulletHell Game\",",
+          "    \"FL_TetrisGame\": \"FL Tetris Game\",",
+          "    \"FL_ImageAdjuster\": \"FL Image Adjuster\",",
+          "    \"FL_SaveImages\": \"FL Save Images\",",
+          "}",
+          "WEB_DIRECTORY = \"./web\"",
+          "__all__ = [\"NODE_CLASS_MAPPINGS\", \"NODE_DISPLAY_NAME_MAPPINGS\", \"WEB_DIRECTORY\"]"
+        ]
+      },
+      "serverNodeTypes": [
+        "FL_GradGenerator",
+        "FL_BulletHellGame",
+        "FL_TetrisGame",
+        "FL_ImageAdjuster",
+        "FL_SaveImages"
+      ],
+      "frontendNodeTypes": [],
+      "extensions": [
+        "Comfy.FL_GradGenerator",
+        "Fill-Nodes.BulletHellGame",
+        "Fill-Nodes.TetrisGame",
+        "Comfy.FL_ImageAdjuster",
+        "Comfy.FL_SaveImages"
+      ]
+    },
+    {
+      "directory": "Bjornulf_custom_nodes",
+      "repo": "https://github.com/justUmen/Bjornulf_custom_nodes",
+      "commit": "f43bce3516412a65b896cfed617f15d6c7292230",
+      "extraPythonModules": [],
+      "initStub": {
+        "reason": "The original __init__.py imports about 150 nodes with heavy optional dependencies (TTS, ffmpeg, model downloads); the stub registers only the image compare node and serves ./web.",
+        "source": [
+          "from .images_compare import FourImageViewer",
+          "",
+          "NODE_CLASS_MAPPINGS = {\"Bjornulf_FourImageViewer\": FourImageViewer}",
+          "NODE_DISPLAY_NAME_MAPPINGS = {\"Bjornulf_FourImageViewer\": \"\ud83d\uddbc\ud83d\udc41 Preview 1-4 images (compare)\"}",
+          "WEB_DIRECTORY = \"./web\"",
+          "__all__ = [\"NODE_CLASS_MAPPINGS\", \"NODE_DISPLAY_NAME_MAPPINGS\", \"WEB_DIRECTORY\"]"
+        ]
+      },
+      "serverNodeTypes": ["Bjornulf_FourImageViewer"],
+      "frontendNodeTypes": [],
+      "extensions": ["Bjornulf.FourImageViewer"]
+    },
+    {
+      "directory": "comfyui-deno-custom-nodes",
+      "repo": "https://github.com/Deno2026/comfyui-deno-custom-nodes",
+      "commit": "e5b4fe12eddd114164b74e1898f6d7150ee34762",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": [
+        "DenoImageCompare",
+        "DenoResolutionSetup",
+        "DenoMultiLoraLoader"
+      ],
+      "frontendNodeTypes": [],
+      "extensions": [
+        "Deno.ImageCompare",
+        "Deno.ResolutionHelper",
+        "Deno.MultiLora"
+      ]
+    },
+    {
+      "directory": "ComfyUI-Custom-Scripts",
+      "repo": "https://github.com/pythongosssss/ComfyUI-Custom-Scripts",
+      "commit": "609f3afaa74b2f88ef9ce8d939626065e3247469",
+      "extraPythonModules": [],
+      "initStub": {
+        "reason": "The original __init__.py calls install_js(), which writes into the ComfyUI install (web/extensions/pysssss); the stub only loads py/*.py and serves ./web.",
+        "source": [
+          "import importlib.util",
+          "import glob",
+          "import os",
+          "import sys",
+          "",
+          "NODE_CLASS_MAPPINGS = {}",
+          "NODE_DISPLAY_NAME_MAPPINGS = {}",
+          "",
+          "_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), \"py\")",
+          "for _file in glob.glob(os.path.join(_py, \"*.py\")):",
+          "    _name = os.path.splitext(_file)[0]",
+          "    _spec = importlib.util.spec_from_file_location(_name, _file)",
+          "    _module = importlib.util.module_from_spec(_spec)",
+          "    sys.modules[_name] = _module",
+          "    _spec.loader.exec_module(_module)",
+          "    if getattr(_module, \"NODE_CLASS_MAPPINGS\", None) is not None:",
+          "        NODE_CLASS_MAPPINGS.update(_module.NODE_CLASS_MAPPINGS)",
+          "        if getattr(_module, \"NODE_DISPLAY_NAME_MAPPINGS\", None) is not None:",
+          "            NODE_DISPLAY_NAME_MAPPINGS.update(_module.NODE_DISPLAY_NAME_MAPPINGS)",
+          "",
+          "WEB_DIRECTORY = \"./web\"",
+          "__all__ = [\"NODE_CLASS_MAPPINGS\", \"NODE_DISPLAY_NAME_MAPPINGS\", \"WEB_DIRECTORY\"]"
+        ]
+      },
+      "serverNodeTypes": ["MathExpression|pysssss"],
+      "frontendNodeTypes": ["PresetText|pysssss"],
+      "extensions": [
+        "pysssss.WorkflowImage",
+        "pysssss.MathExpression",
+        "pysssss.AutoCompleter",
+        "pysssss.PresetText"
+      ]
+    },
+    {
+      "directory": "ComfyUI-Impact-Pack",
+      "repo": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
+      "commit": "33df2097ed893156a8e2465a0eade094b0316240",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["MaskRectArea", "IterativeLatentUpscale"],
+      "frontendNodeTypes": [],
+      "extensions": ["drltdata.MaskRectArea", "Comfy.Impack"]
+    },
+    {
+      "directory": "comfyui-mixlab-nodes",
+      "repo": "https://github.com/shadowcz007/comfyui-mixlab-nodes",
+      "commit": "c5392aa23762a440834c056c3e22cf99ccf52703",
+      "extraPythonModules": ["watchdog"],
+      "initStub": {
+        "reason": "The original __init__.py pip-installs packages into the Python environment at import; the stub imports only the image/layer nodes and serves ./web. Routes under /mixlab/ are therefore absent.",
+        "source": [
+          "from .nodes.ImageNode import GridInput, ShowLayer, NewLayer, SvgImage, GridDisplayAndSave",
+          "",
+          "NODE_CLASS_MAPPINGS = {",
+          "    \"GridInput\": GridInput,",
+          "    \"ShowLayer\": ShowLayer,",
+          "    \"NewLayer\": NewLayer,",
+          "    \"SvgImage\": SvgImage,",
+          "    \"GridDisplayAndSave\": GridDisplayAndSave,",
+          "}",
+          "NODE_DISPLAY_NAME_MAPPINGS = {k: k + \" (Mixlab)\" for k in NODE_CLASS_MAPPINGS}",
+          "WEB_DIRECTORY = \"./web\"",
+          "__all__ = [\"NODE_CLASS_MAPPINGS\", \"NODE_DISPLAY_NAME_MAPPINGS\", \"WEB_DIRECTORY\"]"
+        ]
+      },
+      "serverNodeTypes": ["GridInput", "SvgImage"],
+      "frontendNodeTypes": [],
+      "extensions": [
+        "Mixlab.layer.GridInput",
+        "Mixlab.image.SvgImage",
+        "Comfy.Mixlab.ui"
+      ]
+    },
+    {
+      "directory": "ComfyUI_Custom_Nodes_AlekPet",
+      "repo": "https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet",
+      "commit": "7bc4c10f2407ee63d5900b0e69c13cee41a11a1a",
+      "extraPythonModules": [],
+      "initStub": {
+        "reason": "installNodes() runs pip install into the Python environment and deletes files under the ComfyUI web/ folder.",
+        "replace": {
+          "from": "\ninstallNodes()\n",
+          "to": "\npass\n"
+        }
+      },
+      "serverNodeTypes": ["IDENode"],
+      "frontendNodeTypes": [],
+      "extensions": [
+        "alekpet.IDENode",
+        "alekpet.ExtrasNode.SpeechAndRecognationSpeech"
+      ]
+    },
+    {
+      "directory": "CRT-Nodes",
+      "repo": "https://github.com/PGCRT/CRT-Nodes",
+      "commit": "4fd8825a0aaba3c9336e9f9a7d3e7b96e04660e5",
+      "extraPythonModules": ["soundfile", "cffi", "pycparser"],
+      "initStub": {
+        "reason": "The original __init__.py imports dozens of nodes with heavy dependencies; the stub registers only YuE2 and the Magic LoRA nodes and serves ./js.",
+        "source": [
+          "import os",
+          "import sys",
+          "",
+          "sys.modules[\"crt_nodes\"] = sys.modules[__name__]",
+          "__package__ = \"crt_nodes\"",
+          "",
+          "from .py.YuE2_Music_Generator import YuEMusicGenerator",
+          "from .py.Magic_Lora_Loader import MagicLoraLoader, SaveMergedLora, setup_routes",
+          "",
+          "setup_routes(os.path.dirname(os.path.abspath(__file__)))",
+          "",
+          "NODE_CLASS_MAPPINGS = {",
+          "    \"YuEMusicGenerator\": YuEMusicGenerator,",
+          "    \"Magic LoRA Loader\": MagicLoraLoader,",
+          "    \"Magic Save Merged LoRA\": SaveMergedLora,",
+          "}",
+          "NODE_DISPLAY_NAME_MAPPINGS = {",
+          "    \"YuEMusicGenerator\": \"YuE Music Generator (CRT)\",",
+          "    \"Magic LoRA Loader\": \"Magic LoRA Loader (CRT)\",",
+          "    \"Magic Save Merged LoRA\": \"Magic Save Merged LoRA (CRT)\",",
+          "}",
+          "WEB_DIRECTORY = \"./js\"",
+          "__all__ = [\"NODE_CLASS_MAPPINGS\", \"NODE_DISPLAY_NAME_MAPPINGS\", \"WEB_DIRECTORY\"]"
+        ]
+      },
+      "serverNodeTypes": ["YuEMusicGenerator", "Magic LoRA Loader"],
+      "frontendNodeTypes": [],
+      "extensions": ["Comfy.YuE.UI", "crt.MagicLoraLoader"]
+    },
+    {
+      "directory": "ComfyUI-Easy-Use",
+      "repo": "https://github.com/yolain/ComfyUI-Easy-Use",
+      "commit": "d08ce763bc28e952566ecda91235709aa3fc6bbb",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["easy imageChooser"],
+      "frontendNodeTypes": [],
+      "extensions": ["Comfy.EasyUse.imageChooser"]
+    },
+    {
+      "directory": "cg-use-everywhere",
+      "repo": "https://github.com/chrisgoringe/cg-use-everywhere",
+      "commit": "ffc99037eea8eac4d4ad20bb72a12a87740279a9",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["Anything Everywhere"],
+      "frontendNodeTypes": [],
+      "extensions": ["cg.customnodes.use_everywhere"]
+    },
+    {
+      "directory": "ComfyUI-KJNodes",
+      "repo": "https://github.com/kijai/ComfyUI-KJNodes",
+      "commit": "aa2b5ea5e7f61b51f5d26d726f23c1d74e951016",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["SplineEditor", "PointsEditor", "BlockifyMask"],
+      "frontendNodeTypes": ["SetNode", "GetNode"],
+      "extensions": [
+        "KJNodes.SetNode",
+        "KJNodes.GetNode",
+        "KJNodes.SetGetUI",
+        "KJNodes.SplineEditor",
+        "KJNodes.PointEditor",
+        "KJNodes.HelpPopup"
+      ]
+    },
+    {
+      "directory": "ComfyUI-VideoHelperSuite",
+      "repo": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite",
+      "commit": "4d907bee61e92c2e65af3bd6383a4e4d356126d1",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["VHS_LoadVideo"],
+      "frontendNodeTypes": [],
+      "extensions": ["VideoHelperSuite.Core"]
+    },
+    {
+      "directory": "ComfyUI-RMBG",
+      "repo": "https://github.com/1038lab/ComfyUI-RMBG",
+      "commit": "4d738d23aef4dbdd2951fa0fc1d454dcef19ca61",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["AILab_ImageCompareView", "AILab_ColorToMask"],
+      "frontendNodeTypes": [],
+      "extensions": ["AILab.ImageCompareView", "AILab.colorWidget"]
+    },
+    {
+      "directory": "efficiency-nodes-comfyui",
+      "repo": "https://github.com/jags111/efficiency-nodes-comfyui",
+      "commit": "4579b7d6076b2870998a08f5d37883fbc8261ff2",
+      "extraPythonModules": [],
+      "initStub": null,
+      "serverNodeTypes": ["LoRA Stacker", "KSampler (Efficient)"],
+      "frontendNodeTypes": [],
+      "extensions": [
+        "efficiency.widgethider",
+        "efficiency.seedcontrol",
+        "efficiency.gif_preview"
+      ]
+    }
+  ]
+}
