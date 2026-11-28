@@ -41,7 +41,10 @@ test.describe(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText([FIRST_REPLY])
         await expect(paywall).toBeVisible()
-        await expect(paywall).toContainText(NO_FUNDS_MESSAGE)
+        await expect(paywall).toContainText(
+          enMessages.agent.paywall.body.subscribed
+        )
+        await expect(paywall).not.toContainText(NO_FUNDS_MESSAGE)
         await expect(
           paywall.getByRole('button', {
             name: enMessages.agent.paywall.addCredits
