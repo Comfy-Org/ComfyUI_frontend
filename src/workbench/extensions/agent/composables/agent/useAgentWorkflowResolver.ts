@@ -47,6 +47,14 @@ export type SidebarWorkflowResolution =
 /** How a refresh of the cloud workflow list ended: last page reached, stopped early, or no answer. */
 export type CloudWorkflowRefreshOutcome = 'complete' | 'incomplete' | 'failed'
 
+function updatedAmbiguousNames(
+  current: ReadonlySet<string>,
+  observed: ReadonlySet<string>,
+  complete: boolean
+): ReadonlySet<string> {
+  return complete ? observed : new Set([...current, ...observed])
+}
+
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
@@ -95,9 +103,11 @@ export function useAgentWorkflowResolver({
             count > 1 ? [name] : []
           )
         )
-        ambiguousCloudNames.value = complete
-          ? nextAmbiguousNames
-          : new Set([...ambiguousCloudNames.value, ...nextAmbiguousNames])
+        ambiguousCloudNames.value = updatedAmbiguousNames(
+          ambiguousCloudNames.value,
+          nextAmbiguousNames,
+          complete
+        )
         cloudIndex.value = nextIndex
         return complete ? 'complete' : 'incomplete'
       } catch (error) {
