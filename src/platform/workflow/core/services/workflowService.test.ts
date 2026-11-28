@@ -38,6 +38,7 @@ import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/wa
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
+import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -3770,6 +3771,68 @@ describe('useWorkflowService', () => {
         'workflows/my-workflow.json'
       )
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('asks before replacing a server file the store did not know, then overwrites', async () => {
+      const workflow = createTemporaryWorkflow()
+      workflow.path = 'workflows/image_z_image_turbo.json'
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(workflow)
+      vi.mocked(workflowStore.saveWorkflow)
+        .mockRejectedValueOnce(
+          new UserDataExistsError(
+            "Error storing user data file 'workflows/image_z_image_turbo.json': 409 "
+          )
+        )
+        .mockResolvedValueOnce()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'image_z_image_turbo'
+      })
+
+      expect(result).toBe(true)
+      expect(useDialogService().confirm).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          type: 'overwrite',
+          itemList: ['workflows/image_z_image_turbo.json']
+        })
+      )
+      expect(workflowStore.saveWorkflow).toHaveBeenNthCalledWith(1, workflow)
+      expect(workflowStore.saveWorkflow).toHaveBeenNthCalledWith(2, workflow, {
+        overwrite: true
+      })
+    })
+
+    it('keeps the server file and reports no save when the overwrite is declined', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.saveWorkflow).mockRejectedValueOnce(
+        new UserDataExistsError(
+          "Error storing user data file 'workflows/my-workflow.json': 409 "
+        )
+      )
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(workflowStore.saveWorkflow).toHaveBeenCalledOnce()
+      expect(useTelemetry()?.trackWorkflowSaved).not.toHaveBeenCalled()
+    })
+
+    it('still throws a save failure that is not an existing file', async () => {
+      const workflow = createTemporaryWorkflow()
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      vi.mocked(workflowStore.saveWorkflow).mockRejectedValueOnce(
+        new Error("Error storing user data file 'workflows/x.json': 500 ")
+      )
+
+      await expect(
+        service.saveWorkflowAs(workflow, { filename: 'x' })
+      ).rejects.toThrow('500')
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
     })
 
     it('refuses to save as a path another unsaved tab holds', async () => {
