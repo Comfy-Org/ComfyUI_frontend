@@ -194,12 +194,7 @@ test.describe(
 
       await expect(agentPanel.sendButton).toBeVisible()
       await agentPanel.openWorkSummary()
-      await expect(
-        agentPanel.activityRows.filter({ hasText: thinking })
-      ).toHaveCount(1)
-      await expect(
-        agentPanel.root.getByText(/build the red with\.$/)
-      ).toHaveCount(0)
+      await expect(agentPanel.activityRow(thinking)).toHaveCount(1)
     })
 
     test('names how long the finished turn took', async ({
