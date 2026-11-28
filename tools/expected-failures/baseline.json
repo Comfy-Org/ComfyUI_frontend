@@ -1,9 +1,5 @@
 [
   {
-    "id": "playwright:browser_tests/tests/workspace/workflowDraftForeignWindowSignIn.spec.ts:a second window signing in neither wipes drafts nor stops persistence:1",
-    "classification": "live-defect"
-  },
-  {
     "id": "playwright:browser_tests/tests/agent/agentTwoSessionCrdtSubscription.spec.ts:returning to the displaced build shows it on the canvas:1",
     "classification": "live-defect"
   },
@@ -76,7 +72,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
+    "id": "vitest:src/platform/assets/stores/assetDownloadStore.test.ts:excludes a failed-then-actually-completed task from activeDownloads (PM-1302):1",
     "classification": "live-defect"
   },
   {
