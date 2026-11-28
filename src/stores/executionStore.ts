@@ -167,6 +167,10 @@ interface WorkflowStatusUpdate {
   showStatus?: boolean
 }
 
+interface PendingWorkflowStatus extends WorkflowStatusUpdate {
+  outputs?: QueuedJob['outputs']
+}
+
 interface PendingExecutionError {
   detail: ExecutionErrorWsMessage
   endTime: number
@@ -222,7 +226,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   // Buffers statuses arriving before storeJob attaches the workflow.
   // FIFO-capped to bound growth if a matching storeJob never fires.
-  const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
+  const pendingWorkflowStatusByJobId = new Map<string, PendingWorkflowStatus>()
   const pendingExecutionErrorsByJobId = new Map<string, PendingExecutionError>()
   const pendingSkippedOutputsByJobId = new Map<
     string,
@@ -238,10 +242,12 @@ export const useExecutionStore = defineStore('execution', () => {
       update.executionStartedAt ??
       queuedJobs.value[jobId]?.executionStartedAt ??
       existing?.executionStartedAt
+    const outputs = queuedJobs.value[jobId]?.outputs ?? existing?.outputs
     pendingWorkflowStatusByJobId.delete(jobId)
     pendingWorkflowStatusByJobId.set(jobId, {
       ...update,
-      ...(executionStartedAt !== undefined && { executionStartedAt })
+      ...(executionStartedAt !== undefined && { executionStartedAt }),
+      ...(outputs && { outputs })
     })
     while (pendingWorkflowStatusByJobId.size > MAX_PROGRESS_JOBS) {
       const oldest = pendingWorkflowStatusByJobId.keys().next().value
@@ -1324,8 +1330,10 @@ export const useExecutionStore = defineStore('execution', () => {
     flushPendingWorkflowStatus(id, workflow)
     flushPendingExecutionError(id)
     flushPendingSkippedOutputs(id)
-    if (id === activeJobId.value) showActiveJobProgress()
-    else if (
+    if (id === activeJobId.value) {
+      showActiveJobProgress()
+      showJobOutputs(id)
+    } else if (
       id in queuedJobs.value &&
       queuedJob.executionStartedAt !== undefined
     )
@@ -1351,6 +1359,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (pending === undefined || !workflow) return
     pendingWorkflowStatusByJobId.delete(jobId)
     queuedJobs.value[jobId].executionStartedAt = pending.executionStartedAt
+    queuedJobs.value[jobId].outputs ??= pending.outputs
     // Don't let a stale 'running' overwrite a terminal status already set.
     if (pending.status === 'running' && workflowStatus.value.has(workflow))
       return
@@ -1359,6 +1368,8 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     trackExecutionOutcome(jobId, pending)
     if (pending.status === 'running' || activeJobId.value === jobId) return
+    if (!activeJobId.value || !isJobOwnedBy(activeJobId.value, workflow))
+      showJobOutputs(jobId)
     delete queuedJobs.value[jobId]
     jobIdToWorkflow.delete(jobId)
   }
