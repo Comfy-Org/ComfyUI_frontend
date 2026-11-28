@@ -17,9 +17,16 @@
     v-model="modelValue"
     :component="WidgetSelectDefault"
     :widget="widget as SelectControlWidget"
+    :widget-id="props.widgetId"
     :filename-summary
   />
-  <WidgetSelectDefault v-else v-model="modelValue" :widget :filename-summary />
+  <WidgetSelectDefault
+    v-else
+    v-model="modelValue"
+    :widget
+    :widget-id="props.widgetId"
+    :filename-summary
+  />
 </template>
 
 <script setup lang="ts">
@@ -39,11 +46,13 @@ import type {
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 type SelectControlWidget = SimplifiedControlWidget<WidgetValue>
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | undefined>
+  widgetId?: WidgetId
   nodeType?: string
 }>()
 

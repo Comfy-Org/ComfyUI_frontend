@@ -23840,6 +23840,10 @@ export type ViewFileErrors = {
    * Internal server error
    */
   500: ErrorResponse
+  /**
+   * With `channel` or `res`: the pod's upload buffer budget, which the image's bytes and decoded pixels are charged to, is exhausted; retry after the Retry-After seconds. `code` is `UPLOAD_BUDGET_EXHAUSTED`.
+   */
+  503: ErrorResponse
 }
 
 export type ViewFileError = ViewFileErrors[keyof ViewFileErrors]
