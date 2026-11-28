@@ -8,12 +8,17 @@ describe(isInputPreviewOutput, () => {
   const cases: {
     case: string
     expected: boolean
-    output: Pick<NodeExecutionOutput, 'images'> | undefined
+    output: NodeExecutionOutput | undefined
   }[] = [
     {
       case: 'only input images',
       expected: true,
       output: { images: [{ type: 'input' }, { type: 'input' }] }
+    },
+    {
+      case: 'explicit input preview using output images',
+      expected: true,
+      output: { isInputPreview: true, images: [{ type: 'output' }] }
     },
     {
       case: 'only output images',

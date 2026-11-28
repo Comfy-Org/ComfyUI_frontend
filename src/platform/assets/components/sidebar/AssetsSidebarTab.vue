@@ -476,6 +476,7 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
       url: getAssetInlineMediaUrl(asset),
+      preview_id: asset.preview_id ?? undefined,
       filenameIsDisplayName: isCloud
     }
   })

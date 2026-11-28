@@ -196,11 +196,14 @@ test.describe(
         await expect
           .poll(async () => {
             const src = await preview.getAttribute('src')
-            return src
-              ? new URL(src, comfyPage.page.url()).searchParams.get('filename')
-              : null
+            if (!src) return null
+            const params = new URL(src, comfyPage.page.url()).searchParams
+            return {
+              filename: params.get('filename'),
+              type: params.get('type')
+            }
           })
-          .toBe(selectedValue)
+          .toEqual({ filename: selectedLabel, type: 'output' })
         await expect(preview).toHaveJSProperty('naturalWidth', 64)
       })
     })

@@ -25,6 +25,7 @@ import type {
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/platform/assets/composables/useAssetWidgetData'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { getAssetPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -32,11 +33,7 @@ import {
   parseAnnotatedPath
 } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import {
-  hdrPreviewAssetUrl,
-  isHdrImageFilename,
-  isHdrImageUrl
-} from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
@@ -186,13 +183,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       preview_url:
         kind === 'mesh'
           ? ''
-          : isHdrImageFilename(asset.name)
-            ? asset.preview_id
-              ? hdrPreviewAssetUrl(asset.preview_id)
-              : ([asset.thumbnail_url, asset.preview_url].find(
-                  (url) => url && !isHdrImageUrl(url)
-                ) ?? '')
-            : asset.preview_url || getAnnotatedValueMediaUrl(name, kind),
+          : getAssetPreviewUrl(asset, getAnnotatedValueMediaUrl(name, kind)),
       is_immutable: asset.is_immutable,
       base_models: getAssetBaseModels(asset)
     }

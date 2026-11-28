@@ -174,9 +174,8 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { getAssetType } from '@/platform/assets/adapters/outputAssetMappers'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import {
-  getAssetInlineMediaUrl,
-  getAssetUrl,
-  resolveMediaSrc
+  getAssetPreviewUrl,
+  getAssetUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
@@ -278,12 +277,7 @@ const adaptedAsset = computed(() => {
     display_name: asset.display_name,
     kind: fileKind.value,
     src:
-      fileKind.value === '3D'
-        ? getAssetUrl(asset)
-        : resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
-          (fileKind.value === 'video' || fileKind.value === 'audio'
-            ? getAssetInlineMediaUrl(asset)
-            : ''),
+      fileKind.value === '3D' ? getAssetUrl(asset) : getAssetPreviewUrl(asset),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,
