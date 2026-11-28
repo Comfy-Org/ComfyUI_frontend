@@ -77,6 +77,7 @@ describe('outputAsSerialisable', () => {
     const serialised = outputAsSerialisable(source.outputs[0], source, 0)
 
     expect(serialised.links).toEqual([])
+    expect(source.serialize().outputs![0].links).toEqual([])
   })
 
   it('preserves link presence when a targeted disconnect matches no link', () => {

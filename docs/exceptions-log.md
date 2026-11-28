@@ -21,15 +21,16 @@ superseding decision.
 
 ## Open exceptions
 
-### EX-001: Slot metadata remains class-owned during migration
+### EX-001: Slot compatibility views remain during migration
 
 **Normal rule:** Stores own entity state. Classes and boundary objects expose
 views of that state.
 
-**Current exception:** `NodeState` holds `NodeInputSlot` and `NodeOutputSlot`
-instances in `shallowReactive` arrays. `LGraphNode.inputs` and
-`LGraphNode.outputs` expose those arrays through the store proxy. The array
-containers are store-held, but slot fields remain on the class instances.
+**Current exception:** `NodeState` owns plain slot descriptors. Metadata on
+`NodeInputSlot` and `NodeOutputSlot` forwards to those descriptors, while
+`LGraphNode.inputs` and `LGraphNode.outputs` remain compatibility projections.
+Independent slot keys and removal of the compatibility views are still pending.
+See [the descriptor ownership decision](adr/ECS-SLOTS-0057-plain-descriptors-before-independent-slot-identity.md).
 
 **Owner:** Christian Byrne
 

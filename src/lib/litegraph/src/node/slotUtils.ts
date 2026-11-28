@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import { toRaw } from 'vue'
 
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { SharedIntersection } from '@comfyorg/graph-model/interfaces'
@@ -7,6 +8,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import { slotAdapters } from '@/lib/litegraph/src/node/slotDescriptorState'
 import { inputLinkId, outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
 import type {
   ISerialisableNodeInput,
@@ -18,9 +20,7 @@ type CommonIoSlotProps = SharedIntersection<
   ISerialisableNodeOutput
 >
 
-function serialisesLegacyLinkPresence(
-  slot: INodeOutputSlot
-): slot is INodeOutputSlot & {
+function serialisesLegacyLinkPresence(slot: object): slot is {
   _serialiseLinkIds(ids: LinkId[]): LinkId[] | null
 } {
   return (
@@ -85,14 +85,15 @@ export function outputAsSerialisable(
   // Output widgets do not exist in Litegraph; this is a temporary downstream workaround.
   const outputWidget = widget ? { widget: { name: widget.name } } : null
   const ids = node.graph ? outputLinkIds(node.graph, node.id, slotIndex) : []
+  const adapter = slotAdapters.get(toRaw(slot)) ?? slot
   const links = node.graph
-    ? serialisesLegacyLinkPresence(slot)
-      ? slot._serialiseLinkIds(ids)
+    ? serialisesLegacyLinkPresence(adapter)
+      ? adapter._serialiseLinkIds(ids)
       : ids.length
         ? ids
         : null
-    : serialisesLegacyLinkPresence(slot)
-      ? slot._serialiseLinkIds([])
+    : serialisesLegacyLinkPresence(adapter)
+      ? adapter._serialiseLinkIds([])
       : null
 
   return {

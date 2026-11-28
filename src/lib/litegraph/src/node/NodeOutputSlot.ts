@@ -11,7 +11,8 @@ import type { OptionalProps } from '@comfyorg/graph-model/interfaces'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  SlotDescriptor
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
@@ -24,7 +25,6 @@ import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   _data?: unknown
-  slot_index?: number
   private readonly legacyLinkIds!: LinkId[]
   private readonly legacyLinksView!: LinkId[]
   private legacyLinksPresent!: boolean
@@ -95,12 +95,11 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
 
   constructor(
     slot: OptionalProps<INodeOutputSlot, 'boundingRect'>,
-    node: LGraphNode
+    node: LGraphNode,
+    descriptor?: SlotDescriptor
   ) {
-    // Serialized outputs carry a legacy links mirror; strip it so the base
-    // ctor's Object.assign does not trip the deprecated setter above.
     const { links: legacyLinks, ...rest } = slot
-    super(rest, node)
+    super(rest, node, descriptor)
 
     const legacyLinkIds: LinkId[] = []
     Object.defineProperties(this, {
