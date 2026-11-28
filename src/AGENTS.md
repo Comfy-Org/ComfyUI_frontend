@@ -1,28 +1,11 @@
 # Source Code Guidelines
 
-## Error Handling
+## Error Type Naming
 
-- Expected failure is a return value, not a throw. See
-  `docs/guidance/error-handling.md` for the contract shapes, where to catch,
-  and when a throw is still right.
-- User-friendly and actionable messages
-- Proper error propagation
-- Report failures with `reportError()` from `@comfyorg/telemetry/reportError` —
-  never `captureException` or `datadogRum.addError` directly. Each of those
-  reaches one sink, so the failure is invisible in the other console. Enforced
-  by `no-restricted-imports`; raw sinks belong in app-side telemetry setup.
-
-  ```typescript
-  reportError(error, {
-    errorType: 'failure_initializing_workspace_auth_gate'
-  })
-  ```
-
-  `errorType` is a stable slug. It lands as native RUM `error.type` and the
-  `error_type` Sentry tag. The legacy `error_type` RUM context field is retained
-  for existing queries; prefer `@error.type` for new Datadog queries.
-
-### Error Type Naming
+`reportError(error, { errorType })` takes a stable slug. It lands as native RUM
+`error.type` and the `error_type` Sentry tag. The legacy `error_type` RUM
+context field is retained for existing queries; prefer `@error.type` for new
+Datadog queries.
 
 - Name error types from generic to specific in lowercase `snake_case`:
   `<category>_<operation>_<subject>[_detail]`. Put the category first, then
@@ -41,24 +24,3 @@
 - Treat existing emitted types as telemetry contracts. Rename them only with
   a migration of affected queries and alerts that accounts for old and new
   releases reporting different names.
-
-## Security
-
-- Sanitize HTML with DOMPurify
-- Validate trusted sources
-- Never log secrets
-
-## State Management (Stores)
-
-- Follow domain-driven design for organizing files/folders
-- Clear public interfaces
-- Restrict extension access
-- Clean up subscriptions
-- Only expose state/actions that are used externally; keep internal state private
-
-## General Guidelines
-
-- Use `es-toolkit` for utility functions
-- Use TypeScript for type safety
-- Avoid `@ts-expect-error` - fix the underlying issue
-- Use `vue-i18n` for ALL user-facing strings (`src/locales/en/main.json`)
