@@ -450,14 +450,23 @@ export function registerAgentPanelExtension(): void {
   registered = true
 }
 
+function prototypeForcesAgentOn(): boolean {
+  try {
+    return localStorage.getItem('proto.agentOn') === '1'
+  } catch {
+    return false
+  }
+}
+
 function setupFlagGate(
   loadConsentIfEligible: () => void,
   openWhenStartupDecided: () => void
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const devForcedOn =
-    import.meta.env.MODE === 'development' &&
-    import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    (import.meta.env.MODE === 'development' &&
+      import.meta.env.VITE_AGENT_STANDALONE === 'true') ||
+    prototypeForcesAgentOn()
 
   watch(
     () =>
