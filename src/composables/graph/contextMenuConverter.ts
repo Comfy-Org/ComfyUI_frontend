@@ -30,9 +30,17 @@ const SUPPRESSED_LITEGRAPH_CALLBACKS = new Set<unknown>([
   LGraphCanvas.createDistributeMenu
 ])
 
+function labelledGroup(label: string, items: MenuOption[]): MenuOption[] {
+  if (!items.length) return []
+  return [
+    { label, type: 'category', disabled: true } satisfies MenuOption,
+    ...items
+  ]
+}
+
 export function buildStructuredMenu(
   options: MenuOption[],
-  extensionsLabel: string
+  labels: { extensions: string; repair: string }
 ): MenuOption[] {
   const core = new Map<NodeMenuItemId, MenuOption>()
   const extensions: MenuOption[] = []
@@ -48,19 +56,13 @@ export function buildStructuredMenu(
       const option = core.get(id)
       return option ? [option] : []
     })
+  const withIdPrefix = (prefix: string) =>
+    [...core.values()].filter((option) => option.id?.startsWith(prefix))
   const groups = [
     ...Object.values(sections).map(itemsFor),
-    [...core.values()].filter((option) => option.id?.startsWith('widget:')),
-    extensions.length
-      ? [
-          {
-            label: extensionsLabel,
-            type: 'category',
-            disabled: true
-          } satisfies MenuOption,
-          ...extensions
-        ]
-      : [],
+    withIdPrefix('widget:'),
+    labelledGroup(labels.repair, withIdPrefix('repair:')),
+    labelledGroup(labels.extensions, extensions),
     itemsFor(deleteIds)
   ].filter((group) => group.length)
 

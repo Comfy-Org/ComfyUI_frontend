@@ -11,7 +11,6 @@ export const NODE_MENU_SECTIONS = {
   selection: ['rename', 'copy', 'duplicate'],
   actions: [
     'runBranch',
-    'replaceWithCoreEquivalent',
     'pin',
     'bypass',
     'groupAlways',
@@ -37,6 +36,7 @@ export const NODE_MENU_SECTIONS = {
 export type NodeMenuItemId =
   | (typeof NODE_MENU_SECTIONS)[keyof typeof NODE_MENU_SECTIONS][number]
   | `widget:${string}`
+  | `repair:${string}`
 
 const callbackIds = new WeakMap<object, NodeMenuItemId | null>()
 

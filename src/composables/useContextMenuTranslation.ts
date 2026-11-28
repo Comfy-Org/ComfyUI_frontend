@@ -1,4 +1,4 @@
-import { resolveNodeDefText, st, t, te } from '@/i18n'
+import { resolveNodeDefText, st, te } from '@/i18n'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type {
   IContextMenuOptions,
@@ -6,14 +6,12 @@ import type {
   INodeInputSlot,
   IWidget
 } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
-  LGraphCanvas,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
-import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
-import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
+  getCanvasRepairItems,
+  getNodeRepairItems,
+  toLitegraphRepairSection
+} from '@/platform/graphRepair/repairMenu'
 import { useApp } from '@/scripts/appInstance'
 
 export function translateContextMenuItems(
@@ -56,30 +54,6 @@ export function translateContextMenuItems(
   }
 }
 
-export function getCoreReplacementMenuOption(
-  canvas: LGraphCanvas,
-  node: LGraphNode
-) {
-  if (canvas.state.readOnly || node.graph !== canvas.graph) return null
-  const selected = canvas.selectedItems.has(node)
-    ? [...canvas.selectedItems].filter((item) => item instanceof LGraphNode)
-    : [node]
-  const store = useNodeReplacementStore()
-  if (!selected.some((item) => store.getInstalledNodeReplacement(item)))
-    return null
-  return {
-    id: 'replaceWithCoreEquivalent' as const,
-    label: t(
-      selected.length > 1
-        ? 'nodeReplacement.replaceSelectedWithCoreEquivalents'
-        : 'nodeReplacement.replaceWithCoreEquivalent'
-    ),
-    action: () => {
-      useNodeReplacement().replaceInstalledNodes(selected)
-    }
-  }
-}
-
 export const useContextMenuTranslation = () => {
   // Install compatibility layer BEFORE any extensions load
   legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
@@ -94,13 +68,11 @@ export const useContextMenuTranslation = () => {
       args
     )
 
-    // Add items from new extension API
     const newApiItems = useApp().collectCanvasMenuItems(this)
     for (const item of newApiItems) {
       res.push(item)
     }
 
-    // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
       'getCanvasMenuOptions',
       this,
@@ -109,8 +81,8 @@ export const useContextMenuTranslation = () => {
     for (const item of legacyItems) {
       res.push(item)
     }
+    res.push(...toLitegraphRepairSection(getCanvasRepairItems(this)))
 
-    // Translate all items
     for (const item of res) {
       if (item?.content) {
         item.content = st(`contextMenu.${item.content}`, item.content)
@@ -128,10 +100,8 @@ export const useContextMenuTranslation = () => {
     LGraphCanvas.prototype
   )
 
-  // Install compatibility layer for getNodeMenuOptions
   legacyMenuCompat.install(LGraphCanvas.prototype, 'getNodeMenuOptions')
 
-  // Wrap getNodeMenuOptions to add new API items
   const nodeMenuFn = LGraphCanvas.prototype.getNodeMenuOptions
   const getNodeMenuOptionsWithExtensions = function (
     this: LGraphCanvas,
@@ -140,13 +110,6 @@ export const useContextMenuTranslation = () => {
     const res = nodeMenuFn.apply(this, args) as (IContextMenuValue | null)[]
 
     const node = args[0]
-    const replacement = getCoreReplacementMenuOption(this, node)
-    if (replacement) {
-      res.push({
-        content: replacement.label,
-        callback: markNodeMenuCallback(replacement.action, replacement.id)
-      })
-    }
     const newApiItems = useApp().collectNodeMenuItems(node)
     for (const item of newApiItems) {
       res.push(item)
@@ -160,6 +123,7 @@ export const useContextMenuTranslation = () => {
     for (const item of legacyItems) {
       res.push(item)
     }
+    res.push(...toLitegraphRepairSection(getNodeRepairItems(this, node)))
 
     return res
   }

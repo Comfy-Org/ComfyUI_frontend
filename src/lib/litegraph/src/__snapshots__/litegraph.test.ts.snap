@@ -176,6 +176,7 @@ LiteGraphGlobal {
   ],
   "overlapBounding": [Function],
   "pointerevents_method": "pointer",
+  "prefer_link_reroutes": false,
   "proxy": null,
   "registeredSlotInTypes": {},
   "registeredSlotOutTypes": {},

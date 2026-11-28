@@ -534,6 +534,10 @@
   "LiteGraph_Node_TooltipDelay": {
     "name": "Tooltip Delay"
   },
+  "LiteGraph_Reroute_PreferLinkReroutes": {
+    "name": "Use link reroutes instead of Reroute nodes",
+    "tooltip": "Converts supported Reroute nodes to link reroutes when a workflow loads, hides the Reroute node from node search, and makes reroute shortcuts create link reroutes."
+  },
   "LiteGraph_Reroute_SplineOffset": {
     "name": "Reroute spline offset",
     "tooltip": "The bezier control point offset from the reroute centre point"
