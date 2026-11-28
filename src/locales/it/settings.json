@@ -460,6 +460,10 @@
     "name": "Design moderno dei nodi (Nodes 2.0)",
     "tooltip": "Moderno: rendering basato su DOM con interattività avanzata, funzionalità native del browser e design visivo aggiornato. Classico: rendering tradizionale su canvas."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "Nascondi le estensioni .safetensors e .sft",
+    "tooltip": "Solo Nodes 2.0. Nasconde queste estensioni nei widget dei modelli chiusi. Le altre estensioni restano visibili; le opzioni del menu a discesa e i valori salvati mantengono i nomi file completi."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Modalità controllo widget",
     "options": {

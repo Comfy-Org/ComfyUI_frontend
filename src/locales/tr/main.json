@@ -6432,15 +6432,20 @@
     "undo": "Geri al"
   },
   "widgets": {
+    "allFolders": "Tüm klasörler",
     "backFromFolder": "Geri: {name}",
     "boolean": {
       "false": "yanlış",
       "true": "doğru"
     },
+    "browseToLockFolder": "Kilitlemek için bir klasör aç",
+    "folderLocked": "Klasöre kilitlendi: {name}",
+    "lockFolder": "Klasörü kilitle: {name}",
     "node2only": "Yalnızca Node 2.0",
     "precisionLimit": "Artırma/azaltma devre dışı: değer JavaScript hassasiyet sınırını aşıyor (±2^53)",
     "selectFolder": "Klasör: {name}",
     "selectModel": "Model seç",
+    "unlockFolder": "Klasör kilidini aç: {name}",
     "uploadSelect": {
       "maxSelectionReached": "Maksimum seçim sınırına ulaşıldı",
       "placeholder": "Seç...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "Model seç...",
       "placeholderUnknown": "Medya seç...",
       "placeholderVideo": "Video seç...",
+      "resizeHint": "Yeniden boyutlandırmak için sürükleyin, sıfırlamak için çift tıklayın",
+      "resizeLeftCorner": "Sol köşeden yeniden boyutlandır",
+      "resizeRightCorner": "Sağ köşeden yeniden boyutlandır",
       "thumbnailSize": "Küçük resim boyutu",
       "thumbnailSizes": {
         "compact": "Kompakt",

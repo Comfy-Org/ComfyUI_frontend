@@ -6432,15 +6432,20 @@
     "undo": "元に戻す"
   },
   "widgets": {
+    "allFolders": "すべてのフォルダー",
     "backFromFolder": "戻る: {name}",
     "boolean": {
       "false": "false",
       "true": "true"
     },
+    "browseToLockFolder": "ロックするフォルダーを開く",
+    "folderLocked": "フォルダーにロック済み: {name}",
+    "lockFolder": "フォルダーをロック: {name}",
     "node2only": "Node 2.0専用",
     "precisionLimit": "増減は無効です: 値が JavaScript の精度上限（±2^53）を超えています",
     "selectFolder": "フォルダー: {name}",
     "selectModel": "モデルを選択",
+    "unlockFolder": "フォルダーのロックを解除: {name}",
     "uploadSelect": {
       "maxSelectionReached": "選択の上限に達しました",
       "placeholder": "選択...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "モデルを選択...",
       "placeholderUnknown": "メディアを選択...",
       "placeholderVideo": "動画を選択...",
+      "resizeHint": "ドラッグしてサイズ変更、ダブルクリックでリセット",
+      "resizeLeftCorner": "左の角からサイズ変更",
+      "resizeRightCorner": "右の角からサイズ変更",
       "thumbnailSize": "サムネイルサイズ",
       "thumbnailSizes": {
         "compact": "コンパクト",

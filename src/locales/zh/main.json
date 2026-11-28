@@ -6432,15 +6432,20 @@
     "undo": "撤销"
   },
   "widgets": {
+    "allFolders": "所有文件夹",
     "backFromFolder": "返回：{name}",
     "boolean": {
       "false": "否",
       "true": "是"
     },
+    "browseToLockFolder": "打开一个文件夹以将其锁定",
+    "folderLocked": "已锁定到文件夹：{name}",
+    "lockFolder": "锁定文件夹：{name}",
     "node2only": "仅限 Node 2.0",
     "precisionLimit": "已禁用增减操作：值超出 JavaScript 精度限制 (±2^53)",
     "selectFolder": "文件夹：{name}",
     "selectModel": "选择模型",
+    "unlockFolder": "解锁文件夹：{name}",
     "uploadSelect": {
       "maxSelectionReached": "已达到最大选择数量",
       "placeholder": "请选择...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "请选择模型...",
       "placeholderUnknown": "请选择媒体...",
       "placeholderVideo": "请选择视频...",
+      "resizeHint": "拖动以调整大小，双击以重置",
+      "resizeLeftCorner": "从左侧角落调整大小",
+      "resizeRightCorner": "从右侧角落调整大小",
       "thumbnailSize": "缩略图大小",
       "thumbnailSizes": {
         "compact": "紧凑",

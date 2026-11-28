@@ -460,6 +460,10 @@
     "name": "Design Moderno de Nós (Nodes 2.0)",
     "tooltip": "Moderno: renderização baseada em DOM com interatividade aprimorada, recursos nativos do navegador e design visual atualizado. Clássico: renderização tradicional em canvas."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "Ocultar as extensões .safetensors e .sft",
+    "tooltip": "Apenas Nodes 2.0. Oculte essas extensões em widgets de modelo fechados. Outras extensões permanecem visíveis; as opções do menu suspenso e os valores salvos mantêm os nomes completos dos arquivos."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Modo de controle do widget",
     "options": {

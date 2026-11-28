@@ -460,6 +460,10 @@
     "name": "Modernes Node-Design (Nodes 2.0)",
     "tooltip": "Modern: DOM-basiertes Rendering mit verbesserter Interaktivität, nativen Browserfunktionen und aktualisiertem visuellen Design. Klassisch: Herkömmliches Canvas-Rendering."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": "Erweiterungen .safetensors und .sft ausblenden",
+    "tooltip": "Nur Nodes 2.0. Blenden Sie diese Erweiterungen in geschlossenen Modell-Widgets aus. Andere Erweiterungen bleiben sichtbar; Dropdown-Optionen und gespeicherte Werte behalten vollständige Dateinamen."
+  },
   "Comfy_WidgetControlMode": {
     "name": "Widget-Steuerungsmodus",
     "options": {

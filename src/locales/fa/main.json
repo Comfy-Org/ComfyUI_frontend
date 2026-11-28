@@ -6432,15 +6432,20 @@
     "undo": "واگرد"
   },
   "widgets": {
+    "allFolders": "همهٔ پوشه‌ها",
     "backFromFolder": "بازگشت: {name}",
     "boolean": {
       "false": "نادرست",
       "true": "درست"
     },
+    "browseToLockFolder": "پوشه‌ای را برای قفل کردن باز کنید",
+    "folderLocked": "قفل‌شده روی پوشه: {name}",
+    "lockFolder": "قفل کردن پوشه: {name}",
     "node2only": "فقط Node 2.0",
     "precisionLimit": "افزایش/کاهش غیرفعال است: مقدار از حد دقت JavaScript (±2^53) فراتر می‌رود",
     "selectFolder": "پوشه: {name}",
     "selectModel": "انتخاب مدل",
+    "unlockFolder": "باز کردن قفل پوشه: {name}",
     "uploadSelect": {
       "maxSelectionReached": "حداکثر تعداد انتخاب مجاز رسید",
       "placeholder": "انتخاب...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
       "placeholderVideo": "انتخاب ویدیو...",
+      "resizeHint": "برای تغییر اندازه بکشید، برای بازنشانی دوبار کلیک کنید",
+      "resizeLeftCorner": "تغییر اندازه از گوشهٔ چپ",
+      "resizeRightCorner": "تغییر اندازه از گوشهٔ راست",
       "thumbnailSize": "اندازهٔ تصویر بندانگشتی",
       "thumbnailSizes": {
         "compact": "فشرده",

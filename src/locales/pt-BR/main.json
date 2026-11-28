@@ -6432,15 +6432,20 @@
     "undo": "Desfazer"
   },
   "widgets": {
+    "allFolders": "Todas as pastas",
     "backFromFolder": "Voltar: {name}",
     "boolean": {
       "false": "falso",
       "true": "verdadeiro"
     },
+    "browseToLockFolder": "Abra uma pasta para bloqueá-la",
+    "folderLocked": "Bloqueado na pasta: {name}",
+    "lockFolder": "Bloquear pasta: {name}",
     "node2only": "Apenas Node 2.0",
     "precisionLimit": "Incremento/decremento desativado: o valor excede o limite de precisão do JavaScript (±2^53)",
     "selectFolder": "Pasta: {name}",
     "selectModel": "Selecionar modelo",
+    "unlockFolder": "Desbloquear pasta: {name}",
     "uploadSelect": {
       "maxSelectionReached": "Limite máximo de seleção atingido",
       "placeholder": "Selecionar...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "Selecionar modelo...",
       "placeholderUnknown": "Selecionar mídia...",
       "placeholderVideo": "Selecionar vídeo...",
+      "resizeHint": "Arraste para redimensionar, clique duas vezes para redefinir",
+      "resizeLeftCorner": "Redimensionar pelo canto esquerdo",
+      "resizeRightCorner": "Redimensionar pelo canto direito",
       "thumbnailSize": "Tamanho da miniatura",
       "thumbnailSizes": {
         "compact": "Compacto",

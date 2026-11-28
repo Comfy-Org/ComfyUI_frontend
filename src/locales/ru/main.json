@@ -6432,15 +6432,20 @@
     "undo": "Отменить"
   },
   "widgets": {
+    "allFolders": "Все папки",
     "backFromFolder": "Назад: {name}",
     "boolean": {
       "false": "ложь",
       "true": "истина"
     },
+    "browseToLockFolder": "Откройте папку, чтобы закрепить её",
+    "folderLocked": "Закреплено за папкой: {name}",
+    "lockFolder": "Закрепить папку: {name}",
     "node2only": "Только Node 2.0",
     "precisionLimit": "Увеличение/уменьшение отключено: значение превышает предел точности JavaScript (±2^53)",
     "selectFolder": "Папка: {name}",
     "selectModel": "Выбрать модель",
+    "unlockFolder": "Открепить папку: {name}",
     "uploadSelect": {
       "maxSelectionReached": "Достигнут максимальный лимит выбора",
       "placeholder": "Выбрать...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
       "placeholderVideo": "Выбрать видео...",
+      "resizeHint": "Перетащите, чтобы изменить размер, дважды щёлкните для сброса",
+      "resizeLeftCorner": "Изменить размер с левого угла",
+      "resizeRightCorner": "Изменить размер с правого угла",
       "thumbnailSize": "Размер миниатюры",
       "thumbnailSizes": {
         "compact": "Компактный",

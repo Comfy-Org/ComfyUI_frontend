@@ -6432,15 +6432,20 @@
     "undo": "復原"
   },
   "widgets": {
+    "allFolders": "所有資料夾",
     "backFromFolder": "返回：{name}",
     "boolean": {
       "false": "否",
       "true": "是"
     },
+    "browseToLockFolder": "開啟資料夾以鎖定",
+    "folderLocked": "已鎖定至資料夾：{name}",
+    "lockFolder": "鎖定資料夾：{name}",
     "node2only": "僅限 Node 2.0",
     "precisionLimit": "已停用遞增／遞減：數值超過 JavaScript 精確度限制（±2^53）",
     "selectFolder": "資料夾：{name}",
     "selectModel": "選擇模型",
+    "unlockFolder": "解除鎖定資料夾：{name}",
     "uploadSelect": {
       "maxSelectionReached": "已達到最大選取限制",
       "placeholder": "選擇...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "選擇模型...",
       "placeholderUnknown": "選擇媒體...",
       "placeholderVideo": "選擇影片...",
+      "resizeHint": "拖曳以調整大小，按兩下以重設",
+      "resizeLeftCorner": "從左側角落調整大小",
+      "resizeRightCorner": "從右側角落調整大小",
       "thumbnailSize": "縮圖大小",
       "thumbnailSizes": {
         "compact": "精簡",

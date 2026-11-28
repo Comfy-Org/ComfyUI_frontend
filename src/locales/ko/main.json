@@ -6432,15 +6432,20 @@
     "undo": "실행 취소"
   },
   "widgets": {
+    "allFolders": "모든 폴더",
     "backFromFolder": "뒤로: {name}",
     "boolean": {
       "false": "거짓",
       "true": "참"
     },
+    "browseToLockFolder": "잠글 폴더 열기",
+    "folderLocked": "다음 폴더로 잠김: {name}",
+    "lockFolder": "폴더 잠금: {name}",
     "node2only": "Node 2.0 전용",
     "precisionLimit": "증가/감소가 비활성화됨: 값이 JavaScript 정밀도 한계(±2^53)를 초과합니다",
     "selectFolder": "폴더: {name}",
     "selectModel": "모델 선택",
+    "unlockFolder": "폴더 잠금 해제: {name}",
     "uploadSelect": {
       "maxSelectionReached": "최대 선택 한도에 도달했습니다",
       "placeholder": "선택...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "모델 선택...",
       "placeholderUnknown": "미디어 선택...",
       "placeholderVideo": "비디오 선택...",
+      "resizeHint": "드래그하여 크기 조절, 두 번 클릭하여 재설정",
+      "resizeLeftCorner": "왼쪽 모서리에서 크기 조절",
+      "resizeRightCorner": "오른쪽 모서리에서 크기 조절",
       "thumbnailSize": "썸네일 크기",
       "thumbnailSizes": {
         "compact": "컴팩트",

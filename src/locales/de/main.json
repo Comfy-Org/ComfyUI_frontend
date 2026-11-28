@@ -6432,15 +6432,20 @@
     "undo": "Rückgängig"
   },
   "widgets": {
+    "allFolders": "Alle Ordner",
     "backFromFolder": "Zurück: {name}",
     "boolean": {
       "false": "falsch",
       "true": "wahr"
     },
+    "browseToLockFolder": "Öffnen Sie einen Ordner, um ihn zu sperren",
+    "folderLocked": "Gesperrt auf Ordner: {name}",
+    "lockFolder": "Ordner sperren: {name}",
     "node2only": "Nur Node 2.0",
     "precisionLimit": "Erhöhen/Verringern deaktiviert: Wert überschreitet das JavaScript-Präzisionslimit (±2^53)",
     "selectFolder": "Ordner: {name}",
     "selectModel": "Modell auswählen",
+    "unlockFolder": "Ordner entsperren: {name}",
     "uploadSelect": {
       "maxSelectionReached": "Maximale Auswahlanzahl erreicht",
       "placeholder": "Auswählen...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "Modell auswählen...",
       "placeholderUnknown": "Medien auswählen...",
       "placeholderVideo": "Video auswählen...",
+      "resizeHint": "Ziehen zum Ändern der Größe, doppelklicken zum Zurücksetzen",
+      "resizeLeftCorner": "Größe über die linke Ecke ändern",
+      "resizeRightCorner": "Größe über die rechte Ecke ändern",
       "thumbnailSize": "Größe der Miniaturansichten",
       "thumbnailSizes": {
         "compact": "Kompakt",

@@ -460,6 +460,10 @@
     "name": "모던 노드 디자인 (Vue 노드)",
     "tooltip": "모던: 향상된 상호작용, 기본 브라우저 기능, 업데이트된 시각적 디자인을 갖춘 DOM 기반 렌더링. 클래식: 전통적인 캔버스 렌더링."
   },
+  "Comfy_VueNodes_HideSafeModelExtensions": {
+    "name": " .safetensors 및 .sft 확장자 숨기기",
+    "tooltip": "노드 2.0 전용입니다. 닫힌 모델 위젯에서 이러한 확장자를 숨깁니다. 다른 확장자는 계속 표시되며, 드롭다운 옵션과 저장된 값에는 전체 파일명이 유지됩니다."
+  },
   "Comfy_WidgetControlMode": {
     "name": "위젯 제어 모드",
     "options": {

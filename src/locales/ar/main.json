@@ -6432,15 +6432,20 @@
     "undo": "تراجع"
   },
   "widgets": {
+    "allFolders": "كل المجلدات",
     "backFromFolder": "رجوع: {name}",
     "boolean": {
       "false": "خطأ",
       "true": "صحيح"
     },
+    "browseToLockFolder": "افتح مجلدًا لقفله",
+    "folderLocked": "مقفل على المجلد: {name}",
+    "lockFolder": "قفل المجلد: {name}",
     "node2only": "فقط Node 2.0",
     "precisionLimit": "الزيادة/الإنقاص معطّلان: تتجاوز القيمة حد دقة JavaScript (±2^53)",
     "selectFolder": "المجلد: {name}",
     "selectModel": "اختر نموذج",
+    "unlockFolder": "إلغاء قفل المجلد: {name}",
     "uploadSelect": {
       "maxSelectionReached": "تم الوصول إلى الحد الأقصى للاختيار",
       "placeholder": "اختر...",
@@ -6450,6 +6455,9 @@
       "placeholderModel": "اختر نموذج...",
       "placeholderUnknown": "اختر وسائط...",
       "placeholderVideo": "اختر فيديو...",
+      "resizeHint": "اسحب لتغيير الحجم، وانقر نقرًا مزدوجًا لإعادة التعيين",
+      "resizeLeftCorner": "تغيير الحجم من الزاوية اليسرى",
+      "resizeRightCorner": "تغيير الحجم من الزاوية اليمنى",
       "thumbnailSize": "حجم الصورة المصغرة",
       "thumbnailSizes": {
         "compact": "مضغوط",
