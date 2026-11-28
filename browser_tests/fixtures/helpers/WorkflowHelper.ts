@@ -196,6 +196,14 @@ export class WorkflowHelper {
     })
   }
 
+  async getChangeCount(): Promise<number | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow
+      return workflow?.changeTracker.changeCount
+    })
+  }
+
   async getRedoQueueSize(): Promise<number | undefined> {
     return this.comfyPage.page.evaluate(() => {
       const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
@@ -284,7 +292,10 @@ export class WorkflowHelper {
   }
 
   async switchToTab(tabName: string): Promise<void> {
-    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    const { topbar } = this.comfyPage.menu
+    const tab = topbar.getWorkflowTab(tabName)
+    await tab.click()
+    await expect(tab.and(topbar.getActiveTab())).toBeVisible()
     await this.waitForWorkflowIdle()
   }
 
