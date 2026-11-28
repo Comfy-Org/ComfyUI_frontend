@@ -8,7 +8,7 @@ import type {
 } from '@comfyorg/design-system/lib/color-picker/types'
 import {
   hexToHsva,
-  hsbToRgb,
+  hexToRgb,
   hsvaToHex,
   rgbToHex
 } from '@comfyorg/shared-frontend-utils/colorUtil'
@@ -48,30 +48,37 @@ function readHsva(hex: string): HSVA {
 }
 
 const hsva = ref<HSVA>(readHsva(modelValue.value))
+const exactHex = ref(modelValue.value)
 const displayMode = ref<'hex' | 'rgba'>('hex')
+let isReadingModel = false
 
 watch(modelValue, (newVal) => {
+  exactHex.value = newVal
   const current = hsvaToHex(hsva.value)
   if (newVal !== current) {
-    hsva.value = readHsva(newVal)
+    isReadingModel = true
+    try {
+      hsva.value = readHsva(newVal)
+    } finally {
+      isReadingModel = false
+    }
   }
 })
 
 watch(
   hsva,
   (newHsva) => {
+    if (isReadingModel) return
     const hex = hsvaToHex(newHsva)
-    if (hsvaToHex(readHsva(modelValue.value)) === hex) return
+    exactHex.value = hex
     if (hex !== modelValue.value) {
       modelValue.value = hex
     }
   },
-  { deep: true }
+  { deep: true, flush: 'sync' }
 )
 
-const baseRgb = computed(() =>
-  hsbToRgb({ h: hsva.value.h, s: hsva.value.s, b: hsva.value.v })
-)
+const baseRgb = computed(() => hexToRgb(exactHex.value))
 
 const previewColor = computed(() => {
   const hex = rgbToHex(baseRgb.value)

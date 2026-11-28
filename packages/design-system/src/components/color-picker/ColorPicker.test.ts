@@ -24,6 +24,32 @@ describe('ColorPicker', () => {
     await rerender({ modelValue: '#f3ebdd' })
 
     expect(emitted('update:modelValue')).toBeUndefined()
+    expect(screen.getByRole('button')).toHaveAccessibleName('#f3ebdd 100%')
+  })
+
+  it('publishes an explicit opacity edit that rounds to the displayed value', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(ColorPicker, {
+      props: {
+        modelValue: '#00000001',
+        hexLabel: 'Hex',
+        rgbaLabel: 'RGBA',
+        hueLabel: 'Hue',
+        alphaLabel: 'Alpha',
+        redLabel: 'Red',
+        greenLabel: 'Green',
+        blueLabel: 'Blue',
+        saturationBrightnessLabel: 'Saturation and brightness',
+        formatLabel: 'Format'
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: '#000000 0%' }))
+    const alpha = screen.getByRole('spinbutton', { name: 'Alpha' })
+    await user.clear(alpha)
+    await user.type(alpha, '0')
+
+    expect(emitted('update:modelValue')).toContainEqual(['#00000000'])
   })
 
   it('labels the trigger and panel controls with caller text', async () => {
