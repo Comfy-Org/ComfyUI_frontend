@@ -169,6 +169,10 @@ describe('WidgetLegacy canvas sizing', () => {
 
 describe('WidgetLegacy canvas width', () => {
   it('uses the untransformed layout width when the canvas is zoomed', async () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
     const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
@@ -203,6 +207,41 @@ describe('WidgetLegacy canvas width', () => {
 
     expect(widget.width).toBe(layoutWidth)
     expect(canvases.at(-1)?.width).toBe(layoutWidth * 2)
+  })
+})
+
+describe('WidgetLegacy in the properties panel beside the LiteGraph canvas', () => {
+  it('draws at the panel row width without changing the geometry the canvas draws the node with', async () => {
+    const graph = app.rootGraph
+    const node = new LGraphNode('Legacy')
+    node.size = [210, 120]
+    const widget = node.addWidget('text', 'loras', '', () => {})
+    graph.add(node)
+    widget.y = 40
+    widget.last_y = 40
+    const drawnWidths: number[] = []
+    widget.draw = (_ctx, _node, width) => {
+      drawnWidths.push(width)
+    }
+    useCanvasStore().canvas = fromPartial({ graph })
+    await nextTick()
+
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(318)
+    stubCanvasGetContext()
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'loras', type: 'text', value: undefined }
+      }
+    })
+
+    expect(drawnWidths.at(-1)).toBe(318)
+    expect({
+      width: widget.width,
+      y: widget.y,
+      lastY: widget.last_y,
+      canvasHeight: node.canvasHeight
+    }).toEqual({ width: undefined, y: 40, lastY: 40, canvasHeight: undefined })
   })
 })
 
