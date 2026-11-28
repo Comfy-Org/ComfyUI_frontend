@@ -752,6 +752,14 @@ describe('Server copy of a workflow', () => {
     bindings.unbind(portrait.path)
 
     listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'wf-portrait-2', name: 'Portrait' }], false)
+    )
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('incomplete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.cloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.cloudIdAmbiguous(portrait)).toBe(true)
+
+    listCloudWorkflows.mockResolvedValueOnce(
       listing([{ id: 'wf-portrait-2', name: 'Portrait' }])
     )
     expect(await resolver.refreshCloudWorkflowListing()).toBe('complete')

@@ -90,11 +90,14 @@ export function useAgentWorkflowResolver({
         const nameCounts = new Map<string, number>()
         for (const { name } of nextIndex)
           nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
-        ambiguousCloudNames.value = new Set(
+        const nextAmbiguousNames = new Set(
           Array.from(nameCounts.entries()).flatMap(([name, count]) =>
             count > 1 ? [name] : []
           )
         )
+        ambiguousCloudNames.value = complete
+          ? nextAmbiguousNames
+          : new Set([...ambiguousCloudNames.value, ...nextAmbiguousNames])
         cloudIndex.value = nextIndex
         return complete ? 'complete' : 'incomplete'
       } catch (error) {
