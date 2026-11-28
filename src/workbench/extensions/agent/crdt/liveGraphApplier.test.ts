@@ -175,7 +175,6 @@ class TestGrowingWidgets extends LGraphNode {
   }
 }
 
-/** Rebuilds a dependent widget when its prompt-only controller changes. */
 class TestPromptOnlyGrowingWidgets extends LGraphNode {
   constructor() {
     super('Test Prompt-only Growing Widgets')
