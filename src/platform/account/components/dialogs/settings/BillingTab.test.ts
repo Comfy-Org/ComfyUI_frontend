@@ -691,7 +691,10 @@ describe('BillingTab', () => {
     arrange({ planKind: 'sales_managed', canOpenPlans: false })
 
     const link = screen.getByRole('link', { name: 'Contact sales' })
-    expect(link).toHaveAttribute('href', 'https://comfy.org/contact/')
+    expect(link).toHaveAttribute(
+      'href',
+      'https://comfy.org/contact/?utm_source=comfyui_local&utm_medium=product&utm_campaign=billing_plan_row'
+    )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener')
     expect(link).toHaveClass('no-underline')
@@ -748,7 +751,10 @@ describe('BillingTab', () => {
       )
       expect(
         screen.getByRole('link', { name: 'Contact sales' })
-      ).toHaveAttribute('href', 'https://comfy.org/contact/')
+      ).toHaveAttribute(
+        'href',
+        'https://comfy.org/contact/?utm_source=comfyui_local&utm_medium=product&utm_campaign=billing_plan_row'
+      )
     }
   )
 

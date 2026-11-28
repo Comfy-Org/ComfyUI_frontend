@@ -588,8 +588,12 @@ const canDowngradeToPersonal = computed(() => {
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
 /** The Wan 2.2 i2v template the video estimates are based on. */
-const VIDEO_TEMPLATE_URL =
-  'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
+const VIDEO_TEMPLATE_URL = isCloud
+  ? 'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
+  : productLink(
+      'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v',
+      'pricing_table'
+    )
 
 const authStore = useAuthStore()
 const questionsUrl = computed(() =>

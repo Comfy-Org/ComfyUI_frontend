@@ -65,10 +65,18 @@ const requireUtm: Rule.RuleModule = {
     const call = (node: Rule.Node) => {
       if (!isProductLinkCall(node)) return
       const campaign = node.arguments.at(1)
+      const text =
+        campaign?.type === 'Literal' && typeof campaign.value === 'string'
+          ? campaign.value
+          : campaign?.type === 'TemplateLiteral' &&
+              campaign.expressions.length === 0
+            ? campaign.quasis[0]?.value.cooked
+            : undefined
       if (
-        campaign?.type === 'Literal' &&
-        typeof campaign.value === 'string' &&
-        !SNAKE_CASE.test(campaign.value)
+        campaign &&
+        text !== undefined &&
+        text !== null &&
+        !SNAKE_CASE.test(text)
       )
         context.report({ node: campaign, messageId: 'campaign' })
     }

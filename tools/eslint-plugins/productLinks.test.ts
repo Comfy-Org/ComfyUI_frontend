@@ -80,6 +80,13 @@ ruleTester.run('require-utm', productLinks.rules['require-utm'], {
         "const url = productLink('https://docs.comfy.org/a', 'Help-Center')"
       ),
       errors: [{ messageId: 'campaign' }]
+    },
+    {
+      ...vue(
+        '',
+        'const url = productLink(`https://docs.comfy.org/a`, `Help-Center`)'
+      ),
+      errors: [{ messageId: 'campaign' }]
     }
   ]
 })

@@ -206,6 +206,7 @@ import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { isCloud } from '@/platform/distribution/types'
+import { productLink } from '@/platform/links/productLink'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -394,7 +395,7 @@ const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 
 const CONTACT_SALES_BUTTON = {
   as: 'a',
-  href: CONTACT_SALES_URL,
+  href: productLink(CONTACT_SALES_URL, 'billing_plan_row'),
   target: '_blank',
   rel: 'noopener'
 } as const
