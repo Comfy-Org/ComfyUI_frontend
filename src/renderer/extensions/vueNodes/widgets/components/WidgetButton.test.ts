@@ -105,10 +105,9 @@ describe('WidgetButton Interactions', () => {
       const widget = createButtonWidget({
         options: { iconClass: 'pi pi-star' }
       })
-      const { container } = mountComponent(widget)
+      mountComponent(widget)
 
-      // oxlint-disable-next-line testing-library/no-node-access
-      expect(container.querySelector('i.pi.pi-star')).not.toBeNull()
+      expect(screen.getByTestId('widget-button-icon')).toHaveClass('pi', 'pi-star')
     })
 
     it('handles button with both label and iconClass', () => {
@@ -116,11 +115,10 @@ describe('WidgetButton Interactions', () => {
         label: 'Save',
         options: { iconClass: 'pi pi-save' }
       })
-      const { container } = mountComponent(widget)
+      mountComponent(widget)
 
       expect(screen.getByRole('button')).toHaveTextContent('Save')
-      // oxlint-disable-next-line testing-library/no-node-access
-      expect(container.querySelector('i.pi.pi-save')).not.toBeNull()
+      expect(screen.getByTestId('widget-button-icon')).toHaveClass('pi', 'pi-save')
     })
 
     it.for([

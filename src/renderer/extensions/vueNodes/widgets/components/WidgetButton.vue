@@ -8,7 +8,7 @@
     @click="handleClick"
   >
     {{ widget.label ?? widget.name }}
-    <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
+    <i v-if="widget.options?.iconClass" data-testid="widget-button-icon" :class="widget.options.iconClass" />
   </Button>
 </template>
 
