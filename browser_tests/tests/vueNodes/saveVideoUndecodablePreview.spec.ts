@@ -20,6 +20,7 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 const WIDE = 'video-preview-wide.webm'
 const PORTRAIT = 'video-preview-portrait.webm'
 const PRORES = 'save-video-prores.mov'
+const PRORES_AUDIO = 'save-video-prores-audio.mov'
 const SLOW = 'slow.webm'
 const CANT_PLAY = "This video can't be played in the browser."
 
@@ -33,6 +34,10 @@ test.describe('Save Video preview', () => {
       },
       [PRORES]: {
         path: assetPath(`video/${PRORES}`),
+        contentType: 'video/quicktime'
+      },
+      [PRORES_AUDIO]: {
+        path: assetPath(`video/${PRORES_AUDIO}`),
         contentType: 'video/quicktime'
       }
     })
@@ -90,6 +95,24 @@ test.describe('Save Video preview', () => {
       page.locator('.comfy-img-preview').getByText(CANT_PLAY)
     ).toBeVisible()
   })
+
+  test(
+    'Vue nodes renderer says a video whose audio plays but picture cannot be played',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const nodeId = await addSaveVideo(comfyPage)
+      const node = comfyPage.vueNodes.getNodeLocator(nodeId)
+
+      execution.executed('', nodeId, output(WIDE))
+      await expect(node.getByText(/^\d+ x \d+$/)).toBeVisible()
+
+      execution.executed('', nodeId, output(PRORES_AUDIO))
+      await expect(node.getByText(CANT_PLAY)).toBeVisible()
+      await expect(node.getByText(PRORES_AUDIO)).toBeVisible()
+      await expect(node.getByTestId('main-video')).toBeHidden()
+    }
+  )
 
   test(
     'Vue nodes renderer names the output the browser cannot play',

@@ -136,6 +136,7 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile } from '@/base/common/downloadUtil'
 import {
   MEDIA_LOAD_TIMEOUT,
+  noPictureError,
   videoFailureMessageKey
 } from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
@@ -207,7 +208,8 @@ const handleVideoLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLVideoElement)) return
   const video = event.target
   showLoader.value = false
-  videoError.value = false
+  errorCode.value = noPictureError(video)
+  videoError.value = errorCode.value !== undefined
   if (video.videoWidth && video.videoHeight) {
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
   }
