@@ -122,6 +122,136 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       })
     })
 
+    test.describe('with room to grow the image picker', () => {
+      test.use({ viewport: { width: 1280, height: 1000 } })
+
+      test('resizes the image picker from its free corner', async ({
+        comfyPage
+      }) => {
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+        await expect(dropdown.menu).toBeVisible()
+        await expect(
+          dropdown.popover,
+          'Picker opens below the trigger, so dragging down grows it'
+        ).toHaveAttribute('data-side', 'bottom')
+        const box = async () => (await dropdown.popover.boundingBox())!
+        const before = await box()
+
+        await test.step('dragging the left corner past the viewport edge grows only down', async () => {
+          await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+            x: -120,
+            y: 80
+          })
+          await expect
+            .poll(async () => (await box()).height)
+            .toBeCloseTo(before.height + 80, 0)
+          expect((await box()).width).toBeCloseTo(before.width, 0)
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+          await expect(dropdown.menu).toBeVisible()
+        })
+
+        await test.step('dragging the right corner grows the panel right', async () => {
+          const dragged = await box()
+          await dropdown.dragResizeCorner(dropdown.rightResizeCorner, {
+            x: 60,
+            y: 0
+          })
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(dragged.width + 60, 0)
+          expect((await box()).x).toBeCloseTo(dragged.x, 0)
+        })
+
+        await test.step('arrow keys resize from a corner', async () => {
+          const resized = await box()
+          await dropdown.leftResizeCorner.focus()
+          await comfyPage.page.keyboard.press('ArrowRight')
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(resized.width - 16, 0)
+        })
+
+        await test.step('dragging past the viewport stops at its edge', async () => {
+          await dropdown.dragResizeCorner(dropdown.rightResizeCorner, {
+            x: 2000,
+            y: 2000
+          })
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+          await expect(dropdown.popover).toHaveAttribute('data-side', 'bottom')
+        })
+
+        await test.step('the other corner then shrinks the panel in place', async () => {
+          const stretched = await box()
+          await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+            x: 100,
+            y: 0
+          })
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(stretched.width - 100, 0)
+          const shrunk = await box()
+          expect(shrunk.x + shrunk.width).toBeCloseTo(
+            stretched.x + stretched.width,
+            0
+          )
+        })
+
+        await test.step('double-clicking a corner restores the default size', async () => {
+          await dropdown.rightResizeCorner.dblclick()
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(before.width, 0)
+          await expect
+            .poll(async () => (await box()).height)
+            .toBeCloseTo(before.height, 0)
+        })
+      })
+
+      test('keeps the image picker above its trigger while it shrinks, then flips it when panned', async ({
+        comfyPage
+      }) => {
+        await comfyPage.canvasOps.pan({ x: 300, y: 450 }, { x: 700, y: 300 })
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+        await expect(
+          dropdown.popover,
+          'Picker near the bottom of the viewport opens above the trigger'
+        ).toHaveAttribute('data-side', 'top')
+        const opened = (await dropdown.popover.boundingBox())!
+        const shrunkHeight = 340
+
+        await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+          x: 0,
+          y: opened.height - shrunkHeight
+        })
+
+        await expect
+          .poll(async () => (await dropdown.popover.boundingBox())!.height)
+          .toBeCloseTo(shrunkHeight, 0)
+        await expect(dropdown.popover).toHaveAttribute('data-side', 'top')
+        const shrunk = (await dropdown.popover.boundingBox())!
+        expect(shrunk.y + shrunk.height).toBeCloseTo(
+          opened.y + opened.height,
+          0
+        )
+
+        await test.step('panning the trigger up flips the picker below it', async () => {
+          await comfyPage.canvasOps.pan({ x: 0, y: -400 }, { x: 900, y: 700 })
+          await expect(dropdown.popover).toHaveAttribute('data-side', 'bottom')
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+        })
+      })
+    })
+
     test('keeps a selected image loaded when it is selected again', async ({
       comfyPage
     }) => {
