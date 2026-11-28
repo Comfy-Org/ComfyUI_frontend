@@ -1,0 +1,85 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "CreateBoundingBoxes",
+      "pos": [50, 50],
+      "size": [420, 560],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "background",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "bboxes",
+          "shape": 7,
+          "type": "BOUNDING_BOX,ARRAY,STRING",
+          "link": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": { "name": "width" },
+          "link": null
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": { "name": "height" },
+          "link": null
+        },
+        {
+          "name": "editor_state",
+          "type": "BOUNDING_BOXES",
+          "widget": { "name": "editor_state" },
+          "link": null
+        },
+        {
+          "name": "last_incoming",
+          "shape": 7,
+          "type": "BOUNDING_BOXES",
+          "widget": { "name": "last_incoming" },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "preview",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "bboxes",
+          "type": "BOUNDING_BOX",
+          "links": null
+        },
+        {
+          "name": "elements",
+          "type": "ARRAY",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CreateBoundingBoxes"
+      },
+      "widgets_values": [1024, 1024, [], []]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    }
+  },
+  "version": 0.4
+}
