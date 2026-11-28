@@ -4,7 +4,7 @@ import { useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { growsRight, resizePanel, roomInViewport } from './resizePanel'
-import type { PanelSize, ResizeHandle } from './resizePanel'
+import type { PanelSide, PanelSize, ResizeHandle } from './resizePanel'
 
 const KEYBOARD_STEP = 16
 const KEYBOARD_MOVES: Record<string, { x: number; y: number }> = {
@@ -36,6 +36,7 @@ const { handle, anchor } = defineProps<{
 const cornerLabel = CORNER_LABELS[handle]
 const size = defineModel<PanelSize>('size')
 const alignOffset = defineModel<number>('alignOffset', { default: 0 })
+const side = defineModel<PanelSide>('side')
 const handleRef = useTemplateRef<HTMLElement>('handleRef')
 
 type PanelMeasure = {
@@ -81,10 +82,15 @@ function resizeFrom(panel: PanelMeasure, pointer: { x: number; y: number }) {
     : panel.startOffset
 }
 
+function pinSide(panel: PanelMeasure) {
+  side.value = panel.growsUp ? 'top' : 'bottom'
+}
+
 function onPointerDown(event: PointerEvent) {
   if (drag) return
   const panel = measurePanel()
   if (!panel) return
+  pinSide(panel)
   handleRef.value?.setPointerCapture(event.pointerId)
   drag = {
     pointerId: event.pointerId,
@@ -111,12 +117,14 @@ function onKeydown(event: KeyboardEvent) {
   const panel = measurePanel()
   if (!move || !panel) return
   event.preventDefault()
+  pinSide(panel)
   resizeFrom(panel, move)
 }
 
 function resetSize() {
   size.value = undefined
   alignOffset.value = 0
+  side.value = undefined
 }
 </script>
 

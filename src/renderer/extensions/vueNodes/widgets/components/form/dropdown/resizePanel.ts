@@ -2,6 +2,9 @@ import { clamp } from 'es-toolkit'
 
 export type PanelSize = { width: number; height: number }
 
+/** The side of its trigger a resized panel stays on. */
+export type PanelSide = 'top' | 'bottom'
+
 /** A grip on the popover: the two free corners, the left edge, or the free horizontal edge. */
 export type ResizeHandle =
   | 'left-corner'

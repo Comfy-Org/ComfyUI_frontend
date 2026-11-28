@@ -4,7 +4,8 @@ import {
   computedAsync,
   refDebounced,
   unrefElement,
-  useEventListener
+  useEventListener,
+  whenever
 } from '@vueuse/core'
 import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
@@ -29,7 +30,7 @@ import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import FormDropdownResizeHandle from './FormDropdownResizeHandle.vue'
 import { atLeastMinimumSize } from './resizePanel'
-import type { PanelSize, ResizeHandle } from './resizePanel'
+import type { PanelSide, PanelSize, ResizeHandle } from './resizePanel'
 import {
   DROPDOWN_PANEL_CLASS,
   defaultSearcher,
@@ -149,6 +150,13 @@ const RESIZE_HANDLES: ResizeHandle[] = [
   'right-corner'
 ]
 const alignOffset = ref(0)
+const panelSide = ref<PanelSide>()
+whenever(
+  () => !isOpen.value,
+  () => {
+    panelSide.value = undefined
+  }
+)
 const displayedSearchQuery = ref('')
 const isFiltering = ref(false)
 
@@ -412,6 +420,8 @@ const dropdownItems = computed(() =>
     <PopoverContent
       align="end"
       :align-offset
+      :side="panelSide"
+      :side-flip="!panelSide"
       update-position-strategy="always"
       :side-offset="12"
       hide-when-detached
@@ -459,6 +469,7 @@ const dropdownItems = computed(() =>
         :key="handle"
         v-model:size="panelSize"
         v-model:align-offset="alignOffset"
+        v-model:side="panelSide"
         :handle
         :anchor="triggerRef?.anchor"
       />

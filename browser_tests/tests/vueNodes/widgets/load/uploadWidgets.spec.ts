@@ -211,6 +211,39 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
             .toBeCloseTo(before.height, 0)
         })
       })
+
+      test('keeps the image picker above its trigger while it shrinks', async ({
+        comfyPage
+      }) => {
+        await comfyPage.canvasOps.pan({ x: 300, y: 450 }, { x: 700, y: 300 })
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+        await expect(
+          dropdown.popover,
+          'Picker near the bottom of the viewport opens above the trigger'
+        ).toHaveAttribute('data-side', 'top')
+        const opened = (await dropdown.popover.boundingBox())!
+        const shrunkHeight = 340
+
+        await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+          x: 0,
+          y: opened.height - shrunkHeight
+        })
+
+        await expect
+          .poll(async () => (await dropdown.popover.boundingBox())!.height)
+          .toBeCloseTo(shrunkHeight, 0)
+        await expect(dropdown.popover).toHaveAttribute('data-side', 'top')
+        const shrunk = (await dropdown.popover.boundingBox())!
+        expect(shrunk.y + shrunk.height).toBeCloseTo(
+          opened.y + opened.height,
+          0
+        )
+      })
     })
 
     test('keeps a selected image loaded when it is selected again', async ({
