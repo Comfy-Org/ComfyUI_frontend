@@ -30,6 +30,7 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -3564,6 +3565,25 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       returnTo: '/user-select'
     })
     expect(landings).toEqual([])
+  })
+
+  it('does not redirect when the re-entry attempt cannot be recorded', async ({
+    router
+  }) => {
+    rememberSignedInSession({
+      id: 'user-a',
+      email: 'ada@acme.com',
+      emailVerified: true,
+      signInProvider: 'saml.workos'
+    })
+    vi.spyOn(safeSessionStorage, 'setItem').mockReturnValue('failed')
+
+    await loadPage(router, 'none')
+    await expect(visit(router, '/user-select')).resolves.toMatchObject({
+      landed: '/cloud/login'
+    })
+
+    expect(assign).not.toHaveBeenCalled()
   })
 
   it('with sso_enabled off sends that tab to the plain login page', async ({
