@@ -278,6 +278,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
+import { themePx } from '@comfyorg/theme-core/themePresetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -403,11 +404,12 @@ const showErrorsTabEnabled = computed(() =>
 )
 
 const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
-const nodeGeometry = computed(() => themeStore.activeTheme.nodeGeometry)
+const themeTokens = computed(() => themeStore.activeTheme.cssTokens)
 const bodyTop = computed(
   () =>
-    (displayHeader.value ? nodeGeometry.value.headerHeight : 0) -
-    LiteGraph.NODE_TITLE_HEIGHT
+    (displayHeader.value
+      ? themePx(themeTokens.value, 'node-header-height')
+      : 0) - LiteGraph.NODE_TITLE_HEIGHT
 )
 
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
@@ -1010,7 +1012,7 @@ const bodyLayout = computed<VueNodeBodyLayout | undefined>((previous) => {
     bodyWidth.value,
     bodyHeight.value,
     items,
-    nodeGeometry.value
+    themeTokens.value
   )
   return previous && isEqual(previous, next) ? previous : next
 })

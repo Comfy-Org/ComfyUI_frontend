@@ -4,7 +4,6 @@ import {
   DEFAULT_DARK_THEME_PRESET,
   DEFAULT_LIGHT_THEME_PRESET
 } from './builtInThemePresets'
-import { nodeGeometryOf } from './nodeGeometry'
 import type {
   Colors,
   CompletedThemePreset,
@@ -116,7 +115,6 @@ export function resolveTheme(preset: ThemePreset) {
     stylesheet: resolveStylesheet(preset),
     preset: completedPreset,
     cssTokens,
-    nodeGeometry: nodeGeometryOf(cssTokens),
     legacyCss: completedPreset.colors.comfy_base,
     controls: {
       inputTextColor: completedPreset.colors.comfy_base['input-text']

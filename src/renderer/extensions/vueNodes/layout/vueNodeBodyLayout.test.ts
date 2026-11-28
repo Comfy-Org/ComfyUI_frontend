@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeGeometry } from '@comfyorg/theme-core/nodeGeometry'
+import type { ThemeTokens } from '@comfyorg/theme-core/themePresetSchema'
 
 import { layoutVueNodeBody } from './vueNodeBodyLayout'
 import type { BodyItem } from './vueNodeBodyLayout'
 
-const DEFAULT_GEOMETRY: NodeGeometry = {
-  headerHeight: 28,
-  slotInset: 0,
-  slotBlockMarginBottom: 0,
-  socketRowOverlap: 2
+const DEFAULT_TOKENS: ThemeTokens = {
+  'node-slot-inset': '0px',
+  'node-slot-block-margin-bottom': '0px',
+  'node-socket-row-overlap': '2px'
 }
 
 const GROWABLE_40 = {
@@ -38,7 +37,7 @@ describe('layoutVueNodeBody', () => {
         { kind: 'socket', key: 's', input: 1 },
         { kind: 'control', key: 'c', growable: false }
       ],
-      DEFAULT_GEOMETRY
+      DEFAULT_TOKENS
     )
 
     expect(layout.rows.get('s')).toEqual({ y: 28, height: 20 })
@@ -64,10 +63,9 @@ describe('layoutVueNodeBody', () => {
         { kind: 'control', key: 'c', growable: false }
       ],
       {
-        headerHeight: 30,
-        slotInset: 10,
-        slotBlockMarginBottom: -2,
-        socketRowOverlap: 0
+        'node-slot-inset': '10px',
+        'node-slot-block-margin-bottom': '-2px',
+        'node-socket-row-overlap': '0px'
       }
     )
 
@@ -105,7 +103,7 @@ describe('layoutVueNodeBody', () => {
       slack: 94
     }
   ])('$name', ({ row, height, minBodyHeight, slack }) => {
-    const layout = layoutVueNodeBody(200, 200, [row], DEFAULT_GEOMETRY)
+    const layout = layoutVueNodeBody(200, 200, [row], DEFAULT_TOKENS)
 
     expect(layout.rows.get('g')).toEqual({ y: 4, height })
     expect(layout.minBodyHeight).toBe(minBodyHeight)
@@ -120,7 +118,7 @@ describe('layoutVueNodeBody', () => {
         { kind: 'slots', inputs: [], outputs: [] },
         { kind: 'control', key: 'c', input: 0, growable: false }
       ],
-      DEFAULT_GEOMETRY
+      DEFAULT_TOKENS
     )
 
     expect(layout.inputs).toEqual(new Map([[0, { x: 0, y: 20 }]]))
@@ -132,7 +130,7 @@ describe('layoutVueNodeBody', () => {
       200,
       200,
       [growable(), { kind: 'media', key: 'm' }],
-      DEFAULT_GEOMETRY
+      DEFAULT_TOKENS
     )
 
     expect(layout.rows.get('g')).toEqual({ y: 4, height: 110 })

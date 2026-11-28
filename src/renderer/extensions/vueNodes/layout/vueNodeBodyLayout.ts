@@ -1,6 +1,7 @@
 import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { WidgetSizing } from '@comfyorg/graph-model/widgets'
-import type { NodeGeometry } from '@comfyorg/theme-core/nodeGeometry'
+import type { ThemeTokens } from '@comfyorg/theme-core/themePresetSchema'
+import { themePx } from '@comfyorg/theme-core/themePresetSchema'
 
 import { layoutNodeBody } from '@/lib/litegraph/src/utils/nodeBodyLayout'
 import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
@@ -112,19 +113,21 @@ function isWidgetRow(item: BodyItem | undefined): item is WidgetRow {
 function overlap(
   item: BodyItem,
   neighbour: BodyItem | undefined,
-  geometry: NodeGeometry
+  tokens: ThemeTokens
 ) {
   return item.kind === 'socket' && isWidgetRow(neighbour)
-    ? geometry.socketRowOverlap
+    ? themePx(tokens, 'node-socket-row-overlap')
     : 0
 }
 
-function gapBetween(above: BodyItem, below: BodyItem, geometry: NodeGeometry) {
+function gapBetween(above: BodyItem, below: BodyItem, tokens: ThemeTokens) {
   return (
     VUE_NODE_BODY.gap +
-    (above.kind === 'slots' ? geometry.slotBlockMarginBottom : 0) -
-    overlap(above, below, geometry) -
-    overlap(below, above, geometry)
+    (above.kind === 'slots'
+      ? themePx(tokens, 'node-slot-block-margin-bottom')
+      : 0) -
+    overlap(above, below, tokens) -
+    overlap(below, above, tokens)
   )
 }
 
@@ -132,8 +135,9 @@ function anchorsOf(
   item: BodyItem,
   row: PlacedBodyRow,
   width: number,
-  { slotInset }: NodeGeometry
+  tokens: ThemeTokens
 ) {
+  const slotInset = themePx(tokens, 'node-slot-inset')
   const inputs: [number, Point2D][] = []
   const outputs: [number, Point2D][] = []
   if (item.kind === 'slots') {
@@ -151,19 +155,19 @@ function anchorsOf(
   return { inputs, outputs }
 }
 
-/** Places a Vue node's body rows in a body `width` × `bodyHeight` and anchors every rendered slot, relative to the body's top-left corner, for the theme's node `geometry`. */
+/** Places a Vue node's body rows in a body `width` × `bodyHeight` and anchors every rendered slot, relative to the body's top-left corner, for the resolved theme `tokens`. */
 export function layoutVueNodeBody(
   width: number,
   bodyHeight: number,
   items: readonly BodyItem[],
-  geometry: NodeGeometry
+  tokens: ThemeTokens
 ): VueNodeBodyLayout {
   const sizings: WidgetSizing[] = []
   items.forEach((item, index) => {
     if (index > 0)
       sizings.push({
         kind: 'fixed',
-        height: gapBetween(items[index - 1], item, geometry)
+        height: gapBetween(items[index - 1], item, tokens)
       })
     sizings.push(itemSizing(item))
   })
@@ -185,7 +189,7 @@ export function layoutVueNodeBody(
     if (item.kind === 'media' && item.userHeight === undefined)
       mediaGrowth += row.height
     if (item.kind !== 'slots') rows.set(item.key, row)
-    const anchors = anchorsOf(item, row, width, geometry)
+    const anchors = anchorsOf(item, row, width, tokens)
     for (const [slot, point] of anchors.inputs) inputs.set(slot, point)
     for (const [slot, point] of anchors.outputs) outputs.set(slot, point)
   })

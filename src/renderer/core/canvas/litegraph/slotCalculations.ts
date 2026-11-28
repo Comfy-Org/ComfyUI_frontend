@@ -21,6 +21,7 @@ import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
+import { themePx } from '@comfyorg/theme-core/themePresetSchema'
 import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
 
@@ -198,8 +199,8 @@ function getVueSlotPosition(
   )
 }
 
-function nodeGeometry() {
-  return useThemeStore().activeTheme.nodeGeometry
+function headerHeight() {
+  return themePx(useThemeStore().activeTheme.cssTokens, 'node-header-height')
 }
 
 function getDerivedSlotAnchor(
@@ -210,7 +211,7 @@ function getDerivedSlotAnchor(
   if (node.flags.collapsed)
     return {
       x: isInput ? 0 : node.renderingSize[0],
-      y: nodeGeometry().headerHeight / 2 - litegraph().NODE_TITLE_HEIGHT
+      y: headerHeight() / 2 - litegraph().NODE_TITLE_HEIGHT
     }
   if (!node.graph) return undefined
   return layoutStore.derivedSlotAnchorOf(
@@ -302,8 +303,7 @@ function getVueSlotY(node: LGraphNode, slotIndex: number): number {
 }
 
 function getVueNodeContentY(node: LGraphNode, nodeY: number): number {
-  const header =
-    node.title_mode === TitleMode.NO_TITLE ? 0 : nodeGeometry().headerHeight
+  const header = node.title_mode === TitleMode.NO_TITLE ? 0 : headerHeight()
   return nodeY + header - litegraph().NODE_TITLE_HEIGHT
 }
 

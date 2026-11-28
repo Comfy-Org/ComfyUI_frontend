@@ -86,6 +86,18 @@ export const comfyBaseSchema = z.object({
   ['interface-button-hover-surface']: z.string().optional()
 })
 
+const pxLength = z.string().regex(/^-?\d+(\.\d+)?px$/)
+
+const pxThemeTokenSchemas = {
+  ['node-header-height']: pxLength,
+  ['node-slot-inset']: pxLength,
+  ['node-slot-block-margin-bottom']: pxLength,
+  ['node-socket-row-overlap']: pxLength
+}
+
+/** Theme tokens that layout code reads as numbers; each holds a px length. */
+export type PxThemeToken = keyof typeof pxThemeTokenSchemas
+
 /** Design-system theme variables a palette may override: the shadcn/tweakcn contract plus the node layer. */
 export const themeSchema = z
   .object({
@@ -108,10 +120,7 @@ export const themeSchema = z
     ['node-border']: z.string(),
     ['node-radius']: z.string(),
     ['node-title-font-size']: z.string(),
-    ['node-header-height']: z.string(),
-    ['node-slot-inset']: z.string(),
-    ['node-slot-block-margin-bottom']: z.string(),
-    ['node-socket-row-overlap']: z.string(),
+    ...pxThemeTokenSchemas,
     ['node-widget-height']: z.string(),
     ['node-widget-radius']: z.string(),
     ['node-widget-border-width']: z.string(),
@@ -152,6 +161,11 @@ const completedPresetSchema = themePresetSchema.extend({ colors: colorsSchema })
 
 export type Colors = z.infer<typeof colorsSchema>
 export type ThemeTokens = z.infer<typeof themeSchema>
+
+/** The px value of a resolved theme length token. */
+export function themePx(tokens: ThemeTokens, name: PxThemeToken): number {
+  return parseFloat(tokens[name] ?? '0')
+}
 export type ThemePreset = z.infer<typeof themePresetSchema>
 export type CompletedThemePreset = z.infer<typeof completedPresetSchema>
 export type ThemePresets = Record<string, ThemePreset>

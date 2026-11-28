@@ -6,6 +6,7 @@ import {
 } from './builtInThemePresets'
 import { resolveTheme } from './resolveTheme'
 import type { ThemePreset } from './themePresetSchema'
+import { themePx, themeSchema } from './themePresetSchema'
 
 describe('theme resolution', () => {
   it.for<{
@@ -142,24 +143,33 @@ describe('theme resolution', () => {
     {
       name: 'the default node geometry',
       preset: DEFAULT_DARK_THEME_PRESET,
-      geometry: {
-        headerHeight: 28,
-        slotInset: 0,
-        slotBlockMarginBottom: 0,
-        socketRowOverlap: 2
-      }
+      px: [28, 0, 0, 2]
     },
     {
       name: 'the node geometry Classic declares in its tokens',
       preset: BUILT_IN_THEME_PRESETS.classic,
-      geometry: {
-        headerHeight: 30,
-        slotInset: 10,
-        slotBlockMarginBottom: -2,
-        socketRowOverlap: 0
-      }
+      px: [30, 10, -2, 0]
     }
-  ])('resolves $name', ({ preset, geometry }) => {
-    expect(resolveTheme(preset).nodeGeometry).toEqual(geometry)
+  ])('resolves $name', ({ preset, px }) => {
+    const tokens = resolveTheme(preset).cssTokens
+    expect(
+      (
+        [
+          'node-header-height',
+          'node-slot-inset',
+          'node-slot-block-margin-bottom',
+          'node-socket-row-overlap'
+        ] as const
+      ).map((name) => themePx(tokens, name))
+    ).toEqual(px)
   })
+
+  it.for(['2rem', '30', 'calc(28px + 2px)'])(
+    'rejects %s as a node length token',
+    (value) => {
+      expect(
+        themeSchema.safeParse({ 'node-header-height': value }).success
+      ).toBe(false)
+    }
+  )
 })
