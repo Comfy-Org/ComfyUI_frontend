@@ -23,7 +23,15 @@ import {
 import * as Y from 'yjs'
 
 import { markDynamicGroupController } from '@/core/graph/widgets/dynamicGroupDiagnostics'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/nodeConstruction'
+import type { NodeConstructionCapability } from '@/lib/litegraph/src/nodeConstruction'
+import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
@@ -36,6 +44,7 @@ import type {
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useLitegraphService } from '@/services/litegraphService'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -1082,6 +1091,389 @@ describe('LiveGraphApplier', () => {
       expect.anything(),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
+  })
+
+  it('rebuilds a missing-node placeholder once its type becomes registered', () => {
+    const type = 'TestLateRegistration'
+    let positionWhenAdded: [number, number] | undefined
+    let sizeWhenAdded: number[] | undefined
+    const lifecycleVisibility: {
+      phase: 'added' | 'configured'
+      attached: boolean
+    }[] = []
+    class TestLateRegistration extends LGraphNode {
+      constructor() {
+        super('Late registration')
+        this.addInput('value', '*')
+      }
+
+      override onAdded(): void {
+        positionWhenAdded = [this.pos[0], this.pos[1]]
+        sizeWhenAdded = Array.from(this.size)
+        lifecycleVisibility.push({
+          phase: 'added',
+          attached: this.graph?.nodes.includes(this) ?? false
+        })
+      }
+
+      override onConfigure(): void {
+        lifecycleVisibility.push({
+          phase: 'configured',
+          attached: this.graph?.nodes.includes(this) ?? false
+        })
+      }
+    }
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type,
+          pos: [0, 0],
+          size: [210, 100],
+          inputs: [{ name: 'value', type: '*', link: null }]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('pos', [10, 20]))
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    assert.exists(placeholder)
+    placeholder.pos = [777, 888]
+    placeholder.size = [650, 450]
+
+    LiteGraph.registerNodeType(type, TestLateRegistration)
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(
+          Object.entries({
+            id: 1,
+            type,
+            pos: [20, 30],
+            size: [210, 100],
+            inputs: [{ name: 'value', type: '*', link: null }]
+          })
+        )
+      )
+    })
+    const resolved = graph.getNodeById(toNodeId(1))
+
+    expect(resolved).toBeInstanceOf(TestLateRegistration)
+    expect(resolved?.has_errors).toBeFalsy()
+    expect(positionWhenAdded).toEqual([777, 888])
+    expect(sizeWhenAdded).toEqual([650, 450])
+    expect(lifecycleVisibility).toEqual([
+      { phase: 'added', attached: true },
+      { phase: 'configured', attached: true }
+    ])
+    expect(Array.from(resolved!.pos)).toEqual([777, 888])
+    expect(Array.from(resolved!.size)).toEqual([650, 450])
+
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(
+          Object.entries({
+            id: 1,
+            type,
+            pos: [30, 40],
+            size: [210, 100],
+            inputs: [{ name: 'value', type: '*', link: null }]
+          })
+        )
+      )
+    })
+    expect(graph.getNodeById(toNodeId(1))).toBe(resolved)
+  })
+
+  it('keeps a placeholder when the replacement cannot be built', () => {
+    const type = '00000000-0000-4000-8000-00000000f00d'
+    const refusals: (GraphOrSubgraph | undefined)[] = []
+    class ForeignSubgraphNode extends LGraphNode {
+      static override [NODE_CREATION_GRAPH_FACTORY]: NodeConstructionCapability =
+        {
+          prepare: ({ graph, type }) => {
+            refusals.push(graph)
+            return {
+              kind: 'refused',
+              reason: 'missing-owned-definition',
+              type,
+              report: () => {}
+            }
+          },
+          definitionFor: (node) => node.constructor.nodeData
+        }
+    }
+    const docNode = (pos: [number, number]) => ({
+      id: 1,
+      type,
+      pos,
+      size: [210, 100]
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [docNode([0, 0])],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+    LiteGraph.registerNodeType(type, ForeignSubgraphNode)
+
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+      )
+    })
+
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    expect(refusals).toEqual([graph])
+  })
+
+  it('uses document layout when a placeholder changes to another type', () => {
+    const missingType = 'TestMissingBeforeTypeChange'
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [
+        {
+          id: 1,
+          type: missingType,
+          pos: [10, 20],
+          size: [210, 100]
+        }
+      ],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    assert.exists(placeholder)
+    placeholder.pos = [700, 800]
+    LiteGraph.registerNodeType(missingType, LGraphNode)
+
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(
+          Object.entries({
+            id: 1,
+            type: 'TestPlainWidgets',
+            pos: [30, 40],
+            size: [210, 100],
+            widgets_values: [7]
+          })
+        )
+      )
+    })
+
+    const replacement = graph.getNodeById(toNodeId(1))
+    expect(replacement).toBeInstanceOf(TestPlainWidgets)
+    expect(Array.from(replacement!.pos)).toEqual([30, 40])
+  })
+
+  it('recovers an aliased subgraph placeholder when its target arrives', () => {
+    const type = 'TestAliasedSubgraph'
+    const targetId = '00000000-0000-4000-8000-00000000a11a'
+    const fallbackRoot = new LGraph()
+    const fallbackTarget = createTestSubgraph({
+      rootGraph: fallbackRoot,
+      id: targetId
+    })
+    class AliasedSubgraphNode extends SubgraphNode {
+      constructor(_title?: string) {
+        super(fallbackRoot, fallbackTarget, {
+          id: -1,
+          type: targetId,
+          pos: [0, 0],
+          size: [210, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          mode: 0,
+          order: 0
+        })
+      }
+
+      static override [NODE_CREATION_GRAPH_FACTORY]: NodeConstructionCapability =
+        {
+          prepare: ({ registered, graph, type }) => {
+            const target = graph?.rootGraph.subgraphs.get(targetId)
+            if (!graph || !target) {
+              return {
+                kind: 'refused',
+                reason: 'missing-owned-definition',
+                type,
+                report: () => {}
+              }
+            }
+            return {
+              kind: 'ready',
+              construct: () =>
+                createTestSubgraphNode(target, { parentGraph: graph }),
+              isCurrent: () =>
+                LiteGraph.registered_node_types[type] === registered &&
+                graph.rootGraph.subgraphs.get(targetId) === target,
+              cancel: () => {}
+            }
+          },
+          definitionFor: (node) => node.constructor.nodeData
+        }
+    }
+    LiteGraph.registerNodeType(type, AliasedSubgraphNode)
+    const docNode = (pos: [number, number]) => ({
+      id: 1,
+      type,
+      pos,
+      size: [210, 100]
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [docNode([0, 0])],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+
+    const target = createTestSubgraph({ rootGraph: graph, id: targetId })
+    graph.subgraphs.set(target.id, target)
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+      )
+    })
+
+    const resolved = graph.getNodeById(toNodeId(1))
+    assert(resolved?.isSubgraphNode())
+    expect(resolved.type).toBe(type)
+    expect(resolved.subgraph).toBe(target)
+  })
+
+  it.for(['release', 'throw'] as const)(
+    'cancels an unattached replacement when placeholder removal %s exits',
+    (exit) => {
+      const type = crypto.randomUUID()
+      const docNode = (pos: [number, number]) => ({
+        id: 1,
+        type,
+        pos,
+        size: [210, 100]
+      })
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [docNode([0, 0])],
+        links: []
+      })
+      applyCollected()
+      const placeholder = graph.getNodeById(toNodeId(1))
+      assert.exists(placeholder)
+
+      const definitionData = createTestSubgraphData({ id: type })
+      const definition = graph.createSubgraph(definitionData)
+      useLitegraphService().registerSubgraphNodeDef(
+        {
+          input: { required: {} },
+          output: [],
+          output_is_list: [],
+          output_name: [],
+          name: type,
+          display_name: 'Recovery target',
+          description: 'Recovery target',
+          category: 'test',
+          output_node: false,
+          python_module: 'test'
+        },
+        definition,
+        {
+          id: -1,
+          type,
+          pos: [0, 0],
+          size: [210, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          order: 0,
+          mode: 0
+        }
+      )
+      const Generated = LiteGraph.registered_node_types[type]
+      assert.exists(Generated)
+      const candidates: SubgraphNode[] = []
+      class CapturingReplacement extends Generated {
+        constructor(title: string) {
+          super(title)
+          assert.instanceOf(this, SubgraphNode)
+          candidates.push(this)
+        }
+      }
+      LiteGraph.registerNodeType(type, CapturingReplacement)
+      const removalError = new Error('placeholder removal failed')
+      placeholder.onRemoved = () => {
+        if (exit === 'release') graph.releaseSubgraphs([definition])
+        else throw removalError
+      }
+
+      applyEdit(() => {
+        nodesMap(doc).set(
+          '1',
+          new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+        )
+      })
+
+      const candidate = candidates[0]
+      assert.exists(candidate)
+      definition.addOutput('afterFailure', 'MASK')
+      expect(candidate.outputs).toEqual([])
+      expect(graph.getNodeById(candidate.id)).not.toBe(candidate)
+    }
+  )
+
+  it('keeps a placeholder when the replacement constructor throws', () => {
+    const type = 'TestThrowingConstruction'
+    let constructionAttempts = 0
+    class TestThrowingConstruction extends LGraphNode {
+      constructor() {
+        super('Throwing construction')
+        constructionAttempts++
+        throw new Error('constructor failed')
+      }
+    }
+    const docNode = (pos: [number, number]) => ({
+      id: 1,
+      type,
+      pos,
+      size: [210, 100]
+    })
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [docNode([0, 0])],
+      links: []
+    })
+
+    applyCollected()
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+
+    LiteGraph.registerNodeType(type, TestThrowingConstruction)
+    LiteGraph.catch_exceptions = false
+    onTestFinished(() => {
+      LiteGraph.catch_exceptions = true
+    })
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '1',
+        new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+      )
+    })
+
+    applyEdit(() => nodesMap(doc).get('1')?.set('pos', [40, 50]))
+
+    expect(graph.getNodeById(toNodeId(1))).toBe(placeholder)
+    expect(constructionAttempts).toBe(1)
   })
 
   it('still reports a missing widget on a registered node flagged with errors', () => {

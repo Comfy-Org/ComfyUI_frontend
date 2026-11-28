@@ -7,28 +7,33 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
-/** Creates serialised nodes and links in `graph` at `position`; returns the created nodes in serialised order. */
+function topLeftPosition(
+  nodes: readonly { pos?: Readonly<Vector2> }[],
+  fallback: Readonly<Vector2>
+): Vector2 {
+  const topLeft: Vector2 = [Infinity, Infinity]
+  for (const { pos = fallback } of nodes) {
+    if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
+    if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
+  }
+  return Number.isFinite(topLeft[0]) && Number.isFinite(topLeft[1])
+    ? topLeft
+    : [fallback[0], fallback[1]]
+}
+
 export function deserialiseIntoGraph(
   data: string,
   graph: LGraph,
   position: Readonly<Vector2>
 ): LGraphNode[] {
   const deserialised = JSON.parse(data)
-
-  const topLeft = [Infinity, Infinity]
-  for (const { pos } of deserialised.nodes) {
-    if (topLeft[0] > pos[0]) topLeft[0] = pos[0]
-    if (topLeft[1] > pos[1]) topLeft[1] = pos[1]
-  }
-
-  if (!Number.isFinite(topLeft[0]) || !Number.isFinite(topLeft[1])) {
-    topLeft[0] = position[0]
-    topLeft[1] = position[1]
-  }
-
-  const nodes: LGraphNode[] = []
+  const nodesBySourceIndex: (LGraphNode | null)[] = []
+  const topLeft = topLeftPosition(deserialised.nodes, position)
   for (const info of deserialised.nodes) {
-    const node = LiteGraph.createNode(info.type)
+    const node = LiteGraph.createNode(info.type, undefined, {
+      targetGraph: graph
+    })
+    nodesBySourceIndex.push(node)
     if (!node) continue
 
     node.configure(info)
@@ -39,18 +44,21 @@ export function deserialiseIntoGraph(
     ]
 
     withNodeAddSource('paste', () => graph.add(node, true))
-    nodes.push(node)
   }
 
   for (const info of deserialised.links) {
     const relativeId = info[0]
-    const outNode = relativeId != null ? nodes[relativeId] : undefined
+    const outNode =
+      relativeId != null ? nodesBySourceIndex[relativeId] : undefined
 
-    const inNode = nodes[info[2]]
-    if (outNode) outNode.connect(info[1], inNode, info[3])
+    const inNode = nodesBySourceIndex[info[2]]
+    if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
     else console.warn('Warning, nodes missing on pasting')
   }
-  return nodes
+  const createdNodes = nodesBySourceIndex.filter(
+    (node): node is LGraphNode => node !== null
+  )
+  return createdNodes
 }
 
 /** Inserts legacy relative-index payloads, configuring nodes before graph attachment. */

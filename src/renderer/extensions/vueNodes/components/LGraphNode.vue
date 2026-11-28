@@ -57,7 +57,8 @@
     />
     <AppOutput
       v-if="
-        lgraphNode?.constructor?.nodeData?.output_node &&
+        lgraphNode &&
+        nodeDefinition(lgraphNode)?.output_node &&
         isSelectOutputsMode &&
         nodeData.mode === LGraphEventMode.ALWAYS &&
         !hasAnyError
@@ -275,6 +276,7 @@ import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'

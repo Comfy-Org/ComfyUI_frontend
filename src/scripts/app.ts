@@ -1612,9 +1612,7 @@ export class ComfyApp implements IComfyApp {
                 const replacement = nodeReplacementStore.getReplacementFor(
                   n.type
                 )
-                const cnrId = getCnrIdFromProperties(
-                  n.properties as Record<string, unknown> | undefined
-                )
+                const cnrId = getCnrIdFromProperties(n.properties)
                 const executionId = pathPrefix
                   ? `${pathPrefix}:${n.id}`
                   : String(n.id)
@@ -2844,7 +2842,9 @@ export class ComfyApp implements IComfyApp {
         for (const id of ids) {
           const data = apiData[id]
           const nodeId = localNodeIdsByApiId.get(id) ?? toNodeId(id)
-          let node = LiteGraph.createNode(data.class_type)
+          let node = LiteGraph.createNode(data.class_type, undefined, {
+            targetGraph: graph
+          })
           let placeholderEntry:
             | Extract<MissingNodeType, { type: string }>
             | undefined

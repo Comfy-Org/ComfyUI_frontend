@@ -18,6 +18,8 @@ import type {
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
+import { NODE_CREATION_GRAPH_FACTORY, nodeDefinition } from './nodeConstruction'
+import type { NodeConstructionCapability } from './nodeConstruction'
 import { toValue } from 'vue'
 
 import {
@@ -442,6 +444,7 @@ export class LGraphNode
   implements NodeLike, Positionable, IPinnable, IColorable
 {
   // Static properties used by dynamic child classes
+  static [NODE_CREATION_GRAPH_FACTORY]?: NodeConstructionCapability
   static title?: string
   static MAX_CONSOLE?: number
   static type?: string
@@ -1352,7 +1355,7 @@ export class LGraphNode
 
     const restoration = createWidgetRestorationState(
       info,
-      this.constructor.nodeData?.fallbackWidgetsValuesNames
+      nodeDefinition(this)?.fallbackWidgetsValuesNames
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
@@ -1505,7 +1508,9 @@ export class LGraphNode
   }
 
   clone(): LGraphNode | null {
-    const node = LiteGraph.createNode(this.type)
+    const node = LiteGraph.createNode(this.type, undefined, {
+      targetGraph: this.graph ?? undefined
+    })
     if (!node) return null
 
     // we clone it because serialize returns shared containers

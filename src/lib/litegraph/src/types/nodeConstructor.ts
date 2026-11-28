@@ -2,12 +2,17 @@ import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parse
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type {
+  NODE_CREATION_GRAPH_FACTORY,
+  NodeConstructionCapability
+} from '@/lib/litegraph/src/nodeConstruction'
 import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
 import type { RenderShape, TitleMode } from '@comfyorg/graph-model/globalEnums'
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   new (title: string, type?: string): T
 
+  [NODE_CREATION_GRAPH_FACTORY]?: NodeConstructionCapability
   title?: string
   desc?: string
   priority?: number

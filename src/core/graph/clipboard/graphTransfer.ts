@@ -175,7 +175,9 @@ export function insertItems(
       result.created.push(group)
     }
     for (const info of items.nodes) {
-      const node = LiteGraph.createNode(info.type)
+      const node = LiteGraph.createNode(info.type, undefined, {
+        targetGraph: graph
+      })
       if (!node) continue
 
       result.nodes.set(serializeNodeId(info.id), node)

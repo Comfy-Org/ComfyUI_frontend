@@ -25,7 +25,9 @@ export async function createNode(
     graph,
     graph_mouse: [posX, posY]
   } = canvas
-  const newNode = LiteGraph.createNode(name)
+  const newNode = LiteGraph.createNode(name, undefined, {
+    targetGraph: graph ?? undefined
+  })
   await new Promise((r) => setTimeout(r, 0))
 
   if (newNode && graph) {

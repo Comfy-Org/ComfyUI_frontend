@@ -12,6 +12,7 @@ import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelec
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { nodeDefinition } from '@/lib/litegraph/src/nodeConstruction'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -71,7 +72,7 @@ function getHovered(
 
   const widget = node.getWidgetOnPos(e.canvasX, e.canvasY, false)
 
-  if (widget || node.constructor.nodeData?.output_node) return [node, widget]
+  if (widget || nodeDefinition(node)?.output_node) return [node, widget]
 }
 
 function getNodeBounding(nodeId: NodeId) {
@@ -129,7 +130,7 @@ function handleClick(e: MouseEvent) {
 
   if (!widget) {
     if (!isSelectOutputsMode.value) return
-    if (!node.constructor.nodeData?.output_node)
+    if (!nodeDefinition(node)?.output_node)
       return canvasInteractions.forwardEventToCanvas(e)
     const index = appModeStore.selectedOutputs.findIndex((id) => id === node.id)
     if (index === -1) appModeStore.selectedOutputs.push(node.id)
@@ -162,7 +163,7 @@ const renderedOutputs = computed(() => {
   return canvas
     .graph!.nodes.filter(
       (n) =>
-        n.constructor.nodeData?.output_node &&
+        nodeDefinition(n)?.output_node &&
         n.mode === LGraphEventMode.ALWAYS &&
         !n.has_errors
     )

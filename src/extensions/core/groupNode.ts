@@ -24,10 +24,12 @@ import type {
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension } from '@/types/comfy'
-import { deserialiseIntoGraph } from '@/core/graph/clipboard/vintageClipboard'
 
 import { useApp } from '@/scripts/appInstance'
+import { completeGroupMigration, expandLegacyGroup } from './groupNodeLifecycle'
 import { mergeIfValid } from './widgetInputs'
+
+export type ConvertToNodesResult = ReturnType<typeof expandLegacyGroup>
 
 /**
  * Marker symbol stamped on a synthesized group-node type's `nodeData` (via
@@ -886,135 +888,192 @@ export class GroupNodeHandler {
     this.groupData = groupData
   }
 
-  /**
-   * Unpacks this group node into its constituent nodes within the root graph,
-   * copying current widget values and reconnecting external links, then removes
-   * the group node. Returns the newly created nodes.
-   *
-   * Lossiness is accepted: group nodes nested inside subgraphs are unpacked into
-   * the root graph rather than their original container.
-   */
-  convertToNodes(): LGraphNode[] {
+  convertToNodes(): ConvertToNodesResult {
     const node = this.node
     const graph = node.graph
-    if (!graph) return []
+    if (!graph) return { refused: false, nodes: [] }
     const { nodeData, oldToNewWidgetMap, oldToNewInputMap, newToOldOutputMap } =
       this.groupData
+    const data = JSON.parse(
+      JSON.stringify({
+        ...nodeData,
+        nodes: nodeData.nodes.map((member) => ({ ...member, id: undefined }))
+      })
+    )
+    let origin: readonly [number, number] | undefined
 
-    const addInnerNodes = () => {
-      const c = { ...nodeData }
-      c.nodes = c.nodes.map((n) => ({ ...n, id: undefined }))
-      const newNodes = deserialiseIntoGraph(JSON.stringify(c), graph, [0, 0])
-
-      const [x, y] = node.pos
-      let top: number | undefined
-      let left: number | undefined
-      const consumedOuterWidgetIndices = new Set<number>()
-      for (const [i, newNode] of newNodes.entries()) {
-        const innerNodeData = nodeData.nodes.at(i)
-
-        if (left == null || newNode.pos[0] < left) left = newNode.pos[0]
-        if (top == null || newNode.pos[1] < top) top = newNode.pos[1]
-
-        if (!newNode.widgets || !innerNodeData) continue
-
-        const map = oldToNewWidgetMap[i]
-        if (!map) continue
-        for (const oldName of Object.keys(map)) {
-          const newName = map[oldName]
-          if (!newName) continue
-
-          const widgetIndex = findUnconsumedWidgetIndex(
-            node.widgets,
-            newName,
-            consumedOuterWidgetIndices
+    return expandLegacyGroup({
+      group: node,
+      canvas: useApp().canvas,
+      types: nodeData.nodes.map(({ type }) => type),
+      configure(member, index) {
+        origin ??= [
+          Math.min(
+            ...data.nodes.map((info: { pos?: number[] }) => info.pos?.[0] ?? 0)
+          ),
+          Math.min(
+            ...data.nodes.map((info: { pos?: number[] }) => info.pos?.[1] ?? 0)
           )
-          if (widgetIndex === -1) continue
+        ]
+        member.configure(data.nodes[index])
+        member.pos = [member.pos[0] - origin[0], member.pos[1] - origin[1]]
+      },
+      *effects(createdNodes) {
+        const updateWidgets = () => {
+          const [x, y] = node.pos
+          let top: number | undefined
+          let left: number | undefined
+          const consumedOuterWidgetIndices = new Set<number>()
+          for (const [i, newNode] of createdNodes.entries()) {
+            const innerNodeData = nodeData.nodes.at(i)
 
-          if (innerNodeData.type === 'PrimitiveNode') {
-            for (let j = 0; j < newNode.widgets.length; j++) {
-              const srcWidget = node.widgets?.[widgetIndex + j]
-              if (!srcWidget) continue
-              consumedOuterWidgetIndices.add(widgetIndex + j)
-              newNode.widgets[j].value = srcWidget.value
+            if (left == null || newNode.pos[0] < left) left = newNode.pos[0]
+            if (top == null || newNode.pos[1] < top) top = newNode.pos[1]
+
+            if (!newNode.widgets || !innerNodeData) continue
+
+            const map = oldToNewWidgetMap[i]
+            if (!map) continue
+            for (const oldName of Object.keys(map)) {
+              const newName = map[oldName]
+              if (!newName) continue
+
+              const widgetIndex = findUnconsumedWidgetIndex(
+                node.widgets,
+                newName,
+                consumedOuterWidgetIndices
+              )
+              if (widgetIndex === -1) continue
+
+              if (innerNodeData.type === 'PrimitiveNode') {
+                for (let j = 0; j < newNode.widgets.length; j++) {
+                  const srcWidget = node.widgets?.[widgetIndex + j]
+                  if (!srcWidget) continue
+                  consumedOuterWidgetIndices.add(widgetIndex + j)
+                  newNode.widgets[j].value = srcWidget.value
+                }
+              } else {
+                const outerWidget = node.widgets?.[widgetIndex]
+                const newWidget = newNode.widgets.find(
+                  (w) => w.name === oldName
+                )
+                if (!newWidget || !outerWidget) continue
+
+                consumedOuterWidgetIndices.add(widgetIndex)
+                newWidget.value = outerWidget.value
+                const linkedWidgets = outerWidget.linkedWidgets ?? []
+                for (let w = 0; w < linkedWidgets.length; w++) {
+                  const newLinked = newWidget.linkedWidgets?.[w]
+                  if (newLinked && linkedWidgets[w]) {
+                    newLinked.value = linkedWidgets[w].value
+                  }
+                }
+              }
             }
-          } else {
-            const outerWidget = node.widgets?.[widgetIndex]
-            const newWidget = newNode.widgets.find((w) => w.name === oldName)
-            if (!newWidget || !outerWidget) continue
+          }
 
-            consumedOuterWidgetIndices.add(widgetIndex)
-            newWidget.value = outerWidget.value
-            const linkedWidgets = outerWidget.linkedWidgets ?? []
-            for (let w = 0; w < linkedWidgets.length; w++) {
-              const newLinked = newWidget.linkedWidgets?.[w]
-              if (newLinked && linkedWidgets[w]) {
-                newLinked.value = linkedWidgets[w].value
+          for (const newNode of createdNodes) {
+            newNode.pos = [
+              newNode.pos[0] - ((left ?? 0) - x),
+              newNode.pos[1] - ((top ?? 0) - y)
+            ]
+          }
+        }
+
+        const reconnectInputs = () => {
+          for (const [innerNodeIndex, map] of Object.entries(
+            oldToNewInputMap
+          )) {
+            const newNode = createdNodes.at(Number(innerNodeIndex))
+            if (!newNode || !map) continue
+            for (const [innerInputName, groupSlotId] of Object.entries(map)) {
+              const link = node.getInputLink(groupSlotId)
+              if (!link) continue
+              const originNode = graph.getNodeById(link.origin_id)
+              const innerInputId = newNode.findInputSlot(innerInputName)
+              if (innerInputId !== -1) {
+                originNode?.connect(link.origin_slot, newNode, innerInputId)
               }
             }
           }
         }
-      }
 
-      for (const newNode of newNodes) {
-        newNode.pos = [
-          newNode.pos[0] - ((left ?? 0) - x),
-          newNode.pos[1] - ((top ?? 0) - y)
-        ]
-      }
-
-      return newNodes
-    }
-
-    const reconnectInputs = (newNodes: LGraphNode[]) => {
-      for (const [innerNodeIndex, map] of Object.entries(oldToNewInputMap)) {
-        const newNode = newNodes.at(Number(innerNodeIndex))
-        if (!newNode || !map) continue
-        for (const [innerInputName, groupSlotId] of Object.entries(map)) {
-          const link = node.getInputLink(groupSlotId)
-          if (!link) continue
-          const originNode = graph.getNodeById(link.origin_id)
-          const innerInputId = newNode.findInputSlot(innerInputName)
-          if (innerInputId !== -1) {
-            originNode?.connect(link.origin_slot, newNode, innerInputId)
+        const replacedOutputTargets: {
+          groupOutputId: number
+          targetNode: LGraphNode
+          targetSlot: number
+        }[] = []
+        const reconnectOutputs = () => {
+          for (
+            let groupOutputId = 0;
+            groupOutputId < node.outputs.length;
+            groupOutputId++
+          ) {
+            const links = outputLinks(graph, node.id, groupOutputId)
+            for (const link of links) {
+              const slot = newToOldOutputMap[groupOutputId]
+              if (!slot) continue
+              const targetNode = graph.getNodeById(link.target_id)
+              const newNode = createdNodes.at(slot.node.index ?? 0)
+              if (targetNode) {
+                try {
+                  newNode?.connect(slot.slot, targetNode, link.target_slot)
+                } finally {
+                  const replacement = targetNode.getInputLink(link.target_slot)
+                  if (
+                    newNode &&
+                    replacement?.origin_id === newNode.id &&
+                    replacement.origin_slot === slot.slot
+                  ) {
+                    replacedOutputTargets.push({
+                      groupOutputId,
+                      targetNode,
+                      targetSlot: link.target_slot
+                    })
+                  }
+                }
+              }
+            }
           }
         }
-      }
-    }
-
-    const reconnectOutputs = (newNodes: LGraphNode[]) => {
-      for (
-        let groupOutputId = 0;
-        groupOutputId < node.outputs.length;
-        groupOutputId++
-      ) {
-        const links = outputLinks(graph, node.id, groupOutputId)
-        for (const link of links) {
-          const slot = newToOldOutputMap[groupOutputId]
-          if (!slot) continue
-          const targetNode = graph.getNodeById(link.target_id)
-          const newNode = newNodes.at(slot.node.index ?? 0)
-          if (targetNode) {
-            newNode?.connect(slot.slot, targetNode, link.target_slot)
+        const restoreOutputs = () => {
+          for (const {
+            groupOutputId,
+            targetNode,
+            targetSlot
+          } of replacedOutputTargets) {
+            if (graph.getNodeById(node.id) !== node) continue
+            if (graph.getNodeById(targetNode.id) !== targetNode) continue
+            if (targetNode.getInputLink(targetSlot)) continue
+            node.connect(groupOutputId, targetNode, targetSlot)
           }
         }
-      }
-    }
 
-    const canvas = useApp().canvas
-    const isVisible = canvas.graph === graph
-    if (isVisible) canvas.emitBeforeChange()
-    graph.beforeChange()
-    try {
-      const newNodes = addInnerNodes()
-      reconnectInputs(newNodes)
-      reconnectOutputs(newNodes)
-      graph.remove(this.node)
-      return newNodes
-    } finally {
-      graph.afterChange()
-      if (isVisible) canvas.emitAfterChange()
-    }
+        for (const [
+          sourceIndex,
+          sourceSlot,
+          targetIndex,
+          targetSlot
+        ] of nodeData.links) {
+          const source =
+            sourceIndex == null ? undefined : createdNodes.at(sourceIndex)
+          const target = createdNodes.at(targetIndex)
+          if (source && target) {
+            yield {
+              phase: 'links',
+              apply: () => source.connect(sourceSlot, target, targetSlot)
+            }
+          }
+        }
+        yield { phase: 'widgets', apply: updateWidgets }
+        yield { phase: 'reconnect', apply: reconnectInputs }
+        yield {
+          phase: 'reconnect',
+          apply: reconnectOutputs,
+          compensate: restoreOutputs
+        }
+      }
+    })
   }
 
   static getHandler(node: LGraphNode): GroupNodeHandler | undefined {
@@ -1045,21 +1104,25 @@ export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   }
 }
 
-/**
- * Converts every group node in the root graph to a subgraph. Re-scans until none
- * remain so group nodes revealed by a previous conversion are also migrated. A
- * failed conversion removes the offending node so loading can continue (accepted
- * lossiness) and the scan cannot loop forever.
- * @returns the number of group nodes converted
- */
-function convertLoadedGroupNodes(graph: LGraph): number {
+function convertLoadedGroupNodes(graph: LGraph): {
+  converted: number
+  retained: { node: LGraphNode; memberType: string | undefined }[]
+} {
   let converted = 0
   const failed = new Set<LGraphNode>()
+  const retained = new Map<LGraphNode, string | undefined>()
   for (;;) {
     const node = graph.nodes.find(
       (n) => GroupNodeHandler.isGroupNode(n) && !failed.has(n)
     )
-    if (!node) return converted
+    if (!node)
+      return {
+        converted,
+        retained: [...retained].map(([node, memberType]) => ({
+          node,
+          memberType
+        }))
+      }
     try {
       const handler = GroupNodeHandler.getHandler(node)
       if (!handler) {
@@ -1068,23 +1131,57 @@ function convertLoadedGroupNodes(graph: LGraph): number {
         graph.remove(node)
         continue
       }
-      const innerNodes = handler.convertToNodes()
-      for (const inner of innerNodes) inner.updateArea()
-      graph.convertToSubgraph(new Set(innerNodes))
-      converted++
-    } catch (error) {
-      console.error('Failed to convert group node to subgraph', error)
-      failed.add(node)
-      try {
-        graph.remove(node)
-      } catch (removeError) {
-        console.error(
-          'Failed to remove group node after conversion failure',
-          removeError
-        )
+      const result = handler.convertToNodes()
+      if (result.refused) {
+        failed.add(node)
+        if (graph.getNodeById(node.id) === node)
+          retained.set(
+            node,
+            'interference' in result ? undefined : result.memberType
+          )
+        if (!('interference' in result))
+          console.warn(
+            'Leaving group node unconverted: a member type could not be created in this graph',
+            result.memberType
+          )
+        continue
       }
+      if (completeGroupMigration(graph, result.nodes)) converted++
+      else failed.add(node)
+    } catch (error) {
+      failed.add(node)
+      if (graph.getNodeById(node.id) === node) retained.set(node, undefined)
+      console.error('Failed to convert group node to subgraph', error)
     }
   }
+}
+
+function retainedGroupDefinitionNames(
+  retained: readonly LGraphNode[],
+  definitions: Readonly<Partial<Record<string, GroupNodeWorkflowData>>>
+): Set<string> {
+  const prefixes = [`${PREFIX}${SEPARATOR}`, `${PREFIX}/`]
+  const needed = new Set<string>()
+  const pending = retained.map((node) => node.type)
+
+  while (pending.length > 0) {
+    const type = pending.pop()
+    const prefix = prefixes.find((candidate) => type?.startsWith(candidate))
+    if (!type || !prefix) continue
+    const name = type.slice(prefix.length)
+    if (needed.has(name)) continue
+    needed.add(name)
+    if (!Object.hasOwn(definitions, name)) continue
+    const definition = definitions[name]
+    if (!definition || !Array.isArray(definition.nodes)) continue
+    pending.push(
+      ...definition.nodes
+        .map((node) => node.type)
+        .filter((type): type is string => typeof type === 'string')
+    )
+  }
+
+  return needed
 }
 
 const groupNodeReportIndices = new WeakMap<
@@ -1153,23 +1250,47 @@ export const groupNodeExtension: ComfyExtension = {
         missingNodeTypes.splice(index, 1)
       }
     }
-    if (convertLoadedGroupNodes(graph) > 0) {
-      delete graph.extra.groupNodes
+    const { converted, retained } = convertLoadedGroupNodes(graph)
+    for (const { node, memberType } of retained) {
+      if (memberType !== undefined) {
+        missingNodeTypes.push({ type: memberType, nodeId: String(node.id) })
+      }
+    }
+    if (converted > 0) {
+      const definitions = graph.extra.groupNodes as
+        | Record<string, GroupNodeWorkflowData>
+        | undefined
+      const neededGroups = retainedGroupDefinitionNames(
+        retained.map(({ node }) => node),
+        definitions ?? {}
+      )
+      const kept = Object.fromEntries(
+        Object.entries(definitions ?? {}).filter(([name]) =>
+          neededGroups.has(name)
+        )
+      )
+      if (Object.keys(kept).length > 0) graph.extra.groupNodes = kept
+      else delete graph.extra.groupNodes
     }
   },
   nodeCreated(node: LGraphNode) {
     if (!GroupNodeHandler.isGroupNode(node)) return
     const handler = GroupNodeHandler.getHandler(node)
-    // A stray group node created after load (e.g. paste) has no migration pass;
-    // convert it to a subgraph once it has joined a graph.
     if (!useApp().configuringGraph) {
       queueMicrotask(() => {
         const graph = node.graph
         if (graph && handler && GroupNodeHandler.isGroupNode(node)) {
           try {
-            const innerNodes = handler.convertToNodes()
-            for (const inner of innerNodes) inner.updateArea()
-            graph.convertToSubgraph(new Set(innerNodes))
+            const result = handler.convertToNodes()
+            if (result.refused) {
+              if (!('interference' in result))
+                console.warn(
+                  'Leaving group node unconverted: a member type could not be created in this graph',
+                  result.memberType
+                )
+              return
+            }
+            completeGroupMigration(graph, result.nodes)
           } catch (error) {
             console.error(
               'Failed to convert stray group node to subgraph',

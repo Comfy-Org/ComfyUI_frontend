@@ -38,9 +38,13 @@ import {
   TitleMode
 } from '@comfyorg/graph-model/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
+import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 
-/** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
+import { createLegacyNode } from './nodeConstruction'
+
+/** Options for {@link LiteGraphGlobal.createNode}. Node fields are shallow-copied onto the new node. */
 export interface CreateNodeOptions {
+  targetGraph?: GraphOrSubgraph
   pos?: Point
   size?: Size
   properties?: Dictionary<NodeProperty | undefined>
@@ -629,39 +633,7 @@ export class LiteGraphGlobal {
     title?: string,
     options?: CreateNodeOptions
   ): LGraphNode | null {
-    const base_class = Object.hasOwn(this.registered_node_types, type)
-      ? this.registered_node_types[type]
-      : undefined
-    if (!base_class) {
-      if (this.debug) console.warn(`GraphNode type "${type}" not registered.`)
-      return null
-    }
-
-    title = title || base_class.title || type
-
-    let node: LGraphNode
-
-    try {
-      node = new base_class(title)
-      node._state.type = type
-    } catch (error) {
-      if (!this.catch_exceptions) throw error
-      console.error(error)
-      return null
-    }
-
-    if (!node.title && title) node.title = title
-    // call onresize?
-    node.mode ||= LGraphEventMode.ALWAYS
-
-    // extra options
-    if (options) {
-      Object.assign(node, options)
-    }
-
-    // callback
-    node.onNodeCreated?.()
-    return node
+    return createLegacyNode(this, type, title, options)
   }
 
   /**

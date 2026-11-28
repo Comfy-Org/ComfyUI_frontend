@@ -40,6 +40,7 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
+  LGraph,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
@@ -103,6 +104,111 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import {
+  NODE_CREATION_GRAPH_FACTORY,
+  nodeDefinition
+} from '@/lib/litegraph/src/nodeConstruction'
+import type { NodeConstructionCapability } from '@/lib/litegraph/src/nodeConstruction'
+
+type GeneratedSubgraphNode = typeof LGraphNode & {
+  new (input: SubgraphConstructionInput): SubgraphNode
+}
+
+interface SubgraphNodeRegistration {
+  nodeDef: ComfyNodeDefImpl
+  instanceData: ExportedSubgraphInstance
+  generated?: GeneratedSubgraphNode
+}
+
+interface SubgraphConstructionInput {
+  graph: GraphOrSubgraph
+  subgraph: Subgraph
+  registration: SubgraphNodeRegistration
+  controller: AbortController
+}
+
+interface SubgraphConstructionContext {
+  nodeType: typeof LGraphNode
+  input: SubgraphConstructionInput
+  consumed: boolean
+}
+
+const subgraphNodeRegistrations = new WeakMap<
+  Subgraph,
+  SubgraphNodeRegistration
+>()
+const missingSubgraphTargetReports = new WeakMap<LGraph, Set<string>>()
+const MAX_MISSING_SUBGRAPH_TARGET_REPORTS_PER_GRAPH = 25
+const subgraphConstructionContexts: SubgraphConstructionContext[] = []
+
+function shouldReportMissingSubgraphTarget(
+  rootGraph: LGraph,
+  subgraphId: string
+): boolean {
+  let reported = missingSubgraphTargetReports.get(rootGraph)
+  if (!reported) {
+    reported = new Set()
+    missingSubgraphTargetReports.set(rootGraph, reported)
+  }
+  if (
+    reported.has(subgraphId) ||
+    reported.size >= MAX_MISSING_SUBGRAPH_TARGET_REPORTS_PER_GRAPH
+  ) {
+    return false
+  }
+  reported.add(subgraphId)
+  return true
+}
+
+function reportMissingSubgraphTarget(rootGraph: LGraph, subgraphId: string) {
+  if (!shouldReportMissingSubgraphTarget(rootGraph, subgraphId)) return
+  reportError(
+    new Error('Subgraph node type is missing from the target graph'),
+    {
+      errorType: 'failure_creating_subgraph_node_target_missing',
+      surface: 'graph',
+      context: { subgraphId, rootGraphId: rootGraph.id },
+      sentryMode: 'once_per_page'
+    }
+  )
+}
+
+function subgraphNodeRegistration(
+  subgraph: Subgraph
+): SubgraphNodeRegistration {
+  const registered = subgraphNodeRegistrations.get(subgraph)
+  if (registered) return registered
+
+  const fallback: SubgraphNodeRegistration = {
+    nodeDef: new ComfyNodeDefImpl({
+      input: { required: {} },
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      name: subgraph.id,
+      display_name: subgraph.name,
+      description: subgraph.description || `Subgraph node for ${subgraph.name}`,
+      category: 'subgraph',
+      output_node: false,
+      python_module: 'nodes'
+    }),
+    instanceData: {
+      id: -1,
+      type: subgraph.id,
+      pos: [0, 0],
+      size: [100, 100],
+      inputs: [],
+      outputs: [],
+      flags: {},
+      order: 0,
+      mode: 0
+    }
+  }
+  subgraphNodeRegistrations.set(subgraph, fallback)
+  return fallback
+}
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -190,7 +296,7 @@ export const useLitegraphService = () => {
    * @internal The node definition name used to resolve the node's i18n text.
    */
   function nodeDefName(node: LGraphNode): string {
-    return node.constructor.nodeData?.name ?? ''
+    return nodeDefinition(node)?.name ?? ''
   }
   /**
    * @internal Add input sockets to the node. (No widget)
@@ -335,7 +441,7 @@ export const useLitegraphService = () => {
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
     const orderedInputSpecs = getOrderedInputSpecs(
-      node.constructor.nodeData ?? {},
+      nodeDefinition(node) ?? {},
       inputs
     )
 
@@ -395,26 +501,120 @@ export const useLitegraphService = () => {
     subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
+    const subgraphId = subgraph.id
+    const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
     const node = class ComfyNode extends SubgraphNode {
       static comfyClass: string
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+      static override [NODE_CREATION_GRAPH_FACTORY]: NodeConstructionCapability =
+        {
+          prepare: ({
+            registered,
+            title,
+            type,
+            graph = useApp().rootGraph
+          }) => {
+            const ownedSubgraph = graph.rootGraph.subgraphs.get(subgraphId)
+            if (!ownedSubgraph) {
+              return {
+                kind: 'refused',
+                reason: 'missing-owned-definition',
+                type,
+                report: () =>
+                  reportMissingSubgraphTarget(graph.rootGraph, subgraphId)
+              }
+            }
+            const registration = subgraphNodeRegistration(ownedSubgraph)
+            const input: SubgraphConstructionInput = {
+              graph,
+              subgraph: ownedSubgraph,
+              registration,
+              controller: new AbortController()
+            }
+            return {
+              kind: 'ready',
+              isCurrent: () =>
+                graph.rootGraph.subgraphs.get(subgraphId) === ownedSubgraph &&
+                subgraphNodeRegistrations.get(ownedSubgraph) === registration,
+              cancel: () => input.controller.abort(),
+              construct: () => {
+                if (registered === node) {
+                  const Generated = registration.generated ?? node
+                  return new Generated(input)
+                }
+                subgraphConstructionContexts.push({
+                  nodeType: registered,
+                  input,
+                  consumed: false
+                })
+                try {
+                  return new registered(title)
+                } finally {
+                  subgraphConstructionContexts.pop()
+                }
+              }
+            }
+          },
+          definitionFor: (instance) =>
+            instance.isSubgraphNode()
+              ? subgraphNodeRegistration(instance.subgraph).nodeDef
+              : instance.constructor.nodeData
+        }
 
-      constructor() {
-        super(useApp().rootGraph, subgraph, instanceData)
+      constructor(titleOrInput?: string | SubgraphConstructionInput) {
+        const pendingContext =
+          typeof titleOrInput === 'object'
+            ? undefined
+            : subgraphConstructionContexts.at(-1)
+        const constructionContext =
+          pendingContext?.nodeType === new.target && !pendingContext.consumed
+            ? pendingContext
+            : undefined
+        if (constructionContext) constructionContext.consumed = true
+        const input =
+          typeof titleOrInput === 'object'
+            ? titleOrInput
+            : constructionContext?.input
+        const targetGraph = input?.graph ?? useApp().rootGraph
+        const ownedSubgraph =
+          input?.subgraph ?? targetGraph.rootGraph.subgraphs.get(subgraphId)
+        if (!ownedSubgraph) {
+          reportMissingSubgraphTarget(targetGraph.rootGraph, subgraphId)
+          throw new TypeError(
+            'Subgraph node type is missing from the target graph'
+          )
+        }
+        const registration =
+          input?.registration ?? subgraphNodeRegistration(ownedSubgraph)
+        const controller = input?.controller ?? new AbortController()
+        super(
+          targetGraph,
+          ownedSubgraph,
+          structuredClone(registration.instanceData),
+          controller
+        )
 
-        subgraph.events.addEventListener('widget-promoted', () => {
-          invalidateSubgraphPseudoWidgetCache(this)
-        })
+        ownedSubgraph.events.addEventListener(
+          'widget-promoted',
+          () => {
+            invalidateSubgraphPseudoWidgetCache(this)
+          },
+          { signal: controller.signal }
+        )
 
-        subgraph.events.addEventListener('widget-demoted', () => {
-          invalidateSubgraphPseudoWidgetCache(this)
-        })
+        ownedSubgraph.events.addEventListener(
+          'widget-demoted',
+          () => {
+            invalidateSubgraphPseudoWidgetCache(this)
+          },
+          { signal: controller.signal }
+        )
 
         setupStrokeStyles(this)
-        addInputs(this, ComfyNode.nodeData.inputs)
-        addOutputs(this, ComfyNode.nodeData.outputs)
+        addInputs(this, registration.nodeDef.inputs)
+        addOutputs(this, registration.nodeDef.outputs)
         setInitialSize(this)
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
@@ -450,10 +650,6 @@ export const useLitegraphService = () => {
         return unbindPromotedDynamicInput(this, input)
       }
 
-      /**
-       * Configure the node from a serialised node. Keep 'name', 'type', 'shape',
-       * and 'localized_name' information from the original node definition.
-       */
       override configure(data: ISerialisedNode): void {
         const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
 
@@ -491,7 +687,7 @@ export const useLitegraphService = () => {
         )
 
         data.widgets_values = migrateWidgetsValues(
-          ComfyNode.nodeData.inputs,
+          subgraphNodeRegistration(this.subgraph).nodeDef.inputs,
           this.widgets,
           data.widgets_values ?? []
         )
@@ -503,16 +699,16 @@ export const useLitegraphService = () => {
     addNodeContextMenuHandler(node)
     addDrawBackgroundHandler(node)
     addNodeKeyHandler(node)
-    // Note: Some extensions expects node.comfyClass to be set in
-    // `beforeRegisterNodeDef`.
     node.prototype.comfyClass = nodeDefV1.name
     node.comfyClass = nodeDefV1.name
 
-    const nodeDef = new ComfyNodeDefImpl(nodeDefV1)
     node.nodeData = nodeDef
+    subgraphNodeRegistrations.set(subgraph, {
+      nodeDef,
+      instanceData: structuredClone(instanceData),
+      generated: node
+    })
     LiteGraph.registerNodeType(subgraph.id, node)
-    // Note: Do not following assignments before `LiteGraph.registerNodeType`
-    // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
     node.skip_list = true
     node.title = nodeDef.display_name || nodeDef.name
@@ -861,12 +1057,26 @@ export const useLitegraphService = () => {
           position: options.pos
         }
       )
-      if (!results) throw new Error('Failed to add subgraph blueprint')
+      if (!results) {
+        reportError(new Error('Failed to add subgraph blueprint'), {
+          errorType: 'failure_adding_subgraph_blueprint',
+          surface: 'graph'
+        })
+        return null
+      }
       const node = results.nodes.values().next().value
-      if (!node)
-        throw new Error(
-          'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+      if (!node) {
+        reportError(
+          new Error(
+            'Subgraph blueprint was added, but failed to resolve a subgraph Node'
+          ),
+          {
+            errorType: 'failure_resolving_added_subgraph_blueprint',
+            surface: 'graph'
+          }
         )
+        return null
+      }
       if (addOptions?.ghost) {
         node.flags.ghost = true
         canvas.graph?.trigger('node:property:changed', {
@@ -880,13 +1090,11 @@ export const useLitegraphService = () => {
       return node
     }
 
-    const node = LiteGraph.createNode(
-      nodeDef.name,
-      nodeDef.display_name,
-      options
-    )
-
     const graph = useWorkflowStore().activeSubgraph ?? useApp().rootGraph
+    const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {
+      ...options,
+      targetGraph: graph
+    })
     if (!node) return null
 
     graph.add(node, addOptions)

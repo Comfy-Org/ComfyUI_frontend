@@ -1660,7 +1660,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
             const first_event = contextMenu.getFirstEvent()
             canvas.graph.beforeChange()
-            const node = LiteGraph.createNode(value.value)
+            const node = LiteGraph.createNode(value.value, undefined, {
+              targetGraph: canvas.graph
+            })
             if (node) {
               if (!first_event)
                 throw new TypeError(
@@ -6903,6 +6905,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
       const pos: [number, number] = [nodeX, nodeY]
       const newNode = LiteGraph.createNode(nodeTypeStr, nodeNewOpts?.title, {
+        targetGraph: this.graph ?? undefined,
         pos
       })
       if (newNode) {
@@ -7562,18 +7565,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (!graphcanvas.graph) throw new NullGraphError()
 
           graphcanvas.graph.beforeChange()
-          const node = LiteGraph.createNode(name)
+          const node = LiteGraph.createNode(name, undefined, {
+            targetGraph: graphcanvas.graph
+          })
           if (node) {
             node.pos = graphcanvas.convertEventToCanvasOffset(safeEvent)
             graphcanvas.graph.add(node, false)
           }
 
           // join node after inserting
-          if (options.node_from) {
-            connectSearchBoxNodeFrom(options.node_from, options.slot_from, node)
-          }
-          if (options.node_to) {
-            connectSearchBoxNodeTo(options.node_to, options.slot_from, node)
+          if (node) {
+            if (options.node_from) {
+              connectSearchBoxNodeFrom(
+                options.node_from,
+                options.slot_from,
+                node
+              )
+            }
+            if (options.node_to) {
+              connectSearchBoxNodeTo(options.node_to, options.slot_from, node)
+            }
           }
 
           graphcanvas.graph.afterChange()
