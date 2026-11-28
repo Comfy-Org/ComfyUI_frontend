@@ -196,5 +196,6 @@ describe('ColorPickerSaturationValue', () => {
     expect(emitted('update')).toEqual([[50, 50]])
     expect(emitted('update:saturation')).toEqual([[50]])
     expect(emitted('update:value')).toEqual([[50]])
+    expect(slider).toHaveAttribute('aria-valuetext', '50%, 50%')
   })
 })
