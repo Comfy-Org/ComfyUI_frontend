@@ -239,7 +239,9 @@ test.describe(
         window.app!.canvas.ds.offset = [0, 0]
         window.app!.canvas.ds.scale = 1
         window.app!.canvas.selectNode(node)
+        window.app!.canvas.setDirty(true, true)
       }, nodeId)
+      await comfyPage.nextFrame()
       const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await panel.searchWidgets('edge_counter')

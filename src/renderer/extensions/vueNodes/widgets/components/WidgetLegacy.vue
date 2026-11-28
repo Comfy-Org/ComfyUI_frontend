@@ -121,6 +121,8 @@ function withRowGeometry(run: () => void) {
   const widget = widgetInstance
   const host = node
   const canvasGeometry = readLegacyWidgetGeometry(widget, host)
+  if (LiteGraph.vueNodesMode)
+    rememberGeometryBeforeVueNodes(widget, host, canvasGeometry)
   writeLegacyWidgetGeometry(widget, host, {
     y: rowGeometry.y,
     last_y: rowGeometry.y,
@@ -130,9 +132,8 @@ function withRowGeometry(run: () => void) {
   try {
     run()
   } finally {
-    if (LiteGraph.vueNodesMode)
-      rememberGeometryBeforeVueNodes(widget, host, canvasGeometry)
-    else writeLegacyWidgetGeometry(widget, host, canvasGeometry)
+    if (!LiteGraph.vueNodesMode)
+      writeLegacyWidgetGeometry(widget, host, canvasGeometry)
   }
 }
 
