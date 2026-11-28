@@ -39,7 +39,10 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import {
+  getCnrIdFromNode,
+  getRegistryCnrId
+} from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -252,7 +255,11 @@ function scanSingleNodeModelsAndTypes(
   const originalType = node.last_serialization?.type ?? node.type
   if (!(originalType in LiteGraph.registered_node_types)) {
     const nodeReplacementStore = useNodeReplacementStore()
-    const replacement = nodeReplacementStore.getReplacementFor(originalType)
+    const replacement = nodeReplacementStore.getReplacementForMissing(
+      originalType,
+      getRegistryCnrId(node.properties),
+      { widgetsValues: node.last_serialization?.widgets_values }
+    )
     const store = useMissingNodesErrorStore()
     const existing = store.missingNodesError?.nodeTypes ?? []
     store.surfaceMissingNodes([

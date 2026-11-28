@@ -4,26 +4,55 @@ import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import type { SavedWidgets } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
+import {
+  getCnrIdFromNode,
+  getRegistryCnrId
+} from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 
-function replacementFieldsFor(nodeType: string) {
-  const replacement = useNodeReplacementStore().getReplacementFor(nodeType)
+function replacementFieldsFor(
+  nodeType: string,
+  cnrId: string | undefined,
+  saved: SavedWidgets
+) {
+  const replacement = useNodeReplacementStore().getReplacementForMissing(
+    nodeType,
+    cnrId,
+    saved
+  )
   return {
     isReplaceable: replacement !== null,
     replacement: replacement ?? undefined
   }
 }
 
-function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
+function withCurrentReplacement(
+  nodeType: MissingNodeType,
+  rootGraph: LGraph | undefined
+): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
-  return { ...nodeType, ...replacementFieldsFor(nodeType.type) }
+  if (nodeType.replacement && useNodeReplacementStore().isEnabled)
+    return nodeType
+  const placeholder =
+    rootGraph && nodeType.nodeId != null
+      ? getNodeByExecutionId(rootGraph, String(nodeType.nodeId))
+      : null
+  return {
+    ...nodeType,
+    ...replacementFieldsFor(
+      nodeType.type,
+      placeholder ? getRegistryCnrId(placeholder.properties) : nodeType.cnrId,
+      { widgetsValues: placeholder?.last_serialization?.widgets_values }
+    )
+  }
 }
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */
@@ -50,7 +79,9 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
       type: originalType,
       nodeId: executionId ?? String(node.id),
       cnrId,
-      ...replacementFieldsFor(originalType)
+      ...replacementFieldsFor(originalType, getRegistryCnrId(node.properties), {
+        widgetsValues: node.last_serialization?.widgets_values
+      })
     })
   }
 
@@ -66,16 +97,23 @@ export function rescanAndSurfaceMissingNodes(rootGraph: LGraph): void {
 }
 
 /** Re-resolve replacements on surfaced and pending missing nodes, for replacements that loaded after the workflow. */
-export function refreshMissingNodeReplacements(): void {
+export function refreshMissingNodeReplacements(
+  rootGraph: LGraph | undefined
+): void {
   const store = useMissingNodesErrorStore()
   const surfaced = store.missingNodesError?.nodeTypes
-  if (surfaced) store.setMissingNodeTypes(surfaced.map(withCurrentReplacement))
+  if (surfaced)
+    store.setMissingNodeTypes(
+      surfaced.map((nodeType) => withCurrentReplacement(nodeType, rootGraph))
+    )
 
   for (const workflow of useWorkflowStore().openWorkflows) {
     const pending = workflow.pendingWarnings?.missingNodeTypes
     if (!pending) continue
     updatePendingWarnings(workflow, {
-      missingNodeTypes: pending.map(withCurrentReplacement)
+      missingNodeTypes: pending.map((nodeType) =>
+        withCurrentReplacement(nodeType, undefined)
+      )
     })
   }
 }

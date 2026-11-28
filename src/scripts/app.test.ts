@@ -4919,13 +4919,53 @@ describe('ComfyApp', () => {
         const missingTypes =
           useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
         expect(useNodeReplacement().replaceNodesInPlace(missingTypes)).toEqual([
-          'OldTextNode'
+          '1'
         ])
         expect(
           applyTextReplacements(graph, '%test/ReplacementText.text%')
         ).toBe('Imported prompt text')
       }
     )
+
+    it('offers the pack entry to an API node without cnr_id whose inputs fit it', async () => {
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const workflow = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/api.json', modified: 0, size: 0 })
+      )
+      useWorkflowStore().activeWorkflow = workflow
+      useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+      const replacementStore = useNodeReplacementStore()
+      replacementStore.isLoaded = true
+      const entry: NodeReplacement = {
+        old_node_id: 'SeededText',
+        new_node_id: 'CoreSeededText',
+        old_widget_ids: ['seed', 'control_after_generate', 'text'],
+        input_mapping: null,
+        output_mapping: null,
+        old_pack: 'some-pack',
+        kind: 'equivalent'
+      }
+      replacementStore.replacements = { SeededText: [entry] }
+
+      await app.loadApiJson(
+        {
+          '1': {
+            class_type: 'SeededText',
+            inputs: { seed: 5, text: ['2', 0] }
+          },
+          '2': { class_type: 'UninstalledTextSource', inputs: {} }
+        },
+        ''
+      )
+
+      expect(workflow.pendingWarnings?.missingNodeTypes).toContainEqual(
+        expect.objectContaining({
+          type: 'SeededText',
+          nodeId: '1',
+          replacement: entry
+        })
+      )
+    })
 
     it('restores late autogrow widgets and links without repeating callbacks', async () => {
       const graph = new LGraph()
@@ -5347,7 +5387,7 @@ describe('ComfyApp', () => {
         .spyOn(nodeReplacementStore, 'load')
         .mockResolvedValue()
       const getReplacement = vi
-        .spyOn(nodeReplacementStore, 'getReplacementFor')
+        .spyOn(nodeReplacementStore, 'getReplacementForMissing')
         .mockReturnValue(replacement)
       const apiData: unknown = {
         '-1': {
@@ -5416,7 +5456,10 @@ describe('ComfyApp', () => {
       LiteGraph.registerNodeType(sourceNodeType, ApiJsonSourceNode)
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
-      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
+      vi.spyOn(
+        nodeReplacementStore,
+        'getReplacementForMissing'
+      ).mockReturnValue(null)
 
       await app.loadApiJson(
         {
@@ -5500,7 +5543,10 @@ describe('ComfyApp', () => {
       Reflect.set(app, 'rootGraphInternal', graph)
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
-      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
+      vi.spyOn(
+        nodeReplacementStore,
+        'getReplacementForMissing'
+      ).mockReturnValue(null)
       const missingNodesStore = useMissingNodesErrorStore()
       const workflowService = await useRealWorkflowService()
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({

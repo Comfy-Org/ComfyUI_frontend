@@ -137,16 +137,13 @@ function groupSwapNodes(
   for (const nodeType of nodeTypes) {
     if (typeof nodeType === 'string' || !nodeType.isReplaceable) continue
 
-    const typeName = nodeType.type
-    const existing = map.get(typeName)
+    const newNodeId = nodeType.replacement?.new_node_id
+    const key = `${nodeType.type}|${newNodeId}`
+    const existing = map.get(key)
     if (existing) {
       existing.nodeTypes.push(nodeType)
     } else {
-      map.set(typeName, {
-        type: typeName,
-        newNodeId: nodeType.replacement?.new_node_id,
-        nodeTypes: [nodeType]
-      })
+      map.set(key, { type: nodeType.type, newNodeId, nodeTypes: [nodeType] })
     }
   }
 

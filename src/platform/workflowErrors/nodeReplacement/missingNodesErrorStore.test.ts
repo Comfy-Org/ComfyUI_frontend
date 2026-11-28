@@ -170,66 +170,6 @@ describe('missingNodesErrorStore', () => {
     })
   })
 
-  describe('removeMissingNodesByType', () => {
-    it('removes matching types from the missing nodes list', () => {
-      const store = useMissingNodesErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false },
-        { type: 'NodeB', nodeId: '2', isReplaceable: false },
-        { type: 'NodeC', nodeId: '3', isReplaceable: false }
-      ])
-
-      store.removeMissingNodesByType(['NodeA', 'NodeC'])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-      const remaining = store.missingNodesError?.nodeTypes[0]
-      expect(typeof remaining !== 'string' && remaining?.type).toBe('NodeB')
-    })
-
-    it('clears missingNodesError when all types are removed', () => {
-      const store = useMissingNodesErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
-
-      store.removeMissingNodesByType(['NodeA'])
-
-      expect(store.missingNodesError).toBeNull()
-      expect(store.hasMissingNodes).toBe(false)
-    })
-
-    it('does nothing when missingNodesError is null', () => {
-      const store = useMissingNodesErrorStore()
-      expect(store.missingNodesError).toBeNull()
-
-      store.removeMissingNodesByType(['NodeA'])
-      expect(store.missingNodesError).toBeNull()
-    })
-
-    it('does nothing when removing non-existent types', () => {
-      const store = useMissingNodesErrorStore()
-      store.setMissingNodeTypes([
-        { type: 'NodeA', nodeId: '1', isReplaceable: false }
-      ])
-
-      store.removeMissingNodesByType(['NonExistent'])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-    })
-
-    it('handles removing from string entries', () => {
-      const store = useMissingNodesErrorStore()
-      store.setMissingNodeTypes([
-        'StringNodeA',
-        'StringNodeB'
-      ] as MissingNodeType[])
-
-      store.removeMissingNodesByType(['StringNodeA'])
-
-      expect(store.missingNodesError?.nodeTypes).toHaveLength(1)
-    })
-  })
-
   describe('removeMissingNodesByNodeId', () => {
     it('removes entries matching the nodeId', () => {
       const store = useMissingNodesErrorStore()

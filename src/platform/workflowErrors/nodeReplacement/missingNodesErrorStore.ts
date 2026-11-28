@@ -11,7 +11,6 @@ import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
   removePendingMissingNodeTypesByNodeId,
-  removePendingMissingNodeTypesByType,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -88,12 +87,6 @@ export const useMissingNodesErrorStore = defineStore(
       )
     }
 
-    function removeMissingNodesByType(typesToRemove: string[]) {
-      removeMissingNodes((types) =>
-        removePendingMissingNodeTypesByType(types, typesToRemove)
-      )
-    }
-
     const hasMissingNodes = computed(() => !!visibleMissingNodesError.value)
 
     const missingNodeCount = computed(
@@ -137,7 +130,6 @@ export const useMissingNodesErrorStore = defineStore(
       surfaceMissingNodes,
       removeMissingNodesByNodeId,
       removeMissingNodesByPrefix,
-      removeMissingNodesByType,
       hasMissingNodes,
       missingNodeCount,
       missingAncestorExecutionIds,
