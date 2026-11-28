@@ -1417,6 +1417,7 @@ export const useAgentConversationStore = defineStore(
         input.workflowReferences
       )
       rememberThreadAttachmentNames(input.threadId, input.attachments)
+      input.attachments?.forEach(retainAttachmentUrls)
       const message = createAssistantMessage(input.turnId)
       const transport = createAgentEventTransport(
         message,
@@ -1721,6 +1722,7 @@ export const useAgentConversationStore = defineStore(
         abortActiveTurn()
         return
       }
+      userAttachments.value.get(slot.message.id)?.forEach(retainAttachmentUrls)
       backgroundTurns.set(slot.turnId, {
         threadId: slot.threadId,
         messageId: slot.turnId,
@@ -1855,6 +1857,7 @@ export const useAgentConversationStore = defineStore(
       poppedHydratedCopy: boolean
     ): boolean {
       if (!persistedCopyOutlivesEntry(entry, poppedHydratedCopy)) return false
+      entry.attachments?.forEach(releaseAttachmentUrls)
       retireBackgroundTurn(entry)
       return true
     }
@@ -1862,10 +1865,6 @@ export const useAgentConversationStore = defineStore(
     function retireBackgroundTurn(entry: BackgroundTurn): void {
       rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
       entry.transport.dispose()
-      revokeUnownedBlobPreviews(
-        entry.attachments,
-        collectOwnedBlobPreviews(true)
-      )
     }
 
     function latestBackgroundTurn(
@@ -1907,56 +1906,16 @@ export const useAgentConversationStore = defineStore(
       if (items?.length) target.set(id, items)
     }
 
-    function addBlobPreviews(
-      attachments: readonly UserAttachment[] | undefined,
-      target: Set<string>
-    ): void {
-      for (const { previewUrl, mediaUrl } of attachments ?? []) {
-        for (const url of [previewUrl, mediaUrl])
-          if (url?.startsWith('blob:')) target.add(url)
-      }
-    }
-
-    function collectOwnedBlobPreviews(
-      includeUserAttachments: boolean
-    ): Set<string> {
-      const owned = new Set<string>()
-      if (includeUserAttachments) {
-        for (const attachments of userAttachments.value.values())
-          addBlobPreviews(attachments, owned)
-      }
-      for (const entry of backgroundTurns.values())
-        addBlobPreviews(entry.attachments, owned)
-      return owned
-    }
-
-    function revokeUnownedBlobPreviews(
-      attachments: readonly UserAttachment[] | undefined,
-      owned: ReadonlySet<string>
-    ): void {
-      for (const { previewUrl, mediaUrl } of attachments ?? []) {
-        for (const url of [previewUrl, mediaUrl])
-          if (url && !owned.has(url)) releaseSharedObjectUrl(url)
-      }
-    }
-
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
       const id = entry.message.id
       if (entry.userText === undefined) {
-        revokeUnownedBlobPreviews(
-          entry.attachments,
-          collectOwnedBlobPreviews(true)
-        )
+        entry.attachments?.forEach(releaseAttachmentUrls)
         return
       }
       if (!userTexts.value.has(id)) userTexts.value.set(id, entry.userText)
       if (!userAttachments.value.has(id))
         setIfNonEmpty(userAttachments.value, id, entry.attachments)
-      else
-        revokeUnownedBlobPreviews(
-          entry.attachments,
-          collectOwnedBlobPreviews(true)
-        )
+      else entry.attachments?.forEach(releaseAttachmentUrls)
       if (!userTags.value.has(id)) setIfNonEmpty(userTags.value, id, entry.tags)
       if (!userWorkflowReferences.value.has(id))
         setIfNonEmpty(
@@ -2010,10 +1969,7 @@ export const useAgentConversationStore = defineStore(
         entry.transport.settle()
         entry.transport.dispose()
         backgroundTurns.delete(entry.messageId)
-        revokeUnownedBlobPreviews(
-          entry.attachments,
-          collectOwnedBlobPreviews(true)
-        )
+        entry.attachments?.forEach(releaseAttachmentUrls)
         return entry.messageId
       }
       return null
@@ -2029,11 +1985,9 @@ export const useAgentConversationStore = defineStore(
         )
         entry.transport.settle()
         entry.transport.dispose()
+        entry.attachments?.forEach(releaseAttachmentUrls)
       }
       backgroundTurns.clear()
-      const owned = collectOwnedBlobPreviews(true)
-      for (const entry of discarded)
-        revokeUnownedBlobPreviews(entry.attachments, owned)
     }
 
     function liveTurns(): LiveTurn[] {
@@ -2240,9 +2194,8 @@ export const useAgentConversationStore = defineStore(
     }
 
     function dropAttachmentPreviews(): void {
-      const retainedByBackground = collectOwnedBlobPreviews(false)
       for (const attachments of userAttachments.value.values())
-        revokeUnownedBlobPreviews(attachments, retainedByBackground)
+        attachments.forEach(releaseAttachmentUrls)
       userAttachments.value = new Map()
     }
 

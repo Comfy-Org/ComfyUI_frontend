@@ -5138,5 +5138,35 @@ describe('useAgentConversationStore', () => {
       expect(revoke).toHaveBeenCalledWith('blob:persisted-cat')
       revoke.mockRestore()
     })
+
+    it('keeps an off-screen accepted turn blob preview alive after the composer releases it, until the resumed turn is reset', () => {
+      vi.spyOn(URL, 'createObjectURL').mockReturnValueOnce('blob:background')
+      const revoke = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      const preview = createSharedObjectUrl(new Blob())
+      const store = useAgentConversationStore()
+      const turnId = toTurnId('msg-bg-blob')
+      store.startBackgroundTurn({
+        threadId: 'th-bg-blob',
+        turnId,
+        text: 'with image',
+        attachments: [{ name: 'cat.png', ref: 'cat.png', previewUrl: preview }],
+        tab: { status: 'unknown' }
+      })
+      releaseSharedObjectUrl(preview)
+      expect(revoke).not.toHaveBeenCalled()
+
+      store.setThreadId('th-bg-blob')
+      store.hydrate([])
+      store.resumeBackgroundTurn()
+      expect(revoke).not.toHaveBeenCalled()
+      expect(
+        store.entries.find((entry) => entry.role === 'user')
+      ).toMatchObject({ attachments: [{ previewUrl: 'blob:background' }] })
+
+      store.reset()
+      expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:background')
+    })
   })
 })
