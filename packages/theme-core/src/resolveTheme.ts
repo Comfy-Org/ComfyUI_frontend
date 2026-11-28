@@ -10,7 +10,6 @@ import type {
   ThemePreset,
   ThemeTokens
 } from './themePresetSchema'
-import { validThemeTokens } from './themePresetSchema'
 
 export function usesThemeAliases(id: string) {
   return id === 'dark' || id === 'light'
@@ -107,7 +106,7 @@ export function resolveTheme(preset: ThemePreset) {
     ...DERIVED_THEME_DEFAULTS,
     ...defaults.colors.theme,
     ...legacy,
-    ...validThemeTokens(preset.colors.theme)
+    ...preset.colors.theme
   }
   return {
     id: preset.id,

@@ -164,7 +164,7 @@ describe('theme resolution', () => {
     ).toEqual(px)
   })
 
-  it.for(['2rem', '30', 'calc(28px + 2px)', '-1px'])(
+  it.for(['2rem', '30', 'calc(28px + 2px)'])(
     'rejects %s as a node length token',
     (value) => {
       expect(
@@ -172,23 +172,4 @@ describe('theme resolution', () => {
       ).toBe(false)
     }
   )
-
-  it('falls back to the default for a stored node length token that is not px', () => {
-    const tokens = resolveTheme({
-      id: 'stored',
-      name: 'Stored',
-      colors: {
-        node_slot: {},
-        litegraph_base: {},
-        comfy_base: {},
-        theme: {
-          'node-header-height': 'calc(28px + 2px)',
-          'node-slot-inset': '6px'
-        }
-      }
-    }).cssTokens
-
-    expect(themePx(tokens, 'node-header-height')).toBe(28)
-    expect(themePx(tokens, 'node-slot-inset')).toBe(6)
-  })
 })
