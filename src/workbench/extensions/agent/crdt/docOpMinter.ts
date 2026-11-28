@@ -57,6 +57,7 @@ import {
 import { SUBSCRIBE_ACK_MAX_TIMEOUTS } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
+import { omitDocumentBookkeeping } from './omitDocumentBookkeeping'
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './lifecycleTiming'
 import { promotedHostInputs } from './promotedHostInputs'
 import { reportLostEdit } from './reportLostEdit'
@@ -238,15 +239,6 @@ interface PendingWidgetValue {
   documentValueAtWrite: unknown
 }
 
-/**
- * Returns the node's save-format snapshot for a semantic add operation.
- *
- * Excludes only subgraph hosts, whose widget values are positional by design
- * (`applyHostWidgets` indexes them against the live promoted inputs). Every
- * other named-value node gets a declared `widgets_values_form` when one can
- * be proven (schema A24); otherwise it keeps the positional snapshot rather
- * than shipping an undeclared name-keyed record (KA-12).
- */
 export function wireNodeSnapshot(
   node: LGraphNode,
   onPositionalDropped?: (counts: { positional: number; named: number }) => void
@@ -257,8 +249,7 @@ export function wireNodeSnapshot(
   } catch {
     return null
   }
-  const wireSerialized = { ...serialized }
-  Reflect.deleteProperty(wireSerialized, '__incarnation')
+  const wireSerialized = omitDocumentBookkeeping(serialized)
   Reflect.deleteProperty(wireSerialized, 'widgets_values_form')
   const {
     widgets_values_named: named,

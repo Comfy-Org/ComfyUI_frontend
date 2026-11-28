@@ -76,6 +76,7 @@ import type {
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { placementOffset } from './batchPlacement'
+import { omitDocumentBookkeeping } from './omitDocumentBookkeeping'
 import { promotedHostInputs } from './promotedHostInputs'
 
 export type NodeChange = 'add' | 'update' | 'delete'
@@ -548,7 +549,10 @@ function readDocNode(
   if (widgets === undefined && record !== undefined)
     fields[OPAQUE_WIDGETS_KEY] = record
   const modeUnreadable = dropUnreadableMode(fields)
-  const parsed = zDocNodeFields.safeParse(fields)
+  const parsed = zDocNodeFields.safeParse({
+    ...omitDocumentBookkeeping(fields),
+    [OPAQUE_WIDGETS_KEY]: fields[OPAQUE_WIDGETS_KEY]
+  })
   if (!parsed.success) {
     const { error } = parsed
     return {
