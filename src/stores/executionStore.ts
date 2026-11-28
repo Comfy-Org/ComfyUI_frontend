@@ -92,6 +92,8 @@ export interface QueuedJob {
   startTime?: number
   submissionAcceptedAt?: number
   executionStartedAt?: number
+  /** Epoch ms from the execution_start message. */
+  executionStartedAtWallMs?: number
   outcomeTracked?: boolean
   workflowContext?: WorkflowExecutionContext
   workflowExecutionIntent?: WorkflowExecutionIntent
@@ -700,6 +702,12 @@ export const useExecutionStore = defineStore('execution', () => {
       }
     }
     queuedJobs.value[jobId].executionStartedAt ??= performance.now()
+    const startTimestamp = e.detail.timestamp
+    queuedJobs.value[jobId].executionStartedAtWallMs ??= Number.isFinite(
+      startTimestamp
+    )
+      ? startTimestamp
+      : Date.now()
     setWorkflowStatus(jobId, {
       status: 'running',
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
@@ -1482,11 +1490,16 @@ export const useExecutionStore = defineStore('execution', () => {
     return jobIdToSessionWorkflowPath.value.get(activeJobId.value) === path
   })
 
+  function getExecutionStartWallMs(jobId: JobId): number | undefined {
+    return queuedJobs.value[jobId]?.executionStartedAtWallMs
+  }
+
   return {
     isIdle,
     clientId,
     activeJobId,
     queuedJobs,
+    getExecutionStartWallMs,
     executingNodeId,
     executingNodeIds,
     activeJob,

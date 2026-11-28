@@ -2234,7 +2234,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.activeJobId).toBe('job-1')
       expect(store.queuedJobs['job-1']).toEqual({
         nodes: {},
-        executionStartedAt: expect.any(Number)
+        executionStartedAt: expect.any(Number),
+        executionStartedAtWallMs: 0
       })
     })
 
@@ -2287,6 +2288,40 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store.initializingJobIds.has('job-1')).toBe(false)
       expect(store.initializingJobIds.has('job-2')).toBe(true)
+    })
+
+    it('records the execution_start timestamp as the wall-clock start', () => {
+      fire('execution_start', {
+        prompt_id: 'job-1',
+        timestamp: 1_700_000_000_000
+      })
+
+      expect(store.getExecutionStartWallMs('job-1')).toBe(1_700_000_000_000)
+    })
+
+    it('uses Date.now when execution_start has no timestamp', () => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_123)
+
+      fire('execution_start', { prompt_id: 'job-1' })
+
+      expect(store.getExecutionStartWallMs('job-1')).toBe(1_700_000_000_123)
+    })
+
+    it('keeps the first execution_start wall clock for a job', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 5000 })
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 9000 })
+
+      expect(store.getExecutionStartWallMs('job-1')).toBe(5000)
+    })
+
+    it('drops the wall clock when the job leaves the queue', () => {
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 5000 })
+      fire('execution_success', {
+        prompt_id: 'job-1',
+        timestamp: 8000
+      })
+
+      expect(store.getExecutionStartWallMs('job-1')).toBeUndefined()
     })
 
     describe('a run queued from another connection', () => {
