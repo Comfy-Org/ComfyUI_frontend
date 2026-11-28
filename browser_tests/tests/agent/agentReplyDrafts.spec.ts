@@ -60,6 +60,17 @@ function toolCall(name: string, status: 'running' | 'success'): AgentWsEvent {
   }
 }
 
+function toolCallDraft(name: string): AgentWsEvent {
+  return {
+    type: 'agent_tool_call_draft',
+    data: {
+      tool_call_id: `call-${name}`,
+      tool_name: name,
+      ...ids
+    }
+  }
+}
+
 interface Turn {
   panel: Locator
   send: (frame: AgentWsEvent | HostFrame) => void
@@ -151,6 +162,65 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
 }
 
 test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
+  test('a named tool appears while the model writes it and settles in place', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Build a fox video.')
+    const thinking = 'I will prepare the render script.'
+    const rows = panel.getByTestId('agent-activity-trace').getByRole('listitem')
+    const toolRow = rows.filter({ hasText: 'Run script' })
+
+    send(thinkingDraftFrame(ids, thinking))
+    send(toolCallDraft('run_script'))
+
+    await expect(rows).toHaveCount(2)
+    await expect(rows.nth(0)).toContainText(thinking)
+    await expect(rows.nth(1)).toContainText('Run script')
+    await expect(toolRow.locator('.animate-spin')).toBeVisible()
+
+    send(thinkingFrame(ids, `${thinking} Starting now.`))
+    send(toolCall('run_script', 'running'))
+
+    await expect(rows).toHaveCount(2)
+    await expect(rows.nth(0)).toContainText(`${thinking} Starting now.`)
+    await expect(toolRow).toHaveCount(1)
+    await expect(toolRow.locator('.animate-spin')).toBeVisible()
+
+    send(toolCall('run_script', 'success'))
+
+    await expect(toolRow).toHaveCount(1)
+    await expect(toolRow.locator('.animate-spin')).toHaveCount(0)
+    await expect(toolRow.locator('[class*="lucide--wrench"]')).toBeVisible()
+  })
+
+  test('a provisional tool row leaves no trace after withdrawal or turn end', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { panel, send } = await startTurn(page, 'Check the render script.')
+    const toolRow = panel
+      .getByTestId('agent-activity-trace')
+      .getByRole('listitem')
+      .filter({ hasText: 'Run script' })
+
+    send(toolCallDraft('run_script'))
+    await expect(toolRow).toHaveCount(1)
+
+    send({
+      type: 'agent_tool_call_draft',
+      data: { tool_call_id: '', tool_name: '', ...ids }
+    })
+    await expect(toolRow).toHaveCount(0)
+
+    send(toolCallDraft('run_script'))
+    await expect(toolRow).toHaveCount(1)
+
+    send({ type: 'agent_message_done', data: { ...ids, usage: null } })
+    await expect(toolRow).toHaveCount(0)
+    await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
+  })
+
   test('thinking appears while the model writes it, and is shown once when the round ends', async ({
     page
   }) => {

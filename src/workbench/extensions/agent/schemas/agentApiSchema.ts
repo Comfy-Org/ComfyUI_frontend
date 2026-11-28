@@ -324,6 +324,15 @@ const zAgentMessageDraftData = z
   })
   .passthrough()
 
+const zAgentToolCallDraftData = z
+  .object({
+    tool_call_id: z.string(),
+    tool_name: z.string(),
+    message_id: z.string(),
+    thread_id: z.string()
+  })
+  .passthrough()
+
 const zAgentUsage = z
   .object({
     input_tokens: z.number().nullish(),
@@ -383,6 +392,11 @@ const zAgentThinkingDraftEvent = z.object({
   data: zAgentMessageDraftData
 })
 
+const zAgentToolCallDraftEvent = z.object({
+  type: z.literal('agent_tool_call_draft'),
+  data: zAgentToolCallDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -420,6 +434,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentMessageDeltaEvent,
   zAgentMessageDraftEvent,
   zAgentThinkingDraftEvent,
+  zAgentToolCallDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
