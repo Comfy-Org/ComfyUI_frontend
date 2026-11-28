@@ -21,6 +21,7 @@ import {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -54,6 +55,10 @@ vi.mock(import('firebase/auth'), { spy: true })
 beforeEach(() => {
   stubFirebaseAuthHarness()
 })
+
+function isDefaultWorkflow(data: unknown): boolean {
+  return JSON.stringify(data) === JSON.stringify(getDefaultWorkflow())
+}
 
 function createModeTestWorkflow(
   options: {
@@ -314,6 +319,21 @@ describe('useWorkflowService', () => {
     beforeEach(() => {
       enableWarningSettings()
       workflowStore = useWorkflowStore()
+    })
+
+    it('cancels ghost placement before deactivating the outgoing tracker', () => {
+      const activeWorkflow = createModeTestWorkflow()
+      const tracker = createMockChangeTracker()
+      const deactivate = vi.spyOn(tracker, 'deactivate')
+      activeWorkflow.changeTracker = tracker
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(app.canvas.finalizeGhostPlacement).toHaveBeenCalledWith(true)
+      expect(app.canvas.finalizeGhostPlacement).toHaveBeenCalledBefore(
+        deactivate
+      )
     })
 
     it('forwards the clean flag to saveCurrentViewport', () => {
@@ -2249,7 +2269,7 @@ describe('useWorkflowService', () => {
         path: 'Unsaved Workflow.json'
       })
       vi.mocked(app.loadGraphData).mockImplementation(async (data) => {
-        if (data === defaultGraph)
+        if (isDefaultWorkflow(data))
           useWorkflowStore().activeWorkflow = fallback as LoadedComfyWorkflow
         return true
       })

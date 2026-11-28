@@ -3,6 +3,7 @@ import { toRaw } from 'vue'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import { cancelGhostPlacement } from '@/lib/litegraph/src/canvas/ghostPlacement'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
@@ -31,8 +32,9 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
+import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { nodeTypesMayStillArrive } from '@/platform/lateCustomNodes/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/lateCustomNodes/waitingNodes'
@@ -500,7 +502,7 @@ export const useWorkflowService = () => {
    * Load the default workflow
    */
   const loadDefaultWorkflow = () =>
-    queueWorkflowLoad(() => useApp().loadGraphData(defaultGraph))
+    queueWorkflowLoad(() => useApp().loadGraphData(getDefaultWorkflow()))
 
   /**
    * Load a blank workflow
@@ -913,6 +915,8 @@ export const useWorkflowService = () => {
     // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
+    const canvas = useApp().canvasOrUndefined
+    if (canvas) cancelGhostPlacement(canvas)
     if (activeWorkflow) {
       // Typed as `ComfyWorkflow`: the active workflow's tracker can be absent
       // despite `LoadedComfyWorkflow`'s declared type.
