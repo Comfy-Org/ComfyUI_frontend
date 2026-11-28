@@ -50,6 +50,11 @@ Keep widely-recognized technical terms in English rather than inventing German e
 German compounds are written closed, not spaced: "Bildgenerierung", not "Bild Generierung". Where a compound joins an English technical term to a German noun, hyphenate: "Node-Editor", "Workflow-Vorlage".
 Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the infinitive-with-zu form, which reads like documentation rather than an interface.`
 
+const vietnameseGuidance = `Use natural, concise Vietnamese (vi-VN) as used in modern software UIs, addressing the user as "bạn".
+Keep widely-recognized technical terms in English (Latin script): Node, Workflow, Canvas, Widget, Subgraph, Checkpoint, LoRA, VAE, CLIP, ControlNet, Sampler, Scheduler, Seed, Mask, Prompt, Latent, Bypass, ComfyUI, API, GPU, CUDA, VRAM.
+Preferred terms: Settings = Cài đặt, Save = Lưu, Load = Tải, Import = Nhập, Export = Xuất, Update = Cập nhật, Restart = Khởi động lại, Queue = Hàng đợi, Model = Mô hình, Group = Nhóm, Input = Đầu vào, Output = Kết quả, Enable = Bật, Disable = Tắt, Reset = Đặt lại, Default = Mặc định, Error = Lỗi, Warning = Cảnh báo.
+Keep ALL interpolation placeholders ({node}, {count}...), pipe-separated plural forms ("a | b"), markdown and HTML tags, keyboard symbols, URLs and file paths exactly as written. Never use Vietnamese Title Case; write normal sentence case.`
+
 const generationDefaults = {
   model: 'gpt-5.6-terra',
   reasoningEffort: 'high',
@@ -94,7 +99,8 @@ const appTranslationConfig: TranslationPipelineConfig = {
     { code: 'fa', name: 'Persian', guidance: persianGuidance },
     { code: 'he', name: 'Hebrew', guidance: hebrewGuidance },
     { code: 'it', name: 'Italian' },
-    { code: 'de', name: 'German', guidance: germanGuidance }
+    { code: 'de', name: 'German', guidance: germanGuidance },
+    { code: 'vi', name: 'Vietnamese', guidance: vietnameseGuidance }
   ]
 }
 
