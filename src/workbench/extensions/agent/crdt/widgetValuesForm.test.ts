@@ -90,7 +90,7 @@ describe('the proven widget form', () => {
     expect(widgetFormSuppressionTally()).toEqual([])
   })
 
-  it('declares nothing for a value-dependent layout, which the catalog owns', () => {
+  it('declares the live form for a value-dependent layout', () => {
     useNodeDefStore().addNodeDef(
       nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
@@ -99,9 +99,9 @@ describe('the proven widget form', () => {
       n.addWidget('number', 'mode.steps', 4, () => {})
     })
 
-    expect(widgetValuesFormVerdict(node)).toMatchObject({
-      declared: false,
-      reason: 'value_dependent_layout'
+    expect(widgetValuesFormVerdict(node)).toEqual({
+      declared: true,
+      form: { order: ['mode', 'mode.steps'] }
     })
   })
 
@@ -426,16 +426,13 @@ describe('the invariant channel', () => {
 
 describe('invariant 4 — the undeclared-form production signal', () => {
   it('reports the class and the reason, once per pair', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
-    )
     const build = (n: LGraphNode) => {
-      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
-      n.addWidget('number', 'mode.steps', 4, () => {})
+      n.addWidget('text', 'prompt', 'a', () => {})
+      n.addWidget('text', 'prompt', 'b', () => {})
     }
-    const values = { mode: 'a', 'mode.steps': 4 }
-    const first = nodeWith('Dynamic', build)
-    const repeat = nodeWith('Dynamic', build)
+    const values = { prompt: 'b' }
+    const first = detachedNodeWith('Duplicated', build)
+    const repeat = detachedNodeWith('Duplicated', build)
 
     provenWidgetValuesForm(first, values, serializedOf(first))
     provenWidgetValuesForm(repeat, values, serializedOf(repeat))
@@ -451,11 +448,11 @@ describe('invariant 4 — the undeclared-form production signal', () => {
         errorType: 'agent_widget_form_undeclared',
         surface: 'agent',
         level: 'warning',
-        tags: { node_type: 'Dynamic', reason: 'value_dependent_layout' },
+        tags: { node_type: 'Duplicated', reason: 'duplicate_widget_name' },
         fingerprint: [
           'agent_widget_form_undeclared',
-          'value_dependent_layout',
-          'Dynamic'
+          'duplicate_widget_name',
+          'Duplicated'
         ]
       })
     )
@@ -492,21 +489,11 @@ describe('invariant 4 — the undeclared-form production signal', () => {
   })
 
   it('keeps a per-class tally a bulk pass can read without telemetry', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
-    )
-    function dynamic(n: LGraphNode) {
-      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
-    }
-    const first = nodeWith('Dynamic', dynamic)
-    const repeat = nodeWith('Dynamic', dynamic)
     const duplicated = detachedNodeWith('Duplicated', (n) => {
       n.addWidget('text', 'prompt', 'a', () => {})
       n.addWidget('text', 'prompt', 'b', () => {})
     })
 
-    provenWidgetValuesForm(first, { mode: 'a' }, serializedOf(first))
-    provenWidgetValuesForm(repeat, { mode: 'a' }, serializedOf(repeat))
     provenWidgetValuesForm(
       duplicated,
       { prompt: 'b' },
@@ -514,12 +501,11 @@ describe('invariant 4 — the undeclared-form production signal', () => {
     )
 
     expect(widgetFormSuppressionTally()).toEqual([
-      { nodeType: 'Dynamic', reason: 'value_dependent_layout', count: 2 },
       { nodeType: 'Duplicated', reason: 'duplicate_widget_name', count: 1 }
     ])
   })
 
-  it('classifies and tallies for a bulk pass without reporting', () => {
+  it('classifies a dynamic layout for a bulk pass without reporting', () => {
     useNodeDefStore().addNodeDef(
       nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
@@ -527,10 +513,11 @@ describe('invariant 4 — the undeclared-form production signal', () => {
       n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
     })
 
-    expect(widgetValuesFormVerdict(node)).toMatchObject({ declared: false })
+    expect(widgetValuesFormVerdict(node)).toEqual({
+      declared: true,
+      form: { order: ['mode'] }
+    })
     expect(reportError).not.toHaveBeenCalled()
-    expect(widgetFormSuppressionTally()).toEqual([
-      { nodeType: 'Dynamic', reason: 'value_dependent_layout', count: 1 }
-    ])
+    expect(widgetFormSuppressionTally()).toEqual([])
   })
 })

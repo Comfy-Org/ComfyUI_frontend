@@ -49,7 +49,6 @@ type WidgetFormSuppression =
   | 'declared_keys_disagree'
   /** Invariant 3 — the hook changed the values carried by the Agent wire. */
   | 'hook_changed_serialized_widgets'
-  /** The catalogue owns this order: it is a function of the values. */
   | 'value_dependent_layout'
   /** A missing-node shell round-trips a stored payload, not live widgets. */
   | 'shell_last_serialization'
@@ -108,9 +107,8 @@ const INVARIANT_MESSAGES: Partial<Record<WidgetFormSuppression, string>> = {
 const UNDECLARED_FORM_MESSAGE =
   'Agent widget form invariant 4: object-shaped widget values with no declared form'
 
-const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
+const UNSUPPORTED_VALUE_DEPENDENT_INPUT_TYPES = new Set([
   'COMFY_AUTOGROW_V3',
-  'COMFY_DYNAMICCOMBO_V3',
   'COMFY_DYNAMICGROUP_V3'
 ])
 
@@ -393,13 +391,9 @@ export function classifyWidgetValuesForm(
   values: Record<string, unknown>,
   serialized: SerializedWidgetValues
 ): WidgetFormVerdict {
-  // The catalogue owns a value-dependent order; declaring one would close a
-  // list that is supposed to expand with the selection.
-  if (layoutDependsOnValues(node)) return suppressed('value_dependent_layout')
+  if (layoutDependsOnUnsupportedValues(node))
+    return suppressed('value_dependent_layout')
 
-  // A missing-node shell round-trips its stored payload verbatim, so the
-  // serialized values describe a class this build cannot see and the live
-  // widget list — fabricated or empty — cannot order them.
   if (node.last_serialization) return suppressed('shell_last_serialization')
 
   const proof = formProof(node, values, serialized)
@@ -408,6 +402,13 @@ export function classifyWidgetValuesForm(
     if (failed) return failed
   }
   return { declared: true, form: { order: [...proof.order] } }
+}
+
+function layoutDependsOnUnsupportedValues(node: LGraphNode): boolean {
+  const definition = useNodeDefStore().fromLGraphNode(node)
+  return Object.values(definition?.inputs ?? {}).some((spec) =>
+    UNSUPPORTED_VALUE_DEPENDENT_INPUT_TYPES.has(spec.type)
+  )
 }
 
 /**
@@ -491,11 +492,4 @@ export function provenWidgetValuesForm(
   }
 
   return undefined
-}
-
-function layoutDependsOnValues(node: LGraphNode): boolean {
-  const definition = useNodeDefStore().fromLGraphNode(node)
-  return Object.values(definition?.inputs ?? {}).some((spec) =>
-    VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(spec.type)
-  )
 }

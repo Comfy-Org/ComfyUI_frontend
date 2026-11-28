@@ -4352,14 +4352,6 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
 
   it.for([
     {
-      case: 'a dynamic combo input',
-      definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] }),
-      build: (n: LGraphNode) => {
-        n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
-        n.addWidget('number', 'mode.steps', 4, () => {})
-      }
-    },
-    {
       case: 'a dynamic group input',
       definition: nodeDef('Dynamic', { mode: ['COMFY_DYNAMICGROUP_V3', {}] }),
       build: (n: LGraphNode) => {
@@ -4586,7 +4578,8 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     }
     const snapshot = wireNodeSnapshot(node)!
     expect(snapshot).toMatchObject({
-      widgets_values: { mode: 'a', 'mode.steps': 4 }
+      widgets_values: ['a', 4],
+      widgets_values_form: { order: ['mode', 'mode.steps'] }
     })
     const doc = mint({ nodes: [], links: [] }, catalog)
     const operations: GraphOperation[] = [
@@ -4616,7 +4609,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     doc.destroy()
   })
 
-  it('refuses an uncatalogued dynamic combo before accepting partial widget state', () => {
+  it('applies an uncatalogued dynamic combo from its producer form', () => {
     useNodeDefStore().addNodeDef(
       nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
     )
@@ -4645,13 +4638,13 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
       catalog
     )
 
-    expect(outcomes).toEqual([
+    expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
+    expect(project(doc, catalog).nodes).toEqual([
       expect.objectContaining({
-        outcome: 'rejected',
-        reason: expect.objectContaining({ code: 'uncatalogued_widget_write' })
+        widgets_values: ['a', 4],
+        widgets_values_form: { order: ['mode', 'mode.steps'] }
       })
     ])
-    expect(project(doc, catalog).nodes).toEqual([])
     doc.destroy()
   })
 
@@ -4819,7 +4812,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
       }
     )
 
-    it.fails('applies a human edit of a dotted dynamic child the pinned catalog does not list', () => {
+    it('applies a human edit of a dotted dynamic child the pinned catalog does not list', () => {
       useNodeDefStore().addNodeDef(
         nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
       )

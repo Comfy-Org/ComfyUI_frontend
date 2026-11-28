@@ -275,9 +275,20 @@ export function wireNodeSnapshot(
   const namedCount = Object.keys(named).length
   if (Array.isArray(positional) && positional.length > namedCount)
     onPositionalDropped?.({ positional: positional.length, named: namedCount })
+  const wireValues =
+    form && hasDynamicComboInput(node)
+      ? form.order.map((name) => values[name])
+      : values
   return form
-    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
+    ? { ...snapshot, widgets_values: wireValues, widgets_values_form: form }
     : { ...snapshot, widgets_values: values }
+}
+
+function hasDynamicComboInput(node: LGraphNode): boolean {
+  const definition = useNodeDefStore().fromLGraphNode(node)
+  return Object.values(definition?.inputs ?? {}).some(
+    (spec) => spec.type === 'COMFY_DYNAMICCOMBO_V3'
+  )
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {

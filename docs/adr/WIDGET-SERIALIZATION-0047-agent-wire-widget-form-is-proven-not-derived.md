@@ -115,9 +115,11 @@ each is wrong:
 
 ### Shapes that are suppressed without being violations
 
-A value-dependent layout (`COMFY_AUTOGROW_V3`, `COMFY_DYNAMICCOMBO_V3`,
-`COMFY_DYNAMICGROUP_V3`) keeps its order in the catalogue, which expands it
-with the selection; a closed form would freeze it. A missing-node shell
+A dynamic combo may publish a proven live form because the shared applier
+composes that positional producer order with the pinned catalogue's dynamic
+overlay and recomputes it when the selection changes. Other value-dependent
+layouts (`COMFY_AUTOGROW_V3`, `COMFY_DYNAMICGROUP_V3`) remain suppressed because
+their closed form would freeze catalogue-owned expansion. A missing-node shell
 (`last_serialization` set) round-trips a stored payload for a class this build
 cannot see, so its live widget list — empty or fabricated — cannot order it. A
 value with no live widget at all, an unnamed widget, and two value widgets
@@ -134,6 +136,9 @@ declaration gap would bury the signal under every such class in the ecosystem.
   filtered post-hook named-value key set was rewritten by an extension no
   longer gets a form. Positional or private state the Agent wire does not send
   does not suppress the form.
+- A dynamic-combo node sends its proven values positionally with the form. This
+  activates the shared applier's dynamic overlay while preserving extension
+  widgets the pinned catalogue does not list.
 - Two stricter checks from #22007 were tried and deliberately not adopted.
   Refusing a form because a class overrides serialization, or because a hook
   replaced the positional array, finds no wrong form on this wire: the proof
