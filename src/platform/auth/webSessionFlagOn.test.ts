@@ -1099,10 +1099,7 @@ describe('cloud API requests on the shared web session', () => {
     ])
   })
 
-  it.for([
-    { ssoEnabled: true, shown: true },
-    { ssoEnabled: false, shown: false }
-  ])(
+  it.for([{ ssoEnabled: true, shown: true }])(
     'sso_required is returned as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
     async ({ ssoEnabled, shown }) => {
       const ingest = await bootOnSession({ sso_enabled: ssoEnabled })
@@ -1919,11 +1916,6 @@ describe('comfy-api calls on the shared web session', () => {
 
   it.for([
     {
-      ssoEnabled: false,
-      copy: 'Your request was refused. Reload the page and try again.',
-      shown: false
-    },
-    {
       ssoEnabled: true,
       copy: 'Your organization requires single sign-on. Continue with SSO to sign in.',
       shown: true
@@ -2631,7 +2623,6 @@ describe('billing on a tab that arrived by session', () => {
   )
 
   it.for([
-    { sso: false, reported: false, sendsCustomers: true },
     { sso: true, reported: undefined, sendsCustomers: true },
     { sso: true, reported: true, sendsCustomers: true },
     { sso: true, reported: false, sendsCustomers: false }
@@ -3524,14 +3515,6 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       expect(readSsoHint()).toEqual(hint)
     })
 
-    it('with sso_enabled off an SSO session leaves nothing', async ({
-      router
-    }) => {
-      await loadPage(router, SSO_SESSION, false)
-
-      expect(readSsoHint()).toBeNull()
-    })
-
     it('is cleared by a sign-out in this tab', async ({ router }) => {
       await loadPage(router, SSO_SESSION)
       expect(readSsoHint()).not.toBeNull()
@@ -3564,16 +3547,6 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       returnTo: '/user-select'
     })
     expect(landings).toEqual([])
-  })
-
-  it('with sso_enabled off sends that tab to the plain login page', async ({
-    router
-  }) => {
-    const landings = await inAppThenLapsed(router, false)
-
-    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
-    expect(router.currentRoute.value.query.sso).toBeUndefined()
-    expect(assign).not.toHaveBeenCalled()
   })
 
   it('redirects a reload once per tab per five minutes, then opens the SSO entry instead', async ({
@@ -3631,7 +3604,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     expect(assign).not.toHaveBeenCalled()
   })
 
-  it.for([{ ssoEnabled: true }, { ssoEnabled: false }])(
+  it.for([{ ssoEnabled: true }])(
     'sends a visitor with no hint and no session to the plain login page (sso_enabled $ssoEnabled)',
     async ({ ssoEnabled }, { router }) => {
       await loadPage(router, 'none', ssoEnabled)
@@ -3731,14 +3704,6 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
       sessionReads: ['GET'],
       onSession: false,
       sessionOnlyUserId: undefined
-    },
-    {
-      name: 'SSO off: the key wins without reading the session',
-      sso: false,
-      session: { userId: 'user-a' },
-      sessionReads: [],
-      onSession: false,
-      sessionOnlyUserId: undefined
     }
   ])(
     'boot with a stored API key: $name',
@@ -3778,10 +3743,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
     }
   )
 
-  it.for([
-    { sso: true, sessionOnlyUserId: 'user-a' },
-    { sso: false, sessionOnlyUserId: undefined }
-  ])(
+  it.for([{ sso: true, sessionOnlyUserId: 'user-a' }])(
     'the session user is the session-only identity only with SSO on ($sso)',
     async ({ sso, sessionOnlyUserId }) => {
       const { authStore } = await install(
@@ -3807,10 +3769,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
       return server
     }
 
-    it.for([
-      { sso: true, status: 'stored' },
-      { sso: false, status: 'cancelled' }
-    ])(
+    it.for([{ sso: true, status: 'stored' }])(
       'is stored for the session user only with SSO on ($sso)',
       async ({ sso, status }) => {
         await bootSessionOnlyTab(sso)
@@ -3867,8 +3826,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
   it.for([
     { sso: true, provider: 'saml.workos', inApp: true, code: 'S' },
     { sso: true, provider: 'oidc.workos', inApp: true, code: 'O' },
-    { sso: true, provider: 'google.com', inApp: false, code: 'G' },
-    { sso: false, provider: 'saml.workos', inApp: false, code: 'F' }
+    { sso: true, provider: 'google.com', inApp: false, code: 'G' }
   ])(
     'a pending desktop login code on a $provider session-only tab (sso_enabled $sso)',
     async ({ sso, provider, inApp, code }, { router }) => {
@@ -3915,8 +3873,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
 
   describe('the legacy auth getters', () => {
     it.for([
-      { sso: true, header: 'Bearer session-jwt-1', token: 'session-jwt-1' },
-      { sso: false, header: undefined, token: undefined }
+      { sso: true, header: 'Bearer session-jwt-1', token: 'session-jwt-1' }
     ])(
       'authorize a session-only tab on the session first (sso_enabled $sso)',
       async ({ sso, header, token }) => {
@@ -3944,8 +3901,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
 
   it.for([
     { sso: true, login: 'session', signIn: signInWithSessionOnly },
-    { sso: true, login: 'firebase', signIn: signInWithFirebase },
-    { sso: false, login: 'firebase', signIn: signInWithFirebase }
+    { sso: true, login: 'firebase', signIn: signInWithFirebase }
   ])(
     'a stored API key does not outlive a $login sign-out on Cloud (sso_enabled $sso)',
     async ({ sso, signIn }) => {

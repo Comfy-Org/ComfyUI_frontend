@@ -144,32 +144,6 @@ async function continueWithSso(page: Page, email: string) {
 }
 
 test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
-  test.describe('sso_enabled off', () => {
-    test.use({ ssoEnabled: false })
-
-    test('offers no SSO entry and signs an email in through Firebase without asking discover', async ({
-      page,
-      cloudAuth,
-      discoverRequests
-    }) => {
-      await answerDiscover(page, 200, SSO_DISCOVERED)
-      await cloudAuth.mockLiveEmailSignIn()
-
-      const features = page.waitForResponse((response) =>
-        isPath(response.request(), '/api/features')
-      )
-      await openLogin(page)
-      await features
-      await expect(
-        page.getByRole('button', { name: SSO_COPY.continueWithSso })
-      ).toHaveCount(0)
-      await signInWithEmail(page)
-
-      await expect(page).toHaveURL(APP_ROOT, { timeout: 10_000 })
-      expect(discoverRequests).toEqual([])
-    })
-  })
-
   test.describe('sso_enabled on', () => {
     test('an SSO email navigates to ingest SSO start with its email and return path', async ({
       page,

@@ -293,34 +293,40 @@ describe('useFeatureFlags', () => {
   describe('ssoEnabled', () => {
     it.for([
       {
-        case: 'missing on cloud',
+        case: 'on cloud with the key missing',
         cloud: true,
         value: undefined,
-        expected: false
+        expected: true
       },
-      { case: 'false on cloud', cloud: true, value: false, expected: false },
       {
-        case: 'malformed on cloud',
+        case: 'on cloud with the key false',
         cloud: true,
-        value: 'true',
-        expected: false
+        value: false,
+        expected: true
       },
-      { case: 'true on cloud', cloud: true, value: true, expected: true },
-      { case: 'true off cloud', cloud: false, value: true, expected: false }
-    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      {
+        case: 'off cloud with the key true',
+        cloud: false,
+        value: true,
+        expected: false
+      }
+    ])('is $expected $case', ({ cloud, value, expected }) => {
       vi.mocked(distributionTypes).isCloud = cloud
       vi.mocked(api.getServerFeature).mockReturnValue(value)
 
       expect(useFeatureFlags().flags.ssoEnabled).toBe(expected)
     })
 
-    it('is false on cloud when feature lookup throws', () => {
+    it('does not read sso_enabled from the server', () => {
       vi.mocked(distributionTypes).isCloud = true
       vi.mocked(api.getServerFeature).mockImplementation(() => {
         throw new Error('feature service unavailable')
       })
 
-      expect(useFeatureFlags().flags.ssoEnabled).toBe(false)
+      expect(useFeatureFlags().flags.ssoEnabled).toBe(true)
+      expect(
+        vi.mocked(api.getServerFeature).mock.calls.map(([key]) => key)
+      ).not.toContain('sso_enabled')
     })
   })
 

@@ -317,12 +317,7 @@ export function useFeatureFlags() {
       )
     },
     get ssoEnabled() {
-      if (!isCloud) return false
-
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.SSO_ENABLED,
-        remoteConfig().sso_enabled
-      )
+      return isCloud
     },
     /** Browser sign-in for a local ComfyUI that Desktop does not host. */
     get localWebSsoEnabled() {
@@ -473,7 +468,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
-      [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:
         flags.webSessionLapseRecoveryEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,

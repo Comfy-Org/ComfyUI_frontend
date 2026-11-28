@@ -135,7 +135,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
   web_session_lapse_recovery_enabled?: boolean
-  sso_enabled?: boolean
   local_web_sso?: boolean
   /** Comfy MCP connect surface on local installs. Never served on Cloud. */
   local_mcp_connect?: boolean
