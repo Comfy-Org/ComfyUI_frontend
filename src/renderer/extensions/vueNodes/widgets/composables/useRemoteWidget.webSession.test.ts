@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
@@ -8,7 +8,6 @@ import { COMFY_CLIENT } from '@comfyorg/account-core/requestAuth'
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import { api } from '@/scripts/api'
@@ -59,9 +58,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/platform/telemetry'))
-
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const USER = fromPartial<User>({
   uid: 'user-a',
@@ -111,44 +108,38 @@ const recordRequest = (path: string, init: RequestInit | undefined) => ({
 })
 
 const RESPONSES: Record<string, (workspaceId: string | null) => unknown> = {
-  '/api/features': () => ({ unified_web_session: true }),
+  '/api/features': () => ({}),
   '/api/auth/session': sessionBody,
   '/api/workspaces/current': workspaceBody
 }
 
 function installIngest() {
   const requests: IngestRequest[] = []
-  vi.stubGlobal(
-    'fetch',
-    vi.fn<typeof fetch>(async (input, init) => {
-      const path = new URL(String(input), location.href).pathname
-      if (path !== '/api/features') requests.push(recordRequest(path, init))
-      const workspaceId = new Headers(init?.headers).get('x-comfy-workspace-id')
-      const body = RESPONSES[path]?.(workspaceId) ?? ['checkpoint.safetensors']
-      return jsonResponse(body)
-    })
-  )
+  vi.mocked(fetch).mockImplementation(async (input, init) => {
+    const path = new URL(String(input), location.href).pathname
+    if (path !== '/api/features') requests.push(recordRequest(path, init))
+    const workspaceId = new Headers(init?.headers).get('x-comfy-workspace-id')
+    const body = RESPONSES[path]?.(workspaceId) ?? ['checkpoint.safetensors']
+    return jsonResponse(body)
+  })
   return requests
 }
 
-const workspaceHeader = (workspace: string): Record<string, string> =>
-  workspace === 'ws-team' ? { 'x-comfy-workspace-id': workspace } : {}
+const workspaceHeader = (workspace: string): Record<string, string> => ({
+  'x-comfy-workspace-id': workspace
+})
 
 const sessionRequest = (path: string, workspace: string): IngestRequest => ({
   method: 'GET',
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...workspaceHeader(workspace) },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 describe('remote widgets on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
-  })
-
-  afterEach(() => {
-    remoteConfig.value = {}
   })
 
   it.for([

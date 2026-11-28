@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 
@@ -17,6 +17,49 @@ function useConsentedAgentPanelStore() {
   store.consentAccepted = true
   return store
 }
+
+describe('agentPanelStore funds rechecks', () => {
+  it('releases pending recheck owners and timers when the store is disposed', () => {
+    const store = useAgentPanelStore()
+    const release = vi.fn()
+    const initialTimers = vi.getTimerCount()
+    store.beginFundsRecheck('account-a', release)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+
+    store.$dispose()
+
+    expect(release).toHaveBeenCalledOnce()
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+    expect(vi.getTimerCount()).toBe(initialTimers)
+  })
+
+  it('releases a stalled recheck after a bounded hold', () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const store = useAgentPanelStore()
+    store.beginFundsRecheck('account-a')
+
+    vi.advanceTimersByTime(9_999)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+
+    vi.advanceTimersByTime(1)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+  })
+
+  it('stays pending until every admitted recheck for an identity settles', () => {
+    const store = useAgentPanelStore()
+    const first = store.beginFundsRecheck('account-a')
+    const second = store.beginFundsRecheck('account-a')
+
+    store.finishFundsRecheck(second)
+
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+    store.finishFundsRecheck(first)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+  })
+})
 
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
@@ -31,6 +74,31 @@ describe('agentPanelStore engagement telemetry', () => {
     api.serverFeatureFlagsSettled.value = true
     await nextTick()
     expect(store.flagsSettled).toBe(true)
+  })
+
+  it.for([null, false, '', {}, { state: 'unknown' }])(
+    'ignores an agent feature without a known state: %j',
+    (agent) => {
+      onTestFinished(() => {
+        api.serverFeatureFlags.value = {}
+      })
+      api.serverFeatureFlags.value = { agent }
+
+      expect(useAgentPanelStore().comfyAgent).toBeUndefined()
+    }
+  )
+
+  it("leaves the standalone harness on its own agent, not ComfyUI's", () => {
+    onTestFinished(() => {
+      api.serverFeatureFlags.value = {}
+    })
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready' }
+    }
+    const store = useAgentPanelStore()
+
+    expect(store.comfyAgent).toBeUndefined()
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {
@@ -53,6 +121,25 @@ describe('agentPanelStore engagement telemetry', () => {
       source: 'close_button',
       open_duration_ms: 3000
     })
+  })
+
+  it('starts a fresh free-use epoch when the panel restores without open()', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useConsentedAgentPanelStore()
+    store.enabled = true
+    await nextTick()
+    store.reportedFreeUseImpression = true
+
+    store.enabled = false
+    await nextTick()
+    store.enabled = true
+    await nextTick()
+
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenLastCalledWith({
+      source: 'restored'
+    })
+    expect(store.isOpen).toBe(true)
+    expect(store.reportedFreeUseImpression).toBe(false)
   })
 
   it('emits exactly one opened event for a user click while the panel is enabled', async () => {
@@ -131,6 +218,57 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.suppressRestoredOpen()
     expect(store.isOpen).toBe(true)
+  })
+
+  it('holds a restored open intent hidden for the page without forgetting it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    expect(store.isVisible).toBe(false)
+    expect(store.isOpen).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
+    expect(useTelemetry()!.trackAgentPanelOpened).not.toHaveBeenCalled()
+
+    store.releaseRestoredOpen()
+    await nextTick()
+    expect(store.isVisible).toBe(true)
+    expect(useTelemetry()!.trackAgentPanelOpened).toHaveBeenCalledWith({
+      source: 'restored'
+    })
+  })
+
+  it('shows a held panel when the user opens it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    store.suppressRestoredOpen()
+    store.open()
+    await nextTick()
+
+    expect(store.isVisible).toBe(true)
+    expect(
+      useTelemetry()!.trackAgentPanelOpened
+    ).toHaveBeenCalledExactlyOnceWith({ source: 'topbar_button' })
+  })
+
+  it('shows a held panel when the user toggles it', async () => {
+    localStorage.setItem(OPEN_STORAGE_KEY, 'true')
+    const store = useAgentPanelStore()
+    store.holdRestoredOpen()
+    store.enabled = true
+    await nextTick()
+
+    store.toggle()
+    await nextTick()
+
+    expect(store.isVisible).toBe(true)
+    expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBe('true')
   })
 
   it('emits opened on toggle-open and closed with the open duration', () => {
@@ -420,6 +558,23 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.gateSettled).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
+
+  it.for([{ screen: 'chat' }, { screen: 'skills' }] as const)(
+    'reopens on the $screen screen after the panel is closed',
+    async (view) => {
+      const store = useAgentPanelStore()
+      store.open('topbar_button')
+      store.view = view
+
+      store.close('close_button')
+      await nextTick()
+      expect(store.isOpen).toBe(false)
+      store.open('topbar_button')
+      await nextTick()
+
+      expect(store.view).toEqual(view)
+    }
+  )
 })
 
 describe('agentPanelStore width', () => {
@@ -474,7 +629,12 @@ describe('agentPanelStore width', () => {
       reserved: SIDEBAR_CLOSED,
       expected: 844
     },
-    { requested: 2000, windowWidth: 700, reserved: SIDEBAR_OPEN, expected: 332 }
+    {
+      requested: 2000,
+      windowWidth: 700,
+      reserved: SIDEBAR_OPEN,
+      expected: 332
+    }
   ] as const)(
     'clamps a requested $requested to $expected in a $windowWidth window reserving $reserved',
     ({ requested, windowWidth, reserved, expected }) => {
@@ -580,5 +740,61 @@ describe('agentPanelStore width', () => {
     store.close('topbar_button')
     await nextTick()
     expect(getAgentPanelOpen()).toBe(false)
+  })
+
+  it('reports a refresh rejection that arrives after the timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentPanelStore()
+      const onLateError = vi.fn()
+      let rejectRefresh: ((error: Error) => void) | undefined
+      const refresh = store.refreshBillingStatus(
+        'late-rejection',
+        () =>
+          new Promise<boolean>((_, reject) => {
+            rejectRefresh = reject
+          }),
+        false,
+        onLateError
+      )
+      await vi.advanceTimersByTimeAsync(15_000)
+      await expect(refresh).resolves.toBe(false)
+
+      const error = new Error('late rejection')
+      rejectRefresh?.(error)
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(onLateError).toHaveBeenCalledWith(error)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports an adopted refresh that arrives after the timeout', async () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentPanelStore()
+      const onLateSuccess = vi.fn()
+      let finishRefresh: ((adopted: boolean) => void) | undefined
+      const refresh = store.refreshBillingStatus(
+        'late-success',
+        () =>
+          new Promise<boolean>((resolve) => {
+            finishRefresh = resolve
+          }),
+        false,
+        undefined,
+        onLateSuccess
+      )
+      await vi.advanceTimersByTimeAsync(15_000)
+      await expect(refresh).resolves.toBe(false)
+
+      finishRefresh?.(true)
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(onLateSuccess).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

@@ -9,8 +9,10 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  readonly tabStrip: Locator
   readonly tabs: Locator
   readonly integratedTabBarActions: Locator
+  readonly workflowPopover: Locator
   public readonly menuRoot: Locator
   readonly workflowOverflowButton: Locator
 
@@ -19,15 +21,30 @@ export class Topbar {
     this.menuTrigger = page.getByTestId('comfy-menu-button')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabStrip = this.workflowTabs.getByTestId(
+      TestIds.topbar.workflowTabStrip
+    )
     this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
+    this.workflowPopover = page
+      .locator('.workflow-popover-fade')
+      .filter({ visible: true })
     this.workflowOverflowButton = this.workflowTabs.getByRole('button', {
       name: 'More workflows',
       exact: true,
       includeHidden: true
     })
+  }
+
+  async openBlankWorkflows(count: number) {
+    await expect(this.tabs.first()).toBeVisible()
+    const openTabs = await this.tabs.count()
+    for (let index = 0; index < count; index++) {
+      await this.newWorkflowButton.click()
+    }
+    await expect(this.tabs).toHaveCount(openTabs + count)
   }
 
   async getTabNames(): Promise<string[]> {
@@ -134,9 +151,13 @@ export class Topbar {
     return this._saveWorkflow(workflowName, 'Export')
   }
 
+  exportWorkflowImage(workflowName: string): Promise<void> {
+    return this._saveWorkflow(workflowName, 'Export (Workflow Image)')
+  }
+
   async _saveWorkflow(
     workflowName: string,
-    command: 'Save' | 'Save As' | 'Export'
+    command: 'Save' | 'Save As' | 'Export' | 'Export (Workflow Image)'
   ) {
     await this.triggerTopbarCommand(['File', command])
     await this.getSaveDialog().fill(workflowName)
@@ -144,7 +165,7 @@ export class Topbar {
 
     await this.getSaveDialog().waitFor({ state: 'hidden' })
 
-    if (command === 'Export') return
+    if (command === 'Export' || command === 'Export (Workflow Image)') return
 
     const confirmationDialog = this.page
       .getByRole('dialog')
@@ -172,9 +193,7 @@ export class Topbar {
 
   async dismissWorkflowPopover() {
     await this.page.mouse.move(0, 0)
-    await expect(
-      this.page.locator('.workflow-popover-fade').filter({ visible: true })
-    ).toHaveCount(0)
+    await expect(this.workflowPopover).toHaveCount(0)
   }
 
   async openWorkflowOverflowMenu() {

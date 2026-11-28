@@ -16,6 +16,10 @@ const nanFixturePath = path.resolve(
   __dirname,
   '__fixtures__/with_nan_metadata.webm'
 )
+const legacyCommentFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_vhs_legacy_comment.webm'
+)
 
 describe('WebM/EBML metadata', () => {
   it('extracts workflow and prompt from EBML SimpleTag elements', async () => {
@@ -36,6 +40,16 @@ describe('WebM/EBML metadata', () => {
 
     expect(result.workflow).toBeUndefined()
     expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
+  })
+
+  it('reads workflow and prompt from a legacy VideoHelperSuite COMMENT tag', async () => {
+    const bytes = fs.readFileSync(legacyCommentFixturePath)
+    const file = new File([bytes], 'vhs.webm', { type: 'video/webm' })
+
+    const result = await getFromWebmFile(file)
+
+    expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
+    expect(result.prompt).toEqual(EXPECTED_PROMPT)
   })
 
   it('returns empty for non-WebM data', async () => {

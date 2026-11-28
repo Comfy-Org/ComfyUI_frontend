@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@comfyorg/assets-core/media'
 import Media3DTop from './Media3DTop.vue'
 
 const {
@@ -18,7 +18,7 @@ vi.mock(import('@vueuse/core'), () => ({
   useIntersectionObserver: mockUseIntersectionObserver
 }))
 
-vi.mock(import('../utils/assetPreviewUtil'), () => ({
+vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   findServerPreviewUrl: mockFindServerPreviewUrl,
   isAssetPreviewSupported: mockIsAssetPreviewSupported
 }))
@@ -65,13 +65,12 @@ describe('Media3DTop', () => {
 
   it('renders the placeholder when no thumbnail has loaded', () => {
     noopObserver()
-    const { container } = render(Media3DTop, {
+    render(Media3DTop, {
       props: { asset: makeAsset() },
       global: globalConfig
     })
 
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <img> has no role until src is set
-    expect(container.querySelector('img')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('media-3d-thumbnail')).not.toBeInTheDocument()
     expect(
       screen.getByText('assetBrowser.media.threeDModelPlaceholder')
     ).toBeInTheDocument()
@@ -79,7 +78,7 @@ describe('Media3DTop', () => {
 
   it('uses asset.preview_url directly when preview_id is already on the prop', async () => {
     fireObserverIntersecting()
-    const { container } = render(Media3DTop, {
+    render(Media3DTop, {
       props: {
         asset: makeAsset({
           preview_id: 'p1',
@@ -90,25 +89,27 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const img = container.querySelector('img')
-    expect(img).toHaveAttribute('src', 'http://server/preview.png')
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
+      'src',
+      'http://server/preview.png'
+    )
     expect(mockFindServerPreviewUrl).not.toHaveBeenCalled()
   })
 
   it('queries the server for a preview when preview_id is missing on the prop', async () => {
     fireObserverIntersecting()
     mockFindServerPreviewUrl.mockResolvedValue('http://server/from-name.png')
-    const { container } = render(Media3DTop, {
+    render(Media3DTop, {
       props: { asset: makeAsset() },
       global: globalConfig
     })
     await flush()
 
     expect(mockFindServerPreviewUrl).toHaveBeenCalledWith('mesh.glb')
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const img = container.querySelector('img')
-    expect(img).toHaveAttribute('src', 'http://server/from-name.png')
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
+      'src',
+      'http://server/from-name.png'
+    )
   })
 
   it('skips the server query when isAssetPreviewSupported is false', async () => {
@@ -128,7 +129,7 @@ describe('Media3DTop', () => {
     fireObserverIntersecting()
     mockFindServerPreviewUrl.mockResolvedValue(null)
 
-    const { container, rerender } = render(Media3DTop, {
+    const { rerender } = render(Media3DTop, {
       props: {
         asset: makeAsset({
           preview_id: null,
@@ -138,8 +139,7 @@ describe('Media3DTop', () => {
       global: globalConfig
     })
     await flush()
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('img')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('media-3d-thumbnail')).not.toBeInTheDocument()
 
     // Simulate persistThumbnail patching the store: the prop arrives with the
     // new preview. The watch on [preview_id, preview_url] should apply it
@@ -152,14 +152,15 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const img = container.querySelector('img')
-    expect(img).toHaveAttribute('src', 'http://server/patched.png')
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
+      'src',
+      'http://server/patched.png'
+    )
   })
 
   it('does not overwrite a thumbnail that is already showing', async () => {
     fireObserverIntersecting()
-    const { container, rerender } = render(Media3DTop, {
+    const { rerender } = render(Media3DTop, {
       props: {
         asset: makeAsset({
           preview_id: 'p1',
@@ -169,8 +170,7 @@ describe('Media3DTop', () => {
       global: globalConfig
     })
     await flush()
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('img')).toHaveAttribute(
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
       'src',
       'http://server/first.png'
     )
@@ -183,8 +183,7 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('img')).toHaveAttribute(
+    expect(screen.getByTestId('media-3d-thumbnail')).toHaveAttribute(
       'src',
       'http://server/first.png'
     )
@@ -194,7 +193,7 @@ describe('Media3DTop', () => {
     fireObserverIntersecting()
     mockFindServerPreviewUrl.mockResolvedValue(null)
 
-    const { container, rerender } = render(Media3DTop, {
+    const { rerender } = render(Media3DTop, {
       props: { asset: makeAsset({ preview_id: null, preview_url: undefined }) },
       global: globalConfig
     })
@@ -208,7 +207,6 @@ describe('Media3DTop', () => {
     })
     await flush()
 
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    expect(container.querySelector('img')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('media-3d-thumbnail')).not.toBeInTheDocument()
   })
 })

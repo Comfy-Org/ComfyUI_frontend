@@ -1,5 +1,6 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IAssetWidget } from '@/lib/litegraph/src/types/widgets'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+
+import type { IAssetWidget } from '@comfyorg/graph-model/widgets'
 
 import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions } from './BaseWidget'

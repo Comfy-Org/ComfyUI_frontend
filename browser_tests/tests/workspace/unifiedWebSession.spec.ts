@@ -6,17 +6,21 @@ import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   PROMPT_ACCEPTED,
   SESSION_REVOKED,
+  SHARED_PERSONAL_TEAM_WORKSPACE,
   WEB_SESSION_COOKIE,
   WEB_SESSION_CSRF_TOKEN,
   WEB_SESSION_MINT,
-  WORKSPACE_ACCESS_DENIED
+  WORKSPACE_ACCESS_DENIED,
+  currentWorkspace
 } from '@e2e/fixtures/data/webSession'
 import {
   PERSONAL_WORKSPACE_NAME,
-  TEAM_WORKSPACE_NAME
+  TEAM_WORKSPACE_NAME,
+  WORKSPACE_SWITCHER_WORKSPACES
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { webSessionTest as test } from '@e2e/fixtures/webSessionFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 const WORKSPACE_HEADER = 'x-comfy-workspace-id'
 const TEAM_WORKSPACE_ID = 'ws-team'
@@ -173,6 +177,35 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     })
   })
 
+  test("a member of another user's personal-type Team workspace runs in that workspace, not in Personal", async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const shared = SHARED_PERSONAL_TEAM_WORKSPACE
+    await mockWorkspaceList(page, [...WORKSPACE_SWITCHER_WORKSPACES, shared])
+    await page.route('**/api/workspaces/current', async (route) => {
+      const workspaceId = await route.request().headerValue(WORKSPACE_HEADER)
+      if (workspaceId !== shared.id) return route.fallback()
+      await route.fulfill(jsonRoute(currentWorkspace(shared)))
+    })
+    await mockPromptAccepted(page)
+    await page.evaluate((id) => {
+      sessionStorage.clear()
+      localStorage.setItem('Comfy.Workspace.LastWorkspaceId', id)
+    }, shared.id)
+    await page.reload()
+    await comfyPage.waitForAppReady()
+
+    const promptRequest = page.waitForRequest(isPromptPost)
+    await comfyPage.workflow.loadWorkflow('default')
+    await comfyPage.toast.closeToasts()
+    await comfyPage.runButton.click()
+    const headers = await (await promptRequest).allHeaders()
+
+    expect(headers[WORKSPACE_HEADER]).toBe(shared.id)
+    expect(headers['authorization']).toBeUndefined()
+  })
+
   test('a session revoked elsewhere sends the open tab to the login page when it becomes visible', async ({
     comfyPage
   }) => {
@@ -196,12 +229,13 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     await expect(page).toHaveURL(/\/cloud\/login/)
   })
 
-  test('[E2E-03] switching workspace mints nothing until the next Run, which uses the new workspace', async ({
+  test('[E2E-03] switching workspace goes over the session, and every later mint and the next Run use the new workspace', async ({
     comfyPage,
     tokenMints
   }) => {
     const page = comfyPage.page
     await mockPromptAccepted(page)
+    let mintsBeforeTeamRead = 0
 
     await test.step('switch to the team workspace', async () => {
       await comfyPage.toast.closeToasts()
@@ -216,11 +250,13 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       )
       await switcherPanel.getByText(TEAM_WORKSPACE_NAME).click()
       await teamRead
+      mintsBeforeTeamRead = tokenMints.length
       await comfyPage.waitForAppReady()
 
-      expect(tokenMints, 'workspace switch minted a token before Run').toEqual(
-        []
-      )
+      expect(
+        tokenMints.filter(({ authorization }) => authorization !== undefined),
+        'the switch exchanged a Firebase token instead of using the session'
+      ).toEqual([])
     })
 
     await test.step('Run in the team workspace', async () => {
@@ -231,9 +267,14 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       const headers = await (await promptRequest).allHeaders()
 
       expect(headers[WORKSPACE_HEADER]).toBe(TEAM_WORKSPACE_ID)
-      expect(tokenMints.map(({ workspace }) => workspace)).toEqual([
-        TEAM_WORKSPACE_ID
-      ])
+      expect(
+        new Set(
+          tokenMints
+            .slice(mintsBeforeTeamRead)
+            .map(({ workspace }) => workspace)
+        ),
+        'a token was minted for another workspace after the switch'
+      ).toEqual(new Set([TEAM_WORKSPACE_ID]))
     })
   })
 

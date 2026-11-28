@@ -2,8 +2,8 @@ import type {
   BillingOperationKind,
   BillingPresentation,
   HostedBillingDestination
-} from '../operationState.js'
-import type { CheckoutMethodKind } from './checkoutJourney.js'
+} from '#/core/billing/operationState'
+import type { CheckoutMethodKind } from './checkoutJourney'
 
 /** What the hosted page asks of the customer, from what the server waits on. */
 export type CheckoutHostedStep =

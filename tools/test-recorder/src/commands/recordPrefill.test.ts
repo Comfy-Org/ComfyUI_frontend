@@ -54,6 +54,20 @@ describe('resolveRecordPrefill', () => {
     })
   })
 
+  it.for([
+    { flags: { force: 'true' }, force: true },
+    { flags: { force: 'false' }, force: false },
+    { flags: {}, force: false }
+  ])('reads --force from $flags as $force', ({ flags, force }) => {
+    expect(resolveRecordPrefill(flags).force).toBe(force)
+  })
+
+  it('rejects malformed force instead of silently disabling it', () => {
+    expect(() => resolveRecordPrefill({ force: 'yes' })).toThrow(
+      /Invalid --force value/
+    )
+  })
+
   it('keeps a numeric pull request and rejects other values', () => {
     expect(resolveRecordPrefill({ pr: '123' }).pr).toBe('123')
     const invalid = resolveRecordPrefill({ pr: 'abc' })

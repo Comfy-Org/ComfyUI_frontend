@@ -1,3 +1,5 @@
+import { copyFile } from 'node:fs/promises'
+
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import {
@@ -11,8 +13,243 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
   test.describe('media selection', { tag: '@widget' }, () => {
+    test.use({
+      initialSettings: {
+        'Comfy.Canvas.NavigationMode': 'custom',
+        'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
+        'Comfy.Canvas.MouseWheelScroll': 'zoom'
+      }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+    })
+
+    test('keeps the image picker anchored while the canvas pans and zooms', async ({
+      comfyPage
+    }) => {
+      const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
+      const trigger = node.getByRole('button', {
+        name: 'image',
+        exact: true
+      })
+      await expect(trigger).toContainText('example.png')
+      await WidgetSelectDropdownFixture.fromTrigger(trigger).open()
+
+      const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
+      await expect(menu).toBeVisible()
+      await comfyPage.canvasOps.pan({ x: 137, y: 83 }, { x: 700, y: 300 })
+      await comfyPage.canvas.hover({ position: { x: 600, y: 300 } })
+      await comfyPage.page.mouse.wheel(0, 200)
+      await comfyPage.nextFrame()
+      await expect(menu).toBeVisible()
+      await expect(async () => {
+        const triggerBox = await trigger.boundingBox()
+        const menuBox = await menu.boundingBox()
+        expect(triggerBox).not.toBeNull()
+        expect(menuBox).not.toBeNull()
+        const triggerRight = triggerBox!.x + triggerBox!.width
+        const menuRight = menuBox!.x + menuBox!.width
+        expect(Math.abs(menuRight - triggerRight)).toBeLessThanOrEqual(1)
+        const gap = menuBox!.y - (triggerBox!.y + triggerBox!.height)
+        expect(gap).toBeGreaterThanOrEqual(0)
+        expect(gap).toBeLessThanOrEqual(16)
+      }).toPass({ timeout: 5000 })
+
+      await comfyPage.canvas.click({ position: { x: 700, y: 300 } })
+      await expect(menu).toBeHidden()
+    })
+
+    test('renders each thumbnail size and remembers it across view changes', async ({
+      comfyPage
+    }) => {
+      const { thumbnailSize, thumbnailSizes } = enMessages.widgets.uploadSelect
+      const { gridView, listView } = enMessages.assetBrowser
+      const trigger = comfyPage.vueNodes
+        .getNodeByTitle('Load Image')
+        .getByRole('button', { name: 'image', exact: true })
+      await WidgetSelectDropdownFixture.fromTrigger(trigger).open()
+
+      const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
+      const image = menu.getByRole('img', { name: 'example.png', exact: true })
+      const sizeButton = menu.getByRole('button', { name: thumbnailSize })
+      const preset = (name: string) =>
+        comfyPage.page.getByRole('button', { name, exact: true })
+      const width = async () => (await image.boundingBox())?.width ?? 0
+
+      await expect(image).toBeVisible()
+      const standardWidth = await width()
+      await sizeButton.click()
+      await expect(preset(thumbnailSizes.standard)).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+      await preset(thumbnailSizes.large).click()
+      await expect.poll(width).toBeGreaterThanOrEqual(standardWidth * 4)
+
+      await sizeButton.click()
+      await preset(thumbnailSizes.compact).click()
+      await expect(image).toBeVisible()
+      await expect.poll(width).toBeLessThan(standardWidth)
+      const compactWidth = await width()
+
+      await menu.getByRole('button', { name: listView }).click()
+      await expect(sizeButton).toBeHidden()
+      await menu.getByRole('button', { name: gridView }).click()
+      await expect.poll(width).toBeCloseTo(compactWidth, 0)
+      await sizeButton.click()
+      await expect(preset(thumbnailSizes.compact)).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+    })
+
+    test.describe('in a viewport shorter than the image picker', () => {
+      test.use({ viewport: { width: 1280, height: 520 } })
+
+      test('fits the image picker without scrolling the panel itself', async ({
+        comfyPage
+      }) => {
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+
+        await expect(dropdown.menu).toBeInViewport({ ratio: 1 })
+        await expect.poll(() => dropdown.popoverScrolls()).toBe(false)
+      })
+    })
+
+    test.describe('with room to grow the image picker', () => {
+      test.use({ viewport: { width: 1280, height: 1000 } })
+
+      test('resizes the image picker from its free corner', async ({
+        comfyPage
+      }) => {
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+        await expect(dropdown.menu).toBeVisible()
+        await expect(
+          dropdown.popover,
+          'Picker opens below the trigger, so dragging down grows it'
+        ).toHaveAttribute('data-side', 'bottom')
+        const box = async () => (await dropdown.popover.boundingBox())!
+        const before = await box()
+
+        await test.step('dragging the left corner past the viewport edge grows only down', async () => {
+          await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+            x: -120,
+            y: 80
+          })
+          await expect
+            .poll(async () => (await box()).height)
+            .toBeCloseTo(before.height + 80, 0)
+          expect((await box()).width).toBeCloseTo(before.width, 0)
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+          await expect(dropdown.menu).toBeVisible()
+        })
+
+        await test.step('dragging the right corner grows the panel right', async () => {
+          const dragged = await box()
+          await dropdown.dragResizeCorner(dropdown.rightResizeCorner, {
+            x: 60,
+            y: 0
+          })
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(dragged.width + 60, 0)
+          expect((await box()).x).toBeCloseTo(dragged.x, 0)
+        })
+
+        await test.step('arrow keys resize from a corner', async () => {
+          const resized = await box()
+          await dropdown.leftResizeCorner.focus()
+          await comfyPage.page.keyboard.press('ArrowRight')
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(resized.width - 16, 0)
+        })
+
+        await test.step('dragging past the viewport stops at its edge', async () => {
+          await dropdown.dragResizeCorner(dropdown.rightResizeCorner, {
+            x: 2000,
+            y: 2000
+          })
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+          await expect(dropdown.popover).toHaveAttribute('data-side', 'bottom')
+        })
+
+        await test.step('the other corner then shrinks the panel in place', async () => {
+          const stretched = await box()
+          await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+            x: 100,
+            y: 0
+          })
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(stretched.width - 100, 0)
+          const shrunk = await box()
+          expect(shrunk.x + shrunk.width).toBeCloseTo(
+            stretched.x + stretched.width,
+            0
+          )
+        })
+
+        await test.step('double-clicking a corner restores the default size', async () => {
+          await dropdown.rightResizeCorner.dblclick()
+          await expect
+            .poll(async () => (await box()).width)
+            .toBeCloseTo(before.width, 0)
+          await expect
+            .poll(async () => (await box()).height)
+            .toBeCloseTo(before.height, 0)
+        })
+      })
+
+      test('keeps the image picker above its trigger while it shrinks, then flips it when panned', async ({
+        comfyPage
+      }) => {
+        await comfyPage.canvasOps.pan({ x: 300, y: 450 }, { x: 700, y: 300 })
+        const dropdown = WidgetSelectDropdownFixture.fromTrigger(
+          comfyPage.vueNodes
+            .getNodeByTitle('Load Image')
+            .getByRole('button', { name: 'image', exact: true })
+        )
+        await dropdown.open()
+        await expect(
+          dropdown.popover,
+          'Picker near the bottom of the viewport opens above the trigger'
+        ).toHaveAttribute('data-side', 'top')
+        const opened = (await dropdown.popover.boundingBox())!
+        const shrunkHeight = 340
+
+        await dropdown.dragResizeCorner(dropdown.leftResizeCorner, {
+          x: 0,
+          y: opened.height - shrunkHeight
+        })
+
+        await expect
+          .poll(async () => (await dropdown.popover.boundingBox())!.height)
+          .toBeCloseTo(shrunkHeight, 0)
+        await expect(dropdown.popover).toHaveAttribute('data-side', 'top')
+        const shrunk = (await dropdown.popover.boundingBox())!
+        expect(shrunk.y + shrunk.height).toBeCloseTo(
+          opened.y + opened.height,
+          0
+        )
+
+        await test.step('panning the trigger up flips the picker below it', async () => {
+          await comfyPage.canvasOps.pan({ x: 0, y: -400 }, { x: 900, y: 700 })
+          await expect(dropdown.popover).toHaveAttribute('data-side', 'bottom')
+          await expect(dropdown.popover).toBeInViewport({ ratio: 1 })
+        })
+      })
     })
 
     test('keeps a selected image loaded when it is selected again', async ({
@@ -29,10 +266,11 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const imageLoadError = node.getByTestId(TestIds.errors.imageLoadError)
       const selectedImageButton = node.getByRole('button', {
-        name: 'example.png',
+        name: 'image',
         exact: true
       })
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect(imageLoadError).toBeHidden()
 
       await WidgetSelectDropdownFixture.fromTrigger(
@@ -41,6 +279,7 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       await expect(selectedImageButton).toBeFocused()
       await expect(selectedImageButton).toBeVisible()
+      await expect(selectedImageButton).toContainText('example.png')
       await expect.poll(() => imageWidget.getValue()).toBe('example.png')
       await expect(imageLoadError).toBeHidden()
     })
@@ -83,9 +322,12 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
     await uploadResponse
 
     await expect.poll(() => imageWidget.getValue()).toBe(filename)
-    await expect(
-      node.getByRole('button', { name: filename, exact: true })
-    ).toBeVisible()
+    const imageTrigger = node.getByRole('button', {
+      name: 'image',
+      exact: true
+    })
+    await expect(imageTrigger).toBeVisible()
+    await expect(imageTrigger).toContainText(filename)
     await expect(node.getByTestId(TestIds.errors.imageLoadError)).toBeHidden()
   })
 
@@ -100,10 +342,9 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('LoadVideo')
     expect(loadVideoNode, 'Load Video node was added').toBeDefined()
     const videoWidget = await loadVideoNode.getWidgetByName('file')
-    const rejectionToasts = comfyPage.page.getByText(
-      enMessages.g.videoFilenameExtensionRequired,
-      { exact: true }
-    )
+    const rejectionToasts = comfyPage.toast.toastWarnings.filter({
+      hasText: enMessages.g.videoFilenameExtensionRequired
+    })
     let uploadRequests = 0
     await comfyPage.page.route('**/upload/image', async (route) => {
       uploadRequests += 1
@@ -161,6 +402,64 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
 
       await expect.poll(() => videoWidget.getValue()).toBe('clip.mp4')
       expect(uploadRequests).toBe(1)
+    })
+  })
+
+  test('rejects an extensionless video that the browser gives no MIME type', async ({
+    comfyPage
+  }, testInfo) => {
+    const extensionlessVideoPath = testInfo.outputPath('extensionless')
+    await copyFile(assetPath('plain_video.mp4'), extensionlessVideoPath)
+
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.nextFrame()
+    await comfyPage.searchBoxV2.addNode('Load Video')
+
+    const rejectionToasts = comfyPage.toast.toastWarnings.filter({
+      hasText: enMessages.g.videoFilenameExtensionRequired
+    })
+    const workflowLoadErrors = comfyPage.toast.withText(
+      enMessages.toastMessages.fileLoadError.replace(
+        '{fileName}',
+        'extensionless'
+      )
+    )
+    let uploadRequests = 0
+    await comfyPage.page.route('**/upload/image', async (route) => {
+      uploadRequests += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ name: 'extensionless' })
+      })
+    })
+
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Video')
+
+    await test.step('reject the picked file without uploading', async () => {
+      await node
+        .locator('input[type="file"]')
+        .setInputFiles(extensionlessVideoPath)
+
+      await expect(rejectionToasts).toHaveCount(1)
+      expect(uploadRequests).toBe(0)
+    })
+
+    await test.step('reject the file dropped onto the node', async () => {
+      const box = await node.boundingBox()
+      expect(box, 'Load Video node is rendered').not.toBeNull()
+      await comfyPage.dragDrop.dragAndDropExternalResource({
+        filePath: extensionlessVideoPath,
+        fileType: '',
+        dropPosition: {
+          x: box!.x + box!.width / 2,
+          y: box!.y + box!.height / 2
+        }
+      })
+
+      await expect(rejectionToasts).toHaveCount(2)
+      await expect(workflowLoadErrors).toHaveCount(0)
+      expect(uploadRequests).toBe(0)
     })
   })
 

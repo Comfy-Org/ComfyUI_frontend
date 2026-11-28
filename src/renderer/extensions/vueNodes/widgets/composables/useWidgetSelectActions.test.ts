@@ -3,16 +3,20 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { resolveWidgetValueAsset } from '@/platform/assets/integration/resolveWidgetValueAsset'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { api } from '@/scripts/api'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import enMessages from '@/locales/en/main.json'
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/assets/integration/resolveWidgetValueAsset'))
 
 function createItems(...names: string[]): FormDropdownItem[] {
   return names.map((name, i) => ({
@@ -98,7 +102,32 @@ describe('useWidgetSelectActions', () => {
 
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(modelValue.value).toBe('existing.mp4')
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
+        enMessages.g.videoFilenameExtensionRequired
+      )
+    })
+
+    it('rejects an untyped extensionless file on a video widget', async () => {
+      const modelValue = ref<string | undefined>('existing.mp4')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: ['existing.mp4'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        videoOnly: () => true
+      })
+
+      await handleFilesUpdate([new File(['video'], 'extensionless')])
+
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(modelValue.value).toBe('existing.mp4')
+      expect(useToast().warning).toHaveBeenCalledWith(
         enMessages.g.videoFilenameExtensionRequired
       )
     })
@@ -135,6 +164,33 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('uploaded.png')
       expect(mockCaptureCanvasState).toHaveBeenCalledOnce()
+    })
+
+    it('gives each concurrent upload the response timeout of the whole batch', async () => {
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
+        Response.json({ name: 'a.png', subfolder: '' })
+      )
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([
+        new File([new Uint8Array(2_621_440)], 'a.png'),
+        new File([new Uint8Array(2_621_440)], 'b.png')
+      ])
+
+      expect(
+        vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.timeoutMs)
+      ).toEqual([140_000, 140_000])
     })
 
     it('adds uploaded path to widget values array', async () => {
@@ -221,8 +277,7 @@ describe('useWidgetSelectActions', () => {
 
       expect(modelValue.value).toBe('original.png')
 
-      const toastStore = useToastStore()
-      expect(toastStore.addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'Upload failed: Internal Server Error'
       )
     })
@@ -250,9 +305,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'fail.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Upload failed: HTTP 502'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Upload failed: HTTP 502')
     })
 
     it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
@@ -279,7 +332,7 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'File is too large to upload.'
       )
     })
@@ -308,9 +361,54 @@ describe('useWidgetSelectActions', () => {
 
       await handleFilesUpdate([new File(['test'], 'huge.png')])
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      expect(useToast().warning).toHaveBeenCalledWith(
         'File is too large to upload (limit: 100 MB).'
       )
     })
+  })
+
+  describe('HDR preview', () => {
+    it.for([
+      {
+        value: 'scenes\\sky.exr',
+        image: { filename: 'sky.exr', subfolder: 'scenes', type: 'input' }
+      },
+      {
+        value: 'sky.exr [output]',
+        image: { filename: 'sky.exr', subfolder: '', type: 'output' }
+      },
+      {
+        value: 'renders/sky.hdr [temp]',
+        image: { filename: 'sky.hdr', subfolder: 'renders', type: 'temp' }
+      }
+    ])(
+      'previews $value from its root, subfolder and filename',
+      async ({ value, image }) => {
+        vi.mocked(resolveWidgetValueAsset).mockResolvedValue(
+          fromPartial({ preview_id: 'preview-1' })
+        )
+        const locatorId = fromPartial<NodeLocatorId>('7')
+
+        useWidgetSelectActions({
+          modelValue: ref<string | undefined>(value),
+          dropdownItems: computed(() => []),
+          widget: () =>
+            fromPartial<SimplifiedWidget<string | undefined>>({
+              name: 'image',
+              type: 'combo',
+              value
+            }),
+          uploadFolder: () => 'input',
+          uploadSubfolder: () => undefined,
+          locatorId: () => locatorId
+        })
+
+        await vi.waitFor(() =>
+          expect(useNodeOutputStore().nodeOutputs[locatorId]?.images).toEqual([
+            { ...image, preview_id: 'preview-1' }
+          ])
+        )
+      }
+    )
   })
 })

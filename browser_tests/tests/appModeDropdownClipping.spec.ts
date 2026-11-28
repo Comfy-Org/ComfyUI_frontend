@@ -59,10 +59,6 @@ async function addNode(page: Page, nodeType: string): Promise<string> {
 }
 
 test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test('Select dropdown is not clipped in app mode panel', async ({
     comfyPage
   }) => {
@@ -71,21 +67,19 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
 
     const inputs: [string, string][] = [
       ...DEFAULT_INPUTS,
-      [saveVideoId, 'codec']
+      [saveVideoId, 'format']
     ]
     await comfyPage.appMode.enterAppModeWithInputs(inputs)
 
     await expect(comfyPage.appMode.linearWidgets).toBeVisible()
 
-    // Scroll to bottom so the codec widget is at the clipping edge
     const widgetList = comfyPage.appMode.linearWidgets
     await widgetList.evaluate((el) =>
       el.scrollTo({ top: el.scrollHeight, behavior: 'instant' })
     )
 
-    // Click the codec select (combobox role with aria-label from WidgetSelectDefault)
-    const codecSelect = widgetList.getByRole('combobox', { name: 'codec' })
-    await codecSelect.click()
+    const formatSelect = widgetList.getByRole('combobox', { name: 'format' })
+    await formatSelect.click()
 
     const overlay = comfyPage.page
       .getByTestId('widget-select-default-overlay')

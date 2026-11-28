@@ -1,10 +1,9 @@
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const hoisted = vi.hoisted(() => {
   const customerIoTrack = vi.fn(
@@ -42,7 +41,7 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: hoisted.reportError
 }))
 
@@ -54,6 +53,8 @@ vi.mock<unknown>(import('posthog-js'), () => ({
     capture: vi.fn(),
     identify: vi.fn(),
     register: vi.fn(),
+    unregister: vi.fn(),
+    get_property: vi.fn(),
     people: { set: vi.fn(), set_once: vi.fn() },
     reset: vi.fn()
   }
@@ -74,15 +75,13 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   InAppPlugin: vi.fn(() => ({ name: 'Customer.io In-App Plugin' }))
 }))
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 import {
   markStoresPending,
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { CustomerIoTelemetryProvider } from './CustomerIoTelemetryProvider'
 import { MixpanelTelemetryProvider } from './MixpanelTelemetryProvider'
@@ -111,8 +110,7 @@ describe('telemetry providers wait for Pinia before touching stores', () => {
     const billing = useBillingContext()
     billing.tier = computed(() => null)
     vi.mocked(useBillingContext).mockReturnValue(billing)
-    remoteConfig.value = {}
-    setActivePinia(undefined)
+    useRemoteConfigStore().acceptConfig({}, false)
     markStoresPending()
   })
 

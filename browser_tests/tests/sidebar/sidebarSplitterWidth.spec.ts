@@ -16,21 +16,12 @@ test.describe('Sidebar splitter width independence', () => {
     }
   })
 
-  async function dismissToasts(comfyPage: ComfyPage) {
-    const buttons = await comfyPage.page.locator('.p-toast-close-button').all()
-    for (const btn of buttons) {
-      await btn.click({ timeout: 2000 }).catch(() => {})
-    }
-    // Brief wait for animations
-    await comfyPage.nextFrame()
-  }
-
   async function openSidebarAt(
     comfyPage: ComfyPage,
     location: 'left' | 'right'
   ) {
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', location)
-    await dismissToasts(comfyPage)
+    await comfyPage.toast.closeToasts()
     await comfyPage.menu.nodeLibraryTab.open()
   }
 
@@ -47,6 +38,14 @@ test.describe('Sidebar splitter width independence', () => {
       .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
       .toBeGreaterThan(initialWidth + 40)
     const resizedWidth = (await sidebar.boundingBox())?.width ?? 0
+
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          Number(localStorage.getItem('Comfy.Sidebar.LeftWidth'))
+        )
+      )
+      .toBeCloseTo(resizedWidth, 0)
 
     await comfyPage.workflow.reloadAndWaitForApp()
     await comfyPage.menu.nodeLibraryTab.open()

@@ -1,22 +1,25 @@
 import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentMessage,
   AgentThreadListResponse,
   WorkflowListResponse,
-  WorkflowResponse
+  WorkflowResponse,
+  WorkflowSidebarFileResponse
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
@@ -136,20 +139,17 @@ test.describe(
         ],
         pagination: { offset: 0, limit: 100, total: 2, has_more: false }
       }
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        DRAFT_WORKFLOW_ID,
+        new HostDoc(DRAFT_WORKFLOW_ID, emptySeed, { types: {} })
+      )
+      hostSocket.answerSubscribesWith(() => [])
+      await hostSocket.install()
 
       await bootAgentApp(page, agentFlagEnabled, {
         beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
+          await page.route('**/api/agent/threads?*', (route) =>
             route.fulfill(jsonRoute(threads))
           )
           await page.route('**/api/agent/threads/*/messages', (route) => {
@@ -182,6 +182,17 @@ test.describe(
               return route.fallback()
             return route.fulfill(jsonRoute(workflowRow(DRAFT_WORKFLOW_ID)))
           })
+          await page.route(
+            `**/api/workflows/${SAVED_WORKFLOW_ID}/sidebar-file`,
+            (route) => {
+              const sidebarFile: WorkflowSidebarFileResponse = {
+                path: SAVED_WORKFLOW_PATH,
+                modified: Date.parse(AT),
+                size: JSON.stringify(EMPTY_WORKFLOW).length
+              }
+              return route.fulfill(jsonRoute(sidebarFile))
+            }
+          )
           await page.route('**/api/userdata?*', (route) => {
             const dir = new URL(route.request().url()).searchParams.get('dir')
             if (dir !== 'workflows') return route.fallback()
@@ -219,15 +230,12 @@ test.describe(
 
       await test.step('the agent announces the draft it minted and the panel opens a tab for it', async () => {
         await expect(topbar.tabs).toHaveCount(1)
-        if (!socket) throw new Error('the app never opened /ws')
-        socket.send(
-          JSON.stringify({
-            type: 'agent_active_tab',
-            data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
-          })
-        )
+        hostSocket.send({
+          type: 'agent_active_tab',
+          data: { workflow_id: DRAFT_WORKFLOW_ID, name: DRAFT_TAB_NAME }
+        })
         await expect(topbar.getWorkflowTab(DRAFT_TAB_NAME)).toBeVisible()
-        await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
+        await expect(topbar.getActiveTab()).toContainText(DRAFT_TAB_NAME)
         await expect(unavailable).toBeHidden()
       })
 
@@ -251,7 +259,6 @@ test.describe(
           DRAFT_REQUEST
         ])
         await expect(unavailable).toBeHidden()
-        await expect(agentPanel.workflowPicker).toHaveText(DRAFT_TAB_NAME)
         await expect(topbar.getActiveTab()).toContainText(DRAFT_TAB_NAME)
       })
 

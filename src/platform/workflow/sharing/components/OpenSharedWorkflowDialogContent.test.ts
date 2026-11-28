@@ -100,9 +100,10 @@ describe('OpenSharedWorkflowDialogContent', () => {
 
     it('shows dialog title in header while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
-      const { container } = renderComponent()
-      const header = container.querySelector('header h2') as HTMLElement
-      expect(header.textContent).toBe('Open shared workflow')
+      renderComponent()
+      expect(
+        screen.getByRole('heading', { name: 'Open shared workflow' })
+      ).toBeInTheDocument()
     })
   })
 
@@ -303,7 +304,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       expect(container.textContent).not.toContain(
         'Opening the workflow will create a new copy in your workspace'
       )
-      expect(screen.getByTestId('open-shared-workflow-close')).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Close' })).toBeEnabled()
       expect(screen.getByTestId('open-shared-workflow-cancel')).toBeDisabled()
       expect(
         screen.getByTestId('open-shared-workflow-open-without-importing')

@@ -43,10 +43,7 @@ function pay() {
     rail="saved"
     @retry="emit('retry')"
   />
-  <div
-    v-else-if="saved === 'loading'"
-    class="h-10 rounded-lg bg-secondary-background-hover"
-  />
+  <div v-else-if="saved === 'loading'" class="h-10 rounded-lg bg-accent" />
   <form v-else class="flex flex-col gap-6" @submit.prevent="pay">
     <div v-if="chosenMethodId !== undefined" :inert="locked">
       <SavedMethodSelect

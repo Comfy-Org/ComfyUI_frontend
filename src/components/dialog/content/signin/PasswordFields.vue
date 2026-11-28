@@ -4,7 +4,7 @@
       <FieldLabel for="comfy-org-sign-up-password">
         {{ t('auth.signup.passwordLabel') }}
       </FieldLabel>
-      <PasswordInput
+      <AppPasswordInput
         v-bind="componentField"
         id="comfy-org-sign-up-password"
         autocomplete="new-password"
@@ -18,7 +18,7 @@
         :copy="passwordRulesCopy"
         root-class="text-sm"
         list-class="mt-1 space-y-1"
-        unmet-class="text-destructive-background"
+        unmet-class="text-destructive"
       />
       <FieldError v-if="errors.length && !isPasswordFocused" :errors />
     </Field>
@@ -29,7 +29,7 @@
       <FieldLabel for="comfy-org-sign-up-confirm-password">
         {{ t('auth.login.confirmPasswordLabel') }}
       </FieldLabel>
-      <PasswordInput
+      <AppPasswordInput
         v-bind="componentField"
         id="comfy-org-sign-up-confirm-password"
         autocomplete="new-password"
@@ -50,10 +50,10 @@ import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
-import Field from '@/components/ui/field/Field.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 
 const { fieldClass } = defineProps<{
   fieldClass?: HTMLAttributes['class']

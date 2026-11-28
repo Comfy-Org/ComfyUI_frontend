@@ -4,7 +4,7 @@ import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 
 import type {
@@ -41,11 +41,14 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
-} from '../../types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+} from '@comfyorg/telemetry/types'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { OnboardingTourEvents, TelemetryEvents } from '../../types'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+import {
+  OnboardingTourEvents,
+  TelemetryEvents
+} from '@comfyorg/telemetry/types'
+import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_OPENED,
@@ -89,8 +92,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
+    const remoteConfigStore = useRemoteConfigStore()
     watch(
-      remoteConfig,
+      () => remoteConfigStore.config,
       (config) => {
         this.configureDisabledEvents(config)
       },

@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -33,7 +33,6 @@ interface NonValueWidgetRigConfig {
   nodeDefs: Record<string, ComfyNodeDef>
   samplerNodeId: number
   seed: WorkflowJSON
-  socketSid: string
   threadId: string
   visibleNodeId: number
   workflowId: string
@@ -65,7 +64,6 @@ export class AgentNonValueWidgetRig {
       page,
       config.workflowId,
       host,
-      config.socketSid,
       'apply'
     )
     await hostSocket.install()
@@ -85,7 +83,6 @@ export class AgentNonValueWidgetRig {
 
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('hello')
     hostSocket.send({
       type: 'agent_message_done',
@@ -136,6 +133,26 @@ export class AgentNonValueWidgetRig {
     )
   }
 
+  startRun(jobId: string): void {
+    this.hostSocket.sendExecution({
+      type: 'execution_start',
+      data: { prompt_id: jobId, timestamp: Date.now() }
+    })
+    this.hostSocket.send({
+      type: 'agent_tool_call',
+      data: {
+        thread_id: this.config.threadId,
+        message_id: this.config.messageId,
+        tool_call_id: `call-run-${jobId}`,
+        tool_name: 'run',
+        status: 'success',
+        duration_ms: 40,
+        job_id: jobId,
+        job_workflow_id: this.config.workflowId
+      }
+    })
+  }
+
   widgetValue(nodeId: number, name: string): Promise<unknown> {
     return this.page.evaluate(
       ({ nodeId, name }) =>
@@ -165,7 +182,6 @@ export class AgentNonValueWidgetRig {
   seedField(): Locator {
     return this.vueNodes
       .getNodeLocator(String(this.config.samplerNodeId))
-      .getByLabel('seed', { exact: true })
-      .getByRole('spinbutton')
+      .getByRole('spinbutton', { name: 'seed', exact: true })
   }
 }

@@ -1,12 +1,12 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref } from 'vue'
+import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/types/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -225,6 +225,27 @@ describe('DomWidget style', () => {
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
+  })
+})
+
+describe('DomWidget component widgets', () => {
+  afterEach(() => {
+    useDomWidgetStore().clear()
+  })
+
+  it('passes the owning node id to the component', () => {
+    const widgetState = createWidgetState(false)
+    Object.assign(widgetState.widget, {
+      component: defineComponent({
+        props: { nodeId: { type: [Number, String] } },
+        setup: (props) => () => h('output', `node ${props.nodeId}`)
+      }),
+      inputSpec: {}
+    })
+
+    render(DomWidget, { props: { widgetState } })
+
+    expect(screen.getByRole('status')).toHaveTextContent('node 1')
   })
 })
 

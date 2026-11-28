@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getBillingTelemetryEventPayload,
   getCloudAppBillingTelemetryEventPayload
-} from './payload.js'
+} from './payload'
 
 describe('the web handoff event payload', () => {
   it.for([

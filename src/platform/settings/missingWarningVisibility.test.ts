@@ -57,8 +57,21 @@ describe('isMissingWarningVisible', () => {
     )
   })
 
+  it('keeps a stored legacy missing-nodes dialog opt-out from hiding missing node warnings', async () => {
+    vi.spyOn(api, 'fetchApi').mockResolvedValueOnce(
+      Response.json({ 'Comfy.Workflow.ShowMissingNodesWarning': false })
+    )
+    const store = useSettingStore()
+    await store.load()
+    CORE_SETTINGS.filter((entry) =>
+      entry.category?.includes('MissingNodes')
+    ).forEach((entry) => store.addSetting(entry))
+
+    expect(isMissingWarningVisible('nodes')).toBe(true)
+  })
+
   it.for([
-    { kind: 'nodes', id: 'Comfy.Workflow.ShowMissingNodesWarning' },
+    { kind: 'nodes', id: 'Comfy.ErrorSystem.ShowMissingNodes' },
     { kind: 'models', id: 'Comfy.ErrorSystem.ShowMissingModels' },
     { kind: 'media', id: 'Comfy.Workflow.ShowMissingMediaWarning' }
   ] as const)('hides only $kind when its setting is off', ({ kind, id }) => {

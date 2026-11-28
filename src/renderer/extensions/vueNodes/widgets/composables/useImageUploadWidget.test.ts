@@ -1,14 +1,14 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import type { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 
 type CapturedImageUploadOptions = Parameters<typeof useNodeImageUpload>[1]
@@ -115,6 +115,15 @@ describe('useImageUploadWidget', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn())
   })
 
+  it('creates the upload button without an input socket', () => {
+    const { node } = createUploadNode()
+
+    construct(node)
+
+    const uploadWidget = node.widgets?.find((w) => w.name === 'upload')
+    expect(uploadWidget?.options.socketless).toBe(true)
+  })
+
   it('emits onWidgetChanged after upload changes the combo widget value', () => {
     const { fileComboWidget, node, onWidgetChanged } = createUploadNode()
 
@@ -164,18 +173,30 @@ describe('useImageUploadWidget', () => {
       ])
     ).toBe(true)
 
-    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+    expect(useToast().warning).toHaveBeenCalledWith(
       'g.videoFilenameExtensionRequired'
     )
 
-    vi.mocked(useToastStore().addAlert).mockClear()
+    vi.mocked(useToast().warning).mockClear()
 
     expect(
       mocks.capturedUploadOptions?.onReject?.([
         new File([], 'image.png', { type: 'image/png' })
       ])
     ).toBe(false)
-    expect(useToastStore().addAlert).not.toHaveBeenCalled()
+    expect(useToast().warning).not.toHaveBeenCalled()
+  })
+
+  it('claims an extensionless video the browser gave no MIME type', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([new File([], 'extensionless')])
+    ).toBe(true)
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'g.videoFilenameExtensionRequired'
+    )
   })
 
   it('previews the combo value once the initial frame runs', () => {
@@ -195,20 +216,42 @@ describe('useImageUploadWidget', () => {
     )
   })
 
-  it('loads the new preview when the file combo changes', () => {
-    const { fileComboWidget, node } = createUploadNode()
-    construct(node)
-    fileComboWidget.value = 'beach.jpg'
+  it.for([
+    {
+      name: 'classic image',
+      vue: false,
+      build: construct,
+      previewCalls: [[{ block: false }]]
+    },
+    { name: 'Vue image', vue: true, build: construct, previewCalls: [] },
+    {
+      name: 'Vue video',
+      vue: true,
+      build: constructVideo,
+      previewCalls: [[{ block: false }]]
+    }
+  ])(
+    'updates outputs and schedules the required legacy preview for $name when the combo changes',
+    ({ vue, build, previewCalls }) => {
+      const previousMode = LiteGraph.vueNodesMode
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = previousMode
+      })
+      LiteGraph.vueNodesMode = vue
+      const { fileComboWidget, node } = createUploadNode()
+      build(node)
+      fileComboWidget.value = 'beach.jpg'
 
-    fileComboWidget.callback?.('beach.jpg')
+      fileComboWidget.callback?.('beach.jpg')
 
-    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
-      node,
-      'beach.jpg',
-      { isAnimated: false }
-    )
-    expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
-  })
+      expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+        node,
+        'beach.jpg',
+        { isAnimated: false }
+      )
+      expect(mocks.showPreview.mock.calls).toEqual(previewCalls)
+    }
+  )
 
   it('does not preview a combo whose value is still unset', () => {
     const { fileComboWidget, node } = createUploadNode()

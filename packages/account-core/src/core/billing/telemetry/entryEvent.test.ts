@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { getBillingTelemetryEventName } from './billingTelemetryEvent.js'
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
-import { getCloudAppBillingTelemetryEventPayload } from './payload.js'
+import { getBillingTelemetryEventName } from './billingTelemetryEvent'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
+import { getCloudAppBillingTelemetryEventPayload } from './payload'
 
 describe('the entry events', () => {
   it.for<{
@@ -55,6 +55,25 @@ describe('the entry events', () => {
         stage: 'add_credits_clicked',
         outcome: 'pending',
         payment_intent_source: 'deep_link',
+        billing_surface: 'cloud_app'
+      }
+    },
+    {
+      name: 'a refused pricing deep link with its reason and phase',
+      event: {
+        operation: 'entry',
+        stage: 'pricing_link_refused',
+        outcome: 'pending',
+        reason: 'pricing_surface_unavailable',
+        phase: 'after_catalog_fetch'
+      },
+      eventName: 'billing.entry.pricing_link_refused',
+      payload: {
+        operation: 'entry',
+        stage: 'pricing_link_refused',
+        outcome: 'pending',
+        reason: 'pricing_surface_unavailable',
+        phase: 'after_catalog_fetch',
         billing_surface: 'cloud_app'
       }
     }

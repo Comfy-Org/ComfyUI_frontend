@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed, reactive, readonly } from 'vue'
 
-import type { useTransformState as realUseTransformState } from '../useTransformState'
+import type { useTransformState as realUseTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 function reactiveDefaults() {
   return {
@@ -16,7 +16,8 @@ function reactiveDefaults() {
 const transformState: ReturnType<typeof realUseTransformState> = {
   ...reactiveDefaults(),
   syncWithCanvas: vi.fn(),
-  screenToCanvas: vi.fn(({ x, y }) => ({ x, y }))
+  screenToCanvas: vi.fn(({ x, y }) => ({ x, y })),
+  canvasToScreen: vi.fn(({ x, y }) => ({ x, y }))
 }
 
 export const useTransformState = vi.fn(() => {

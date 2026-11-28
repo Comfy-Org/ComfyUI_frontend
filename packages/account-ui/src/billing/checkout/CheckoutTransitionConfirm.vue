@@ -1,6 +1,6 @@
 <template>
   <div
-    class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col items-stretch justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
+    class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div>
       <div class="mb-8 flex items-center gap-3">
@@ -12,13 +12,13 @@
           :disabled="interactionLocked"
           @click="emit('back')"
         >
-          <i class="pi pi-arrow-left text-base" />
+          <i class="icon-[lucide--arrow-left]" />
         </CheckoutButton>
-        <h2
-          class="m-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
+        <CheckoutTitle
+          class="m-0 flex-1 text-center text-xl font-semibold text-foreground lg:text-2xl"
         >
           {{ confirmTitle }}
-        </h2>
+        </CheckoutTitle>
         <div class="size-8 shrink-0" aria-hidden="true" />
       </div>
       <CheckoutReactivationBanner
@@ -27,62 +27,42 @@
         :title="bannerTitle"
         :segments="bannerSegments"
         :checkbox-label="
-          exceedsMonthlyThreshold
+          requiresChargeConsent
             ? copy.reactivation.checkboxLabel(chargeDisplay)
             : null
         "
       />
 
-      <CheckoutTransitionSummary
-        :plan-name="plan.name"
-        :hero-price
-        :usd-per-month="copy.usdPerMonth"
-        :details="planDetails"
-        :heading="isImmediate ? '' : copy.afterThat"
-        :refill-label="refillLabel"
-        :refill-credits
-        :note="refillNote"
-      />
+      <slot v-if="summaryReplaced" name="summary" />
+      <template v-else>
+        <CheckoutTransitionSummary
+          :plan-name="plan.name"
+          :hero-price
+          :usd-per-month="copy.usdPerMonth"
+          :details="planDetails"
+          :heading="isImmediate ? '' : copy.afterThat"
+          :refill-label="refillLabel"
+          :refill-credits
+          :note="refillNote"
+        />
 
-      <!-- Immediate changes carry their addends: one sum under one divider
-           (Figma 5344-35724). -->
-      <div :class="totalClass">
-        <template v-if="discounts.length">
-          <div class="flex items-center justify-between text-muted-foreground">
-            <span>{{ copy.discountComposition }}</span>
-          </div>
-          <div
-            v-for="discount in discounts"
-            :key="discount.key"
-            class="flex items-center justify-between text-muted-foreground"
-          >
-            <span>{{ discount.label }}</span>
-            <span class="text-base-foreground">
-              {{ discount.name
-              }}<template v-if="discount.amount">
-                · −{{ discount.amount }}</template
-              >
-            </span>
-          </div>
-        </template>
-        <div class="flex items-center justify-between text-base">
-          <span class="text-base-foreground">
-            {{ copy.totalDueToday }}
-          </span>
-          <span class="font-bold text-base-foreground tabular-nums">
-            {{ amountDueToday }}
-          </span>
-        </div>
-        <span class="text-sm text-muted-foreground">{{ renewalTerms }}</span>
-      </div>
-      <CheckoutPromotionCode
-        v-if="embeddedCheckoutEnabled"
-        :applied-code="previewData.promotion_code"
-        :disabled="interactionLocked"
-        :copy
-        @apply="emit('applyPromotionCode', $event)"
-        @invalidate="emit('invalidateQuote')"
-      />
+        <CheckoutTransitionTotal
+          :discounts
+          :discount-composition="copy.discountComposition"
+          :total-due-today="copy.totalDueToday"
+          :amount-due-today
+          :renewal-terms
+          :scheduled="!isImmediate"
+        />
+        <CheckoutPromotionCode
+          v-if="embeddedCheckoutEnabled"
+          :applied-code="previewData.promotion_code"
+          :disabled="interactionLocked"
+          :copy
+          @apply="emit('applyPromotionCode', $event)"
+          @invalidate="emit('invalidateQuote')"
+        />
+      </template>
     </div>
 
     <div class="flex flex-col gap-2 pt-8 pb-4">
@@ -99,6 +79,21 @@
         :action-url="verificationUrl"
         :copy
       />
+
+      <template v-if="paymentCancelable">
+        <CheckoutButton
+          variant="secondary"
+          size="lg"
+          class="w-full rounded-lg"
+          :loading="cancelingPayment"
+          @click="emit('cancelPayment')"
+        >
+          {{ copy.cancelPaymentAndRetry }}
+        </CheckoutButton>
+        <p v-if="cancelPaymentError" role="alert" class="m-0 text-destructive">
+          {{ cancelPaymentError }}
+        </p>
+      </template>
 
       <CheckoutButton
         :variant="actionUrl ? 'tertiary' : 'inverted'"
@@ -117,26 +112,21 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The confirm step of a change to an existing subscription: what it switches
- * to and when, what is charged today, and — for a subscription set to end —
- * the reactivation the change implies, which a large enough charge has to be
- * acknowledged before the confirm unlocks.
- */
 import { computed, ref, watch } from 'vue'
 
 import type {
   BillingAuthenticationState,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
 import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutReactivationBanner from './CheckoutReactivationBanner.vue'
 import CheckoutTermsNote from './CheckoutTermsNote.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import CheckoutTransitionSummary from './CheckoutTransitionSummary.vue'
+import CheckoutTransitionTotal from './CheckoutTransitionTotal.vue'
 import CheckoutVerificationPrompt from './CheckoutVerificationPrompt.vue'
 import type { CheckoutCopy } from './checkoutCopy'
 import { splitPlaceholders } from './checkoutCopy'
@@ -160,17 +150,18 @@ const {
   copy,
   locale,
   subscriptionLoaded,
-  subscriptionCancelled = false,
-  subscriptionEndDate = null,
   isLoading = false,
   actionUrl = null,
-  forceReactivation = false,
   authenticationState = null,
   authenticationError = null,
   reconciliationOperationId = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  summaryReplaced = false,
+  paymentCancelable = false,
+  cancelingPayment = false,
+  cancelPaymentError = null
 } = defineProps<{
   previewData: SubscriptionPreview
   /** The plan switched to: its name and the credits one month refills. All
@@ -182,28 +173,30 @@ const {
   /** False until the subscription status has loaded once; the confirm stays
    *  disabled until then. */
   subscriptionLoaded: boolean
-  subscriptionCancelled?: boolean
-  subscriptionEndDate?: string | Date | null
   isLoading?: boolean
   actionUrl?: string | null
-  /** Server-authoritative fallback for legacy status reads that omit a
-   * scheduled cancellation until subscribe enforces the consent gate. */
-  forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
   reconciliationOperationId?: string | null
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  /** The host summarizes a payment it did not quote here in the `summary` slot. */
+  summaryReplaced?: boolean
+  /** The server's `cancelable` for the pending payment; the cancel is offered only on true. */
+  paymentCancelable?: boolean
+  cancelingPayment?: boolean
+  cancelPaymentError?: string | null
 }>()
 
 const emit = defineEmits<{
   /** True only once the reactivation banner was shown and confirmed (checkbox
-   *  ticked above the charge threshold, since the button is gated on it). */
+   *  ticked when the server requires charge consent). */
   confirm: [confirmReactivation: boolean]
   back: []
   applyPromotionCode: [code: string]
   invalidateQuote: []
+  cancelPayment: []
 }>()
 
 const recoveryState = computed(() => ({
@@ -234,18 +227,11 @@ const isImmediate = computed(() => previewData.is_immediate)
 const newIsYearly = computed(() =>
   isAnnualDuration(previewData.new_plan.duration)
 )
-const currentIsYearly = computed(() =>
-  isAnnualDuration(previewData.current_plan?.duration)
-)
-
-const isCancelled = computed(
-  () => forceReactivation || (!embeddedCheckoutEnabled && subscriptionCancelled)
-)
 
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
 >(() => {
-  if (!isCancelled.value) return null
+  if (previewData.requires_reactivation_confirmation !== true) return null
   switch (previewData.transition_type) {
     case 'upgrade':
       return 'upgrade'
@@ -257,40 +243,17 @@ const reactivationVariant = computed<
       return null
   }
 })
-// The banner and threshold math read the end date and the current plan;
-// without them the banner would render broken copy or force the checkbox on
-// a bogus $0 threshold.
-const cancelAt = computed(
-  () => subscriptionEndDate ?? previewData.current_plan?.period_end
-)
+const cancelAt = computed(() => previewData.cancel_at)
 
 const isReactivating = computed(
-  () =>
-    isCancelled.value &&
-    reactivationVariant.value !== null &&
-    !!cancelAt.value &&
-    !!previewData.current_plan
+  () => reactivationVariant.value !== null && !!cancelAt.value
 )
 
-// seat_summary.total_cost_cents is the whole-subscription price; price_cents
-// is per-seat and understates the threshold on multi-seat team plans. ANNUAL
-// divides by 12 for a monthly equivalent.
-const currentMonthlyPriceCents = computed(() => {
-  const current = previewData.current_plan
-  if (!current) return 0
-  const totalCents = current.seat_summary.total_cost_cents
-  return currentIsYearly.value ? totalCents / 12 : totalCents
-})
 const chargeCents = computed(
   () => previewData.amount_due_cents ?? previewData.cost_today_cents
 )
-// The downgrade copy always says "you won't be charged today" with no amount
-// shown, so it never gets the checkbox even if cost_today_cents is positive.
-const exceedsMonthlyThreshold = computed(
-  () =>
-    isReactivating.value &&
-    reactivationVariant.value !== 'downgrade' &&
-    chargeCents.value > currentMonthlyPriceCents.value
+const requiresChargeConsent = computed(
+  () => previewData.requires_reactivation_charge_confirmation === true
 )
 const chargeDisplay = computed(
   () => `$${formatUsdFromCents(chargeCents.value)}`
@@ -309,7 +272,7 @@ watch(
 const confirmDisabled = computed(
   () =>
     !subscriptionLoaded ||
-    (exceedsMonthlyThreshold.value && !reactivationConfirmed.value)
+    (requiresChargeConsent.value && !reactivationConfirmed.value)
 )
 const confirmBlocked = computed(
   () =>
@@ -320,7 +283,7 @@ const confirmBlocked = computed(
 const confirmReactivation = computed(
   () =>
     isReactivating.value &&
-    (!exceedsMonthlyThreshold.value || reactivationConfirmed.value)
+    (!requiresChargeConsent.value || reactivationConfirmed.value)
 )
 
 const bannerTitle = computed(() =>
@@ -407,13 +370,6 @@ const refillNote = computed(() => {
     ? copy.billedYearly(annualTotalFormatted.value)
     : copy.billedEachMonth(`$${formatNumber(newMonthlyUsd.value, locale)}`)
 })
-
-const totalClass = computed(() =>
-  cn(
-    'flex flex-col gap-2 border-t border-border-subtle pt-6',
-    !isImmediate.value && 'mt-10'
-  )
-)
 
 const discounts = computed(() =>
   isImmediate.value

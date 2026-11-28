@@ -2,18 +2,20 @@
  * What only the credits read does. The scope fence, the shared request, and
  * the publish rules it inherits are proved once in `scopedReader.test.ts`.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import { createCreditsReader } from './credits.js'
+import type { BillingTransport } from './billingContracts'
+
+import type { SessionSnapshot } from '#/core/session'
+import { sessionBillingScopeSource } from './billingScope'
+import { createCreditsReader } from './credits'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {
@@ -77,5 +79,98 @@ describe('createCreditsReader', () => {
     if (result.status !== 'ok') return
     expect(result.value.balance.amount_micros).toBe(0)
     expect(result.value.balance.prepaid_balance_micros).toBeUndefined()
+  })
+
+  it.for([
+    { suggested: 2_500, expected: 2_500 },
+    { suggested: null, expected: null }
+  ])(
+    'reads the suggested top-up amount $suggested as a number',
+    async ({ suggested, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk({ ...BALANCE, suggested_topup_amount_cents: suggested })
+      ])
+
+      const result = await createCreditsReader({
+        transport,
+        scopeSource
+      }).read()
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { balance: { suggested_topup_amount_cents: expected } }
+      })
+    }
+  )
+
+  it.for([
+    { case: 'a served fractional display balance', served: 1_234.5 },
+    { case: 'a served negative display balance', served: -42.25 },
+    { case: 'an omitted display balance', served: undefined }
+  ])('keeps $case as received', async ({ served }) => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({ ...BALANCE, cloud_credit_display_balance_cents: served })
+    ])
+
+    const result = await createCreditsReader({ transport, scopeSource }).read()
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.value.balance.cloud_credit_display_balance_cents).toBe(served)
+  })
+
+  it('rejects a suggested top-up amount outside the safe integer range', async () => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({
+        ...BALANCE,
+        suggested_topup_amount_cents: Number.MAX_SAFE_INTEGER + 1
+      })
+    ])
+
+    const result = await createCreditsReader({ transport, scopeSource }).read()
+
+    expect(result.status).toBe('error')
+  })
+
+  it('serves a fresh read from a new request, and the older answer cannot overwrite it', async () => {
+    const { scopeSource } = fakeSession()
+    const release: Array<() => void> = []
+    const answers = [BALANCE, { ...BALANCE, amount_micros: 99 }]
+    let call = 0
+    const transport: BillingTransport = vi.fn(async () => {
+      const answer = answers[call++]
+      await new Promise<void>((resolve) => release.push(resolve))
+      return httpOk(answer)
+    })
+    const reader = createCreditsReader({ transport, scopeSource })
+
+    const older = reader.read()
+    const joined = reader.read()
+    const fresh = reader.read({ fresh: true })
+    await vi.waitFor(() => expect(transport).toHaveBeenCalledTimes(2))
+    release[1]()
+    const freshResult = await fresh
+    release[0]()
+    const [olderResult, joinedResult] = await Promise.all([older, joined])
+
+    expect(transport).toHaveBeenCalledTimes(2)
+    expect(freshResult).toMatchObject({
+      status: 'ok',
+      value: { balance: { amount_micros: 99 } }
+    })
+    expect(olderResult).toMatchObject({
+      status: 'ok',
+      value: { balance: { amount_micros: 12_500_000 } }
+    })
+    expect(joinedResult).toMatchObject({
+      status: 'ok',
+      value: { balance: { amount_micros: 12_500_000 } }
+    })
+    expect(reader.getSnapshot()).toMatchObject({
+      balance: { amount_micros: 99 }
+    })
   })
 })

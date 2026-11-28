@@ -29,13 +29,13 @@ if (returningFromPortal) void dropReturnMarker()
       <p class="m-0 text-sm text-muted-foreground">
         {{ t('hosted.invoices.body') }}
       </p>
-      <p v-if="failure" class="m-0 text-sm text-destructive-background">
+      <p v-if="failure" class="m-0 text-sm text-destructive">
         {{ refusal(failure) }}
       </p>
       <button
         type="button"
         :disabled="opening"
-        class="h-11 cursor-pointer self-start rounded-lg bg-base-foreground px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+        class="h-11 cursor-pointer self-start rounded-lg bg-foreground px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
         @click="openPortal"
       >
         {{ t('hosted.invoices.open') }}

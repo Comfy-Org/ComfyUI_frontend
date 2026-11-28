@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { getBillingTelemetryEventName } from './billingTelemetryEvent.js'
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
-import { BILLING_TELEMETRY_EVENTS } from './eventNames.js'
+import { getBillingTelemetryEventName } from './billingTelemetryEvent'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
+import { BILLING_TELEMETRY_EVENTS } from './eventNames'
 import {
   getBillingWebTelemetryEventPayload,
   getCloudAppBillingTelemetryEventPayload
-} from './payload.js'
+} from './payload'
 
 describe('the portal events', () => {
   it.for<{

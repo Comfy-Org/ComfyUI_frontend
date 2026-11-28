@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { useStorage } from '@vueuse/core'
-import { onMounted } from 'vue'
+import { computed, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import type {
-  AgentFreeUseNoticeMetadata,
-  AgentFreeUsePlacement
-} from '@/platform/telemetry/types'
+import Button from '@comfyorg/design-system/button/Button'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
+import type { AgentFreeUseNoticeMetadata } from '@comfyorg/telemetry/types'
+import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
-import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
+import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
-const FREE_USE_DOCS_URL = 'https://docs.comfy.org/get_started/cloud'
-
-const PLACEMENT_CLASSES = {
-  'top-banner': 'px-4 py-3',
-  'near-composer': 'rounded-lg px-4 py-3',
-  'above-input': 'px-4 py-3',
-  'inside-input': 'm-3 rounded-lg px-4 py-3'
-} as const satisfies Record<AgentFreeUsePlacement, string>
-
-const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
+const placement = 'near-composer' as const
 
-const dismissed = useStorage(FREE_USE_NOTICE_DISMISSED_KEY, false)
+const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
+const dismissed = useSafeLocalStorage(
+  () => freeUseNoticeDismissedKey(resolvedUserInfo.value?.id),
+  false,
+  { writeDefaults: false }
+)
 
-onMounted(() => {
-  if (!dismissed.value) emit('notice', { action: 'shown', placement })
-})
+const visible = computed(() => isAuthInitialized.value && !dismissed.value)
+
+watch(
+  visible,
+  (onScreen) => {
+    if (onScreen) emit('notice', { action: 'shown', placement })
+  },
+  { immediate: true }
+)
 
 function onDismiss(): void {
   dismissed.value = true
@@ -37,27 +37,22 @@ function onDismiss(): void {
 
 <template>
   <div
-    v-if="!dismissed"
+    v-if="visible"
     role="note"
     :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
-    :class="
-      cn(
-        'flex items-start gap-3 bg-blue-selection text-base-foreground',
-        PLACEMENT_CLASSES[placement]
-      )
-    "
+    class="flex items-start gap-3 rounded-lg bg-primary/30 px-4 py-3 text-foreground"
   >
     <p class="my-0 min-w-0 flex-1 text-sm/5">
-      {{ $t('agent.freeUseNotice') }}
+      {{ $t('agent.firstChatFreeNotice') }}
       <Button
         variant="link"
         size="unset"
         as="a"
-        :href="FREE_USE_DOCS_URL"
+        :href="AGENT_COST_DOCS_URL"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline p-0 text-sm/5 font-normal text-primary-background-hover hover:underline hover:underline-offset-4"
+        class="inline p-0 text-sm/5 font-normal text-foreground underline underline-offset-4"
         @click="emit('notice', { action: 'learn_more_clicked', placement })"
       >
         {{ $t('g.learnMore') }}
@@ -71,7 +66,7 @@ function onDismiss(): void {
       class="shrink-0"
       @click="onDismiss"
     >
-      <span class="icon-[lucide--x] size-5" />
+      <i aria-hidden="true" class="icon-[lucide--x] size-5" />
     </Button>
   </div>
 </template>

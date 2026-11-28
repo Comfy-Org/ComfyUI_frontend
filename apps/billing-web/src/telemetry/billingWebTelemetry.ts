@@ -15,7 +15,10 @@ import {
   getCheckoutJourneyTelemetryEventPayload
 } from '@comfyorg/account-core/billing'
 import type { CloudTelemetryConfig } from '@comfyorg/account-core/firebase'
-import type { WebSessionTelemetryEvent } from '@comfyorg/account-core/telemetry'
+import type {
+  SsoTelemetryEvent,
+  WebSessionTelemetryEvent
+} from '@comfyorg/account-core/telemetry'
 import {
   createPostHogBeforeSend,
   createPostHogUrlQueryScrub
@@ -25,6 +28,7 @@ import {
   DEFAULT_POSTHOG_API_HOST
 } from '@comfyorg/shared-frontend-utils/telemetry'
 
+import { useBillingEntry } from '@/entry/billingEntry'
 import type { BillingWebSessionPhase } from '@/router'
 import { addRumAction, clearRumUser, setRumUser } from '@/telemetry/rum'
 
@@ -53,6 +57,7 @@ interface BillingEvent {
     | BillingTelemetryEventName
     | CheckoutJourneyTelemetryEventName
     | WebSessionTelemetryEvent['name']
+    | SsoTelemetryEvent['name']
   readonly properties: Readonly<Record<string, unknown>>
   /** Sent while the page goes away, after PostHog has drained its queue on `pagehide`. */
   readonly onPageExit?: true
@@ -175,6 +180,12 @@ async function loadPostHog(
 
 export function createBillingWebTelemetry() {
   let posthog: PostHogSink = { status: 'off' }
+  const { entry } = useBillingEntry()
+
+  function arrivalProduct() {
+    const product = entry.value?.product
+    return product === undefined ? {} : { product }
+  }
 
   function capture(event: BillingEvent): void {
     switch (posthog.status) {
@@ -237,7 +248,10 @@ export function createBillingWebTelemetry() {
     attempt(() =>
       send({
         name: getBillingTelemetryEventName(event),
-        properties: getBillingWebTelemetryEventPayload(event)
+        properties: {
+          ...arrivalProduct(),
+          ...getBillingWebTelemetryEventPayload(event)
+        }
       })
     )
   }
@@ -249,6 +263,7 @@ export function createBillingWebTelemetry() {
         name: getCheckoutJourneyTelemetryEventName(event),
         properties: {
           ...getCheckoutJourneyTelemetryEventPayload(event),
+          ...arrivalProduct(),
           billing_surface: 'billing_web'
         },
         ...(event.phase === 'abandoned' && { onPageExit: true })
@@ -257,6 +272,12 @@ export function createBillingWebTelemetry() {
   }
 
   function trackWebSessionEvent(event: WebSessionTelemetryEvent): void {
+    attempt(() =>
+      send({ name: event.name, properties: { ...event.properties } })
+    )
+  }
+
+  function trackSsoEvent(event: SsoTelemetryEvent): void {
     attempt(() =>
       send({ name: event.name, properties: { ...event.properties } })
     )
@@ -272,6 +293,7 @@ export function createBillingWebTelemetry() {
     startRumUser,
     trackBillingEvent,
     trackCheckoutJourneyEvent,
+    trackSsoEvent,
     trackWebSessionEvent
   }
 }

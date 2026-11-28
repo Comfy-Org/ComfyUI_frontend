@@ -7,6 +7,11 @@ export class WidgetSelectDefaultFixture {
   public readonly trigger: Locator
   public readonly menu: Locator
   public readonly options: Locator
+  public readonly searchInput: Locator
+  public readonly folderLock: Locator
+  public readonly folderBack: Locator
+  public readonly previous: Locator
+  public readonly next: Locator
 
   constructor(
     public readonly root: Locator,
@@ -15,6 +20,21 @@ export class WidgetSelectDefaultFixture {
     this.trigger = root.getByRole('combobox', { name: widgetName, exact: true })
     this.menu = root.page().getByTestId(TestIds.widgets.selectDefaultViewport)
     this.options = this.menu.getByRole('option')
+    this.searchInput = root
+      .page()
+      .getByTestId(TestIds.widgets.selectDefaultSearchInput)
+    this.folderLock = root
+      .page()
+      .getByRole('button', { name: /^(Lock|Unlock) folder:/ })
+    this.folderBack = root.page().getByRole('button', { name: /^Back: / })
+    this.previous = root.getByRole('button', {
+      name: `${widgetName}: Previous`,
+      exact: true
+    })
+    this.next = root.getByRole('button', {
+      name: `${widgetName}: Next`,
+      exact: true
+    })
   }
 
   async open(): Promise<void> {
@@ -29,6 +49,7 @@ export class WidgetSelectDefaultFixture {
 
   async selectOption(name: string): Promise<void> {
     await this.open()
+    if (await this.searchInput.isVisible()) await this.searchInput.fill(name)
     await this.options.getByText(name, { exact: true }).click()
     await expect(this.menu).toBeHidden()
   }

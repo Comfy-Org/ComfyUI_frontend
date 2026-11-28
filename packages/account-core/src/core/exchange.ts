@@ -9,13 +9,15 @@
  */
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 
-import { isSsoRequiredRefusal } from './ssoRequired.js'
+import { isSsoRequiredRefusal, ssoRequiredOrganizationId } from './ssoRequired'
 import type {
   AccountCredential,
   AccountUser,
+  ExchangeFailureReason,
   SessionErrorCode,
+  SessionFailure,
   SessionResult
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export const CredentialResponseSchema = zExchangeTokenResponse
 
@@ -27,20 +29,64 @@ function codeForResponse(status: number): SessionErrorCode {
   return 'TOKEN_EXCHANGE_FAILED'
 }
 
+const MAX_REPORTED_ISSUE_PATHS = 5
+
+const CLOCK_SKEW_TOLERANCE_MS = 30_000
+const MAX_CLOCK_SKEW_MS = 24 * 60 * 60 * 1000
+
+function clockSkewMs(response: Response, headersAt: number): number {
+  const serverNow = Date.parse(response.headers.get('Date') ?? '')
+  if (Number.isNaN(serverNow)) return 0
+  const skew = headersAt - serverNow
+  const magnitude = Math.abs(skew)
+  return magnitude > CLOCK_SKEW_TOLERANCE_MS && magnitude <= MAX_CLOCK_SKEW_MS
+    ? skew
+    : 0
+}
+
+function unusableBody(
+  httpStatus: number,
+  reason: ExchangeFailureReason,
+  detail?: string
+): SessionFailure {
+  return {
+    status: 'error',
+    code: 'TOKEN_EXCHANGE_FAILED',
+    httpStatus,
+    reason,
+    ...(detail === undefined ? {} : { detail })
+  }
+}
+
+function schemaIssuePaths(
+  issues: readonly { readonly path: readonly PropertyKey[] }[]
+): string {
+  const paths = issues.map((issue) =>
+    issue.path.length === 0 ? '(root)' : issue.path.map(String).join('.')
+  )
+  return [...new Set(paths)].slice(0, MAX_REPORTED_ISSUE_PATHS).join(',')
+}
+
+type Refusal = Pick<SessionFailure, 'code' | 'organizationId'>
+
 /** Only a 403's body is read: it tells an SSO refusal from any other. */
-async function codeForRefusal(
+async function refusalFor(
   response: Response,
   signal: AbortSignal
-): Promise<SessionErrorCode> {
+): Promise<Refusal> {
   const code = codeForResponse(response.status)
-  if (code !== 'ACCESS_DENIED') return code
+  if (code !== 'ACCESS_DENIED') return { code }
   let body: unknown
   try {
     body = await abortable(response.json(), signal)
   } catch {
-    return code
+    return { code }
   }
-  return isSsoRequiredRefusal(response.status, body) ? 'SSO_REQUIRED' : code
+  if (!isSsoRequiredRefusal(response.status, body)) return { code }
+  const organizationId = ssoRequiredOrganizationId(body)
+  return organizationId === undefined
+    ? { code: 'SSO_REQUIRED' }
+    : { code: 'SSO_REQUIRED', organizationId }
 }
 
 export function abortable<T>(
@@ -64,6 +110,49 @@ export function abortable<T>(
       }
     )
   })
+}
+
+function credentialFromBody(
+  user: AccountUser,
+  response: Response,
+  rawBody: unknown,
+  clock: { readonly skewMs: number; readonly localNow: number }
+): SessionResult {
+  const parsed = CredentialResponseSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return unusableBody(
+      response.status,
+      'schema_mismatch',
+      schemaIssuePaths(parsed.error.issues)
+    )
+  }
+  const serverExpiresAt = Date.parse(parsed.data.expires_at)
+  if (Number.isNaN(serverExpiresAt)) {
+    return unusableBody(response.status, 'invalid_expiry')
+  }
+  if (parsed.data.token === '') {
+    return unusableBody(response.status, 'empty_token')
+  }
+  const { skewMs, localNow } = clock
+  const expiresAt = serverExpiresAt + skewMs
+  const expiresInMs = expiresAt - localNow
+  if (expiresInMs <= 0) {
+    return unusableBody(
+      response.status,
+      'expired_on_arrival',
+      `expires_in_ms=${Math.round(expiresInMs)}` +
+        (skewMs === 0 ? '' : `,clock_skew_ms=${Math.round(skewMs)}`)
+    )
+  }
+  const session: AccountCredential = {
+    token: parsed.data.token,
+    expiresAt,
+    uid: user.uid,
+    workspace: parsed.data.workspace,
+    role: parsed.data.role,
+    permissions: parsed.data.permissions
+  }
+  return { status: 'ok', session }
 }
 
 export interface ExchangeRequest {
@@ -94,9 +183,6 @@ export async function exchangeToken(
     try {
       idToken = await abortable(user.getIdToken(), controller.signal)
     } catch (error) {
-      // A missing identity token is NOT_AUTHENTICATED; an identity failure
-      // carrying that code keeps it, anything else (including our own abort)
-      // stays in the transient bucket.
       const coded =
         !controller.signal.aborted &&
         typeof error === 'object' &&
@@ -127,57 +213,26 @@ export async function exchangeToken(
     if (!response.ok) {
       return {
         status: 'error',
-        code: await codeForRefusal(response, controller.signal),
+        ...(await refusalFor(response, controller.signal)),
         httpStatus: response.status
       }
     }
 
+    const skewMs = clockSkewMs(response, now())
     let rawBody: unknown
     try {
-      // The timeout stays armed through the body read: headers arriving does
-      // not bound the body, and a stalled body must abort like a stalled connect.
       rawBody = await abortable(response.json(), controller.signal)
     } catch {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
+      return unusableBody(
+        response.status,
+        controller.signal.aborted ? 'body_aborted' : 'body_unreadable'
+      )
     }
 
-    const parsed = CredentialResponseSchema.safeParse(rawBody)
-    if (!parsed.success) {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-    // Date.parse can yield NaN on a schema-valid string, so the expiry is
-    // checked after the schema. A token dead on arrival can never authorize
-    // anything; a short-but-future one is left to the valid-on-read path; an
-    // empty token is never a session.
-    const expiresAt = Date.parse(parsed.data.expires_at)
-    if (
-      Number.isNaN(expiresAt) ||
-      parsed.data.token === '' ||
-      expiresAt <= now()
-    ) {
-      return {
-        status: 'error',
-        code: 'TOKEN_EXCHANGE_FAILED',
-        httpStatus: response.status
-      }
-    }
-    const session: AccountCredential = {
-      token: parsed.data.token,
-      expiresAt,
-      uid: user.uid,
-      workspace: parsed.data.workspace,
-      role: parsed.data.role,
-      permissions: parsed.data.permissions
-    }
-    return { status: 'ok', session }
+    return credentialFromBody(user, response, rawBody, {
+      skewMs,
+      localNow: now()
+    })
   } finally {
     clearTimeout(timeout)
     signal?.removeEventListener('abort', abort)

@@ -17,20 +17,20 @@
  * signed-in uid, so a token survives a reload but can never be served to a
  * different signed-in user.
  */
-import type { CredentialStorage } from './credentialCache.js'
+import type { CredentialStorage } from './credentialCache'
 import {
   DEFAULT_FRESH_MARGIN_MS,
   createCredentialCache,
   decodeAdopted,
   isCredentialFresh,
   selectFreshCredential
-} from './credentialCache.js'
-import type { AccountIdentity } from './identity.js'
-import { abortable, exchangeToken } from './exchange.js'
-import type { MintDispatch } from './mintCoordinator.js'
-import { createMintCoordinator } from './mintCoordinator.js'
-import type { RefreshHost } from './refreshScheduler.js'
-import { createRefreshScheduler } from './refreshScheduler.js'
+} from './credentialCache'
+import type { AccountIdentity } from './identity'
+import { abortable, exchangeToken } from './exchange'
+import type { MintDispatch } from './mintCoordinator'
+import { createMintCoordinator } from './mintCoordinator'
+import type { RefreshHost } from './refreshScheduler'
+import { createRefreshScheduler } from './refreshScheduler'
 import type {
   AccountCredential,
   AccountUser,
@@ -38,20 +38,20 @@ import type {
   SessionErrorCode,
   SessionFailure,
   SessionResult
-} from './sessionContracts.js'
+} from './sessionContracts'
 import type {
   SessionEffect,
   SessionEvent,
   SessionTransition
-} from './sessionState.js'
+} from './sessionState'
 import {
   arbitrateMint,
   initialSessionState,
   scheduledMintHolds,
   transition
-} from './sessionState.js'
+} from './sessionState'
 
-export type { AccountIdentity } from './identity.js'
+export type { AccountIdentity } from './identity'
 export type {
   AccountCredential,
   AccountUser,
@@ -63,10 +63,10 @@ export type {
   SessionFailure,
   SessionRefreshOutcome,
   SessionResult
-} from './sessionContracts.js'
-export { isPermanentSessionError } from './sessionContracts.js'
-export type { CredentialStorage } from './credentialCache.js'
-export { isCredentialFresh } from './credentialCache.js'
+} from './sessionContracts'
+export { isPermanentSessionError } from './sessionContracts'
+export type { CredentialStorage } from './credentialCache'
+export { isCredentialFresh } from './credentialCache'
 
 /**
  * The session error codes, keys only. Hosts own the copy (the cloud app's
@@ -83,7 +83,7 @@ export const SESSION_ERROR_CODES: Readonly<Record<SessionErrorCode, true>> = {
   SSO_REQUIRED: true
 }
 
-export { SESSION_TELEMETRY_EVENT } from '../telemetry.js'
+export { SESSION_TELEMETRY_EVENT } from '#/telemetry'
 
 export interface SessionRequestOptions {
   readonly fetchImpl?: typeof fetch

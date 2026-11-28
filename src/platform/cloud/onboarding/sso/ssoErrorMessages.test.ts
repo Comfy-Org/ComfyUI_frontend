@@ -56,6 +56,7 @@ describe('SSO error copy', () => {
         "SSO_ORG_DISABLED": "Single sign-on is turned off for your organization. Contact your administrator.",
         "SSO_ORG_MISMATCH": "You signed in to a different organization than the one for this email. Try again with your work account.",
         "SSO_ORG_NOT_ATTACHED": "Your organization's Comfy workspace isn't set up yet. Contact your administrator.",
+        "SSO_SEAT_LIMIT_REACHED": "Your organization has used all its Comfy seats. Ask your administrator to free a seat or add more.",
         "SSO_SIGN_IN_FAILED": "We couldn't sign you in with single sign-on. Try again.",
         "SSO_UNAVAILABLE": "Single sign-on is unavailable right now. Try again in a moment.",
         "SSO_USER_SUSPENDED": "Your organization has removed your access. Contact your administrator.",

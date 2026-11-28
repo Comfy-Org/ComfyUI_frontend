@@ -16,8 +16,8 @@ const WidgetLayoutFieldStub = defineComponent({
     '<div data-testid="layout-field" :data-widget-name="widget.name"><slot /></div>'
 })
 
-const ColorPickerStub = defineComponent({
-  name: 'ColorPicker',
+const AppColorPickerStub = defineComponent({
+  name: 'AppColorPicker',
   props: {
     modelValue: { type: String, default: '' },
     alpha: { type: Boolean, default: true }
@@ -53,7 +53,7 @@ describe('WidgetColorPicker Value Binding', () => {
     return render(WidgetColorPicker, {
       global: {
         stubs: {
-          ColorPicker: ColorPickerStub,
+          AppColorPicker: AppColorPickerStub,
           WidgetLayoutField: WidgetLayoutFieldStub
         }
       },

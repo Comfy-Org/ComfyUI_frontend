@@ -18,6 +18,26 @@ const arrayMutationMethods = new Set<PropertyKey>([
   'unshift'
 ])
 
+const typedArrayReadMethods = new Set<PropertyKey>([
+  Symbol.iterator,
+  'at',
+  'entries',
+  'includes',
+  'indexOf',
+  'join',
+  'keys',
+  'lastIndexOf',
+  'slice',
+  'toLocaleString',
+  'toString',
+  'values'
+])
+
+/** Whether calling `property` on a typed array can change its elements, directly or through a callback. */
+export function isTypedArrayMutationMethod(property: PropertyKey): boolean {
+  return !typedArrayReadMethods.has(property)
+}
+
 function snapshot(target: object): unknown[] {
   return Reflect.ownKeys(target).flatMap((property) => [
     property,
@@ -50,7 +70,11 @@ export function createMutationView<TTarget extends object>(
       const value = mapValue(property, Reflect.get(target, property, target))
       if (property === 'constructor') return value
       if (typeof value !== 'function') return value
-      if (!shouldCommitMethod(property)) return value.bind(target)
+      if (!shouldCommitMethod(property))
+        return (...args: unknown[]) => {
+          synchronize?.()
+          return Reflect.apply(value, target, args)
+        }
 
       return (...args: unknown[]) => {
         synchronize?.()

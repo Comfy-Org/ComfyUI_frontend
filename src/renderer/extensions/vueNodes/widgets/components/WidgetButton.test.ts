@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -124,17 +124,14 @@ describe('WidgetButton Interactions', () => {
     })
 
     it.for([
-      ['secondary', 'hover:bg-secondary-background-hover'],
-      ['primary', 'hover:bg-primary-background-hover'],
-      ['inverted', 'hover:bg-base-foreground/80'],
-      ['textonly', 'hover:bg-secondary-background-hover']
+      ['secondary', 'hover:bg-accent'],
+      ['primary', 'hover:bg-primary/90'],
+      ['inverted', 'hover:bg-foreground/80'],
+      ['textonly', 'hover:bg-accent']
     ] as const)('handles button variant: %s', ([variant, hoverClass]) => {
       const widget = createButtonWidget({ options: { variant } })
       mountComponent(widget)
-      expect(screen.getByRole('button')).toHaveClass(
-        'bg-component-node-widget-background',
-        hoverClass
-      )
+      expect(screen.getByRole('button')).toHaveClass('bg-input', hoverClass)
     })
   })
 

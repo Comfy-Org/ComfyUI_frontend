@@ -3,8 +3,8 @@ import type {
   BillingTelemetryEvent,
   BillingTelemetryFailure,
   SubscriptionCommandFailure,
-  SubscriptionCommandOutcome,
-  SubscriptionCommandResult
+  SubscriptionCommandResult,
+  TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 
 /** How one command call ended, read the way the attempt's lifecycle needs it. */
@@ -100,10 +100,10 @@ export function failureOfCode(
     : UNKNOWN_FAILURE
 }
 
-function outcomeOfOperation({
-  operation
-}: SubscriptionCommandOutcome): SettledOutcome {
-  if (operation === undefined) return { kind: 'succeeded' }
+/** How a settled operation ends its attempt, wherever this tab learned of it. */
+export function outcomeOfOperation(
+  operation: TerminalBillingOperation
+): SettledOutcome {
   const billingOpId = operation.id
   switch (operation.phase) {
     case 'succeeded':
@@ -143,7 +143,10 @@ function outcomeOfOperation({
 export function outcomeOfCommandResult(
   result: SubscriptionCommandResult
 ): AttemptOutcome {
-  if (result.status === 'ok') return outcomeOfOperation(result.value)
+  if (result.status === 'ok')
+    return result.value.operation === undefined
+      ? { kind: 'succeeded' }
+      : outcomeOfOperation(result.value.operation)
   if (result.code === 'REACTIVATION_CONFIRMATION_REQUIRED') return CONTINUED
   return {
     kind: 'failed',

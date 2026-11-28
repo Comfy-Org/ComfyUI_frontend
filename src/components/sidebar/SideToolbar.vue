@@ -16,8 +16,7 @@
           'mr-(--comfy-canvas-gutter)':
             !isConnected && !isHidden && sidebarLocation === 'right',
           'overflowing-sidebar': isOverflowing,
-          'overflow-hidden border-r border-interface-stroke/50 shadow-interface':
-            isConnected,
+          'overflow-hidden border-r border-border/50 shadow-md': isConnected,
           'pointer-events-none overflow-hidden opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
@@ -39,17 +38,13 @@
         :class="groupClasses"
       >
         <ComfyMenuButton />
-        <SidebarIcon
+        <SidebarExtensionTabButton
           v-for="tab in tabs"
           :key="tab.id"
-          :icon="tab.icon"
-          :icon-badge="tab.iconBadge"
-          :tooltip="tab.tooltip"
+          :tab
           :tooltip-suffix="getTabTooltipSuffix(tab)"
-          :label="tab.label || tab.title"
           :is-small
           :selected="tab.id === selectedTab?.id"
-          :data-testid="`${tab.id}-tab-button`"
           @click="onTabClick(tab)"
         />
         <SidebarTemplatesButton />
@@ -64,6 +59,17 @@
         />
         <SidebarShortcutsToggleButton v-if="!hideWorkspaceToggles" :is-small />
         <SidebarSettingsButton :is-small />
+        <CurrentUserButton
+          v-if="showProfileButton"
+          :show-arrow="false"
+          :side="profileSide"
+          class="flex w-full shrink-0 justify-center pb-1"
+        />
+        <LoginButton
+          v-else-if="showLoginButton"
+          :side="profileSide"
+          class="mb-1 shrink-0"
+        />
       </div>
     </div>
     <HelpCenterPopups :is-small />
@@ -92,20 +98,23 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useCommandStore } from '@/stores/commandStore'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useUserStore } from '@/stores/userStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
-import SidebarIcon from './SidebarIcon.vue'
+import SidebarExtensionTabButton from './SidebarExtensionTabButton.vue'
 import SidebarLogoutIcon from './SidebarLogoutIcon.vue'
 import SidebarTemplatesButton from './SidebarTemplatesButton.vue'
 
@@ -130,9 +139,16 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
+const { isLoggedIn } = useCurrentUser()
+const { flags } = useFeatureFlags()
+const showProfileButton = computed(
+  () => flags.billingNewUxEnabled && isLoggedIn.value
+)
+const showLoginButton = computed(
+  () => flags.billingNewUxEnabled && !isLoggedIn.value && !isCloud
+)
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
@@ -142,6 +158,9 @@ const isSmall = computed(
 )
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
+)
+const profileSide = computed(() =>
+  sidebarLocation.value === 'left' ? 'right' : 'left'
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
 const isConnected = computed(
@@ -159,7 +178,7 @@ const tabs = computed(() => {
     : all
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
-const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
+const isHidden = computed(() => canvasStore.isPickingNodes)
 
 /**
  * Handle sidebar tab icon click.
@@ -265,6 +284,7 @@ onMounted(() => {
   )
 
   checkOverflow()
+  watch([showProfileButton, showLoginButton], checkOverflow)
 
   onBeforeUnmount(() => {
     overflowObserver.stop()
@@ -296,11 +316,6 @@ onMounted(() => {
 </script>
 
 <style>
-/* Global CSS variables for sidebar
- * These variables need to be global (not scoped) because they are used by
- * teleported components like WhatsNewPopup that render outside the sidebar
- * but need to reference sidebar dimensions for proper positioning.
- */
 :root {
   --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
@@ -321,16 +336,16 @@ onMounted(() => {
   --sidebar-item-height: var(--sidebar-default-item-height);
 }
 
-:root:has(.side-tool-bar-container.small-sidebar) {
+.side-tool-bar-container.small-sidebar {
   --sidebar-width: var(--sidebar-small-floating-width);
   --sidebar-item-height: var(--sidebar-small-item-height);
 }
 
-:root:has(.side-tool-bar-container.connected-sidebar) {
+.side-tool-bar-container.connected-sidebar {
   --sidebar-width: var(--sidebar-default-connected-width);
 }
 
-:root:has(.side-tool-bar-container.small-sidebar.connected-sidebar) {
+.side-tool-bar-container.small-sidebar.connected-sidebar {
   --sidebar-width: var(--sidebar-small-connected-width);
 }
 </style>
@@ -338,6 +353,6 @@ onMounted(() => {
 <style scoped>
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
-  background-color: var(--comfy-menu-bg);
+  background-color: var(--background);
 }
 </style>

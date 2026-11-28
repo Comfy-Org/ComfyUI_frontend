@@ -2,12 +2,16 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { SsoTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { DEFAULT_LIGHT_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
-import { TelemetryEvents } from '../../types'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
 const {
@@ -46,11 +50,89 @@ beforeEach(() => {
   useCurrentUser().userEmail = computed(() => 'restored@example.com')
 })
 
+const assetDownload = {
+  phase: 'body',
+  auth_credential: 'bearer',
+  route: 'assets_content',
+  media_kind: 'image',
+  surface: 'gallery',
+  duration_ms: 120,
+  page_age_ms: 5000,
+  online: true
+} as const
+
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it.for([
+    { paletteId: 'dark', expectedScheme: 'dark' },
+    { paletteId: 'light', expectedScheme: 'light' },
+    { paletteId: 'nord', expectedScheme: 'dark' }
+  ])(
+    'reports the active $paletteId theme after startup',
+    ({ paletteId, expectedScheme }) => {
+      useThemeStore().activePresetId = paletteId
+      const registry = new TelemetryRegistry()
+      registry.registerProvider(new DatadogRumTelemetryProvider())
+
+      registry.trackBootstrapComplete({
+        outcome: 'completed',
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        hidden_ms: 0,
+        visible_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+        theme: paletteId,
+        color_scheme: expectedScheme
+      })
+    }
+  )
+
+  it('reports custom themes without sending their user-defined IDs', () => {
+    useThemeStore().addCustomPreset({
+      ...DEFAULT_LIGHT_THEME_PRESET,
+      id: 'private-palette-name'
+    })
+
+    new DatadogRumTelemetryProvider().trackBootstrapComplete({
+      outcome: 'completed',
+      total_ms: 123,
+      phase_count: 0,
+      untraced_ms: 123,
+      hidden_ms: 0,
+      visible_ms: 123,
+      phases: {}
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith('app:theme_loaded', {
+      theme: 'custom',
+      color_scheme: 'light'
+    })
+  })
+
+  it.for(['failed', 'timed_out'] as const)(
+    'does not report a loaded theme for %s startup',
+    (outcome) => {
+      new DatadogRumTelemetryProvider().trackBootstrapComplete({
+        outcome,
+        total_ms: 123,
+        phase_count: 0,
+        untraced_ms: 123,
+        hidden_ms: 0,
+        visible_ms: 123,
+        phases: {}
+      })
+
+      expect(addAction).not.toHaveBeenCalled()
+    }
+  )
+
   it('identifies restored sessions and replaces identity on account changes', () => {
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
@@ -148,6 +230,59 @@ describe('DatadogRumTelemetryProvider', () => {
     })
   })
 
+  it('records why the agent chat called its workflow unavailable as a RUM action', () => {
+    const metadata = {
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-1',
+      startup_tab_restore_settled: false
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentTargetUnavailable(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      metadata
+    )
+  })
+
+  it('records gated agent sends as RUM actions so drop-offs can be monitored', () => {
+    const metadata = {
+      gate: 'coach',
+      outcome: 'dropped',
+      reason: 'panel_closed',
+      client_message_id: 'client-message-1',
+      held_ms: 800,
+      thread_id: 'thread-1',
+      client_session_id: 'client-session-1'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackAgentSendGated(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_SEND_GATED,
+      metadata
+    )
+  })
+
+  it('records status retries as RUM actions', () => {
+    const metadata = {
+      transport: 'axios',
+      method: 'GET',
+      host: 'cloud.comfy.org',
+      route: '/api/billing/balance',
+      attempts: 3,
+      final_status: 503,
+      outcome: 'exhausted'
+    } as const
+
+    new DatadogRumTelemetryProvider().trackFetchStatusRetry(metadata)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_STATUS_RETRY,
+      metadata
+    )
+  })
+
   it('records fetch timeouts as RUM actions', () => {
     new DatadogRumTelemetryProvider().trackFetchTimeout({
       route: '/userdata/:resource',
@@ -214,6 +349,33 @@ describe('DatadogRumTelemetryProvider', () => {
     )
   })
 
+  it.for<SsoTelemetryEvent>([
+    {
+      name: 'app:sso_required_shown',
+      properties: {
+        surface: 'cloud_login',
+        trigger: 'firebase_sign_in',
+        presentation: 'notice',
+        flow_id: 'flow-1'
+      }
+    },
+    {
+      name: 'app:sso_sign_in_failed',
+      properties: {
+        surface: 'cloud_app',
+        reason: 'state_mismatch',
+        flow_id: 'flow-1'
+      }
+    }
+  ])('records the SSO event $name as a custom action', (event) => {
+    new DatadogRumTelemetryProvider().trackSsoEvent(event)
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+
   it('records image load failures by source', () => {
     new DatadogRumTelemetryProvider().trackImageLoadFailed({
       source: 'node_image_preview'
@@ -224,6 +386,20 @@ describe('DatadogRumTelemetryProvider', () => {
       { source: 'node_image_preview' }
     )
   })
+
+  it.for([
+    ['completed', TelemetryEvents.ASSET_DOWNLOAD_COMPLETED],
+    ['failed', TelemetryEvents.ASSET_DOWNLOAD_FAILED]
+  ] as const)(
+    'adds a %s asset download as its own RUM action',
+    ([outcome, actionName]) => {
+      const metadata = { ...assetDownload, outcome }
+
+      new DatadogRumTelemetryProvider().trackAssetDownload(metadata)
+
+      expect(addAction).toHaveBeenCalledExactlyOnceWith(actionName, metadata)
+    }
+  )
 
   it.for([
     ['extension.manager:supports-v4', 'extension_manager_supports_v4'],

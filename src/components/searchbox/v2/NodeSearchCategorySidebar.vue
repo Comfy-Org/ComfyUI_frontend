@@ -3,6 +3,7 @@
     as="div"
     orientation="vertical"
     :loop="true"
+    data-slot="node-search-categories"
     class="group/categories flex min-h-0 flex-col overflow-y-auto py-2.5 select-none"
   >
     <!-- Preset categories -->
@@ -31,7 +32,7 @@
       :class="
         cn(
           'flex flex-col px-3',
-          !hidePresets && 'mt-2 border-t border-border-subtle pt-2'
+          !hidePresets && 'mt-2 border-t border-border/50 pt-2'
         )
       "
     >
@@ -62,10 +63,10 @@ import NodeSearchCategoryTreeNode, {
   CATEGORY_SELECTED_CLASS,
   CATEGORY_UNSELECTED_CLASS
 } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { CategoryNode } from '@/components/searchbox/v2/NodeSearchCategoryTreeNode.vue'
 import { nodeOrganizationService } from '@/services/nodeOrganizationService'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { cn } from '@comfyorg/tailwind-utils'

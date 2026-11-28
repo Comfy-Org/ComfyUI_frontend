@@ -4,23 +4,26 @@
  * `BillingResult` — the builder never throws, and a code carries no server or
  * caller text a host could render by accident.
  */
-import type { BillingIntent, BillingProduct } from './contract.js'
-import { billingIntentPath, isBillingSource } from './contract.js'
+import type { BillingIntent, BillingProduct } from './contract'
+import { billingIntentPath, isBillingSource } from './contract'
 import type {
+  EntryAutoTopUp,
   InvalidIdentifierCode,
   OptionalEntryValues
-} from './entryFields.js'
+} from './entryFields'
 import {
   ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
   ENTRY_PARAM_RETURN_TO,
   ENTRY_PARAM_SOURCE,
   OPTIONAL_ENTRY_FIELDS,
-  isEntryAmountCents
-} from './entryFields.js'
-import { isContractIdentifier } from './identifiers.js'
-import { isReturnTarget } from './returnTargets.js'
-import { parseUrl } from './url.js'
+  isEntryAmountCents,
+  isEntryAutoTopUp,
+  writeEntryAutoTopUp
+} from './entryFields'
+import { isContractIdentifier } from './identifiers'
+import { isReturnTarget } from './returnTargets'
+import { parseUrl } from './url'
 
 export interface BillingEntryInput extends OptionalEntryValues {
   /** Only the origin is used; any path or query on it is discarded. */
@@ -37,12 +40,15 @@ export interface BillingEntryInput extends OptionalEntryValues {
   readonly source?: string
   /** The credit amount a top-up asks for, in whole cents. */
   readonly amountCents?: number
+  /** The auto top-up a top-up asks to turn on with its payment. */
+  readonly autoTopUp?: EntryAutoTopUp
 }
 
 export type BillingEntryUrlErrorCode =
   | 'INVALID_ORIGIN'
   | 'UNKNOWN_RETURN_TARGET'
   | 'INVALID_AMOUNT'
+  | 'INVALID_AUTO_TOP_UP'
   | InvalidIdentifierCode
 
 export type BillingEntryUrlResult =
@@ -86,6 +92,10 @@ export function buildBillingEntryUrl(
   if (amountCents !== undefined && !isEntryAmountCents(amountCents))
     return { status: 'error', code: 'INVALID_AMOUNT' }
 
+  const { autoTopUp } = input
+  if (autoTopUp !== undefined && !isEntryAutoTopUp(autoTopUp))
+    return { status: 'error', code: 'INVALID_AUTO_TOP_UP' }
+
   const url = new URL(billingIntentPath(input.intent), origin)
   url.searchParams.set(ENTRY_PARAM_PRODUCT, input.product)
   url.searchParams.set(ENTRY_PARAM_RETURN_TO, input.returnTo)
@@ -97,6 +107,7 @@ export function buildBillingEntryUrl(
     url.searchParams.set(ENTRY_PARAM_SOURCE, input.source)
   if (amountCents !== undefined)
     url.searchParams.set(ENTRY_PARAM_AMOUNT, String(amountCents))
+  if (autoTopUp !== undefined) writeEntryAutoTopUp(url.searchParams, autoTopUp)
 
   return { status: 'ok', url }
 }

@@ -4,6 +4,7 @@ import type { Page, Request } from '@playwright/test'
 import type { ErrorResponse, SsoDiscoverResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 import type { operations } from '@/types/comfyRegistryTypes'
 
 import {
@@ -28,6 +29,25 @@ const APP_ROOT = new RegExp(
   `^${APP_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?(\\?.*)?$`
 )
 const SSO_COPY = enMessages.auth.sso
+const OAUTH_REQUEST_ID = '550e8400-e29b-41d4-a716-446655440000'
+const CONSENT_CHALLENGE: OAuthConsentChallenge = {
+  client_provenance: 'first_party',
+  oauth_request_id: OAUTH_REQUEST_ID,
+  csrf_token: 'csrf-token',
+  client_display_name: 'Comfy Desktop',
+  resource_display_name: 'Comfy Cloud',
+  redirect_uri: 'http://127.0.0.1:50632/callback',
+  client_application_type: 'native',
+  scopes: ['comfy-cloud:user:read'],
+  workspaces: [
+    {
+      id: 'personal-workspace',
+      name: 'Personal',
+      type: 'personal',
+      role: 'owner'
+    }
+  ]
+}
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
 
@@ -103,8 +123,12 @@ async function openLogin(page: Page) {
 
 async function signInWithEmail(page: Page) {
   await openLogin(page)
+  await submitEmailSignIn(page, CLOUD_SELF_EMAIL)
+}
+
+async function submitEmailSignIn(page: Page, email: string) {
   await page.getByRole('button', { name: 'Use email instead' }).click()
-  await page.locator('#cloud-sign-in-email').fill(CLOUD_SELF_EMAIL)
+  await page.locator('#cloud-sign-in-email').fill(email)
   await page
     .locator('#cloud-sign-in-password')
     .fill('correct-horse-battery-staple')
@@ -177,6 +201,134 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       expect(ssoStarts).toHaveLength(1)
     })
 
+    test('an SSO sign-in for a pending OAuth request returns to a consent page the server serves', async ({
+      page
+    }) => {
+      await answerDiscover(page, 200, SSO_DISCOVERED)
+      await page.route('**/api/auth/sso/start**', (route) => {
+        const returnTo = new URL(route.request().url()).searchParams.get(
+          'return_to'
+        )
+        // Playwright does not route requests that follow a redirect, so the
+        // IdP round trip ends in a fresh navigation to return_to instead.
+        const target = new URL(returnTo ?? '/', APP_URL).toString()
+        return route.fulfill({
+          status: 200,
+          contentType: 'text/html',
+          body: `<script>location.replace(${JSON.stringify(target)})</script>`
+        })
+      })
+      // The server serves the SPA as a page only at /cloud/oauth/consent and
+      // answers a document load of /oauth/consent with a JSON 404.
+      await page.route('**/oauth/consent**', async (route) => {
+        const request = route.request()
+        if (request.resourceType() !== 'document') return route.fallback()
+        const path = new URL(request.url()).pathname.replace(/\/+$/, '')
+        if (path === '/cloud/oauth/consent') {
+          const app = await route.fetch({ url: `${APP_URL}/` })
+          return route.fulfill({ response: app })
+        }
+        return route.fulfill({
+          status: 404,
+          json: { code: 'NOT_FOUND', message: 'Not Found' }
+        })
+      })
+      await page.route('**/oauth/authorize?**', (route) =>
+        route.request().resourceType() === 'document'
+          ? route.fallback()
+          : route.fulfill({ status: 200, json: CONSENT_CHALLENGE })
+      )
+
+      await page.goto(`${APP_URL}/?oauth_request_id=${OAUTH_REQUEST_ID}`)
+      await expect(page).toHaveURL(/\/cloud\/login/)
+      await page.getByRole('button', { name: SSO_COPY.continueWithSso }).click()
+      await page.locator('#cloud-sso-email').fill(SSO_EMAIL)
+      await page
+        .getByRole('button', { name: SSO_COPY.submit, exact: true })
+        .click()
+
+      await expect(
+        page.getByRole('heading', {
+          name: enMessages.oauth.consent.title.replace(
+            '{client}',
+            CONSENT_CHALLENGE.client_display_name
+          )
+        })
+      ).toBeVisible()
+      expect(new URL(page.url()).searchParams.get('oauth_request_id')).toBe(
+        OAUTH_REQUEST_ID
+      )
+    })
+
+    test('switching account on a consent page resumes the same request as the new account', async ({
+      page,
+      cloudAuth
+    }) => {
+      const accountB = { email: 'account-b@test.comfy.org', name: 'Account B' }
+      const signedInEmails: string[] = []
+      page.on('request', (request) => {
+        if (request.url().includes('accounts:signInWithPassword')) {
+          signedInEmails.push(request.postDataJSON().email)
+        }
+      })
+      await page.route('**/api/features', (route) =>
+        route.fulfill({
+          json: {
+            sso_enabled: true,
+            oauth_consent_switch_account_enabled: true
+          }
+        })
+      )
+      await page.route('**/oauth/authorize?**', (route) =>
+        route.request().resourceType() === 'document'
+          ? route.fallback()
+          : route.fulfill({
+              status: 200,
+              json: {
+                ...CONSENT_CHALLENGE,
+                user_email: signedInEmails.at(-1)
+              } satisfies OAuthConsentChallenge
+            })
+      )
+      const appShell = await page.request
+        .get(APP_URL)
+        .then((response) => response.text())
+        .then((html) => html.replace('<head>', '<head><base href="/">'))
+      await page.route('**/cloud/login?**', (route) =>
+        route.request().resourceType() === 'document'
+          ? route.fulfill({ contentType: 'text/html', body: appShell })
+          : route.fallback()
+      )
+      await answerDiscover(page, 200, NOT_SSO)
+      await cloudAuth.mockLiveEmailSignIn()
+      const accountRow = page.getByRole('region', {
+        name: enMessages.oauth.consent.signedInAs
+      })
+
+      await page.goto(`${APP_URL}/?oauth_request_id=${OAUTH_REQUEST_ID}`)
+      await expect(page).toHaveURL(/\/cloud\/login/)
+      await submitEmailSignIn(page, CLOUD_SELF_EMAIL)
+      await expect(accountRow).toContainText(CLOUD_SELF_EMAIL)
+
+      await page
+        .getByRole('button', { name: enMessages.oauth.consent.switchAccount })
+        .click()
+      await expect(page).toHaveURL(/\/cloud\/login\?/)
+      const loginQuery = new URL(page.url()).searchParams
+      expect(loginQuery.get('switchAccount')).toBe('true')
+      expect(loginQuery.get('oauth_request_id')).toBe(OAUTH_REQUEST_ID)
+
+      await cloudAuth.mockLiveEmailSignIn(accountB.email, accountB.name)
+      await submitEmailSignIn(page, accountB.email)
+
+      await expect(accountRow).toContainText(accountB.email)
+      await expect(accountRow).not.toContainText(CLOUD_SELF_EMAIL)
+      expect(new URL(page.url()).pathname).toBe('/oauth/consent')
+      expect(new URL(page.url()).searchParams.get('oauth_request_id')).toBe(
+        OAUTH_REQUEST_ID
+      )
+    })
+
     test('an email that does not use SSO stays on the login page with the not-SSO message', async ({
       page,
       ssoStarts
@@ -210,18 +362,44 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
       expect(ssoStarts).toEqual([])
     })
 
-    test('an sso_error ingest sends back shows its message on the login page', async ({
+    test('an sso_error ingest sends back shows its message on the login page, then leaves the URL', async ({
       page
     }) => {
       await page.goto(`${APP_URL}/?sso_error=SSO_ORG_DISABLED`)
 
-      await expect(page).toHaveURL(
-        /\/cloud\/login\?.*sso_error=SSO_ORG_DISABLED/
-      )
       await expect(page.getByText(SSO_COPY.errors.orgDisabled)).toBeVisible()
+      await expect(page).toHaveURL(/\/cloud\/login/)
+      await expect(page).not.toHaveURL(/sso_error=/)
     })
 
-    test('a Firebase sign-in ingest refuses with sso_required opens the SSO dialog', async ({
+    test('a customer record refused with sso_required shows the SSO notice on the page, not a failure toast', async ({
+      page,
+      cloudAuth
+    }) => {
+      await answerDiscover(page, 200, NOT_SSO)
+      await cloudAuth.mockLiveEmailSignIn()
+      await page.route('**/customers', (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill({ status: 403, json: SSO_REQUIRED })
+          : route.fallback()
+      )
+
+      await signInWithEmail(page)
+
+      await expect(
+        page.getByRole('alert').filter({
+          hasText: SSO_COPY.required.bodyWithEmail.replace(
+            '{email}',
+            CLOUD_SELF_EMAIL
+          )
+        })
+      ).toBeVisible()
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+      await expect(page.getByText(/Failed to create customer/)).toHaveCount(0)
+      await expect(page).toHaveURL(/\/cloud\/login/)
+    })
+
+    test('a Firebase sign-in ingest refuses with sso_required shows the SSO notice on the page', async ({
       page,
       cloudAuth
     }) => {
@@ -235,15 +413,18 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
 
       await signInWithEmail(page)
 
-      const dialog = page.getByRole('dialog')
       await expect(
-        dialog.getByRole('heading', { name: SSO_COPY.required.title })
+        page.getByRole('alert').filter({
+          hasText: SSO_COPY.required.bodyWithEmail.replace(
+            '{email}',
+            CLOUD_SELF_EMAIL
+          )
+        })
       ).toBeVisible()
       await expect(
-        dialog.getByText(
-          SSO_COPY.required.bodyWithEmail.replace('{email}', CLOUD_SELF_EMAIL)
-        )
-      ).toBeVisible()
+        page.getByRole('button', { name: SSO_COPY.continueWithSso })
+      ).toHaveCount(1)
+      await expect(page.getByRole('dialog')).toHaveCount(0)
       await expect(page).toHaveURL(/\/cloud\/login/)
     })
   })

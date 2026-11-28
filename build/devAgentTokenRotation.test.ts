@@ -1,7 +1,7 @@
 // node:http rather than fetch: vitest.network.setup.ts blocks fetch to http(s).
 import { randomBytes } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
-import type { Server } from 'node:http'
+import type { IncomingMessage, Server } from 'node:http'
 import { createServer, request } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -19,15 +19,22 @@ function listeningPort(server: Pick<Server, 'address'> | null): number {
   return address.port
 }
 
+function sessionOf(req: IncomingMessage): string | undefined {
+  const session = req.headers['x-comfy-agent-session']
+  return typeof session === 'string' ? session : undefined
+}
+
 class FakeStandaloneAgent {
   private token = randomBytes(32).toString('hex')
   private readonly server: Server
+  readonly requestSessions: Array<string | undefined> = []
   readonly requestAuthorizations: Array<string | undefined> = []
-  readonly upgradeAuthorizations: Array<string | undefined> = []
+  readonly upgradeSessions: Array<string | undefined> = []
   private constructor() {
     this.server = createServer((req, res) => {
+      this.requestSessions.push(sessionOf(req))
       this.requestAuthorizations.push(req.headers.authorization)
-      if (!this.authorized(req.headers.authorization)) {
+      if (!this.authorized(sessionOf(req))) {
         res.statusCode = 401
         res.end('unauthorized')
         return
@@ -36,9 +43,9 @@ class FakeStandaloneAgent {
       res.end(JSON.stringify({ path: req.url }))
     })
     this.server.on('upgrade', (req, socket) => {
-      this.upgradeAuthorizations.push(req.headers.authorization)
+      this.upgradeSessions.push(sessionOf(req))
       socket.end(
-        this.authorized(req.headers.authorization)
+        this.authorized(sessionOf(req))
           ? 'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n'
           : 'HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n'
       )
@@ -53,8 +60,8 @@ class FakeStandaloneAgent {
     return agent
   }
 
-  private authorized(header: string | undefined): boolean {
-    return header === `Bearer ${this.token}`
+  private authorized(session: string | undefined): boolean {
+    return session === this.token
   }
 
   get url(): string {
@@ -225,7 +232,19 @@ describe('dev agent proxy across an agent restart', { timeout: 15_000 }, () => {
     expect(await upgradeThroughProxy(server)).toBe(101)
   })
 
-  it('does not forward an inbound credential while discovery is unavailable', async () => {
+  it('passes the signed-in user credential through beside the session', async () => {
+    const { agent, server } = await bringUpPair('discovery')
+
+    expect(
+      await getThroughProxy(server, '/api/agent/threads', {
+        Authorization: 'Bearer user-id-token'
+      })
+    ).toBe(200)
+    expect(agent.requestAuthorizations).toEqual(['Bearer user-id-token'])
+    expect(agent.requestSessions).toEqual([agent.currentToken])
+  })
+
+  it('does not forward an inbound session while discovery is unavailable', async () => {
     const agent = await FakeStandaloneAgent.start()
     started.agent = agent
     ownedDataDir = await mkdtemp(join(tmpdir(), 'dev-agent-rotation-'))
@@ -237,11 +256,11 @@ describe('dev agent proxy across an agent restart', { timeout: 15_000 }, () => {
 
     expect(
       await getThroughProxy(server, '/api/agent/threads', {
-        Authorization: `Bearer ${agent.currentToken}`,
+        'X-Comfy-Agent-Session': agent.currentToken,
         'Sec-Fetch-Site': 'same-origin'
       })
     ).toBe(401)
-    expect(agent.requestAuthorizations).toEqual([undefined])
+    expect(agent.requestSessions).toEqual([undefined])
   })
 
   it('keeps the credential off cross-origin requests after a rotation', async () => {
@@ -256,18 +275,14 @@ describe('dev agent proxy across an agent restart', { timeout: 15_000 }, () => {
     ).toBe(403)
 
     await rejectCrossOriginUpgrade(server)
-    expect(agent.upgradeAuthorizations).toEqual([
-      `Bearer ${agent.currentToken}`
-    ])
+    expect(agent.upgradeSessions).toEqual([agent.currentToken])
   })
 
   it('keeps a static credential off a cross-origin upgrade', async () => {
     const { agent, server } = await bringUpPair('static')
 
     await rejectCrossOriginUpgrade(server)
-    expect(agent.upgradeAuthorizations).toEqual([
-      `Bearer ${agent.currentToken}`
-    ])
+    expect(agent.upgradeSessions).toEqual([agent.currentToken])
   })
 
   it('rejects a request that declares itself cross-site', async () => {
@@ -289,7 +304,7 @@ describe('dev agent proxy across an agent restart', { timeout: 15_000 }, () => {
         'Sec-Fetch-Site': 'cross-site'
       })
     ).toBe(403)
-    expect(agent.requestAuthorizations).toEqual([])
+    expect(agent.requestSessions).toEqual([])
   })
 
   it('serves a caller that sends no browser metadata at all', async () => {

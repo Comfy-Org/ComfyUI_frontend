@@ -1,32 +1,40 @@
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeId } from '@/types/nodeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import type {
+  LGraphNode,
+  LLink,
+  LinkConnector,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
-  INodeInputSlot,
-  INodeOutputSlot,
   ISlotType,
   Positionable
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
 import { EmptySubgraphOutput } from './EmptySubgraphOutput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
+
+import { provideSubgraphOutputGuard } from './subgraphTypeGuards'
 
 export class SubgraphOutputNode
   extends SubgraphIONodeBase<SubgraphOutput>
   implements Positionable
 {
   readonly id: NodeId = SUBGRAPH_OUTPUT_ID
+  readonly slotDirection = 'input'
 
   readonly emptySlot: EmptySubgraphOutput = new EmptySubgraphOutput(this)
 
@@ -38,40 +46,11 @@ export class SubgraphOutputNode
     return [...this.slots, this.emptySlot]
   }
 
-  get slotAnchorX() {
-    const [x] = this.boundingRect
-    return x + SubgraphIONodeBase.roundedRadius
-  }
-
-  override onPointerDown(
-    e: CanvasPointerEvent,
-    pointer: CanvasPointer,
-    linkConnector: LinkConnector
+  protected override dragNewLink(
+    linkConnector: LinkConnector,
+    slot: SubgraphOutput
   ): void {
-    // Left-click handling for dragging connections
-    if (e.button === 0) {
-      for (const slot of this.allSlots) {
-        // Check if click is within the full slot area (including label)
-        if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          pointer.onDragStart = () => {
-            linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
-          }
-          pointer.onDragEnd = (eUp) => {
-            linkConnector.dropLinks(this.subgraph, eUp)
-          }
-          pointer.onDoubleClick = () => {
-            this.handleSlotDoubleClick(slot, e)
-          }
-          pointer.finally = () => {
-            linkConnector.reset(true)
-          }
-        }
-      }
-      // Check for right-click
-    } else if (e.button === 2) {
-      const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
-      if (slot) this.showSlotContextMenu(slot, e)
-    }
+    linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
   }
 
   /** @inheritdoc */
@@ -158,4 +137,21 @@ export class SubgraphOutputNode
 
     this.drawSlots(ctx, colorContext, fromSlot, editorAlpha)
   }
+}
+
+function isSubgraphOutput(slot: unknown): slot is SubgraphOutput {
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    'parent' in slot &&
+    slot.parent instanceof SubgraphOutputNode
+  )
+}
+
+provideSubgraphOutputGuard(isSubgraphOutput)
+
+type RegisteredSubgraphOutputNode = SubgraphOutputNode
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface SubgraphOutputNode extends RegisteredSubgraphOutputNode {}
 }

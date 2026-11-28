@@ -1,5 +1,7 @@
 import type { CreateTopupResponse } from '@comfyorg/ingest-types'
 
+import type { AddCreditsPlanLine } from '#/core/billing/addCredits/addCreditsCopy'
+
 import type {
   BillingCheckoutReceived,
   BillingFailed,
@@ -7,8 +9,8 @@ import type {
   BillingRequestSent,
   BillingStarted,
   BillingSucceeded
-} from './stages.js'
-import type { PaymentIntentSource } from './vocabulary.js'
+} from './stages'
+import type { PaymentIntentSource } from './vocabulary'
 
 /** The fixed amounts, in USD, a top-up dialog offers as one-click choices. */
 export const TOPUP_AMOUNT_PRESETS_USD = [10, 25, 50, 100] as const
@@ -29,6 +31,8 @@ type TopupStarted = BillingStarted & {
   /** The amount being bought, in whole cents. */
   amount_cents?: number
   amount_preset?: TopupAmountPreset
+  /** The plan line shown before paying, or `none` when the dialog showed none. */
+  plan_line?: AddCreditsPlanLine | 'none'
 }
 
 export type TopupBillingEvent = {

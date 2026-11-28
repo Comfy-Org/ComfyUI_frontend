@@ -43,7 +43,6 @@ test.describe(
       await test.step('host answers the subscribe with its catch-up', async () => {
         const panel = new AgentPanel(page)
         await panel.open()
-        await panel.selectWorkflow()
         await panel.sendMessage('Show the saved workflow')
         await expect(
           panel.root.getByText(enMessages.agent.thinking).first()
@@ -57,13 +56,13 @@ test.describe(
 
       await test.step('host values replace the stale ones on the canvas', async () => {
         await expect(
-          source.getByLabel('width', { exact: true }).getByRole('spinbutton')
+          source.getByRole('spinbutton', { name: 'width', exact: true })
         ).toHaveValue(hostVisibleValues.width)
         await expect(
-          source.getByLabel('height', { exact: true }).getByRole('spinbutton')
+          source.getByRole('spinbutton', { name: 'height', exact: true })
         ).toHaveValue(hostVisibleValues.height)
         await expect(
-          source.getByLabel('length', { exact: true }).getByRole('spinbutton')
+          source.getByRole('spinbutton', { name: 'length', exact: true })
         ).toHaveValue(hostVisibleValues.length)
         await expect(
           source.getByRole('textbox', { name: 'prompt', exact: true })

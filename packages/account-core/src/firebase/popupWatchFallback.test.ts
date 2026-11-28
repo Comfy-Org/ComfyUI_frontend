@@ -10,7 +10,7 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
 describe('the popup watch on a resolver it cannot extend', () => {
   it('uses Firebase’s own resolver and runs sign-in unwatched, instead of failing to load', async () => {
     const { runWatchedPopup, watchedPopupRedirectResolver } =
-      await import('./popupWatch.js')
+      await import('./popupWatch')
     const onAbandoned = vi.fn()
 
     expect(watchedPopupRedirectResolver).toBe(sdk.browserPopupRedirectResolver)

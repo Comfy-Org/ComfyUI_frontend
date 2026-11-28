@@ -41,12 +41,18 @@ on:
       - '!.storybook/**'
       - '!**/*.md'
   workflow_dispatch:
+    inputs:
+      registry_forms:
+        description: Run the opt-in per-pack widget-form census
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
 concurrency:
-  group: ecosystem-matrix-${{ github.ref }}
+  group: ecosystem-matrix-${{ github.ref }}${{ inputs.registry_forms && '-census' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
 
 env:
@@ -62,7 +68,16 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      should-run: ${{ github.event_name == 'pull_request' && github.event.pull_request.changed_files >= 3000 || steps.changes.outputs.should-run-source }}
+      should-run: >-
+        ${{ (github.event_name == 'push'
+          || github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'pull_request'
+            && github.event.pull_request.head.repo.full_name == github.repository
+            && github.repository == 'Comfy-Org/ComfyUI_frontend'
+            && (startsWith(github.head_ref, 'version-bump-')
+              || github.head_ref == 'chore/corpus-pins')))
+          && (github.event.pull_request.changed_files >= 3000
+            || steps.changes.outputs.should-run-source == 'true') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -244,7 +259,7 @@ jobs:
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.registry_forms && 120 || 20 }}
     strategy:
       fail-fast: false
       matrix:
@@ -253,6 +268,7 @@ jobs:
     env:
       MATRIX_RENDERER: ${{ matrix.renderer }}
       MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '' }}
+      MATRIX_REGISTRY_FORMS: ${{ inputs.registry_forms && '1' || '' }}
     steps:
       # This job EXECUTES unreviewed third-party pack code under vitest;
       # the checkout must not leave a usable git credential behind for it.
@@ -334,7 +350,7 @@ jobs:
           row_names=()
           for f in matrix-rows/*.json; do
             name=$(basename "$f" .json)
-            case "$name" in _manifest*) continue ;; esac
+            case "$name" in _manifest*|_registry-baseline) continue ;; esac
             row_names+=("$name")
           done
           echo "specs=$built rows=${#row_names[@]}"
@@ -439,6 +455,7 @@ jobs:
         env:
           MATRIX_RUN_ID: ${{ github.run_id }}
           MATRIX_EXPECT_SHARDS: '4'
+          MATRIX_EXPECT_REGISTRY_FORMS: ${{ inputs.registry_forms && '1' || '' }}
         run: |
           set +e
           MATRIX_OUT="$PWD/matrix-rows" \
@@ -685,14 +702,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$SHOULD_RUN" = false ]; then
-            echo 'This candidate changes nothing the matrix measures, so every expensive stage was skipped.' > matrix-explainer.md
+            echo 'The matrix runs on same-repository version-bump PRs with relevant changes, main-branch pushes, and manual dispatches. This candidate does not qualify, so every expensive stage was skipped.' > matrix-explainer.md
             cat matrix-explainer.md
             exit 0
           fi
           {
             echo '| Stage | Result | What a failure here means |'
             echo '| --- | --- | --- |'
-            echo "| pin-status | $PIN_STATUS_RESULT | Informational. It never fails the build; it warns when the corpus snapshot is over 30 days old. |"
+            echo "| pin-status | $PIN_STATUS_RESULT | Informational. It never fails the build; it warns when the corpus snapshot is over 35 days old. |"
             echo "| corpus | $CORPUS_RESULT | Infrastructure: the pack mirror could not be fetched, validated or cached. Not your diff. |"
             echo "| shards | $SHARDS_RESULT | **Harness integrity, not pack breakage.** A shard only checks that every built spec wrote its row; vitest's own exit code is deliberately ignored because pack code leaks unhandled rejections. |"
             echo "| verdicts | $VERDICTS_RESULT | The population verdict per renderer. **This is the stage that judges packs.** Exit 1 is FAIL; exit 2 is *withheld* — rows were missing, so nothing was measured, which is not the same as your change breaking packs. |"

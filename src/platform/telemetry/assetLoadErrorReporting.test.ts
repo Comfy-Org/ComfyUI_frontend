@@ -1,22 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { MockInstance } from 'vitest'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('./reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 import {
   reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from './assetLoadErrorReporting'
+import { claimExtensionImportError } from './customNodeLoadTelemetry'
 
 describe('asset load error reporting', () => {
-  let consoleError: MockInstance<typeof console.error>
-
-  beforeEach(() => {
-    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-  })
+  beforeEach(() => {})
 
   describe('on cloud, where a sink exists', () => {
     beforeEach(() => {
@@ -43,7 +40,7 @@ describe('asset load error reporting', () => {
           tags: { tag_name: 'link' }
         })
       )
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it.for([
@@ -54,7 +51,7 @@ describe('asset load error reporting', () => {
       reportResourceLoadError(url, tagName)
 
       expect(mockReportError).not.toHaveBeenCalled()
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
     })
 
     it('reports a same-origin failure given as a relative URL', () => {
@@ -97,7 +94,36 @@ describe('asset load error reporting', () => {
           errorType: 'vite_preload_error'
         })
       )
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('a preload failure left to reject at its importer', () => {
+    beforeEach(() => {
+      vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    })
+
+    it('is reported once its importer has had the chance to claim it', () => {
+      const error = new Error('Importing a module script failed.')
+
+      reportPreloadErrorUnlessExtensionImport(error)
+      expect(mockReportError).not.toHaveBeenCalled()
+      vi.runAllTimers()
+
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        error,
+        expect.objectContaining({ errorType: 'vite_preload_error' })
+      )
+    })
+
+    it('is left to the extension loader when it claimed the failure', () => {
+      const error = new SyntaxError("Unexpected token '}'")
+
+      reportPreloadErrorUnlessExtensionImport(error)
+      claimExtensionImportError(error)
+      vi.runAllTimers()
+
+      expect(mockReportError).not.toHaveBeenCalled()
     })
   })
 
@@ -116,14 +142,14 @@ describe('asset load error reporting', () => {
         'script'
       )
 
-      expect(consoleError).not.toHaveBeenCalled()
+      expect(console.error).not.toHaveBeenCalled()
       expect(mockReportError).not.toHaveBeenCalled()
     })
 
     it('logs a resource failure locally instead of reporting it', () => {
       reportResourceLoadError('http://localhost:5173/assets/app.css', 'link')
 
-      expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      expect(console.error).toHaveBeenCalledExactlyOnceWith(
         '[resource:loadError]',
         { url: 'http://localhost:5173/assets/app.css', tagName: 'link' }
       )
@@ -137,7 +163,7 @@ describe('asset load error reporting', () => {
         )
       )
 
-      expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+      expect(console.error).toHaveBeenCalledExactlyOnceWith(
         '[vite:preloadError]',
         expect.objectContaining({
           url: 'http://localhost:5173/assets/app-123.js',

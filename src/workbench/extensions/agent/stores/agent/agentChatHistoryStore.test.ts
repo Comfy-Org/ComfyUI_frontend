@@ -131,6 +131,59 @@ describe('useAgentChatHistoryStore', () => {
     expect(store.activeId).toBe('a')
   })
 
+  describe('sessionsFor', () => {
+    const forWorkflow = (
+      id: string,
+      workflowId: string,
+      lastActivityAt?: number
+    ): ChatSession => ({
+      ...session(id, lastActivityAt ?? NOW),
+      lastActivityAt,
+      workflowId
+    })
+
+    it('lists only the chats of one workflow, by last activity, with the renamed titles', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([
+        forWorkflow('older', 'wf-a', 1),
+        forWorkflow('elsewhere', 'wf-b', 9),
+        forWorkflow('newer', 'wf-a', 3),
+        { ...session('unbound', 7), lastActivityAt: 7 }
+      ])
+      store.rename('older', 'Duck pipeline')
+
+      expect(store.sessionsFor('wf-a')).toMatchObject([
+        { id: 'newer', title: 'newer' },
+        { id: 'older', title: 'Duck pipeline' }
+      ])
+    })
+
+    it('lists a chat with no valid time last, though History groups it under Today', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([
+        forWorkflow('stampless', 'wf-a'),
+        forWorkflow('stamped', 'wf-a', 1)
+      ])
+
+      expect(store.sessionsFor('wf-a').map(({ id }) => id)).toEqual([
+        'stamped',
+        'stampless'
+      ])
+    })
+
+    it('leaves out a chat that was deleted', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([
+        forWorkflow('a', 'wf-a', 1),
+        forWorkflow('b', 'wf-a', 2)
+      ])
+
+      store.remove('b')
+
+      expect(store.sessionsFor('wf-a').map(({ id }) => id)).toEqual(['a'])
+    })
+  })
+
   it('restores titles and tombstones only from the current scope', () => {
     sessionStorage.setItem(
       'Comfy.Workspace.Current',
@@ -188,14 +241,28 @@ describe('useAgentChatHistoryStore', () => {
   })
 
   it('removes a session with no server request', () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const store = useAgentChatHistoryStore()
     store.replaceAll([session('a', 1)])
 
     store.remove('a')
 
-    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
     expect(store.sessions).toHaveLength(0)
-    fetchSpy.mockRestore()
+    vi.mocked(fetch).mockRestore()
+  })
+
+  it('keeps a remembered session across a stale replaceAll until a refresh lists it and obeys tombstones', () => {
+    const store = useAgentChatHistoryStore()
+    store.rememberSession(session('th-new', 100))
+
+    store.replaceAll([session('th-old', 50)])
+    expect(store.sessions.map(({ id }) => id)).toEqual(['th-new', 'th-old'])
+
+    store.replaceAll([session('th-new', 100), session('th-old', 50)])
+    expect(store.sessions.map(({ id }) => id)).toEqual(['th-new', 'th-old'])
+
+    store.remove('th-new')
+    store.rememberSession(session('th-new', 100))
+    expect(store.sessions.map(({ id }) => id)).toEqual(['th-old'])
   })
 })

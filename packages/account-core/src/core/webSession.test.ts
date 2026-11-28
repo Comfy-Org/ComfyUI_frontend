@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FakeWebSessionState } from '../testing.js'
-import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '../testing.js'
-import { COMFY_CLIENT } from './requestAuth.js'
-import type { WebSessionOptions } from './webSession.js'
+import type { FakeWebSessionState } from '#/testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '#/testing'
+import { COMFY_CLIENT } from './requestAuth'
+import type { WebSessionOptions } from './webSession'
 import {
   createWebSession,
   deleteWebSession,
   readWebSession,
   revokeAllWebSessions
-} from './webSession.js'
+} from './webSession'
 
 const API = 'https://cloud.example/api'
 const NOW = Date.parse('2024-06-15T12:00:00Z')
@@ -147,6 +147,26 @@ describe('web session status mapping', () => {
       })
     }
   )
+
+  it('keeps the organization an sso_required refusal names', async () => {
+    const result = await readWebSession(
+      optionsFor(
+        respondWith(
+          403,
+          JSON.stringify({
+            code: 'sso_required',
+            message: 'use SSO',
+            organization_id: 'org_acme'
+          })
+        )
+      )
+    )
+
+    expect(result).toMatchObject({
+      code: 'SSO_REQUIRED',
+      organizationId: 'org_acme'
+    })
+  })
 
   it.for([
     { name: '429 edge rate limit', status: 429, body: errorBody('no_session') },

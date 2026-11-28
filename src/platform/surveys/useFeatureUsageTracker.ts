@@ -1,5 +1,8 @@
-import { useStorage } from '@vueuse/core'
 import { computed } from 'vue'
+import { customStorageEventName } from '@vueuse/core'
+
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 
 interface FeatureUsage {
   useCount: number
@@ -10,6 +13,7 @@ interface FeatureUsage {
 type FeatureUsageRecord = Partial<Record<string, FeatureUsage>>
 
 const STORAGE_KEY = 'Comfy.FeatureUsage'
+const pendingUsage = new Map<string, FeatureUsage>()
 
 function latestUsage(
   storedUsage: FeatureUsage | undefined,
@@ -33,33 +37,46 @@ function incrementUsage(
   }
 }
 
+function applyPendingUsage(usageData: FeatureUsageRecord) {
+  return {
+    ...usageData,
+    ...Object.fromEntries(
+      [...pendingUsage].map(([featureId, usage]) => [
+        featureId,
+        latestUsage(usageData[featureId], usage)
+      ])
+    )
+  }
+}
+
 function persistUsageData(
   featureId: string,
-  currentUsage: FeatureUsage | undefined,
+  currentUsageData: FeatureUsageRecord,
   now: number
 ) {
   try {
-    const oldValue = localStorage.getItem(STORAGE_KEY)
+    const oldValue = safeLocalStorage.getItem(STORAGE_KEY)
     const storedUsageData = oldValue
       ? (JSON.parse(oldValue) as FeatureUsageRecord)
       : {}
+    const mergedUsageData = applyPendingUsage(storedUsageData)
     const usageData = {
-      ...storedUsageData,
+      ...mergedUsageData,
       [featureId]: incrementUsage(
-        latestUsage(storedUsageData[featureId], currentUsage),
+        latestUsage(mergedUsageData[featureId], currentUsageData[featureId]),
         now
       )
     }
     const newValue = JSON.stringify(usageData)
 
-    localStorage.setItem(STORAGE_KEY, newValue)
+    if (safeLocalStorage.setItem(STORAGE_KEY, newValue) !== 'ok') return
+    pendingUsage.clear()
+    const storageArea = safeLocalStorage.asStorage()
+    const change = { key: STORAGE_KEY, oldValue, newValue, storageArea }
     window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: STORAGE_KEY,
-        oldValue,
-        newValue,
-        storageArea: localStorage
-      })
+      storageArea instanceof Storage
+        ? new StorageEvent('storage', change)
+        : new CustomEvent(customStorageEventName, { detail: change })
     )
     return usageData
   } catch {
@@ -72,23 +89,38 @@ function persistUsageData(
  * Persists to localStorage.
  */
 export function useFeatureUsageTracker(featureId: string) {
-  const usageData = useStorage<FeatureUsageRecord>(STORAGE_KEY, {})
+  const usageData = useSafeLocalStorage<FeatureUsageRecord>(STORAGE_KEY, {})
 
   const usage = computed(() => usageData.value[featureId])
   const useCount = computed(() => usage.value?.useCount ?? 0)
 
   function trackUsage() {
     const now = Date.now()
-    const existing = usageData.value[featureId]
+    const currentUsageData = usageData.value
+    const existing = currentUsageData[featureId]
 
-    usageData.value = persistUsageData(featureId, existing, now) ?? {
-      ...usageData.value,
-      [featureId]: incrementUsage(existing, now)
+    const persistedUsageData = persistUsageData(
+      featureId,
+      currentUsageData,
+      now
+    )
+    const nextUsageData = persistedUsageData ?? {
+      ...currentUsageData,
+      [featureId]: incrementUsage(
+        latestUsage(pendingUsage.get(featureId), existing),
+        now
+      )
     }
+    if (!persistedUsageData) {
+      const nextUsage = nextUsageData[featureId]
+      if (nextUsage) pendingUsage.set(featureId, nextUsage)
+    }
+    usageData.value = nextUsageData
   }
 
   function reset() {
     delete usageData.value[featureId]
+    pendingUsage.delete(featureId)
   }
 
   return {

@@ -11,13 +11,13 @@ import type {
   WebSessionCommandResult,
   WebSessionFailure,
   WebSessionResult
-} from './sessionContracts.js'
-import type { WebSessionOptions } from './webSession.js'
+} from './sessionContracts'
+import type { WebSessionOptions } from './webSession'
 import {
   createWebSession,
   deleteWebSession,
   readWebSession
-} from './webSession.js'
+} from './webSession'
 
 export interface RememberedLogin {
   /** The Comfy user id of the login this browser remembers, or null. */
@@ -190,8 +190,8 @@ function leaveAccount(
   return {
     state: { phase: 'signed_out', outcome },
     effects: [
-      ...effects,
-      { type: 'account_changed', change: { reason: 'signed_out', outcome } }
+      { type: 'account_changed', change: { reason: 'signed_out', outcome } },
+      ...effects
     ]
   }
 }
@@ -406,6 +406,11 @@ export interface WebSessionIdentityOptions {
   readonly onAccountChanged?: (
     change: WebSessionAccountChange & { readonly epoch: number }
   ) => void
+  /** Reports a remembered-login sign-out that failed after an account change. */
+  readonly onLocalSignOutFailed?: (
+    error: unknown,
+    context: { readonly epoch: number }
+  ) => void
   readonly heartbeat?: WebSessionHeartbeatOptions
   readonly schedule?: ScheduleRetry
   readonly retryBaseMs?: number
@@ -435,6 +440,7 @@ export interface WebSessionIdentity {
 
 const HEARTBEAT_KEY = '@comfyorg/account-core web-session heartbeat'
 const HEARTBEAT_INTERVAL_MS = 10 * 60 * 1000
+const PROOF_TIMEOUT_MS = 15_000
 
 const zSharedResult = z.discriminatedUnion('status', [
   z.object({
@@ -529,14 +535,19 @@ function createAccountIdentity(
   let signIns = 0
   let liveSignIn = 0
   let cancelRetry: (() => void) | undefined
+  let cancelProofRetry: (() => void) | undefined
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
   let stopWatching: (() => void)[] = []
-  let restoring = { epoch, settled: Promise.resolve() }
+  let restoring = { epoch, settled: Promise.resolve(), inFlight: false }
 
   function dispatch(event: WebSessionIdentityEvent): void {
     const next = transitionWebSessionIdentity(state, event)
     const changed = next.state !== state
+    if (changed) {
+      cancelProofRetry?.()
+      cancelProofRetry = undefined
+    }
     state = next.state
     next.effects.forEach(run)
     if (changed) listeners.forEach((listener) => listener(state))
@@ -651,21 +662,56 @@ function createAccountIdentity(
     ]
   }
 
+  function proofWithinTimeout(): Promise<{ value: string | null } | undefined> {
+    return new Promise((resolve) => {
+      const cancel = schedule(() => resolve(undefined), PROOF_TIMEOUT_MS)
+      login.getProof().then(
+        (value) => {
+          cancel()
+          resolve({ value })
+        },
+        () => {
+          cancel()
+          resolve(undefined)
+        }
+      )
+    })
+  }
+
   async function restore(
     started: number,
-    expectedUserId: string
+    expectedUserId: string,
+    retried: boolean
   ): Promise<void> {
-    const proof = await login.getProof().then(
-      (value) => ({ value }),
-      () => undefined
-    )
+    const proof = await proofWithinTimeout()
     if (started !== epoch) return
-    if (proof === undefined) return dispatch({ type: 'proof_errored' })
+    if (proof === undefined) {
+      if (!retried && state.phase === 'signed_in') {
+        cancelProofRetry?.()
+        cancelProofRetry = schedule(() => {
+          cancelProofRetry = undefined
+          if (started === epoch && state.phase === 'signed_in') {
+            startRestore(expectedUserId, true)
+          }
+        }, retryBaseMs)
+      }
+      return dispatch({ type: 'proof_errored' })
+    }
     const { value } = proof
     if (value === null) return dispatch({ type: 'proof_missing' })
     await answer(started, { type: 'restore_answered' }, () =>
       createWebSession(options.session, async () => value, { expectedUserId })
     )
+  }
+
+  function startRestore(expectedUserId: string, retried: boolean): void {
+    if (restoring.inFlight && restoring.epoch === epoch) return
+    const settled = restore(epoch, expectedUserId, retried).finally(() => {
+      if (restoring.settled === settled) {
+        restoring = { ...restoring, inFlight: false }
+      }
+    })
+    restoring = { epoch, settled, inFlight: true }
   }
 
   function run(effect: WebSessionIdentityEffect): void {
@@ -676,7 +722,7 @@ function createAccountIdentity(
         )
         return
       case 'restore':
-        restoring = { epoch, settled: restore(epoch, effect.expectedUserId) }
+        startRestore(effect.expectedUserId, false)
         return
       case 'schedule_retry':
         cancelRetry = schedule(
@@ -688,7 +734,13 @@ function createAccountIdentity(
         )
         return
       case 'sign_out_locally':
-        login.signOutLocally().catch(reportLocalSignOutFailure)
+        {
+          const signOutEpoch = epoch
+          login.signOutLocally().catch((error: unknown) => {
+            reportLocalSignOutFailure(error)
+            options.onLocalSignOutFailed?.(error, { epoch: signOutEpoch })
+          })
+        }
         return
       default:
         notify(effect)
@@ -769,6 +821,8 @@ function createAccountIdentity(
       epoch += 1
       cancelRetry?.()
       cancelRetry = undefined
+      cancelProofRetry?.()
+      cancelProofRetry = undefined
       stopHeartbeat()
       state = { phase: 'idle' }
       listeners.forEach((listener) => listener(state))

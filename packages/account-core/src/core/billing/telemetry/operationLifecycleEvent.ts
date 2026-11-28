@@ -1,10 +1,10 @@
 import {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT
-} from '../../../telemetry.js'
-import type { BillingOperationTelemetryEvent } from '../operationLifecycle.js'
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
-import type { PaymentIntentSource } from './vocabulary.js'
+} from '#/telemetry'
+import type { BillingOperationTelemetryEvent } from '#/core/billing/operationLifecycle'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
+import type { PaymentIntentSource } from './vocabulary'
 
 /**
  * The lifecycle's event onto the poller's `billing.operation.*` stages, so

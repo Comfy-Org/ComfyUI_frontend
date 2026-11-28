@@ -6,6 +6,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
@@ -34,6 +35,32 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
         /View details/i
       )
     })
+  })
+
+  test.describe('Warning appearance', { tag: '@screenshot' }, () => {
+    for (const palette of ['dark', 'light'] as const) {
+      test(`shows a visible warning stripe in the ${palette} palette`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.ColorPalette', palette)
+        await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+
+        const overlay = getOverlay(comfyPage.page)
+        await expect(overlay).toBeVisible()
+        const stripe = await overlay.evaluate((el) => {
+          const style = getComputedStyle(el)
+          return {
+            border: style.borderLeftColor,
+            background: style.backgroundColor
+          }
+        })
+        expect(stripe.border).not.toBe(stripe.background)
+        await expectElementScreenshot(
+          overlay,
+          `error-overlay-warning-${palette}.png`
+        )
+      })
+    }
   })
 
   test.describe('Persistence', () => {

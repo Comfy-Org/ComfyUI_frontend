@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
 import {
   createBillingScopeTracker,
   sessionBillingScopeSource
-} from './billingScope.js'
+} from './billingScope'
 
 function credential(
   overrides: Partial<AccountCredential> = {}

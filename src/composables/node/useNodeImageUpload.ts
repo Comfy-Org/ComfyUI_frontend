@@ -1,16 +1,17 @@
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
-import { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { api } from '@/scripts/api'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { uploadTimeoutMs } from '@/utils/uploadTimeout'
 
-const UPLOAD_TIMEOUT_MS = 120_000
 const BYTES_PER_MB = 1024 * 1024
 
 function buildUploadErrorMessage(resp: Response) {
@@ -40,6 +41,7 @@ interface ImageUploadFormFields {
 
 const uploadFile = async (
   file: File,
+  timeoutMs: number,
   formFields: Partial<ImageUploadFormFields> = {}
 ) => {
   const body = new FormData()
@@ -49,11 +51,11 @@ const uploadFile = async (
   const resp = await api.fetchApi('/upload/image', {
     method: 'POST',
     body,
-    timeoutMs: UPLOAD_TIMEOUT_MS
+    timeoutMs
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(buildUploadErrorMessage(resp))
+    useToast().warning(buildUploadErrorMessage(resp))
     return
   }
 
@@ -95,25 +97,32 @@ export const useNodeImageUpload = (
 ) => {
   const { fileFilter, onUploadComplete, allow_batch, accept } = options
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (
+    file: File,
+    timeoutMs = uploadTimeoutMs([file])
+  ) => {
     try {
-      const path = await uploadFile(file, {
+      const path = await uploadFile(file, timeoutMs, {
         type: options.folder
       })
       if (!path) return
       return path
     } catch (error) {
       if (error instanceof DOMException && error.name === 'TimeoutError') {
-        useToastStore().addAlert(t('g.uploadTimedOut'))
+        useToast().warning(t('g.uploadTimedOut'))
       } else {
-        useToastStore().addAlert(String(error))
+        useToast().warning(
+          t('g.uploadFailed', {
+            reason: getErrorMessage(error) ?? t('g.unknownError')
+          })
+        )
       }
     }
   }
 
   const handleUploadBatch = async (files: File[]) => {
     if (node.isUploading) {
-      useToastStore().addAlert(t('g.uploadAlreadyInProgress'))
+      useToast().warning(t('g.uploadAlreadyInProgress'))
       return []
     }
     node.isUploading = true
@@ -123,7 +132,10 @@ export const useNodeImageUpload = (
       node.graph?.setDirtyCanvas(true)
       options.onUploadStart?.(files)
 
-      const paths = await Promise.all(files.map(handleUpload))
+      const timeoutMs = uploadTimeoutMs(files)
+      const paths = await Promise.all(
+        files.map((file) => handleUpload(file, timeoutMs))
+      )
       const validPaths = paths.filter((p): p is string => !!p)
       if (validPaths.length) {
         onUploadComplete(validPaths)

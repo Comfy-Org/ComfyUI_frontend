@@ -11,8 +11,9 @@ import { docLinksIncident } from './liveGraphApplier'
  * register it claimed; replaying those registers from the document undoes the
  * live edit without touching anything else. A node the document lacks is
  * removed live along with its links; one it holds is restored with the
- * document links incident to it. Interior (`path`) writes address subgraph
- * definitions the applier never projects, so they have nothing to undo here.
+ * document links incident to it. Interior (`path`) writes are skipped: a
+ * rejected op never reached the document, so the live interior already
+ * holds the document value and there is nothing to undo here.
  */
 export function changesForRejectedOps(
   doc: Y.Doc,
@@ -20,7 +21,7 @@ export function changesForRejectedOps(
 ): FrameChanges {
   const nodes = new Map<string, NodeChange>()
   const widgets = new Map<string, Set<string>>()
-  const resyncNodes = new Set<string>()
+  const resyncNodes = new Map<string, Set<string>>()
   const links = new Set<string>()
   const docNodes = nodesMap(doc)
   const settleNode = (id: string): void => {
@@ -48,9 +49,13 @@ export function changesForRejectedOps(
         widgets.set(id, names)
         break
       }
-      case 'set_node_field':
-        resyncNodes.add(String(op.node_id))
+      case 'set_node_field': {
+        const id = String(op.node_id)
+        const keys = resyncNodes.get(id) ?? new Set<string>()
+        keys.add(op.field)
+        resyncNodes.set(id, keys)
         break
+      }
       case 'connect':
       case 'disconnect':
         links.add(String(op.link_id))

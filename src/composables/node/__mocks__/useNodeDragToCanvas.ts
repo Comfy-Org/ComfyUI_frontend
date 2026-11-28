@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { ref, shallowRef } from 'vue'
 
-import type { useNodeDragToCanvas as realUseNodeDragToCanvas } from '../useNodeDragToCanvas'
+import type { useNodeDragToCanvas as realUseNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 
 const nodeDragToCanvas: ReturnType<typeof realUseNodeDragToCanvas> = {
   isDragging: ref(false),

@@ -1,51 +1,54 @@
-import { createSharedComposable, whenever } from '@vueuse/core'
+import { createSharedComposable, tryOnScopeDispose } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { startMoveSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
+import type { MoveSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeBoundsUpdate } from '@comfyorg/graph-model/layout'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
-import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
 export const useNodeDrag = createSharedComposable(() => {
   const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
-  // Get transform utilities from TransformPane if available
-  const transformState = useTransformState()
-
-  // Snap-to-grid functionality
   const { shouldSnap, applySnapToPosition } = useNodeSnap()
 
-  // Shift key sync for LiteGraph canvas preview
-  const { trackShiftKey } = useShiftKeySync()
+  const { trackShiftKey, isShiftHeld } = useShiftKeySync()
 
   const canvasStore = useCanvasStore()
 
-  // Drag state
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
   let otherSelectedNodesStartPositions: Map<NodeId, Point> | null = null
-  let rafId: number | null = null
+  let stopFrame: (() => void) | null = null
   let stopShiftSync: (() => void) | null = null
 
-  /** `pos` is readonly on Positionable, so absolute targets are reached via `move()`. */
   let nonNodeStartPositions: Map<Positionable, Point> | null = null
 
-  // Auto-pan state
+  let moveSnap: MoveSnap | null = null
+  let dragOrigin: Point | null = null
+
   let autoPan: AutoPanController | null = null
   let lastPointerX = 0
   let lastPointerY = 0
 
-  function startDrag(event: PointerEvent, nodeId: NodeId) {
+  function startDrag(
+    event: PointerEvent,
+    nodeId: NodeId,
+    initialShiftKey: boolean
+  ) {
     const { rootGraphId } = canvasStore
     if (!rootGraphId) return
 
@@ -53,8 +56,7 @@ export const useNodeDrag = createSharedComposable(() => {
     if (!layout) return
     const position = layout.position
 
-    // Track shift key state and sync to canvas for snap preview
-    stopShiftSync = trackShiftKey(event)
+    stopShiftSync = trackShiftKey(initialShiftKey)
 
     dragStartPos = { ...position }
     dragStartMouse = { x: event.clientX, y: event.clientY }
@@ -63,15 +65,12 @@ export const useNodeDrag = createSharedComposable(() => {
 
     const selectedNodes = toValue(selectedNodeIds)
 
-    // capture the starting positions of all other selected nodes
-    // Only move other selected items if the dragged node is part of the selection
     const isDraggedNodeInSelection = selectedNodes.has(nodeId)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
 
       for (const id of selectedNodes) {
-        // Skip the current node being dragged
         if (id === nodeId) continue
 
         const nodeLayout = layoutStore.getNodeLayout(rootGraphId, id)
@@ -83,8 +82,6 @@ export const useNodeDrag = createSharedComposable(() => {
       otherSelectedNodesStartPositions = null
     }
 
-    // Capture selected groups only if the dragged node is part of the selection
-    // This prevents groups from moving when dragging an unrelated node
     nonNodeStartPositions = isDraggedNodeInSelection
       ? new Map(
           toValue(selectedItems)
@@ -92,6 +89,24 @@ export const useNodeDrag = createSharedComposable(() => {
             .map((item) => [item, { x: item.pos[0], y: item.pos[1] }])
         )
       : null
+
+    dragOrigin = { ...position }
+    moveSnap = startDragSnap(nodeId)
+  }
+
+  function startDragSnap(nodeId: NodeId): MoveSnap | null {
+    const { canvas } = canvasStore
+    const graph = canvas?.graph
+    if (!canvas || !graph) return null
+    const nodeIds = [
+      nodeId,
+      ...(otherSelectedNodesStartPositions?.keys() ?? [])
+    ]
+    const nodes = nodeIds.flatMap((id) => graph.getNodeById(id) ?? [])
+    return startMoveSnap(canvas, [
+      ...nodes,
+      ...(nonNodeStartPositions?.keys() ?? [])
+    ])
   }
 
   function startAutoPan(event: PointerEvent, nodeId: NodeId) {
@@ -103,8 +118,7 @@ export const useNodeDrag = createSharedComposable(() => {
     if (!lgCanvas?.ds) return
 
     autoPan = new AutoPanController({
-      canvas: lgCanvas.canvas,
-      ds: lgCanvas.ds,
+      canvas: lgCanvas,
       maxPanSpeed: lgCanvas.auto_pan_speed,
       onPan: (panX, panY) => {
         if (dragStartPos) {
@@ -130,29 +144,32 @@ export const useNodeDrag = createSharedComposable(() => {
     autoPan.start()
   }
 
-  /**
-   * Recalculates all dragged node positions based on the current mouse
-   * position and canvas transform.
-   */
   function updateNodePositions(nodeId: NodeId) {
+    stopFrame?.()
+    stopFrame = null
     if (!dragStartPos || !dragStartMouse) return
 
-    const { rootGraphId } = canvasStore
-    if (!rootGraphId) return
+    const { rootGraphId, canvas } = canvasStore
+    if (!rootGraphId || !canvas || canvasStore.isReadOnly) return
 
-    const mouseDelta = {
-      x: lastPointerX - dragStartMouse.x,
-      y: lastPointerY - dragStartMouse.y
+    const pointerDelta = {
+      x: (lastPointerX - dragStartMouse.x) / canvas.ds.scale,
+      y: (lastPointerY - dragStartMouse.y) / canvas.ds.scale
     }
-
-    const canvasOrigin = transformState.screenToCanvas({ x: 0, y: 0 })
-    const canvasWithDelta = transformState.screenToCanvas(mouseDelta)
+    const pannedBy = dragOrigin
+      ? { x: dragStartPos.x - dragOrigin.x, y: dragStartPos.y - dragOrigin.y }
+      : { x: 0, y: 0 }
+    const raw = {
+      x: pointerDelta.x + pannedBy.x,
+      y: pointerDelta.y + pannedBy.y
+    }
+    const snapped =
+      moveSnap?.offset(raw, { snapToGrid: isShiftHeld.value }) ?? raw
     const canvasDelta = {
-      x: canvasWithDelta.x - canvasOrigin.x,
-      y: canvasWithDelta.y - canvasOrigin.y
+      x: snapped.x - pannedBy.x,
+      y: snapped.y - pannedBy.y
     }
 
-    // Move drag updates in one transaction to avoid per-node notify fan-out.
     const updates = [
       {
         nodeId,
@@ -181,8 +198,6 @@ export const useNodeDrag = createSharedComposable(() => {
     mutations.batchMoveNodes(rootGraphId, updates)
 
     for (const [item, start] of nonNodeStartPositions ?? []) {
-      // Absolute target every frame, so a dropped frame cannot leave the item
-      // behind and per-frame deltas cannot drift out of step with the nodes.
       item.move(
         start.x + canvasDelta.x - item.pos[0],
         start.y + canvasDelta.y - item.pos[1],
@@ -210,38 +225,28 @@ export const useNodeDrag = createSharedComposable(() => {
       return
     }
 
-    // Throttle position updates using requestAnimationFrame for better performance
-    if (rafId !== null) return // Skip if frame already scheduled
-
-    const { target, pointerId } = event
-    if (target instanceof HTMLElement && !target.hasPointerCapture(pointerId)) {
-      // Delay capture to drag to allow for the Node cloning
-      target.setPointerCapture(pointerId)
-    }
-
     lastPointerX = event.clientX
     lastPointerY = event.clientY
     startAutoPan(event, nodeId)
 
-    rafId = requestAnimationFrame(() => {
-      rafId = null
+    const { canvas } = canvasStore
+    if (stopFrame || !canvas) return
+    stopFrame = onCanvasFrame(canvas, 'update', () =>
       updateNodePositions(nodeId)
-    })
+    )
   }
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
-    // Apply snap to final position if snap was active (matches LiteGraph behavior)
+    if (nodeId && stopFrame) updateNodePositions(nodeId)
     const { rootGraphId } = canvasStore
     if (shouldSnap(event) && nodeId && rootGraphId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
-      // Snap main node
       const currentLayout = layoutStore.getNodeLayout(rootGraphId, nodeId)
       if (currentLayout) {
         const currentPos = currentLayout.position
         const snappedPos = applySnapToPosition({ ...currentPos })
 
-        // Only add update if position actually changed
         if (snappedPos.x !== currentPos.x || snappedPos.y !== currentPos.y) {
           boundsUpdates.push({
             nodeId,
@@ -255,8 +260,6 @@ export const useNodeDrag = createSharedComposable(() => {
         }
       }
 
-      // Also snap other selected nodes
-      // Capture all positions at the start to ensure consistent state
       if (
         otherSelectedNodesStartPositions &&
         otherSelectedNodesStartPositions.size > 0
@@ -267,7 +270,6 @@ export const useNodeDrag = createSharedComposable(() => {
             const currentPos = { ...nodeLayout.position }
             const snappedPos = applySnapToPosition(currentPos)
 
-            // Only add update if position actually changed
             if (
               snappedPos.x !== currentPos.x ||
               snappedPos.y !== currentPos.y
@@ -286,7 +288,6 @@ export const useNodeDrag = createSharedComposable(() => {
         }
       }
 
-      // Apply all snap updates in a single batched transaction
       if (boundsUpdates.length > 0) {
         layoutStore.batchUpdateNodeBounds(rootGraphId, boundsUpdates, {
           source: LayoutSource.Vue
@@ -303,22 +304,34 @@ export const useNodeDrag = createSharedComposable(() => {
     otherSelectedNodesStartPositions = null
     nonNodeStartPositions = null
 
+    moveSnap?.stop()
+    moveSnap = null
+    dragOrigin = null
+
     autoPan?.stop()
     autoPan = null
 
     stopShiftSync?.()
     stopShiftSync = null
 
-    if (rafId !== null) {
-      cancelAnimationFrame(rafId)
-      rafId = null
-    }
+    stopFrame?.()
+    stopFrame = null
   }
 
-  whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
+  const stopClearListen = onGraphIntent((intent) => {
+    if (intent.type === 'clear' && intent.graphId === canvasStore.rootGraphId)
+      resetDragState()
+  })
+
+  tryOnScopeDispose(() => {
+    stopClearListen()
+    resetDragState()
+  })
+
   return {
     startDrag,
     handleDrag,
-    endDrag
+    endDrag,
+    cancelDrag: resetDragState
   }
 })

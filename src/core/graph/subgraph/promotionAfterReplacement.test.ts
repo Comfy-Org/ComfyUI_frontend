@@ -11,7 +11,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 vi.mock(import('@/services/litegraphService'))
 

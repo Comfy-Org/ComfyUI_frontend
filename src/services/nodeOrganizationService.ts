@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { buildNodeDefTree } from '@/stores/nodeDefStore'
 import type {
   NodeGroupingStrategy,
@@ -11,7 +11,7 @@ import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
-const DEFAULT_ICON = 'pi pi-sort'
+const DEFAULT_ICON = 'icon-[lucide--arrow-down-up]'
 
 function categoryPathExtractor(nodeDef: ComfyNodeDefImpl): string[] {
   const category = nodeDef.category || ''
@@ -35,14 +35,14 @@ class NodeOrganizationService {
     {
       id: 'category',
       label: 'sideToolbar.nodeLibraryTab.groupStrategies.category',
-      icon: 'pi pi-folder',
+      icon: 'icon-[lucide--folder]',
       description: 'sideToolbar.nodeLibraryTab.groupStrategies.categoryDesc',
       getNodePath: categoryPathExtractor
     },
     {
       id: 'module',
       label: 'sideToolbar.nodeLibraryTab.groupStrategies.module',
-      icon: 'pi pi-box',
+      icon: 'icon-[lucide--box]',
       description: 'sideToolbar.nodeLibraryTab.groupStrategies.moduleDesc',
       getNodePath: (nodeDef: ComfyNodeDefImpl) => {
         const pythonModule = nodeDef.python_module || ''
@@ -74,7 +74,7 @@ class NodeOrganizationService {
     {
       id: 'source',
       label: 'sideToolbar.nodeLibraryTab.groupStrategies.source',
-      icon: 'pi pi-server',
+      icon: 'icon-[lucide--server]',
       description: 'sideToolbar.nodeLibraryTab.groupStrategies.sourceDesc',
       getNodePath: (nodeDef: ComfyNodeDefImpl) => {
         if (nodeDef.api_node) {
@@ -94,14 +94,14 @@ class NodeOrganizationService {
     {
       id: 'original',
       label: 'sideToolbar.nodeLibraryTab.sortBy.original',
-      icon: 'pi pi-sort-alt',
+      icon: 'icon-[lucide--arrow-down-up]',
       description: 'sideToolbar.nodeLibraryTab.sortBy.originalDesc',
       compare: () => 0
     },
     {
       id: 'alphabetical',
       label: 'sideToolbar.nodeLibraryTab.sortBy.alphabetical',
-      icon: 'pi pi-sort-alpha-down',
+      icon: 'icon-[lucide--arrow-down-a-z]',
       description: 'sideToolbar.nodeLibraryTab.sortBy.alphabeticalDesc',
       compare: (a: ComfyNodeDefImpl, b: ComfyNodeDefImpl) =>
         a.display_name.localeCompare(b.display_name)

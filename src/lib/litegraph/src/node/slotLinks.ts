@@ -1,16 +1,19 @@
+import type {
+  LGraph,
+  LGraphNode,
+  LLink
+} from '@comfyorg/graph-model/entityRegistry'
 import { useLinkStore } from '@/stores/linkStore'
-import type { EndpointUpdateError } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { LinkId } from '@/types/linkId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
+import type { EndpointPatch, EndpointUpdateError } from '@/stores/linkStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
-import type { LGraph } from '../LGraph'
-import type { LGraphNode } from '../LGraphNode'
-import type { INodeInputSlot } from '../interfaces'
-import { slotFloatingLinks } from '../LLink'
-import type { LLink } from '../LLink'
-import { NodeSlotType } from '../types/globalEnums'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 /**
  * Store-backed reads over the links attached to a node's slots.
  * These replace the `output.links[]` / `input.link` mirrors: the link
@@ -152,6 +155,19 @@ export function finalizeInputLinkRemoval(
     )
   }
 }
+/** Applies every link endpoint patch at once, or none of them. */
+export function updateLinkEndpoints(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  updates: readonly { link: LLink; patch: EndpointPatch }[]
+): boolean {
+  const result = useLinkStore().updateEndpoints(
+    graphScopeOf(graph),
+    updates.map(({ link, patch }) => ({ topology: link._state, patch }))
+  )
+  if (!result.ok) console.error('Failed to update link endpoints', result.error)
+  return result.ok
+}
+
 export function captureInputLayout(node: LGraphNode): InputLayoutSnapshot {
   const links = new Map<INodeInputSlot, LLink>()
   if (node.graph) {

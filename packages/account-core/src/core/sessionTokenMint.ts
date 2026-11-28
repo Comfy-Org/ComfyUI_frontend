@@ -9,16 +9,16 @@ import {
   zExchangeTokenResponse
 } from '@comfyorg/ingest-types/zod'
 
-import { isCredentialFresh } from './credentialCache.js'
-import { COMFY_CLIENT } from './requestAuth.js'
-import { timedSignal } from './requestTimeout.js'
-import { SSO_REQUIRED_SERVER_CODE } from './ssoRequired.js'
+import { isCredentialFresh } from './credentialCache'
+import { COMFY_CLIENT } from './requestAuth'
+import { timedSignal } from './requestTimeout'
+import { SSO_REQUIRED_SERVER_CODE } from './ssoRequired'
 import type {
   AccountCredential,
   WebSession,
   WebSessionErrorCode,
   WebSessionFailure
-} from './sessionContracts.js'
+} from './sessionContracts'
 
 export interface SessionTokenMintOptions {
   /** Ingest API root, e.g. `https://cloud.comfy.org/api`. */
@@ -225,7 +225,7 @@ export function createSessionTokenMint({
       status: 'ok',
       credential: {
         token: parsed.data.token,
-        expiresAt: Math.min(expiresAt, session.expiresAt),
+        expiresAt,
         uid: session.user.id,
         workspace: parsed.data.workspace,
         role: parsed.data.role,

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-import { CredentialResponseSchema } from './exchange.js'
-import type { AccountCredential } from './sessionContracts.js'
+import { CredentialResponseSchema } from './exchange'
+import type { AccountCredential } from './sessionContracts'
 
 /**
  * Raw string storage for the credential cache. Hosts wrap their medium —
@@ -17,7 +17,8 @@ export interface CredentialStorage {
 
 /** The generated contract for POST /api/auth/token, never a local copy of it. */
 const CachedCredentialSchema = CredentialResponseSchema.omit({
-  expires_at: true
+  expires_at: true,
+  user_id: true
 }).extend({
   // Storage and broadcast are untrusted boundaries: an empty token can never
   // authorize and a non-finite expiry can never lapse, so neither is a session.

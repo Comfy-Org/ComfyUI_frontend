@@ -4,6 +4,7 @@
  * rather than risk showing the customer the other checkout.
  */
 import { CLOUD_BASE_URL } from '@/config/env'
+import { handoffTab } from '@/handoff/handoffTab'
 import { billingWebSessionClient } from '@/session/billingWebSession'
 
 export type CheckoutUiVariant = 'embedded' | 'full_page'
@@ -15,6 +16,44 @@ export type CheckoutUiState =
 const FLAG_KEY = 'billing_web_checkout_ui'
 const FAIL_CLOSED: CheckoutUiVariant = 'embedded'
 const FLAG_FETCH_TIMEOUT_MS = 4000
+
+/** The shared web session's signed-in user and a cookie read of a Cloud URL. */
+export interface WebSessionCloudRead {
+  readonly uid: string
+  readonly read: (
+    url: string,
+    init: RequestInit
+  ) => Promise<Response | undefined>
+}
+
+let webSessionCloudRead: () => WebSessionCloudRead | undefined = () => undefined
+
+/** Set by the auth module, which decides whether this tab is on the web session. */
+export function provideWebSessionCloudRead(
+  source: () => WebSessionCloudRead | undefined
+): void {
+  webSessionCloudRead = source
+}
+
+let handoffCheckoutUiRead: () => Promise<CheckoutUiVariant | undefined> = () =>
+  Promise.resolve(undefined)
+
+/** Set by the auth module: a handoff tab's read of the variant from billing capabilities. */
+export function provideHandoffCheckoutUiRead(
+  read: () => Promise<CheckoutUiVariant | undefined>
+): void {
+  handoffCheckoutUiRead = read
+}
+
+let handoffVariant: Promise<CheckoutUiVariant> | undefined
+
+function awaitHandoffCheckoutUi(): Promise<CheckoutUiVariant> {
+  handoffVariant ??= handoffCheckoutUiRead().then(
+    (variant) => variant ?? FAIL_CLOSED,
+    () => FAIL_CLOSED
+  )
+  return handoffVariant
+}
 
 /** `settled` is terminal, so a mounted checkout can never become the other one. */
 export function settleCheckoutUi(
@@ -28,43 +67,42 @@ function parseCheckoutUiVariant(value: unknown): CheckoutUiVariant | undefined {
   return value === 'embedded' || value === 'full_page' ? value : undefined
 }
 
-/**
- * Mirrors the host's `getDevOverride`: JSON, so a bare `full_page` is
- * rejected and `"full_page"` honoured. An unrecognised variant falls through
- * to the server so a typo cannot silently pin a developer to `embedded`.
- */
-function readDevOverride(): CheckoutUiVariant | undefined {
+function parseBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined
+}
+
+function readDevOverride<T>(
+  key: string,
+  parse: (value: unknown) => T | undefined
+): T | undefined {
   if (!import.meta.env.DEV || typeof localStorage === 'undefined')
     return undefined
   let raw: string | null
   try {
-    raw = localStorage.getItem(`ff:${FLAG_KEY}`)
+    raw = localStorage.getItem(`ff:${key}`)
   } catch {
     return undefined
   }
   if (raw === null) return undefined
   try {
-    return parseCheckoutUiVariant(JSON.parse(raw))
+    return parse(JSON.parse(raw))
   } catch {
-    console.warn(`[ff] Invalid JSON for override "${FLAG_KEY}":`, raw)
+    console.warn(`[ff] Invalid JSON for override "${key}":`, raw)
     return undefined
   }
 }
 
-async function fetchVariant(
-  token: string,
-  signal: AbortSignal
-): Promise<CheckoutUiVariant> {
-  const response = await fetch(`${CLOUD_BASE_URL}/api/features`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store',
-    signal
-  })
-  if (!response.ok) return FAIL_CLOSED
+const FEATURES_URL = `${CLOUD_BASE_URL}/api/features`
+
+type CloudFeatures = Readonly<Record<string, unknown>>
+
+async function featuresOf(
+  response: Response | undefined
+): Promise<CloudFeatures | undefined> {
+  if (!response?.ok) return undefined
   const body: unknown = await response.json()
-  if (typeof body !== 'object' || body === null || !(FLAG_KEY in body))
-    return FAIL_CLOSED
-  return parseCheckoutUiVariant(body[FLAG_KEY]) ?? FAIL_CLOSED
+  if (typeof body !== 'object' || body === null) return undefined
+  return { ...body }
 }
 
 /**
@@ -72,36 +110,108 @@ async function fetchVariant(
  * `ensureFresh` would mint for the personal workspace and remount the view
  * under the customer.
  */
-async function resolveVariant(workspaceId: string): Promise<CheckoutUiVariant> {
+function readWithToken(workspaceId: string) {
+  return async (signal: AbortSignal): Promise<Response | undefined> => {
+    const minted = await billingWebSessionClient().ensureFresh(undefined, {
+      workspaceId,
+      signal,
+      timeoutMs: FLAG_FETCH_TIMEOUT_MS
+    })
+    if (minted?.status !== 'ok') return undefined
+    return fetch(FEATURES_URL, {
+      headers: { Authorization: `Bearer ${minted.session.token}` },
+      cache: 'no-store',
+      signal
+    })
+  }
+}
+
+async function resolveFeatures(
+  read: (signal: AbortSignal) => Promise<Response | undefined>
+): Promise<CloudFeatures | undefined> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FLAG_FETCH_TIMEOUT_MS)
   try {
-    const minted = await billingWebSessionClient().ensureFresh(undefined, {
-      workspaceId,
-      signal: controller.signal,
-      timeoutMs: FLAG_FETCH_TIMEOUT_MS
-    })
-    if (minted?.status !== 'ok') return FAIL_CLOSED
-    return await fetchVariant(minted.session.token, controller.signal)
+    return await featuresOf(await read(controller.signal))
   } catch {
-    return FAIL_CLOSED
+    return undefined
   } finally {
     clearTimeout(timer)
   }
 }
 
 let memo:
-  | { readonly uid: string; readonly resolution: Promise<CheckoutUiVariant> }
+  | {
+      readonly uid: string
+      readonly resolution: Promise<CloudFeatures | undefined>
+    }
   | undefined
+
+function awaitCloudFeatures(): Promise<CloudFeatures | undefined> {
+  const onSession = webSessionCloudRead()
+  if (onSession) {
+    const { uid, read } = onSession
+    if (memo?.uid !== uid)
+      memo = {
+        uid,
+        resolution: resolveFeatures((signal) =>
+          read(FEATURES_URL, { cache: 'no-store', signal })
+        )
+      }
+    return memo.resolution
+  }
+  const snapshot = billingWebSessionClient().getSnapshot()
+  if (snapshot.phase !== 'authenticated') return Promise.resolve(undefined)
+  const { uid, workspace } = snapshot.session
+  if (memo?.uid !== uid)
+    memo = { uid, resolution: resolveFeatures(readWithToken(workspace.id)) }
+  return memo.resolution
+}
+
+async function awaitFlag<T>(
+  key: string,
+  parse: (value: unknown) => T | undefined,
+  failClosed: T
+): Promise<T> {
+  if (handoffTab.value !== undefined) return failClosed
+  const override = readDevOverride(key, parse)
+  if (override !== undefined) return override
+  const features = await awaitCloudFeatures()
+  return parse(features?.[key]) ?? failClosed
+}
 
 /** Never rejects. An anonymous visitor is answered without memoizing, so a later signed-in mount still asks. */
 export function awaitCheckoutUiVariant(): Promise<CheckoutUiVariant> {
-  const override = readDevOverride()
-  if (override !== undefined) return Promise.resolve(override)
-  const snapshot = billingWebSessionClient().getSnapshot()
-  if (snapshot.phase !== 'authenticated') return Promise.resolve(FAIL_CLOSED)
-  const { uid, workspace } = snapshot.session
-  if (memo?.uid !== uid)
-    memo = { uid, resolution: resolveVariant(workspace.id) }
-  return memo.resolution
+  if (handoffTab.value !== undefined) return awaitHandoffCheckoutUi()
+  return awaitFlag(FLAG_KEY, parseCheckoutUiVariant, FAIL_CLOSED)
+}
+
+/** Never rejects; `false` unless Cloud serves `unified_billing_settings: true`. */
+export function awaitUnifiedBillingSettings(): Promise<boolean> {
+  return awaitFlag('unified_billing_settings', parseBoolean, false)
+}
+
+/** Never rejects; `false` unless Cloud serves `billing_web_plan_change_card_choice: true`. */
+export function awaitPlanChangeCardChoice(): Promise<boolean> {
+  return awaitFlag('billing_web_plan_change_card_choice', parseBoolean, false)
+}
+
+/** Never rejects; `false` unless Cloud serves `billing_web_topup_hosted_methods: true`. */
+export function awaitTopupHostedMethods(): Promise<boolean> {
+  return awaitFlag('billing_web_topup_hosted_methods', parseBoolean, false)
+}
+
+/** Never rejects; `false` unless Cloud serves `billing_web_promo_auto_apply: true`. */
+export function awaitPromoAutoApply(): Promise<boolean> {
+  return awaitFlag('billing_web_promo_auto_apply', parseBoolean, false)
+}
+
+/**
+ * Never rejects. Whether a top-up pays in the page with a saved or new card: a
+ * handoff tab always does (it exists only under `local_billing_web`), any other
+ * tab while Cloud serves `unified_billing_settings: true`.
+ */
+export function awaitInPageTopup(): Promise<boolean> {
+  if (handoffTab.value !== undefined) return Promise.resolve(true)
+  return awaitUnifiedBillingSettings()
 }

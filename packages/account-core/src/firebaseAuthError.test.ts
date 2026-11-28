@@ -87,7 +87,7 @@ describe('severityForAuthError', () => {
         code: 'auth/cancelled-popup-request'
       }),
       'the user closing a window is not an application error'
-    ).toBe('warn')
+    ).toBe('warning')
     for (const classification of [
       { kind: 'unauthorized-domain', code: 'auth/unauthorized-domain' },
       { kind: 'signup-blocked', code: 'auth/internal-error' },

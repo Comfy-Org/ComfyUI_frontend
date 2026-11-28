@@ -4,7 +4,7 @@ import {
   readAnonymousFeatureFlag,
   readWebSessionProbe,
   resolveUnifiedWebSession
-} from './webSessionFlag.js'
+} from './webSessionFlag'
 
 const CLOUD = 'https://cloud.example'
 const FEATURES_URL = `${CLOUD}/api/features`

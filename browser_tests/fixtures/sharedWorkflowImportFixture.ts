@@ -1,3 +1,4 @@
+import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import type { Page } from '@playwright/test'
 import type {
@@ -177,7 +178,7 @@ async function mockSharedWorkflowImportFlow(
   await page.route(/\/api\/assets(?=\?|$)/, async (route) => {
     const url = new URL(route.request().url())
     const includeTags = getTagParam(url, 'include_tags')
-    const isInputAssetRequest = includeTags.includes('input')
+    const isInputAssetRequest = assetRequestIncludesTag(url.href, 'input')
 
     if (isInputAssetRequest) {
       recordRequestEvent(

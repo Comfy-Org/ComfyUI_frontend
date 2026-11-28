@@ -67,6 +67,6 @@ test.describe('Assets list view drag', { tag: '@cloud' }, () => {
     await expect
       .poll(() => comfyPage.menu.topbar.getActiveTabName())
       .toContain('agent_generated_video')
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(2)
+    await comfyPage.expectNodeCount(2)
   })
 })

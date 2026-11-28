@@ -5,9 +5,9 @@ import {
   BALANCE_WATCH_MAX_SCHEDULED_RUNS,
   BALANCE_WATCH_RETRY_GAPS_MS,
   createBalanceWatch
-} from './balanceWatch.js'
-import type { BillingResult } from './billingContracts.js'
-import type { CreditsSnapshot } from './credits.js'
+} from './balanceWatch'
+import type { BillingResult } from './billingContracts'
+import type { CreditsSnapshot } from './credits'
 
 const NOW = 1_000_000
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const

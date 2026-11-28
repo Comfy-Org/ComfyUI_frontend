@@ -289,6 +289,22 @@ export const noRelativePackages: Rule = {
   }
 }
 
+function isBarePackageName(specifier: string): boolean {
+  return /^(?:@[^/]+\/)?[^/]+$/.test(specifier)
+}
+
+export const noJsExtensionImports: Rule = {
+  create(context) {
+    return forEachImport((source, specifier) => {
+      if (!specifier.endsWith('.js') || isBarePackageName(specifier)) return
+      context.report({
+        node: source,
+        message: `Drop the ".js" extension from "${specifier}". The bundler and TypeScript resolve extensionless specifiers.`
+      })
+    })
+  }
+}
+
 const PATH_BUILDERS = new Set(
   ['node:path', 'path'].flatMap((module) => [
     `${module}#join`,

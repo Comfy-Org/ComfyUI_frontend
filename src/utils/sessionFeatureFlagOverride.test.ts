@@ -4,6 +4,7 @@ import { initializeAuth } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 const mockDistribution = vi.hoisted(() => ({
@@ -35,6 +36,7 @@ describe('getSessionOverride', () => {
   beforeEach(() => {
     mockDistribution.isCloud = true
     mockCurrentUser.value = COMFY_EMPLOYEE
+    webSessionUser.value = undefined
     vi.mocked(initializeAuth).mockReturnValue(resolvedAuth)
     firebaseIdentity.initialize()
   })
@@ -93,9 +95,9 @@ describe('getSessionOverride', () => {
   })
 
   it('overrides any flag, with no opt-in registry to join', () => {
-    visit('/?ff=unified_cloud_auth&ff=some_flag_invented_tomorrow:42')
+    visit('/?ff=sso_enabled&ff=some_flag_invented_tomorrow:42')
 
-    expect(getSessionOverride('unified_cloud_auth')).toBe(true)
+    expect(getSessionOverride('sso_enabled')).toBe(true)
     expect(getSessionOverride('some_flag_invented_tomorrow')).toBe(42)
   })
 
@@ -142,13 +144,11 @@ describe('getSessionOverride', () => {
     })
 
     it('never logs the submitted value, which may carry a pasted secret', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-      const log = vi.spyOn(console, 'log').mockImplementation(() => {})
       visit('/?ff=some_flag:sk-live-not-a-real-secret')
 
       expect(getSessionOverride('some_flag')).toBe('sk-live-not-a-real-secret')
-      expect(warn).not.toHaveBeenCalled()
-      expect(log).not.toHaveBeenCalled()
+      expect(console.warn).not.toHaveBeenCalled()
+      expect(console.log).not.toHaveBeenCalled()
     })
 
     it('discards a hand-written storage payload that is not an object', () => {
@@ -191,18 +191,13 @@ describe('getSessionOverride', () => {
 
     it('withholds a stored override before Auth has resolved and does not initialize Firebase', async () => {
       vi.resetModules()
-      const [
-        { getSessionOverride: readFresh },
-        { getApps, initializeApp },
-        { remoteConfigState }
-      ] = await Promise.all([
-        import('@/utils/sessionFeatureFlagOverride'),
-        import('firebase/app'),
-        import('@/platform/remoteConfig/remoteConfig')
-      ])
+      const [{ getSessionOverride: readFresh }, { getApps, initializeApp }] =
+        await Promise.all([
+          import('@/utils/sessionFeatureFlagOverride'),
+          import('firebase/app')
+        ])
       vi.mocked(initializeApp).mockClear()
       vi.mocked(getApps).mockReturnValue([])
-      remoteConfigState.value = 'anonymous'
       visit('/?ff=onboarding_tour_enabled')
 
       expect(readFresh('onboarding_tour_enabled')).toBeUndefined()
@@ -217,6 +212,23 @@ describe('getSessionOverride', () => {
       mockCurrentUser.value = COMFY_EMPLOYEE
       expect(getSessionOverride('onboarding_tour_enabled')).toBe(true)
     })
+
+    it.for([
+      { email: 'dev@comfy.org', emailVerified: true, applies: true },
+      { email: 'dev@comfy.org', emailVerified: false, applies: false },
+      { email: 'dev@notcomfy.org', emailVerified: true, applies: false }
+    ])(
+      'reads the web session user when Firebase has none: $email verified=$emailVerified',
+      ({ email, emailVerified, applies }) => {
+        mockCurrentUser.value = null
+        webSessionUser.value = { id: 'uid-1', email, emailVerified }
+        visit('/?ff=onboarding_tour_enabled')
+
+        expect(getSessionOverride('onboarding_tour_enabled')).toBe(
+          applies ? true : undefined
+        )
+      }
+    )
 
     it('accepts a verified address regardless of case', () => {
       mockCurrentUser.value = { email: 'Dev@Comfy.org', emailVerified: true }

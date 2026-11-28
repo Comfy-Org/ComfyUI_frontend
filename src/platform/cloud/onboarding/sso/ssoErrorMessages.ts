@@ -10,6 +10,7 @@ export const SSO_ERROR_MESSAGE_KEY: Readonly<Record<SsoErrorCode, string>> = {
   SSO_ORG_DISABLED: 'auth.sso.errors.orgDisabled',
   SSO_ORG_NOT_ATTACHED: 'auth.sso.errors.orgNotAttached',
   SSO_ORG_MISMATCH: 'auth.sso.errors.orgMismatch',
+  SSO_SEAT_LIMIT_REACHED: 'auth.sso.errors.seatLimitReached',
   SSO_USER_SUSPENDED: 'auth.sso.errors.suspended',
   SSO_ACCOUNT_DELETED: 'auth.sso.errors.accountDeleted',
   SSO_ACCOUNT_CONFLICT: 'auth.sso.errors.accountConflict',

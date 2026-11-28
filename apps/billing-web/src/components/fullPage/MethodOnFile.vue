@@ -18,7 +18,7 @@ const onFile = computed(() => methods.find((method) => method.is_default))
 
 <template>
   <div v-if="onFile" class="flex flex-col gap-3">
-    <h3 class="m-0 text-base font-normal text-base-foreground">
+    <h3 class="m-0 text-base font-normal text-foreground">
       {{ t('checkout.paymentMethod') }}
     </h3>
     <SavedMethodSelect :methods="[onFile]" :model-value="onFile.id" />

@@ -79,7 +79,7 @@ async function probeIsOn(probe: () => Promise<boolean>): Promise<boolean> {
 
 async function loadClientHeader(): Promise<string | undefined> {
   try {
-    const { COMFY_CLIENT } = await import('./requestAuth.js')
+    const { COMFY_CLIENT } = await import('./requestAuth')
     return COMFY_CLIENT
   } catch {
     return undefined

@@ -6,8 +6,11 @@ import { computed, defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useAppMode } from '@/composables/useAppMode'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
+import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { app } from '@/scripts/app'
 
 import LinearPreview from './LinearPreview.vue'
 import type { OutputSelection } from './linearModeTypes'
@@ -36,7 +39,23 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'), () => ({
+  useMediaAssetActions: vi.fn(() => ({
+    downloadAssets: vi.fn(),
+    deleteAssets: vi.fn(async () => false),
+    copyJobId: vi.fn(async () => {}),
+    addWorkflow: vi.fn(async () => {}),
+    addMultipleToWorkflow: vi.fn(async () => {}),
+    openWorkflow: vi.fn(async () => {}),
+    openMultipleWorkflows: vi.fn(async () => {}),
+    exportWorkflow: vi.fn(async () => {}),
+    exportMultipleWorkflows: vi.fn(async () => {})
+  }))
+}))
+
+vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
+  extractWorkflowFromAsset: vi.fn()
+}))
 
 vi.mock(import('@/scripts/app'))
 
@@ -45,12 +64,15 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download', moreOptions: 'More Options' },
+      g: {
+        delete: 'Delete',
+        download: 'Download',
+        moreOptions: 'More Options'
+      },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
         cancelThisRun: 'Cancel this run',
-        deleteAllAssets: 'Delete all',
         downloadAll: 'Download all'
       }
     }
@@ -91,7 +113,6 @@ function renderPreview(
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         ImagePreview: { template: '<div data-testid="image-preview" />' },
         LatentPreview: { template: '<div data-testid="latent-preview" />' },
@@ -168,9 +189,45 @@ describe('LinearPreview', () => {
       .setup()
       .click(screen.getByRole('button', { name: 'More Options' }))
     expect(
-      await screen.findByRole('menuitem', { name: 'Delete all' })
+      await screen.findByRole('menuitem', { name: 'Delete' })
     ).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      name: 'loads a different workflow as a user activation on Reuse Parameters',
+      workflowId: 'other-workflow-id'
+    },
+    {
+      name: 'loads the matching workflow as a user activation when no change tracker exists',
+      workflowId: 'current-workflow-id'
+    }
+  ])('$name', async ({ workflowId }) => {
+    app.rootGraph.id = 'current-workflow-id'
+    const workflow = fromPartial<ComfyWorkflowJSON>({ id: workflowId })
+    vi.mocked(extractWorkflowFromAsset).mockResolvedValue({
+      workflow,
+      filename: 'out.json'
+    })
+    const asset = fromPartial<AssetItem>({
+      id: 'a1',
+      name: 'out.png',
+      tags: []
+    })
+    const selection: OutputSelection = {
+      asset,
+      canShowPreview: true
+    }
+
+    const { user } = renderPreview({}, selection)
+    await user.click(
+      await screen.findByRole('button', { name: 'Reuse Parameters' })
+    )
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(workflow, true, true, null, {
+      initiator: 'user'
+    })
   })
 })

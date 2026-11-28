@@ -2,7 +2,7 @@
   <Tabs v-model="bottomPanelStore.activeBottomPanelTabId" class="h-full gap-0">
     <TabsList variant="panel" class="w-full shrink-0">
       <div class="flex w-full justify-between">
-        <div class="tabs-container font-inter">
+        <div class="tabs-container">
           <TabsTrigger
             v-for="tab in bottomPanelStore.bottomPanelTabs"
             :key="tab.id"
@@ -27,7 +27,7 @@
             size="sm"
             @click="openKeybindingSettings"
           >
-            <i class="pi pi-cog" />
+            <i class="icon-[lucide--settings]" />
             {{ $t('shortcuts.manageShortcuts') }}
           </Button>
           <Button
@@ -37,21 +37,21 @@
             :aria-label="t('g.close')"
             @click="closeBottomPanel"
           >
-            <i class="pi pi-times" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </div>
       </div>
     </TabsList>
-    <TabsContent
-      v-if="
-        bottomPanelStore.bottomPanelVisible &&
-        bottomPanelStore.activeBottomPanelTab
-      "
-      :value="bottomPanelStore.activeBottomPanelTab.id"
-      class="h-0 grow"
-    >
-      <ExtensionSlot :extension="bottomPanelStore.activeBottomPanelTab" />
-    </TabsContent>
+    <template v-if="bottomPanelStore.bottomPanelVisible">
+      <TabsContent
+        v-for="tab in bottomPanelStore.bottomPanelTabs"
+        :key="tab.id"
+        :value="tab.id"
+        class="h-0 grow"
+      >
+        <ExtensionSlot :extension="tab" />
+      </TabsContent>
+    </template>
   </Tabs>
 </template>
 
@@ -60,11 +60,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Tabs from '@/components/ui/tabs/Tabs.vue'
-import TabsContent from '@/components/ui/tabs/TabsContent.vue'
-import TabsList from '@/components/ui/tabs/TabsList.vue'
-import TabsTrigger from '@/components/ui/tabs/TabsTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Tabs from '@comfyorg/design-system/tabs/Tabs'
+import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
+import TabsList from '@comfyorg/design-system/tabs/TabsList'
+import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'

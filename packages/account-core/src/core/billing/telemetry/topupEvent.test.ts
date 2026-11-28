@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingTelemetryEvent } from './billingTelemetryEvent.js'
-import { getCloudAppBillingTelemetryEventPayload } from './payload.js'
-import { getTopupAmountPreset } from './topupEvent.js'
-import type { TopupAmountPreset } from './topupEvent.js'
+import type { BillingTelemetryEvent } from './billingTelemetryEvent'
+import { getCloudAppBillingTelemetryEventPayload } from './payload'
+import { getTopupAmountPreset } from './topupEvent'
+import type { TopupAmountPreset } from './topupEvent'
 
 describe('the top-up amount preset', () => {
   it.for<{ picked: number | null; reported: TopupAmountPreset }>([
@@ -37,6 +37,20 @@ describe('the top-up started event', () => {
       amount_cents: 2500,
       amount_preset: '25',
       billing_surface: 'cloud_app'
+    })
+  })
+
+  it('reports the plan line the customer saw before paying', () => {
+    const event: BillingTelemetryEvent = {
+      operation: 'topup',
+      stage: 'started',
+      outcome: 'pending',
+      amount_cents: 2500,
+      plan_line: 'no_plan'
+    }
+
+    expect(getCloudAppBillingTelemetryEventPayload(event)).toMatchObject({
+      plan_line: 'no_plan'
     })
   })
 })

@@ -5,9 +5,9 @@ import { defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const i18n = createI18n({
@@ -28,7 +28,7 @@ const DialogBodyWithMenu = defineComponent({
   setup: () => () =>
     h(
       Menu,
-      { items },
+      { items, removeLabel: 'Remove' },
       {
         trigger: () => h(Button, null, () => 'Open menu')
       }
@@ -56,9 +56,7 @@ describe('Menu inside a modal Reka dialog', () => {
       title: 'Host dialog',
       component: DialogBodyWithMenu,
       dialogComponentProps: {
-        renderer: 'reka',
         headless: true,
-        modal: true,
         closable: true
       }
     })

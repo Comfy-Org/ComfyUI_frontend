@@ -1,19 +1,21 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watchEffect } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import {
-  useWorkflowStore,
-  useWorkflowBookmarkStore
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowBookmarkStore } from '@/platform/workflow/management/stores/workflowBookmarkStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type {
+  RenderedTreeExplorerNode,
+  TreeExplorerNode
+} from '@/types/treeExplorerTypes'
 import { flattenTree } from '@/utils/treeUtil'
 vi.mock(import('firebase/auth'))
 
@@ -49,7 +51,7 @@ const {
 })
 
 vi.mock<unknown>(
-  import('@/components/sidebar/tabs/SidebarTopArea.vue'),
+  import('@comfyorg/design-system/navigation/SidebarTopArea'),
   () => ({
     default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
   })
@@ -251,5 +253,35 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
+  })
+
+  it('duplicates a workflow from its sidebar context menu as a user activation', async () => {
+    const workflow = createMockWorkflow('workflows/source.json')
+    Object.assign(useWorkflowStore(), {
+      workflows: [workflow]
+    })
+
+    renderComponent()
+    await userEvent.type(screen.getByRole('combobox'), 'source')
+    await nextTick()
+
+    const root = getSearchRoot()
+    const leafNode = root?.children?.find((child) => child.data === workflow)
+    assert.exists(leafNode)
+    const contextMenuItems = leafNode.contextMenuItems
+    assert(typeof contextMenuItems === 'function')
+    const duplicateItem = contextMenuItems(
+      fromPartial<RenderedTreeExplorerNode<ComfyWorkflow>>(leafNode)
+    ).find((item) => item.label === 'g.duplicate')
+    assert.exists(duplicateItem)
+    await duplicateItem.command?.({
+      originalEvent: new Event('click'),
+      item: duplicateItem
+    })
+
+    expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
+      workflow,
+      { initiator: 'user' }
+    )
   })
 })

@@ -6,14 +6,18 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { afterAll, describe, expect, it } from 'vitest'
+import type { ProxyOptions } from 'vite'
 
-import { createDevAgentConfig } from '../build/devAgentConfig'
+import {
+  createDevAgentConfig,
+  devServerAgentRoutes
+} from '../build/devAgentConfig'
 
 const execFileAsync = promisify(execFile)
 const agentDataDir = mkdtempSync(join(tmpdir(), 'vite-agent-config-'))
 afterAll(() => rmSync(agentDataDir, { force: true, recursive: true }))
 const printAgentConfig =
-  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, host: config.server?.host })))"
+  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, workflowsHeaders: config.server?.proxy?.['/api/workflows']?.headers, host: config.server?.host, proxyCredential: config.define?.['import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL'] })))"
 
 describe('dev agent proxy transport', () => {
   it.for([
@@ -29,7 +33,7 @@ describe('dev agent proxy transport', () => {
     expect(host).toBeUndefined()
     expect(proxy).toMatchObject({
       target: url,
-      headers: { Authorization: 'Bearer test-session-token' }
+      headers: { 'X-Comfy-Agent-Session': 'test-session-token' }
     })
   })
 
@@ -73,7 +77,7 @@ describe('dev agent proxy transport', () => {
       DEV_AGENT_DATA_DIR: ''
     })
     expect(proxy).toMatchObject({
-      headers: { Authorization: 'Bearer test-session-token' }
+      headers: { 'X-Comfy-Agent-Session': 'test-session-token' }
     })
   })
 
@@ -104,10 +108,51 @@ describe('dev agent proxy transport', () => {
     ).toThrow('VITE_AGENT_STANDALONE requires DEV_AGENT_URL')
   })
 
+  it(
+    'refuses the standalone harness when the dev server URL selects the cloud distribution',
+    { timeout: 30_000 },
+    async () => {
+      await expect(
+        execFileAsync(
+          process.execPath,
+          ['--import', 'tsx', '--eval', printAgentConfig],
+          {
+            cwd: process.cwd(),
+            timeout: 25_000,
+            env: {
+              ...process.env,
+              DEV_AGENT_URL: 'http://127.0.0.1:8095',
+              DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+              DEV_AGENT_DATA_DIR: '',
+              VITE_AGENT_STANDALONE: 'true',
+              DEV_SERVER_COMFYUI_URL: 'https://testcloud.comfy.org/',
+              DISTRIBUTION: ''
+            }
+          }
+        )
+      ).rejects.toThrow(
+        'VITE_AGENT_STANDALONE cannot be combined with DISTRIBUTION=cloud'
+      )
+    }
+  )
+
+  it('allows the agent proxy in a cloud distribution without the standalone harness', () => {
+    expect(
+      createDevAgentConfig(
+        {
+          DEV_AGENT_URL: 'http://127.0.0.1:8095',
+          DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+        },
+        'cloud'
+      ).proxy
+    ).toMatchObject({ target: 'http://127.0.0.1:8095' })
+  })
+
   it('leaves the proxy disabled when no target or token is set', () => {
     expect(createDevAgentConfig({})).toEqual({
       host: undefined,
-      proxy: undefined
+      proxy: undefined,
+      proxySuppliesCredential: false
     })
   })
 })
@@ -124,11 +169,54 @@ describe('dev agent comfy credential', () => {
     expect(proxy).toMatchObject({
       target: 'http://127.0.0.1:8095',
       headers: {
-        Authorization: 'Bearer test-session-token',
-        'X-Comfy-Token': 'comfyui-test-key'
+        'X-Comfy-Agent-Session': 'test-session-token',
+        'X-API-KEY': 'comfyui-test-key'
       }
     })
   })
+
+  it('presents a non-key token as the bearer, the way ingest reads it', () => {
+    expect(
+      createDevAgentConfig({
+        DEV_AGENT_URL: 'http://127.0.0.1:8095',
+        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+        DEV_AGENT_COMFY_TOKEN: 'a-firebase-jwt'
+      }).proxy?.headers
+    ).toEqual({
+      'X-Comfy-Agent-Session': 'test-session-token',
+      Authorization: 'Bearer a-firebase-jwt'
+    })
+  })
+
+  it.for([
+    {
+      label: 'a proxy with a comfy credential',
+      env: {
+        DEV_AGENT_URL: 'http://127.0.0.1:8095',
+        DEV_AGENT_SESSION_TOKEN: 'test-session-token',
+        DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key'
+      },
+      supplies: true
+    },
+    {
+      label: 'a proxy without one',
+      env: {
+        DEV_AGENT_URL: 'http://127.0.0.1:8095',
+        DEV_AGENT_SESSION_TOKEN: 'test-session-token'
+      },
+      supplies: false
+    },
+    {
+      label: 'a comfy credential without a proxy',
+      env: { DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key' },
+      supplies: false
+    }
+  ])(
+    'reports whether the proxy supplies a credential for $label',
+    ({ env, supplies }) => {
+      expect(createDevAgentConfig(env).proxySuppliesCredential).toBe(supplies)
+    }
+  )
 
   it('allows remote development without a comfy credential', () => {
     expect(createDevAgentConfig({ VITE_REMOTE_DEV: 'true' }).host).toBe(
@@ -152,13 +240,88 @@ describe('dev agent comfy credential', () => {
             DEV_AGENT_SESSION_TOKEN: 'test-session-token',
             DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
             VITE_AGENT_STANDALONE: 'true',
-            VITE_REMOTE_DEV: 'true'
+            VITE_REMOTE_DEV: 'true',
+            DEV_SERVER_COMFYUI_URL: '',
+            DEV_AGENT_DATA_DIR: '',
+            DISTRIBUTION: ''
           }
         }
       )
-      expect(stdout).toBe(
-        '{"headers":{"Authorization":"Bearer test-session-token","X-Comfy-Token":"comfyui-test-key"}}'
-      )
+      const headers = {
+        'X-Comfy-Agent-Session': 'test-session-token',
+        'X-API-KEY': 'comfyui-test-key'
+      }
+      expect(JSON.parse(stdout)).toEqual({
+        headers,
+        workflowsHeaders: headers,
+        proxyCredential: '"true"'
+      })
     }
   )
+})
+
+describe('dev server agent routes', () => {
+  const agentProxy = { target: 'http://127.0.0.1:8095', ws: true }
+  const backend = { target: 'https://cloud.example.com' }
+
+  function resolve(
+    routes: Record<string, ProxyOptions>,
+    url: string
+  ): ProxyOptions | undefined {
+    return Object.entries(routes).find(([context]) =>
+      url.startsWith(context)
+    )?.[1]
+  }
+
+  function resolveSocket(
+    routes: Record<string, ProxyOptions>,
+    url: string
+  ): ProxyOptions | undefined {
+    return Object.entries(routes).find(([context, options]) => {
+      if (!url.startsWith(context)) return false
+      const target = typeof options.target === 'string' ? options.target : ''
+      return options.ws === true || /^wss?:/.test(target)
+    })?.[1]
+  }
+
+  it('upgrades the events socket on the backend without a local agent', () => {
+    const routes = devServerAgentRoutes(undefined, backend)
+
+    expect(routes).toEqual({
+      '/api/agent/events': { target: 'https://cloud.example.com', ws: true }
+    })
+    expect(resolveSocket(routes, '/api/agent/events')).toMatchObject({
+      target: 'https://cloud.example.com',
+      ws: true
+    })
+  })
+
+  it('falls the events socket through to the backend when the agent route cannot carry one', () => {
+    const routes = devServerAgentRoutes(
+      { target: 'http://127.0.0.1:8095' },
+      backend
+    )
+
+    expect(resolve(routes, '/api/agent/events')).toMatchObject({
+      target: 'http://127.0.0.1:8095'
+    })
+    expect(resolveSocket(routes, '/api/agent/events')).toMatchObject({
+      target: 'https://cloud.example.com',
+      ws: true
+    })
+  })
+
+  it('routes the agent and the saved-workflow index to a local agent first', () => {
+    const routes = devServerAgentRoutes(agentProxy, backend)
+
+    expect(resolve(routes, '/api/workflows?limit=20')).toBe(agentProxy)
+    expect(resolve(routes, '/api/agent/threads/new/messages')).toBe(agentProxy)
+    expect(resolveSocket(routes, '/api/agent/events')).toBe(agentProxy)
+  })
+
+  it('leaves other api traffic to the ComfyUI proxy', () => {
+    expect(
+      resolve(devServerAgentRoutes(agentProxy, backend), '/api/prompt')
+    ).toBeUndefined()
+  })
 })

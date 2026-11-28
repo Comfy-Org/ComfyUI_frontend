@@ -2,18 +2,20 @@ import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   calculateMinimapScale,
   enforceMinimumBounds
 } from '@/renderer/core/spatial/boundsCalculator'
-import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
+import type { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 
-import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
+import type {
+  SizedExtents as MinimapBounds,
+  Bounds as ViewportTransform
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 export function useMinimapViewport(
   canvas: Ref<MinimapCanvas | null>,
-  graph: Ref<LGraph | null>,
   width: number,
   height: number
 ) {
@@ -52,21 +54,6 @@ export function useMinimapViewport(
     }
   }
 
-  const calculateGraphBounds = (): MinimapBounds => {
-    const dataSource = new MinimapDataSource(graph.value)
-
-    if (!dataSource.hasData()) {
-      return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }
-    }
-
-    const sourceBounds = dataSource.getBounds()
-    return enforceMinimumBounds(sourceBounds)
-  }
-
-  const calculateScale = () => {
-    return calculateMinimapScale(bounds.value, width, height)
-  }
-
   const updateViewport = () => {
     const c = canvas.value
     if (!c) return
@@ -101,9 +88,12 @@ export function useMinimapViewport(
     viewportTransform.value = { x, y, width: w, height: h }
   }
 
-  const updateBounds = () => {
-    bounds.value = calculateGraphBounds()
-    scale.value = calculateScale()
+  const updateBounds = (source: MinimapDataSource) => {
+    const nextBounds = source.getBounds()
+    bounds.value = source.hasData()
+      ? enforceMinimumBounds(nextBounds)
+      : nextBounds
+    scale.value = calculateMinimapScale(bounds.value, width, height)
   }
 
   const centerViewOn = (worldX: number, worldY: number) => {
@@ -127,8 +117,10 @@ export function useMinimapViewport(
 
     c.setDirty(true, true)
   }
-  const { resume: startViewportSync, pause: stopViewportSync } =
-    useRafFn(updateViewport)
+  const { resume: startViewportSync, pause: stopViewportSync } = useRafFn(
+    updateViewport,
+    { immediate: false }
+  )
 
   return {
     bounds: computed(() => bounds.value),

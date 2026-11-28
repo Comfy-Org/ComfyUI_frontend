@@ -1,11 +1,5 @@
-/**
- * Fill matches the social buttons; inputs need it set explicitly.
- * Also applied to `PasswordInput`, whose root is an `InputGroup`: the shell
- * classes land on the group and the `**:` variants reach its control and
- * toggle.
- */
 export const CLOUD_AUTH_FIELD_CLASS =
-  'h-11 rounded-2xl bg-transparency-white-t8 text-primary-warm-white placeholder:text-transparency-white-t40 xl:h-12 **:data-[slot=input-group-control]:placeholder:text-transparency-white-t40 **:data-[slot=input-group-button]:text-primary-comfy-canvas/70'
+  'h-11 rounded-2xl bg-white/8 text-primary-warm-white placeholder:text-white/40 xl:h-12 **:data-[slot=input-group-control]:placeholder:text-white/40 **:data-[slot=input-group-button]:text-primary-comfy-canvas/70'
 
 export const CLOUD_AUTH_LABEL_CLASS =
   'text-base font-normal text-primary-comfy-canvas/70'

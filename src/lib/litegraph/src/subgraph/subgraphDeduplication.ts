@@ -1,5 +1,5 @@
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import {
   mintGroupId,
   mintLinkId,
@@ -9,24 +9,24 @@ import {
   observeLinkId,
   observeNodeId,
   observeRerouteId
-} from '../idAllocation'
-import type { LGraphState } from '../idAllocation'
+} from '@/lib/litegraph/src/idAllocation'
+import type { LGraphState } from '@/lib/litegraph/src/idAllocation'
 import {
   normalizeConfiguredTopology,
   remapLinkReferences
-} from '../linkDeduplication'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
-import type { NodeProperty } from '@/types/nodeState'
+} from '@/lib/litegraph/src/linkDeduplication'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   ExportedSubgraph,
   ExposedWidget,
   ISerialisedNode,
   SerialisableLLink
-} from '../types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 interface DeduplicationResult<
   Subgraph extends { id: string; nodes?: { type: string }[] } =
@@ -507,8 +507,6 @@ export function topologicalSortSubgraphs(
   const subgraphIds = new Set(subgraphs.map((sg) => sg.id))
   const byId = new Map(subgraphs.map((sg) => [sg.id, sg]))
 
-  // Build adjacency: dependency → set of dependents (parents that use it).
-  // Edges go from leaf to parent so Kahn's emits leaves first.
   const dependents = new Map<string, Set<string>>()
   const inDegree = new Map<string, number>()
   for (const id of subgraphIds) {
@@ -518,15 +516,14 @@ export function topologicalSortSubgraphs(
 
   for (const sg of subgraphs) {
     for (const node of sg.nodes ?? []) {
-      if (subgraphIds.has(node.type)) {
-        // sg depends on node.type → edge from node.type to sg.id
-        dependents.get(node.type)!.add(sg.id)
+      const nodeDependents = dependents.get(node.type)
+      if (nodeDependents && !nodeDependents.has(sg.id)) {
+        nodeDependents.add(sg.id)
         inDegree.set(sg.id, (inDegree.get(sg.id) ?? 0) + 1)
       }
     }
   }
 
-  // Kahn's algorithm — leaves (in-degree 0) are emitted first.
   const queue: string[] = []
   for (const [id, degree] of inDegree) {
     if (degree === 0) queue.push(id)
@@ -543,10 +540,8 @@ export function topologicalSortSubgraphs(
     }
   }
 
-  // Cycle fallback: return original order
-  if (sorted.length !== subgraphs.length) return subgraphs
-
-  return sorted
+  const emitted = new Set(sorted)
+  return [...sorted, ...subgraphs.filter((sg) => !emitted.has(sg))]
 }
 
 function patchSubgraphNodeReferences(

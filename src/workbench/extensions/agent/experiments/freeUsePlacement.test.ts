@@ -1,86 +1,65 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig,
-  remoteConfigRevision
-} from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { getDevOverride } from '@/utils/devFeatureFlagOverride'
-import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import {
-  FREE_USE_PLACEMENT_FLAG,
+  LOCAL_FREE_USE_PLACEMENT,
   useFreeUsePlacement
 } from './freeUsePlacement'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/utils/devFeatureFlagOverride'))
-vi.mock(import('@/utils/sessionFeatureFlagOverride'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('useFreeUsePlacement', () => {
   beforeEach(() => {
-    authenticatedRemoteConfigState.value = 'unloaded'
-    remoteConfig.value = {}
-    remoteConfigRevision.value = 0
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'near-composer' },
+      true
+    )
   })
 
-  it('uses a known authenticated assignment', async () => {
-    const { variant } = useFreeUsePlacement()
+  it('keeps the selected near-composer notice on Cloud after the experiment ends', () => {
+    const telemetry = useTelemetry()!
+    const { variant, reportNotice } = useFreeUsePlacement(true)
 
-    expect(variant.value).toBe('control')
-    remoteConfig.value = {
-      'agent-free-use-message-placement': 'above-input'
-    }
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfigRevision.value++
-    await vi.waitFor(() => expect(variant.value).toBe('above-input'))
-    expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
-      placement: 'above-input',
-      '$feature/agent-free-use-message-placement': 'above-input'
+    expect(variant.value).toBe(LOCAL_FREE_USE_PLACEMENT)
+    reportNotice({ action: 'shown', placement: 'near-composer' })
+    expect(telemetry.trackAgentFreeUseExposure).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentFreeUseNotice).toHaveBeenCalledExactlyOnceWith({
+      action: 'shown',
+      placement: LOCAL_FREE_USE_PLACEMENT,
+      deployment: 'cloud'
     })
   })
 
-  it('keeps control when the flag is absent', () => {
-    remoteConfig.value = {}
-    authenticatedRemoteConfigState.value = 'authenticated'
-    const { variant } = useFreeUsePlacement()
+  it('retains the Local notice and its interaction telemetry', () => {
+    const telemetry = useTelemetry()!
+    const { variant, reportNotice } = useFreeUsePlacement(false)
 
-    expect(variant.value).toBe('control')
-    expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
-      placement: 'control',
-      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: 'control'
+    expect(variant.value).toBe(LOCAL_FREE_USE_PLACEMENT)
+    reportNotice({ action: 'shown', placement: LOCAL_FREE_USE_PLACEMENT })
+    reportNotice({ action: 'shown', placement: LOCAL_FREE_USE_PLACEMENT })
+    reportNotice({
+      action: 'learn_more_clicked',
+      placement: LOCAL_FREE_USE_PLACEMENT
     })
-  })
 
-  it('keeps control for an unknown flag value', () => {
-    const config: RemoteConfig = {}
-    Object.defineProperty(config, FREE_USE_PLACEMENT_FLAG, {
-      enumerable: true,
-      value: 'unknown'
-    })
-    remoteConfig.value = config
-    authenticatedRemoteConfigState.value = 'authenticated'
-    const { variant } = useFreeUsePlacement()
-
-    expect(variant.value).toBe('control')
-    expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
-      placement: 'control',
-      [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: 'control'
-    })
-  })
-
-  it('prefers session and dev overrides for QA', () => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
-    vi.mocked(getDevOverride).mockReturnValue('near-composer')
-    vi.mocked(getSessionOverride).mockReturnValue('inside-input')
-
-    const { variant } = useFreeUsePlacement()
-
-    expect(variant.value).toBe('inside-input')
-    expect(useTelemetry()?.trackAgentFreeUseExposure).not.toHaveBeenCalled()
+    expect(telemetry.trackAgentFreeUseExposure).not.toHaveBeenCalled()
+    expect(vi.mocked(telemetry.trackAgentFreeUseNotice).mock.calls).toEqual([
+      [
+        {
+          action: 'shown',
+          placement: LOCAL_FREE_USE_PLACEMENT,
+          deployment: 'local'
+        }
+      ],
+      [
+        {
+          action: 'learn_more_clicked',
+          placement: LOCAL_FREE_USE_PLACEMENT,
+          deployment: 'local'
+        }
+      ]
+    ])
   })
 })

@@ -6,7 +6,7 @@ import {
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const EXPECTED_DEFAULT_TYPES = [
   'checkpoints',
@@ -33,7 +33,10 @@ const EXPECTED_DEFAULT_TYPES = [
   'ipadapter',
   'nlf',
   'FlashVSR',
-  'FlashVSR-v1.1'
+  'FlashVSR-v1.1',
+  'background_removal',
+  'frame_interpolation',
+  'film'
 ] as const
 
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
@@ -45,6 +48,8 @@ const MOCK_NODE_NAMES = [
   'ImageOnlyCheckpointLoader',
   'LoraLoader',
   'LoraLoaderModelOnly',
+  'LoadLoraModel',
+  'LoadLoraTextEncoder',
   'VAELoader',
   'ControlNetLoader',
   'UNETLoader',
@@ -67,7 +72,10 @@ const MOCK_NODE_NAMES = [
   'IPAdapterModelLoader',
   'LoadNLFModel',
   'FlashVSRNode',
-  'LTXICLoRALoaderModelOnly'
+  'LTXICLoRALoaderModelOnly',
+  'LoadBackgroundRemovalModel',
+  'FrameInterpolationModelLoader',
+  'FILM VFI'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -218,7 +226,10 @@ describe('useModelToNodeStore', () => {
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
       ['FlashVSR', 'FlashVSRNode', ''],
-      ['FlashVSR-v1.1', 'FlashVSRNode', '']
+      ['FlashVSR-v1.1', 'FlashVSRNode', ''],
+      ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+      ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+      ['film', 'FILM VFI', 'ckpt_name']
     ])(
       'should return correct provider for %s',
       ([modelType, expectedNodeName, expectedKey]) => {
@@ -231,6 +242,31 @@ describe('useModelToNodeStore', () => {
       }
     )
 
+    it.for([
+      ['unet', 'UNETLoader', 'unet_name'],
+      ['unet/flux', 'UNETLoader', 'unet_name'],
+      ['clip', 'CLIPLoader', 'clip_name'],
+      ['t2i_adapter', 'ControlNetLoader', 'control_net_name']
+    ])(
+      'resolves the legacy %s folder to the loader of the folder ComfyUI maps it to',
+      ([modelType, expectedNodeName, expectedKey]) => {
+        const modelToNodeStore = useModelToNodeStore()
+
+        const provider = modelToNodeStore.getNodeProvider(modelType)
+        expect(provider?.nodeDef.name).toBe(expectedNodeName)
+        expect(provider?.key).toBe(expectedKey)
+      }
+    )
+
+    it('prefers a provider registered under a legacy folder name over its mapped folder', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.quickRegister('clip', 'CLIPVisionLoader', 'clip_name')
+
+      expect(modelToNodeStore.getNodeProvider('clip')?.nodeDef.name).toBe(
+        'CLIPVisionLoader'
+      )
+    })
+
     it.for(['ultralytics', 'ultralytics/bbox', 'ultralytics/segm'])(
       'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
       (modelType) => {
@@ -241,6 +277,51 @@ describe('useModelToNodeStore', () => {
       }
     )
   })
+
+  it('does not treat an auto-loading provider as an asset widget', () => {
+    expect(useModelToNodeStore().isModelWidget('FL_ChatterboxVC', '')).toBe(
+      false
+    )
+  })
+
+  it('supports repeated model fields registered outside the default mappings', () => {
+    const store = useModelToNodeStore()
+    store.registerNodeProvider(
+      'vae',
+      new ModelNodeProvider(createMockNodeDef('MultiVAE'), /^items\.\d+\.file$/)
+    )
+
+    expect(store.isModelWidget('MultiVAE', 'items.3.file')).toBe(true)
+    expect(store.isModelWidget('MultiVAE', 'items.3.strength')).toBe(false)
+    expect(store.getCategoryForNodeType('MultiVAE')).toBe('vae')
+  })
+
+  it('matches string selectors literally, including regex characters', () => {
+    const store = useModelToNodeStore()
+    store.quickRegister('vae', 'VAELoader', 'items.*.file')
+
+    expect(store.isModelWidget('VAELoader', 'items.*.file')).toBe(true)
+    expect(store.isModelWidget('VAELoader', 'items.3.file')).toBe(false)
+  })
+
+  it.for(['g', 'y'])(
+    'keeps repeated widget checks stable with the %s flag',
+    (flags) => {
+      const store = useModelToNodeStore()
+      store.registerNodeProvider(
+        'vae',
+        new ModelNodeProvider(
+          createMockNodeDef('MultiVAE'),
+          new RegExp(/^items\.\d+\.file$/, flags)
+        )
+      )
+
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.strength')).toBe(false)
+    }
+  )
 
   describe('getAllNodeProviders', () => {
     it('should return all providers for model type with multiple nodes', () => {
@@ -264,7 +345,7 @@ describe('useModelToNodeStore', () => {
       )
 
       const loraProviders = modelToNodeStore.getAllNodeProviders('loras')
-      expect(loraProviders).toHaveLength(3)
+      expect(loraProviders).toHaveLength(5)
       expect(loraProviders).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -453,6 +534,23 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.getAllNodeProviders('checkpoints').length
 
       expect(secondCheckpointCount).toBe(firstCheckpointCount)
+    })
+
+    it('registers defaults added after an earlier partial node definition set', () => {
+      const nodeDefStore = useNodeDefStore()
+      nodeDefStore.nodeDefsByName = {
+        CheckpointLoaderSimple: mockNodeDefsByName.CheckpointLoaderSimple
+      }
+      const modelToNodeStore = useModelToNodeStore()
+
+      modelToNodeStore.registerDefaults()
+      expect(modelToNodeStore.getNodeProvider('vae')).toBeUndefined()
+
+      nodeDefStore.nodeDefsByName = mockNodeDefsByName
+
+      expect(modelToNodeStore.getNodeProvider('vae')?.nodeDef.name).toBe(
+        'VAELoader'
+      )
     })
 
     it('should not register when nodeDefStore is empty', () => {

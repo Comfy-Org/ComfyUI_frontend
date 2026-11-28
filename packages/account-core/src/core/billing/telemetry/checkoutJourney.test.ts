@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CheckoutJourneyTelemetryEvent } from './checkoutJourney.js'
+import type { CheckoutJourneyTelemetryEvent } from './checkoutJourney'
 import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   CHECKOUT_JOURNEY_SCHEMA_VERSION,
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload
-} from './checkoutJourney.js'
+} from './checkoutJourney'
 
 const CONTEXT = {
   checkout_journey_id: 'journey-1',
@@ -114,6 +114,23 @@ const CASES: readonly PayloadCase[] = [
       phase: 'promo',
       result: 'applied',
       prefilled: true
+    }
+  },
+  {
+    name: 'a promo checkout applied itself says so',
+    event: {
+      ...CONTEXT,
+      phase: 'promo',
+      result: 'applied',
+      prefilled: true,
+      auto_applied: true
+    },
+    payload: {
+      ...PAYLOAD_OF_CONTEXT,
+      phase: 'promo',
+      result: 'applied',
+      prefilled: true,
+      auto_applied: true
     }
   },
   {

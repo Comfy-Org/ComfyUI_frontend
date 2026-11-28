@@ -4,20 +4,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ZoomControlsModal from '@/components/graph/modals/ZoomControlsModal.vue'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
-  vi.mocked(useCommandStore().formatKeySequence).mockImplementation(
-    (command) =>
-      command.id === 'Comfy.Canvas.ZoomIn'
-        ? 'Ctrl+'
-        : command.id === 'Comfy.Canvas.ZoomOut'
-          ? 'Ctrl-'
-          : 'Ctrl+0'
+  vi.mocked(useCommandStore().formatKeySequence).mockImplementation((command) =>
+    command.id === 'Comfy.Canvas.ZoomIn'
+      ? 'Ctrl+'
+      : command.id === 'Comfy.Canvas.ZoomOut'
+        ? 'Ctrl-'
+        : 'Ctrl+0'
   )
   for (const [commandId, key] of [
     ['Comfy.Canvas.ZoomIn', '+'],
@@ -76,7 +75,7 @@ describe('ZoomControlsModal', () => {
     const zoomInButton = screen.getByTestId('zoom-in-action')
     await user.click(zoomInButton)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.ZoomIn'
     )
   })
@@ -88,7 +87,7 @@ describe('ZoomControlsModal', () => {
     const zoomOutButton = screen.getByTestId('zoom-out-action')
     await user.click(zoomOutButton)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.ZoomOut'
     )
   })
@@ -100,7 +99,7 @@ describe('ZoomControlsModal', () => {
     const fitViewButton = screen.getByTestId('zoom-to-fit-action')
     await user.click(fitViewButton)
 
-    expect(vi.mocked(useCommandStore().execute)).toHaveBeenCalledWith(
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
       'Comfy.Canvas.FitView'
     )
   })
@@ -120,7 +119,7 @@ describe('ZoomControlsModal', () => {
       await user.keyboard(`${typed}{Enter}`)
 
       expect(
-        vi.mocked(useCanvasStore().setAppZoomFromPercentage)
+        useCanvasStore().setAppZoomFromPercentage
       ).toHaveBeenCalledExactlyOnceWith(applied)
     }
   )

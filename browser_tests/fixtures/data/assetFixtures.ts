@@ -1,6 +1,6 @@
 import type { Asset } from '@comfyorg/ingest-types'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetItem } from '@comfyorg/assets-core/schema'
 
 /**
  * Core-native asset shape: the ingest Asset plus the `loader_path` contract
@@ -75,7 +75,18 @@ export const AGENT_VIDEO_ASSET: Asset = createOutputAsset({
   last_access_time: '2026-09-18T00:00:00.000Z'
 })
 
-export const STALE_TEMP_FILENAME = 'ComfyUI_temp_thsmm_00001_.png'
+export const AGENT_AUDIO_ASSET: Asset = createOutputAsset({
+  id: '33333333-3333-4333-a333-333333333333',
+  hash: 'blake3:3333333333333333333333333333333333333333333333333333333333333333',
+  name: 'agent_generated_audio.wav',
+  mime_type: 'audio/wav',
+  size: 24_044,
+  created_at: '2026-09-18T00:00:00.000Z',
+  updated_at: '2026-09-18T00:00:00.000Z',
+  last_access_time: '2026-09-18T00:00:00.000Z'
+})
+
+const STALE_TEMP_FILENAME = 'ComfyUI_temp_thsmm_00001_.png'
 export const STALE_TEMP_CARD_TEXT = STALE_TEMP_FILENAME.replace(/\.[^.]+$/, '')
 export const STALE_TEMP_ASSET: Asset = createOutputAsset({
   id: '55555555-5555-4555-a555-555555555555',
@@ -100,6 +111,13 @@ export const STABLE_CHECKPOINT: Asset = createModelAsset({
   created_at: '2025-01-15T10:30:00Z',
   updated_at: '2025-01-15T10:30:00Z'
 })
+
+export const UNSUPPORTED_QWEN_TTS: Asset = {
+  ...STABLE_CHECKPOINT,
+  id: 'test-qwen-tts-001',
+  name: 'Qwen3-TTS-12Hz-0.6B-CustomVoice.safetensors',
+  tags: ['models', 'qwen-tts/Qwen3-TTS-12Hz-0.6B-CustomVoice']
+}
 
 export const STABLE_CHECKPOINT_2: Asset = createModelAsset({
   id: 'test-checkpoint-002',
@@ -418,3 +436,103 @@ export const MULTI_OUTPUT_SECOND: Asset = createOutputAsset({
   updated_at: '2026-09-18T00:00:01.000Z',
   last_access_time: '2026-09-18T00:00:01.000Z'
 })
+
+export const TEMP_STACK_JOB_ID = 'abababab-abab-4bab-abab-abababababab'
+
+export const TEMP_STACK_SAVED: Asset = createOutputAsset({
+  id: 'acacacac-acac-4cac-acac-acacacacacac',
+  name: 'stack_saved.png',
+  hash: 'blake3:acacacacacacacacacacacacacacacacacacacacacacacacacacacacacacacac',
+  job_id: TEMP_STACK_JOB_ID,
+  created_at: '2026-10-20T00:00:00.000Z',
+  updated_at: '2026-10-20T00:00:00.000Z',
+  last_access_time: '2026-10-20T00:00:00.000Z'
+})
+
+export const TEMP_STACK_PREVIEW: Asset = createOutputAsset({
+  id: 'adadadad-adad-4dad-adad-adadadadadad',
+  name: 'stack_temp.png',
+  hash: 'blake3:adadadadadadadadadadadadadadadadadadadadadadadadadadadadadadadad',
+  job_id: TEMP_STACK_JOB_ID,
+  tags: ['output', 'temp'],
+  created_at: '2026-10-20T00:00:01.000Z',
+  updated_at: '2026-10-20T00:00:01.000Z',
+  last_access_time: '2026-10-20T00:00:01.000Z'
+})
+
+export const FLAT_TEMP_ASSET: Asset = createOutputAsset({
+  id: 'aeaeaeae-aeae-4eae-aeae-aeaeaeaeaeae',
+  name: 'flat_temp.png',
+  hash: 'blake3:aeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeae',
+  tags: ['output', 'temp'],
+  created_at: '2026-10-21T00:00:00.000Z',
+  updated_at: '2026-10-21T00:00:00.000Z',
+  last_access_time: '2026-10-21T00:00:00.000Z'
+})
+
+export const TEMP_FOLDER_JOB_ID = 'afafafaf-afaf-4faf-afaf-afafafafafaf'
+
+export const TEMP_FOLDER_SAVED: Asset = createOutputAsset({
+  id: 'b0b0b0b0-b0b0-40b0-b0b0-b0b0b0b0b0b0',
+  name: 'folder_saved.png',
+  hash: 'blake3:b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0',
+  job_id: TEMP_FOLDER_JOB_ID,
+  created_at: '2026-10-22T00:00:00.000Z',
+  updated_at: '2026-10-22T00:00:00.000Z',
+  last_access_time: '2026-10-22T00:00:00.000Z'
+})
+
+/** Names its folder only in `user_metadata.subfolder`; the job is the top-level `job_id`. */
+export const TEMP_FOLDER_PREVIEW: Asset = createOutputAsset({
+  id: 'b1b1b1b1-b1b1-41b1-b1b1-b1b1b1b1b1b1',
+  name: 'folder_temp.png',
+  hash: 'blake3:b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1',
+  job_id: TEMP_FOLDER_JOB_ID,
+  tags: ['output', 'temp'],
+  user_metadata: { subfolder: 'previews' },
+  created_at: '2026-10-22T00:00:01.000Z',
+  updated_at: '2026-10-22T00:00:01.000Z',
+  last_access_time: '2026-10-22T00:00:01.000Z'
+})
+
+/** Names its folder only in `user_metadata.subfolder`; the job is the top-level `job_id`. */
+export const TEMP_FOLDER_SINGLE: Asset = createOutputAsset({
+  id: 'b2b2b2b2-b2b2-42b2-b2b2-b2b2b2b2b2b2',
+  name: 'single_temp.png',
+  hash: 'blake3:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2',
+  job_id: 'b3b3b3b3-b3b3-43b3-b3b3-b3b3b3b3b3b3',
+  tags: ['output', 'temp'],
+  user_metadata: { subfolder: 'previews' },
+  created_at: '2026-10-23T00:00:00.000Z',
+  updated_at: '2026-10-23T00:00:00.000Z',
+  last_access_time: '2026-10-23T00:00:00.000Z'
+})
+
+/** No job; names its folder only in `user_metadata.subfolder`. */
+export const FLAT_FOLDER_TEMP_ASSET: Asset = createOutputAsset({
+  id: 'b5b5b5b5-b5b5-45b5-b5b5-b5b5b5b5b5b5',
+  name: 'flat_folder.png',
+  hash: 'blake3:b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5b5',
+  tags: ['output', 'temp'],
+  user_metadata: { subfolder: 'previews' },
+  created_at: '2026-10-24T00:00:00.000Z',
+  updated_at: '2026-10-24T00:00:00.000Z',
+  last_access_time: '2026-10-24T00:00:00.000Z'
+})
+
+/** A minimal listed asset with a fresh timestamp and an `/api/view` preview. */
+export function createListedAsset(
+  id: string,
+  name: string,
+  tags: string[]
+): Asset {
+  const createdAt = new Date().toISOString()
+  return {
+    id,
+    name,
+    tags,
+    preview_url: `/api/view?filename=${name}&type=input`,
+    created_at: createdAt,
+    updated_at: createdAt
+  }
+}

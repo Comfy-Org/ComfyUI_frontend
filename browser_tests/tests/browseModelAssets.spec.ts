@@ -7,17 +7,20 @@ import type {
 } from '@comfyorg/ingest-types'
 import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
-import { STABLE_CHECKPOINT } from '@e2e/fixtures/data/assetFixtures'
+import {
+  STABLE_CHECKPOINT,
+  UNSUPPORTED_QWEN_TTS
+} from '@e2e/fixtures/data/assetFixtures'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 import type {
   AssetMetadata,
   AsyncUploadResponse
-} from '@/platform/assets/schemas/assetSchema'
+} from '@comfyorg/assets-core/schema'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
-const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT]
+const CLOUD_ASSETS: Asset[] = [STABLE_CHECKPOINT, UNSUPPORTED_QWEN_TTS]
 
 const test = createCloudAssetsFixture(CLOUD_ASSETS)
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
@@ -52,16 +55,14 @@ test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
     // Dialog closes and the ghost is armed; the node is not placed until the
     // user clicks the canvas.
     await expect(modal).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 1000 })
-      .toBe(0)
+    await comfyPage.expectNodeCount(0, { timeout: 1000 })
 
     const canvasBox = (await comfyPage.canvas.boundingBox())!
     await comfyPage.canvas.click({
       position: { x: canvasBox.width / 2, y: canvasBox.height / 2 }
     })
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
       .toBe(1)
@@ -72,6 +73,29 @@ test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
     expect(loader).toBeDefined()
     const widget = await loader.getWidgetByName('ckpt_name')
     expect(await widget.getValue()).toBe(STABLE_CHECKPOINT.name)
+  })
+
+  test('disables Use for a model category without a node provider', async ({
+    comfyPage
+  }) => {
+    await comfyPage.command.executeCommand('Comfy.BrowseModelAssets')
+
+    const modal = comfyPage.page.locator(
+      '[data-component-id="AssetBrowserModal"]'
+    )
+    const card = modal.locator(
+      `[data-component-id="AssetCard"][data-asset-id="${UNSUPPORTED_QWEN_TTS.id}"]`
+    )
+    const useButton = card.getByRole('button', {
+      name: 'Use: This model type is not supported yet'
+    })
+
+    await expect(card).toBeVisible()
+    await expect(useButton).toHaveAttribute('aria-disabled', 'true')
+    await card.focus()
+    await card.press('Enter')
+    await expect(modal).toBeVisible()
+    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
   })
 })
 

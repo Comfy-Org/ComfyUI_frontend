@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import time
 
+from comfy_api.latest import _io
 from comfy_api.v0_0_2 import IO
 from nodes import LoadImage
 
@@ -409,6 +410,20 @@ class RefModLoader:
         return ()
 
 
+class FancyTimer:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "time"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "Reproduces CRT Nodes Fancy Timer's onSerialize that hands back live node properties"
+
+    def time(self):
+        return ()
+
+
 class PreviewBridge:
     @classmethod
     def INPUT_TYPES(cls):
@@ -423,6 +438,27 @@ class PreviewBridge:
     DESCRIPTION = "Reproduces Impact Preview Bridge's asynchronous image registration setter"
 
     def preview(self, source_image, image):
+        return ()
+
+
+class PlagueKindSimulacrum:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "image_slot": (["imaginary-cat.png"],),
+            "video_slot": (["stunt-potato.webm"],),
+            "caption": ("STRING", {
+                "multiline": True,
+                "default": "Test-only impersonator. No media was harmed (or loaded).",
+            }),
+        }}
+
+    RETURN_TYPES = ()
+    FUNCTION = "pretend"
+    CATEGORY = "DevTools/Definitely Fake"
+    DESCRIPTION = "Test-only PlagueKind-style DOM tabs. Zero plagues, zero media processing."
+
+    def pretend(self, image_slot, video_slot, caption):
         return ()
 
 
@@ -471,6 +507,28 @@ class NodeWithNumericCombo(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+class NodeWithAdvancedSocketInput(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithAdvancedSocketInput",
+            display_name="Node With Advanced Socket Input",
+            category="DevTools",
+            description="A node with an advanced input that has no widget",
+            inputs=[
+                IO.Image.Input("image"),
+                IO.Mask.Input("mask", optional=True, advanced=True),
+                IO.Int.Input(
+                    "iteration_outer", optional=True, force_input=True, advanced=True
+                ),
+            ],
+        )
+
+    @classmethod
+    async def execute(cls, image, mask=None, iteration_outer=None):
+        return IO.NodeOutput()
+
+
 class NodeWithDynamicCombo(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -506,7 +564,7 @@ class NodeWithDynamicGroup(IO.ComfyNode):
             description="Echoes repeated widget rows without loading models.",
             inputs=[
                 IO.String.Input("before", default="first"),
-                IO.DynamicGroup.Input("loras", template=[
+                _io._DynamicGroup.Input("loras", template=[
                     IO.Combo.Input("lora_name", options=["A.safetensors", "B.safetensors", "C.safetensors"]),
                     IO.Float.Input("strength", default=1.0, min=-2.0, max=2.0, step=0.1),
                     IO.Boolean.Input("enabled", default=True, optional=True),
@@ -570,13 +628,16 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsWASPause": WASPause,
     "DevToolsRefModLoader": RefModLoader,
     "DevToolsPreviewBridge": PreviewBridge,
+    "DevToolsFancyTimer": FancyTimer,
+    "DevToolsPlagueKindSimulacrum": PlagueKindSimulacrum,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
+    "DevToolsNodeWithAdvancedSocketInput": NodeWithAdvancedSocketInput,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
     "DevToolsBranchNode": TestBranchNode,
 }
 
-if hasattr(IO, "DynamicGroup"):
+if hasattr(_io, "_DynamicGroup"):
     NODE_CLASS_MAPPINGS["DevToolsNodeWithDynamicGroup"] = NodeWithDynamicGroup
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -602,8 +663,11 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsWASPause": "WAS Pause Compatibility",
     "DevToolsRefModLoader": "RefMod Loader Compatibility",
     "DevToolsPreviewBridge": "Preview Bridge Compatibility",
+    "DevToolsFancyTimer": "Fancy Timer Compatibility",
+    "DevToolsPlagueKindSimulacrum": "PlagueKind-ish (TEST ONLY, zero plagues)",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
+    "DevToolsNodeWithAdvancedSocketInput": "Node With Advanced Socket Input",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
     "DevToolsBranchNode": "Test Branch Node",
 }

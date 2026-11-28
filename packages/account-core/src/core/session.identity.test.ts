@@ -9,13 +9,13 @@ import {
   mintResponse,
   okFetch,
   testUser
-} from './__fixtures__/sessionFakes.js'
+} from './__fixtures__/sessionFakes'
 import type {
   AccountIdentity,
   SessionClientOptions,
   SessionSnapshot
-} from './session.js'
-import { createSessionClient } from './session.js'
+} from './session'
+import { createSessionClient } from './session'
 
 function makeClient(
   overrides: Partial<SessionClientOptions> = {},

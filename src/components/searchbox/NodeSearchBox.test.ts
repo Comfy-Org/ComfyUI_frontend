@@ -1,25 +1,32 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-import {
-  ComfyNodeDefImpl,
-  useNodeDefStore,
-  useNodeFrequencyStore
-} from '@/stores/nodeDefStore'
+import { DialogPortal } from 'reka-ui'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { FuseFilter } from '@/utils/fuseUtil'
 import NodeSearchBox from './NodeSearchBox.vue'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
-    en: { g: { searchPlaceholder: 'Search {subject}', nodes: 'nodes' } }
+    en: {
+      g: {
+        searchPlaceholder: 'Search {subject}',
+        nodes: 'nodes',
+        addNodeFilterCondition: 'Add node filter condition',
+        close: 'Close'
+      }
+    }
   }
 })
 
@@ -69,7 +76,7 @@ describe('NodeSearchBox', () => {
       output_name: [],
       output_node: false
     })
-    vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+    vi.spyOn(useNodeDefStore(), 'topNodeDefs', 'get').mockReturnValue([
       frequent
     ])
     const filter = new FuseFilter<ComfyNodeDefImpl>([], {
@@ -94,6 +101,7 @@ describe('NodeSearchBox', () => {
       data: () => ({ filterVisible: false })
     })
     render(Parent, { global: { plugins: [i18n] } })
+    expect(screen.getByRole('combobox', { name: 'Search nodes' })).toBeVisible()
 
     await userEvent
       .setup()
@@ -121,6 +129,52 @@ describe('NodeSearchBox', () => {
     })
   })
 
+  it('shows a node definition registered after the query was searched', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+
+    await fireEvent.update(screen.getByRole('combobox'), 'dragon')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.queryByRole('option', { name: 'Dragon Blueprint' })).toBe(
+      null
+    )
+
+    useNodeDefStore().registerBlueprintNodeDef(
+      new ComfyNodeDefImpl({
+        name: 'SubgraphBlueprint.dragon',
+        display_name: 'Dragon Blueprint',
+        category: 'Subgraph Blueprints',
+        python_module: 'blueprint',
+        description: '',
+        input: {},
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      })
+    )
+
+    await nextTick()
+
+    expect(
+      screen.getByRole('option', { name: 'Dragon Blueprint' })
+    ).toBeVisible()
+  })
+
+  it('shows frequent nodes that load after the box opened', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+    expect(screen.queryByRole('option', { name: 'KSampler' })).toBeNull()
+
+    const nodeFrequencyStore = useNodeFrequencyStore()
+    nodeFrequencyStore.isLoaded = false
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: { KSampler: 1 } })
+    await nodeFrequencyStore.loadNodeFrequencies()
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(screen.getByRole('option', { name: 'KSampler' })).toBeVisible()
+  })
+
   it.for([50, 100])(
     'cancels pending search telemetry when unmounted after %i ms',
     async (elapsed) => {
@@ -135,4 +189,50 @@ describe('NodeSearchBox', () => {
       expect(useTelemetry()?.trackNodeSearch).not.toHaveBeenCalled()
     }
   )
+
+  it('opens its filter dialog above search opened over another dialog', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const manager = screen.getByTestId('existing-overlay')
+    const Harness = defineComponent({
+      components: { NodeSearchBox, DialogPortal },
+      setup: () => ({ filterVisible: ref(false) }),
+      template: `
+        <DialogPortal><div data-testid="search-content">
+          <NodeSearchBox v-model:filter-visible="filterVisible" :filters="[]" />
+        </div></DialogPortal>
+      `
+    })
+    render(Harness, {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          NodePreview: true,
+          NodeSearchFilter: true,
+          NodeSearchItem: true,
+          SearchAutocomplete: {
+            template: '<input />',
+            methods: { focus: vi.fn(), open: vi.fn() }
+          }
+        }
+      }
+    })
+    const searchContent = await screen.findByTestId('search-content')
+
+    expect(manager.compareDocumentPosition(searchContent)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
+
+    const user = userEvent.setup()
+    await user.click(
+      screen.getByRole('button', { name: 'Add node filter condition' })
+    )
+    const filterContent = await screen.findByRole('dialog')
+
+    expect(searchContent.compareDocumentPosition(filterContent)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
+  })
 })

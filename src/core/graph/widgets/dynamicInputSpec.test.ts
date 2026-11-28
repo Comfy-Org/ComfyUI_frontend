@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyInputsSpec, InputSpec } from '@/schemas/nodeDefSchema'
-import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyInputsSpec, InputSpec } from '@comfyorg/object-info-parser'
+import { zDynamicGroupInputSpec } from '@comfyorg/object-info-parser'
 
 import { resolveDynamicInputSpec } from './dynamicInputSpec'
 

@@ -4,12 +4,13 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '../../scripts/app'
-import { ComfyWidgets } from '../../scripts/widgets'
+import { useApp } from '@/scripts/appInstance'
+import { ComfyWidgets } from '@/scripts/widgets'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Node that add notes to your project
 
-app.registerExtension({
+export const noteNodeExtension: ComfyExtension = {
   name: 'Comfy.NoteNode',
   registerCustomNodes() {
     class NoteNode extends LGraphNode {
@@ -30,7 +31,7 @@ app.registerExtension({
           this,
           'text',
           ['STRING', { default: this.properties.text, multiline: true }],
-          app
+          useApp()
         )
 
         this.serialize_widgets = true
@@ -67,7 +68,7 @@ app.registerExtension({
           this,
           'text',
           ['STRING', { default: this.properties.text }],
-          app
+          useApp()
         )
 
         this.serialize_widgets = true
@@ -78,4 +79,4 @@ app.registerExtension({
     LiteGraph.registerNodeType('MarkdownNote', MarkdownNoteNode)
     MarkdownNoteNode.category = 'utilities'
   }
-})
+}

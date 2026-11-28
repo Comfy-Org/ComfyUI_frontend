@@ -1,11 +1,12 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.use({ connectWebSocketToServer: false })
 
@@ -22,7 +23,7 @@ test.use({ connectWebSocketToServer: false })
 test(
   'shows the dragged non-first batch output in the sent message, not a type=input lookup',
   { tag: ['@cloud', '@agent', '@ui'] },
-  async ({ page, workflowSelection, promptHistory }) => {
+  async ({ page, promptHistory }) => {
     const droppedFilename = 'ComfyUI_00002_.png'
     const correctPreviewPath = '/assets/asset-e2e-batch-output-2/content'
 
@@ -46,14 +47,6 @@ test(
         exact: true
       })
       .click()
-    await panel
-      .getByRole('button', { name: enMessages.agent.switchWorkflow })
-      .click()
-    await page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
 
     const correctPreviewUrl = new URL(correctPreviewPath, page.url()).toString()
 
@@ -85,7 +78,7 @@ test(
       )
     })
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     // `fill` clears the editor's whole ProseMirror doc before typing, which
     // deletes the atom node the drop above just inserted (see
     // agentInlineReferences.spec.ts for the same constraint) - use

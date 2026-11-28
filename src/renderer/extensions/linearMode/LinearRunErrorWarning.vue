@@ -2,14 +2,15 @@
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import Button from '@comfyorg/design-system/button/Button'
+import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 
 const { t } = useI18n()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
-const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
+const { hasError, overlayMessage, overlayTitle, overlayGroupKeys } =
+  useErrorOverlayState()
 </script>
 
 <template>
@@ -18,10 +19,8 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
     data-testid="linear-validation-warning"
     :class="
       cn(
-        'mb-3 flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out',
-        hasError
-          ? 'border-l-destructive-background'
-          : 'border-l-warning-foreground'
+        'mb-3 flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-l-4 bg-background p-3 shadow-md transition-colors duration-200 ease-in-out',
+        hasError ? 'border-l-destructive' : 'border-l-warning'
       )
     "
   >
@@ -35,16 +34,16 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
           aria-hidden="true"
           :class="
             cn(
-              'mt-0.5 size-4 shrink-0',
+              'mt-0.5',
               hasError
-                ? 'icon-[lucide--circle-x] text-destructive-background'
-                : 'icon-[lucide--triangle-alert] text-warning-foreground'
+                ? 'icon-[lucide--circle-x] text-destructive'
+                : 'icon-[lucide--triangle-alert] text-warning'
             )
           "
         />
         <span class="sr-only">{{ t(hasError ? 'g.error' : 'g.warning') }}</span>
         <span
-          class="min-w-0 flex-1 truncate text-sm text-base-foreground"
+          class="min-w-0 flex-1 truncate text-sm text-foreground"
           :title="overlayTitle"
         >
           {{ overlayTitle }}
@@ -70,7 +69,7 @@ const { hasError, overlayMessage, overlayTitle } = useErrorOverlayState()
         size="unset"
         class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
         data-testid="linear-view-errors"
-        @click="viewErrorsInGraph"
+        @click="viewErrorsInGraph(overlayGroupKeys)"
       >
         {{ t('linearMode.error.goto') }}
       </Button>

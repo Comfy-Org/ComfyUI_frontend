@@ -5,22 +5,22 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionSnapshot } from '#/core/session'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { createPaymentMethodsReader } from './paymentMethods.js'
+} from './billingContracts'
+import { createPaymentMethodsReader } from './paymentMethods'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk,
   httpStatus
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {

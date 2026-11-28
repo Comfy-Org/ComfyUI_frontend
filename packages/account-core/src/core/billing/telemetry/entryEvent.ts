@@ -1,7 +1,7 @@
 import type {
   PaymentIntentSource,
   SubscriptionCheckoutTier
-} from './vocabulary.js'
+} from './vocabulary'
 
 /**
  * A cloud entry point that leads to billing. A client journey observation: it
@@ -18,4 +18,9 @@ export type EntryBillingEvent = {
       current_tier?: SubscriptionCheckoutTier
     }
   | { stage: 'add_credits_clicked' }
+  | {
+      stage: 'pricing_link_refused'
+      reason: 'pricing_surface_unavailable' | 'cannot_manage_subscription'
+      phase: 'before_catalog_fetch' | 'after_catalog_fetch'
+    }
 )

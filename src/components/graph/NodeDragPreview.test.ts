@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 
 import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock<unknown>(

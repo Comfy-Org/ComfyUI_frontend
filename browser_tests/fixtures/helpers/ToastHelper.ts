@@ -1,19 +1,39 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from '@e2e/fixtures/selectors'
+
+type ToastKind = 'error' | 'success' | 'warning' | 'loading'
+
+const TOAST_SELECTOR = '[data-testid="toast"]'
+
+export function toastSelector(kind: ToastKind): string {
+  return `${TOAST_SELECTOR}[data-toast-kind="${kind}"]`
+}
+
 export class ToastHelper {
-  public readonly visibleToasts: Locator
+  public readonly panels: Locator
   public readonly toastErrors: Locator
+  public readonly toastLoadings: Locator
   public readonly toastSuccesses: Locator
   public readonly toastWarnings: Locator
+  public readonly visibleToasts: Locator
 
-  constructor(private readonly page: Page) {
-    this.visibleToasts = page.locator('.p-toast-message:visible')
-    this.toastErrors = page.locator('.p-toast-message.p-toast-message-error')
-    this.toastSuccesses = page.locator(
-      '.p-toast-message.p-toast-message-success'
-    )
-    this.toastWarnings = page.locator('.p-toast-message.p-toast-message-warn')
+  constructor(page: Page) {
+    this.panels = page.getByTestId(TestIds.toast.panel)
+    this.toastErrors = page.locator(toastSelector('error'))
+    this.toastLoadings = page.locator(toastSelector('loading'))
+    this.toastSuccesses = page.locator(toastSelector('success'))
+    this.toastWarnings = page.locator(toastSelector('warning'))
+    this.visibleToasts = page.locator(TOAST_SELECTOR).filter({ visible: true })
+  }
+
+  withText(text: string | RegExp): Locator {
+    return this.visibleToasts.filter({ hasText: text })
+  }
+
+  async dismiss(toast: Locator): Promise<void> {
+    await toast.getByTestId('toast-close').click()
   }
 
   async closeToasts(requireCount = 0): Promise<void> {
@@ -23,15 +43,12 @@ export class ToastHelper {
         .waitFor({ state: 'visible' })
     }
 
-    // Clear all toasts
-    const toastCloseButtons = await this.page
-      .locator('.p-toast-close-button')
-      .all()
-    for (const button of toastCloseButtons) {
-      await button.click()
+    const closeButtons = this.visibleToasts.getByTestId('toast-close')
+    for (let open = await closeButtons.count(); open > 0; open--) {
+      await closeButtons.first().click()
+      await expect(closeButtons).toHaveCount(open - 1)
     }
 
-    // Assert all toasts are closed
     await expect(this.visibleToasts).toHaveCount(0)
   }
 }

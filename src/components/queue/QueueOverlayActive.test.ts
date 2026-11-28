@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import QueueOverlayActive from './QueueOverlayActive.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 
 const i18n = createI18n({
   legacy: false,
@@ -28,14 +28,9 @@ const i18n = createI18n({
   }
 })
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
-}
-
 const defaultProps = {
-  totalProgressStyle: { transform: 'scaleX(0.65)' },
-  currentNodeProgressStyle: { transform: 'scaleX(0.4)' },
+  totalPercent: 65,
+  currentNodePercent: 40,
   totalPercentFormatted: '65%',
   currentNodePercentFormatted: '40%',
   currentNodeName: 'Sampler',
@@ -48,10 +43,7 @@ const renderComponent = (props: Record<string, unknown> = {}) =>
   render(QueueOverlayActive, {
     props: { ...defaultProps, ...props },
     global: {
-      plugins: [i18n],
-      directives: {
-        tooltip: tooltipDirectiveStub
-      }
+      plugins: [i18n]
     }
   })
 
@@ -73,8 +65,9 @@ describe('QueueOverlayActive', () => {
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const progressBars = container.querySelectorAll('.absolute.inset-0')
     expect(progressBars).toHaveLength(2)
-    expect(progressBars[0]).toHaveStyle({ transform: 'scaleX(0.65)' })
-    expect(progressBars[1]).toHaveStyle({ transform: 'scaleX(0.4)' })
+    await nextTick()
+    expect(progressBars[0].getAnimations()[0].currentTime).toBe(650)
+    expect(progressBars[1].getAnimations()[0].currentTime).toBe(400)
 
     expect(screen.getByText('65%')).toBeInTheDocument()
 
@@ -113,12 +106,15 @@ describe('QueueOverlayActive', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('builds tooltip configs with translated strings', () => {
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
-
+  it.for([
+    { name: 'Interrupt all running jobs', tooltip: 'Cancel job' },
+    { name: 'Clear queued', tooltip: 'Clear queue' }
+  ])('describes $name with a translated tooltip', async ({ name, tooltip }) => {
+    const user = userEvent.setup()
     renderComponent()
 
-    expect(spy).toHaveBeenCalledWith('Cancel job')
-    expect(spy).toHaveBeenCalledWith('Clear queue')
+    await user.hover(screen.getByRole('button', { name }))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
   })
 })

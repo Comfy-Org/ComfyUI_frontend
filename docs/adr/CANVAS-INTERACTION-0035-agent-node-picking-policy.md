@@ -77,8 +77,8 @@ copies it anywhere.
    one to a node of another graph scope, survives the switch.
 
 2. **One reader, injected into litegraph.**
-   `CanvasInteractionModeReader` (`src/lib/litegraph/src/canvas/CanvasInteractionMode.ts`)
-   is a one-method interface, `isSelectOnly(): boolean`. The application
+   `CanvasInteractionModeReader` is a one-method interface,
+   `isSelectOnly(): boolean`. The application
    implements it over the store in
    `src/renderer/core/canvas/interaction/canvasInteractionMode.ts` and
    `ComfyApp` hands the same instance to the canvas constructor

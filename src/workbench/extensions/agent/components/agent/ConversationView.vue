@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import {
   useEventListener,
   useIntersectionObserver,
@@ -7,8 +9,8 @@ import {
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import Button from '@comfyorg/design-system/button/Button'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -17,9 +19,10 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { PromptSnapshot } from '../../types/workflowReference'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflowReference'
 
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
@@ -27,12 +30,14 @@ import UserMessage from './message/UserMessage.vue'
 const {
   entries,
   conversationId,
+  retryBlocked = false,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
   conversationId?: string | null
+  retryBlocked?: boolean
   paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
@@ -40,14 +45,50 @@ const {
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
-  paywallAction: [action: AgentPaywallAction]
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
+  retryPending: [clientMessageId: string]
+  deletePending: [clientMessageId: string]
+  newChat: []
 }>()
 
 const { t } = useI18n()
+const skills = useSkillPacksStore()
+const conversation = useAgentConversationStore()
+
+function isRetryDisabled(entry: ConversationEntry): boolean {
+  if (retryBlocked) return true
+  if (entry.role !== 'user' || entry.pending?.status !== 'failed') return false
+  const pending = conversation.getPendingSend(entry.pending.clientMessageId)
+  return pending ? conversation.isOriginBusy(pending.origin) : false
+}
+const hasSendingMessage = computed(() =>
+  entries.some(
+    (entry) => entry.role === 'user' && entry.pending?.status === 'sending'
+  )
+)
+const hasSkills = computed(() =>
+  entries.some((entry) => entry.role === 'user' && entry.skillReference)
+)
+function refreshSkills(): void {
+  void skills.startFlagGate({ fetch: false })
+  if (skills.enabled) void skills.refreshPacks()
+}
+// Opening a conversation refreshes the catalog its skills are shown against.
+// A live turn's first skill doesn't: the session refreshes when it ends.
+watch(
+  () => conversation.historySkillNames,
+  (names) => {
+    if (names.length) refreshSkills()
+  },
+  { immediate: true }
+)
+watch([() => skills.enabled, () => skills.scope], () => {
+  if (hasSkills.value) refreshSkills()
+})
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
@@ -94,14 +135,9 @@ function scrollToLatest(): void {
   atBottom.value = true
   const target = Math.max(0, element.scrollHeight - element.clientHeight)
   clearPendingProgrammaticScroll()
-  const willMove =
-    element.scrollHeight > element.clientHeight &&
-    Math.abs(element.scrollTop - target) > bottomGracePx
-  if (willMove) {
-    pendingProgrammaticScroll = {
-      target,
-      frame: requestAnimationFrame(clearPendingProgrammaticScroll)
-    }
+  pendingProgrammaticScroll = {
+    target,
+    frame: requestAnimationFrame(clearPendingProgrammaticScroll)
   }
   if (typeof element.scrollTo === 'function') {
     element.scrollTo({ top: target, behavior: 'instant' })
@@ -144,7 +180,9 @@ useResizeObserver(scrollContainer, followLatestAfterResize)
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last || !('parts' in last)) return `${entries.length}`
+  if (!last) return '0'
+  if (!('parts' in last))
+    return `${entries.length}:${last.pending?.status ?? ''}:${last.pending?.failure?.message ?? ''}`
   const tail = last.parts.at(-1)
   const tailText = tail && 'text' in tail ? tail.text.length : 0
   const settled = last.parts.filter(
@@ -217,11 +255,21 @@ watch(
               :attachments="entry.attachments"
               :tags="entry.tags"
               :workflow-references="entry.workflowReferences"
+              :skill-reference="entry.skillReference"
+              :pending="entry.pending"
+              :retry-disabled="isRetryDisabled(entry)"
+              :paywall-presentation
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
               @open-reference-workflow="
                 (workflowId: string, workflowName: string) =>
                   emit('openReferenceWorkflow', workflowId, workflowName)
+              "
+              @retry-pending="emit('retryPending', $event)"
+              @delete-pending="emit('deletePending', $event)"
+              @new-chat="emit('newChat')"
+              @paywall-action="
+                (action, surface) => emit('paywallAction', action, surface)
               "
             />
             <AgentMessage
@@ -230,10 +278,7 @@ watch(
               :answering-ask-ids
               :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
-              @answer-ask="
-                (askId: string, selection: 'run' | 'cancel') =>
-                  emit('answerAsk', askId, selection)
-              "
+              @answer-ask="(askId, answer) => emit('answerAsk', askId, answer)"
               @approval-shown="
                 (askId, turnId, workflowId) =>
                   emit('approvalShown', askId, turnId, workflowId)
@@ -242,16 +287,26 @@ watch(
                 (askId: string, workflowId: string, workflowName?: string) =>
                   emit('openWorkflow', askId, workflowId, workflowName)
               "
-              @paywall-action="emit('paywallAction', $event)"
+              @paywall-action="
+                (action, surface) => emit('paywallAction', action, surface)
+              "
             />
           </template>
         </div>
       </div>
     </div>
 
+    <div
+      role="status"
+      :aria-label="hasSendingMessage ? t('agent.sendingMessage') : undefined"
+      class="sr-only"
+    >
+      {{ hasSendingMessage ? t('agent.sendingMessage') : '' }}
+    </div>
+
     <Button
       v-if="!shouldFollowLatest"
-      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
+      :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"
       size="icon"
@@ -259,7 +314,7 @@ watch(
       class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
       @click="scrollToLatest"
     >
-      <span class="icon-[lucide--chevron-down] size-4" />
+      <i aria-hidden="true" class="icon-[lucide--chevron-down]" />
     </Button>
   </div>
 </template>

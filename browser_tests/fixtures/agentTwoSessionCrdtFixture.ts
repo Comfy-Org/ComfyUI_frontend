@@ -17,18 +17,16 @@ import {
   zAgentTurnAccepted
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import {
-  agentTest,
-  bootAgentApp,
-  mockWorkflowPersistence
-} from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { emptySeed } from '@e2e/fixtures/data/agent/agentRemoteApply'
+import { mockEmptyAgentThreadList } from '@e2e/fixtures/utils/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const SOCKET_SID = 'b6f0a2c1-8e34-4d21-9c07-2a1b3c4d5e60'
@@ -38,8 +36,6 @@ const SUBSCRIBE_TIMEOUT = 15_000
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const NEW_CHAT_LABEL = enMessages.agent.newChat
-const SWITCH_WORKFLOW_LABEL = enMessages.agent.switchWorkflow
-const HOME_WORKFLOW_ID = '00000000-0000-4000-8000-000000000000'
 
 export interface AgentBoundWorkflow {
   workflowId: string
@@ -89,9 +85,11 @@ export class AgentTwoSessionCrdtHarness {
 
   async boot(): Promise<void> {
     await this.mockAgentApi()
-    await this.page.routeWebSocket(/\/ws(\?|$)/, (socket) => {
+    await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
+    })
+    await this.page.routeWebSocket(/\/ws(\?|$)/, (socket) => {
       socket.send(
         JSON.stringify({
           type: 'status',
@@ -113,19 +111,6 @@ export class AgentTwoSessionCrdtHarness {
       })
     ])
     await this.agentPanel.open(PANEL_MOUNT_TIMEOUT)
-    await this.selectHomeTarget()
-  }
-
-  private async selectHomeTarget(): Promise<void> {
-    await mockWorkflowPersistence(this.page, HOME_WORKFLOW_ID)
-    const picker = this.panel.getByRole('button', {
-      name: SWITCH_WORKFLOW_LABEL
-    })
-    await picker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
   }
 
   private async startThread(prompt: string): Promise<AgentThread> {
@@ -295,9 +280,7 @@ export class AgentTwoSessionCrdtHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
-    )
+    await mockEmptyAgentThreadList(page)
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
       if (request.method() === 'POST') {

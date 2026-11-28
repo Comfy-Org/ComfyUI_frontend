@@ -1,13 +1,15 @@
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { parseWidgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  extractWidgetStringValue,
+  parseImageWidgetValue
+} from '@/utils/imageUtil'
 
 type LoaderMediaType = 'image' | 'video' | 'audio'
 
@@ -64,7 +66,8 @@ function buildMediaUrl(
   appendCloudResParam(params, filename)
   const revision = previewRevision?.(filename)
   if (revision) params.set('template_input_revision', String(revision))
-  const previewParam = mediaType === 'image' ? app.getPreviewFormatParam() : ''
+  const previewParam =
+    mediaType === 'image' ? useApp().getPreviewFormatParam() : ''
   return api.apiURL(`/view?${params}${previewParam}`)
 }
 

@@ -1,13 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { fakeWebSessionUser } from '../testing.js'
-import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth.js'
-import type { WebSession, WebSessionErrorCode } from './sessionContracts.js'
-import type { SessionTokenResult } from './sessionTokenMint.js'
-import {
-  SessionTokenError,
-  createSessionTokenMint
-} from './sessionTokenMint.js'
+import { fakeWebSessionUser } from '#/testing'
+import { COMFY_CLIENT, createRequestAuthorizer } from './requestAuth'
+import type { WebSession, WebSessionErrorCode } from './sessionContracts'
+import type { SessionTokenResult } from './sessionTokenMint'
+import { SessionTokenError, createSessionTokenMint } from './sessionTokenMint'
 
 const T0 = Date.parse('2026-09-25T00:00:00Z')
 const MINUTE = 60_000
@@ -34,6 +31,7 @@ function tokenBody(token: string, expiresAt: number) {
   return {
     token,
     expires_at: new Date(expiresAt).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
     role: 'owner',
     permissions: []
@@ -158,22 +156,25 @@ describe('createSessionTokenMint', () => {
     expect(sent).toHaveLength(2)
   })
 
-  it('re-mints once the session would have expired, even if the token outlives it', async () => {
-    const { mint, sent, state } = setup()
-    state.session = {
-      ...sessionFor('user-1'),
-      expiresAt: T0 + 10 * MINUTE
+  it.for<{ name: string; sessionExpiresAt: number }>([
+    { name: 'ends before the token', sessionExpiresAt: T0 + 10 * MINUTE },
+    { name: 'already passed its idle expiry', sessionExpiresAt: T0 - MINUTE }
+  ])(
+    'keeps the token until its own expiry when the local session copy $name',
+    async ({ sessionExpiresAt }) => {
+      const { mint, sent, state } = setup()
+      state.session = { ...sessionFor('user-1'), expiresAt: sessionExpiresAt }
+
+      const tokens = []
+      for (const minute of [0, 1, 9, 13]) {
+        clock.now = T0 + minute * MINUTE
+        tokens.push(await mint.getWorkspaceToken())
+      }
+
+      expect(tokens).toEqual(['jwt-1', 'jwt-1', 'jwt-1', 'jwt-1'])
+      expect(sent).toHaveLength(1)
     }
-
-    const first = await mint.getWorkspaceToken()
-    clock.now = T0 + 8 * MINUTE
-    const reused = await mint.getWorkspaceToken()
-    clock.now = T0 + 9 * MINUTE
-    const reminted = await mint.getWorkspaceToken()
-
-    expect([first, reused, reminted]).toEqual(['jwt-1', 'jwt-1', 'jwt-2'])
-    expect(sent).toHaveLength(2)
-  })
+  )
 
   it('shares one request among concurrent callers for the same workspace', async () => {
     const { mint, sent } = setup()

@@ -11,6 +11,33 @@ vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
+const modifiedWorkflow = {
+  isModified: true,
+  isPersisted: true,
+  changeTracker: { hasPreview: false }
+}
+
+function fireGraphChanged() {
+  const listener = vi
+    .mocked(api.addEventListener)
+    .mock.calls.find(([type]) => type === 'graphChanged')?.[1]
+  if (typeof listener !== 'function') throw new Error('no listener')
+  listener(
+    new CustomEvent('graphChanged', {
+      detail: {
+        last_node_id: 0,
+        last_link_id: 0,
+        nodes: [],
+        links: [],
+        groups: [],
+        config: {},
+        extra: {},
+        version: 0.4
+      }
+    })
+  )
+}
+
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
   useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
@@ -21,7 +48,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -43,7 +70,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: false, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow, isModified: false }
     })
 
     render({
@@ -61,11 +88,27 @@ describe('useWorkflowAutoSave', () => {
     )
   })
 
+  it('saves a pending edit after a layout preview ends without a graph change', () => {
+    useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
+    const changeTracker = { hasPreview: true }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: { ...modifiedWorkflow, changeTracker }
+    })
+    render({ setup: useWorkflowAutoSave, render: () => null })
+
+    vi.advanceTimersByTime(1000)
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
+
+    changeTracker.hasPreview = false
+    vi.advanceTimersByTime(1000)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
+  })
+
   it('should not auto save workflow when autosave is off', async () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -85,7 +128,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 2000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -109,7 +152,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 2000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -120,14 +163,11 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     vi.advanceTimersByTime(500)
 
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     vi.advanceTimersByTime(1999)
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
@@ -140,12 +180,8 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
-
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
 
     try {
       render({
@@ -163,12 +199,12 @@ describe('useWorkflowAutoSave', () => {
       vi.advanceTimersByTime(1000)
       await Promise.resolve()
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'Auto save failed:',
         expect.any(Error)
       )
     } finally {
-      consoleErrorSpy.mockRestore()
+      vi.mocked(console.error).mockRestore()
     }
   })
 
@@ -176,7 +212,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -198,9 +234,7 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     resolveSave!(true)
     await Promise.resolve()
@@ -229,7 +263,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 0
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: true }
+      activeWorkflow: { ...modifiedWorkflow }
     })
 
     render({
@@ -247,9 +281,7 @@ describe('useWorkflowAutoSave', () => {
 
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = -500
 
-    const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     await vi.runAllTimersAsync()
 
@@ -260,7 +292,7 @@ describe('useWorkflowAutoSave', () => {
     useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'after delay'
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = 1000
     Object.assign(useWorkflowStore(), {
-      activeWorkflow: { isModified: true, isPersisted: false }
+      activeWorkflow: { ...modifiedWorkflow, isPersisted: false }
     })
 
     render({

@@ -131,7 +131,7 @@ If the wrapper only renames or relays a mocked value, fail it. Inline the lookup
 ### Third-Party Seams
 
 - Distinguish trivial hooks from behavior-rich APIs.
-- Mocking single-method third-party hooks like `primevue/usetoast` is usually acceptable.
+- Mocking single-method third-party hooks like `@vueuse/core`'s `useClipboard` is usually acceptable.
 - That exception does not justify mocking behavior-rich third-party modules.
 
 ### `vue-i18n`

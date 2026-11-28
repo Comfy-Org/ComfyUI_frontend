@@ -10,11 +10,22 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 export async function openMoreOptions(comfyPage: ComfyPage): Promise<Locator> {
   await expect(comfyPage.selectionToolbox).toBeVisible()
 
-  const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
+  const moreOptionsBtn = comfyPage.selectionToolbox.getByRole('button', {
+    name: 'More Options',
+    exact: true
+  })
   await expect(moreOptionsBtn).toBeVisible()
   await moreOptionsBtn.click()
 
   const menu = comfyPage.page.getByRole('menu')
   await expect(menu.getByText('Copy', { exact: true })).toBeVisible()
   return menu
+}
+
+/** Opens the selection toolbox "Align" popover. */
+export async function openAlign(comfyPage: ComfyPage): Promise<void> {
+  await expect(comfyPage.selectionToolbox).toBeVisible()
+  await comfyPage.selectionToolbox
+    .getByRole('button', { name: 'Align', exact: true })
+    .click()
 }

@@ -70,8 +70,8 @@ export class BuilderSelectHelper {
       .click()
 
     const input = this.page
-      .getByTestId(TestIds.builder.ioItemTitle)
       .getByRole('textbox')
+      .and(this.page.getByTestId(TestIds.builder.ioItemTitle))
     await expect(input).toBeFocused()
     await input.fill(newName)
     await this.page.keyboard.press('Enter')
@@ -90,8 +90,8 @@ export class BuilderSelectHelper {
     await titleEl.dblclick()
 
     const input = this.page
-      .getByTestId(TestIds.builder.ioItemTitle)
       .getByRole('textbox')
+      .and(this.page.getByTestId(TestIds.builder.ioItemTitle))
     await input.fill(newName)
     await this.page.keyboard.press('Enter')
     await this.comfyPage.nextFrame()
@@ -116,11 +116,6 @@ export class BuilderSelectHelper {
     await this.comfyPage.nextFrame()
   }
 
-  /**
-   * Click a widget on the canvas to select it as a builder input.
-   * @param nodeTitle The displayed title of the node.
-   * @param widgetName The widget name to click.
-   */
   async selectInputWidget(nodeTitle: string, widgetName: string) {
     await this.comfyPage.canvasOps.setScale(1)
     const nodeRefs = await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
@@ -129,9 +124,10 @@ export class BuilderSelectHelper {
     await nodeRef.centerOnNode()
     const widgetLocator = this.comfyPage.vueNodes
       .getNodeLocator(String(nodeRef.id))
-      .getByLabel(widgetName, { exact: true })
-    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
-    await widgetLocator.click({ force: true })
+      .locator(`[data-widget-name=${JSON.stringify(widgetName)}]`)
+    await expect(widgetLocator).toBeVisible()
+    const box = (await widgetLocator.boundingBox())!
+    await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
     await this.comfyPage.nextFrame()
   }
 

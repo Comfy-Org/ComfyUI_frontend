@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { EXCHANGE_URL, memoryStorage } from './__fixtures__/sessionFakes.js'
-import type { AccountIdentity } from './identity.js'
-import { brandIdentity, identityBrand } from './identity.js'
-import { createSessionClient } from './session.js'
+import { EXCHANGE_URL, memoryStorage } from './__fixtures__/sessionFakes'
+import type { AccountIdentity } from './identity'
+import { brandIdentity, identityBrand } from './identity'
+import { createSessionClient } from './session'
 
 describe('identity brand', () => {
   it('an unbranded port is a compile error and brandIdentity stamps the brand without mutating its input', () => {

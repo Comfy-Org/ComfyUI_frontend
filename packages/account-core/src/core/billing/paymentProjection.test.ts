@@ -4,9 +4,9 @@ import type {
   BillingOperationState,
   BillingRecoveryAction,
   PendingBillingOperation
-} from './operationState.js'
-import type { HostPaymentStep, PaymentProjection } from './paymentProjection.js'
-import { awaitsHostedAction, projectPaymentStep } from './paymentProjection.js'
+} from './operationState'
+import type { HostPaymentStep, PaymentProjection } from './paymentProjection'
+import { awaitsHostedAction, projectPaymentStep } from './paymentProjection'
 
 const IDENTITY = {
   id: 'op-1',

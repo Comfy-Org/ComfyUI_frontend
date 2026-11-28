@@ -1,12 +1,21 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { t } from '@/i18n'
 import { openTypeformDialog } from '@/platform/surveys/openTypeformDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import { FEEDBACK_TYPEFORM_ID, buildFeedbackHiddenFields } from './config'
 import type { FeedbackSource } from './config'
 
-export function openFeedbackDialog(source: FeedbackSource) {
+export function openFeedbackDialog(
+  source: FeedbackSource,
+  {
+    typeformId = FEEDBACK_TYPEFORM_ID,
+    extraTags = {}
+  }: {
+    typeformId?: string
+    extraTags?: Record<string, string | null | undefined>
+  } = {}
+) {
   const { userEmail } = useCurrentUser()
 
   useTelemetry()?.trackUiButtonClicked({
@@ -15,11 +24,15 @@ export function openFeedbackDialog(source: FeedbackSource) {
   })
   openTypeformDialog({
     key: 'global-feedback',
-    typeformId: FEEDBACK_TYPEFORM_ID,
+    typeformId,
     title: t('feedback.title'),
     hiddenFields: buildFeedbackHiddenFields(
       source,
-      userEmail.value ? { email: userEmail.value } : {}
+      Object.fromEntries(
+        Object.entries({ email: userEmail.value, ...extraTags }).flatMap(
+          ([key, value]) => (value ? [[key, value]] : [])
+        )
+      )
     )
   })
 }

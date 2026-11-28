@@ -3,8 +3,8 @@ import { computed } from 'vue'
 
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import type { SlotId } from '@/types/slotId'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -28,13 +28,13 @@ const clipPath = computed(() => {
 })
 
 const types = computed(() => {
-  if (props.hasError) return ['var(--color-error)']
-  //TODO Support connected/disconnected colors?
-  if (!props.slotData) return [getSlotColor()]
+  if (props.hasError) return ['var(--destructive)']
+  const fallback = 'var(--slot-fallback-color)'
+  if (!props.slotData) return [getSlotColor(undefined, fallback)]
   if (props.slotData.type === '*') return ['']
   return `${props.slotData.type}`
     .split(',')
-    .map(getSlotColor)
+    .map((type) => getSlotColor(type, fallback))
     .slice(0, MAX_MULTITYPE_SLICES)
 })
 
@@ -45,10 +45,10 @@ const slotClass = computed(() =>
     'slot-dot bg-ink-100',
     isListShape.value ? 'rounded-[1px]' : 'rounded-full',
     'transition-all duration-150',
-    'border border-solid border-node-component-slot-dot-outline',
+    'border border-solid border-foreground/10',
     props.multi
       ? 'h-5 w-2'
-      : 'size-2 cursor-crosshair group-hover/slot:scale-125 group-hover/slot:[--node-component-slot-dot-outline-opacity-mult:5]'
+      : 'size-2 cursor-crosshair group-hover/slot:scale-125 group-hover/slot:border-foreground/50'
   )
 )
 </script>
@@ -56,9 +56,10 @@ const slotClass = computed(() =>
 <template>
   <div
     data-testid="slot-connection-dot"
+    data-part="slot-dot"
     :class="
       cn(
-        'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',
+        'group/slot relative flex size-6 items-center justify-center [--slot-fallback-color:#AAA] after:absolute after:inset-y-0 after:w-5/2',
         props.class
       )
     "

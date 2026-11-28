@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
 const mockCanvas = vi.hoisted(() => ({
   graph_mouse: [0, 0] as [number, number],
@@ -166,21 +166,6 @@ describe('useImagePreviewWidget', () => {
       const widget = getWidget(node)
       const size = widget.computeLayoutSize!(node)
       expect(size).toEqual({ minHeight: 220, minWidth: 1 })
-    })
-  })
-
-  describe('createCopyForNode', () => {
-    it('creates a copy bound to a new node', () => {
-      const constructor = useImagePreviewWidget()
-      const node1 = createMockNode({ id: 1 })
-      constructor(node1, defaultInputSpec)
-
-      const widget = getWidget(node1)
-      const node2 = createMockNode({ id: 2 })
-      const copy = widget.createCopyForNode(node2)
-
-      expect(copy.name).toBe('preview')
-      expect(copy.type).toBe('custom')
     })
   })
 

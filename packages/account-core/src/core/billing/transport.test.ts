@@ -6,13 +6,19 @@ import type {
   SessionClient,
   SessionRequestOptions,
   SessionSnapshot
-} from '../session.js'
-import type { AccountCredential, SessionResult } from '../sessionContracts.js'
-import type { BillingHttpResponse, BillingResult } from './billingContracts.js'
-import type { BillingScope, BillingScopeSource } from './billingScope.js'
-import { createCredentialedBillingTransport } from './credentialedTransport.js'
-import { codeForHttpStatus } from './httpStatus.js'
-import { createSessionBillingTransport } from './transport.js'
+} from '#/core/session'
+import type { AccountCredential, SessionResult } from '#/core/sessionContracts'
+import { makeClient } from '#/core/__fixtures__/sessionClientFixture'
+import {
+  manualIdentity,
+  mintBody,
+  testUser
+} from '#/core/__fixtures__/sessionFakes'
+import type { BillingHttpResponse, BillingResult } from './billingContracts'
+import type { BillingScope, BillingScopeSource } from './billingScope'
+import { createCredentialedBillingTransport } from './credentialedTransport'
+import { codeForHttpStatus } from './httpStatus'
+import { createSessionBillingTransport } from './transport'
 
 const BASE = 'https://cloud.test/api'
 
@@ -233,6 +239,40 @@ describe('createSessionBillingTransport', () => {
     )
   })
 
+  it('keeps a still-valid session when a read cannot refresh it', async () => {
+    const identity = manualIdentity()
+    const { client } = makeClient(
+      {
+        fetchImpl: vi
+          .fn<typeof fetch>()
+          .mockResolvedValueOnce(
+            jsonResponse(
+              200,
+              mintBody({
+                expires_at: new Date(Date.now() + 60_000).toISOString()
+              })
+            )
+          )
+          .mockImplementation(async () => jsonResponse(503, {}))
+      },
+      identity.port
+    )
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const billingFetch = vi.fn<typeof fetch>()
+    const transport = createSessionBillingTransport({
+      session: client,
+      resolveUrl: (route) => `${BASE}${route}`,
+      fetchImpl: billingFetch
+    })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toMatchObject({ status: 'error', httpStatus: 503 })
+    expect(billingFetch).not.toHaveBeenCalled()
+    expect(client.getToken()).toBe('workspace-jwt')
+  })
+
   it('reports NOT_AUTHENTICATED without sending a request', async () => {
     const { transport, fetchImpl } = makeTransport({ ensureFresh: undefined })
 
@@ -376,20 +416,42 @@ describe('createSessionBillingTransport', () => {
     }
   )
 
-  it('never replays a write the backend cannot deduplicate', async () => {
-    const { transport, fetchImpl, remint } = makeTransport({
+  it.for(['POST', 'PUT'] as const)(
+    'never replays a %s the backend cannot deduplicate',
+    async (method) => {
+      const { transport, fetchImpl, remint } = makeTransport({
+        remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
+        responses: [jsonResponse(401, {})]
+      })
+
+      const result = await transport({ method, route: '/billing/topup' })
+
+      expect(remint).not.toHaveBeenCalled()
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { httpStatus: 401, authenticationRetrySkipped: true }
+      })
+    }
+  )
+
+  it('replays a PUT that carries an idempotency key', async () => {
+    const { transport, fetchImpl } = makeTransport({
       remint: { status: 'ok', session: credential({ token: 'fresh-jwt' }) },
-      responses: [jsonResponse(401, {})]
+      responses: [jsonResponse(401, {}), jsonResponse(200, { enabled: true })]
     })
 
-    const result = await transport({ method: 'POST', route: '/billing/topup' })
-
-    expect(remint).not.toHaveBeenCalled()
-    expect(fetchImpl).toHaveBeenCalledTimes(1)
-    expect(result).toMatchObject({
-      status: 'ok',
-      value: { httpStatus: 401, authenticationRetrySkipped: true }
+    const result = await transport({
+      method: 'PUT',
+      route: '/billing/auto-reload',
+      body: { enabled: true },
+      idempotencyKey: 'key-1'
     })
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fetchImpl.mock.calls[1]?.[1]?.method).toBe('PUT')
+    expect(fetchImpl.mock.calls[1]?.[1]?.body).toBe('{"enabled":true}')
+    expect(result).toMatchObject({ status: 'ok', value: { httpStatus: 200 } })
   })
 
   it('replays a write that carries an idempotency key', async () => {
@@ -652,19 +714,23 @@ describe('createCredentialedBillingTransport', () => {
     }
   )
 
-  it('forwards a write body and the key the backend deduplicates it by', async () => {
-    const { transport, fetchImpl } = makeTransport()
+  it.for(['POST', 'PUT'] as const)(
+    'forwards a %s body and the key the backend deduplicates it by',
+    async (method) => {
+      const { transport, fetchImpl } = makeTransport()
 
-    await transport({
-      method: 'POST',
-      route: '/billing/topup',
-      body: { amount_cents: 500 },
-      idempotencyKey: 'key-1'
-    })
+      await transport({
+        method,
+        route: '/billing/topup',
+        body: { amount_cents: 500 },
+        idempotencyKey: 'key-1'
+      })
 
-    expect(fetchImpl.mock.calls[0]?.[1]?.body).toBe('{"amount_cents":500}')
-    expect(sentHeaders(fetchImpl).get('Idempotency-Key')).toBe('key-1')
-  })
+      expect(fetchImpl.mock.calls[0]?.[1]?.method).toBe(method)
+      expect(fetchImpl.mock.calls[0]?.[1]?.body).toBe('{"amount_cents":500}')
+      expect(sentHeaders(fetchImpl).get('Idempotency-Key')).toBe('key-1')
+    }
+  )
 
   it('reports NOT_AUTHENTICATED without sending a request when no scope is established', async () => {
     const { transport, fetchImpl } = makeTransport({ initialScope: undefined })
