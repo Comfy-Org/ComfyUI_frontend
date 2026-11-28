@@ -1019,7 +1019,10 @@ export class GroupNodeHandler {
                 try {
                   newNode?.connect(slot.slot, targetNode, link.target_slot)
                 } finally {
-                  const replacement = targetNode.getInputLink(link.target_slot)
+                  const replacement =
+                    targetNode.graph === graph
+                      ? targetNode.getInputLink(link.target_slot)
+                      : null
                   if (
                     newNode &&
                     replacement?.origin_id === newNode.id &&
