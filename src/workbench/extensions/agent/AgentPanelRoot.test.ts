@@ -14989,7 +14989,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
       expect(
         await screen.findByRole('button', {
-          name: i18n.global.t('agent.worked')
+          name: i18n.global.t('agent.workedForSeconds', { seconds: 1 })
         })
       ).toBeVisible()
       expect(

@@ -1,5 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -18,6 +19,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -284,6 +286,33 @@ describe('PropertiesPanel errors tab icon', () => {
     expect(screen.getByTestId('panel-tab-icon')).toHaveAccessibleName(
       'Blocking errors'
     )
+  })
+})
+
+describe('PropertiesPanel prompt panel session', () => {
+  function openSessionInNodeSettings() {
+    const { graph } = renderPanel('parameters')
+    const node = new LGraphNode('CLIP Text Encode')
+    graph.add(node)
+    const widget = node.addWidget('textarea', 'text', 'a portrait', () => {})
+    const promptPanelStore = usePromptPanelStore()
+    promptPanelStore.open({ node, widget })
+    promptPanelStore.isPromptViewShown = false
+    return promptPanelStore
+  }
+
+  it('offers no Prompt button without a session', () => {
+    renderPanel('parameters')
+
+    expect(screen.queryByRole('button', { name: 'Prompt' })).toBeNull()
+  })
+
+  it('returns to the prompt view from the Prompt button during a session', async () => {
+    const promptPanelStore = openSessionInNodeSettings()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Prompt' }))
+
+    expect(promptPanelStore.isPromptViewShown).toBe(true)
   })
 })
 

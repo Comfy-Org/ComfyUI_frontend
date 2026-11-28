@@ -7,19 +7,32 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { usePromptEditorExperimentStore } from '@/renderer/extensions/textEditor/promptEditorExperimentStore'
+import { usePromptPanelStore } from '@/renderer/extensions/textEditor/promptPanelStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
 
 import WidgetTextarea from './WidgetTextarea.vue'
 import { createMockWidget } from './widgetTestUtils'
 
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
 const mockIsNodeOptionsOpen = vi.hoisted(() => vi.fn(() => false))
+
+vi.mock(import('@comfyorg/telemetry'))
+
+const telemetry = vi.mocked(useTelemetry)()
+assert.exists(telemetry)
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
@@ -402,8 +415,14 @@ describe('WidgetTextarea contextmenu', () => {
 
 describe('WidgetTextarea expand to editor', () => {
   function renderWithDialogHost(
-    widgetOverrides: Partial<SimplifiedWidget<string>> = {}
+    widgetOverrides: Partial<SimplifiedWidget<string>> = {},
+    { inSidePanel = false }: { inSidePanel?: boolean } = {}
   ) {
+    const graph = createTestRootGraph()
+    const node = new LGraphNode('CLIP Text Encode')
+    graph.add(node)
+    node.addWidget('textarea', 'text', 'a portrait', () => {})
+    useCanvasStore().currentGraph = graph
     const onUpdateModelValue = vi.fn()
     render(GlobalDialog, { global: { plugins: [i18n] } })
     const view = render(WidgetTextarea, {
@@ -413,13 +432,18 @@ describe('WidgetTextarea expand to editor', () => {
           name: 'text',
           ...widgetOverrides
         }),
+        nodeId: node.id,
         nodeTitle: 'CLIP Text Encode',
         modelValue: 'a portrait',
         'onUpdate:modelValue': onUpdateModelValue
       },
-      global: { plugins: [i18n], mocks: { $t: (msg: string) => msg } }
+      global: {
+        plugins: [i18n],
+        mocks: { $t: (msg: string) => msg },
+        provide: { [HideLayoutFieldKey]: inSidePanel }
+      }
     })
-    return { onUpdateModelValue, view }
+    return { node, onUpdateModelValue, view }
   }
 
   async function openEditor() {
@@ -459,6 +483,116 @@ describe('WidgetTextarea expand to editor', () => {
         within(actions).queryByRole('button', { name: 'textEditor.expand' })
       )
     ).toBe(shown)
+  })
+
+  it('reports the dialog arm as exposed when Expand opens the dialog', async () => {
+    const expose = vi.spyOn(usePromptEditorExperimentStore(), 'expose')
+    renderWithDialogHost()
+
+    await openEditor()
+
+    expect(expose).toHaveBeenCalledWith('control')
+  })
+
+  describe('with the dialog arm served', () => {
+    beforeEach(() => {
+      useRemoteConfigStore().acceptConfig(
+        { 'prompt-editor-surface': 'control' },
+        true
+      )
+    })
+
+    afterEach(() => {
+      useRemoteConfigStore().invalidate()
+    })
+
+    it.for([
+      { context: 'app mode', inSidePanel: false, appMode: true },
+      { context: 'the side panel', inSidePanel: true, appMode: false }
+    ])(
+      'leaves the session out of the experiment in $context, where the panel could not open',
+      async ({ inSidePanel, appMode }) => {
+        useCanvasStore().linearMode = appMode
+        renderWithDialogHost({}, { inSidePanel })
+
+        await openEditor()
+
+        expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
+        expect(telemetry.trackPromptEditorOpened).toHaveBeenCalledWith({
+          surface: 'dialog',
+          trigger: 'expand_button'
+        })
+      }
+    )
+  })
+
+  describe('with the panel arm served', () => {
+    beforeEach(() => {
+      useRemoteConfigStore().acceptConfig(
+        { 'prompt-editor-surface': 'panel' },
+        true
+      )
+    })
+
+    afterEach(() => {
+      useRemoteConfigStore().invalidate()
+    })
+
+    it('opens the prompt panel on its node instead of the dialog', async () => {
+      const { node } = renderWithDialogHost()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'textEditor.expand' })
+      )
+
+      expect(usePromptPanelStore().target?.node).toBe(node)
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(telemetry.trackPromptEditorExposure).toHaveBeenCalledWith({
+        variant: 'panel',
+        '$feature/prompt-editor-surface': 'panel'
+      })
+    })
+
+    it('reports no panel exposure when the panel cannot open', async () => {
+      vi.spyOn(usePromptPanelStore(), 'canOpen').mockReturnValue(false)
+      renderWithDialogHost()
+
+      await openEditor()
+
+      expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalledWith(
+        expect.objectContaining({ variant: 'panel' })
+      )
+    })
+
+    it.for([
+      {
+        state: 'app mode',
+        hidePanel: () => (useCanvasStore().linearMode = true)
+      },
+      {
+        state: 'focus mode',
+        hidePanel: () => (usePromptPanelStore().isPanelHidden = true)
+      }
+    ])(
+      'falls back to the dialog in $state without reporting exposure',
+      async ({ hidePanel }) => {
+        hidePanel()
+        renderWithDialogHost()
+
+        await openEditor()
+
+        expect(usePromptPanelStore().isActive).toBe(false)
+        expect(telemetry.trackPromptEditorExposure).not.toHaveBeenCalled()
+      }
+    )
+
+    it('opens the dialog from the side panel, which also lists widgets of nodes inside subgraphs', async () => {
+      renderWithDialogHost({}, { inSidePanel: true })
+
+      await openEditor()
+
+      expect(usePromptPanelStore().isActive).toBe(false)
+    })
   })
 
   it.for([

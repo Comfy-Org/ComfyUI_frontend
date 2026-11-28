@@ -15,9 +15,9 @@ jobs:
       contents: read
       pull-requests: write
       statuses: write
-    uses: Comfy-Org/github-workflows/.github/workflows/telemetry-cost-contract.yml@63c501a0a3646f671e2f35d1a4cb35acfcbbd749
+    uses: Comfy-Org/github-workflows/.github/workflows/telemetry-cost-contract.yml@15deef69ae4a2233bf0cca9f7c90ecaa03934ff7
     with:
-      workflows_ref: 63c501a0a3646f671e2f35d1a4cb35acfcbbd749
+      workflows_ref: 15deef69ae4a2233bf0cca9f7c90ecaa03934ff7
       patterns: |
         \breportError\(
         \b(?:useTelemetry\(\)|telemetry)\??\.trackUiButtonClicked\(

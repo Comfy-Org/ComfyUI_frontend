@@ -45,7 +45,7 @@ assert.match(baselineCss, /\.bg-secondary\s*\{[^}]*var\(--secondary\)/)
 assert.match(baselineCss, /\.icon-\\\[lucide--check\\\]\s*\{/)
 assert.match(baselineCss, /\.z-overlay\s*\{/)
 assert.doesNotMatch(baselineCss, /body\s*\{[^}]*overflow:\s*hidden/)
-assert.doesNotMatch(baselineCss, /#vue-app\s*\{/)
+assert.doesNotMatch(baselineCss, /\.vue-app\s*\{/)
 process.stdout.write(
   'Packed CSS and the baseline compile without Vue, Reka, or VueUse installed.\n'
 )
