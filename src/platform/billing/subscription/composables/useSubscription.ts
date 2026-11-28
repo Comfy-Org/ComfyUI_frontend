@@ -6,41 +6,24 @@ import {
   useEventListener
 } from '@vueuse/core'
 
-import type { BillingPortalTarget } from '@comfyorg/account-core/billing'
-
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
-import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
-import type {
-  CheckoutAttributionMetadata,
-  ResubscribeClickMetadata,
-  SubscriptionSuccessMetadata
-} from '@/platform/telemetry/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError as reportTelemetryError } from '@comfyorg/telemetry/reportError'
+import type { SubscriptionSuccessMetadata } from '@comfyorg/telemetry/types'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import {
-  PaymentPopupBlockedError,
-  categorizeBillingApiError
-} from '@/platform/telemetry/utils/billingFailureCategory'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -49,20 +32,9 @@ import {
   getPendingSubscriptionCheckoutAttempt,
   claimPendingCheckoutTerminal,
   getPendingCheckoutTerminal,
-  hasPendingSubscriptionCheckoutAttempt,
-  persistPendingSubscriptionCheckoutAttempt
+  hasPendingSubscriptionCheckoutAttempt
 } from '@/platform/billing/subscription/utils/subscriptionCheckoutTracker'
-import type { ReportedCheckoutAttemptInput } from '@/platform/billing/subscription/utils/subscriptionCheckoutUtil'
-import {
-  missingCheckoutUrlError,
-  runReportedCheckoutAttempt
-} from '@/platform/billing/subscription/utils/subscriptionCheckoutUtil'
-import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
-import { openBillingUrl } from '@/platform/billing/billingTab'
-
-type CloudSubscriptionCheckoutResponse = NonNullable<
-  operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
->
+import type { BillingStatusReadOptions } from '@/platform/billing/composables/types'
 
 const PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS = [3000, 10000, 30000]
 
@@ -115,11 +87,10 @@ function useSubscriptionInternal() {
 
     return subscriptionStatus.value?.is_active ?? false
   })
-  const { reportError, accessBillingPortalDirect } = useAuthActions()
+  const { reportError } = useAuthActions()
 
   const authStore = useAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
-  const { getFirebaseAuthHeader, fetchWithCustomerRecovery } = authStore
+  const workspaceStore = useWorkspaceIdentity()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -186,22 +157,6 @@ function useSubscriptionInternal() {
       ? t('subscription.tierNameYearly', { name: baseName })
       : baseName
   })
-
-  function buildApiUrl(path: string): string {
-    return `${getComfyApiBaseUrl()}${path}`
-  }
-
-  const getCheckoutAttributionForCloud =
-    async (): Promise<CheckoutAttributionMetadata> => {
-      if (__DISTRIBUTION__ !== 'cloud') {
-        return {}
-      }
-
-      const { getCheckoutAttribution } =
-        await import('@/platform/telemetry/utils/checkoutAttribution')
-
-      return getCheckoutAttribution()
-    }
 
   interface PendingCheckoutSchedule {
     timeoutId: number | null
@@ -477,133 +432,16 @@ function useSubscriptionInternal() {
     stopPendingCheckoutRecovery()
   }
 
-  const buildAuthHeaders = async (): Promise<Record<string, string>> => {
-    const authHeader =
-      (await webSessionResourceHeader()) ?? (await getFirebaseAuthHeader())
-    if (!authHeader) {
-      throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
-
-    return {
-      ...authHeader,
-      'Content-Type': 'application/json'
-    }
-  }
-
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
     reportError
   )
-
-  interface SubscribeDirectOptions {
-    /** Set when this call originates from the resubscribe flow, not a plain subscribe. */
-    operation?: 'resubscribe'
-    /** Click-time source for a resubscribe attempt; carried through to the terminal event. */
-    source?: ResubscribeClickMetadata['source']
-  }
-
-  const getPreviousCycle = (): BillingCycle | undefined => {
-    if (subscriptionDuration.value === 'ANNUAL') return 'yearly'
-    if (subscriptionDuration.value === 'MONTHLY') return 'monthly'
-  }
-
-  const resubscribeAttemptDetails = (
-    options: SubscribeDirectOptions | undefined
-  ) => {
-    if (options?.operation !== 'resubscribe') return {}
-    const previousCancelAt = subscriptionStatus.value
-      ? (subscriptionStatus.value.cancel_at ?? null)
-      : undefined
-
-    return {
-      operation: options.operation,
-      resubscribe_source: options.source,
-      ...(previousCancelAt !== undefined
-        ? { previous_cancel_at: previousCancelAt }
-        : {})
-    }
-  }
-
-  const standardCheckoutAttemptInput = (
-    options: SubscribeDirectOptions | undefined
-  ): ReportedCheckoutAttemptInput => {
-    const previousTier = subscriptionTier.value
-      ? toTierKey(subscriptionTier.value)
-      : null
-
-    return {
-      tier: 'standard',
-      cycle: 'monthly',
-      checkout_type: canAccessSubscriptionFeatures.value ? 'change' : 'new',
-      previous_tier: previousTier ?? undefined,
-      previous_cycle: getPreviousCycle(),
-      ...resubscribeAttemptDetails(options),
-      owner_id: authStore.userId ?? undefined,
-      workspace_id: workspaceStore.activeWorkspaceId
-    }
-  }
-
-  /** Unwrapped `subscribe`, for callers that need rejections to propagate (e.g. telemetry). */
-  const subscribeDirect = (options?: SubscribeDirectOptions): Promise<void> =>
-    runReportedCheckoutAttempt(
-      standardCheckoutAttemptInput(options),
-      async (attempt) => {
-        const response = await initiateSubscriptionCheckout()
-
-        if (!response.checkout_url) throw missingCheckoutUrlError()
-
-        if (!openBillingUrl(response.checkout_url)) {
-          throw new PaymentPopupBlockedError(
-            t('subscription.preview.paymentPopupBlocked')
-          )
-        }
-
-        persistPendingSubscriptionCheckoutAttempt(attempt)
-      }
-    )
-
-  const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
 
   /**
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
    */
   const isSubscriptionEnabled = (): boolean =>
     Boolean(isCloud && window.__CONFIG__?.subscription_required)
-
-  const { startCancellationWatcher, stopCancellationWatcher } =
-    useSubscriptionCancellationWatcher({
-      fetchStatus,
-      canAccessSubscriptionFeatures: canAccessSubscriptionFeatures,
-      subscriptionStatus,
-      telemetry,
-      shouldWatchCancellation: isSubscriptionEnabled
-    })
-
-  const openBillingPortal = async (
-    target: BillingPortalTarget,
-    options?: { cancelSubscription?: boolean }
-  ) => {
-    const portal = createBillingPortalReporter(telemetry, target)
-    let opened: boolean
-    try {
-      opened = await accessBillingPortalDirect(undefined, options)
-    } catch (error) {
-      portal.failed(error, 'legacy')
-      throw error
-    }
-    if (opened) portal.opened('legacy')
-    else portal.blocked('legacy')
-    return opened
-  }
-
-  const manageSubscription = async (options?: {
-    cancelSubscription?: boolean
-  }) => {
-    if (!(await openBillingPortal('manage_subscription', options))) {
-      throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
-    }
-    startCancellationWatcher()
-  }
 
   const handleViewUsageHistory = () => {
     window.open(platformLink('/profile/usage'), '_blank')
@@ -612,10 +450,6 @@ function useSubscriptionInternal() {
   const handleLearnMore = () => {
     window.open('https://docs.comfy.org', '_blank')
   }
-
-  const handleInvoiceHistory = wrapWithErrorHandlingAsync(async () => {
-    await openBillingPortal('invoices')
-  }, reportError)
 
   type PendingCheckoutRecoverySource =
     | 'bootstrap'
@@ -884,18 +718,31 @@ function useSubscriptionInternal() {
     if (inFlightStatusRead?.promise === fetchPromise) inFlightStatusRead = null
   }
 
-  function fetchSubscriptionStatus(): Promise<BillingStatusResponse | null> {
+  const sharedStatusRead = (
+    ownerId: string | null,
+    workspaceId: string | null,
+    pendingAttemptId: string | null
+  ): Promise<BillingStatusResponse | null> | null =>
+    inFlightStatusRead?.ownerId === ownerId &&
+    inFlightStatusRead.workspaceId === workspaceId &&
+    inFlightStatusRead.pendingAttemptId === pendingAttemptId
+      ? inFlightStatusRead.promise
+      : null
+
+  function fetchSubscriptionStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<BillingStatusResponse | null> {
     const ownerId = authStore.userId ?? null
     const workspaceId = workspaceStore.activeWorkspaceId
     const pendingAttemptId =
       getPendingSubscriptionCheckoutAttempt()?.attempt_id ?? null
     observeStatusScope(ownerId, workspaceId)
-    if (
-      inFlightStatusRead?.ownerId === ownerId &&
-      inFlightStatusRead.workspaceId === workspaceId &&
-      inFlightStatusRead.pendingAttemptId === pendingAttemptId
-    ) {
-      return inFlightStatusRead.promise
+    const shared = sharedStatusRead(ownerId, workspaceId, pendingAttemptId)
+    if (shared) {
+      if (!options?.fresh) return shared
+      return shared
+        .catch(() => null)
+        .then(() => fetchSubscriptionStatus(options))
     }
 
     const sequence = ++nextStatusFetchSequence
@@ -932,7 +779,7 @@ function useSubscriptionInternal() {
     try {
       const status = rail
         ? await readOnRail(rail.readStatus, 'getBillingStatus')
-        : await workspaceApi.getBillingStatus()
+        : await billingApi.getBillingStatus()
       return status
     } catch (error) {
       const status =
@@ -967,7 +814,7 @@ function useSubscriptionInternal() {
       )
     )
       return null
-    publishSubscriptionStatus(statusData, workspaceId)
+    publishSubscriptionStatus(statusData)
 
     return statusData
   }
@@ -989,19 +836,10 @@ function useSubscriptionInternal() {
     )
   }
 
-  function publishSubscriptionStatus(
-    statusData: BillingStatusResponse,
-    workspaceId: string | null
-  ): void {
+  function publishSubscriptionStatus(statusData: BillingStatusResponse): void {
     // Only a current, publishable read proves billing is reachable.
     lastPendingCheckoutStatus = statusData
     subscriptionStatus.value = statusData
-    if (workspaceId && statusData.billing_rail) {
-      workspaceStore.setWorkspaceBillingRail(
-        workspaceId,
-        statusData.billing_rail
-      )
-    }
     syncPendingSubscriptionSuccess(statusData)
   }
 
@@ -1067,40 +905,11 @@ function useSubscriptionInternal() {
         subscriptionStatus.value = null
         clearPendingSubscriptionCheckoutAttempt()
         stopPendingCheckoutRecovery()
-        stopCancellationWatcher()
         isInitialized.value = true
       }
     },
     { immediate: true }
   )
-
-  const initiateSubscriptionCheckout =
-    async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const headers = await buildAuthHeaders()
-      const checkoutAttribution = await getCheckoutAttributionForCloud()
-
-      const response = await fetchWithCustomerRecovery(
-        buildApiUrl('/customers/cloud-subscription-checkout'),
-        {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(checkoutAttribution)
-        }
-      )
-
-      if (!response.ok) {
-        const { message, code } = await parseErrorResponse(response)
-        throw new AuthStoreError(
-          t('toastMessages.failedToInitiateSubscription', {
-            error: message
-          }),
-          response.status,
-          code
-        )
-      }
-
-      return response.json()
-    }
 
   return {
     // State
@@ -1120,14 +929,10 @@ function useSubscriptionInternal() {
     isSubscriptionEnabled,
 
     // Actions
-    subscribe,
-    subscribeDirect,
     fetchStatus,
     fetchStatusDirect: fetchSubscriptionStatus,
-    manageSubscription,
     handleViewUsageHistory,
-    handleLearnMore,
-    handleInvoiceHistory
+    handleLearnMore
   }
 }
 

@@ -7,10 +7,10 @@ import { nextTick } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { testI18n } from '@/utils/__tests__/testI18n'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import KeybindingPanel from './KeybindingPanel.vue'
 
@@ -69,7 +69,9 @@ function renderPanel() {
 
 async function waitForSearchAutofocus() {
   await waitFor(() =>
-    expect(screen.getByPlaceholderText('Search Keybindings...')).toHaveFocus()
+    expect(
+      screen.getByRole('combobox', { name: 'Search Keybindings...' })
+    ).toHaveFocus()
   )
 }
 

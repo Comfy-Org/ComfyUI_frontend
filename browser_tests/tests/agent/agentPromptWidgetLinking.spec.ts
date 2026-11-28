@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 // Three stories of qa/user-story-test-matrix.md (in-app-agent-program), all
 // about the same slot -- a prompt widget that also accepts a wire:
@@ -82,6 +83,24 @@ function renderedLinks(page: {
   )
 }
 
+function liveInputSlot(
+  page: { evaluate: <T, A>(fn: (arg: A) => T, arg: A) => Promise<T> },
+  nodeId: string,
+  inputName: string
+): Promise<number> {
+  return page.evaluate(
+    ({ nodeId, inputName }) => {
+      const node = window.app!.graph.getNodeById(nodeId as NodeId)
+      const slot = node?.inputs.findIndex((input) => input.name === inputName)
+      if (slot === undefined || slot < 0) {
+        throw new Error(`Input ${inputName} is missing from node ${nodeId}`)
+      }
+      return slot
+    },
+    { nodeId, inputName }
+  )
+}
+
 test.describe(
   'Wiring a text output into a prompt widget',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -96,6 +115,12 @@ test.describe(
 
       await test.step('replay the recorded turn so the follower is bound', () =>
         agentConversation.runTurns())
+
+      const promptTextSlot = await liveInputSlot(
+        page,
+        PROMPT_NODE_ID,
+        PROMPT_WIDGET
+      )
 
       const promptNode =
         agentConversation.vueNodes.getNodeLocator(PROMPT_NODE_ID)
@@ -134,7 +159,7 @@ test.describe(
             fromNode: String(STRING_SOURCE_ID),
             fromSlot: 0,
             toNode: PROMPT_NODE_ID,
-            toSlot: PROMPT_TEXT_SLOT
+            toSlot: promptTextSlot
           })
       })
 
@@ -143,7 +168,7 @@ test.describe(
         await expect(
           agentConversation.vueNodes.getInputSlotConnectionDot(
             PROMPT_NODE_ID,
-            PROMPT_TEXT_SLOT
+            promptTextSlot
           )
         ).toBeVisible()
         await expect(
@@ -160,6 +185,12 @@ test.describe(
 
       await test.step('replay the recorded turn so the follower is bound', () =>
         agentConversation.runTurns())
+
+      const promptTextSlot = await liveInputSlot(
+        page,
+        PROMPT_NODE_ID,
+        PROMPT_WIDGET
+      )
 
       const before = await renderedLinks(page)
 
@@ -192,7 +223,7 @@ test.describe(
         expect(
           after.filter(
             (link) =>
-              link.toNode === PROMPT_NODE_ID && link.toSlot === PROMPT_TEXT_SLOT
+              link.toNode === PROMPT_NODE_ID && link.toSlot === promptTextSlot
           ),
           'an IMAGE output must not land on a STRING prompt input'
         ).toEqual([])

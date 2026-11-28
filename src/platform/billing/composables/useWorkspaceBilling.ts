@@ -17,8 +17,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/billing/subscription/composables/useBillingPlans'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
@@ -28,11 +28,9 @@ import type {
   PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SubscribeOptions
-} from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { openHostedBillingTabOutcome } from '@/platform/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
@@ -49,13 +47,14 @@ import { useBillingReadRail } from '@/platform/billing/composables/useBillingRea
 import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { subscribeInputFrom } from '@/platform/billing/subscribeInput'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 import type {
   BalanceInfo,
   BillingActions,
   BillingPortalOutcome,
   BillingState,
+  BillingStatusReadOptions,
   SubscriptionInfo
 } from '@/platform/billing/composables/types'
 
@@ -204,15 +203,17 @@ export type WorkspaceBilling = BillingState &
 export function useWorkspaceBilling(): WorkspaceBilling {
   const billingPlans = useBillingPlans()
   const billingOperationStore = useBillingOperationStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
   const telemetry = useTelemetry()
   const { flags } = useFeatureFlags()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const lastBalanceReadFailed = ref(false)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
+  const statusReadAuthoritative = ref(true)
   let adoption: Promise<boolean> = Promise.resolve(false)
   const seatCapacity = shallowRef<SeatCapacity | null>(null)
   const balanceData = shallowRef<BillingBalanceResponse | null>(null)
@@ -238,11 +239,14 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       scheduledChange: status.scheduled_change ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
+      endedAt: status.ended_at,
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
         status.scoped_effective_has_funds?.agent ?? status.has_funds,
-      agentScopedHasFunds: status.scoped_has_funds?.agent
+      agentScopedHasFunds: status.scoped_has_funds?.agent,
+      agentScopedHasFundsAuthoritative:
+        statusReadAuthoritative.value && status.billing_rail !== undefined
     }
   })
 
@@ -258,7 +262,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
+      cloudCreditDisplayBalanceCents: data.cloud_credit_display_balance_cents,
       suggestedTopupAmountCents: data.suggested_topup_amount_cents,
+      minTopupCents: data.min_topup_cents,
+      minTopupCredits: data.min_topup_credits,
+      maxTopupCents: data.max_topup_cents,
+      maxTopupCredits: data.max_topup_credits,
       lowBalance: data.low_balance
     }
   })
@@ -275,12 +284,24 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const renewalInvoice = computed(
     () => statusData.value?.renewal_invoice ?? null
   )
+  const periodCreditGrant = computed(
+    () => statusData.value?.period_credit_grant ?? null
+  )
+  const nextCreditRefillAt = computed(
+    () => statusData.value?.next_credit_refill_at ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
   const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const subscriptionPaymentRecovery = computed(
+    () => billingPlans.subscriptionPaymentRecovery.value
+  )
+  const statusPaymentRecovery = computed(
+    () => statusData.value?.subscription_payment_recovery ?? null
+  )
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
@@ -317,24 +338,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  /**
-   * Whether the rail that issues this kind of operation is the one that owns a
-   * pending one at load. Adopting on the other rail is what makes a mid-session
-   * flag flip ambiguous: the operation's writes went one way and its poller the
-   * other.
-   *
-   * A server predating `pending_billing_op_type` only ever had subscriptions to
-   * hand back, so it follows the subscription rail — the same reading
-   * `resumeModeFor` takes of an absent field.
-   */
-  function railOwnsResume(
-    type: BillingStatusResponse['pending_billing_op_type']
-  ): boolean {
-    return type === 'topup'
-      ? flags.billingSdkTopupRailEnabled
-      : flags.billingSdkSubscriptionRailEnabled
-  }
-
   async function resumePendingOperation(
     status: BillingStatusResponse
   ): Promise<boolean> {
@@ -342,7 +345,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (billingOperationStore.getOperation(status.pending_billing_op_id)) {
       return true
     }
-    if (railOwnsResume(status.pending_billing_op_type)) {
+    if (flags.billingSdkRailEnabled) {
       return useBillingSdkStore()
         .recover()
         .catch(() => false)
@@ -356,12 +359,13 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return true
   }
 
-  function isStaleStatusRead(
+  function isStaleBillingRead(
+    billingResource: keyof typeof latestBillingReadIds,
     requestId: number,
     workspaceId: string | undefined
   ): boolean {
     return (
-      requestId !== latestBillingReadIds.status ||
+      requestId !== latestBillingReadIds[billingResource] ||
       workspaceId !== workspaceStore.activeWorkspace?.id
     )
   }
@@ -371,7 +375,16 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     return adoption
   }
 
-  async function fetchStatus(): Promise<void> {
+  function adoptStatus(status: BillingStatusResponse): void {
+    seatCapacity.value = seatCapacityFrom(status)
+    statusData.value = status
+    statusReadAuthoritative.value = true
+    adoption = resumePendingOperation(status)
+  }
+
+  async function fetchStatusFresh(
+    options?: BillingStatusReadOptions
+  ): Promise<boolean> {
     adoption = Promise.resolve(false)
     const requestId = ++latestBillingReadIds.status
     const workspaceId = workspaceStore.activeWorkspace?.id
@@ -380,19 +393,19 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus, 'getBillingStatus')
-        : await workspaceApi.getBillingStatus()
-      if (status === undefined || isStaleStatusRead(requestId, workspaceId))
-        return
+        ? await readOnRail(() => rail.readStatus(options), 'getBillingStatus')
+        : await billingApi.getBillingStatus()
+      if (
+        status === undefined ||
+        isStaleBillingRead('status', requestId, workspaceId)
+      )
+        return false
 
-      seatCapacity.value = seatCapacityFrom(status)
-      statusData.value = status
-      if (workspaceId && status.billing_rail) {
-        workspaceStore.setWorkspaceBillingRail(workspaceId, status.billing_rail)
-      }
-      adoption = resumePendingOperation(status)
+      adoptStatus(status)
+      return true
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
+        statusReadAuthoritative.value = false
         error.value =
           err instanceof Error ? err.message : 'Failed to fetch billing status'
       }
@@ -402,23 +415,36 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  async function fetchBalance(): Promise<void> {
+  async function fetchStatus(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
+    await fetchStatusFresh(options)
+  }
+
+  async function fetchBalance(
+    options?: BillingStatusReadOptions
+  ): Promise<void> {
     const requestId = ++latestBillingReadIds.balance
+    const workspaceId = workspaceStore.activeWorkspace?.id
     const rail: BillingReadRail | null = useBillingReadRail()
     isLoading.value = true
     error.value = null
     try {
       const balance = rail
-        ? await readOnRail(rail.readBalance, 'getBillingBalance')
-        : await workspaceApi.getBillingBalance()
-      if (balance !== undefined && requestId === latestBillingReadIds.balance) {
+        ? await readOnRail(() => rail.readBalance(options), 'getBillingBalance')
+        : await billingApi.getBillingBalance()
+      if (
+        balance !== undefined &&
+        !isStaleBillingRead('balance', requestId, workspaceId)
+      ) {
         balanceData.value = balance
+        lastBalanceReadFailed.value = false
       }
     } catch (err) {
-      if (requestId === latestBillingReadIds.balance) {
-        error.value =
-          err instanceof Error ? err.message : 'Failed to fetch balance'
-      }
+      if (isStaleBillingRead('balance', requestId, workspaceId)) return
+      lastBalanceReadFailed.value = true
+      error.value =
+        err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
     } finally {
       if (requestId === latestBillingReadIds.balance) isLoading.value = false
@@ -509,7 +535,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.subscribe(planSlug, options)
+      const response = await billingApi.subscribe(planSlug, options)
       isLoading.value = false
       void reconcileBillingStateAfterSubscribe()
       return response
@@ -535,7 +561,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.previewSubscribe(planSlug, options)
+      return await billingApi.previewSubscribe(planSlug, options)
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to preview subscription'
@@ -619,7 +645,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const returnUrl = window.location.href
-      const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
+      const response = await billingApi.getPaymentPortalUrl(returnUrl)
       return { url: response.url || undefined, billingClient: 'legacy' }
     } catch (err) {
       error.value =
@@ -730,7 +756,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     // Once set, the poller (billingOperationStore) owns failure telemetry; until then, this must report it.
     let billingOpId: string | undefined
     try {
-      const response = await workspaceApi.cancelSubscription()
+      const response = await billingApi.cancelSubscription()
       billingOpId = response.billing_op_id
       const operation = await billingOperationStore.startOperation(
         billingOpId,
@@ -780,7 +806,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      const response = await workspaceApi.resubscribe()
+      const response = await billingApi.resubscribe()
       await Promise.allSettled([fetchStatus(), fetchBalance()])
       // A pending resubscribe (e.g. SCA/3DS re-authentication) isn't done
       // yet: wait for the tracked billing op to actually resolve instead of
@@ -822,7 +848,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isLoading.value = true
     error.value = null
     try {
-      return await workspaceApi.createTopup(amountCents, crypto.randomUUID())
+      return await billingApi.createTopup(amountCents, crypto.randomUUID())
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to top up credits'
@@ -853,11 +879,14 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
+    statusPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
     isLoading,
     error,
+    balanceReadFailed: computed(() => lastBalanceReadFailed.value),
     canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,
@@ -866,11 +895,14 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     tier,
     renewalDate,
     renewalInvoice,
+    periodCreditGrant,
+    nextCreditRefillAt,
     readAndAdoptPendingOperation,
 
     // Actions
     initialize,
     fetchStatus,
+    fetchStatusFresh,
     fetchBalance,
     subscribe,
     previewSubscribe,

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('./reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 

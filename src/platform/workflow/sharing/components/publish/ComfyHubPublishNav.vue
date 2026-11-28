@@ -21,9 +21,8 @@
             cn(
               'h-10 w-full justify-start rounded-lg px-4 py-3 text-left',
               isCurrentStep(step.name) &&
-                !(isProfileCreationFlow && step.name === 'finish')
-                ? 'bg-muted'
-                : 'hover:bg-accent'
+                !(isProfileCreationFlow && step.name === 'finish') &&
+                'bg-muted'
             )
           "
           @click="$emit('stepClick', step.name)"
@@ -35,7 +34,7 @@
               cn(
                 'size-5 border bg-transparent text-xs font-bold',
                 isCurrentStep(step.name)
-                  ? 'border-foreground bg-foreground text-background'
+                  ? 'border-foreground bg-foreground'
                   : isCompletedStep(step.name)
                     ? 'border-foreground text-foreground'
                     : 'border-muted-foreground text-muted-foreground'
@@ -68,8 +67,8 @@ import { computed } from 'vue'
 
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'

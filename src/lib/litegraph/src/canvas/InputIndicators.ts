@@ -1,4 +1,4 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import { isMiddleButtonHeld } from '@/base/pointerUtils'
 
 /**

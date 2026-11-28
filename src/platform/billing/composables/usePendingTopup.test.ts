@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AuditLog } from '@/services/customerEventsService'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 
 import { usePendingTopup } from './usePendingTopup'
 
@@ -74,6 +74,35 @@ describe('usePendingTopup', () => {
         consumeCompletedTopup([creditAddedEvent(Date.now() + 1000)])
       ).toEqual({ startedAtMs })
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    })
+
+    it('treats a topup_completed event like credit_added', () => {
+      const startedAtMs = Date.now() - 30_000
+      localStorage.setItem(STORAGE_KEY, String(startedAtMs))
+      const { consumeCompletedTopup } = usePendingTopup()
+      expect(
+        consumeCompletedTopup([
+          {
+            event_type: 'topup_completed',
+            createdAt: new Date(Date.now() + 1000).toISOString()
+          }
+        ])
+      ).toEqual({ startedAtMs })
+      expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
+    })
+
+    it('returns no completion while the marker cannot be removed, so one top-up is reported once', () => {
+      const startedAtMs = Date.now() - 30_000
+      localStorage.setItem(STORAGE_KEY, String(startedAtMs))
+      const { consumeCompletedTopup } = usePendingTopup()
+      vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+      const events = [creditAddedEvent(Date.now() + 1000)]
+
+      expect(consumeCompletedTopup(events)).toBeNull()
+      expect(consumeCompletedTopup(events)).toBeNull()
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(String(startedAtMs))
     })
 
     it('ignores credit events that predate tracking', () => {

@@ -38,6 +38,7 @@ const canvasActions = vi.mockObject<
     | 'deleteSelected'
     | 'emitAfterChange'
     | 'emitBeforeChange'
+    | 'finalizeGhostPlacement'
     | 'getWidgetAtCursor'
     | 'pasteFromClipboard'
     | 'processMouseDown'
@@ -69,6 +70,7 @@ const canvasActions = vi.mockObject<
     processMouseWheel() {},
     emitBeforeChange() {},
     emitAfterChange() {},
+    finalizeGhostPlacement() {},
     getWidgetAtCursor: () => undefined
   },
   { spy: true }
@@ -78,10 +80,13 @@ const actions = vi.mockObject<
   Pick<
     RealComfyApp,
     | 'clean'
+    | 'fetchNodeDefs'
+    | 'getNodeDefs'
     | 'getPreviewFormatParam'
     | 'getRandParam'
     | 'graphToPrompt'
     | 'handleFile'
+    | 'hasPendingCamera'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -89,6 +94,7 @@ const actions = vi.mockObject<
     | 'refreshMissingModels'
     | 'registerExtension'
     | 'registerNodeDef'
+    | 'reloadNodeDefs'
     | 'setup'
     | 'showErrorOnFileLoad'
   >
@@ -105,16 +111,28 @@ const actions = vi.mockObject<
       assert.fail('Configure app.graphToPrompt for this test')
     },
     registerExtension() {},
+    async getNodeDefs() {
+      return {}
+    },
+    async fetchNodeDefs() {
+      return { ok: true, defs: {} }
+    },
     async registerNodeDef() {},
+    async reloadNodeDefs() {
+      return true
+    },
     async refreshMissingModels() {
       assert.fail('Configure app.refreshMissingModels for this test')
     },
-    async refreshComboInNodes() {},
+    async refreshComboInNodes() {
+      return true
+    },
     clean() {},
     openClipspace() {},
     getPreviewFormatParam: () => '',
     getRandParam: () => '',
     async handleFile() {},
+    hasPendingCamera: () => false,
     showErrorOnFileLoad() {}
   },
   { spy: true }
@@ -148,12 +166,14 @@ const uiActions: Pick<RealComfyApp['ui'], 'restoreMenuPosition'> = {
 }
 
 type AppState = {
-  -readonly [K in
-    | 'configuringGraph'
-    | 'lastExecutionError'
-    | 'nodeOutputs'
-    | 'nodePreviewImages'
-    | 'vueAppReady']: RealComfyApp[K]
+  -readonly [
+    K in
+      | 'configuringGraph'
+      | 'lastExecutionError'
+      | 'nodeOutputs'
+      | 'nodePreviewImages'
+      | 'vueAppReady'
+  ]: RealComfyApp[K]
 } & {
   rootGraph: ShallowRef<RealComfyApp['rootGraphOrUndefined']>
   canvas: Canvas
@@ -258,6 +278,12 @@ export const app = {
   get isGraphReady() {
     return state().rootGraph.value !== undefined
   },
+  createRootGraph: vi.fn(() => new LGraph()),
+  enqueueGraphLoad: vi.fn(<T>(operation: () => Promise<T>) => operation()),
+  activateRootGraph: vi.fn((graph: LGraph) => {
+    state().rootGraph.value = graph
+    state().canvas.setGraph(graph)
+  }),
   get nodeOutputs() {
     return state().nodeOutputs
   },

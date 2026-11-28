@@ -1,21 +1,40 @@
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent, nextTick } from 'vue'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useNewUserService } from '@/services/useNewUserService'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
+import { blankGraph } from '@/scripts/defaultGraph'
+import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import '@/scripts/changeTracker'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 
 const apiEvents: EventTarget = api
+
+function draftScope(subject: string, workspaceId: string): string {
+  return `${encodeURIComponent(subject)}:${workspaceId}`
+}
 
 vi.mock(
   import('@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'),
@@ -45,6 +64,23 @@ vi.mock(
       loadTemplateFromUrl: vi.fn()
     })
   })
+)
+
+const workflowLinkUrlLoader = vi.hoisted(() => ({
+  openWorkflowLinkFromUrl: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasLinkInFlight: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
+  >(() => false)
+}))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
+  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
 )
 
 const folderWorkflowsUrlLoader = vi.hoisted(() => ({
@@ -100,7 +136,11 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
 vi.mock<unknown>(
   import('@/platform/navigation/preservedQueryNamespaces'),
   () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
+    PRESERVED_QUERY_NAMESPACES: {
+      TEMPLATE: 'template',
+      SHARE: 'share',
+      LOCAL_HANDOFF: 'local_handoff'
+    }
   })
 )
 
@@ -135,11 +175,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
+  useWorkflowStore().provideChangeTracker(ChangeTracker)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  openWorkflowMock.mockResolvedValue(true)
 })
 
 describe('useWorkflowPersistenceV2', () => {
@@ -149,6 +192,7 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
+    storageIO.resetStorageAvailable()
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
@@ -157,6 +201,7 @@ describe('useWorkflowPersistenceV2', () => {
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
     distributionMocks.isCloud = false
+    vi.mocked(useCurrentUser()).isAuthInitialized = computed(() => true)
     Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
   })
@@ -257,6 +302,32 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   describe('loadPreviousWorkflowFromStorage', () => {
+    it('waits for cloud authentication before restoring a workflow', async () => {
+      distributionMocks.isCloud = true
+      const authInitialized = ref(false)
+      vi.mocked(useCurrentUser()).isAuthInitialized = computed(
+        () => authInitialized.value
+      )
+      const loadWorkflowsSpy = vi
+        .spyOn(useWorkflowStore(), 'loadWorkflows')
+        .mockResolvedValue()
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      const pending = initializeWorkflow()
+      await Promise.resolve()
+
+      expect(loadWorkflowsSpy).not.toHaveBeenCalled()
+
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      authInitialized.value = true
+      await nextTick()
+      await pending
+
+      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+    })
+
     it('does not restore the active workflow early when open tab state exists', async () => {
       const workflowStore = useWorkflowStore()
       vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
@@ -285,16 +356,16 @@ describe('useWorkflowPersistenceV2', () => {
       const { initializeWorkflow } = mountWorkflowPersistence()
       const pending = initializeWorkflow()
 
-      await Promise.resolve()
-
-      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+      await vi.waitFor(() => expect(loadWorkflowsSpy).toHaveBeenCalledOnce())
       expect(openWorkflowMock).not.toHaveBeenCalled()
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
 
       gate.resolve()
       await pending
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow, {
+        isCurrent: expect.any(Function)
+      })
     })
 
     it('loads saved workflow when draft is missing for session path', async () => {
@@ -309,9 +380,31 @@ describe('useWorkflowPersistenceV2', () => {
       await initializeWorkflow()
 
       // Should call workflowService.openWorkflow with the saved workflow
-      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow)
+      expect(openWorkflowMock).toHaveBeenCalledWith(savedWorkflow, {
+        isCurrent: expect.any(Function)
+      })
       // Should NOT fall through to loadGraphData (fallbackToLatestDraft)
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the latest draft when the session workflow does not open', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('Unreadable.json')
+      writeActivePath(savedWorkflow.path)
+      openWorkflowMock.mockResolvedValue(false)
+      const draftStore = useWorkflowDraftStoreV2()
+      const fallback = vi
+        .spyOn(draftStore, 'loadPersistedWorkflow')
+        .mockResolvedValue(false)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      const outcome = await initializeWorkflow()
+
+      expect(fallback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fallbackToLatestDraft: true })
+      )
+      expect(outcome).not.toBe('restored')
     })
 
     it('prefers draft over saved workflow when draft exists', async () => {
@@ -360,6 +453,60 @@ describe('useWorkflowPersistenceV2', () => {
   })
 
   describe('restoreWorkflowTabsState', () => {
+    it('waits for cloud authentication before restoring tabs', async () => {
+      distributionMocks.isCloud = true
+      const authInitialized = ref(false)
+      vi.mocked(useCurrentUser()).isAuthInitialized = computed(
+        () => authInitialized.value
+      )
+      const loadWorkflowsSpy = vi
+        .spyOn(useWorkflowStore(), 'loadWorkflows')
+        .mockResolvedValue()
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      const pending = restoreWorkflowTabsState()
+      await Promise.resolve()
+
+      expect(loadWorkflowsSpy).not.toHaveBeenCalled()
+
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      authInitialized.value = true
+      await nextTick()
+      await pending
+
+      expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
+    })
+
+    it('drops unreachable unscoped drafts after the new-user check', async () => {
+      distributionMocks.isCloud = true
+      const newUserService = useNewUserService()
+      newUserService.reset()
+      localStorage.setItem('Comfy.Workflow.Draft.v2:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+
+      mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        '{}'
+      )
+
+      await newUserService.initializeIfNewUser()
+      await nextTick()
+
+      expect(localStorage.getItem('Comfy.Workflow.Draft.v2:personal:abc')).toBe(
+        null
+      )
+      expect(
+        localStorage.getItem('Comfy.Workflow.Draft.v2:user-a:personal:abc')
+      ).toBe('{}')
+    })
+
     it('waits for workflow metadata before restoring tab pointers', async () => {
       const workflowStore = useWorkflowStore()
       const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
@@ -378,10 +525,49 @@ describe('useWorkflowPersistenceV2', () => {
       expect(loadWorkflowsSpy).toHaveBeenCalledOnce()
       expect(openWorkflowMock).not.toHaveBeenCalled()
 
+      expect(workflowStore.tabsRestored).toBe(false)
+
       gate.resolve()
       await pending
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+      expect(workflowStore.tabsRestored).toBe(true)
+    })
+
+    it('does not open the previous account tabs after a switch during metadata loading', async () => {
+      distributionMocks.isCloud = true
+      Object.assign(useTeamWorkspaceStore(), {
+        initState: 'ready',
+        activeWorkspaceId: 'personal'
+      })
+      const workflowStore = useWorkflowStore()
+      const loadWorkflowsSpy = vi.spyOn(workflowStore, 'loadWorkflows')
+      const accountAWorkflow = workflowStore.createTemporary('AccountA.json')
+      localStorage.setItem(
+        StorageKeys.lastOpenPaths('personal'),
+        JSON.stringify({
+          workspaceId: 'personal',
+          paths: [accountAWorkflow.path],
+          activeIndex: 0
+        })
+      )
+      const gate = createDeferred()
+      loadWorkflowsSpy.mockReturnValue(gate.promise)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+        .calls[0][0]
+      onUserResolved({ id: 'user-a' })
+      const pending = restoreWorkflowTabsState()
+      await vi.waitFor(() => expect(loadWorkflowsSpy).toHaveBeenCalledOnce())
+
+      onUserResolved({ id: 'user-b' })
+      gate.resolve()
+      await pending
+      await vi.runAllTimersAsync()
+      localStorage.removeItem(StorageKeys.lastOpenPaths('personal'))
+
+      expect(openWorkflowMock).not.toHaveBeenCalled()
     })
 
     it('falls back to the default workflow when metadata loading fails', async () => {
@@ -396,6 +582,7 @@ describe('useWorkflowPersistenceV2', () => {
 
       expect(loadBlankWorkflowMock).toHaveBeenCalled()
       expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(workflowStore.tabsRestored).toBe(true)
     })
 
     it('activates the correct workflow at storedActiveIndex', async () => {
@@ -423,6 +610,116 @@ describe('useWorkflowPersistenceV2', () => {
       await restoreWorkflowTabsState()
 
       expect(openWorkflowMock).toHaveBeenCalledWith(workflowB)
+    })
+
+    it('keeps the draft of an unsaved background tab when it is first loaded', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const draftPath = 'workflows/Background.json'
+      const draftGraph = JSON.stringify({
+        ...blankGraph,
+        id: '6f1e9a2b-3c4d-4e5f-8a9b-0c1d2e3f4a5b',
+        extra: { a: 1 }
+      })
+      draftStore.saveDraft(draftPath, draftGraph, {
+        name: 'Background.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState([draftPath, active.path], 1)
+      vi.advanceTimersByTime(60_000)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+      const background = workflowStore.getWorkflowByPath(draftPath)
+      expect(background?.isLoaded).toBe(false)
+
+      await background!.load()
+
+      expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
+    })
+
+    it.for([
+      ['no id', {}],
+      ['a legacy id', { id: 'legacy-workflow-id' }]
+    ] as const)(
+      'keeps the draft of an unsaved background tab with %s when it is first loaded',
+      async ([, idFields]) => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const workflowStore = useWorkflowStore()
+        vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+        const draftStore = useWorkflowDraftStoreV2()
+        const draftPath = 'workflows/Background.json'
+        draftStore.saveDraft(
+          draftPath,
+          JSON.stringify({ ...blankGraph, ...idFields, extra: { a: 1 } }),
+          { name: 'Background.json', isTemporary: true }
+        )
+        const stored = draftStore.getDraft(draftPath)
+        const active = workflowStore.createTemporary('Active.json')
+        writeTabState([draftPath, active.path], 1)
+        vi.advanceTimersByTime(60_000)
+
+        const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+        await restoreWorkflowTabsState()
+        const background = workflowStore.getWorkflowByPath(draftPath)
+        expect(background?.isLoaded).toBe(false)
+        expect(draftStore.getDraft(draftPath)).toMatchObject({
+          data: stored!.data,
+          updatedAt: stored!.updatedAt
+        })
+
+        await background!.load()
+
+        expect(JSON.parse(draftStore.getDraft(draftPath)!.data).extra).toEqual({
+          a: 1
+        })
+        expect(background!.activeState?.extra).toEqual({ a: 1 })
+        const tabId = background!.initialState?.id
+        expect(isValidUuid(tabId)).toBe(true)
+        expect(background!.activeState?.id).toBe(tabId)
+      }
+    )
+
+    it('leaves a reused workflow outside the workflows folder unstamped', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const draftStore = useWorkflowDraftStoreV2()
+      const id = '7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
+      const graph = { ...blankGraph, id }
+      const outside = new ComfyWorkflow({
+        path: 'templates/Shared.json',
+        modified: Date.now(),
+        size: -1
+      })
+      outside.originalContent = outside.content = JSON.stringify(graph)
+      await outside.load()
+      workflowStore.attachWorkflow(outside)
+      const outsideModified = outside.lastModified
+      vi.advanceTimersByTime(60_000)
+      draftStore.saveDraft('workflows/Shared.json', JSON.stringify(graph), {
+        name: 'Shared.json',
+        isTemporary: true
+      })
+      const active = workflowStore.createTemporary('Active.json')
+      writeTabState(['workflows/Shared.json', active.path], 1)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      expect(outside.lastModified).toBe(outsideModified)
     })
 
     it('activates first tab when storedActiveIndex is 0', async () => {
@@ -642,6 +939,77 @@ describe('useWorkflowPersistenceV2', () => {
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
       }
     )
+
+    it.for(
+      [
+        {
+          name: 'local handoff param in URL',
+          applyIntent: () => (routeMocks.query = { from_local: 'nonce' })
+        },
+        {
+          name: 'local handoff preserved across the sign-in redirect',
+          applyIntent: () =>
+            (preservedQueryMocks.payloads.local_handoff = {
+              from_local: 'nonce'
+            })
+        }
+      ].flatMap((intent) => [
+        { ...intent, openOnCloudEnabled: true, outcome: 'url-intent' },
+        { ...intent, openOnCloudEnabled: false, outcome: 'fresh' }
+      ])
+    )(
+      'reports $outcome with $name while Open on Cloud is $openOnCloudEnabled',
+      async ({ applyIntent, openOnCloudEnabled, outcome }) => {
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
+        applyIntent()
+
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await expect(initializeWorkflow()).resolves.toBe(outcome)
+      }
+    )
+  })
+
+  describe('a workflow-id link', () => {
+    it('defers Getting Started while a workflow-id link waits for navigation', async () => {
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow()
+      ).resolves.toBe('url-intent')
+    })
+
+    it.for(['opened', 'failed', 'pending'] as const)(
+      'does not fall back to a folder when the workflow-id link result is %s',
+      async (status) => {
+        workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue(status)
+        vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await initializeWorkflow()
+
+        expect(
+          folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps restored tabs behind the linked workflow without replacing the active tab', async () => {
+      const store = useWorkflowStore()
+      vi.spyOn(store, 'loadWorkflows').mockResolvedValue()
+      const previous = store.createTemporary('Previous.json')
+      writeTabState([previous.path], 0)
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(store.openWorkflows).toEqual([previous])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('a link that names a workflows folder', () => {
@@ -692,33 +1060,143 @@ describe('useWorkflowPersistenceV2', () => {
       const { initializeWorkflow } = mountWorkflowPersistence()
       await initializeWorkflow()
 
-      expect(openWorkflowMock).toHaveBeenCalledWith(lastWorkflow)
+      expect(openWorkflowMock).toHaveBeenCalledWith(lastWorkflow, {
+        isCurrent: expect.any(Function)
+      })
     })
   })
 
-  it('flushes a pending workflow edit when the page is unloaded', async () => {
+  it.for([false, true])(
+    'flushes a pending draft with preview active: %s',
+    async (hasPreview) => {
+      const workflowStore = useWorkflowStore()
+      const workflow = await workflowStore.createTemporary('Draft.json').load()
+      workflowStore.activeWorkflow = workflow
+      mountWorkflowPersistence()
+      await nextTick()
+
+      const finishPreview = hasPreview
+        ? workflow.changeTracker.beginPreview(() => {})
+        : undefined
+      workflow.changeTracker.activeState = {
+        ...blankGraph,
+        extra: { marker: 'final-edit' }
+      }
+      apiEvents.dispatchEvent(new Event('graphChanged'))
+      mocks.state.currentGraph = { ...blankGraph, extra: { marker: 'live' } }
+
+      const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+      expect(localStorage.getItem(payloadKey)).toBeNull()
+
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+      finishPreview?.()
+
+      const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+      expect(JSON.parse(payload.data)).toEqual({
+        ...blankGraph,
+        extra: { marker: hasPreview ? 'final-edit' : 'live' }
+      })
+    }
+  )
+
+  it('keeps the last saved edit after an index write fails during a newer edit', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     await nextTick()
 
+    const firstEdit = { ...blankGraph, extra: { marker: 1 } }
+    mocks.state.currentGraph = firstEdit
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    const indexKey = StorageKeys.draftIndex('personal')
+    const realSetItem = localStorage.setItem.bind(localStorage)
+    let indexFailureInjected = false
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === indexKey && !indexFailureInjected) {
+        indexFailureInjected = true
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      }
+      return realSetItem(key, value)
+    })
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    mocks.state.currentGraph = firstEdit
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    expect(indexFailureInjected).toBe(true)
+    expect(useWorkflowDraftStoreV2().getDraft(workflow.path)?.data).toBe(
+      JSON.stringify(firstEdit)
+    )
+  })
+
+  it('backs off repeated quota writes and reports one toast per failure episode', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Draft.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    const setItem = localStorage.setItem.bind(localStorage)
+    const write = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        if (key.startsWith(StorageKeys.prefixes.draftPayload))
+          throw new DOMException('Full', 'QuotaExceededError')
+        setItem(key, value)
+      })
+    const toastError = vi.spyOn(useToast(), 'error')
+    const payloadWrites = () =>
+      write.mock.calls.filter(([key]) =>
+        key.startsWith(StorageKeys.prefixes.draftPayload)
+      )
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 1 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 2 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(payloadWrites()).toHaveLength(1)
+    expect(toastError).toHaveBeenCalledOnce()
+
+    await vi.advanceTimersByTimeAsync(5_000)
+    mocks.state.currentGraph = { ...blankGraph, extra: { marker: 3 } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.advanceTimersByTimeAsync(512)
+
+    expect(payloadWrites()).toHaveLength(2)
+    expect(toastError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a pending edit recoverable when the server clock is ahead', async () => {
+    const path = 'workflows/Saved.json'
+    const modified = Date.now() + 60_000
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const workflow = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    workflow.isModified = true
+    useWorkflowStore().activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
     mocks.state.currentGraph = {
-      nodes: [],
-      extra: { marker: 'final-edit' }
+      ...blankGraph,
+      extra: { marker: 'new edit' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
-
-    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
-    expect(localStorage.getItem(payloadKey)).toBeNull()
-
     window.dispatchEvent(new PageTransitionEvent('pagehide'))
 
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
-    expect(JSON.parse(payload.data)).toEqual({
-      nodes: [],
-      extra: { marker: 'final-edit' }
-    })
+    vi.mocked(api.getUserData).mockResolvedValueOnce(Response.json(blankGraph))
+    const reopened = await new ComfyWorkflow({ path, modified, size: 1 }).load()
+    expect(reopened.activeState.extra?.marker).toBe('new edit')
   })
 
   it('does not flush a pending workflow edit after disposal', async () => {
@@ -747,6 +1225,111 @@ describe('useWorkflowPersistenceV2', () => {
     ).toBeNull()
   })
 
+  it('recovers a mounted pending edit when logout is aborted', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('LogoutAborted.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { marker: 'recovered-after-abort' }
+    }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    const transition = storageIO.prepareWorkflowLogoutTransition()
+    await vi.runAllTimersAsync()
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+
+    transition.releaseAndResumePersistence()
+
+    const stored =
+      localStorage.getItem(payloadKey) ??
+      expect.unreachable('aborted logout did not persist the draft')
+    const payload = JSON.parse(stored)
+    expect(JSON.parse(payload.data)).toEqual({
+      nodes: [],
+      extra: { marker: 'recovered-after-abort' }
+    })
+  })
+
+  it('drops the outgoing pending edit when the logout fence completes', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('LogoutCompleted.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { nodes: [], extra: { marker: 'outgoing' } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+
+    const transition = storageIO.prepareWorkflowLogoutTransition()
+    transition.release()
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).toBeNull()
+  })
+
+  it('does not show a save error for edits fenced during logout', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('LogoutInFlight.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    storageIO.prepareWorkflowLogoutTransition()
+    mocks.state.currentGraph = { marker: 'during-logout' }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    expect(useToast().toasts).toEqual([])
+  })
+
+  it('releases an auth-state fence started before the graph mounts', () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    storageIO.fenceWorkflowStorageForAuthState()
+    mountWorkflowPersistence()
+
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+
+    expect(storageIO.isStorageAvailable()).toBe(true)
+  })
+
+  it('releases a logout fence after the persistence composable remounts', () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    mountWorkflowPersistence()
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    onLogout()
+
+    const [mounted] = mountedApps.splice(-1)
+    mounted.app.unmount()
+    mounted.container.remove()
+    mountWorkflowPersistence()
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[1][0]
+    onUserResolved({ id: 'user-b' })
+
+    expect(storageIO.isStorageAvailable()).toBe(true)
+  })
+
   it('flushes the final source-workspace edit before blocking transition writes', async () => {
     distributionMocks.isCloud = true
     const sourceWorkspaceId = 'workspace-a'
@@ -764,18 +1347,18 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const sourcePayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      sourceWorkspaceId
+      draftScope('unauthenticated', sourceWorkspaceId)
     )
     const destinationPayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      destinationWorkspaceId
+      draftScope('unauthenticated', destinationWorkspaceId)
     )
     expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
 
@@ -785,7 +1368,7 @@ describe('useWorkflowPersistenceV2', () => {
       JSON.stringify({ id: destinationWorkspaceId, type: 'team' })
     )
     mocks.state.currentGraph = {
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'late-source-write' }
     }
     apiEvents.dispatchEvent(new Event('graphChanged'))
@@ -793,7 +1376,7 @@ describe('useWorkflowPersistenceV2', () => {
 
     const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
     expect(JSON.parse(sourcePayload.data)).toEqual({
-      nodes: [],
+      ...blankGraph,
       extra: { marker: 'workspace-a-final-edit' }
     })
     expect(localStorage.getItem(destinationPayloadKey)).toBeNull()
@@ -803,7 +1386,7 @@ describe('useWorkflowPersistenceV2', () => {
     expect(
       sessionStorage.getItem(StorageKeys.openPaths('test-client'))
     ).toBeNull()
-    cancelTransition()
+    cancelTransition.release()
   })
 
   it('resumes workflow writes once workspace readiness is confirmed after authentication recovers', async () => {
@@ -847,12 +1430,8 @@ describe('useWorkflowPersistenceV2', () => {
     ).toBe(true)
   })
 
-  it('cancels stale workspace-readiness watchers across authentication episodes', async () => {
+  it('keeps storage fenced when the workspace becomes ready after a second logout', async () => {
     distributionMocks.isCloud = true
-    const completeTransitionSpy = vi.spyOn(
-      storageIO,
-      'completeWorkflowLogoutTransition'
-    )
     mountWorkflowPersistence()
 
     const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
@@ -861,21 +1440,16 @@ describe('useWorkflowPersistenceV2', () => {
     onLogout()
     onUserResolved({ id: 'user-b' })
     onLogout()
-    onUserResolved({ id: 'user-c' })
 
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-c' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
     await nextTick()
 
-    expect(completeTransitionSpy).toHaveBeenCalledOnce()
+    expect(storageIO.isStorageAvailable()).toBe(false)
   })
 
   it('releases the write fence when workspace initialization fails permanently', async () => {
     distributionMocks.isCloud = true
-    const completeTransitionSpy = vi.spyOn(
-      storageIO,
-      'completeWorkflowLogoutTransition'
-    )
     mountWorkflowPersistence()
 
     const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
@@ -884,12 +1458,12 @@ describe('useWorkflowPersistenceV2', () => {
     onLogout()
     onUserResolved({ id: 'user-a' })
 
-    expect(completeTransitionSpy).not.toHaveBeenCalled()
+    expect(storageIO.isStorageAvailable()).toBe(false)
 
     Object.assign(useTeamWorkspaceStore(), { initState: 'error' })
     await nextTick()
 
-    expect(completeTransitionSpy).toHaveBeenCalledOnce()
+    expect(storageIO.isStorageAvailable()).toBe(true)
   })
 
   it('waits for workspace readiness and drops pending pre-logout edits', async () => {
@@ -922,7 +1496,7 @@ describe('useWorkflowPersistenceV2', () => {
     )
     const destinationPayloadKey = StorageKeys.draftPayload(
       workflow.path,
-      destinationWorkspaceId
+      draftScope('user-b', destinationWorkspaceId)
     )
     const personalPayloadKey = StorageKeys.draftPayload(
       workflow.path,
@@ -949,5 +1523,274 @@ describe('useWorkflowPersistenceV2', () => {
     expect(localStorage.getItem(sourcePayloadKey)).toBeNull()
     expect(localStorage.getItem(personalPayloadKey)).toBeNull()
     expect(localStorage.getItem(destinationPayloadKey)).not.toBeNull()
+  })
+
+  it('replaces the active graph before restoring a directly switched account', async () => {
+    distributionMocks.isCloud = true
+    const workflowStore = useWorkflowStore()
+    const draftStore = useWorkflowDraftStoreV2()
+    const sourceWorkflow = await workflowStore
+      .createTemporary('AccountA.json')
+      .load()
+    workflowStore.activeWorkflow = sourceWorkflow
+    mountWorkflowPersistence()
+
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    draftStore.setAuthSubject('user-b')
+    const destinationPath = 'workflows/AccountB.json'
+    draftStore.saveDraft(destinationPath, '{"owner":"b"}', {
+      name: 'AccountB.json',
+      isTemporary: true
+    })
+    draftStore.setAuthSubject('user-a')
+
+    mocks.state.currentGraph = { owner: 'a', pending: true }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    storageIO.fenceWorkflowStorageForAuthState()
+    onUserResolved({ id: 'user-b' })
+    await vi.runAllTimersAsync()
+
+    expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'personal' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+
+    await vi.waitFor(() => {
+      expect(mocks.loadGraphDataMock).toHaveBeenCalledWith(
+        { owner: 'b' },
+        true,
+        true,
+        'AccountB.json',
+        { opening: 'reopened' }
+      )
+    })
+    expect(workflowStore.activeWorkflow).toBeNull()
+    expect(draftStore.getDraft(destinationPath)?.data).toBe('{"owner":"b"}')
+    expect(draftStore.getDraft('workflows/AccountA.json')).toBeNull()
+    expect(storageIO.isStorageAvailable()).toBe(true)
+  })
+
+  it('keeps writes fenced when the user signs out during an account switch', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    const blankLoaded = createDeferred()
+    loadBlankWorkflowMock.mockReturnValue(blankLoaded.promise)
+    mountWorkflowPersistence()
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    onUserResolved({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalled())
+
+    onLogout()
+    blankLoaded.resolve()
+    await vi.runAllTimersAsync()
+
+    expect(
+      storageIO.writePayload('personal', 'after-logout', {
+        data: '{}',
+        updatedAt: 1
+      })
+    ).toBe(false)
+  })
+
+  it('keeps an auth-state fence raised while a switched account restores', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    const restored = createDeferred<boolean>()
+    const loadPersisted = vi
+      .spyOn(useWorkflowDraftStoreV2(), 'loadPersistedWorkflow')
+      .mockReturnValue(restored.promise)
+    mountWorkflowPersistence()
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    onUserResolved({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadPersisted).toHaveBeenCalled())
+
+    storageIO.fenceWorkflowStorageForAuthState()
+    restored.resolve(true)
+    await vi.runAllTimersAsync()
+
+    expect(storageIO.isStorageAvailable()).toBe(false)
+  })
+
+  it('keeps writes fenced when the user signs out while an account switch waits for the workspace', async () => {
+    distributionMocks.isCloud = true
+    mountWorkflowPersistence()
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    onUserResolved({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalled())
+
+    onLogout()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'personal' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await vi.runAllTimersAsync()
+
+    expect(storageIO.isStorageAvailable()).toBe(false)
+  })
+
+  it('reopens storage when a directly switched account fails to load', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    loadBlankWorkflowMock.mockRejectedValueOnce(new Error('load failed'))
+    mountWorkflowPersistence()
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    storageIO.fenceWorkflowStorageForAuthState()
+
+    onUserResolved({ id: 'user-b' })
+    await vi.runAllTimersAsync()
+
+    expect(storageIO.isStorageAvailable()).toBe(true)
+  })
+
+  it('keeps storage fenced when logout follows a same-user re-resolve during a failed switch', async () => {
+    distributionMocks.isCloud = true
+    let rejectBlank: (error: Error) => void = () => {}
+    loadBlankWorkflowMock.mockReturnValueOnce(
+      new Promise<void>((_, reject) => {
+        rejectBlank = reject
+      })
+    )
+    mountWorkflowPersistence()
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    onUserResolved({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalled())
+    onUserResolved({ id: 'user-b' })
+    rejectBlank(new Error('load failed'))
+    await vi.runAllTimersAsync()
+
+    onLogout()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'personal' })
+    Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+    await nextTick()
+
+    expect(storageIO.isStorageAvailable()).toBe(false)
+  })
+
+  it('skips a queued account switch when the user signs out before it starts', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    mountWorkflowPersistence()
+    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+
+    onUserResolved({ id: 'user-b' })
+    onLogout()
+    onUserResolved({ id: 'user-c' })
+    await vi.runAllTimersAsync()
+
+    expect(loadBlankWorkflowMock).not.toHaveBeenCalled()
+    await vi.waitFor(() => {
+      expect(storageIO.isStorageAvailable()).toBe(true)
+    })
+  })
+
+  it('releases each superseded account switch owner', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    const firstBlankLoaded = createDeferred()
+    const secondBlankLoaded = createDeferred()
+    loadBlankWorkflowMock
+      .mockReturnValueOnce(firstBlankLoaded.promise)
+      .mockReturnValueOnce(secondBlankLoaded.promise)
+    mountWorkflowPersistence()
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    onUserResolved({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalledOnce())
+
+    onUserResolved({ id: 'user-c' })
+    firstBlankLoaded.resolve()
+    await vi.waitFor(() =>
+      expect(loadBlankWorkflowMock).toHaveBeenCalledTimes(2)
+    )
+    secondBlankLoaded.resolve()
+    await vi.runAllTimersAsync()
+
+    expect(storageIO.isStorageAvailable()).toBe(true)
+  })
+
+  it('keeps writes fenced when logout starts during an account switch', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    const blankLoaded = createDeferred()
+    loadBlankWorkflowMock.mockReturnValue(blankLoaded.promise)
+    mountWorkflowPersistence()
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    onUserResolved({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalled())
+
+    storageIO.prepareWorkflowLogoutTransition()
+    blankLoaded.resolve()
+    await vi.runAllTimersAsync()
+
+    expect(
+      storageIO.writePayload('personal', 'after-logout', {
+        data: '{}',
+        updatedAt: 1
+      })
+    ).toBe(false)
+  })
+
+  it('keeps writes fenced when a failed logout aborts during an account switch', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    const blankLoaded = createDeferred()
+    loadBlankWorkflowMock.mockReturnValue(blankLoaded.promise)
+    mountWorkflowPersistence()
+    const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
+      .calls[0][0]
+    onUserResolved({ id: 'user-a' })
+    onUserResolved({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalled())
+
+    storageIO.prepareWorkflowLogoutTransition().releaseAndResumePersistence()
+
+    expect(
+      storageIO.writePayload('personal', 'mid-switch', {
+        data: '{}',
+        updatedAt: 1
+      })
+    ).toBe(false)
+    blankLoaded.resolve()
+    await vi.runAllTimersAsync()
   })
 })

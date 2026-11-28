@@ -1,22 +1,17 @@
 <template>
   <Menu v-model:open="open" :items="menuItems" class="min-w-56">
     <template #trigger>
-      <button
-        :class="
-          cn(
-            'absolute top-[calc(var(--workflow-tabs-height)+16px)] left-4 z-1000 inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border-none py-2 pr-2 pl-3 shadow-md transition-colors',
-            'bg-secondary hover:bg-accent',
-            'data-[state=open]:bg-muted'
-          )
-        "
+      <Button
+        size="lg"
+        class="absolute top-[calc(var(--workflow-tabs-height)+16px)] left-4 gap-2.5 pr-2 pl-3 shadow-md data-[state=open]:bg-muted"
         :aria-label="t('linearMode.appModeToolbar.appBuilder')"
       >
-        <i class="icon-[lucide--hammer] size-4" />
+        <i class="icon-[lucide--hammer]" />
         <span class="text-sm font-medium">
           {{ t('linearMode.appModeToolbar.appBuilder') }}
         </span>
-        <i class="icon-[lucide--chevron-down] size-4 text-muted-foreground" />
-      </button>
+        <i class="icon-[lucide--chevron-down] text-muted-foreground" />
+      </Button>
     </template>
   </Menu>
 </template>
@@ -26,14 +21,17 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type {
+  MenuItem,
+  MenuItemCommandEvent
+} from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()

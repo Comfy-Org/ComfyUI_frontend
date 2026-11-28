@@ -20,8 +20,8 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
       retries: 0,
       workers: 1,
       use: {
-        trace: 'on',
-        video: 'on',
+        trace: 'off',
+        video: process.env.RECORD_VIDEO === 'true' ? 'on' : 'off',
         launchOptions: {
           slowMo: Number(process.env.SLOW_MO) || 0
         }
@@ -45,6 +45,9 @@ export default defineConfig({
     '**/liveCloud/**',
     '**/crossOriginSession/**',
     '**/*.test.ts',
+    ...(process.env.VUE_WRAPPER_PILOT_CAPTURE
+      ? []
+      : ['**/vueWrapperPilot.spec.ts']),
     // Untransformed recorder output — still bare codegen, not a runnable spec
     '**/*.raw.spec.ts',
     // The recorder's scratch spec calls page.pause(), so collecting it outside

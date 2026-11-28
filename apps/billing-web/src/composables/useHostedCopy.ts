@@ -1,6 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { BillingPlansData } from '@comfyorg/account-core/billing'
+import { PURCHASE_REFUSAL_SERVER_CODES } from '@comfyorg/account-core/billing'
 
 import { unbrokenDate } from '@/checkout/longDate'
 
@@ -15,9 +16,9 @@ export interface HostedCopy {
   /** A catalog plan by its tier and duration, never by its slug. */
   readonly planName: (plan: CatalogPlan) => string
   /**
-   * Copy for a failed billing call. A code that only names the HTTP status
-   * shows the sentence the server wrote, as the app does; every other code
-   * keeps billing-web's own copy.
+   * Copy for a failed billing call. A code that only names the HTTP status,
+   * or a purchase the server refuses for now, shows the sentence the server
+   * wrote, as the app does; every other code keeps billing-web's own copy.
    */
   readonly refusal: (failure: RefusedCall) => string
   readonly date: (isoDate: string) => string
@@ -29,9 +30,10 @@ interface RefusedCall {
   readonly serverMessage?: string
 }
 
-const STATUS_ONLY_CODES: ReadonlySet<string> = new Set([
+const SERVER_WORDED_CODES: ReadonlySet<string> = new Set([
   'REQUEST_FAILED',
-  'CONFLICT'
+  'CONFLICT',
+  ...PURCHASE_REFUSAL_SERVER_CODES
 ])
 
 export function useHostedCopy(): HostedCopy {
@@ -43,7 +45,7 @@ export function useHostedCopy(): HostedCopy {
   }
 
   function refusal({ code, serverMessage }: RefusedCall): string {
-    return STATUS_ONLY_CODES.has(code) && serverMessage
+    return SERVER_WORDED_CODES.has(code) && serverMessage
       ? serverMessage
       : coded('failure', code)
   }

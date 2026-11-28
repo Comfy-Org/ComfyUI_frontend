@@ -19,11 +19,13 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { cloudflareAccessHeaders } from './build/cloudflareAccess.ts'
 import {
   createDevAgentConfig,
   devServerAgentRoutes
 } from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import { vueDevtoolsKitStub } from './build/plugins/vueDevtoolsKitStub.ts'
 import {
   hasCompleteSentryUploadConfig,
   resolveSentryUploadConfig
@@ -49,6 +51,11 @@ const ISOLATED_STORE_TESTS = [
   'src/stores/entityIdStore.test.ts',
   'src/testing/pinia.test.ts'
 ]
+const CENSUS_TESTS = ['scripts/registry-census/*.census.test.ts']
+
+const NODE_ENVIRONMENT_TESTS = [
+  'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+]
 
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
@@ -57,11 +64,14 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/lib/litegraph/src/node',
   'src/lib/litegraph/src/subgraph',
   'src/lib/litegraph/src/utils',
+  'src/platform/assets/adapters',
   'src/platform/assets/composables',
-  'src/platform/assets/mappings',
-  'src/platform/assets/schemas',
+  'src/platform/assets/integration',
   'src/platform/assets/services',
+  'src/platform/assets/stores',
+  'src/platform/assets/types',
   'src/platform/assets/utils',
+  'src/platform/extensions',
   'src/platform/billing/api',
   'src/platform/billing/composables',
   'src/platform/billing/stores',
@@ -87,10 +97,10 @@ const CRITICAL_COVERAGE_DIRS = [
   'src/services',
   'src/stores',
   'src/utils',
-  'src/workbench/extensions/manager/composables',
-  'src/workbench/extensions/manager/services',
-  'src/workbench/extensions/manager/stores',
-  'src/workbench/extensions/manager/utils',
+  'src/platform/customNodes/manager/composables',
+  'src/platform/customNodes/manager/services',
+  'src/platform/customNodes/manager/stores',
+  'src/platform/customNodes/manager/utils',
   'src/workbench/utils'
 ]
 
@@ -247,9 +257,94 @@ const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 const devAgentConfig = createDevAgentConfig(process.env, DISTRIBUTION)
 
-const cloudProxyConfig =
-  DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
+const accessHeaders = cloudflareAccessHeaders(
+  process.env,
+  DEV_SERVER_COMFYUI_URL
+)
 
+if (accessHeaders && process.env.VITE_REMOTE_DEV === 'true') {
+  throw new Error(
+    'Cloudflare Access credentials cannot be used with VITE_REMOTE_DEV; bind the authenticated proxy to loopback.'
+  )
+}
+
+// Cloudflare routes on the Host header, so a token is only usable on a request
+// that carries the backend's host rather than the dev server's.
+const backendProxyConfig: ProxyOptions = {
+  ...(DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}),
+  ...(accessHeaders
+    ? {
+        headers: accessHeaders,
+        changeOrigin: true,
+        secure: true,
+        bypass: rejectForeignCaller
+      }
+    : {})
+}
+
+// The agent proxy adds the session token, so only the dev server's own pages may use it.
+function isCrossOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin
+  if (origin === undefined) return false
+  try {
+    return new URL(origin).host !== req.headers.host
+  } catch {
+    return true
+  }
+}
+
+// A foreign page cannot read a cross-origin response without CORS headers, but
+// the request still reaches the gated backend with our service token attached,
+// so a CORS-simple `POST /api/interrupt` from another localhost port drives a
+// real side effect on it. `Origin` covers those writes; browsers omit it on a
+// simple GET, so `Sec-Fetch-Site` covers the rest. A caller that sends neither
+// is not a browser page and is left alone, which is the policy `/api/agent`
+// already applies to its own token.
+function isForeignCaller(req: IncomingMessage): boolean {
+  if (isCrossOrigin(req)) return true
+  const site = req.headers['sec-fetch-site']
+  return typeof site === 'string' && site !== 'same-origin' && site !== 'none'
+}
+
+// Refuses the caller before the Access token is attached. Vite turns a `false`
+// bypass result into a bare 404, so the 403 and its reason are written here
+// first; the already-ended response makes Vite's status assignment a no-op.
+// `res` is undefined on a WebSocket upgrade, which `authenticatedWsGuard`
+// owns, so this leaves that path untouched.
+function rejectForeignCaller(
+  req: IncomingMessage,
+  res: ServerResponse | undefined
+): false | null {
+  if (!accessHeaders || !res || !isForeignCaller(req)) return null
+  res.statusCode = 403
+  res.end('The authenticated dev proxy serves the dev server origin only')
+  return false
+}
+
+// `bypass` is a single slot, so a route that already owns one has to run the
+// credential guard itself rather than inheriting it from `backendProxyConfig`.
+function guardedBypass(
+  bypass: NonNullable<ProxyOptions['bypass']>
+): NonNullable<ProxyOptions['bypass']> {
+  return (req, res, options) =>
+    rejectForeignCaller(req, res) === false ? false : bypass(req, res, options)
+}
+
+// Browsers do not apply the same-origin policy to WebSocket handshakes, so any
+// page can open ws://localhost:5173/ws. Once the service token rides on that
+// upgrade the dev server is an authenticated relay to the gated backend, so
+// reject a cross-origin upgrade the same way `/api/agent` does. Only applied
+// where credentials are actually attached, leaving the unconfigured checkout's
+// `/ws` proxy exactly as it was.
+const authenticatedWsGuard: Pick<ProxyOptions, 'configure'> = accessHeaders
+  ? {
+      configure: (proxy) => {
+        proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
+          if (isCrossOrigin(req)) socket.destroy()
+        })
+      }
+    }
+  : {}
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
   req: IncomingMessage,
@@ -320,7 +415,7 @@ function handleGcsRedirect(
 
 const gcsRedirectProxyConfig: ProxyOptions = {
   target: DEV_SERVER_COMFYUI_URL,
-  ...cloudProxyConfig,
+  ...backendProxyConfig,
   selfHandleResponse: true,
   configure: (proxy) => {
     proxy.on('proxyRes', handleGcsRedirect)
@@ -361,7 +456,7 @@ export default defineConfig({
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(DISTRIBUTION === 'cloud'
@@ -373,13 +468,13 @@ export default defineConfig({
 
       ...devServerAgentRoutes(devAgentConfig.proxy, {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       }),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig,
-        bypass: (req, res, _options) => {
+        ...backendProxyConfig,
+        bypass: guardedBypass((req, res, _options) => {
           if (!res) return null
 
           // Return empty array for extensions API as these modules
@@ -397,49 +492,50 @@ export default defineConfig({
           }
 
           return null
-        }
+        })
       },
 
       '/oauth': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig,
-        bypass: (req) => {
+        ...backendProxyConfig,
+        bypass: guardedBypass((req) => {
           const path = (req.url ?? '').split('?')[0]
           if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
             return req.url
           }
           return null
-        }
+        })
       },
 
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig,
+        ...authenticatedWsGuard
       },
 
       '/workflow_templates': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
               target: DEV_SERVER_COMFYUI_URL,
-              ...cloudProxyConfig
+              ...backendProxyConfig
             }
           }
         : {}),
@@ -455,6 +551,7 @@ export default defineConfig({
     ...(!DISABLE_VUE_PLUGINS
       ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
       : [vue(vuePluginOptions)]),
+    vueDevtoolsKitStub(!DISABLE_VUE_PLUGINS),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
@@ -615,7 +712,7 @@ export default defineConfig({
     }),
 
     Components({
-      dts: true,
+      dts: !process.env.VITEST,
       resolvers: [
         IconsResolver({
           customCollections: ['comfy']
@@ -649,7 +746,9 @@ export default defineConfig({
           {
             name: 'validate-sentry-upload-config',
             apply: 'build' as const,
-            configResolved: () => resolveSentryUploadConfig(process.env)
+            configResolved: () => {
+              resolveSentryUploadConfig(process.env)
+            }
           },
           ...(SENTRY_UPLOAD ? [sentryVitePlugin(SENTRY_UPLOAD)] : [])
         ]
@@ -897,12 +996,30 @@ export default defineConfig({
             './vitest.timer.setup.ts',
             './vitest.setup.ts'
           ],
-          exclude: ISOLATED_STORE_TESTS,
+          exclude: [...ISOLATED_STORE_TESTS, ...NODE_ENVIRONMENT_TESTS],
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'packages/api-client/src/**/*.test.ts',
+            'packages/graph-model/src/**/*.test.ts',
+            'packages/settings-core/src/**/*.test.ts',
+            'packages/theme-core/src/**/*.test.ts',
+            'packages/telemetry/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node-environment',
+          environment: 'node',
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts',
+            './vitest.timer.setup.ts'
+          ],
+          include: NODE_ENVIRONMENT_TESTS
         }
       },
       {
@@ -926,7 +1043,7 @@ export default defineConfig({
             './vitest.console.setup.ts',
             './vitest.network.setup.ts'
           ],
-          exclude: FRONTEND_SCRIPT_TESTS,
+          exclude: [...FRONTEND_SCRIPT_TESTS, ...CENSUS_TESTS],
           include: [
             'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',

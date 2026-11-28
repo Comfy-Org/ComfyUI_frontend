@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import Knob from '@/components/ui/knob/Knob.vue'
+import Knob from '@comfyorg/design-system/knob/Knob'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 
 defineProps<{

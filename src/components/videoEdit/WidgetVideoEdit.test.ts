@@ -10,12 +10,16 @@ import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type {
   VideoEditFeature,
   VideoEditValue
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Bounds } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import WidgetVideoEdit from './WidgetVideoEdit.vue'
 
@@ -24,8 +28,6 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: { widgetHistory: { undo: 'Undo', redo: 'Redo' } } }
 })
-
-const hostNode = { id: 'host' }
 
 const mocks = vi.hoisted(() => {
   // oxlint-disable-next-line typescript/no-require-imports
@@ -48,14 +50,7 @@ const mocks = vi.hoisted(() => {
   return mocks
 })
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: {},
-    canvas: { graph: { id: 'graph', getNodeById: () => hostNode } }
-  }
-}))
-
-vi.mock(import('@/utils/graphTraversalUtil'))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/composables/video/useVideoSourceUrl'), () => {
   // oxlint-disable-next-line typescript/no-require-imports
@@ -160,14 +155,18 @@ function createWidget(
   }
 }
 
-function renderWidget(widget = createWidget(), initial: VideoEditValue = {}) {
+function renderWidget(
+  widget = createWidget(),
+  initial: VideoEditValue = {},
+  nodeId: NodeId = toNodeId('node-1')
+) {
   const modelValue = ref<VideoEditValue>(initial)
   const Host = defineComponent({
     setup() {
       return () =>
         h(WidgetVideoEdit, {
           widget,
-          nodeId: toNodeId('node-1'),
+          nodeId,
           modelValue: modelValue.value,
           'onUpdate:modelValue': (value: VideoEditValue) => {
             modelValue.value = value
@@ -240,8 +239,21 @@ describe('WidgetVideoEdit node history', () => {
   })
 })
 
+function addHostNode(): LGraphNode {
+  const node = new LGraphNode('VideoEdit')
+  app.rootGraph.add(node)
+  return node
+}
+
+function addPromotedSourceSubgraph() {
+  const subgraph = createTestSubgraph({ rootGraph: app.rootGraph })
+  app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+  return subgraph
+}
+
 describe('WidgetVideoEdit', () => {
   beforeEach(() => {
+    useCanvasStore().currentGraph = app.rootGraph
     recorded.props = undefined
     mocks.resolvedSource = undefined
     mocks.sourceStatus.value = 'loading'
@@ -252,29 +264,42 @@ describe('WidgetVideoEdit', () => {
   })
 
   it('resolves the source from the host node when no locator is present', () => {
-    renderWidget()
+    const host = addHostNode()
 
-    expect(getNodeByLocatorId).not.toHaveBeenCalled()
-    expect(mocks.resolvedSource).toBe(hostNode)
+    renderWidget(createWidget(), {}, host.id)
+
+    expect(mocks.resolvedSource).toBe(host)
   })
 
   it('resolves a promoted widget through its node locator id', () => {
-    const locatorNode = new LGraphNode('inner')
-    locatorNode.id = toNodeId('inner')
-    vi.mocked(getNodeByLocatorId).mockReturnValue(locatorNode)
+    const host = addHostNode()
+    const subgraph = addPromotedSourceSubgraph()
+    const inner = new LGraphNode('inner')
+    subgraph.add(inner)
 
-    renderWidget(createWidget({}, { nodeLocatorId: 'sub:42' }))
+    renderWidget(
+      createWidget(
+        {},
+        { nodeLocatorId: createNodeLocatorId(subgraph.id, inner.id) }
+      ),
+      {},
+      host.id
+    )
 
-    expect(getNodeByLocatorId).toHaveBeenCalledWith({}, 'sub:42')
-    expect(mocks.resolvedSource).toBe(locatorNode)
+    expect(mocks.resolvedSource).toBe(inner)
   })
 
   it('falls back to the host node when the locator resolves to nothing', () => {
-    vi.mocked(getNodeByLocatorId).mockReturnValue(null)
+    const host = addHostNode()
+    const subgraph = addPromotedSourceSubgraph()
 
-    renderWidget(createWidget({}, { nodeLocatorId: 'sub:42' }))
+    renderWidget(
+      createWidget({}, { nodeLocatorId: createNodeLocatorId(subgraph.id, 42) }),
+      {},
+      host.id
+    )
 
-    expect(mocks.resolvedSource).toBe(hostNode)
+    expect(mocks.resolvedSource).toBe(host)
   })
 
   it('defaults to both features when the widget options omit them', () => {

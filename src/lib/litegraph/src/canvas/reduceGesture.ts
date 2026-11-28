@@ -1,9 +1,6 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { dist2 } from '@/lib/litegraph/src/measure'
-
-export interface GesturePoint {
-  readonly x: number
-  readonly y: number
-}
+export type GesturePoint = Readonly<Point2D>
 
 interface ClickRecord {
   readonly position: GesturePoint

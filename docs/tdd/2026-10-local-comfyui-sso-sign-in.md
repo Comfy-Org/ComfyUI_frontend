@@ -147,6 +147,58 @@ mint off in prod until F6 passes.
 | F5  | The local SSO session mints the workspace and partner-node tokens from the OAuth credential                                                                                        | FE-3099, FE-2170 | F1, F4, B4 |
 | F6  | QA: port Desktop cases D1–D11 to web local; fake-clock long-queue E2E; E2E for flag off, on and token-endpoint failure                                                             | FE-3099          | F5, C1     |
 
+## Sign-in return path (revised Oct 28)
+
+QA (Denys, L4 on the local SSO test plan, `#proj-sso` Oct 28) found that the
+redirect B5 relies on never reaches the frontend: Cloud redirects the page to
+`http://127.0.0.1:8188/?code=…&state=…` and ComfyUI core answers 403.
+`create_origin_only_middleware` refuses every request with
+`Sec-Fetch-Site: cross-site` (ComfyUI #13261, comfyanonymous, April 2026), and a
+redirect from the Cloud sign-in site is a cross-site navigation. Core was
+assumed to need no change because `/` already serves the app; the guard was
+missed.
+
+**Rejected: exempt the main-page navigation in core.** Comfy-Org/ComfyUI#17410
+let `GET /` with `Sec-Fetch-Mode: navigate` and `Sec-Fetch-Dest: document`
+through the guard. Cross-site fetches, embeds, other paths and POSTs stayed
+403, it passed CI, and it was verified end to end on stagingcloud. Alexander
+deferred to comfyanonymous, who owns the guard. comfyanonymous rejected it
+(`#dev-core-engine`, Oct 28): any exemption becomes a security problem as soon as
+someone adds the wrong route, so core should not open the guard at all. The PR
+was closed. A dedicated core callback route, or an exemption behind
+`--feature-flag local_web_sso`, has the same problem and was not pursued.
+
+**Adopted: popup with a Cloud-hosted callback.** No request ever crosses into
+core.
+
+1. `requestSignIn` opens `/oauth/authorize` in a popup instead of navigating
+   the page. The redirect URI is `/oauth/local-callback.html` on the Cloud
+   origin the build signs in to, and `state` is the PKCE state plus `~` plus
+   the page's loopback origin.
+2. Sign-in and consent finish in the popup, and Cloud redirects it to the
+   callback page, a same-site navigation on the Cloud origin.
+3. The callback page (`public/oauth/local-callback.html`, a static file with
+   no app boot) reads the origin from `state`. Only for an `http:` origin on
+   `127.0.0.1` or `localhost`, it posts the callback query to `window.opener`
+   with that exact target origin, then closes.
+4. The page accepts the message only from the Cloud origin and from the popup
+   it opened, then exchanges the code with its PKCE verifier and the callback
+   redirect URI. The token endpoint's loopback CORS is unchanged.
+
+Why this is safe: the code reaches only a loopback opener; a page on another
+origin that opens the popup never receives it. Even a leaked code cannot be
+exchanged without the verifier that stays in the opener's session storage.
+Cloud pages send no `Cross-Origin-Opener-Policy`, so `window.opener` survives
+the sign-in redirects; adding COOP to Cloud would break this and must exempt
+the callback page.
+
+Changes: Comfy-Org/cloud registers the three Cloud callback URLs on
+`comfy-local-web` next to the loopback ones; the frontend adds the callback page
+and the popup flow. A blocked popup shows "Allow pop-ups for this page to
+sign in."; a closed popup leaves the page signed out without an error. The
+loopback redirect and the boot-time completion stay for builds that still
+redirect the page.
+
 ## Related documents
 
 Notion (Documents Hub):

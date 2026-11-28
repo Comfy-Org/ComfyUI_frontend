@@ -9,18 +9,33 @@ import {
   getEffectiveHardness
 } from '@comfyorg/mask-editor/brushUtils'
 import { StrokeProcessor } from '@comfyorg/mask-editor/StrokeProcessor'
+import { locateWidgetNode } from '@/composables/widgetHistoryScope'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
+import {
+  isWidgetInputConnected,
+  resolveWidgetInputSource
+} from '@/composables/widgetInputSource'
+import {
+  captureCanvasRegion,
+  clampCanvasRect,
+  usePainterHistory
+} from '@/renderer/extensions/painter/composables/usePainterHistory'
+import type { CanvasRect } from '@/renderer/extensions/painter/composables/usePainterHistory'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
-import { hexToRgb } from '@/utils/colorUtil'
-import type { Point } from '@comfyorg/mask-editor/types'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { hexToRgb } from '@comfyorg/shared-frontend-utils/colorUtil'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import { getErrorMessage } from '@/utils/errorUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -30,23 +45,49 @@ export const PAINTER_TOOLS: Record<string, PainterTool> = {
 } as const
 
 interface UsePainterOptions {
+  widget: LocatedWidget
   canvasEl: Ref<HTMLCanvasElement | null>
   cursorEl: Ref<HTMLElement | null>
   modelValue: Ref<string>
+  historyScope?: () => WidgetHistoryScope | null
+}
+
+function capturePointerIfActive(e: PointerEvent): boolean {
+  try {
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function releasePointerIfCaptured(e: PointerEvent): boolean {
+  try {
+    ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
-  const { canvasEl, cursorEl, modelValue } = options
+  const {
+    widget,
+    canvasEl,
+    cursorEl,
+    modelValue,
+    historyScope = () => null
+  } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
   const toast = useToast()
 
   const isDirty = ref(false)
+  let canvasMask = ''
+  let pendingMaskImage: HTMLImageElement | null = null
 
   const cursorVisible = ref(false)
-
-  const inputImageUrl = ref<string | null>(null)
-  const isImageInputConnected = ref(false)
+  const { setTransform: setCursorTransform } = useCompositedTransform(cursorEl)
 
   let isDrawing = false
   let strokeProcessor: StrokeProcessor | null = null
@@ -68,6 +109,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   let dirtyX1 = 0
   let dirtyY1 = 0
   let hasDirtyRect = false
+  let strokeBounds: CanvasRect | null = null
 
   let strokeBrush: {
     radius: number
@@ -79,9 +121,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     b: number
   } | null = null
 
-  const litegraphNode = computed(() => {
-    if (!nodeId || !app.canvas.graph) return null
-    return app.canvas.graph.getNodeById(nodeId)
+  const litegraphNode = useLiveGraphNode(() => {
+    const location = locateWidgetNode(widget, nodeId)
+    return location?.graph.getNodeById(location.nodeId)
   })
 
   const widgetValueStore = useWidgetValueStore()
@@ -155,25 +197,24 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     node.properties.painterBrushHardness = brushHardness.value
   }
 
-  function updateInputImageUrl() {
+  const imageInputSlot = computed(
+    () => litegraphNode.value?.findInputSlot('image') ?? -1
+  )
+
+  const isImageInputConnected = computed(() => {
     const node = litegraphNode.value
-    if (!node) {
-      inputImageUrl.value = null
-      isImageInputConnected.value = false
-      return
-    }
+    if (!node || imageInputSlot.value < 0) return false
+    return isWidgetInputConnected(node, imageInputSlot.value, nodeId)
+  })
 
-    isImageInputConnected.value = node.isInputConnected(0)
-
-    const inputNode = node.getInputNode(0)
-    if (!inputNode) {
-      inputImageUrl.value = null
-      return
-    }
-
-    const urls = nodeOutputStore.getNodeImageUrls(inputNode)
-    inputImageUrl.value = urls?.length ? urls[0] : null
-  }
+  const inputImageUrl = computed<string | null>(() => {
+    const node = litegraphNode.value
+    if (!node || imageInputSlot.value < 0) return null
+    const source = resolveWidgetInputSource(node, imageInputSlot.value, nodeId)
+    return source
+      ? (nodeOutputStore.getNodeImageUrls(source)?.[0] ?? null)
+      : null
+  })
 
   function activeHardness(): number {
     return tool.value === PAINTER_TOOLS.ERASER ? 1 : brushHardness.value
@@ -188,6 +229,15 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     const effectiveRadius = getEffectiveBrushSize(radius, activeHardness())
     const effectiveDiameter = effectiveRadius * 2
     return effectiveDiameter * (canvasDisplayWidth.value / canvasWidth.value)
+  })
+
+  const history = usePainterHistory({
+    scope: historyScope,
+    context: getCtx,
+    canRestore: () => !isDrawing,
+    onRestore: () => {
+      isDirty.value = true
+    }
   })
 
   function getCtx() {
@@ -212,11 +262,28 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
   }
 
+  function expandStrokeBounds(x0: number, y0: number, x1: number, y1: number) {
+    const bounds = strokeBounds
+    if (!bounds) {
+      strokeBounds = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }
+      return
+    }
+    const left = Math.min(bounds.x, x0)
+    const top = Math.min(bounds.y, y0)
+    strokeBounds = {
+      x: left,
+      y: top,
+      width: Math.max(bounds.x + bounds.width, x1) - left,
+      height: Math.max(bounds.y + bounds.height, y1) - top
+    }
+  }
+
   function expandDirtyRect(cx: number, cy: number, r: number) {
     const x0 = cx - r
     const y0 = cy - r
     const x1 = cx + r
     const y1 = cy + r
+    expandStrokeBounds(x0, y0, x1, y1)
     if (!hasDirtyRect) {
       dirtyX0 = x0
       dirtyY0 = y0
@@ -398,7 +465,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
   function startStroke(e: PointerEvent) {
     const point = getCanvasPoint(e)
-    if (!point) return
+    if (!point || history.isRestoring()) return
 
     const el = canvasEl.value
     if (!el) return
@@ -412,6 +479,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     isDrawing = true
     isDirty.value = true
+    pendingMaskImage = null
+    strokeBounds = null
     snapshotBrush()
     strokeProcessor = new StrokeProcessor(Math.max(1, strokeBrush!.radius / 2))
     strokeProcessor.addPoint(point)
@@ -471,11 +540,21 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     }
 
     compositeStrokeToMain()
+    recordStroke()
 
     isDrawing = false
     strokeProcessor = null
     strokeBrush = null
     lastPoint = null
+  }
+
+  function recordStroke() {
+    const el = canvasEl.value
+    const rect = el && strokeBounds && clampCanvasRect(strokeBounds, el)
+    strokeBounds = null
+    const before = baseCanvas
+    if (!rect || !before) return
+    history.record(() => captureCanvasRegion(before, rect))
   }
 
   function resizeCanvas() {
@@ -509,16 +588,32 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     const el = canvasEl.value
     const ctx = getCtx()
     if (!el || !ctx) return
+    const rect = clampCanvasRect(
+      { x: 0, y: 0, width: el.width, height: el.height },
+      el
+    )
+    if (rect) history.record(() => captureCanvasRegion(el, rect))
     ctx.clearRect(0, 0, el.width, el.height)
     isDirty.value = true
+    pendingMaskImage = null
+    canvasMask = ''
     modelValue.value = ''
   }
 
+  function clearToEmptyMask() {
+    const el = canvasEl.value
+    const ctx = getCtx()
+    if (!el || !ctx) return
+    ctx.clearRect(0, 0, el.width, el.height)
+    pendingMaskImage = null
+    canvasMask = ''
+  }
+
   function updateCursorPos(e: PointerEvent) {
-    const el = cursorEl.value
-    if (!el) return
     const size = displayBrushSize.value
-    el.style.transform = `translate(${e.offsetX - size / 2}px, ${e.offsetY - size / 2}px)`
+    setCursorTransform(
+      `translate(${e.offsetX - size / 2}px, ${e.offsetY - size / 2}px)`
+    )
   }
 
   function handlePointerDown(e: PointerEvent) {
@@ -526,11 +621,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     cacheCanvasRect()
     updateCursorPos(e)
     startStroke(e)
-    try {
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-    } catch {
-      // setPointerCapture may throw for synthetic events (e.g. in tests)
-    }
+    capturePointerIfActive(e)
   }
 
   let pendingMoveEvent: PointerEvent | null = null
@@ -560,11 +651,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       cancelAnimationFrame(rafId)
       flushPendingStroke()
     }
-    try {
-      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {
-      // releasePointerCapture may throw for synthetic events (e.g. in tests)
-    }
+    releasePointerIfCaptured(e)
     endStroke()
   }
 
@@ -622,6 +709,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     const body = new FormData()
     body.append('image', blob, name)
     body.append('type', 'input')
+    body.append('subfolder', 'painter')
 
     let resp: Response
     try {
@@ -667,7 +755,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       )
     }
 
-    const result = `${data.name} [input]`
+    const result = createAnnotatedPath(data.name, {
+      subfolder: data.subfolder
+    })
+    canvasMask = result
     modelValue.value = result
     isDirty.value = false
     return result
@@ -685,7 +776,8 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function restoreCanvas() {
-    const parsed = parseMaskFilename(modelValue.value)
+    const requestedMask = modelValue.value
+    const parsed = parseMaskFilename(requestedMask)
     if (!parsed) return
 
     const params = new URLSearchParams()
@@ -695,27 +787,46 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
 
     const url = api.apiURL('/view?' + params.toString())
     const img = new Image()
+    pendingMaskImage = img
+    const isStillWanted = () =>
+      pendingMaskImage === img && modelValue.value === requestedMask
     img.crossOrigin = 'anonymous'
     img.onload = () => {
       const el = canvasEl.value
-      if (!el) return
+      if (!el || !isStillWanted()) return
+      pendingMaskImage = null
       canvasWidth.value = img.naturalWidth
       canvasHeight.value = img.naturalHeight
+      el.width = img.naturalWidth
+      el.height = img.naturalHeight
       mainCtx = null
       getCtx()?.drawImage(img, 0, 0)
+      canvasMask = requestedMask
       isDirty.value = false
     }
     img.onerror = () => {
+      if (!isStillWanted()) return
+      pendingMaskImage = null
       modelValue.value = ''
     }
     img.src = url
   }
 
-  watch(() => nodeOutputStore.nodeOutputs, updateInputImageUrl, { deep: true })
-  watch(() => nodeOutputStore.nodePreviewImages, updateInputImageUrl, {
-    deep: true
+  watch(modelValue, (mask) => {
+    if (mask === canvasMask) return
+    history.discard()
+    if (mask) restoreCanvas()
+    else clearToEmptyMask()
   })
-  watch([canvasWidth, canvasHeight], resizeCanvas)
+
+  watch(litegraphNode, () => {
+    registerWidgetSerialization()
+    restoreSettingsFromProperties()
+  })
+  watch([canvasWidth, canvasHeight], () => {
+    resizeCanvas()
+    history.discard()
+  })
 
   watch(
     [tool, brushSize, brushColor, brushOpacity, brushHardness],
@@ -726,7 +837,6 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     resizeCanvas()
     registerWidgetSerialization()
     restoreSettingsFromProperties()
-    updateInputImageUrl()
     restoreCanvas()
   }
 
@@ -737,6 +847,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       cancelAnimationFrame(rafId)
       rafId = null
     }
+    history.discard()
   })
 
   return {
@@ -763,6 +874,11 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     handlePointerLeave,
 
     handleInputImageLoad,
-    handleClear
+    handleClear,
+
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
+    undo: history.undo,
+    redo: history.redo
   }
 }

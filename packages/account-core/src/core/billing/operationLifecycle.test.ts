@@ -91,6 +91,7 @@ const STATUS_DATA: BillingStatusData = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }
@@ -857,6 +858,89 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    it('recovers the named operation, not a different one the backend reports pending', async () => {
+      const { lifecycle, calls } = harness({
+        embedded: true,
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-topup',
+          pending_billing_op_type: 'topup',
+          payment_intent_client_secret: 'pi_topup'
+        }),
+        answers: [
+          httpOk(
+            opStatus({
+              id: 'op-signup',
+              payment_intent_client_secret: 'pi_signup',
+              authentication_state: 'requires_action'
+            })
+          )
+        ]
+      })
+
+      const recovered = await lifecycle.recover({
+        operation: { id: 'op-signup', kind: 'subscription' }
+      })
+
+      expect(calls.map((call) => call.route)).toEqual([
+        operationRoute('op-signup')
+      ])
+      expect(recovered).toMatchObject({
+        status: 'ok',
+        value: {
+          id: 'op-signup',
+          kind: 'subscription',
+          presentation: 'embedded',
+          challenge: { clientSecret: 'pi_signup' }
+        }
+      })
+    })
+
+    it('adopts nothing for a named operation whose read returns after a payment command started', async () => {
+      const namedRead = deferred<BillingResult<BillingHttpResponse>>()
+      const { lifecycle } = harness({
+        embedded: true,
+        answers: [namedRead.promise, httpOk(opStatus({ id: 'op-new' }))]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      const recovering = lifecycle.recover({
+        operation: { id: 'op-signup', kind: 'subscription' }
+      })
+      await flush()
+      await lifecycle.begin('subscription', issued({ operationId: 'op-new' }))
+      namedRead.resolve(
+        httpOk(
+          opStatus({
+            id: 'op-signup',
+            payment_intent_client_secret: 'pi_signup'
+          })
+        )
+      )
+
+      await expect(recovering).resolves.toMatchObject({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      expect(announced.map((state) => state.id)).not.toContain('op-signup')
+    })
+
+    it('recovers nothing when the named operation is not found', async () => {
+      const { lifecycle } = harness({
+        status: statusSnapshot({
+          pending_billing_op_id: 'op-topup',
+          pending_billing_op_type: 'topup'
+        }),
+        answers: [httpStatus(404)]
+      })
+
+      await expect(
+        lifecycle.recover({
+          operation: { id: 'op-signup', kind: 'subscription' }
+        })
+      ).resolves.toEqual({ status: 'ok', value: undefined })
+    })
+
     it("announces the backend's pending operation with the phase it read, never as an unread pending", async () => {
       const { lifecycle, calls } = harness({
         status: statusSnapshot({
@@ -1298,6 +1382,36 @@ describe('createBillingOperationLifecycle', () => {
         value: {
           phase: 'succeeded',
           receipt: { amountChargedCents: 3250, creditsAdded: 6858 }
+        }
+      })
+    })
+
+    it('re-reads a success whose auto top-up is still turning on, when asked for settled operations', async () => {
+      const charged = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250,
+        credits_added: 6858
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus({ ...charged, auto_top_up_activation: 'pending' })),
+          httpOk(opStatus({ ...charged, auto_top_up_activation: 'failed' }))
+        ]
+      })
+      await lifecycle.begin('topup', issued())
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({
+        receipt: { autoTopUpActivation: 'pending' }
+      })
+
+      await expect(
+        lifecycle.recover({ includeSettled: true })
+      ).resolves.toMatchObject({
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          receipt: { creditsAdded: 6858, autoTopUpActivation: 'failed' }
         }
       })
     })

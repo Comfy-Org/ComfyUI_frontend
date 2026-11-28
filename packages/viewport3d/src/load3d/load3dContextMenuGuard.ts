@@ -1,4 +1,4 @@
-type PointerPosition = { x: number; y: number }
+import type { Point2D as PointerPosition } from '@comfyorg/shared-frontend-utils/geometry'
 
 function exceedsClickThreshold(
   start: PointerPosition,

@@ -10,6 +10,7 @@ import {
   MODEL_ACCESS_ERROR_CATALOG_ID,
   MODEL_DOWNLOAD_FAILED_CATALOG_ID,
   OUT_OF_MEMORY_CATALOG_ID,
+  PERSONAL_WALLET_INSUFFICIENT_CREDITS_CATALOG_ID,
   PREPROCESSING_FAILED_CATALOG_ID,
   PREPROCESSING_TIMEOUT_CATALOG_ID,
   RATE_LIMITED_CATALOG_ID,
@@ -18,6 +19,7 @@ import {
   RUN_START_FAILED_CATALOG_ID,
   SERVER_BUSY_CATALOG_ID,
   SERVER_CRASHED_CATALOG_ID,
+  SERVER_OUT_OF_MEMORY_CATALOG_ID,
   SIGN_IN_REQUIRED_CATALOG_ID,
   SUBSCRIPTION_REQUIRED_CATALOG_ID,
   SUBSCRIPTION_UPGRADE_REQUIRED_CATALOG_ID,
@@ -25,6 +27,8 @@ import {
   UNEXPECTED_SERVICE_ERROR_CATALOG_ID,
   WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID
 } from './catalogIds'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+
 import type { CatalogParams } from './catalogI18n'
 
 // Runtime errors can share generic exception labels, so targeted cataloging
@@ -32,6 +36,10 @@ import type { CatalogParams } from './catalogI18n'
 const INSUFFICIENT_CREDITS_MESSAGES = new Set([
   'Payment Required: Please add credits to your account to use this node.'
 ])
+const PERSONAL_WALLET_SESSION_PREFIX =
+  'Payment Required: This session is set to bill your personal account,'
+const PERSONAL_WALLET_API_KEY_PREFIX =
+  'Payment Required: This API key bills your personal account,'
 const WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES = new Set([
   // Execution-time (pre-GPU) WebSocket failure for a queued team job.
   'Payment Required: Please add credits to your workspace to continue.',
@@ -46,12 +54,19 @@ const SUBSCRIPTION_REQUIRED_MESSAGES = new Set([
   'User has no active subscription. Please subscribe to a plan to continue.',
   'Subscription required to queue workflows'
 ])
+const EXECUTE_PROMPT_SUBSCRIPTION_TYPES = new Set([
+  'CLOUD_SUBSCRIPTION_REQUIRED',
+  'FREE_TIER_EXHAUSTED',
+  'PARTNER_NODE_PAYMENT_REQUIRED',
+  'MODEL_PAYMENT_REQUIRED'
+])
 const SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX =
   'the following private models require a subscription upgrade:'
 const TIMEOUT_MESSAGES = new Set(['Job execution time exceeded maximum limit'])
 const GENERATION_STALLED_MESSAGES = new Set([
   'Job went too long without making any progress',
-  'Job has stagnated'
+  'Job has stagnated',
+  'Job stopped after making no node progress for too long'
 ])
 const SERVER_CRASHED_MESSAGES = new Set([
   'RIP to the server your workflow was running on.',
@@ -82,10 +97,21 @@ const RUN_ENDED_UNEXPECTEDLY_MESSAGE = 'The run ended unexpectedly.'
 const SIGN_IN_REQUIRED_MESSAGE =
   'Unauthorized: Please login first to use this node.'
 const RATE_LIMITED_PREFIX = 'Rate Limit Exceeded:'
-const CORE_OOM_TIP = 'This error means you ran out of memory on your GPU.'
-const CORE_OOM_ALLOCATION_PREFIX = 'Allocation on device'
-const CLOUD_OOM_PREFIX =
+const GPU_OOM_SIGNATURES = [
+  'This error means you ran out of memory on your GPU.',
+  'Allocation on device',
+  'CUDA out of memory',
+  'CUDA error: out of memory',
+  'GPU out of memory',
+  'torch.OutOfMemoryError',
+  'torch.cuda.OutOfMemoryError',
+  'VRAM grow failed'
+]
+const CLOUD_HOST_OOM_EXCEPTION_TYPE = 'OOMError'
+const CLOUD_HOST_OOM_SIDECAR_PREFIX =
   'Workflow execution failed due to insufficient memory (OOM).'
+const CLOUD_HOST_OOM_CONTAINER_MESSAGE =
+  'This workflow ran out of memory on the server. Try a shorter video, lower resolution or smaller batch.'
 const ERRNO_DIRECTORY_MESSAGE = '[Errno 21] Is a directory:'
 const INVALID_CLIP_INPUT_PREFIX = 'ERROR: clip input is invalid: None'
 const PROMPT_TOO_SHORT_MESSAGE =
@@ -119,6 +145,7 @@ const REQUEST_FAILED_PREFIXES = ['Failed to send prompt request:']
 const SERVER_CRASHED_PREFIXES = [
   'Workflow execution was interrupted due to ComfyUI process restart.',
   'Job execution interrupted: server shutdown.',
+  'Job execution interrupted: the inference server was shut down',
   'Failed to clear queue and restart failed:',
   'WebSocket failed to reconnect after restart:'
 ]
@@ -157,15 +184,22 @@ function catalogMatchWithMessageFallback(
   return catalogMatch(catalogId, { detailsFallback: message })
 }
 
-function isOutOfMemoryError(info: RuntimeErrorInfo): boolean {
-  const message = info.exceptionMessage
-  return (
-    info.exceptionType === 'OOMError' ||
-    message.includes(CORE_OOM_TIP) ||
-    message.includes(CORE_OOM_ALLOCATION_PREFIX) ||
-    message.includes(CLOUD_OOM_PREFIX) ||
-    message.includes('CUDA out of memory') ||
-    message.includes('GPU out of memory')
+function isGpuOutOfMemoryError(message: string): boolean {
+  return pendingServerFact(
+    'BE-27004',
+    GPU_OOM_SIGNATURES.some((signature) => message.includes(signature))
+  )
+}
+
+function isHostOutOfMemoryError(
+  info: RuntimeErrorInfo,
+  message: string
+): boolean {
+  return pendingServerFact(
+    'BE-27004',
+    info.exceptionType === CLOUD_HOST_OOM_EXCEPTION_TYPE ||
+      message === CLOUD_HOST_OOM_CONTAINER_MESSAGE ||
+      message.includes(CLOUD_HOST_OOM_SIDECAR_PREFIX)
   )
 }
 
@@ -206,6 +240,20 @@ function hasEmbeddedApiErrorPayload(message: string): boolean {
   return /request returned error status \d{3}:\s*\{/.test(message)
 }
 
+export type PersonalWalletCredential = 'session' | 'api_key'
+
+function isPersonalWalletMessage(message: string, prefix: string): boolean {
+  return pendingServerFact('BE-23739', message.startsWith(prefix))
+}
+
+function personalWalletMatch(
+  credential: PersonalWalletCredential
+): RuntimeCatalogMatch {
+  return catalogMatch(PERSONAL_WALLET_INSUFFICIENT_CREDITS_CATALOG_ID, {
+    params: { credential }
+  })
+}
+
 function isSubscriptionUpgradeMessage(message: string): boolean {
   return (
     message.toLowerCase().startsWith(SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX) &&
@@ -222,9 +270,14 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
       catalogMatchWithMessageFallback(IMAGE_NOT_LOADED_CATALOG_ID, message)
   },
   {
-    matches: isOutOfMemoryError,
+    matches: (_info, message) => isGpuOutOfMemoryError(message),
     resolve: (_info, message) =>
       catalogMatchWithMessageFallback(OUT_OF_MEMORY_CATALOG_ID, message)
+  },
+  {
+    matches: isHostOutOfMemoryError,
+    resolve: (_info, message) =>
+      catalogMatchWithMessageFallback(SERVER_OUT_OF_MEMORY_CATALOG_ID, message)
   },
   {
     matches: (_info, message) => message.startsWith(INVALID_CLIP_INPUT_PREFIX),
@@ -247,6 +300,16 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
     matches: (_info, message) =>
       WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES.has(message),
     resolve: () => catalogMatch(WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID)
+  },
+  {
+    matches: (_info, message) =>
+      isPersonalWalletMessage(message, PERSONAL_WALLET_SESSION_PREFIX),
+    resolve: () => personalWalletMatch('session')
+  },
+  {
+    matches: (_info, message) =>
+      isPersonalWalletMessage(message, PERSONAL_WALLET_API_KEY_PREFIX),
+    resolve: () => personalWalletMatch('api_key')
   },
   {
     // 'insufficient_credits' is the error.type BE-2866 will emit on the
@@ -399,6 +462,11 @@ export function resolveRuntimeCatalogMatch(
   info: RuntimeErrorInfo
 ): RuntimeCatalogMatch | undefined {
   const message = info.exceptionMessage.trim()
+
+  if (EXECUTE_PROMPT_SUBSCRIPTION_TYPES.has(info.exceptionType)) {
+    return catalogMatch(SUBSCRIPTION_REQUIRED_CATALOG_ID)
+  }
+  if (info.exceptionType === 'FREE_TIER_UNAVAILABLE') return undefined
 
   for (const rule of RUNTIME_MATCH_RULES) {
     if (rule.matches(info, message)) return rule.resolve(info, message)

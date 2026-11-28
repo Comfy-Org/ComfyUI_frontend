@@ -75,8 +75,8 @@ import { onMounted, ref, useId } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import type {
   CancellationReason,
@@ -87,7 +87,7 @@ import {
   cancellationSurveyExitEvent,
   cancellationSurveyShownEvent
 } from '@/platform/billing/subscription/utils/cancellationSurvey'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 const { surveyId, experimentVariant, onExit } = defineProps<{
   surveyId: string

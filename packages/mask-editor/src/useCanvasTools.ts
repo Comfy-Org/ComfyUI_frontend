@@ -1,8 +1,8 @@
 import { ref, watch } from 'vue'
 import { useMaskEditorStore } from './maskEditorStore'
 import { ColorComparisonMethod } from './types'
-import type { Point } from './types'
-import { rgbToHsl } from './color'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { rgbToHsl } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const getPixelAlpha = (
   data: Uint8ClampedArray,

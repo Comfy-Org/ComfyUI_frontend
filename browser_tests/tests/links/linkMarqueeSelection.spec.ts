@@ -1,14 +1,14 @@
 import type { Page } from '@playwright/test'
 
-import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/types/nodeId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const CONDITIONING_INPUTS = ['positive', 'negative']
 
@@ -110,7 +110,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     await test.step('Hide both links from the toolbox', async () => {
       await marqueeBeforeInputs(comfyPage, marquee)
       await comfyPage.selectionToolbox
-        .getByTestId(TestIds.selectionToolbox.hideLinks)
+        .getByRole('button', { name: 'Hide Selected Links', exact: true })
         .click()
 
       await expect
@@ -142,7 +142,7 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     await test.step('Delete both links from the toolbox', async () => {
       await marqueeBeforeInputs(comfyPage, marquee)
       await comfyPage.selectionToolbox
-        .getByTestId(TestIds.selectionToolbox.deleteLinks)
+        .getByRole('button', { name: 'Delete Selected Links', exact: true })
         .click()
 
       await expect
@@ -160,9 +160,10 @@ test.describe('Marquee link selection', { tag: '@canvas' }, () => {
     await test.step('Delete both links with the Delete key', async () => {
       await marqueeBeforeInputs(comfyPage, marquee)
       await expect(
-        comfyPage.selectionToolbox.getByTestId(
-          TestIds.selectionToolbox.deleteLinks
-        )
+        comfyPage.selectionToolbox.getByRole('button', {
+          name: 'Delete Selected Links',
+          exact: true
+        })
       ).toBeVisible()
       await comfyPage.keyboard.delete()
 
@@ -186,8 +187,14 @@ async function expectOutputLinksHideAndShow(
   linkIds: string[]
 ) {
   const toolbox = comfyPage.selectionToolbox
-  const hideLinks = toolbox.getByTestId(TestIds.selectionToolbox.hideLinks)
-  const showLinks = toolbox.getByTestId(TestIds.selectionToolbox.showLinks)
+  const hideLinks = toolbox.getByRole('button', {
+    name: 'Hide Selected Links',
+    exact: true
+  })
+  const showLinks = toolbox.getByRole('button', {
+    name: 'Show Selected Links',
+    exact: true
+  })
 
   await test.step('Hide every link of the output from the toolbox', async () => {
     await clickOutput()
@@ -197,6 +204,7 @@ async function expectOutputLinksHideAndShow(
     await expect
       .poll(() => linkPresentation(comfyPage))
       .toEqual(Object.fromEntries(linkIds.map((id) => [id, { hidden: true }])))
+    await expect(toolbox).toBeHidden()
   })
 
   await test.step('Show the hidden links again from the toolbox', async () => {
@@ -236,11 +244,12 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
     const [encoder] =
       await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
     const clipOutput = await loader.getOutput(1)
-    const encoderInput = await encoder.getInput(0)
+    const encoderInput = await encoder.getInputByName('clip')
     const inputLinkId = () =>
       comfyPage.page.evaluate(
-        (id) => window.app!.graph.getNodeById(id)?.inputs[0].link ?? null,
-        encoder.id
+        ([id, index]) =>
+          window.app!.graph.getNodeById(id)?.inputs[index].link ?? null,
+        [encoder.id, encoderInput.index] as const
       )
 
     await expectOutputLinksHideAndShow(
@@ -284,3 +293,47 @@ test.describe('Socket click link selection', { tag: '@canvas' }, () => {
     }
   )
 })
+
+test.describe(
+  'Socket go-to control',
+  { tag: ['@canvas', '@screenshot', '@vue-nodes'] },
+  () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      const title = 'Conditioning text encoder for the main subject prompt'
+      await comfyPage.workflow.loadWorkflow('default', {
+        nodes: { 6: { title }, 7: { title } }
+      })
+    })
+
+    test('shows a go-to button and a picker of same-named long titles', async ({
+      comfyPage
+    }) => {
+      const toolbox = comfyPage.selectionToolbox
+
+      await test.step('An input socket offers one go-to button', async () => {
+        const encoder = await comfyPage.nodeOps.getNodeRefById(6)
+        const { index } = await encoder.getInputByName('clip')
+        await comfyPage.vueNodes.getInputSlotConnectionDot('6', index).click()
+        const goTo = toolbox.getByRole('button', {
+          name: 'Go to Load Checkpoint'
+        })
+        await expect(goTo).toBeVisible()
+
+        await expectElementScreenshot(goTo, 'link-destination-button.png')
+      })
+
+      await test.step('An output socket opens a picker of its linked nodes', async () => {
+        await comfyPage.vueNodes.getOutputSlotConnectionDot('4', 1).click()
+        await toolbox
+          .getByRole('button', { name: 'Go to a linked node' })
+          .click()
+        const picker = comfyPage.page.getByRole('menu')
+        await expect(picker.getByRole('menuitem')).toHaveCount(2)
+
+        await expectElementScreenshot(picker, 'link-destination-picker.png')
+      })
+    })
+  }
+)

@@ -1,8 +1,8 @@
 import { describe, expect } from 'vitest'
 
 import { LLink } from '@/lib/litegraph/src/litegraph'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { test } from './__fixtures__/testExtensions'
 

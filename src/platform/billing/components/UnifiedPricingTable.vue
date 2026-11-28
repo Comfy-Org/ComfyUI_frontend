@@ -149,7 +149,7 @@
                 :key="feature"
                 class="flex items-start gap-2"
               >
-                <i class="pi pi-check mt-0.5 text-xs" />
+                <i class="mt-0.5 icon-[lucide--check] size-3" />
                 <span class="text-sm font-normal text-muted-foreground">
                   {{ feature }}
                 </span>
@@ -160,10 +160,7 @@
                  card bottom so the figures align across tiers. -->
             <div class="mt-auto flex flex-col gap-1">
               <div class="flex items-center gap-2">
-                <i
-                  class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
-                  aria-hidden="true"
-                />
+                <i class="icon-[lucide--coins] bg-credit" aria-hidden="true" />
                 <span class="text-sm/normal font-bold tabular-nums">
                   {{ n(creditsForTier(tier)) }}
                 </span>
@@ -242,7 +239,7 @@
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
                   <i
-                    class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
+                    class="icon-[lucide--coins] bg-credit"
                     aria-hidden="true"
                   />
                   <span class="text-sm/normal font-bold tabular-nums">
@@ -297,7 +294,7 @@
                   :key="perk"
                   class="flex items-start gap-2"
                 >
-                  <i class="pi pi-check mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--check] size-3" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ perk }}
                   </span>
@@ -309,7 +306,7 @@
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
                 <div class="flex items-start gap-2">
-                  <i class="pi pi-clock mt-0.5 text-xs" />
+                  <i class="mt-0.5 icon-[lucide--clock] size-3" />
                   <span class="text-sm font-normal">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
                   </span>
@@ -349,16 +346,73 @@
       </div>
     </div>
 
-    <div class="mt-auto flex min-h-14 items-center justify-center pt-4 text-sm">
+    <div
+      class="mt-auto flex min-h-14 flex-col items-center justify-center gap-2 pt-4 text-sm"
+    >
+      <div
+        v-if="showSignupPaymentNotice"
+        role="status"
+        data-testid="pricing-signup-payment-notice"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
+      >
+        <i
+          class="icon-[lucide--circle-alert] bg-background"
+          aria-hidden="true"
+        />
+        <span>
+          {{ signupPaymentTitle }}
+          {{ t('subscription.signupPaymentRecovery.body') }}
+        </span>
+        <a
+          :href="CONTACT_SUPPORT_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-inter font-bold text-background no-underline hover:opacity-80"
+        >
+          {{ t('subscription.signupPaymentRecovery.contactSupport') }}
+        </a>
+        <button
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
+          :disabled="isOpeningPayment"
+          @click="finishPayment"
+        >
+          {{ t('subscription.signupPaymentRecovery.finishPayment') }}
+        </button>
+      </div>
+      <div
+        v-else-if="showPastDueNotice"
+        role="status"
+        data-testid="pricing-past-due-notice"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
+      >
+        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
+        <span>
+          {{
+            t(
+              isOwnerNotice
+                ? 'subscription.pastDueNoticeOwner'
+                : 'subscription.pastDueNoticeMember'
+            )
+          }}
+        </span>
+        <button
+          v-if="isOwnerNotice"
+          ref="updatePaymentButtonEl"
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 font-inter text-sm font-bold text-background hover:opacity-80 disabled:cursor-default disabled:opacity-60"
+          :disabled="isUpdatingPayment"
+          @click="updatePayment"
+        >
+          {{ t('subscription.paymentRecovery.ownerCta') }}
+        </button>
+      </div>
       <div
         v-if="showScheduledPlanChange"
         role="status"
         class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
       >
-        <i
-          class="icon-[lucide--info] size-4 shrink-0 bg-background"
-          aria-hidden="true"
-        />
+        <i class="icon-[lucide--info] bg-background" aria-hidden="true" />
         <span>
           {{
             t('subscription.scheduledChangeNotice', {
@@ -369,7 +423,11 @@
         </span>
       </div>
       <I18nT
-        v-else
+        v-if="
+          !showSignupPaymentNotice &&
+          !showPastDueNotice &&
+          !showScheduledPlanChange
+        "
         keypath="subscription.pricingBlurb"
         tag="p"
         class="m-0 text-center text-muted-foreground"
@@ -386,7 +444,7 @@
         </template>
         <template #questions>
           <a
-            :href="QUESTIONS_URL"
+            :href="questionsUrl"
             target="_blank"
             rel="noopener noreferrer"
             class="cursor-pointer text-foreground no-underline hover:text-muted-foreground"
@@ -420,26 +478,29 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import PricingTierHeading from '@/platform/billing/components/PricingTierHeading.vue'
-import Card from '@/components/ui/card/Card.vue'
+import Card from '@comfyorg/design-system/card/Card'
 import {
   BILLING_ACTION_NAME,
   planCtaActionName
 } from '@/platform/telemetry/billingActionNames'
 import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import CreditSlider from '@/platform/billing/components/credit-slider/CreditSlider.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
 import {
   ENTERPRISE_URL,
   TIER_PRICING,
-  amountForBillingCycle
+  amountForBillingCycle,
+  toTierKey
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
@@ -457,11 +518,13 @@ import {
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type { Plan } from '@comfyorg/billing-core'
 import { formatSubscriptionDate } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { buildSupportUrl } from '@/platform/support/config'
+import { useAuthStore } from '@/stores/authStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -470,12 +533,14 @@ interface Props {
   loadingTier?: CheckoutTierKey | null
   /** Initial plan scope. */
   initialPlanMode?: 'personal' | 'team'
+  outstandingPaymentRefusals?: number
 }
 
 const {
   isLoading,
   loadingTier = null,
-  initialPlanMode = 'personal'
+  initialPlanMode = 'personal',
+  outstandingPaymentRefusals = 0
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -493,7 +558,6 @@ const emit = defineEmits<{
 
 const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions } = useWorkspaceUI()
 
 // Every CTA here resolves to a billing write the server authorizes on its own,
 // so each catalog asks whether any write that reaches it is permitted instead of
@@ -505,7 +569,6 @@ const { permissions } = useWorkspaceUI()
 // The team catalog is not reachable by downgrading to personal, so its gate
 // stops at the three writes that do reach it.
 const lifecycleActionPermitted = computed(() => {
-  if (!isCloud) return permissions.value.canManageSubscription
   if (!capabilities.snapshotAuthoritative.value) return true
   return (
     capabilities.canSubscribeSelfServe.value ||
@@ -517,7 +580,6 @@ const lifecycleActionPermitted = computed(() => {
 // Read on its own by the plan-scope toggle, which offers or withholds the whole
 // personal catalog rather than one CTA, so it keeps its own capability.
 const canDowngradeToPersonal = computed(() => {
-  if (!isCloud) return permissions.value.canDowngradeToPersonal
   if (!capabilities.snapshotAuthoritative.value) return true
   return capabilities.canDowngradeToPersonal.value
 })
@@ -528,8 +590,11 @@ const planMode = ref<'personal' | 'team'>(initialPlanMode)
 const VIDEO_TEMPLATE_URL =
   'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
 
-/** External footnote destinations — rendered as real links (open in a new tab). */
-const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
+const authStore = useAuthStore()
+const questionsUrl = computed(() =>
+  buildSupportUrl('question', { email: authStore.userEmail })
+)
+const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
@@ -639,6 +704,43 @@ watch(
     if (!canSelect) planMode.value = 'team'
   },
   { immediate: true }
+)
+
+const {
+  updatePayment,
+  isUpdatingPayment,
+  paymentRecoveryLock,
+  refreshCapabilities
+} = usePaymentRecoveryDialog()
+const updatePaymentButtonEl = ref<HTMLElement | null>(null)
+const showPastDueNotice = computed(
+  () => isCloud && paymentRecoveryLock.value !== null
+)
+const isOwnerNotice = computed(() => paymentRecoveryLock.value === 'owner')
+const {
+  subscriptionPaymentRecovery,
+  recoveryPlanTier,
+  isOpeningPayment,
+  finishPayment
+} = useSubscriptionPaymentRecovery()
+const showSignupPaymentNotice = computed(
+  () => isCloud && subscriptionPaymentRecovery.value !== null
+)
+const signupPaymentTitle = computed(() => {
+  const tierKey = recoveryPlanTier.value && toTierKey(recoveryPlanTier.value)
+  return tierKey
+    ? t('subscription.signupPaymentRecovery.title', {
+        plan: t(`subscription.tiers.${tierKey}.name`)
+      })
+    : t('subscription.signupPaymentRecovery.titleNoPlan')
+})
+watch(
+  () => outstandingPaymentRefusals,
+  async () => {
+    await refreshCapabilities()
+    await nextTick()
+    updatePaymentButtonEl.value?.focus()
+  }
 )
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
@@ -876,6 +978,12 @@ const getDeniedReasonCopy = (tierKey: CheckoutTierKey): string | undefined => {
       ? t('subscription.planUnavailable.subscriptionChangeScheduled', { date })
       : t('subscription.planUnavailable.subscriptionChangeInProgress')
   }
+  if (
+    plan.denied_reason === 'billing_operation_in_progress' &&
+    showSignupPaymentNotice.value
+  ) {
+    return undefined
+  }
   const key = plan.denied_reason && DENIED_REASON_COPY_KEYS[plan.denied_reason]
   return t(key || 'subscription.planUnavailable.generic')
 }
@@ -894,8 +1002,8 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean =>
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
-    ? 'font-inter text-sm font-bold leading-normal text-background'
-    : 'font-inter text-sm font-bold leading-normal text-foreground'
+    ? 'text-sm font-bold leading-normal text-background'
+    : 'text-sm font-bold leading-normal'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
@@ -943,7 +1051,8 @@ function handleSubscribeTeam() {
       discountedUsd: getStopDiscountedMonthlyUsd(
         stop,
         currentBillingCycle.value
-      )
+      ),
+      periodChargeUsd: stop.periodChargeUsd
     },
     billingCycle: currentBillingCycle.value,
     isChange: isTeamPlanChange.value

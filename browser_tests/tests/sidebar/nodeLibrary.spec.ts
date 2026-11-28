@@ -35,7 +35,7 @@ async function expectBookmarkCustomization(
 }
 
 async function renameInlineFolder(comfyPage: ComfyPage, newName: string) {
-  const renameInput = comfyPage.page.locator('.editable-text input')
+  const renameInput = comfyPage.page.locator('input.editable-text')
   await expect(renameInput).toBeVisible()
   await renameInput.fill(newName)
   await renameInput.press('Enter')
@@ -89,9 +89,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.nextFrame()
 
     // Verify the node is added to the canvas
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(count + 1)
+    await comfyPage.expectNodeCount(count + 1)
   })
 
   test('Bookmark node', async ({ comfyPage }) => {
@@ -134,7 +132,7 @@ test.describe('Node library sidebar', () => {
   test('Can add new bookmark folder', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.newFolderButton.click()
-    const textInput = comfyPage.page.locator('.editable-text input')
+    const textInput = comfyPage.page.locator('input.editable-text')
     await textInput.waitFor({ state: 'visible' })
     await textInput.fill('New Folder')
     await textInput.press('Enter')
@@ -149,7 +147,7 @@ test.describe('Node library sidebar', () => {
 
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page.getByRole('menuitem', { name: 'New Folder' }).click()
-    const textInput = comfyPage.page.locator('.editable-text input')
+    const textInput = comfyPage.page.locator('input.editable-text')
     await textInput.waitFor({ state: 'visible' })
     await textInput.fill('bar')
     await textInput.press('Enter')

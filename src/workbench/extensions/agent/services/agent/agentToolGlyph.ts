@@ -32,6 +32,16 @@ const KNOWN_TOOLS: Record<string, KnownTool> = {
     labelKey: 'agent.toolForgotPreference',
     activeLabelKey: 'agent.toolForgettingPreference',
     icon: 'icon-[lucide--circle-question-mark]'
+  },
+  set_extension_enabled: {
+    labelKey: 'agent.toolSwitchedNodePack',
+    activeLabelKey: 'agent.toolSwitchingNodePack',
+    icon: 'icon-[lucide--package]'
+  },
+  remove_extension: {
+    labelKey: 'agent.toolRemovedNodePack',
+    activeLabelKey: 'agent.toolRemovingNodePack',
+    icon: 'icon-[lucide--package-minus]'
   }
 }
 
@@ -39,6 +49,10 @@ const KNOWN_TOOLS: Record<string, KnownTool> = {
 // to something off Object.prototype.
 function knownTool(name: string): KnownTool | undefined {
   return Object.hasOwn(KNOWN_TOOLS, name) ? KNOWN_TOOLS[name] : undefined
+}
+
+export function toolUsesOutcomeCopy(name: string): boolean {
+  return knownTool(name) !== undefined
 }
 
 export function toolLabel(

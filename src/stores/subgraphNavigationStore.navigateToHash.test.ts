@@ -7,7 +7,7 @@ import { nextTick, ref } from 'vue'
 import type * as VueRouter from 'vue-router'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import {
@@ -77,8 +77,6 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/services/litegraphService'))
 
 const workflowServiceMocks = vi.hoisted(() => ({
@@ -129,7 +127,6 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     app.canvas.subgraph = undefined
     app.canvas.graph = app.rootGraph
     useCanvasStore().currentGraph = app.rootGraph
-    Object.assign(useWorkflowStore(), { openWorkflows: [] })
     useWorkflowStore().activeSubgraph = undefined
     routeHashRef.value = ''
     routerMocks.history.state = {}
@@ -489,6 +486,22 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(useWorkflowStore().activeSubgraph).toBe(subgraph)
   })
 
+  it('opens the workflow of a restored page hash without calling it a user change', async () => {
+    const workflow = fromPartial<ComfyWorkflow>({
+      path: 'restored-workflow.json',
+      activeState: { id: ids.deletedSubgraph, definitions: { subgraphs: [] } }
+    })
+    useWorkflowStore().attachWorkflow(workflow, 0)
+    routeHashRef.value = `#${ids.deletedSubgraph}`
+
+    await useSubgraphNavigationStore().updateHash()
+
+    expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledExactlyOnceWith(
+      workflow,
+      { navigationIntentId: expect.any(Number) }
+    )
+  })
+
   it('uses the emitted graph during a synchronous graph-change event', async () => {
     const subgraph = makeSubgraph(ids.validSubgraph)
     const navigationStore = useSubgraphNavigationStore()
@@ -543,7 +556,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     })
     expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
       targetWorkflow,
-      { navigationIntentId: expect.any(Number) }
+      { navigationIntentId: expect.any(Number), initiator: 'user' }
     )
   })
 
@@ -598,7 +611,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     expect(routeHashRef.value).toBe(`#${targetSubgraph.id}`)
     expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
       originalWorkflow,
-      { navigationIntentId: expect.any(Number) }
+      { navigationIntentId: expect.any(Number), initiator: 'user' }
     )
   })
 
@@ -696,7 +709,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         routeWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     resolveFirstPush?.()
@@ -748,7 +761,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         firstWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     app.canvas.graph = secondRoot
@@ -798,7 +811,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         firstWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     routeHashRef.value = `#${secondId}`
@@ -807,7 +820,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() => {
       expect(workflowServiceMocks.openWorkflow).toHaveBeenLastCalledWith(
         secondWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
       expect(app.canvas.graph?.id).toBe(secondId)
     })
@@ -848,7 +861,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() =>
       expect(workflowServiceMocks.openWorkflow).toHaveBeenCalledWith(
         firstWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
     )
     routeHashRef.value = `#${secondId}`
@@ -860,7 +873,7 @@ describe('useSubgraphNavigationStore - navigateToHash validation', () => {
     await vi.waitFor(() => {
       expect(workflowServiceMocks.openWorkflow).toHaveBeenLastCalledWith(
         secondWorkflow,
-        { navigationIntentId: expect.any(Number) }
+        { navigationIntentId: expect.any(Number), initiator: 'user' }
       )
       expect(app.canvas.graph?.id).toBe(secondId)
     })

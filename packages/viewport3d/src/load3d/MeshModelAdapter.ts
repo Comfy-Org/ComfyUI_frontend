@@ -161,7 +161,9 @@ export class MeshModelAdapter implements ModelAdapter {
 
     gltf.scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.geometry.computeVertexNormals()
+        if (!child.geometry.hasAttribute('normal')) {
+          child.geometry.computeVertexNormals()
+        }
         ctx.registerOriginalMaterial(child, child.material)
         if (child instanceof THREE.SkinnedMesh) {
           child.frustumCulled = false

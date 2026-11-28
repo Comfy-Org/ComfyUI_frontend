@@ -6,7 +6,7 @@ import {
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -22,9 +22,9 @@ import {
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock(import('@/services/litegraphService'))
@@ -467,6 +467,30 @@ describe('flushProxyWidgetMigration', () => {
       expect(exposures).toHaveLength(1)
       expect(exposures[0].sourcePreviewName).toBe('$$canvas-image-preview')
       expect(exposures[0].sourceNodeId).toBe(String(inner.id))
+    })
+
+    it('exposes legacy video and animation preview entries once under the canvas preview name before the previews are drawn', () => {
+      const host = buildHost()
+      const inner = addInnerNode(host, 'Inner')
+
+      host.properties.proxyWidgets = [
+        [String(inner.id), 'video-preview'],
+        [String(inner.id), '$$comfy_animation_preview']
+      ]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      expect(
+        usePreviewExposureStore().getExposures(
+          host.rootGraph.id,
+          String(host.id)
+        )
+      ).toEqual([
+        expect.objectContaining({
+          sourceNodeId: String(inner.id),
+          sourcePreviewName: '$$canvas-image-preview'
+        })
+      ])
+      expect(host.properties.proxyWidgetErrorQuarantine).toBeUndefined()
     })
 
     it('classifies type:preview serialize:false widgets as preview exposure', () => {

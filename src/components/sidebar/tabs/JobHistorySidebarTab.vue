@@ -44,7 +44,7 @@
             :disabled="queuedCount === 0"
             @click="clearQueuedWorkflows"
           >
-            <i class="icon-[lucide--list-x] size-4" />
+            <i class="icon-[lucide--list-x]" />
           </Button>
         </div>
       </div>
@@ -84,8 +84,8 @@ import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/
 import JobFilterActions from '@/components/queue/job/JobFilterActions.vue'
 import JobAssetsList from '@/components/queue/job/JobAssetsList.vue'
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import { usePointMenu } from '@/components/ui/menu/usePointMenu'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { getVisibleJobTabs, jobTabLabelKeys } from '@/composables/queue/jobTabs'
 import type { JobTab } from '@/composables/queue/jobTabs'
@@ -96,11 +96,11 @@ import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import Button from '@comfyorg/design-system/button/Button'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'

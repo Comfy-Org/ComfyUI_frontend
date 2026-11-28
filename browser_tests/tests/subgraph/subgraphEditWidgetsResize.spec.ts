@@ -38,9 +38,7 @@ test.describe(
 
     test('opens an interior widget context menu', async ({ comfyPage }) => {
       await comfyPage.vueNodes.enterSubgraph()
-      const widget = comfyPage.vueNodes
-        .getNodeByTitle('KSampler')
-        .getByLabel('steps', { exact: true })
+      const widget = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'steps')
 
       await widget.click({ button: 'right' })
 

@@ -1,6 +1,6 @@
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 import type {
   AskUserResolution,
   AssistantMessage,
@@ -10,6 +10,7 @@ import type {
 } from './agentMessageParts'
 import {
   askIdOf,
+  creditsFromChargeMicroUsd,
   retireAskParts,
   snapshotMessage,
   toAskOrNoticePart,
@@ -31,16 +32,26 @@ export type AgentChatEvent = Extract<
       | 'agent_tool_call'
       | 'agent_message_delta'
       | 'agent_message_draft'
+      | 'agent_thinking_draft'
       | 'agent_message_done'
       | 'agent_active_tab'
       | 'agent_ask'
       | 'agent_ask_resolved'
+      | 'agent_extension_changed'
   }
+>
+type AgentNonTerminalEvent = Exclude<
+  AgentChatEvent,
+  { type: 'agent_message_done' | 'agent_extension_changed' }
 >
 
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
 type AgentActiveTabEvent = Extract<AgentChatEvent, { type: 'agent_active_tab' }>
 type AgentAskEvent = Extract<AgentChatEvent, { type: 'agent_ask' }>
+type AgentExtensionChangedEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_extension_changed' }
+>
 type AgentThinkingEvent = Extract<AgentChatEvent, { type: 'agent_thinking' }>
 type AgentAskResolvedEvent = Extract<
   AgentChatEvent,
@@ -49,6 +60,10 @@ type AgentAskResolvedEvent = Extract<
 type AgentMessageDeltaEvent = Extract<
   AgentChatEvent,
   { type: 'agent_message_delta' }
+>
+type AgentThinkingDraftEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_thinking_draft' }
 >
 type AgentMessageDraftEvent = Extract<
   AgentChatEvent,
@@ -92,8 +107,17 @@ export interface AgentEventTransport {
   dispose: () => void
 }
 
+const TOOLS_THAT_KEEP_ANSWER_DRAFT: ReadonlySet<string> = new Set([
+  'remember',
+  'forget'
+])
+
 function updateSkill(part: ToolPart, skill: string | null | undefined): void {
   if (skill) part.skill = skill
+}
+
+function updateDownload(part: ToolPart, download: string | undefined): void {
+  if (download) part.download = download
 }
 
 export function createAgentEventTransport(
@@ -106,12 +130,15 @@ export function createAgentEventTransport(
     data: AgentAskEvent['data'],
     reason: UndeliverableAskReason,
     context?: UndeliverableAskContext
-  ) => void = createUndeliverableAskReporter().report
+  ) => void = createUndeliverableAskReporter().report,
+  initialCanvasSyncOutcomeCount?: number
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let draft: TextPart | null = null
+  let answerToolRunning = false
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
+  let thinkingDraft: ThinkingPart | null = null
   const tools = new Map<string, ToolPart>(
     message.parts
       .filter((part): part is ToolPart => part.type === 'tool')
@@ -121,7 +148,8 @@ export function createAgentEventTransport(
   let lastTabTargetKey: string | undefined
   const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
   const observedCanvasOps = new Map<string, Set<string>>()
-  const canvasSyncOutcomeAtStart = getCanvasSyncOutcomeCount()
+  const canvasSyncOutcomeAtStart =
+    initialCanvasSyncOutcomeCount ?? getCanvasSyncOutcomeCount()
   const canvasSyncBaseline = new Map<ToolPart, number>()
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
@@ -216,7 +244,20 @@ export function createAgentEventTransport(
     return pendingCanvasSync.size > 0
   }
 
+  function settleUnresolvedToolParts(): void {
+    for (const part of message.parts) {
+      if (
+        part.type !== 'tool' ||
+        part.state !== 'streaming' ||
+        part.ok !== undefined
+      )
+        continue
+      part.state = 'done'
+    }
+  }
+
   function dispose(): void {
+    settled = true
     flushPendingCanvasSync()
   }
 
@@ -281,7 +322,8 @@ export function createAgentEventTransport(
         type: 'tool',
         callId: data.tool_call_id,
         name: data.tool_name,
-        state: 'streaming'
+        state: 'streaming',
+        ...(data.status === 'running' && { startedAtMs: Date.now() })
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)
@@ -289,15 +331,31 @@ export function createAgentEventTransport(
     }
     part.name = data.tool_name
     updateSkill(part, data.skill)
+    updateDownload(part, data.download)
     if (data.status !== 'running') {
       resolveToolCallState(part, data.status, data.duration_ms, data)
     }
+  }
+
+  function handleToolCallFrame(data: AgentToolCallEvent['data']): void {
+    if (TOOLS_THAT_KEEP_ANSWER_DRAFT.has(data.tool_name)) {
+      answerToolRunning = data.status === 'running'
+      dropThinkingDraft()
+    } else {
+      dropDrafts()
+    }
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    handleToolCallEvent(data)
   }
 
   function handleActiveTabEvent(data: AgentActiveTabEvent['data']): boolean {
     const targetKey = `${data.workflow_id}\u0000${data.node_locator_id ?? ''}`
     if (lastTabTargetKey === targetKey) return false
     lastTabTargetKey = targetKey
+    dropThinkingDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -309,6 +367,23 @@ export function createAgentEventTransport(
       name: data.name
     })
     return true
+  }
+
+  function handleExtensionChangedEvent(
+    data: AgentExtensionChangedEvent['data']
+  ): void {
+    dropThinkingDraft()
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    message.parts.push({
+      type: 'extensionChange',
+      action: data.action,
+      pack: data.pack,
+      agentCreated: data.agent_created,
+      restartRequired: data.restart_required
+    })
   }
 
   function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
@@ -326,7 +401,8 @@ export function createAgentEventTransport(
     }
     const part = toAskOrNoticePart(data)
     if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
-    dropDraft()
+    if (!answerToolRunning) dropDraft()
+    dropThinkingDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
@@ -335,13 +411,67 @@ export function createAgentEventTransport(
     return true
   }
 
-  /** Applies one `agent_thinking` frame: appends its delta to the open
-   * thinking part, opening one first if none is open. */
+  function roundWasRestored(toolCallId: string | undefined): boolean {
+    if (!toolCallId) return false
+    return message.parts.some(
+      (part) => part.type === 'thinking' && part.toolCallId === toolCallId
+    )
+  }
+
   function handleThinkingEvent(data: AgentThinkingEvent['data']): void {
+    if (roundWasRestored(data.tool_call_id)) {
+      dropThinkingDraft()
+      return
+    }
     closeOpenText()
+    adoptThinkingDraft()
     message.thinking = true
     ;(openThinking ?? openNewThinking()).text += data.delta
     message.thinkingText = openThinking?.text
+  }
+
+  function adoptThinkingDraft(): void {
+    if (!thinkingDraft) return
+    thinkingDraft.text = ''
+    thinkingDraft.state = 'streaming'
+    openThinking = thinkingDraft
+    thinkingDraft = null
+  }
+
+  function handleThinkingDraftEvent(
+    data: AgentThinkingDraftEvent['data']
+  ): void {
+    if (!data.text) {
+      if (thinkingDraft) dropThinkingDraft()
+      return
+    }
+    if (!thinkingDraft) {
+      closeOpenText()
+      closeOpenThinking()
+      thinkingDraft = openNewThinking()
+      keepAnswerDraftLast()
+    }
+    thinkingDraft.state = 'streaming'
+    openThinking = thinkingDraft
+    thinkingDraft.text = data.text
+    message.thinking = true
+    message.thinkingText = data.text
+  }
+
+  function keepAnswerDraftLast(): void {
+    if (!draft || message.parts.at(-1) === draft) return
+    const answer = draft
+    message.parts = [...message.parts.filter((part) => part !== answer), answer]
+  }
+
+  function dropThinkingDraft(): void {
+    if (!thinkingDraft) return
+    const stale = thinkingDraft
+    if (openThinking === stale) openThinking = null
+    message.parts = message.parts.filter((part) => part !== stale)
+    thinkingDraft = null
+    message.thinking = false
+    message.thinkingText = undefined
   }
 
   function handleAskResolvedEvent(
@@ -360,7 +490,7 @@ export function createAgentEventTransport(
   /** Applies one `agent_message_delta` frame: appends its delta to the open
    * text part, opening one first if none is open. */
   function handleMessageDeltaEvent(data: AgentMessageDeltaEvent['data']): void {
-    dropDraft()
+    dropDrafts()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
@@ -386,6 +516,11 @@ export function createAgentEventTransport(
     const stale = draft
     message.parts = message.parts.filter((part) => part !== stale)
     draft = null
+  }
+
+  function dropDrafts(): void {
+    dropDraft()
+    dropThinkingDraft()
   }
 
   /** Applies one `agent_message_draft` frame: the whole reply so far replaces
@@ -428,18 +563,13 @@ export function createAgentEventTransport(
     return part
   }
 
-  function applyChatEvent(event: AgentChatEvent): boolean {
+  function applyChatEvent(event: AgentNonTerminalEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
         handleThinkingEvent(event.data)
         return true
       case 'agent_tool_call':
-        dropDraft()
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        handleToolCallEvent(event.data)
+        handleToolCallFrame(event.data)
         return true
       case 'agent_active_tab':
         return handleActiveTabEvent(event.data)
@@ -453,9 +583,9 @@ export function createAgentEventTransport(
       case 'agent_message_draft':
         handleMessageDraftEvent(event.data)
         return true
-      case 'agent_message_done':
-        settle()
-        return false
+      case 'agent_thinking_draft':
+        handleThinkingDraftEvent(event.data)
+        return true
     }
   }
 
@@ -465,15 +595,28 @@ export function createAgentEventTransport(
         reportUndeliverableAsk(event.data, 'settled-turn')
       return
     }
+    if (event.type === 'agent_message_done') {
+      message.creditsUsed = creditsFromChargeMicroUsd(
+        event.data.usage?.charge_micro_usd
+      )
+      settle()
+      return
+    }
+    if (event.type === 'agent_extension_changed') {
+      handleExtensionChangedEvent(event.data)
+      emit(snapshotMessage(message))
+      return
+    }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
   }
 
   function settle(): void {
     if (settled) return
     settled = true
-    dropDraft()
+    dropDrafts()
     closeOpenText()
     closeOpenThinking()
+    settleUnresolvedToolParts()
     message.thinking = false
     message.thinkingText = undefined
     message.streaming = false

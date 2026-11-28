@@ -34,7 +34,7 @@
             )
           "
         >
-          <i class="icon-[lucide--x] size-4" />
+          <i class="icon-[lucide--x]" />
         </button>
       </TagsInputItemDelete>
     </TagsInputItem>

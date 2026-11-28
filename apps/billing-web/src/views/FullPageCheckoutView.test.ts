@@ -29,7 +29,12 @@ import {
 
 import type { OperationNotice } from '@/checkout/operationChannel'
 
+import {
+  awaitPlanChangeCardChoice,
+  awaitPromoAutoApply
+} from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
+import { handoffTab } from '@/handoff/handoffTab'
 import { createBillingI18n } from '@/i18n'
 import type {
   FakeBillingClient,
@@ -60,7 +65,8 @@ vi.mock(import('@datadog/browser-rum'))
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 /** The Stripe key this origin resolves; a test clears it to play a deployment without one. */
@@ -88,6 +94,13 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
     }
   })
 }))
+
+vi.mock(import('@/config/checkoutUi'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
+  vi.mocked(awaitPromoAutoApply).mockResolvedValue(false)
+})
 
 vi.mock(import('@/entry/workspaceBinding'), () => ({
   boundWorkspaceId: () => undefined,
@@ -167,7 +180,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         isLoading: { type: Boolean, default: false },
         locked: { type: Boolean, default: false }
       },
-      emits: ['confirm', 'phase'],
+      emits: ['confirm', 'phase', 'submittingChange'],
       setup(
         props: { canSubmit: boolean; isLoading: boolean; locked: boolean },
         {
@@ -632,6 +645,7 @@ describe('FullPageCheckoutView', () => {
           max_seats: 1,
           occupied_seats: 1,
           scheduled_change: scheduled,
+          ended_at: null,
           team_credit_stop: null
         }
       })
@@ -643,18 +657,28 @@ describe('FullPageCheckoutView', () => {
     }
   )
 
-  it.for<{ name: string; returnTo: string; href: string }>([
+  it.for<{ name: string; query: string; href: string }>([
     {
       name: 'the product that sent the customer, in the billed workspace',
-      returnTo: 'comfyui_workspace',
+      query: 'product=comfyui&return_to=comfyui_workspace',
       href: 'https://testcloud.comfy.org/?workspace=ws-team'
     },
     {
-      name: "the workspace's Plan & Credits settings when this family has no destination for the target",
-      returnTo: 'platform_account',
-      href: 'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+      name: 'the platform it named, in the billed workspace',
+      query: 'product=comfyui&return_to=platform_account',
+      href: 'https://testplatform.comfy.org/?workspace=ws-team'
+    },
+    {
+      name: 'Platform Plans for a Platform checkout headed back to Cloud',
+      query: 'product=platform&return_to=comfyui_workspace&correlation_id=cj_1',
+      href: 'https://testplatform.comfy.org/settings/billing/plans?correlation_id=cj_1&workspace=ws-team'
+    },
+    {
+      name: 'the Platform page it named for a Platform checkout',
+      query: 'product=platform&return_to=platform_billing',
+      href: 'https://testplatform.comfy.org/profile/billing?workspace=ws-team'
     }
-  ])('the back arrow goes to $name', async ({ returnTo, href }) => {
+  ])('the back arrow goes to $name', async ({ query, href }) => {
     const assign = vi
       .spyOn(window.location, 'assign')
       .mockImplementation(() => {})
@@ -662,7 +686,7 @@ describe('FullPageCheckoutView', () => {
     await renderCheckout(
       {},
       () => {},
-      `/v1/checkout?product=comfyui&return_to=${returnTo}&plan=creator_monthly`
+      `/v1/checkout?${query}&plan=creator_monthly`
     )
     await screen.findByText('Subscribe to Creator Plan · Acme Team')
 
@@ -759,7 +783,8 @@ describe('FullPageCheckoutView', () => {
         }
       },
       code: 'PLAN_NOT_FOUND',
-      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+      plans:
+        'https://testplatform.comfy.org/settings/billing/plans?workspace=ws-team'
     },
     {
       name: 'a retired team plan whose link carries its commit stop',
@@ -776,7 +801,8 @@ describe('FullPageCheckoutView', () => {
         }
       },
       code: 'PLAN_NOT_FOUND',
-      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
+      plans:
+        'https://testplatform.comfy.org/settings/billing/plans?pricing=team&stop=stop_1&workspace=ws-team'
     },
     {
       name: 'a team plan named without its commit stop',
@@ -790,7 +816,8 @@ describe('FullPageCheckoutView', () => {
         }
       },
       code: 'CHECKOUT_LINK_INVALID',
-      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
+      plans:
+        'https://testplatform.comfy.org/settings/billing/plans?pricing=team&workspace=ws-team'
     },
     {
       name: 'a catalog team plan named without its commit stop, which the quote refuses',
@@ -811,24 +838,27 @@ describe('FullPageCheckoutView', () => {
         }
       },
       code: 'CHECKOUT_LINK_INVALID',
-      plans: 'https://testcloud.comfy.org/?pricing=team&workspace=ws-team'
+      plans:
+        'https://testplatform.comfy.org/settings/billing/plans?pricing=team&workspace=ws-team'
     },
     {
       name: 'a link the contract cannot read',
       path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator/monthly',
       options: {},
       code: 'CHECKOUT_LINK_INVALID',
-      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+      plans:
+        'https://testplatform.comfy.org/settings/billing/plans?workspace=ws-team'
     },
     {
       name: 'a link that names no plan',
       path: '/v1/checkout?product=comfyui&return_to=comfyui_workspace',
       options: {},
       code: 'CHECKOUT_LINK_INVALID',
-      plans: 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+      plans:
+        'https://testplatform.comfy.org/settings/billing/plans?workspace=ws-team'
     }
   ])(
-    '$name is Plan not available, coded for support, and View plans opens the live catalog',
+    '$name is Plan not available, coded for support, and View plans opens Platform Plans',
     async ({ path, options, code, plans }) => {
       const assign = vi
         .spyOn(window.location, 'assign')
@@ -1290,7 +1320,40 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       Reflect.deleteProperty(window, 'opener')
     })
 
-    it('goes back to return_to with the outcome and reference when no script opened the tab', async () => {
+    it.for([
+      { name: 'its opener cut loose', opener: undefined },
+      { name: 'a script opened', opener: {} }
+    ])(
+      'closes a tab $name when the browser lets it, and navigates nowhere',
+      async ({ opener }) => {
+        if (opener)
+          Object.defineProperty(window, 'opener', {
+            value: opener,
+            configurable: true
+          })
+        const assign = vi
+          .spyOn(window.location, 'assign')
+          .mockImplementation(() => {})
+        const close = vi.spyOn(window, 'close').mockImplementation(() => {
+          Object.defineProperty(window, 'closed', {
+            value: true,
+            configurable: true
+          })
+        })
+        await payReady(SETTLED)
+        form.emit('confirm', 'ctoken_1')
+
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Close' })
+        )
+
+        Reflect.deleteProperty(window, 'closed')
+        expect(close).toHaveBeenCalledOnce()
+        expect(assign).not.toHaveBeenCalled()
+      }
+    )
+
+    it('goes back to return_to with the outcome and reference when the browser keeps the tab open', async () => {
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -1303,7 +1366,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         await screen.findByRole('button', { name: 'Close' })
       )
 
-      expect(close).not.toHaveBeenCalled()
+      expect(close).toHaveBeenCalledOnce()
       expect(assign).toHaveBeenCalledOnce()
       expect(parseReturnResult(String(assign.mock.calls[0][0]))).toEqual({
         result: 'success',
@@ -1321,7 +1384,61 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       ])
     })
 
-    it("goes to the workspace's Plan & Credits settings when this family has no destination for return_to", async () => {
+    it('keeps a handoff tab the browser will not close on its ending', async () => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
+      handoffTab.value = {
+        kind: 'session',
+        session: {
+          token: 'comfy-scoped-session-1',
+          expiresAt: Date.now() + 30 * 60_000,
+          userId: 'user-1',
+          email: 'a@example.com',
+          workspace: { id: 'ws-team', name: 'Acme Team', type: 'team' },
+          role: 'owner'
+        }
+      }
+      await payReady(SETTLED)
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+      handoffTab.value = undefined
+
+      expect(close).toHaveBeenCalledOnce()
+      expect(assign).not.toHaveBeenCalled()
+      expect(
+        screen.getByText('You can close this tab now.')
+      ).toBeInTheDocument()
+    })
+
+    it('goes back to Cloud with the result from a Platform checkout headed there', async () => {
+      const assign = vi
+        .spyOn(window.location, 'assign')
+        .mockImplementation(() => {})
+      await renderCheckout(
+        SETTLED,
+        () => {},
+        '/v1/checkout?product=platform&return_to=comfyui_workspace&plan=creator_monthly'
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+      form.emit('confirm', 'ctoken_1')
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Close' })
+      )
+
+      expect(assign).toHaveBeenCalledWith(
+        'https://testcloud.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_mine'
+      )
+    })
+
+    it('goes back to the platform its return_to names, with the result', async () => {
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -1340,28 +1457,8 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       )
 
       expect(assign).toHaveBeenCalledWith(
-        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+        'https://testplatform.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_mine'
       )
-    })
-
-    it('closes a tab a script opened, and navigates nowhere', async () => {
-      Object.defineProperty(window, 'opener', {
-        value: {},
-        configurable: true
-      })
-      const assign = vi
-        .spyOn(window.location, 'assign')
-        .mockImplementation(() => {})
-      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
-      await payReady(SETTLED)
-      form.emit('confirm', 'ctoken_1')
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Close' })
-      )
-
-      expect(close).toHaveBeenCalledOnce()
-      expect(assign).not.toHaveBeenCalled()
     })
 
     it.for<{ name: string; opened: boolean; footer: string }>([
@@ -1451,6 +1548,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         max_seats: 1,
         occupied_seats: 1,
         scheduled_change: null,
+        ended_at: null,
         team_credit_stop: null,
         cancel_at: '2026-07-28T00:00:00.000Z'
       }
@@ -2499,7 +2597,7 @@ describe('FullPageCheckoutView payment authentication', () => {
     )
   })
 
-  it('puts a challenge the bank refused on its card and frees Pay for the retry, on the same form', async () => {
+  it('puts a challenge the bank refused, still pending, on a not-verified card and frees Pay for the retry, on the same form', async () => {
     const fake = await payHeld()
     fake.publishOperation(challengedOperation('op_3ds', 'in_progress'))
     await waitFor(() => expect(footnote()).toHaveTextContent(PHASE_A))
@@ -2510,9 +2608,9 @@ describe('FullPageCheckoutView payment authentication', () => {
       challenge: { clientSecret: 'cs', status: 'failed' }
     })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Payment not completed'
-    )
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Payment not verified')
+    expect(alert).not.toHaveTextContent("you haven't been charged")
     await waitFor(() => expect(payButton()).toBeEnabled())
     expect(footnote()).toBeEmptyDOMElement()
     expect(form.locked()).toBe(false)
@@ -2967,6 +3065,232 @@ describe('FullPageCheckoutView promo codes', () => {
     expect(await screen.findByText('−$5.60')).toBeInTheDocument()
   })
 
+  describe('with billing_web_promo_auto_apply on', () => {
+    const CAMPAIGN_QUOTE = previewOf({
+      quote_id: 'q_campaign',
+      amount_due_cents: 2240,
+      promotion_code: 'BLACKFRIDAY26',
+      discounts: [
+        { kind: 'promotion', code: 'BLACKFRIDAY26', amount_off_cents: 560 }
+      ]
+    })
+
+    function quotesWithCampaign(fake: FakeBillingClient) {
+      fake.previewSubscribe.mockImplementation(async ({ promotionCode }) => {
+        if (promotionCode === undefined)
+          return { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+        if (promotionCode.toUpperCase() === 'BLACKFRIDAY26')
+          return { status: 'ok', value: CAMPAIGN_QUOTE }
+        return promotionCode.toUpperCase() === 'LAUNCH20'
+          ? { status: 'ok', value: LAUNCH20_QUOTE }
+          : refusedWith('PROMOTION_CODE_INVALID')
+      })
+    }
+
+    const CAMPAIGN_PATH = `${CHECKOUT_PATH}&promo=BLACKFRIDAY26`
+
+    beforeEach(() => {
+      vi.mocked(awaitPromoAutoApply).mockResolvedValue(true)
+    })
+
+    it('prices the campaign code from the URL without an Apply click, and Pay binds it', async () => {
+      const fake = await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(await screen.findByText('−$5.60')).toBeInTheDocument()
+      expect(screen.getAllByText('$22.40')).toHaveLength(2)
+      expect(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      ).toBeEnabled()
+
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+      form.emit('confirm', 'ctoken_1')
+      await waitFor(() =>
+        expect(fake.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({
+            promotion_code: 'BLACKFRIDAY26',
+            quote_id: 'q_campaign'
+          })
+        )
+      )
+    })
+
+    it('leaves any other code from the URL typed until Apply', async () => {
+      const fake = await renderCheckout(
+        {},
+        quotesWithCampaign,
+        `${CHECKOUT_PATH}&promo=LAUNCH20`
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+
+      expect(promoField()).toHaveValue('LAUNCH20')
+      expect(screen.getAllByText('$28.00')).toHaveLength(2)
+      expect(fake.previewSubscribe).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a removed campaign code off after a reload, through Pay', async () => {
+      await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('−$5.60')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      )
+      await screen.findByRole('button', { name: 'Add promo code' })
+      cleanup()
+
+      const reloaded = await renderCheckout(
+        {},
+        quotesWithCampaign,
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+      await waitFor(() => expect(payButton()).toBeEnabled())
+
+      expect(
+        screen.getByRole('button', { name: 'Add promo code' })
+      ).toBeInTheDocument()
+      expect(screen.queryByText('−$5.60')).not.toBeInTheDocument()
+
+      form.emit('confirm', 'ctoken_1')
+      await waitFor(() =>
+        expect(reloaded.subscribe).toHaveBeenCalledWith(
+          expect.objectContaining({ quote_id: 'q_1' })
+        )
+      )
+      expect(reloaded.subscribe).toHaveBeenCalledWith(
+        expect.not.objectContaining({ promotion_code: expect.anything() })
+      )
+      expect(reloaded.previewSubscribe).toHaveBeenCalledOnce()
+    })
+
+    it('still offers a different link-carried code after the campaign code was removed', async () => {
+      await renderCheckout({}, quotesWithCampaign, CAMPAIGN_PATH)
+      await screen.findByText('−$5.60')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Remove BLACKFRIDAY26' })
+      )
+      await screen.findByRole('button', { name: 'Add promo code' })
+      cleanup()
+
+      await renderCheckout(
+        {},
+        quotesWithCampaign,
+        `${CHECKOUT_PATH}&promo=LAUNCH20`
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(promoField()).toHaveValue('LAUNCH20')
+    })
+
+    it('reports to error tracking when the automatic Apply could not be checked', async () => {
+      vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+        clientToken: 'pub',
+        applicationId: 'app'
+      })
+      await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : { status: 'error', code: 'REQUEST_FAILED' }
+          ),
+        CAMPAIGN_PATH
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "We couldn't check this code. Try again."
+      )
+      await waitFor(() =>
+        expect(datadogRum.addError).toHaveBeenCalledWith(
+          expect.objectContaining({ name: 'promo_auto_apply_unchecked' }),
+          expect.objectContaining({
+            error_type: 'promo_auto_apply_unchecked',
+            ui_mode: 'full_page'
+          })
+        )
+      )
+      expect(
+        JSON.stringify(vi.mocked(datadogRum.addError).mock.calls)
+      ).not.toMatch(/blackfriday26/i)
+    })
+
+    it('does not report a failed manual Apply as the automatic one when the flag answers late', async () => {
+      vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+        clientToken: 'pub',
+        applicationId: 'app'
+      })
+      let answerFlag: (on: boolean) => void = () => {}
+      vi.mocked(awaitPromoAutoApply).mockReturnValue(
+        new Promise((resolve) => {
+          answerFlag = resolve
+        })
+      )
+      const fake = await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : { status: 'error', code: 'REQUEST_FAILED' }
+          ),
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+      await screen.findByRole('alert')
+
+      answerFlag(true)
+      await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+      await waitFor(() =>
+        expect(fake.previewSubscribe).toHaveBeenCalledTimes(3)
+      )
+
+      expect(datadogRum.addError).not.toHaveBeenCalled()
+    })
+
+    it('leaves a refused campaign code typed under its error at the full total', async () => {
+      await renderCheckout(
+        {},
+        (fake) =>
+          fake.previewSubscribe.mockImplementation(async ({ promotionCode }) =>
+            promotionCode === undefined
+              ? { status: 'ok', value: previewOf({ quote_id: 'q_1' }) }
+              : refusedWith('PROMOTION_CODE_INVALID')
+          ),
+        CAMPAIGN_PATH
+      )
+      await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "This code isn't valid."
+      )
+      expect(promoField()).toHaveValue('BLACKFRIDAY26')
+      expect(screen.getAllByText('$28.00')).toHaveLength(2)
+      expect(datadogRum.addError).not.toHaveBeenCalled()
+    })
+  })
+
+  it('with the auto-apply flag off, a manually removed link code is offered again after a reload', async () => {
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    await screen.findByText('−$5.60')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove LAUNCH20' })
+    )
+    await screen.findByRole('button', { name: 'Add promo code' })
+    cleanup()
+
+    await renderCheckout({}, quotesByCode, `${CHECKOUT_PATH}&promo=LAUNCH20`)
+    await screen.findByText('Subscribe to Creator Plan · Acme Team')
+
+    expect(promoField()).toHaveValue('LAUNCH20')
+  })
+
   it('a Pay over a typed, unapplied code applies it and waits for a second Pay at the new total', async () => {
     const fake = await renderCheckout(
       {},
@@ -3327,6 +3651,7 @@ describe('FullPageCheckoutView promo codes', () => {
             max_seats: 1,
             occupied_seats: 1,
             scheduled_change: null,
+            ended_at: null,
             team_credit_stop: null,
             cancel_at: '2026-07-28T00:00:00.000Z'
           }
@@ -3531,7 +3856,8 @@ describe('FullPageCheckoutView attempt telemetry', () => {
     payment_intent_source: 'subscribe_now_button',
     checkout_ui: 'full_page',
     billing_client: 'sdk',
-    billing_surface: 'billing_web'
+    billing_surface: 'billing_web',
+    product: 'comfyui'
   }
 
   const SETTLED: FakeBillingClientOptions['subscribe'] = {
@@ -3672,5 +3998,195 @@ describe('FullPageCheckoutView attempt telemetry', () => {
         'billing.subscription_checkout.succeeded'
       ])
     )
+  })
+})
+
+describe('FullPageCheckoutView card choice on a plan change', () => {
+  beforeEach(() => {
+    form.mounts = 0
+    vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(true)
+  })
+
+  const PLAN_CHANGES: {
+    name: string
+    preview: Partial<SubscriptionPreview>
+    eyebrow: string
+    cta: 'Confirm upgrade' | 'Confirm change'
+  }[] = [
+    {
+      name: 'an upgrade charged today',
+      preview: { transition_type: 'upgrade' },
+      eyebrow: 'Upgrade to Creator Plan · Acme Team',
+      cta: 'Confirm upgrade'
+    },
+    {
+      name: 'a switch to yearly charged today',
+      preview: { transition_type: 'duration_change' },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    },
+    {
+      name: 'a downgrade scheduled for period end',
+      preview: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        cost_today_cents: 0
+      },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    }
+  ]
+
+  async function renderPlanChange(
+    preview: Partial<SubscriptionPreview>,
+    eyebrow: string,
+    options: FakeBillingClientOptions = {}
+  ) {
+    const fake = await renderCheckout({
+      preview: { status: 'ok', value: previewOf(preview) },
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] },
+      ...options
+    })
+    await screen.findByText(eyebrow)
+    return fake
+  }
+
+  it.for(PLAN_CHANGES)(
+    'opens $name on Saved with the default card, and $cta sends it with the return URL',
+    async ({ preview, eyebrow, cta }) => {
+      const fake = await renderPlanChange(preview, eyebrow)
+
+      expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+      expect(savedPicker()).toHaveTextContent('·· 4402')
+
+      await userEvent.click(confirmButton(cta))
+
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+      const request = fake.subscribe.mock.calls[0][0]
+      expect(request).toMatchObject({
+        saved_payment_method_id: 'pm_mastercard',
+        return_url: expect.stringContaining('/checkout')
+      })
+      expect(request).not.toHaveProperty('confirmation_token')
+    }
+  )
+
+  it('sends another saved card picked for the upgrade', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4242/ }))
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_visa'
+    })
+  })
+
+  it('sends a new card typed under Add new payment with the return URL', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    await userEvent.click(tab('Add new payment'))
+    form.emit('confirm', 'ctoken_new')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    const request = fake.subscribe.mock.calls[0][0]
+    expect(request).toMatchObject({
+      confirmation_token: 'ctoken_new',
+      return_url: expect.stringContaining('/checkout')
+    })
+    expect(request).not.toHaveProperty('saved_payment_method_id')
+  })
+
+  it('holds the tabs while a new card is still turning into a token, so Saved cannot be switched to under it', async () => {
+    await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await userEvent.click(tab('Add new payment'))
+
+    form.emit('submittingChange', true)
+    await nextTick()
+    expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+
+    form.emit('submittingChange', false)
+    await nextTick()
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
+  })
+
+  it('releases the tabs when the card form fails mid-token, so Saved is still chosen and paid', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await userEvent.click(tab('Add new payment'))
+    form.emit('submittingChange', true)
+    await nextTick()
+
+    reportPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'update'
+    })
+    await nextTick()
+
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
+    await userEvent.click(tab('Saved'))
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_mastercard'
+    })
+  })
+
+  it('keeps the picker after a declined upgrade, so another saved card is confirmed on the same page', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team',
+      {
+        subscribe: {
+          status: 'ok',
+          value: {
+            phase: 'failed',
+            operation: failedOperation('card_declined', 'op_declined')
+          }
+        }
+      }
+    )
+
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment declined'
+    )
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(confirmButton('Confirm upgrade')).toBeEnabled())
+
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: { phase: 'succeeded' }
+    })
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4242/ }))
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_mastercard'
+    })
+    expect(fake.subscribe.mock.calls[1][0]).toMatchObject({
+      saved_payment_method_id: 'pm_visa'
+    })
   })
 })

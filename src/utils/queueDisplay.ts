@@ -1,8 +1,12 @@
+import { zJobDeployment } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
+
+import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import { isImageResult } from '@/utils/resultItem'
 import type { JobState } from '@/types/queue'
-import { formatDuration } from '@/utils/formatUtil'
+import { formatDuration, formatSize } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 
 export type BuildJobDisplayCtx = {
@@ -16,6 +20,8 @@ export type BuildJobDisplayCtx = {
   showAddedHint?: boolean
   /** Whether the app is running in cloud distribution */
   isCloud?: boolean
+  /** The model file the job is downloading before it runs */
+  modelDownload?: Omit<JobModelDownload, 'progress'>
 }
 
 type JobDisplay = {
@@ -61,11 +67,63 @@ const buildQueuedTime = (
   return formatClockTimeFn(ts, locale)
 }
 
+const zDeploymentNames = z.object({
+  build_name: zJobDeployment.shape.build_name.nullable().catch(undefined),
+  name: zJobDeployment.shape.name.nullable().catch(undefined)
+})
+
+const deploymentBuildName = (task: TaskItemImpl): string | undefined => {
+  const deployment = zDeploymentNames.safeParse(task.job.deployment)
+  if (!deployment.success) return undefined
+  const { build_name, name } = deployment.data
+  return build_name?.trim() || name?.trim() || undefined
+}
+
+type PlainTextTranslate = (
+  key: string,
+  named: Record<string, unknown>,
+  options: { escapeParameter: boolean }
+) => string
+
+export const withDeploymentBuildName = (
+  secondary: string,
+  task: TaskItemImpl,
+  t: PlainTextTranslate
+): string => {
+  const build = deploymentBuildName(task)
+  if (!build) return secondary
+  if (!secondary) return build
+  return t(
+    'queue.onBuild',
+    { detail: secondary, build },
+    { escapeParameter: false }
+  )
+}
+
 export const buildJobDisplay = (
   task: TaskItemImpl,
   state: JobState,
   ctx: BuildJobDisplayCtx
 ): JobDisplay => {
+  if (ctx.modelDownload) {
+    const { name, index, count, bytesDownloaded, bytesTotal } =
+      ctx.modelDownload
+    return {
+      iconName: 'icon-[lucide--download]',
+      primary:
+        count > 1
+          ? ctx.t('queue.downloadingModelOf', { name, index, count })
+          : ctx.t('queue.downloadingModel', { name }),
+      secondary:
+        bytesTotal === null
+          ? formatSize(bytesDownloaded)
+          : ctx.t('queue.downloadedOfTotal', {
+              downloaded: formatSize(bytesDownloaded),
+              total: formatSize(bytesTotal)
+            }),
+      showClear: true
+    }
+  }
   if (state === 'pending') {
     if (ctx.showAddedHint) {
       return {

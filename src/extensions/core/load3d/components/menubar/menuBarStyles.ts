@@ -1,12 +1,12 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { menuContentClass } from '@/components/ui/menu/menuStyles'
+import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 
 export const chipClass =
   'shrink-0 gap-1.5 rounded-lg bg-popover px-2.5 py-1 hover:bg-muted'
 
 export const formPanelClass =
-  'w-48 max-h-80 overflow-y-auto flex flex-col gap-0.5 p-1.5 rounded-lg border-border bg-popover shadow-md'
+  'max-h-80 flex flex-col gap-0.5 p-1.5 rounded-lg border-border bg-popover'
 
 export const menuPanelClass = cn(
   menuContentClass,

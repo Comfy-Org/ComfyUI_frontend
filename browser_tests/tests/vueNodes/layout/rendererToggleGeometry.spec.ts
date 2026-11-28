@@ -2,8 +2,10 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const LEGACY_TITLE_HEIGHT = 30
 
@@ -17,6 +19,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
       await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
     )
 
+    await comfyPage.vueNodes.waitForSlotLayout(nodeId)
     const before = await comfyPage.canvasOps.getNodeGeometry(nodeId)
     expect(
       before.inputs.length + before.outputs.length,
@@ -35,6 +38,7 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     await comfyPage.page.mouse.up()
     await comfyPage.nextFrame()
 
+    await comfyPage.vueNodes.waitForSlotLayout(nodeId)
     await expect
       .poll(async () => {
         const { size } = await comfyPage.canvasOps.getNodeGeometry(nodeId)
@@ -203,3 +207,73 @@ test.describe('Renderer toggle geometry', { tag: ['@vue-nodes'] }, () => {
     }
   )
 })
+
+test.describe(
+  'Renderer toggle with the properties panel open',
+  { tag: ['@vue-nodes', '@widget'] },
+  () => {
+    test('a legacy widget the panel drew in Vue nodes takes canvas clicks across its full node width after switching to LiteGraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      const nodeId = toNodeId(
+        await comfyPage.vueNodes.getNodeIdByTitle('KSampler')
+      )
+      await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.graph.getNodeById(nodeId)!
+        node.addCustomWidget({
+          name: 'edge_counter',
+          type: 'legacy_test',
+          value: 0,
+          options: {},
+          y: 0,
+          draw() {},
+          mouse(this: { value: number; width?: number }, event, [x], host) {
+            if (event.type !== 'pointerdown') return false
+            if (x > (this.width || host.size[0]) - 30) this.value++
+            return true
+          }
+        })
+        node.pos = [40, 40]
+        node.setSize([480, node.size[1]])
+        window.app!.canvas.ds.offset = [0, 0]
+        window.app!.canvas.ds.scale = 1
+        window.app!.canvas.selectNode(node)
+        window.app!.canvas.setDirty(true, true)
+      }, nodeId)
+      await comfyPage.nextFrame()
+      const panel = new PropertiesPanel(comfyPage.page)
+      await panel.open(comfyPage.actionbar.propertiesButton)
+      await panel.searchWidgets('edge_counter')
+      await expect(
+        panel.root.getByTestId(TestIds.widgets.legacyCanvas)
+      ).toBeVisible()
+
+      await comfyPage.menu.topbar.setVueNodesEnabled(false)
+      await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+      await comfyPage.nextFrame()
+
+      const readValue = () =>
+        comfyPage.page.evaluate(
+          (nodeId) =>
+            window
+              .app!.graph.getNodeById(nodeId)!
+              .widgets!.find((widget) => widget.name === 'edge_counter')!.value,
+          nodeId
+        )
+      const rightEdge = await comfyPage.page.evaluate((nodeId) => {
+        const node = window.app!.graph.getNodeById(nodeId)!
+        const widget = node.widgets!.find(
+          (candidate) => candidate.name === 'edge_counter'
+        )!
+        return window.app!.canvasPosToClientPos([
+          node.pos[0] + node.size[0] - 15,
+          node.pos[1] + widget.y + 10
+        ])
+      }, nodeId)
+      await comfyPage.page.mouse.click(rightEdge[0], rightEdge[1])
+
+      await expect.poll(readValue).toBe(1)
+    })
+  }
+)

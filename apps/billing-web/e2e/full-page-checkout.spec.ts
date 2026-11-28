@@ -64,7 +64,7 @@ for (const { name, query } of [
     query: 'product=comfyui&return_to=elsewhere&plan=pro_monthly'
   }
 ]) {
-  test(`a link with ${name} still checks out, and the back arrow goes to Plan & Credits`, async ({
+  test(`a link with ${name} still checks out, and the back arrow goes to Platform Billing`, async ({
     page,
     cloud,
     signIn
@@ -78,7 +78,7 @@ for (const { name, query } of [
     await page.getByRole('button', { name: 'Back' }).click()
 
     await expect(page).toHaveURL(
-      'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws_e2e'
+      'https://testplatform.comfy.org/profile/billing?workspace=ws_e2e'
     )
   })
 }
@@ -378,6 +378,46 @@ for (const { name, preview, cta } of [
     expect(subscribe?.body).not.toHaveProperty('confirmation_token')
   })
 }
+
+test('with card choice served on, an upgrade opens Saved on the default card and confirms with the other card picked', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.planChangeCardChoice = true
+  cloud.scenario.paymentMethods = [MASTERCARD_4402, VISA_3184]
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade',
+    is_immediate: true
+  }
+  await signIn(CHECKOUT)
+
+  await expect(tab(page, 'Saved')).toHaveAttribute('aria-selected', 'true')
+  await expect(tab(page, 'Add new payment')).toBeVisible()
+  await expect(savedPicker(page)).toContainText('·· 3184')
+  await expect(payButton(page)).toBeHidden()
+
+  await savedPicker(page).click()
+  await page.getByRole('option', { name: /4402/ }).click()
+  await expect(savedPicker(page)).toContainText('·· 4402')
+  await page.getByRole('button', { name: 'Confirm upgrade' }).click()
+
+  await expect
+    .poll(() =>
+      cloud.requests.find((request) => request.path === '/billing/subscribe')
+    )
+    .toMatchObject({
+      body: {
+        saved_payment_method_id: 'pm_e2e_mastercard',
+        return_url: expect.any(String)
+      }
+    })
+  const subscribe = cloud.requests.find(
+    (request) => request.path === '/billing/subscribe'
+  )
+  expect(subscribe?.body).not.toHaveProperty('confirmation_token')
+})
 
 test('553-9297: a plan change on a plan set to end needs the keep-subscription tick: Pay without it sends nothing, with it sends the consent', async ({
   page,

@@ -4,14 +4,14 @@ import { effectScope } from 'vue'
 
 import { useProgressTextPreviews } from '@/composables/node/useProgressTextPreviews'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { ProgressTextWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ProgressTextWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 const { showTextPreview, removeTextPreview } = vi.hoisted(() => ({
@@ -83,9 +83,16 @@ describe('useProgressTextPreviews', () => {
   describe('progress_text events', () => {
     it('shows the text preview on the executing node', () => {
       const node = showCanvasNode()
+      const workflow = createWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+      storeActiveJob(workflow)
       mountPreviews()
 
-      fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
+      fireProgressText({
+        nodeId: toNodeId('1'),
+        text: 'warming up',
+        prompt_id: 'job-1'
+      })
 
       expect(showTextPreview).toHaveBeenCalledExactlyOnceWith(
         node,
@@ -95,9 +102,16 @@ describe('useProgressTextPreviews', () => {
 
     it('resolves nested execution ids through the workflow store', () => {
       const node = showCanvasNode()
+      const workflow = createWorkflow()
+      useWorkflowStore().activeWorkflow = workflow
+      storeActiveJob(workflow)
       mountPreviews()
 
-      fireProgressText({ nodeId: toNodeId('3:1'), text: 'warming up' })
+      fireProgressText({
+        nodeId: toNodeId('3:1'),
+        text: 'warming up',
+        prompt_id: 'job-1'
+      })
 
       expect(showTextPreview).toHaveBeenCalledExactlyOnceWith(
         node,

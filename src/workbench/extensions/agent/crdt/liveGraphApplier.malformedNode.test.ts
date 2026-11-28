@@ -12,13 +12,12 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { reportError } from '@/platform/telemetry/reportError'
-import { toNodeId } from '@/types/nodeId'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSink extends LGraphNode {
   constructor() {
@@ -31,6 +30,7 @@ const CATALOG: WidgetCatalog = { types: { TestSink: { widget_order: [] } } }
 const CONTEXT = { actor: 'agent:test:turn-1', opIds: ['op-1'] }
 const HUMAN_ACTOR = 'human:user-1:tab-1'
 const NODE_ID = 149
+const DIAGNOSTIC_BUDGET = 1024
 
 function sinkNode(slot: Record<string, unknown>) {
   return {
@@ -56,6 +56,27 @@ function onlyReport() {
   const calls = vi.mocked(reportError).mock.calls
   expect(calls).toHaveLength(1)
   return calls[0]
+}
+
+function onlyReportContext(): Record<string, unknown> {
+  const [, options] = onlyReport()
+  assert(options.context)
+  return options.context
+}
+
+function diagnosticStringChars(value: unknown): number {
+  if (typeof value === 'string') return value.length
+  if (Array.isArray(value)) {
+    return value.reduce(
+      (total, entry) => total + diagnosticStringChars(entry),
+      0
+    )
+  }
+  if (value === null || typeof value !== 'object') return 0
+  return Object.values(value).reduce(
+    (total, entry) => total + diagnosticStringChars(entry),
+    0
+  )
 }
 
 beforeEach(() => {
@@ -107,6 +128,49 @@ describe('LiveGraphApplier malformed node report', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it.for<unknown>(['tracked', '4', null])(
+    'projects a node whose stored mode is %o with the default mode, without a report',
+    (mode) => {
+      const { graph, doc, applyCollected } = setup({
+        nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
+        links: []
+      })
+      nodesMap(doc).get(String(NODE_ID))?.set('mode', mode)
+
+      applyCollected()
+
+      expect(graph.getNodeById(toNodeId(NODE_ID))?.mode).toBe(
+        LGraphEventMode.ALWAYS
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('keeps the live mode when the document mode stops being a number', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [
+        {
+          ...sinkNode({ name: 'image', type: 'IMAGE', link: null }),
+          mode: LGraphEventMode.BYPASS
+        }
+      ],
+      links: []
+    })
+    applyCollected()
+
+    doc.transact(() => {
+      const node = nodesMap(doc).get(String(NODE_ID))
+      node?.set('mode', 'bypass')
+      node?.set('title', 'renamed')
+    })
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    const live = graph.getNodeById(toNodeId(NODE_ID))
+    expect(live?.mode).toBe(LGraphEventMode.BYPASS)
+    expect(live?.title).toBe('renamed')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('reports an opaque widget record with a length key instead of configuring from it', () => {
     const { graph, doc, applyCollected } = setup({
       nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
@@ -130,9 +194,18 @@ describe('LiveGraphApplier malformed node report', () => {
     [{ name: 'image', type: undefined }, 'invalid_union undefined'],
     [{ name: 'image', type: null }, 'invalid_union null'],
     [{ name: 'image', type: true }, 'invalid_union boolean'],
-    [{ name: 'image', type: [] }, 'too_small array:0'],
+    [{ name: 'image', type: [] }, 'too_small array:0[]'],
     [{ name: 'image', type: {} }, 'invalid_union object:0'],
-    [{ name: 'image', type: { name: 'IMAGE' } }, 'invalid_union object:1']
+    [{ name: 'image', type: { name: 'IMAGE' } }, 'invalid_union object:1'],
+    [{ name: 'image', type: [0, 0] }, 'invalid_union array:2[number,number]'],
+    [
+      { name: 'image', type: [null, 'IMAGE'] },
+      'invalid_union array:2[null,string]'
+    ],
+    [
+      { name: 'image', type: ['IMAGE', [1]] },
+      'invalid_union array:2[string,array]'
+    ]
   ])(
     'separates %o, which zod collapses to one message, as %s',
     ([slot, issue]) => {
@@ -146,6 +219,74 @@ describe('LiveGraphApplier malformed node report', () => {
       })
     }
   )
+
+  it('keeps the real array length while shaping a bounded number of elements', () => {
+    const { applyCollected } = setup({
+      nodes: [
+        sinkNode({ name: 'image', type: Array.from({ length: 40 }, () => 0) })
+      ],
+      links: []
+    })
+
+    applyCollected()
+
+    const shapes = String(onlyReportContext().valueShapes)
+    expect(shapes).toContain('array:40[')
+    expect(shapes).toContain('+24]')
+    expect(shapes.split('number').length - 1).toBe(16)
+  })
+
+  it('bounds an oversized diagnostic context instead of forwarding it whole', () => {
+    const { doc, applyCollected } = setup({
+      nodes: [
+        {
+          ...sinkNode({ name: 'image' }),
+          inputs: Array.from({ length: 60 }, (_, index) => ({
+            name: `slot${index}`
+          }))
+        }
+      ],
+      links: []
+    })
+    doc
+      .getMap('__stamps')
+      .set(JSON.stringify(['node', String(NODE_ID)]), [
+        1,
+        HUMAN_ACTOR,
+        'op'.repeat(800)
+      ])
+
+    applyCollected()
+
+    const context = onlyReportContext()
+    expect(diagnosticStringChars(context)).toBeLessThanOrEqual(
+      DIAGNOSTIC_BUDGET
+    )
+    expect(context).toMatchObject({ nodeId: '149', classType: 'TestSink' })
+    expect(context.valueShapes).toBe('')
+    expect(context.producer).toMatchObject({
+      origin: 'operation',
+      actorKind: 'human',
+      opId: expect.stringMatching(/\+\d+$/)
+    })
+  })
+
+  it('does not add omission markers after short strings exhaust the budget', () => {
+    const applier = new LiveGraphApplier({ getGraph: () => new LGraph() })
+    const reportOnce = Reflect.get(applier, 'reportOnce')
+    assert(typeof reportOnce === 'function')
+
+    Reflect.apply(reportOnce, applier, [
+      'many-short-strings',
+      'many short strings',
+      'agent_graph_many_short_strings',
+      { values: Array.from({ length: 600 }, () => 'aa') }
+    ])
+
+    expect(diagnosticStringChars(onlyReportContext())).toBeLessThanOrEqual(
+      DIAGNOSTIC_BUDGET
+    )
+  })
 
   it('names the stamping operation, and the actor kind without its user segments', () => {
     const { graph, doc, collector, applier } = setup({ nodes: [], links: [] })
@@ -261,7 +402,7 @@ describe('LiveGraphApplier malformed node report', () => {
     const calls = vi.mocked(reportError).mock.calls
     expect(calls).toHaveLength(2)
     expect(calls[1]?.[1]).toMatchObject({
-      context: { valueShapes: 'inputs.0.type too_small array:0' }
+      context: { valueShapes: 'inputs.0.type too_small array:0[]' }
     })
   })
 })

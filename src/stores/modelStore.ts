@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, onScopeDispose, reactive, ref, watch } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
+import type { ModelFile } from '@comfyorg/assets-core/schema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'

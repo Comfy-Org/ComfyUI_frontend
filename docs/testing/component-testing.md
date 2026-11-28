@@ -16,7 +16,7 @@ its accessible role and name.
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 describe('Button', () => {
   it('renders its label and disabled state', () => {

@@ -2,7 +2,8 @@ import { ref, watch } from 'vue'
 
 import { isMiddleButtonHeld, isMiddlePointerInput } from './pointer'
 
-import type { Point, ImageLayer, ToolInternalSettings } from './types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { ImageLayer, ToolInternalSettings } from './types'
 import { Tools } from './types'
 import { useMaskEditorStore } from './maskEditorStore'
 import { useBrushDrawing } from './useBrushDrawing'
@@ -34,11 +35,11 @@ export function useToolManager(
       newActiveLayerOnSet: 'rgb'
     },
     [Tools.MaskBucket]: {
-      cursor: "url('/cursor/paintBucket.png') 30 25, auto",
+      cursor: `url('${new URL('./assets/cursors/paintBucket.png', import.meta.url).href}') 30 25, auto`,
       newActiveLayerOnSet: 'mask'
     },
     [Tools.MaskColorFill]: {
-      cursor: "url('/cursor/colorSelect.png') 15 25, auto",
+      cursor: `url('${new URL('./assets/cursors/colorSelect.png', import.meta.url).href}') 15 25, auto`,
       newActiveLayerOnSet: 'mask'
     }
   }

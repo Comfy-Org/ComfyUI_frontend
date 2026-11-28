@@ -2,7 +2,7 @@ import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocFrameTransport, ServerDocFrame } from './docFrameClient'
 import {
@@ -13,8 +13,6 @@ import {
 import type { ServerDocFrameType } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
@@ -51,6 +49,7 @@ describe('doc frame client', () => {
         v: 1,
         workflow_id: 'wf-1',
         seq: 1,
+        lineage_seq: 1,
         update_b64: encodeBase64(encoded),
         actor: 'agent:thread-1:turn-1',
         op_ids: ['op-1', 'op-2']
@@ -59,6 +58,7 @@ describe('doc frame client', () => {
     expect(frame?.type).toBe('doc_update')
     if (frame?.type !== 'doc_update') throw new Error('Expected doc_update')
     expect(frame.data.actor).toBe('agent:thread-1:turn-1')
+    expect(frame.data.lineageSeq).toBe(1)
     expect(frame.data.opIds).toEqual(['op-1', 'op-2'])
 
     const follower = new FollowerDoc()
@@ -118,6 +118,7 @@ describe('doc frame client', () => {
           v: 1,
           workflow_id: 'wf-1',
           state_vector_b64: encodeBase64(stateVector),
+          known_lineage_seq: 0,
           supports_reseed: true,
           schema_version: SCHEMA_VERSION
         }
@@ -151,6 +152,7 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 1,
       update_b64: encodeBase64(update)
     })
     bridge.resubscribe()
@@ -160,6 +162,7 @@ describe('doc frame client', () => {
       v: 1,
       workflow_id: 'wf-1',
       seq: 1,
+      lineage_seq: 1,
       update_b64: encodeBase64(update)
     })
 
@@ -168,8 +171,6 @@ describe('doc frame client', () => {
     expect(
       frames.filter((frame) => frame.type === 'doc_subscribe')
     ).toHaveLength(3)
-    // The bridge holds semantic state in its FollowerDoc; the ECS adapter
-    // applies observed effects to domain stores, never into layoutStore's doc.
     expect(bridge.follower.doc.getMap('nodes').toJSON()).toEqual({ one: 1 })
   })
 
@@ -177,11 +178,17 @@ describe('doc frame client', () => {
     expect(
       parseServerDocFrame({
         type: 'doc_subscribed',
-        data: { v: 1, workflow_id: 'wf-1', ok: true, seq: 2 }
+        data: {
+          v: 1,
+          workflow_id: 'wf-1',
+          ok: true,
+          seq: 2,
+          lineage_seq: 7
+        }
       })
     ).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true, seq: 2 }
+      data: { workflowId: 'wf-1', ok: true, seq: 2, lineageSeq: 7 }
     })
     expect(
       parseServerDocFrame({
@@ -247,6 +254,66 @@ describe('doc frame client', () => {
     })
   })
 
+  it('replaces a restored follower when the subscribed lineage differs', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const bridge = new LayoutFollowerBridge(client)
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+
+    bridge.subscribe('wf-1', 4)
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 9,
+      lineage_seq: 8
+    })
+
+    expect(JSON.parse(transport.sent[0]).data.known_lineage_seq).toBe(4)
+    expect(resets).toEqual([{ workflowId: 'wf-1', seq: 9, lineageSeq: 8 }])
+  })
+
+  it('replaces a restored follower when an accepted ack omits lineage 0', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const bridge = new LayoutFollowerBridge(client)
+    const resets: unknown[] = []
+    bridge.addEventListener('doc_reset', (event) => {
+      if (event instanceof CustomEvent) resets.push(event.detail)
+    })
+
+    bridge.subscribe('wf-1', 4)
+    transport.receive('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-1',
+      ok: true,
+      seq: 9
+    })
+
+    expect(resets).toEqual([{ workflowId: 'wf-1', seq: 9, lineageSeq: 0 }])
+  })
+
+  it('rejects an accepted doc_subscribed whose lineage_seq is malformed', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: true, lineage_seq: 'retired' }
+      })
+    ).toBeNull()
+    expect(
+      parseServerDocFrame({
+        type: 'doc_subscribed',
+        data: { v: 1, workflow_id: 'wf-1', ok: false, code: 'forbidden' }
+      })
+    ).toEqual({
+      type: 'doc_subscribed',
+      data: { workflowId: 'wf-1', ok: false, code: 'forbidden' }
+    })
+  })
+
   it('keeps a seq-0 or absent-seq doc_subscribed ok ack as a valid baseline', () => {
     // The relay's DocSubscribedFrame uses `json:"seq,omitempty"`, so a fresh
     // (unminted) doc acked at seq 0 arrives with `seq` absent. Both shapes are
@@ -258,7 +325,7 @@ describe('doc frame client', () => {
       })
     ).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true, seq: 0 }
+      data: { workflowId: 'wf-1', ok: true, seq: 0, lineageSeq: 0 }
     })
     const absent = parseServerDocFrame({
       type: 'doc_subscribed',
@@ -266,7 +333,7 @@ describe('doc frame client', () => {
     })
     expect(absent).toEqual({
       type: 'doc_subscribed',
-      data: { workflowId: 'wf-1', ok: true }
+      data: { workflowId: 'wf-1', ok: true, lineageSeq: 0 }
     })
     expect(absent?.data).not.toHaveProperty('seq')
   })
@@ -303,10 +370,28 @@ describe('doc frame client', () => {
     })
   })
 
-  // The subscribe-ack side of this domain is pinned by 'keeps a seq-0 or
-  // absent-seq doc_subscribed ok ack as a valid baseline' above. Both frame
-  // types share `isSequence`, so pin the update side too: a seq-0 `doc_update`
-  // must survive parsing rather than being read as "no seq".
+  it('rejects and reports a doc update without its generated lineage field', () => {
+    const transport = new TestTransport()
+    const client = new DocFrameClient(transport)
+    const listener = vi.fn()
+    client.addEventListener('doc_update', listener)
+
+    transport.receive('doc_update', {
+      v: 1,
+      workflow_id: 'wf-1',
+      seq: 1,
+      update_b64: encodeBase64(new Uint8Array([1]))
+    })
+
+    expect(listener).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_crdt_invalid_server_frame',
+      tags: { frame_type: 'doc_update' },
+      level: 'warning'
+    })
+  })
+
   it('keeps seq zero on a doc update', () => {
     expect(
       parseServerDocFrame({
@@ -315,12 +400,18 @@ describe('doc frame client', () => {
           v: 1,
           workflow_id: 'wf-1',
           seq: 0,
+          lineage_seq: 1,
           update_b64: encodeBase64(new Uint8Array([1]))
         }
       })
     ).toEqual({
       type: 'doc_update',
-      data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
+      data: {
+        workflowId: 'wf-1',
+        seq: 0,
+        lineageSeq: 1,
+        update: new Uint8Array([1])
+      }
     })
   })
 

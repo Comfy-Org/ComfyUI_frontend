@@ -1,7 +1,7 @@
 import type { CheckoutJourneyPhaseEvent } from '@comfyorg/account-core/billing'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import {
   bindOperationToCheckoutJourney,
   clearCheckoutJourney,
@@ -15,7 +15,7 @@ import {
   trackCheckoutJourneyPhase
 } from './checkoutJourneyTelemetry'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 function enterJourney(): CheckoutJourneyRecord {
   const resolved = resolveCheckoutJourney({

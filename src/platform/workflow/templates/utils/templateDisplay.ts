@@ -2,7 +2,7 @@ import type {
   LogoInfo,
   TemplateInfo,
   TemplateTypeFilter
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 
 /**
  * Whether a template opens in App Mode rather than as a node graph.

@@ -1,7 +1,16 @@
+import { defineAsyncComponent } from 'vue'
+
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useDialogStore } from '@/stores/dialogStore'
-import TopBarHeader from '@/renderer/extensions/maskEditor/components/dialog/TopBarHeader.vue'
-import MaskEditorContent from '@/renderer/extensions/maskEditor/components/MaskEditorContent.vue'
+
+const TopBarHeader = defineAsyncComponent(
+  () =>
+    import('@/renderer/extensions/maskEditor/components/dialog/TopBarHeader.vue')
+)
+const MaskEditorContent = defineAsyncComponent(
+  () =>
+    import('@/renderer/extensions/maskEditor/components/MaskEditorContent.vue')
+)
 
 export function useMaskEditor() {
   const openMaskEditor = (node: LGraphNode | null) => {

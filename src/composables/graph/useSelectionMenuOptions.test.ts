@@ -1,15 +1,17 @@
 import { render } from '@testing-library/vue'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { buildStructuredMenu } from '@/composables/graph/contextMenuConverter'
 import { useSelectionMenuOptions } from '@/composables/graph/useSelectionMenuOptions'
 
 const mocks = vi.hoisted(() => ({
   convertToSubgraph: vi.fn(),
   unpackSubgraph: vi.fn(),
   addSubgraphToLibrary: vi.fn(),
-  frameNodes: vi.fn()
+  frameNodes: vi.fn(),
+  canDistribute: { value: true }
 }))
 
 const i18n = createI18n({
@@ -34,7 +36,8 @@ vi.mock<unknown>(import('@/composables/graph/useNodeArrangement'), () => ({
     alignOptions: [{ localizedName: 'align-left', icon: 'align-left' }],
     distributeOptions: [{ localizedName: 'distribute', icon: 'distribute' }],
     applyAlign: vi.fn(),
-    applyDistribute: vi.fn()
+    applyDistribute: vi.fn(),
+    canDistribute: mocks.canDistribute
   })
 }))
 
@@ -65,6 +68,34 @@ function setupComposable() {
 }
 
 describe('useSelectionMenuOptions - multiple nodes options', () => {
+  it('keeps Tidy up beside alignment actions outside Extensions', () => {
+    const { getAlignmentOptions } = setupComposable()
+    const menu = buildStructuredMenu(getAlignmentOptions(), 'Extensions')
+
+    expect(menu.map((option) => option.label)).toEqual([
+      'contextMenu.Align Selected To',
+      'contextMenu.Distribute Nodes',
+      'g.tidyUp'
+    ])
+  })
+
+  it.for([true, false])(
+    'disables Distribute Nodes unless the selection can distribute (%s)',
+    (canDistribute) => {
+      mocks.canDistribute.value = canDistribute
+      onTestFinished(() => {
+        mocks.canDistribute.value = true
+      })
+      const { getAlignmentOptions } = setupComposable()
+
+      const distribute = getAlignmentOptions().find(
+        (option) => option.label === 'contextMenu.Distribute Nodes'
+      )
+
+      expect(distribute?.disabled).toBe(!canDistribute)
+    }
+  )
+
   it('returns Frame Nodes option that invokes frameNodes when called', () => {
     const { getMultipleNodesOptions } = setupComposable()
     const options = getMultipleNodesOptions()

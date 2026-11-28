@@ -20,6 +20,15 @@ test.describe(
         'widgets/stringified_typed_widget_values'
       )
 
+      const latent = await comfyPage.nodeOps.getNodeRefById(5)
+      const sampler = await comfyPage.nodeOps.getNodeRefById(3)
+      expect({
+        width: await (await latent.getWidgetByName('width')).getValue(),
+        height: await (await latent.getWidgetByName('height')).getValue(),
+        steps: await (await sampler.getWidgetByName('steps')).getValue(),
+        cfg: await (await sampler.getWidgetByName('cfg')).getValue()
+      }).toEqual({ width: 512, height: 768, steps: 20, cfg: 7.5 })
+
       let requestBody: unknown
       const execution = new ExecutionHelper(comfyPage)
       await execution.run({

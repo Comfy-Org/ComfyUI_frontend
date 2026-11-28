@@ -1,9 +1,10 @@
 import { expect } from '@playwright/test'
 
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
@@ -22,31 +23,53 @@ test.describe('Settings dialog - extension actions', { tag: '@ui' }, () => {
   })
 })
 
-test.describe('Settings dialog', { tag: '@ui' }, () => {
-  test('About panel renders mocked version from server', async ({
-    comfyPage
-  }) => {
-    const stats = {
-      ...mockSystemStats,
-      system: {
-        ...mockSystemStats.system,
-        comfyui_version: MOCK_COMFYUI_VERSION
-      }
-    }
-    await comfyPage.page.route('**/system_stats**', async (route) => {
-      await route.fulfill({ json: stats })
+test.describe(
+  'Settings dialog - left panel',
+  { tag: ['@ui', '@screenshot'] },
+  () => {
+    test('outlines the search field against the panel at rest', async ({
+      comfyPage
+    }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await expect(dialog.searchBox).toBeFocused()
+      await dialog.searchBox.blur()
+      await expect(dialog.searchBox).not.toBeFocused()
+
+      await expectElementScreenshot(
+        dialog.leftPanel,
+        'settings-left-panel.png',
+        { threshold: 0.05 }
+      )
     })
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+  }
+)
 
-    const dialog = comfyPage.settingDialog
-    await dialog.open()
-    await dialog.goToAboutPanel()
+test.describe('Settings dialog', { tag: '@ui' }, () => {
+  test.describe('About panel', () => {
+    test.beforeEach(async ({ page }) => {
+      const stats = {
+        ...mockSystemStats,
+        system: {
+          ...mockSystemStats.system,
+          comfyui_version: MOCK_COMFYUI_VERSION
+        }
+      }
+      await page.route('**/system_stats**', async (route) => {
+        await route.fulfill({ json: stats })
+      })
+    })
 
-    const aboutPanel = comfyPage.page.getByTestId('about-panel')
-    await expect(aboutPanel).toBeVisible()
-    await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
-    await expect(aboutPanel).toContainText('ComfyUI_frontend')
+    test('renders mocked version from server', async ({ comfyPage }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await dialog.goToAboutPanel()
+
+      const aboutPanel = comfyPage.page.getByTestId('about-panel')
+      await expect(aboutPanel).toBeVisible()
+      await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
+      await expect(aboutPanel).toContainText('ComfyUI_frontend')
+    })
   })
 
   test('Toggling a boolean setting through UI persists the value', async ({

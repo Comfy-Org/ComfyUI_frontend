@@ -9,8 +9,6 @@ import { api } from '@/scripts/api'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/scripts/api'))
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
@@ -111,7 +109,9 @@ describe('ReplyAudioCard', () => {
 
     await waitFor(() => expect(anchorClick).toHaveBeenCalledOnce())
     expect(anchorClick.mock.instances[0].download).toBe('song.mp3')
-    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=song.mp3', {
+      onAuthCredential: expect.any(Function)
+    })
   })
 
   it('downloads under the resolved display name instead of the hash', async () => {

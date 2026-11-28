@@ -8,6 +8,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { WorkflowsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -15,25 +16,22 @@ test.describe(
   "Deleting the open chat's target workflow",
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('says the target workflow is no longer available', async ({
+    test('follows the replacement tab instead of reporting the target as gone', async ({
       page,
       workflowSelection
     }) => {
       const agentPanel = new AgentPanel(page)
       const panel = await agentPanel.open()
-      const targetPicker = agentPanel.workflowPicker
+      const topbar = new Topbar(page)
       const unavailable = panel.getByText(
         enMessages.agent.targetWorkflowUnavailable
       )
 
-      await test.step('pick an unsaved target and save it', async () => {
-        await targetPicker.click()
-        await page
-          .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-          .click()
+      await test.step('save the active workflow', async () => {
+        const saving = topbar.saveWorkflowAs('Unsaved Workflow')
         await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
         workflowSelection.finishSave(true)
-        await expect(targetPicker).toHaveText('Unsaved Workflow')
+        await saving
         await expect(unavailable).toBeHidden()
       })
 
@@ -45,13 +43,18 @@ test.describe(
           .click({ button: 'right' })
         await new ContextMenu(page).clickMenuItem('Delete')
         await new ConfirmDialog(page).delete.click()
+        await expect(
+          workflowsTab.getPersistedItem('Unsaved Workflow')
+        ).toHaveCount(0)
       })
 
-      await test.step('show the target as unavailable', async () => {
-        await expect(unavailable).toBeVisible()
-        await expect(targetPicker).toHaveText(
-          enMessages.agent.selectWorkflowForAgent
+      await test.step('follow the replacement tab without a notice', async () => {
+        await expect(topbar.getActiveTab()).toContainText(
+          'Unsaved Workflow (2)'
         )
+        await expect(unavailable).toBeHidden()
+        await agentPanel.composer.fill('Ask on replacement')
+        await expect(agentPanel.sendButton).toBeEnabled()
       })
     })
   }

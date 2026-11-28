@@ -3,19 +3,21 @@ import {
   useAsyncState,
   useDocumentVisibility
 } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { computed, onScopeDispose, watch } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { deriveAutoTopUpCard } from '@comfyorg/account-core/billing'
+import type { AutoTopUpCardState } from '@comfyorg/account-core/billing'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import {
+  busyRereadDelayMs,
+  isSubscriptionChangeInProgress,
+  MAX_BUSY_REREADS
+} from '@/platform/billing/composables/autoTopUpReadBusy'
+import type { AutoReloadSettings } from '@comfyorg/billing-core'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-
-type AutoTopUpCardState =
-  | { kind: 'loading' }
-  | { kind: 'unavailable' }
-  | { kind: 'loaded'; settings: AutoReloadSettings }
 
 interface ScopedRead {
   scope: string
@@ -25,7 +27,7 @@ interface ScopedRead {
 function useBillingAutoTopUpCardInternal() {
   const authStore = useAuthStore()
   const apiKeyAuthStore = useApiKeyAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
+  const workspaceStore = useWorkspaceIdentity()
 
   const scope = computed(() => {
     const actorId = authStore.userId ?? apiKeyAuthStore.currentUser?.id
@@ -37,6 +39,28 @@ function useBillingAutoTopUpCardInternal() {
   let refreshSerial = 0
   let inFlightScope: string | null = null
   let committed: ScopedRead | null = null
+  let busyScope: string | null = null
+  let busyRereads = 0
+  let busyTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearBusyReread() {
+    if (busyTimer !== null) clearTimeout(busyTimer)
+    busyTimer = null
+  }
+
+  function scheduleBusyReread(requestScope: string, error: unknown) {
+    if (busyScope !== requestScope) {
+      busyScope = requestScope
+      busyRereads = 0
+    }
+    if (busyRereads >= MAX_BUSY_REREADS) return
+    busyRereads++
+    clearBusyReread()
+    busyTimer = setTimeout(() => {
+      busyTimer = null
+      if (scope.value === requestScope) refresh()
+    }, busyRereadDelayMs(error))
+  }
 
   async function readCurrentScope(): Promise<ScopedRead | null> {
     const requestScope = scope.value
@@ -46,17 +70,22 @@ function useBillingAutoTopUpCardInternal() {
     try {
       const next = {
         scope: requestScope,
-        settings: await workspaceApi.getBillingAutoReload()
+        settings: await billingApi.getBillingAutoReload()
       }
       if (serial !== refreshSerial) return committed
+      if (busyScope === requestScope) busyScope = null
       committed = next
       return next
     } catch (error) {
-      reportError(error, {
-        errorType: 'auto_top_up_read_failed',
-        surface: 'billing'
-      })
+      const busy = isSubscriptionChangeInProgress(error)
+      if (!busy) {
+        reportError(error, {
+          errorType: 'auto_top_up_read_failed',
+          surface: 'billing'
+        })
+      }
       if (serial !== refreshSerial) return committed
+      if (busy) scheduleBusyReread(requestScope, error)
       if (committed?.scope === requestScope && committed.settings) {
         return committed
       }
@@ -78,12 +107,12 @@ function useBillingAutoTopUpCardInternal() {
     return current?.scope === scope.value ? current : null
   })
 
-  const state = computed<AutoTopUpCardState>(() => {
-    const settings = answer.value?.settings
-    if (read.isLoading.value && !settings) return { kind: 'loading' }
-    if (settings) return { kind: 'loaded', settings }
-    return { kind: 'unavailable' }
-  })
+  const state = computed<AutoTopUpCardState>(() =>
+    deriveAutoTopUpCard({
+      isLoading: read.isLoading.value,
+      settings: answer.value?.settings ?? null
+    })
+  )
 
   const isReady = computed(() => answer.value !== null && !read.isLoading.value)
 
@@ -111,7 +140,12 @@ function useBillingAutoTopUpCardInternal() {
     if (visibility === 'visible' && requested) refresh()
   })
 
-  return { state, isReady, ensureRead, retry }
+  onScopeDispose(() => {
+    refreshSerial++
+    clearBusyReread()
+  })
+
+  return { scope, state, isReady, ensureRead, retry }
 }
 
 export const useBillingAutoTopUpCard = createSharedComposable(

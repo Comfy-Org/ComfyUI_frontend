@@ -242,7 +242,11 @@ describe('ssoStartUrl', () => {
       returnTo: 'https://evil.example/x',
       expected: '/'
     }
-  ])('$name', ({ returnTo, expected }) => {
+  ])('$name without URL.canParse', ({ returnTo, expected }) => {
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, { canParse: undefined })
+    )
     const params = new URL(
       ssoStartUrl({
         email: 'a@acme.com',
@@ -328,6 +332,7 @@ describe('readSsoError', () => {
     'SSO_ORG_DISABLED',
     'SSO_ORG_MISMATCH',
     'SSO_ORG_NOT_ATTACHED',
+    'SSO_SEAT_LIMIT_REACHED',
     'SSO_SIGN_IN_FAILED',
     'SSO_UNAVAILABLE',
     'SSO_USER_SUSPENDED'

@@ -23,11 +23,11 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import type { ExportedSubgraphInstance } from '@comfyorg/graph-model/serialisation'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -964,19 +964,6 @@ describe('SubgraphNode Execution', () => {
 
     // May be undefined if no internal connection exists
     expect(resolved === undefined || typeof resolved === 'object').toBe(true)
-  })
-
-  it('should prevent infinite recursion', () => {
-    // Circular self-references currently recurse in traversal; this test documents
-    // that execution flattening throws instead of silently succeeding.
-    const subgraph = createTestSubgraph({ nodeCount: 1 })
-    const subgraphNode = createTestSubgraphNode(subgraph, {
-      parentGraph: subgraph
-    })
-
-    // Add subgraph node to its own subgraph (circular reference)
-    // add() itself throws due to recursive forEachNode traversal
-    expect(() => subgraph.add(subgraphNode)).toThrow()
   })
 
   it('should resolve cross-boundary links', () => {

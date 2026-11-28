@@ -77,6 +77,7 @@ Add appropriate tags to every test:
 | `@canvas`     | Canvas interactions                       |
 | `@node`       | Node-related                              |
 | `@widget`     | Widget-related                            |
+| `@a11y`       | axe accessibility scans                   |
 | `@mobile`     | Mobile viewport (runs on Pixel 5 project) |
 | `@2x`         | HiDPI tests (runs on 2x scale project)    |
 

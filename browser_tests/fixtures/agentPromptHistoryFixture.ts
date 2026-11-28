@@ -10,6 +10,7 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type {
   AgentWsEvent,
+  PersistedThinkingEntry,
   PersistedToolCallSummary
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -26,8 +27,9 @@ const base = mergeTests(agentTest, workflowSelectionTest, webSocketFixture)
 // the stricter wire `ToolCallSummary` generated type.
 type MockAgentMessageContent = Omit<
   NonNullable<AgentMessage['content']>,
-  'tool_calls'
+  'thinking' | 'tool_calls'
 > & {
+  thinking?: PersistedThinkingEntry[]
   tool_calls?: PersistedToolCallSummary[]
 }
 type MockAgentMessage = Omit<AgentMessage, 'content'> & {
@@ -35,18 +37,29 @@ type MockAgentMessage = Omit<AgentMessage, 'content'> & {
 }
 
 export const promptHistoryTest = base.extend<{
+  serverTurnIds: 'collapsed' | 'distinct'
   agentPanel: AgentPanel
   promptHistory: {
     requests: AgentPostMessageRequest[]
     historyReads: () => number
     historyRequestThreadIds: string[]
     completeLatestTurn: (content: MockAgentMessageContent) => void
+    streamLatestTurn: (reply: string) => Promise<void>
+    persistAndFinishLatestTurn: (
+      reply: string,
+      chargeMicroUsd: number
+    ) => Promise<void>
+    finishLatestTurn: (reply: string, chargeMicroUsd: number) => Promise<void>
   }
 }>({
+  serverTurnIds: ['collapsed', { option: true }],
   agentPanel: async ({ page }, use) => {
     await use(new AgentPanel(page))
   },
-  promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
+  promptHistory: async (
+    { page, workflowSelection, getAgentSocket, serverTurnIds },
+    use
+  ) => {
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
     const messages: MockAgentMessage[] = []
@@ -93,11 +106,15 @@ export const promptHistoryTest = base.extend<{
       requests.push(request)
       threadId = new URL(route.request().url()).pathname.split('/').at(-2)!
       const messageId = `1dda6c2a-fdc5-45c3-b499-${String(requests.length).padStart(12, '0')}`
+      const turnId =
+        serverTurnIds === 'distinct'
+          ? `6b0f41d7-1c58-4d2e-8a37-${String(requests.length).padStart(12, '0')}`
+          : messageId
       messages.push(
         {
           id: `user-${requests.length}`,
           thread_id: threadId,
-          turn_id: messageId,
+          turn_id: turnId,
           seq: messages.length + 1,
           role: 'user',
           status: 'complete',
@@ -110,7 +127,7 @@ export const promptHistoryTest = base.extend<{
         {
           id: messageId,
           thread_id: threadId,
-          turn_id: messageId,
+          turn_id: turnId,
           seq: messages.length + 2,
           role: 'assistant',
           status: 'streaming'
@@ -140,15 +157,66 @@ export const promptHistoryTest = base.extend<{
         socket.send(JSON.stringify(done))
       }
     )
+    const latestAssistantTurn = () => {
+      const turn = messages.findLast(({ role }) => role === 'assistant')
+      if (!turn) throw new Error('No turn has been sent yet')
+      return turn
+    }
+    const streamLatestTurn = async (reply: string) => {
+      const turn = latestAssistantTurn()
+      const socket = await getAgentSocket()
+      socket.send(
+        JSON.stringify({
+          type: 'agent_message_delta',
+          data: {
+            message_id: turn.id,
+            thread_id: threadId,
+            delta: reply
+          }
+        } satisfies AgentWsEvent)
+      )
+    }
+    const persistAndFinishLatestTurn = async (
+      reply: string,
+      chargeMicroUsd: number
+    ) => {
+      const turn = latestAssistantTurn()
+      turn.status = 'complete'
+      turn.content = { text: reply }
+      const usage = {
+        input_tokens: 10,
+        output_tokens: 5,
+        total_tokens: 15,
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 0,
+        charge_micro_usd: chargeMicroUsd
+      }
+      const socket = await getAgentSocket()
+      socket.send(
+        JSON.stringify({
+          type: 'agent_message_done',
+          data: {
+            message_id: turn.id,
+            thread_id: threadId,
+            usage
+          }
+        } satisfies AgentWsEvent)
+      )
+    }
     await use({
       requests,
       historyReads: () => historyReads,
       historyRequestThreadIds,
       completeLatestTurn: (content) => {
-        const turn = messages.findLast(({ role }) => role === 'assistant')
-        if (!turn) throw new Error('No turn has been sent yet')
+        const turn = latestAssistantTurn()
         turn.status = 'complete'
         turn.content = content
+      },
+      streamLatestTurn,
+      persistAndFinishLatestTurn,
+      finishLatestTurn: async (reply, chargeMicroUsd) => {
+        await streamLatestTurn(reply)
+        await persistAndFinishLatestTurn(reply, chargeMicroUsd)
       }
     })
   }

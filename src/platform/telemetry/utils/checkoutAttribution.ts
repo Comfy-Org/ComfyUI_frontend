@@ -1,7 +1,8 @@
 import { isPlainObject } from 'es-toolkit'
 import { withTimeout } from 'es-toolkit/promise'
 
-import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
+import type { CheckoutAttributionMetadata } from '@comfyorg/telemetry/types'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
 type GaIdentity = {
   client_id?: string
@@ -37,7 +38,7 @@ function readStoredAttribution(): Partial<Record<AttributionQueryKey, string>> {
   if (typeof window === 'undefined') return {}
 
   try {
-    const stored = localStorage.getItem(ATTRIBUTION_STORAGE_KEY)
+    const stored = safeLocalStorage.getItem(ATTRIBUTION_STORAGE_KEY)
     if (!stored) return {}
 
     const parsed: unknown = JSON.parse(stored)
@@ -63,11 +64,7 @@ function persistAttribution(
 ): void {
   if (typeof window === 'undefined') return
 
-  try {
-    localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(payload))
-  } catch {
-    return
-  }
+  safeLocalStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(payload))
 }
 
 function readAttributionFromUrl(

@@ -7,11 +7,11 @@ import {
 import type {
   SubscriptionCancellationMetadata,
   TelemetryDispatcher
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import type {
   SubscriptionDuration,
   SubscriptionTier
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 interface SubscriptionCancellationMetadataOptions {
   cancelAt?: string

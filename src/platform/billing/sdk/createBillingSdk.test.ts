@@ -19,8 +19,8 @@ import type {
 } from '@comfyorg/account-core/session'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
-import { createBillingSdk } from './createBillingSdk'
+import type { BillingSdk, BillingSdkOptions } from '@comfyorg/billing-core/sdk'
+import { createBillingSdk } from '@comfyorg/billing-core/sdk'
 
 const BASE = 'https://cloud.test/api'
 
@@ -45,6 +45,7 @@ const SNAPSHOT: SessionSnapshot = {
 }
 
 const STATUS = {
+  ended_at: null,
   billing_rail: 'stripe',
   has_funds: true,
   is_active: true,
@@ -55,6 +56,7 @@ const STATUS = {
 }
 
 const CAPABILITIES = {
+  auto_top_up_enabled: false,
   capabilities: {
     can_cancel: false,
     can_change_seats: false,
@@ -67,11 +69,16 @@ const CAPABILITIES = {
     can_manage_partner_node_access: false,
     can_view_pending_invites: false,
     can_view_team_usage: false,
+    can_view_workspace_usage: false,
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
+    can_view_auto_top_up: false,
+    can_view_auto_top_up_member_notice: false,
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
+    can_set_budgets: false,
+    can_set_hard_caps: false,
     can_upgrade: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,

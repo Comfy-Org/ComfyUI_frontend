@@ -31,6 +31,7 @@
       :can-use-recording="canUseRecording && !isPreview"
       :material-modes="materialModes"
       :has-skeleton="hasSkeleton"
+      :model-stats="modelStats"
       :source-format="sourceFormat"
       @update-background-image="handleBackgroundImageUpdate"
       @update-hdri-file="handleHDRIFileUpdate"
@@ -60,16 +61,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed } from 'vue'
 
 import Load3DMenuBar from '@/extensions/core/load3d/components/Load3DMenuBar.vue'
 import Load3DScene from '@/extensions/core/load3d/components/Load3DScene.vue'
 import { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/types/domWidget'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
@@ -93,15 +94,10 @@ function isComponentWidget(
   return 'node' in widget && widget.node !== undefined
 }
 
-const node = ref<LGraphNode | null>(null)
-
-if (isComponentWidget(widget)) {
-  node.value = widget.node
-} else if (nodeId) {
-  onMounted(() => {
-    node.value = resolveNode(nodeId) ?? null
-  })
-}
+const node = useLiveGraphNode(() => {
+  if (isComponentWidget(widget)) return widget.node
+  return nodeId ? resolveNode(nodeId) : null
+})
 
 const {
   // configs
@@ -120,6 +116,7 @@ const {
   canExport,
   materialModes,
   hasSkeleton,
+  modelStats,
   sourceFormat,
   hasRecording,
   recordingDuration,
@@ -151,7 +148,7 @@ const {
   handleSetGizmoMode,
   handleResetGizmoTransform,
   cleanup
-} = useLoad3d(node as Ref<LGraphNode | null>)
+} = useLoad3d(node)
 
 const enable3DViewer = computed(() =>
   useSettingStore().get('Comfy.Load3D.3DViewerEnable')

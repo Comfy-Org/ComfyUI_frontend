@@ -93,6 +93,36 @@ describe('AgentCrdtProjection frame node delta', () => {
     })
   })
 
+  it('distinguishes non-node graph changes from an empty frame', () => {
+    const graph = fromPartial<NonNullable<ProjectionGraph>>({})
+    vi.spyOn(LiveGraphApplier.prototype, 'applyChanges').mockReturnValue({
+      createdNodeIds: [],
+      failureCount: 0
+    })
+    const { host, follower, projection } = setup(graph)
+    const node = new Y.Map<unknown>([['type', 'KSampler']])
+    nodesMap(host).set('3', node)
+    const seed = frame(1, host)
+    follower.applyRemoteUpdate(seed.update)
+    projection.applyFrame(seed)
+
+    const before = Y.encodeStateVector(host)
+    node.set('title', 'Updated')
+    const update = frame(2, host, before)
+    follower.applyRemoteUpdate(update.update)
+
+    expect(projection.applyFrame(update)).toMatchObject({
+      applied: true,
+      hadChanges: true,
+      nodes: { added: [], removed: [] }
+    })
+    expect(projection.applyFrame(update)).toMatchObject({
+      applied: true,
+      hadChanges: false,
+      nodes: { added: [], removed: [] }
+    })
+  })
+
   it('retains a failed projection until a clean retry applies it', () => {
     const graph = fromPartial<NonNullable<ProjectionGraph>>({})
     const applyChanges = vi

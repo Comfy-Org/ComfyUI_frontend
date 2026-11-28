@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -87,9 +87,7 @@ test.describe('smoke: core workflow @custom-nodes', () => {
         await comfyPage.nextFrame()
         consoleErrors.stop()
 
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBeGreaterThan(0)
+        await comfyPage.expectNodeCountMinimum(1)
         // Core smoke loads a graph but queues no prompt; a prompt-execution
         // error here is a prior tier's async stray (isForeignExecutionNoise).
         expect(

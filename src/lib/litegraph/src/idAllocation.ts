@@ -1,18 +1,18 @@
-import type { LGraph } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
 
 import type {
   ISerialisedGroup,
   ISerialisedNode,
   SerialisableLLink
-} from './types/serialisation'
-import { toGroupId } from '@/types/groupId'
-import type { GroupId } from '@/types/groupId'
-import { toLinkId } from '@/types/linkId'
-import type { LinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
-import type { RerouteId } from '@/types/rerouteId'
+} from '@comfyorg/graph-model/serialisation'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 export interface LGraphState {
   /** Counter, not an id — brand at the point a group is constructed. */

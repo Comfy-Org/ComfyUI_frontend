@@ -1,22 +1,10 @@
+import type {
+  SizedExtents as SpatialBounds,
+  PositionedRect as PositionedNode
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { calculatePositionExtents } from '@/utils/positionBounds'
 
-/**
- * Spatial bounds calculations for node layouts
- */
-
-interface SpatialBounds {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-  width: number
-  height: number
-}
-
-export interface PositionedNode {
-  pos: [number, number]
-  size: [number, number]
-}
+export type { PositionedRect as PositionedNode } from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Calculate the spatial bounding box of positioned nodes

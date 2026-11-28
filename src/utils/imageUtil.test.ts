@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getGridThumbnailUrl, parseImageWidgetValue } from './imageUtil'
+import {
+  extractWidgetStringValue,
+  getGridThumbnailUrl,
+  parseImageWidgetValue
+} from './imageUtil'
 
 describe('getGridThumbnailUrl', () => {
   it('adds a compact preview format to a full-resolution view URL', () => {
@@ -81,5 +85,96 @@ describe('parseImageWidgetValue', () => {
       subfolder: '',
       type: 'input'
     })
+  })
+
+  it.for([
+    {
+      raw: 'scenes\\sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'scenes',
+      type: 'output'
+    },
+    {
+      raw: 'a\\b/sky.png',
+      filename: 'sky.png',
+      subfolder: 'a/b',
+      type: 'input'
+    },
+    {
+      raw: 'pasted/12:30.png',
+      filename: '12:30.png',
+      subfolder: 'pasted',
+      type: 'input'
+    },
+    {
+      raw: '12:30/out.png [output]',
+      filename: 'out.png',
+      subfolder: '12:30',
+      type: 'output'
+    },
+    {
+      raw: 'scenes//sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'scenes/',
+      type: 'output'
+    },
+    {
+      raw: '/sky.png [output]',
+      filename: 'sky.png',
+      subfolder: '',
+      type: 'output'
+    },
+    {
+      raw: 'scenes/sky.png/ [output]',
+      filename: '',
+      subfolder: 'scenes/sky.png',
+      type: 'output'
+    },
+    {
+      raw: 'scenes/../sky.png [temp]',
+      filename: 'sky.png',
+      subfolder: 'scenes/..',
+      type: 'temp'
+    },
+    {
+      raw: 'D:\\sky.png [output]',
+      filename: 'sky.png',
+      subfolder: 'D:',
+      type: 'output'
+    }
+  ])(
+    'splits $raw into subfolder "$subfolder" and filename "$filename"',
+    ({ raw, ...expected }) => {
+      expect(parseImageWidgetValue(raw)).toEqual(expected)
+    }
+  )
+})
+
+describe('extractWidgetStringValue', () => {
+  it.for([
+    {
+      name: 'a string value',
+      value: 'sky.png [output]',
+      expected: 'sky.png [output]'
+    },
+    {
+      name: 'an object with a string filename',
+      value: { filename: 'sky.png', subfolder: 'scenes' },
+      expected: 'sky.png'
+    },
+    {
+      name: 'an object with a non-string filename',
+      value: { filename: 7 },
+      expected: undefined
+    },
+    {
+      name: 'an object without a filename',
+      value: { subfolder: 'scenes' },
+      expected: undefined
+    },
+    { name: 'null', value: null, expected: undefined },
+    { name: 'a number', value: 7, expected: undefined }
+  ])('reads $name', ({ value, expected }) => {
+    expect(extractWidgetStringValue(value)).toBe(expected)
   })
 })

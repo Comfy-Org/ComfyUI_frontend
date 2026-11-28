@@ -41,6 +41,7 @@
             :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
             :max-seats="inviteFormMaxSeats"
             :occupied-seats="inviteFormOccupiedSeats"
+            @invites-created="refreshBilling('account')"
             @submitted="onInvited"
           />
         </div>
@@ -71,12 +72,13 @@ import { CheckoutSuccess } from '@comfyorg/account-ui/billing/checkout'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 import { useCheckoutCopy } from '@/platform/billing/composables/useCheckoutCopy'
 
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'

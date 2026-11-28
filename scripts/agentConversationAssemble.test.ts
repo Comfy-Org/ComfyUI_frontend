@@ -348,6 +348,25 @@ describe('assembleConversation', () => {
     expect(entry.event.data).not.toHaveProperty('message_id')
   })
 
+  it('strips tool op ids that semantic-op replay remints', () => {
+    const altered = frames().map((frame) =>
+      frame.type === 'agent_tool_call'
+        ? { ...frame, data: { ...frame.data, op_ids: ['op-1'] } }
+        : frame
+    )
+    const { conversation } = assembleConversation(
+      input({ raw: raw({ frames: altered }) })
+    )
+    const tool = conversation.turns[0].response.find(
+      (entry) =>
+        entry.kind === 'event' && entry.event.type === 'agent_tool_call'
+    )
+
+    expect(tool?.kind).toBe('event')
+    if (tool?.kind !== 'event') return
+    expect(tool.event.data).not.toHaveProperty('op_ids')
+  })
+
   it('strips the wire envelope from the exported ops', () => {
     const { conversation } = assembleConversation(input())
     const entry = conversation.turns[0].response.find(
@@ -706,18 +725,16 @@ describe('assembleConversation', () => {
     ).toThrow('but the seed fixture given here has')
   })
 
-  it('refuses a turn with no active tab frame', () => {
-    expect(() =>
-      assembleConversation(
-        input({
-          raw: raw({
-            frames: frames().filter(
-              (frame) => frame.type !== 'agent_active_tab'
-            )
-          })
+  it('uses the seeded workflow when no active tab frame is emitted', () => {
+    const { conversation } = assembleConversation(
+      input({
+        raw: raw({
+          frames: frames().filter((frame) => frame.type !== 'agent_active_tab')
         })
-      )
-    ).toThrow('no agent_active_tab frame in this turn')
+      })
+    )
+
+    expect(conversation.workflow.id).toBe(WORKFLOW)
   })
 
   it('refuses a turn whose last frame is not the done frame', () => {

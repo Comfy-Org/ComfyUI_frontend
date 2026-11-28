@@ -63,8 +63,9 @@ import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import {
   LIGHT_TYPES,
   LIGHT_TYPE_LABEL_KEYS

@@ -1,20 +1,25 @@
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
-import { app as comfyApp } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ComfyUI } from '@/scripts/ui'
 import { ComfyAppMenu } from '@/scripts/ui/menu/index'
 import { $el } from '@/scripts/ui/utils'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { ComfyApp } from '@/types/comfy'
 
-const detachers = new WeakMap<ComfyApp, () => void>()
+type LegacyUITarget = Omit<ComfyApp, 'ui' | 'menu'> & {
+  ui: ComfyApp['ui']
+  menu: ComfyApp['menu']
+}
+
+const detachers = new WeakMap<LegacyUITarget, () => void>()
 
 /**
  * Builds the legacy menu, dialogs, and placeholder body elements on an app,
  * replacing any earlier attachment. Returns a function that removes them.
  */
-export function attachLegacyUI(target: ComfyApp = comfyApp): () => void {
+export function attachLegacyUI(target: LegacyUITarget = useApp()): () => void {
   detachers.get(target)?.()
 
   target.ui = new ComfyUI(target, {

@@ -4,18 +4,24 @@ import type {
   BillingPlansResponse,
   Plan,
   TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
-import { reportError } from '@/platform/telemetry/reportError'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
+import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
+import { zSubscriptionPaymentRecovery } from '@comfyorg/ingest-types/zod'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
+import { sessionEndedReporting } from '@/platform/billing/composables/sessionEndedReporting'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { t } from '@/i18n'
 
 const plans = ref<Plan[]>([])
 const currentPlanSlug = ref<string | null>(null)
 const teamCreditStops = ref<TeamCreditStops | null>(null)
+const subscriptionPaymentRecovery = ref<SubscriptionPaymentRecovery | null>(
+  null
+)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 let fetchPromise: Promise<void> | null = null
@@ -27,7 +33,7 @@ const MAX_SCOPE_REISSUES = 4
 
 function billingScopeKey(): string {
   const identity = useCurrentUser().resolvedUserInfo.value?.id ?? 'anonymous'
-  const workspace = useTeamWorkspaceStore().activeWorkspaceId ?? 'personal'
+  const workspace = useWorkspaceIdentity().activeWorkspaceId ?? 'personal'
   return `${identity}:${workspace}`
 }
 
@@ -35,6 +41,7 @@ function clearCatalog(): void {
   plans.value = []
   currentPlanSlug.value = null
   teamCreditStops.value = null
+  subscriptionPaymentRecovery.value = null
   adoptedScopeKey = null
   error.value = null
   errorScopeKey = null
@@ -61,7 +68,8 @@ function reportCatalogFallback(err: unknown, hasCachedPlans: boolean): void {
       operation: 'load',
       outcome: hasCachedPlans ? 'recovered' : 'failed'
     },
-    level: 'warning'
+    level: 'warning',
+    ...sessionEndedReporting(err)
   })
 }
 
@@ -97,6 +105,10 @@ export function useBillingPlans() {
     plans.value = response.plans
     currentPlanSlug.value = response.current_plan_slug ?? null
     teamCreditStops.value = response.team_credit_stops ?? null
+    const recovery = zSubscriptionPaymentRecovery.safeParse(
+      response.subscription_payment_recovery
+    )
+    subscriptionPaymentRecovery.value = recovery.success ? recovery.data : null
     adoptedScopeKey = scopeKey
   }
 
@@ -142,7 +154,7 @@ export function useBillingPlans() {
     const request: Promise<void> = (
       rail
         ? readOnRail(rail.readPlans, 'getBillingPlans')
-        : workspaceApi.getBillingPlans()
+        : billingApi.getBillingPlans()
     )
       .then((response) => {
         if (fetchPromise !== request) return fetchPromise ?? undefined
@@ -196,6 +208,7 @@ export function useBillingPlans() {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     isLoading,
     error,
     monthlyPlans,

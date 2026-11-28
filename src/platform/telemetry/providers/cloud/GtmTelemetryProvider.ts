@@ -31,8 +31,8 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -164,7 +164,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       ga4EventName,
       metadata && {
         current_tier: metadata.current_tier,
-        reason: metadata.reason
+        reason: metadata.reason,
+        refusal_type: metadata.refusal_type
       }
     )
   }

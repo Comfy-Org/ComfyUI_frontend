@@ -12,11 +12,7 @@
       :aria-label="playLabel"
       @click="playing = !playing"
     >
-      <i
-        :class="
-          cn(playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]', 'size-4')
-        "
-      />
+      <i :class="playing ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'" />
     </Button>
 
     <Slider
@@ -37,7 +33,7 @@
       {{ formatAnimationTime(animationDuration) }}
     </span>
 
-    <Popover v-model:open="speedOpen">
+    <PopoverRoot v-model:open="speedOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -48,7 +44,7 @@
           :aria-label="t('load3d.menuBar.playbackSpeed')"
         >
           {{ speedLabel }}
-          <i class="icon-[lucide--chevron-down] size-4 opacity-70" />
+          <i class="icon-[lucide--chevron-down] opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -73,9 +69,9 @@
           {{ formatSpeed(speed) }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover v-model:open="clipOpen">
+    <PopoverRoot v-model:open="clipOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -85,9 +81,9 @@
           type="button"
           :aria-label="t('load3d.menuBar.animationClip')"
         >
-          <i class="icon-[lucide--clapperboard] size-4 shrink-0" />
+          <i class="icon-[lucide--clapperboard]" />
           <span v-if="!compact" class="truncate">{{ selectedClipName }}</span>
-          <i class="icon-[lucide--chevron-down] size-4 shrink-0 opacity-70" />
+          <i class="icon-[lucide--chevron-down] opacity-70" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -112,12 +108,12 @@
           <span class="truncate">{{ clip.name }}</span>
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -129,14 +125,13 @@ import {
   menuPanelClass
 } from '@/extensions/core/load3d/components/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/extensions/core/load3d/components/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,
   selectedMenuButtonClass
-} from '@/components/ui/menu/menuStyles'
-import Slider from '@/components/ui/slider/Slider.vue'
+} from '@comfyorg/design-system/lib/menu/menuStyles'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import type { AnimationItem } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {

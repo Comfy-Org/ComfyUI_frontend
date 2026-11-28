@@ -2,8 +2,8 @@
  * QuadTree implementation for spatial indexing of nodes
  * Optimized for viewport culling in large node graphs
  */
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
-  Bounds,
   QuadNodeDebugInfo,
   SpatialIndexDebugInfo
 } from '@/types/spatialIndex'

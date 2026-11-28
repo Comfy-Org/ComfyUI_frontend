@@ -1,6 +1,6 @@
 import type { CapabilitiesSnapshot } from '@comfyorg/account-core/billing'
 
-import type { BillingCapabilitiesRead } from '@/platform/workspace/api/workspaceApi'
+import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
 
 /**
  * The SDK's cached capabilities snapshot in the shape the capabilities
@@ -11,8 +11,23 @@ export function projectBillingCapabilities(
   snapshot: CapabilitiesSnapshot
 ): BillingCapabilitiesRead {
   return {
+    ...(snapshot.autoTopUpEnabled === undefined
+      ? {}
+      : { auto_top_up_enabled: snapshot.autoTopUpEnabled }),
+    ...(snapshot.autoTopUpMemberView === undefined
+      ? {}
+      : { auto_top_up_member_view: snapshot.autoTopUpMemberView }),
+    ...(snapshot.autoTopUpSetup === undefined
+      ? {}
+      : { auto_top_up_setup: snapshot.autoTopUpSetup }),
+    ...(snapshot.billingNoticeAudience === undefined
+      ? {}
+      : { billing_notice_audience: snapshot.billingNoticeAudience }),
     capabilities: snapshot.capabilities,
     denied_reasons: snapshot.denials,
+    ...(snapshot.endingNoticeStartsAt === undefined
+      ? {}
+      : { ending_notice_starts_at: snapshot.endingNoticeStartsAt }),
     expires_at: new Date(snapshot.freshUntil).toISOString(),
     resolved_for: {
       user_id: snapshot.scope.userId,
@@ -20,6 +35,12 @@ export function projectBillingCapabilities(
     },
     revision: snapshot.revision,
     rollout_defaults_applied: snapshot.rolloutDefaultsApplied,
+    ...(snapshot.planKind === undefined
+      ? {}
+      : { plan_kind: snapshot.planKind }),
+    ...(snapshot.hasParkedBillingOperation === undefined
+      ? {}
+      : { has_parked_billing_operation: snapshot.hasParkedBillingOperation }),
     ...(snapshot.paymentRecoveryAvailable === undefined
       ? {}
       : { payment_recovery_available: snapshot.paymentRecoveryAvailable })

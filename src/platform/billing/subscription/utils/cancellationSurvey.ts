@@ -1,7 +1,7 @@
 import type {
   InAppSurveyEvent,
   InAppSurveyStage
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 export const CANCELLATION_REASONS = [
   'tooExpensive',

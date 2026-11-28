@@ -2,21 +2,24 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isComfyAgentReady } from '@/platform/remoteConfig/comfyAgentFeature'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
+  isLoopbackOnlyRefusal,
   listSkillPacks,
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
 import type { SkillPack } from '@/platform/skills/types'
+import { skillPacksReporting } from '@/platform/skills/api/skillPacksReporting'
 
 const AGENT_EXPERIENCE_FLAG = 'agent-in-app-experience'
 const SKILL_PACKS_FLAG = 'agent-skill-packs'
 
-function isRoutesUnavailable(error: unknown): boolean {
+function isGateOff(error: unknown): boolean {
   return error instanceof SkillPacksApiError && error.status === 404
 }
 
@@ -28,15 +31,20 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Refreshes keep the last confirmation until a response replaces it.
   const catalogConfirmed = ref(false)
   const loadFailed = ref(false)
+  const loadFailureReason = ref<string>()
+  const catalogUnavailable = ref(false)
   const flagsEnabled = ref(false)
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
 
-  const enabled = computed(() => flagsEnabled.value && routesAvailable.value)
+  const agentHosted = computed(isComfyAgentReady)
+  const surfaceEnabled = computed(() => flagsEnabled.value || agentHosted.value)
+  const enabled = computed(() => surfaceEnabled.value && routesAvailable.value)
 
   let flagGateStarted = false
   let fetchGeneration = 0
-  let inFlight: Promise<void> | undefined
+  const catalogGeneration = ref(0)
+  let inFlight: Promise<boolean> | undefined
   let catalogRequested = false
   const { resolvedUserInfo } = useCurrentUser()
   const workspace = useTeamWorkspaceStore()
@@ -52,12 +60,15 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
 
   function invalidateCatalog(): void {
     fetchGeneration++
+    catalogGeneration.value++
     inFlight = undefined
     packs.value = []
     loading.value = false
     hasLoaded.value = false
     catalogConfirmed.value = false
     loadFailed.value = false
+    loadFailureReason.value = undefined
+    catalogUnavailable.value = false
     routesAvailable.value = true
   }
 
@@ -66,8 +77,19 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     (next) => {
       scope.value = next
       invalidateCatalog()
-      if (catalogRequested && flagsEnabled.value && resolvedUserInfo.value)
+      if (catalogRequested && surfaceEnabled.value && resolvedUserInfo.value)
         void ensurePacks()
+    },
+    { flush: 'sync' }
+  )
+
+  watch(
+    surfaceEnabled,
+    (isEnabled, wasEnabled) => {
+      if (wasEnabled && !isEnabled) invalidateCatalog()
+      if (!wasEnabled && isEnabled && catalogRequested) {
+        void fetchPacks().catch(reportFetchFailure)
+      }
     },
     { flush: 'sync' }
   )
@@ -77,25 +99,21 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   }: { fetch?: boolean } = {}): Promise<void> {
     catalogRequested ||= fetch
     if (flagGateStarted) {
-      if (fetch && flagsEnabled.value) {
+      if (fetch && surfaceEnabled.value) {
         if (!routesAvailable.value) void fetchPacks().catch(reportFetchFailure)
         else void ensurePacks()
       }
       return
     }
     flagGateStarted = true
+    if (fetch && surfaceEnabled.value)
+      void fetchPacks().catch(reportFetchFailure)
     try {
       const { default: posthog } = await import('posthog-js')
       const sync = () => {
-        const wasEnabled = flagsEnabled.value
         flagsEnabled.value =
           posthog.isFeatureEnabled(AGENT_EXPERIENCE_FLAG) === true &&
           posthog.isFeatureEnabled(SKILL_PACKS_FLAG) === true
-        if (wasEnabled && !flagsEnabled.value) invalidateCatalog()
-        // Probe because backend availability can disagree with PostHog.
-        if (!wasEnabled && flagsEnabled.value && catalogRequested) {
-          void fetchPacks().catch(reportFetchFailure)
-        }
       }
       posthog.onFeatureFlags((_flags, _variants, context) => {
         // Ignore failed flag deliveries.
@@ -115,7 +133,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   function reportFetchFailure(error: unknown): void {
     reportError(error, {
       errorType: 'error_fetching_agent_skill_packs',
-      surface: 'agent'
+      surface: 'agent',
+      ...skillPacksReporting(error)
     })
   }
 
@@ -126,7 +145,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     invalidateCatalog()
   }
 
-  function fetchPacks(): Promise<void> {
+  function fetchPacks(): Promise<boolean> {
     syncScope()
     catalogRequested = true
     if (inFlight) return inFlight
@@ -137,9 +156,16 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     return request
   }
 
-  function isCurrentScope(requestScope: string): boolean {
+  function isCurrentScope(
+    requestScope: string,
+    requestGeneration?: number
+  ): boolean {
     syncScope()
-    return requestScope === scope.value
+    if (requestScope !== scope.value) return false
+    return (
+      requestGeneration === undefined ||
+      requestGeneration === catalogGeneration.value
+    )
   }
 
   // Syncs first: a backend change has no reactive source, so a response may be
@@ -152,25 +178,33 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     packs.value = nextPacks
     hasLoaded.value = true
     catalogConfirmed.value = true
+    catalogUnavailable.value = false
     routesAvailable.value = true
   }
 
-  async function fetchPacksOnce(): Promise<void> {
+  async function fetchPacksOnce(): Promise<boolean> {
     const generation = ++fetchGeneration
     const requestScope = scope.value
     loading.value = true
     loadFailed.value = false
+    loadFailureReason.value = undefined
+    catalogUnavailable.value = false
     try {
       const nextPacks = await listSkillPacks()
-      if (isSuperseded(generation, requestScope)) return
+      if (isSuperseded(generation, requestScope)) return false
       applyCatalog(nextPacks)
+      return true
     } catch (error) {
-      if (isSuperseded(generation, requestScope)) return
-      if (isRoutesUnavailable(error)) {
-        markUnavailable()
-        return
+      if (isSuperseded(generation, requestScope)) return false
+      if (isGateOff(error) && !catalogConfirmed.value) {
+        packs.value = []
+        hasLoaded.value = false
+        catalogUnavailable.value = true
+        return false
       }
       loadFailed.value = true
+      if (isLoopbackOnlyRefusal(error))
+        loadFailureReason.value = error.message.trim() || undefined
       throw error
     } finally {
       if (generation === fetchGeneration) loading.value = false
@@ -185,6 +219,8 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loading.value = false
     hasLoaded.value = true
     loadFailed.value = false
+    loadFailureReason.value = undefined
+    catalogUnavailable.value = false
     const rest = packs.value.filter((existing) => existing.name !== pack.name)
     packs.value = [...rest, pack].sort((a, b) => a.name.localeCompare(b.name))
   }
@@ -195,6 +231,13 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     fetchGeneration++
     inFlight = undefined
     loading.value = false
+    if (catalogConfirmed.value) {
+      loadFailed.value = false
+      loadFailureReason.value = undefined
+    } else if (loadFailed.value) {
+      hasLoaded.value = false
+    }
+    catalogUnavailable.value = false
     packs.value = packs.value.filter((pack) => pack.name !== name)
   }
 
@@ -239,7 +282,10 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     loading,
     hasLoaded,
     catalogConfirmed,
+    catalogGeneration,
     loadFailed,
+    loadFailureReason,
+    catalogUnavailable,
     scope,
     enabled,
     flagsEnabled,

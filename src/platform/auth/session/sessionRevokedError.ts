@@ -1,3 +1,5 @@
+import { classifyWebSessionFailure } from '@comfyorg/account-core/webSession'
+
 type RevokedCode = 'SESSION_REVOKED' | 'TOKEN_REVOKED'
 
 /** Ingest refused the sign-in because it predates a revocation. */
@@ -11,6 +13,16 @@ export class SessionRevokedError extends Error {
   }
 }
 
-export function revokedCodeOf(code: string | undefined): RevokedCode | null {
-  return code === 'SESSION_REVOKED' || code === 'TOKEN_REVOKED' ? code : null
+/** The revoked session in a refused ingest response, or undefined for every other refusal. */
+export function sessionRevokedRefusal(
+  message: string,
+  status: number,
+  body: unknown
+): SessionRevokedError | undefined {
+  const failure = classifyWebSessionFailure(status, body)
+  if (failure.code !== 'SESSION_REVOKED') return undefined
+  return new SessionRevokedError(
+    message,
+    failure.serverCode === 'TOKEN_REVOKED' ? 'TOKEN_REVOKED' : 'SESSION_REVOKED'
+  )
 }

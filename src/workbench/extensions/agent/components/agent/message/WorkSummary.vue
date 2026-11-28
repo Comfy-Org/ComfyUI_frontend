@@ -27,6 +27,25 @@ const unconfirmedCanvasWrite = computed(() =>
           toolCanMutateCanvas(part.name)))
   )
 )
+
+const durationSeconds = computed(() => {
+  const durationMs = parts.reduce(
+    (total, part) => total + (part.durationMs ?? 0),
+    0
+  )
+  return durationMs > 0 ? Math.ceil(durationMs / 1000) : undefined
+})
+
+const workedLabel = computed(() => {
+  if (unconfirmedCanvasWrite.value) return t('agent.workedNotConfirmedOnCanvas')
+  if (durationSeconds.value === undefined) return t('agent.worked')
+
+  const minutes = Math.floor(durationSeconds.value / 60)
+  const seconds = durationSeconds.value % 60
+  return minutes > 0
+    ? t('agent.workedForMinutes', { minutes, seconds })
+    : t('agent.workedForSeconds', { seconds })
+})
 </script>
 
 <template>
@@ -34,18 +53,16 @@ const unconfirmedCanvasWrite = computed(() =>
     <CollapsibleTrigger
       class="group flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-sm leading-none font-normal text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     >
-      <span
+      <i
         v-if="unconfirmedCanvasWrite"
-        class="icon-[lucide--triangle-alert] size-4 shrink-0"
+        aria-hidden="true"
+        class="icon-[lucide--triangle-alert]"
         data-testid="agent-canvas-unconfirmed"
       />
-      <span class="text-left">{{
-        unconfirmedCanvasWrite
-          ? t('agent.workedNotConfirmedOnCanvas')
-          : t('agent.worked')
-      }}</span>
-      <span
-        class="icon-[lucide--chevron-down] size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180"
+      <span class="text-left">{{ workedLabel }}</span>
+      <i
+        aria-hidden="true"
+        class="icon-[lucide--chevron-down] transition-transform group-data-[state=open]:rotate-180"
       />
     </CollapsibleTrigger>
     <CollapsibleContent class="agent-work-summary overflow-hidden">

@@ -1,11 +1,7 @@
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { createSharedComposable } from '@vueuse/core'
 import { unref } from 'vue'
 import { useMaskEditorStore } from './maskEditorStore'
-
-interface Point {
-  x: number
-  y: number
-}
 
 function useCoordinateTransformInternal() {
   const store = useMaskEditorStore()

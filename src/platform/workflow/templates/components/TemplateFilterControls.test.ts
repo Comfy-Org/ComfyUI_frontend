@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import type { TemplateSortMode } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 
 import TemplateFilterControls from './TemplateFilterControls.vue'
@@ -32,13 +32,13 @@ const modelOptions: SelectOption[] = [
 ]
 
 const sortOptions: SelectOption[] = [
-  { name: 'Default', value: 'default' },
+  { name: 'Popular', value: 'popular' },
   { name: 'Newest', value: 'newest' }
 ]
 
 function renderControls() {
   const selectedModels = ref<SelectOption[]>([])
-  const sortSelection = ref<TemplateSortMode>('default')
+  const sortSelection = ref<TemplateSortMode>('popular')
 
   const Parent = {
     components: { TemplateFilterControls },

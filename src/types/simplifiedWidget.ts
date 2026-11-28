@@ -2,17 +2,14 @@
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
-import type { WidgetValue } from '@/types/widgetValue'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
-export type { WidgetValue } from '@/types/widgetValue'
+export type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 export const CONTROL_OPTIONS = [
   'fixed',
@@ -42,7 +39,9 @@ export function getControlWidget(
   const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
   if (!controlWidget) return
   return {
-    value: normalizeControlOption(controlWidget.value),
+    get value() {
+      return normalizeControlOption(controlWidget.value)
+    },
     update: (value) => (controlWidget.value = normalizeControlOption(value))
   }
 }
@@ -67,8 +66,8 @@ export interface SimplifiedWidget<
 
   borderStyle?: string
 
-  /** Callback fired when value changes */
-  callback?: (value: T) => void
+  /** Callback fired when the value changes, or with the click event when a button is clicked */
+  callback?: (value: T, click?: MouseEvent) => void
 
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }

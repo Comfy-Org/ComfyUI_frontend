@@ -53,7 +53,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import type { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 
 import KeyComboDisplay from './KeyComboDisplay.vue'
 

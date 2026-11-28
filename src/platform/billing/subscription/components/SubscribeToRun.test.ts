@@ -5,33 +5,28 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import SubscribeToRun from './SubscribeToRun.vue'
 
 const mockCanManageSubscription = ref(true)
-const mockIsMdOrLarger = ref(true)
 
 vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/billing/composables/useBillingUI'))
+
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  breakpointsTailwind: { md: 768 },
-  createSharedComposable: (composable: () => unknown) => composable,
-  useBreakpoints: () => ({
-    greaterOrEqual: () => mockIsMdOrLarger
-  }),
-  useDocumentVisibility: () => ref('visible'),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
-}))
+vi.mock(import('@comfyorg/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -51,10 +46,13 @@ const i18n = createI18n({
 })
 
 function renderButton() {
-  const defaultPermissions = useWorkspaceUI().permissions.value
-  useWorkspaceUI().permissions = computed(() => ({
+  const defaultPermissions = useBillingUI().permissions.value
+  useBillingUI().permissions = computed(() => ({
     ...defaultPermissions,
-    canManageSubscription: mockCanManageSubscription.value
+    canManageSubscription: receiveServerFact(
+      'can_manage_subscription',
+      mockCanManageSubscription.value
+    )
   }))
   vi.mocked(useTelemetry).mockReturnValue(null)
   const user = userEvent.setup()
@@ -68,9 +66,8 @@ function renderButton() {
 
 describe('SubscribeToRun', () => {
   beforeEach(() => {
-    useWorkspaceUI()
+    useBillingUI()
     mockCanManageSubscription.value = true
-    mockIsMdOrLarger.value = true
   })
 
   it('shows the subscribe label for owners who can manage the subscription', () => {
@@ -98,6 +95,27 @@ describe('SubscribeToRun', () => {
     expect(
       useSubscriptionPaywall().showSubscriptionDialog
     ).toHaveBeenCalledExactlyOnceWith({ reason: 'subscribe_to_run' })
+  })
+
+  it('says why credits did not help when the inactive account holds funds', async () => {
+    const context = useBillingContext()
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...context,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>({ isActive: false, hasFunds: true })
+      ),
+      subscriptionState: computed(() => 'never_subscribed' as const)
+    })
+    const { user } = renderButton()
+
+    await user.click(screen.getByTestId('subscribe-to-run-button'))
+
+    expect(
+      useSubscriptionPaywall().showSubscriptionDialog
+    ).toHaveBeenCalledExactlyOnceWith({
+      reason: 'subscribe_to_run',
+      creditsLocked: true
+    })
   })
 
   it('routes members to the same role-aware dialog on click', async () => {

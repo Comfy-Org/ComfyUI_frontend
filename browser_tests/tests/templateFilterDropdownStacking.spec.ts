@@ -8,7 +8,7 @@ import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 const test = mergeTests(comfyPageFixture, templateApiFixture)
 
 test.describe('Template filter dropdown stacking', () => {
-  test.beforeEach(async ({ comfyPage, templateApi }) => {
+  test.beforeEach(async ({ templateApi }) => {
     templateApi.configure(
       withTemplates([
         makeTemplate({ name: 'wan-1', title: 'Wan One', models: ['Wan 2.2'] }),
@@ -16,10 +16,6 @@ test.describe('Template filter dropdown stacking', () => {
       ])
     )
     await templateApi.mock()
-    // The template index is fetched during app startup, so the routes have to be
-    // in place before the app loads or the store keeps its unmocked contents.
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
   })
 
   test('renders filter options above the dialog and keeps them clickable', async ({
@@ -34,8 +30,6 @@ test.describe('Template filter dropdown stacking', () => {
     const option = comfyPage.page.getByRole('option', { name: 'Wan 2.2' })
     await expect(option).toBeVisible()
 
-    // Visibility alone passes even when the dialog covers the option, so hit-test
-    // the option's centre: whatever paints there must belong to the option itself.
     const optionIsOnTop = await option.evaluate((el) => {
       const { left, top, width, height } = el.getBoundingClientRect()
       const topMost = document.elementFromPoint(
@@ -46,7 +40,6 @@ test.describe('Template filter dropdown stacking', () => {
     })
     expect(optionIsOnTop).toBe(true)
 
-    // The user-facing consequence: the click lands on the option, not the dialog.
     await option.click()
     await comfyPage.page.keyboard.press('Escape')
 

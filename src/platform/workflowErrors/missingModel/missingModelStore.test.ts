@@ -1,12 +1,13 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { watch } from 'vue'
 
 import { st, t } from '@/i18n'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -24,7 +25,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 import { useMissingModelStore } from './missingModelStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 function makeModelCandidate(
   name: string,
@@ -123,7 +124,8 @@ describe('missingModelStore', () => {
         .spyOn(app, 'refreshMissingModels')
         .mockResolvedValue({
           missingModels: [],
-          confirmedCandidates: []
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
         })
 
       await store.refreshMissingModels()
@@ -138,7 +140,8 @@ describe('missingModelStore', () => {
         .spyOn(app, 'refreshMissingModels')
         .mockResolvedValue({
           missingModels: [],
-          confirmedCandidates: []
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
         })
 
       await store.refreshMissingModels({ reloadDefs: false })
@@ -156,7 +159,11 @@ describe('missingModelStore', () => {
       const refreshSpy = vi.spyOn(app, 'refreshMissingModels').mockReturnValue(
         new Promise((resolve) => {
           resolveRefresh = () =>
-            resolve({ missingModels: [], confirmedCandidates: [] })
+            resolve({
+              missingModels: [],
+              confirmedCandidates: [],
+              surfaced: Promise.resolve()
+            })
         })
       )
 
@@ -167,6 +174,26 @@ describe('missingModelStore', () => {
 
       expect(refreshSpy).toHaveBeenCalledTimes(1)
       expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
+    it('returns once the scan starts and stays refreshing until the verified candidates reach the store', async () => {
+      const store = useMissingModelStore()
+      let surface: () => void = () => undefined
+      vi.spyOn(app, 'refreshMissingModels').mockResolvedValue({
+        missingModels: [],
+        confirmedCandidates: [],
+        surfaced: new Promise((resolve) => {
+          surface = resolve
+        })
+      })
+
+      await store.refreshMissingModels()
+      expect(store.isRefreshingMissingModels).toBe(true)
+
+      surface()
+      await vi.waitFor(() =>
+        expect(store.isRefreshingMissingModels).toBe(false)
+      )
     })
 
     it('shows a toast when the refresh pipeline fails', async () => {
@@ -395,6 +422,30 @@ describe('missingModelStore', () => {
 
       store.removeMissingModelByWidget('99', 'ckpt_name')
       expect(store.missingModelCandidates).toHaveLength(1)
+    })
+
+    it('does not notify readers when nothing matches', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', {
+          nodeId: toNodeId('5'),
+          widgetName: 'ckpt_name'
+        })
+      ])
+      const onChange = vi.fn()
+      const stop = watch(() => store.missingModelCandidates, onChange, {
+        flush: 'sync'
+      })
+
+      store.removeMissingModelByWidget('99', 'ckpt_name')
+      store.removeMissingModelsByNodeId('99')
+      store.removeMissingModelByNameOnNodes(
+        'model_a.safetensors',
+        new Set(['99'])
+      )
+      stop()
+
+      expect(onChange).not.toHaveBeenCalled()
     })
   })
 

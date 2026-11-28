@@ -29,11 +29,12 @@ export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
 const EXTENSION_ERROR_MESSAGES = [
   'Invalid call to runtime.sendMessage(). Tab not found.',
-  '[messaging] In this JS context, only one listener can be setup for'
+  '[messaging] In this JS context, only one listener can be setup for',
+  "Failed to execute 'readText' on 'Clipboard': Document is not focused."
 ]
 
 const ERROR_MESSAGE_PREFIX =
-  /^(?:Unhandled promise rejection:\s*)?(?:Error:\s*)?$/
+  /^(?:Unhandled promise rejection:\s*)?(?:(?:NotAllowed)?Error:\s*)?$/
 
 const RUM_NOISE_HOSTS = [
   'facebook.com',

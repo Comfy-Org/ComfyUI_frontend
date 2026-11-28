@@ -1,3 +1,4 @@
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 /**
  * Composable for managing transform state synchronized with LiteGraph canvas
  *
@@ -54,15 +55,8 @@ import { computed, reactive, readonly } from 'vue'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createSharedComposable } from '@vueuse/core'
 
-interface Point {
-  x: number
-  y: number
-}
-
-interface Camera {
-  x: number
-  y: number
-  z: number // scale/zoom
+interface Camera extends Point {
+  z: number
 }
 
 function useTransformStateIndividual() {
@@ -120,11 +114,20 @@ function useTransformStateIndividual() {
     }
   }
 
+  /** Converts canvas coordinates to screen coordinates; the inverse of {@link screenToCanvas}. */
+  function canvasToScreen(point: Point): Point {
+    return {
+      x: (point.x + camera.x) * camera.z,
+      y: (point.y + camera.y) * camera.z
+    }
+  }
+
   return {
     camera: readonly(camera),
     transformStyle,
     syncWithCanvas,
-    screenToCanvas
+    screenToCanvas,
+    canvasToScreen
   }
 }
 

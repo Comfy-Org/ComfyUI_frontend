@@ -1,7 +1,4 @@
-import type {
-  LGraphNode,
-  LGraph
-} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode, LGraph } from '@comfyorg/graph-model/entityRegistry'
 /**
  * Slot Position Calculations
  *
@@ -10,20 +7,21 @@ import type {
  * calculation logic while providing their own position data.
  */
 
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  Point2D as LayoutPoint
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
-import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
+import { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { VUE_NODE_HEADER_HEIGHT } from '@/renderer/core/layout/slots/derivedSlotAnchors'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type {
-  Point as LayoutPoint,
-  SlotLayout
-} from '@/renderer/core/layout/types'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
 
 export interface SlotPositionContext {
@@ -184,8 +182,8 @@ function getVueSlotPosition(
   isInput: boolean
 ): Point {
   const [nodeX, nodeY] = node.pos
-  const offset = getRenderedSlotOffset(node, slotIndex, isInput)
-  if (offset) return [nodeX + offset.x, nodeY + offset.y]
+  const anchor = getDerivedSlotAnchor(node, slotIndex, isInput)
+  if (anchor) return [nodeX + anchor.x, nodeY + anchor.y]
 
   const nodeWidth = node.flags.collapsed
     ? (node._collapsed_width ?? litegraph().NODE_COLLAPSED_WIDTH)
@@ -200,18 +198,22 @@ function getVueSlotPosition(
   )
 }
 
-function getRenderedSlotOffset(
+function getDerivedSlotAnchor(
   node: LGraphNode,
   slotIndex: number,
   isInput: boolean
-): LayoutPoint | null {
-  if (!node.graph) return null
-  return layoutStore.getSlotOffset(
+): LayoutPoint | undefined {
+  if (node.flags.collapsed)
+    return {
+      x: isInput ? 0 : node.renderingSize[0],
+      y: VUE_NODE_HEADER_HEIGHT / 2 - litegraph().NODE_TITLE_HEIGHT
+    }
+  if (!node.graph) return undefined
+  return layoutStore.derivedSlotAnchorOf(
     node.graph.rootGraph.id,
     node.id,
     slotIndex,
-    isInput ? 'input' : 'output',
-    node.flags.collapsed ? 'collapsed' : 'expanded'
+    isInput ? 'input' : 'output'
   )
 }
 
@@ -298,7 +300,7 @@ function getVueSlotY(node: LGraphNode, slotIndex: number): number {
 function getVueNodeContentY(node: LGraphNode, nodeY: number): number {
   return node.title_mode === TitleMode.NO_TITLE
     ? nodeY - litegraph().NODE_TITLE_HEIGHT
-    : nodeY
+    : nodeY + VUE_NODE_HEADER_HEIGHT - litegraph().NODE_TITLE_HEIGHT
 }
 
 export function getSlotLayout(

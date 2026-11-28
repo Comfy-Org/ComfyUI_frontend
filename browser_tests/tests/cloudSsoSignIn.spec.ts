@@ -123,8 +123,12 @@ async function openLogin(page: Page) {
 
 async function signInWithEmail(page: Page) {
   await openLogin(page)
+  await submitEmailSignIn(page, CLOUD_SELF_EMAIL)
+}
+
+async function submitEmailSignIn(page: Page, email: string) {
   await page.getByRole('button', { name: 'Use email instead' }).click()
-  await page.locator('#cloud-sign-in-email').fill(CLOUD_SELF_EMAIL)
+  await page.locator('#cloud-sign-in-email').fill(email)
   await page
     .locator('#cloud-sign-in-password')
     .fill('correct-horse-battery-staple')
@@ -251,6 +255,75 @@ test.describe('Cloud login SSO entry', { tag: ['@cloud', '@ui'] }, () => {
           )
         })
       ).toBeVisible()
+      expect(new URL(page.url()).searchParams.get('oauth_request_id')).toBe(
+        OAUTH_REQUEST_ID
+      )
+    })
+
+    test('switching account on a consent page resumes the same request as the new account', async ({
+      page,
+      cloudAuth
+    }) => {
+      const accountB = { email: 'account-b@test.comfy.org', name: 'Account B' }
+      const signedInEmails: string[] = []
+      page.on('request', (request) => {
+        if (request.url().includes('accounts:signInWithPassword')) {
+          signedInEmails.push(request.postDataJSON().email)
+        }
+      })
+      await page.route('**/api/features', (route) =>
+        route.fulfill({
+          json: {
+            sso_enabled: true,
+            oauth_consent_switch_account_enabled: true
+          }
+        })
+      )
+      await page.route('**/oauth/authorize?**', (route) =>
+        route.request().resourceType() === 'document'
+          ? route.fallback()
+          : route.fulfill({
+              status: 200,
+              json: {
+                ...CONSENT_CHALLENGE,
+                user_email: signedInEmails.at(-1)
+              } satisfies OAuthConsentChallenge
+            })
+      )
+      const appShell = await page.request
+        .get(APP_URL)
+        .then((response) => response.text())
+        .then((html) => html.replace('<head>', '<head><base href="/">'))
+      await page.route('**/cloud/login?**', (route) =>
+        route.request().resourceType() === 'document'
+          ? route.fulfill({ contentType: 'text/html', body: appShell })
+          : route.fallback()
+      )
+      await answerDiscover(page, 200, NOT_SSO)
+      await cloudAuth.mockLiveEmailSignIn()
+      const accountRow = page.getByRole('region', {
+        name: enMessages.oauth.consent.signedInAs
+      })
+
+      await page.goto(`${APP_URL}/?oauth_request_id=${OAUTH_REQUEST_ID}`)
+      await expect(page).toHaveURL(/\/cloud\/login/)
+      await submitEmailSignIn(page, CLOUD_SELF_EMAIL)
+      await expect(accountRow).toContainText(CLOUD_SELF_EMAIL)
+
+      await page
+        .getByRole('button', { name: enMessages.oauth.consent.switchAccount })
+        .click()
+      await expect(page).toHaveURL(/\/cloud\/login\?/)
+      const loginQuery = new URL(page.url()).searchParams
+      expect(loginQuery.get('switchAccount')).toBe('true')
+      expect(loginQuery.get('oauth_request_id')).toBe(OAUTH_REQUEST_ID)
+
+      await cloudAuth.mockLiveEmailSignIn(accountB.email, accountB.name)
+      await submitEmailSignIn(page, accountB.email)
+
+      await expect(accountRow).toContainText(accountB.email)
+      await expect(accountRow).not.toContainText(CLOUD_SELF_EMAIL)
+      expect(new URL(page.url()).pathname).toBe('/oauth/consent')
       expect(new URL(page.url()).searchParams.get('oauth_request_id')).toBe(
         OAUTH_REQUEST_ID
       )

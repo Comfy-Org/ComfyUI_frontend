@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 import { setBillingContextMock } from '@/storybook/mocks/useBillingContext'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'

@@ -1,4 +1,4 @@
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 
 type Enclosure = {
@@ -62,7 +62,7 @@ export function addWeightToParentheses(text: string): string {
 export const editAttentionExtension: ComfyExtension = {
   name: 'Comfy.EditAttention',
   init() {
-    const editAttentionDelta = app.ui.settings.addSetting({
+    const editAttentionDelta = useApp().ui.settings.addSetting({
       id: 'Comfy.EditAttention.Delta',
       category: ['Comfy', 'EditTokenWeight', 'Delta'],
       name: 'Ctrl+up/down precision',

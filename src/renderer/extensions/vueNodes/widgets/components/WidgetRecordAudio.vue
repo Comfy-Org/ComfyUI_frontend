@@ -1,15 +1,13 @@
 <template>
   <div class="relative" @pointerdown.stop>
-    <div class="mb-4">
-      <Button
-        class="w-full border-0"
-        :disabled="isRecording || readonly"
-        @click="handleStartRecording"
-      >
-        {{ t('g.startRecording', 'Start Recording') }}
-        <i-lucide:mic class="ml-1" />
-      </Button>
-    </div>
+    <Button
+      class="mb-4 flex w-full border-0"
+      :disabled="isRecording || readonly"
+      @click="handleStartRecording"
+    >
+      {{ t('g.startRecording', 'Start Recording') }}
+      <i-lucide:mic class="ml-1" />
+    </Button>
     <div
       v-if="isRecording || isPlaying || recordedURL"
       class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-node px-3 text-muted-foreground"
@@ -57,7 +55,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i class="icon-[lucide--play] size-4" />
+        <i class="icon-[lucide--play]" />
       </button>
 
       <button
@@ -66,7 +64,7 @@
         class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i class="icon-[lucide--square] size-4" />
+        <i class="icon-[lucide--square]" />
       </button>
     </div>
     <audio
@@ -86,12 +84,11 @@ import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import Button from '@/components/ui/button/Button.vue'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
+import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
@@ -151,13 +148,9 @@ const { isRecording, recordedURL } = recorder
 const { waveformBars } = waveform
 const { isPlaying, audioElementKey } = playback
 
-// Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.canvas.graph) return null
-  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
-})
+const litegraphNode = useWidgetHostNode(() => props.nodeId)
 
 function handleRecordingComplete(blob: Blob) {
   // Create a widget-owned blob URL (independent of useAudioRecorder's

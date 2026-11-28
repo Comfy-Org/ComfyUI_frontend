@@ -6,7 +6,7 @@ import type {
 import { useEventListener } from '@vueuse/core'
 import { onScopeDispose } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import {
   getActiveCheckoutJourney,
   toCheckoutJourneyContext

@@ -41,7 +41,7 @@
 
       <div>
         <Button variant="secondary" @click="$emit('reset-transform')">
-          <i class="pi pi-refresh" />
+          <i class="icon-[lucide--rotate-cw]" />
           {{ $t('load3d.gizmo.reset') }}
         </Button>
       </div>
@@ -50,8 +50,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import type { GizmoMode } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const gizmoEnabled = defineModel<boolean>('gizmoEnabled')

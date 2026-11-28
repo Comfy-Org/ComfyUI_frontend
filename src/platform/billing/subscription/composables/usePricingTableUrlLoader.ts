@@ -1,4 +1,8 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useRoute, useRouter } from 'vue-router'
+
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -8,10 +12,10 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import type { TeamCreditStops } from '@comfyorg/billing-core'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
 
@@ -83,32 +87,40 @@ export function getPricingCheckoutSelection(
       credits: catalogStop.credits,
       usd: catalogStop[teamCheckoutRequest.billingCycle].list_price_cents / 100,
       discountedUsd:
-        catalogStop[teamCheckoutRequest.billingCycle].price_cents / 100
+        catalogStop[teamCheckoutRequest.billingCycle].price_cents / 100,
+      periodChargeUsd: {
+        monthly: catalogStop.monthly.period_charge_cents / 100,
+        yearly: catalogStop.yearly.period_charge_cents / 100
+      }
     },
     billingCycle: teamCheckoutRequest.billingCycle
   }
 }
 
-/**
- * Opens the pricing table from a `?pricing=` deep link, to send pilot users
- * straight to subscribe. Values: `1` (default tab), `team`, `personal`, or a
- * selected personal tier or Team credit stop with a billing cycle to open its
- * confirmation.
- *
- * Gated to workspace owners (`canManageSubscription`); a member is a silent
- * no-op with the param stripped. Survives the login redirect via the
- * preserved-query system, like the invite URL loader.
- */
 export function usePricingTableUrlLoader() {
   const route = useRoute()
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
   const { teamCreditStops, fetchPlans } = useBillingContext()
-  const { permissions, canOpenPricingSurface } = useWorkspaceUI()
+  const { permissions, canOpenPricingSurface } = useBillingUI()
   const { initialize: initializeCapabilities } = useBillingCapabilities()
 
-  /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
-  async function loadPricingTableFromUrl() {
+  function reportRefusal(
+    reason: 'pricing_surface_unavailable' | 'cannot_manage_subscription',
+    phase: 'before_catalog_fetch' | 'after_catalog_fetch'
+  ) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'entry',
+      stage: 'pricing_link_refused',
+      outcome: 'pending',
+      reason,
+      phase
+    })
+  }
+
+  async function loadPricingTableFromUrl({
+    workspaceLinkRefused = false
+  } = {}) {
     hydratePreservedQuery(NAMESPACE)
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
@@ -134,10 +146,20 @@ export function usePricingTableUrlLoader() {
     clearPreservedQuery(NAMESPACE)
 
     if (typeof param !== 'string' || !param) return
+    if (workspaceLinkRefused) {
+      useToast().info(t('workspace.deepLinkPricingRefused'))
+      return
+    }
 
     await initializeCapabilities()
-    if (!permissions.value.canManageSubscription) return
-    if (!canOpenPricingSurface.value) return
+    if (!permissions.value.canManageSubscription) {
+      reportRefusal('cannot_manage_subscription', 'before_catalog_fetch')
+      return
+    }
+    if (!canOpenPricingSurface.value) {
+      reportRefusal('pricing_surface_unavailable', 'before_catalog_fetch')
+      return
+    }
 
     const teamCheckoutRequest = getTeamCheckoutRequest(
       param,
@@ -156,11 +178,20 @@ export function usePricingTableUrlLoader() {
 
       const canManageSubscription: unknown =
         permissions.value.canManageSubscription
-      if (canManageSubscription !== true) return
+      if (canManageSubscription !== true) {
+        reportRefusal('cannot_manage_subscription', 'after_catalog_fetch')
+        return
+      }
+      const canOpenPricing: unknown = canOpenPricingSurface.value
+      if (canOpenPricing !== true) {
+        reportRefusal('pricing_surface_unavailable', 'after_catalog_fetch')
+        return
+      }
       const availableTeamCreditStops: unknown = teamCreditStops.value
       if (!availableTeamCreditStops) {
-        subscriptionDialog.showPricingTable({
+        await subscriptionDialog.showPricingTable({
           reason: 'deep_link',
+          sameTab: true,
           planMode: 'team'
         })
         return
@@ -175,8 +206,9 @@ export function usePricingTableUrlLoader() {
     )
     if (isCheckoutTier(param) && !initialCheckout) return
     if (teamCheckoutRequest && !initialCheckout) {
-      subscriptionDialog.showPricingTable({
+      await subscriptionDialog.showPricingTable({
         reason: 'deep_link',
+        sameTab: true,
         planMode: 'team'
       })
       return
@@ -199,8 +231,9 @@ export function usePricingTableUrlLoader() {
       permissions.value.canManageSubscription
     if (canManageSubscription !== true) return
 
-    subscriptionDialog.showPricingTable({
+    await subscriptionDialog.showPricingTable({
       reason: 'deep_link',
+      sameTab: true,
       planMode,
       initialCheckout
     })

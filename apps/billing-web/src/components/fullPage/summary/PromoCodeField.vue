@@ -2,6 +2,9 @@
 import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { PromoRejection } from '@/checkout/promoEntry'
 
 const { draft, error, locked } = defineProps<{
@@ -44,7 +47,7 @@ function edit(event: Event) {
       <button
         type="submit"
         :disabled="locked"
-        class="flex h-8 cursor-pointer items-center rounded-lg bg-secondary px-2 text-xs hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-10 max-lg:px-3"
+        :class="cn(buttonVariants(), 'max-lg:h-10 max-lg:px-3')"
       >
         {{ t(`${P}.apply`) }}
       </button>
@@ -52,10 +55,15 @@ function edit(event: Event) {
         type="button"
         :disabled="locked"
         :aria-label="t(`${P}.dismiss`)"
-        class="flex size-8 cursor-pointer items-center justify-center rounded-lg hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:size-10"
+        :class="
+          cn(
+            buttonVariants({ variant: 'textonly', size: 'icon' }),
+            'max-lg:size-10'
+          )
+        "
         @click="emit('dismiss')"
       >
-        <i class="icon-[lucide--x] size-4" aria-hidden="true" />
+        <i class="icon-[lucide--x]" aria-hidden="true" />
       </button>
     </div>
     <p

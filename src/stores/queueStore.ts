@@ -1,26 +1,28 @@
 import { defineStore } from 'pinia'
+import { isEqual } from 'es-toolkit'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import type {
   APITaskType,
   JobListItem,
   TaskType
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+} from '@comfyorg/api-client/jobTypes'
 import type {
   StatusWsMessageStatus,
   TaskOutput
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
-import { useExtensionServiceAccess } from '@/services/extensionServiceAccess'
+import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
+import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 enum TaskItemDisplayStatus {
@@ -364,7 +366,9 @@ export const useQueueStore = defineStore('queue', () => {
           ...queue.Running.map((j) => j.id),
           ...queue.Pending.map((j) => j.id)
         ])
+        executionStore.recordJobIdsAtLoad(activeJobIds)
         executionStore.reconcileInitializingJobs(activeJobIds)
+        useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
       } else {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
@@ -391,7 +395,8 @@ export const useQueueStore = defineStore('queue', () => {
           if (
             existing.outputsCount !== (job.outputs_count ?? undefined) ||
             existing.previewableOutputsCount !==
-              (job.previewable_outputs_count ?? undefined)
+              (job.previewable_outputs_count ?? undefined) ||
+            !isEqual(existing.job.deployment, job.deployment)
           ) {
             return new TaskItemImpl(job)
           }

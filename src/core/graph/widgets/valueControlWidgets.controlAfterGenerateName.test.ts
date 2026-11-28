@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputSpec, IntInputSpec } from '@/schemas/nodeDefSchema'
+import type { InputSpec, IntInputSpec } from '@comfyorg/object-info-parser'
 import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 import {
   addValueControlWidget,

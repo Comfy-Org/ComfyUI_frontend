@@ -13,7 +13,7 @@ import {
   promoRejectionOf,
   reducePromoEntry
 } from '@/checkout/promoEntry'
-import type { PromoMemory } from '@/checkout/promoMemory'
+import type { PromoMemory, PromoRemoval } from '@/checkout/promoMemory'
 import { codeToRemember } from '@/checkout/promoMemory'
 
 interface CheckoutPromoOptions {
@@ -25,6 +25,7 @@ interface CheckoutPromoOptions {
   readonly requote: (promotionCode?: string) => Promise<PreviewSubscribeResult>
   /** Where an applied code outlives a reload or a provider return. */
   readonly memory: PromoMemory
+  readonly removal?: PromoRemoval
 }
 
 /**
@@ -37,11 +38,25 @@ export function useCheckoutPromo({
   prefill,
   live,
   requote,
-  memory
+  memory,
+  removal
 }: CheckoutPromoOptions) {
   const entry = shallowRef<PromoEntry>(
-    initialPromoEntry(prefill, memory.recall())
+    initialPromoEntry(
+      prefill?.promotionCode !== undefined &&
+        removal?.removed(prefill.promotionCode)
+        ? undefined
+        : prefill,
+      memory.recall()
+    )
   )
+
+  function isCarriedCode(code: string): boolean {
+    return (
+      prefill?.promotionCode !== undefined &&
+      code.toUpperCase() === prefill.promotionCode.trim().toUpperCase()
+    )
+  }
 
   function dispatch(event: PromoEntryEvent) {
     const kept = codeToRemember(entry.value)
@@ -74,13 +89,31 @@ export function useCheckoutPromo({
     )
   }
 
+  function holdsCarriedCode(): boolean {
+    const current = entry.value
+    return (
+      current.kind === 'editing' &&
+      prefill?.promotionCode !== undefined &&
+      current.draft === prefill.promotionCode
+    )
+  }
+
+  async function applyCarried(claim: () => boolean): Promise<boolean> {
+    if (!holdsCarriedCode() || !live() || !claim()) return false
+    await apply()
+    return true
+  }
+
   async function remove() {
-    if (!live() || entry.value.kind !== 'applied') return
+    const current = entry.value
+    if (!live() || current.kind !== 'applied') return
     dispatch({ type: 'removeRequested' })
     const result = await requote()
     dispatch({
       type: result.status === 'ok' ? 'removeSettled' : 'removeFailed'
     })
+    if (result.status === 'ok' && isCarriedCode(current.code))
+      removal?.remember(current.code)
   }
 
   return {
@@ -97,6 +130,8 @@ export function useCheckoutPromo({
     edit: (draft: string) => intend({ type: 'edited', draft }),
     dismiss: () => intend({ type: 'dismissed' }),
     apply,
+    /** Applies the code the entry URL carried, while the field still holds it untouched and `claim` grants the attempt; resolves whether it tried. */
+    applyCarried,
     remove,
     expire: () => dispatch({ type: 'expired' }),
     /** The quote takes no code, so whatever the link carried is dropped. */

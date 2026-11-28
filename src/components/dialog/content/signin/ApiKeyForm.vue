@@ -32,7 +32,7 @@
           />
           <FieldDescription>
             {{ t('auth.apiKey.helpText') }}
-            <a :href="`${comfyPlatformBaseUrl}/login`" target="_blank">
+            <a :href="apiKeysUrl" target="_blank" :rel="platformLinkRel()">
               {{ t('auth.apiKey.generateKey') }}
             </a>
             <span class="mx-1">•</span>
@@ -69,17 +69,16 @@ import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Field from '@/components/ui/field/Field.vue'
-import FieldDescription from '@/components/ui/field/FieldDescription.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Input from '@/components/ui/input/Input.vue'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import Button from '@comfyorg/design-system/button/Button'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
 import {
-  configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+  platformLinkRel,
+  platformSurfaceLink
+} from '@/platform/workspace/utils/platformLink'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -87,12 +86,8 @@ import { useAuthStore } from '@/stores/authStore'
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
-const comfyPlatformBaseUrl = computed(() =>
-  configValueOrDefault(
-    remoteConfig.value,
-    'comfy_platform_base_url',
-    getComfyPlatformBaseUrl()
-  )
+const apiKeysUrl = computed(() =>
+  platformSurfaceLink('/profile/api-keys', 'api-key-form')
 )
 
 const { t } = useI18n()

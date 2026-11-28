@@ -1,6 +1,7 @@
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
-import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
+import type { BillingOpStatusResponse } from '@comfyorg/billing-core'
 
 const STORAGE_KEY = 'comfy:pending-subscription-checkout'
 const MAX_AGE_MS = 24 * 60 * 60_000
@@ -87,42 +88,30 @@ function isPendingCheckout(
 export function savePendingSubscriptionCheckout(
   checkout: PendingSubscriptionCheckout
 ): void {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(checkout))
-  } catch {
-    return
-  }
+  safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify(checkout))
 }
 
 export function getPendingSubscriptionCheckout(
   now = Date.now()
 ): PendingSubscriptionCheckout | null {
   try {
-    const stored = sessionStorage.getItem(STORAGE_KEY)
+    const stored = safeSessionStorage.getItem(STORAGE_KEY)
     if (!stored) return null
     const checkout: unknown = JSON.parse(stored)
     if (isPendingCheckout(checkout, now)) return checkout
-    sessionStorage.removeItem(STORAGE_KEY)
+    safeSessionStorage.removeItem(STORAGE_KEY)
   } catch {
-    try {
-      sessionStorage.removeItem(STORAGE_KEY)
-    } catch {
-      return null
-    }
+    safeSessionStorage.removeItem(STORAGE_KEY)
   }
   return null
 }
 
 export function clearPendingSubscriptionCheckout(operationId?: string): void {
-  try {
-    if (operationId) {
-      const checkout = getPendingSubscriptionCheckout()
-      if (checkout?.operationId !== operationId) return
-    }
-    sessionStorage.removeItem(STORAGE_KEY)
-  } catch {
-    return
+  if (operationId) {
+    const checkout = getPendingSubscriptionCheckout()
+    if (checkout?.operationId !== operationId) return
   }
+  safeSessionStorage.removeItem(STORAGE_KEY)
 }
 
 export type PollableOperationStatus =

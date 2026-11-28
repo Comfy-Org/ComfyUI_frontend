@@ -39,6 +39,14 @@ test.describe('Sidebar splitter width independence', () => {
       .toBeGreaterThan(initialWidth + 40)
     const resizedWidth = (await sidebar.boundingBox())?.width ?? 0
 
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() =>
+          Number(localStorage.getItem('Comfy.Sidebar.LeftWidth'))
+        )
+      )
+      .toBeCloseTo(resizedWidth, 0)
+
     await comfyPage.workflow.reloadAndWaitForApp()
     await comfyPage.menu.nodeLibraryTab.open()
     await expect

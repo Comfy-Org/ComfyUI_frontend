@@ -16,6 +16,8 @@ import json
 import os
 import struct
 import subprocess
+import tempfile
+import zlib
 
 import av
 from PIL import Image
@@ -147,6 +149,31 @@ def generate_png():
     report('with_metadata.png')
 
 
+def generate_corrupt_itxt_png():
+    name = 'corrupt_compressed_itxt.png'
+    path = out(name)
+    make_1x1_image().save(path, 'PNG')
+
+    with open(path, 'rb') as source:
+        png = bytearray(source.read())
+    corrupt_zlib = bytes.fromhex('789c434c4a4e494d1c25461201003da5c15d')
+    chunk_type = b'iTXt'
+    chunk_data = b'workflow\0\x01\0\0\0' + corrupt_zlib
+    chunk = (
+        struct.pack('>I', len(chunk_data))
+        + chunk_type
+        + chunk_data
+        + struct.pack('>I', zlib.crc32(chunk_type + chunk_data))
+    )
+    first_chunk_length = struct.unpack_from('>I', png, 8)[0]
+    insert_at = 8 + 12 + first_chunk_length
+    png[insert_at:insert_at] = chunk
+
+    with open(path, 'wb') as fixture:
+        fixture.write(png)
+    report(name)
+
+
 def generate_webp():
     img = make_1x1_image()
     exif = build_exif_bytes()
@@ -254,9 +281,39 @@ def generate_nan_variants():
     report('with_nan_metadata.json')
 
 
+def generate_vhs_legacy_comment():
+    """VideoHelperSuite Video Combine before Jan 2026 wrote ALL metadata as one
+    JSON blob in the `comment` tag (MP4 ilst ©cmt, Matroska COMMENT),
+    with `prompt` itself double-encoded as a JSON string."""
+    blob = json.dumps({'prompt': PROMPT_JSON, 'workflow': WORKFLOW})
+    for char, escaped in (
+        ('\\', '\\\\'), (';', '\\;'), ('#', '\\#'), ('=', '\\='), ('\n', '\\\n'),
+    ):
+        blob = blob.replace(char, escaped)
+    with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:
+        f.write(';FFMETADATA1\ncomment=' + blob)
+        metadata_path = f.name
+    try:
+        for name, codec in (
+            ('with_vhs_legacy_comment.mp4', 'aac'),
+            ('with_vhs_legacy_comment.webm', 'libvorbis'),
+        ):
+            subprocess.run([
+                'ffmpeg', '-y', '-loglevel', 'error',
+                '-i', metadata_path,
+                '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono',
+                '-map', '1:a', '-t', '0.01', '-c:a', codec,
+                out(name),
+            ], check=True)
+            report(name)
+    finally:
+        os.unlink(metadata_path)
+
+
 if __name__ == '__main__':
     print('Generating fixtures...')
     generate_png()
+    generate_corrupt_itxt_png()
     generate_webp()
     generate_avif()
     generate_flac()
@@ -265,4 +322,5 @@ if __name__ == '__main__':
     generate_mp4()
     generate_webm()
     generate_nan_variants()
+    generate_vhs_legacy_comment()
     print('Done.')

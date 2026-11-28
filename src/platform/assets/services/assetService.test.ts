@@ -1,18 +1,15 @@
+import type { AssetUpdated } from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useAssetsStore } from '@/stores/assetsStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type {
-  AssetItem,
-  AssetResponse
-} from '@/platform/assets/schemas/assetSchema'
-import {
-  MISSING_TAG,
-  assetService
-} from '@/platform/assets/services/assetService'
+import type { AssetItem, AssetResponse } from '@comfyorg/assets-core/schema'
+import { MISSING_TAG } from '@comfyorg/assets-core/metadata'
+import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 
@@ -107,6 +104,7 @@ describe(assetService.shouldUseWidgetAssetPicker, () => {
       deployment_id: 'dep-release',
       release_id: 'release-1',
       status: 'ready',
+      can_start: false,
       created_at: '2026-10-01T00:00:00Z'
     }
 
@@ -384,16 +382,66 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
+  it.for([204, 404])(
+    'confirms the record is absent after DELETE returns %s',
+    async (status) => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, { status })
+      )
 
-    await assetService.deleteAsset('asset-1')
+      await expect(assetService.deleteAsset('asset-1')).resolves.toBeUndefined()
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/assets/asset-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-  })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets/asset-1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    }
+  )
+})
+
+describe('asset tag changes', () => {
+  const tagChanges = [
+    {
+      name: 'addAssetTags',
+      change: assetService.addAssetTags,
+      tags: ['checkpoints'],
+      result: { total_tags: ['models', 'checkpoints'], added: ['checkpoints'] }
+    },
+    {
+      name: 'removeAssetTags',
+      change: assetService.removeAssetTags,
+      tags: ['loras'],
+      result: { total_tags: ['models'], removed: ['loras'] }
+    }
+  ]
+
+  it.for(tagChanges)(
+    '$name tells asset-change listeners once the server changed the tags',
+    async ({ change, tags, result }) => {
+      const listener = vi.fn()
+      onTestFinished(assetService.onAssetsChanged(listener))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(result))
+
+      await change('asset-1', tags)
+
+      expect(listener).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for(tagChanges)(
+    '$name leaves asset-change listeners alone when the server refuses',
+    async ({ change, tags }) => {
+      const listener = vi.fn()
+      onTestFinished(assetService.onAssetsChanged(listener))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        buildResponse(null, { ok: false, status: 500 })
+      )
+
+      await expect(change('asset-1', tags)).rejects.toThrow(/500/)
+
+      expect(listener).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('assetResponseSchema accepts real API shapes', () => {
@@ -859,6 +907,181 @@ describe(assetService.getAssetModels, () => {
   })
 })
 
+describe(assetService.getWorkspaceLibraryModels, () => {
+  function libraryRow(id: string, filename: string): AssetItem {
+    return {
+      id,
+      name: filename,
+      tags: ['models', 'loras'],
+      size: 152043520,
+      mime_type: 'application/octet-stream',
+      created_at: '2026-10-29T00:00:00Z',
+      updated_at: '2026-10-29T00:00:00Z',
+      user_metadata: { filename }
+    }
+  }
+
+  it("lists every member's private models in the folder from the workspace library listing", async () => {
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            libraryRow(
+              '3f0b6c1e-0000-4000-8000-000000000001',
+              'my_style_v2.safetensors'
+            )
+          ],
+          { hasMore: true, nextCursor: 'page-2', total: 2 }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            libraryRow(
+              '3f0b6c1e-0000-4000-8000-000000000002',
+              'teammate_style.safetensors'
+            )
+          ],
+          { total: 2 }
+        )
+      )
+
+    const { names } = await assetService.getWorkspaceLibraryModels('loras')
+
+    expect(names).toEqual([
+      'my_style_v2.safetensors',
+      'teammate_style.safetensors'
+    ])
+    const [first, second] = vi
+      .mocked(api.fetchApi)
+      .mock.calls.map(([url]) => new URL(url, 'http://localhost').searchParams)
+    expect(first.get('include_tags')).toBe('models,loras')
+    expect(first.get('include_public')).toBe('false')
+    expect(first.get('workspace_library')).toBe('true')
+    expect(second.get('after')).toBe('page-2')
+    expect(second.get('workspace_library')).toBe('true')
+  })
+
+  it('leaves out a row whose loader name is not a safe file name', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-000000000003',
+          '../escape.safetensors'
+        ),
+        libraryRow('3f0b6c1e-0000-4000-8000-000000000004', 'kept.safetensors')
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual({ names: ['kept.safetensors'], blocked: [] })
+  })
+
+  it('names a model by its loader path when its file name differs', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000005',
+            'My Style (final).safetensors'
+          ),
+          loader_path: 'my_style_final.safetensors'
+        }
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual({ names: ['my_style_final.safetensors'], blocked: [] })
+  })
+
+  it('lists a loader name once when two members added a model under it', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000c',
+          'my_style_v2.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000d',
+          'teammate_style.safetensors'
+        ),
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-00000000000e',
+          'my_style_v2.safetensors'
+        )
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual({
+      names: ['my_style_v2.safetensors', 'teammate_style.safetensors'],
+      blocked: []
+    })
+  })
+
+  it("lists apart the models the Build's model rules block, each once, and treats a row without the mark as runnable", async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000010',
+            'banned_style.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000011',
+            'banned_style.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000012',
+            '../banned_escape.safetensors'
+          ),
+          blocked_by_model_policy: true
+        },
+        {
+          ...libraryRow(
+            '3f0b6c1e-0000-4000-8000-000000000013',
+            'allowed_style.safetensors'
+          ),
+          blocked_by_model_policy: false
+        },
+        libraryRow(
+          '3f0b6c1e-0000-4000-8000-000000000014',
+          'unmarked_style.safetensors'
+        )
+      ])
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).resolves.toEqual({
+      names: ['allowed_style.safetensors', 'unmarked_style.safetensors'],
+      blocked: ['banned_style.safetensors']
+    })
+  })
+
+  it('fails when the listing fails, so the dropdown can report it', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildResponse(
+        { code: 'INVALID_TAG_FILTER', message: 'bad tags' },
+        { ok: false, status: 400 }
+      )
+    )
+
+    await expect(
+      assetService.getWorkspaceLibraryModels('loras')
+    ).rejects.toThrow('400')
+  })
+})
+
 describe(assetService.onModelsScanned, () => {
   it('invokes the callback when the scan event fires and unsubscribes cleanly', () => {
     const callback = vi.fn()
@@ -923,6 +1146,18 @@ describe(assetService.updateAsset, () => {
     ).rejects.toThrow(/Invalid response/)
   })
 
+  it('accepts an AssetUpdated response that omits created_at', async () => {
+    const response: AssetUpdated = {
+      id: 'f2b7c1e0-0000-4000-8000-000000000001',
+      updated_at: '2024-01-02T00:00:00Z'
+    }
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(response))
+
+    await expect(
+      assetService.updateAsset(response.id, { user_metadata: {} })
+    ).resolves.toBeDefined()
+  })
+
   it('PUTs the JSON payload and returns the parsed asset', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildResponse(validAsset({ id: 'asset-1', name: 'renamed.safetensors' }))
@@ -974,9 +1209,74 @@ describe(assetService.getAssetsByTag, () => {
     expect(params.get('include_tags')).toBe('input')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
+
+  it.for([
+    { runtime: 'cloud', isCloud: true, expected: 'true' },
+    { runtime: 'local', isCloud: false, expected: null }
+  ])(
+    'sends capped_total=$expected on $runtime',
+    async ({ isCloud, expected }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
+      )
+
+      await assetService.getAssetsByTag('input')
+
+      const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+      const params = new URL(requestedUrl, 'http://localhost').searchParams
+      expect(params.get('capped_total')).toBe(expected)
+    }
+  )
 })
 
 describe(assetService.getAllAssetsByTag, () => {
+  it('walks every page while has_more holds when the total is capped', async () => {
+    mockDistributionState.isCloud = true
+    onTestFinished(() => {
+      mockDistributionState.isCloud = false
+    })
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            validAsset({ id: 'a', tags: ['input'] }),
+            validAsset({ id: 'b', tags: ['input'] })
+          ],
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-2' }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            validAsset({ id: 'c', tags: ['input'] }),
+            validAsset({ id: 'd', tags: ['input'] })
+          ],
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-3' }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'e', tags: ['input'] })], {
+          total: 2
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b', 'c', 'd', 'e'])
+    const cappedTotals = vi
+      .mocked(api.fetchApi)
+      .mock.calls.map(([url]) =>
+        new URL(url, 'http://localhost').searchParams.get('capped_total')
+      )
+    expect(cappedTotals).toEqual(['true', 'true', 'true'])
+  })
+
   it('walks pages by keyset cursor with include_public=true', async () => {
     vi.mocked(api.fetchApi)
       .mockResolvedValueOnce(
@@ -1264,6 +1564,18 @@ describe(assetService.getAssetsPageForNodeType, () => {
 })
 
 describe(assetService.getAssetsForNodeType, () => {
+  it('asks for public models explicitly instead of relying on the server default', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-1' })])
+    )
+
+    await assetService.getAssetsForNodeType('CheckpointLoaderSimple')
+
+    const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_public')).toBe('true')
+  })
+
   it('returns just the assets array from the page response', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'ckpt-1' })], { hasMore: true })
@@ -1285,3 +1597,51 @@ describe(assetService.getAssetsForNodeType, () => {
 })
 
 vi.mock(import('@/scripts/app'))
+
+describe(assetService.importPublishedAssets, () => {
+  it('returns a failure and reports a rejected transport request once', async () => {
+    const error = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(error)
+
+    await expect(
+      assetService.importPublishedAssets({
+        published_asset_ids: ['published-1']
+      })
+    ).resolves.toEqual({ ok: false, status: null })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      errorType: 'failure_importing_published_assets',
+      surface: 'assets'
+    })
+  })
+})
+
+describe(assetService.getWorkspaceLibraryAssetsPage, () => {
+  it('requests workspace models with its own cursor and preserves loader paths and permissions', async () => {
+    const row = validAsset({
+      loader_path: 'artist/style.safetensors',
+      is_immutable: true
+    })
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      Response.json({
+        assets: [row],
+        total: 2,
+        has_more: true,
+        next_cursor: 'library-next'
+      })
+    )
+    const response = await assetService.getWorkspaceLibraryAssetsPage({
+      after: 'library-first',
+      signal: controller.signal
+    })
+    expect(response.assets).toEqual([row])
+    expect(response.next_cursor).toBe('library-next')
+    const [url, options] = vi.mocked(api.fetchApi).mock.calls[0]
+    const params = new URL(url, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models')
+    expect(params.get('workspace_library')).toBe('true')
+    expect(params.get('include_public')).toBe('false')
+    expect(params.get('after')).toBe('library-first')
+    expect(options?.signal).toBe(controller.signal)
+  })
+})

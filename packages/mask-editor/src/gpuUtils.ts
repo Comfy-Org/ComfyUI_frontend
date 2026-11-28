@@ -1,6 +1,8 @@
-import type { Point } from './types'
-
-import type { DirtyRect } from './brushDrawingUtils'
+import type {
+  Point2D,
+  Point2D as Point,
+  Extents as DirtyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Computes the clamped dirty-rect coordinates for a putImageData call.
@@ -24,22 +26,15 @@ export function clampDirtyRect(
   return dw > 0 && dh > 0 ? { dx, dy, dw, dh } : full
 }
 
-/**
- * Linearly interpolates a sequence of points at a fixed step size,
- * returning GPU-ready stroke points with pressure=1.
- *
- * When skipResampling is true the input points are returned as-is (used
- * during live preview where the caller has already handled spacing).
- */
 export function buildStrokePoints(
   points: Point[],
   skipResampling: boolean,
   stepSize: number
-): { x: number; y: number; pressure: number }[] {
+): (Point2D & { pressure: number })[] {
   if (skipResampling) {
     return points.map((p) => ({ x: p.x, y: p.y, pressure: 1.0 }))
   }
-  const result: { x: number; y: number; pressure: number }[] = []
+  const result: (Point2D & { pressure: number })[] = []
   for (let i = 0; i < points.length - 1; i++) {
     const p1 = points[i]
     const p2 = points[i + 1]

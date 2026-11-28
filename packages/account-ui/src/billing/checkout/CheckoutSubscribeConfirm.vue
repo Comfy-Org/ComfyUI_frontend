@@ -10,7 +10,7 @@
           :disabled="interactionLocked"
           @click="emit('back')"
         >
-          <i class="pi pi-arrow-left text-base" />
+          <i class="icon-[lucide--arrow-left]" />
         </CheckoutButton>
         <CheckoutTitle :class="layout.title">
           {{ copy.confirmPayment }}

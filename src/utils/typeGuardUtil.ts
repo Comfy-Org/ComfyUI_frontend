@@ -2,9 +2,9 @@ import type {
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/types/entityRegistry'
-import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
+} from '@comfyorg/graph-model/entityRegistry'
+import type { INodeSlot } from '@comfyorg/graph-model/interfaces'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`

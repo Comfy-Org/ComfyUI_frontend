@@ -56,8 +56,6 @@ test.describe(
           expect(
             outcomes.some((outcome) => outcome.outcome === 'applied')
           ).toBe(true)
-          // The node really was a ghost at the moment the op was minted from
-          // it; without this the rest of the test proves nothing.
           expect(agentConversation.placementWasGhosted).toBe(true)
           return added
         })
@@ -90,9 +88,10 @@ test.describe(
         await expect(node).not.toHaveAttribute('data-ghost')
         await expect(node).not.toHaveClass(/pointer-events-none/)
 
+        await agentConversation.fitCanvasToGraph()
         await agentConversation.vueNodes.selectNode(nodeId)
-        await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(node).toHaveClass(/outline-foreground/)
+        await expect(agentConversation.vueNodes.emphasizedNodes).toHaveCount(1)
+        await expect(node).toHaveAttribute('data-emphasized', 'true')
       })
     })
 
@@ -162,8 +161,8 @@ test.describe(
         await expect(node).not.toHaveClass(/pointer-events-none/)
 
         await agentConversation.vueNodes.selectNode(replacementId)
-        await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(node).toHaveClass(/outline-foreground/)
+        await expect(agentConversation.vueNodes.emphasizedNodes).toHaveCount(1)
+        await expect(node).toHaveAttribute('data-emphasized', 'true')
       })
     })
   }

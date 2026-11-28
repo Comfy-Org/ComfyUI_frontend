@@ -4,9 +4,9 @@ import { nextTick } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { useTelemetry } from '@/platform/telemetry'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -16,6 +16,7 @@ import {
   clearCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/billing/utils/checkoutJourney'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -35,12 +36,12 @@ import type {
   HostedBillingDestination
 } from '@comfyorg/account-core/billing'
 import { BILLING_OPERATION_TELEMETRY_EVENT } from '@comfyorg/account-core/billing'
-import type { BillingSdk, BillingSdkOptions } from './createBillingSdk'
+import type { BillingSdk, BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 
 const mockCreateBillingSdk = vi.hoisted(() =>
   vi.fn<(options: BillingSdkOptions) => BillingSdk>()
 )
-vi.mock(import('./createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
@@ -48,7 +49,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -98,8 +99,8 @@ describe('useBillingSdkStore', () => {
     expect(options.session).toBe(
       useWorkspaceAuthStore().getUnifiedSessionClient()
     )
-    expect(options.resolveUrl).toBe(workspaceApiUrl)
-    expect(options.pointerStorage).toBe(sessionStorage)
+    expect(options.resolveUrl).toBe(ingestApiUrl)
+    expect(options.pointerStorage).toBe(safeSessionStorage)
   })
 
   it.for(['stripe', 'billing_web'] as const)(
@@ -203,6 +204,39 @@ describe('useBillingSdkStore', () => {
 
     harness.publish(settledTopup('succeeded'))
     expect(toast.toasts).toEqual([])
+  })
+
+  it('does not bring back a progress toast the customer closed', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+    toast.close(toast.toasts[0].id)
+    harness.publish(pendingTopup())
+
+    expect(toast.toasts).toEqual([])
+  })
+
+  it('does not treat a teardown of all toasts as the customer closing one', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+    toast.dismissAll()
+    harness.publish(pendingTopup())
+
+    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'loading' })])
+  })
+
+  it('still shows the verification prompt after the customer closed the processing toast', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup())
+    toast.close(toast.toasts[0].id)
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+
+    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'warning' })])
   })
 
   it('keeps a subscribe in step with its progress toast, as the poller did', () => {
@@ -677,6 +711,46 @@ describe('useBillingSdkStore subscription commands', () => {
     ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
+
+  it.for([
+    {
+      name: 'opens the payment page the subscribe still owes',
+      atRetry: pendingSubscription({ actionUrl: 'https://pay.example/op-1' }),
+      opened: [['https://pay.example/op-1', '_blank']],
+      reported: [['op-1', 'new_tab']]
+    },
+    {
+      name: 'opens nothing once the subscribe has settled',
+      atRetry: settledOperation('succeeded', 'subscription'),
+      opened: [],
+      reported: []
+    }
+  ])(
+    'retrying a blocked payment page from its warning $name',
+    ({ atRetry, opened, reported }) => {
+      const openPage = vi.spyOn(window, 'open').mockReturnValueOnce(null)
+      useBillingSdkStore()
+      harness.publish(
+        pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+      )
+      harness.publish(atRetry)
+      const warning = useToast().toasts.find(
+        (shown) =>
+          shown.kind === 'warning' &&
+          shown.description ===
+            "Couldn't open the payment page — please allow popups and try again."
+      )
+      expect(warning?.actions.map(({ label }) => label)).toEqual(['Try again'])
+      openPage.mockClear()
+
+      warning?.actions[0].onClick()
+
+      expect(openPage.mock.calls).toEqual(opened)
+      expect(
+        vi.mocked(harness.sdk.lifecycle.reportHostedStepOpened).mock.calls
+      ).toEqual(reported)
+    }
+  )
 
   it.for([
     { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },

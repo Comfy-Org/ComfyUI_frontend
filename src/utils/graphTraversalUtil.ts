@@ -3,20 +3,25 @@ import type {
   LGraphNode,
   Subgraph,
   SubgraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import {
   createLeafNodeExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
   parseNodeLocatorId
-} from '@/types/nodeIdentification'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
+} from '@comfyorg/graph-model/nodeIdentification'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { UUID } from '@/utils/uuid'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
@@ -25,7 +30,7 @@ import { isSubgraphIoNode } from './typeGuardUtil'
 type RuntimeGraphNode = Omit<LGraphNode, 'isSubgraphNode'> &
   Partial<Pick<LGraphNode, 'isSubgraphNode'>>
 
-function isSubgraphNode(node: RuntimeGraphNode): node is SubgraphNode {
+export function isSubgraphNode(node: RuntimeGraphNode): node is SubgraphNode {
   return node.isSubgraphNode?.call(node) ?? false
 }
 
@@ -174,21 +179,31 @@ export function mapAllNodes<T>(
   graph: LGraph | Subgraph,
   mapFn: (node: LGraphNode) => T | undefined
 ): T[] {
+  return mapAllNodesWithVisited(graph, mapFn, new Set())
+}
+
+function mapAllNodesWithVisited<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined,
+  visited: Set<LGraph | Subgraph>
+): T[] {
+  if (visited.has(graph)) return []
+  visited.add(graph)
+
   const results: T[] = []
 
   visitGraphNodes(graph, (node) => {
-    // Recursively map over subgraphs first
     if (isSubgraphNode(node)) {
-      results.push(...mapAllNodes(node.subgraph, mapFn))
+      results.push(...mapAllNodesWithVisited(node.subgraph, mapFn, visited))
     }
 
-    // Apply map function to current node
     const result = mapFn(node)
     if (result !== undefined) {
       results.push(result)
     }
   })
 
+  visited.delete(graph)
   return results
 }
 
@@ -244,15 +259,26 @@ export function forEachNode(
   graph: LGraph | Subgraph,
   fn: (node: LGraphNode) => void
 ): void {
+  forEachNodeWithVisited(graph, fn, new Set())
+}
+
+function forEachNodeWithVisited(
+  graph: LGraph | Subgraph,
+  fn: (node: LGraphNode) => void,
+  visited: Set<LGraph | Subgraph>
+): void {
+  if (visited.has(graph)) return
+  visited.add(graph)
+
   visitGraphNodes(graph, (node) => {
-    // Recursively process subgraphs first
     if (isSubgraphNode(node)) {
-      forEachNode(node.subgraph, fn)
+      forEachNodeWithVisited(node.subgraph, fn, visited)
     }
 
-    // Execute function on current node
     fn(node)
   })
+
+  visited.delete(graph)
 }
 
 /**
@@ -986,12 +1012,38 @@ function findPartialExecutionPathToGraph(
   return undefined
 }
 
+type InputLink = ReturnType<LGraphNode['getInputLink']>
+
 export function resolveInputSourceNode(
   node: LGraphNode,
+  slot: number,
+  host?: SubgraphNode
+): LGraphNode | undefined {
+  const link = node.getInputLink(slot)
+  if (link?.origin_id === SUBGRAPH_INPUT_ID) {
+    return host?.subgraph === node.graph
+      ? resolveHostInputSourceNode(host, link.origin_slot)
+      : undefined
+  }
+  return followSubgraphOutputs(node.getInputNode(slot), link)
+}
+
+function resolveHostInputSourceNode(
+  host: SubgraphNode,
   slot: number
 ): LGraphNode | undefined {
-  let upstream = node.getInputNode(slot)
-  let link = node.getInputLink(slot)
+  const graph = host.graph
+  const link = graph ? inputLink(graph, host.id, slot) : undefined
+  if (!graph || !link) return undefined
+  return followSubgraphOutputs(graph.getNodeById(link.origin_id), link)
+}
+
+function followSubgraphOutputs(
+  source: LGraphNode | null,
+  sourceLink: InputLink | undefined
+): LGraphNode | undefined {
+  let upstream = source
+  let link = sourceLink
   const visited = new Set<LGraphNode>()
 
   while (upstream?.isSubgraphNode()) {

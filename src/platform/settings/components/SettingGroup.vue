@@ -16,7 +16,7 @@
       }}
     </h3>
     <div
-      v-for="setting in group.settings.filter((s) => !s.deprecated)"
+      v-for="setting in group.settings"
       :key="setting.id"
       :data-setting-id="setting.id"
       class="setting-item mb-3"
@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 defineProps<{

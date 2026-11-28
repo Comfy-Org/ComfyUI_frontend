@@ -3,14 +3,14 @@ import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConn
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@/renderer/core/layout/types'
+import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { parseSlotId } from '@/types/slotId'
-import type { SlotId } from '@/types/slotId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { parseSlotId } from '@comfyorg/graph-model/slotId'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 
 interface DropResolutionContext {
   adapter: LinkConnectorAdapter | null
@@ -118,19 +118,16 @@ export const resolveNodeSurfaceSlotCandidate = (
   }
 
   const key = getSlotKey(nodeId, index, isInput)
-  const offset = layoutStore.getSlotOffset(
-    graph.rootGraph.id,
-    nodeId,
-    index,
-    isInput ? 'input' : 'output',
-    node.flags.collapsed ? 'collapsed' : 'expanded'
-  )
-  if (!offset) {
-    session.preferredSlotForNode.set(nodeId, null)
-    return null
-  }
-
-  const layout = getGraphSlotLayout(graph, nodeId, index, isInput)
+  const rendered =
+    node.flags.collapsed ||
+    node.type === 'Reroute' ||
+    layoutStore.derivedSlotAnchorOf(
+      graph.rootGraph.id,
+      nodeId,
+      index,
+      isInput ? 'input' : 'output'
+    )
+  const layout = rendered && getGraphSlotLayout(graph, nodeId, index, isInput)
   if (!layout) {
     session.preferredSlotForNode.set(nodeId, null)
     return null

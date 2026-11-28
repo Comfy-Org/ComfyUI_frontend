@@ -1,0 +1,24 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoraLoaderModelOnly",
+      "pos": [150, 140],
+      "size": [315, 82],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [{ "name": "model", "type": "MODEL", "link": null }],
+      "outputs": [{ "name": "MODEL", "type": "MODEL", "links": [] }],
+      "properties": { "Node name for S&R": "LoraLoaderModelOnly" },
+      "widgets_values": ["e2e_local_only_lora.safetensors", 1]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

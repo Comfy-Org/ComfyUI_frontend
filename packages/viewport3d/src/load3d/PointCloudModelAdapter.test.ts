@@ -32,6 +32,7 @@ vi.mock(import('./loader/FastPLYLoader'), () => ({
 function makePLYGeometry(opts: {
   withColors?: boolean
   withFaces?: boolean
+  normals?: number[]
 }): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
@@ -42,6 +43,12 @@ function makePLYGeometry(opts: {
     geometry.setAttribute(
       'color',
       new THREE.Float32BufferAttribute([1, 0, 0, 0, 1, 0, 0, 0, 1], 3)
+    )
+  }
+  if (opts.normals) {
+    geometry.setAttribute(
+      'normal',
+      new THREE.Float32BufferAttribute(opts.normals, 3)
     )
   }
   if (opts.withFaces) {
@@ -126,6 +133,42 @@ describe('PointCloudModelAdapter', () => {
       const child = result!.object.children[0]
       expect(child).toBeInstanceOf(THREE.Mesh)
       expect(ctx.setOriginalModel).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the normals stored in the file', async () => {
+      const fileNormals = [0.6, 0.8, 0, 0, 0.6, 0.8, 0.8, 0, 0.6]
+      const geometry = makePLYGeometry({
+        withFaces: true,
+        normals: fileNormals
+      })
+      plyLoaderParse.mockReturnValueOnce(geometry)
+
+      await new PointCloudModelAdapter(() => 'threejs').load(
+        makeContext('original'),
+        '/api/view?',
+        'cloud.ply',
+        fetchBytes
+      )
+
+      expect(Array.from(geometry.getAttribute('normal').array)).toEqual(
+        Array.from(new Float32Array(fileNormals))
+      )
+    })
+
+    it('computes normals for a PLY stored without them', async () => {
+      const geometry = makePLYGeometry({ withFaces: true })
+      plyLoaderParse.mockReturnValueOnce(geometry)
+
+      await new PointCloudModelAdapter(() => 'threejs').load(
+        makeContext('original'),
+        '/api/view?',
+        'cloud.ply',
+        fetchBytes
+      )
+
+      expect(Array.from(geometry.getAttribute('normal').array)).toEqual([
+        0, 0, 1, 0, 0, 1, 0, 0, 1
+      ])
     })
 
     it('returns a Group containing Points when materialMode is pointCloud', async () => {

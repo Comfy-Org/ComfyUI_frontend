@@ -7,7 +7,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   ExecutionContext,
   ShellLayoutMetadata
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 
 const mocks = vi.hoisted(() => ({
@@ -151,4 +151,32 @@ describe('SentryTelemetryProvider', () => {
       node_type: 'KSampler'
     })
   })
+
+  it.for([
+    ['recovered', 'info'],
+    ['exhausted', 'warning'],
+    ['retry_after_too_long', 'warning']
+  ] as const)(
+    'records a %s status retry as a %s breadcrumb',
+    ([outcome, level]) => {
+      const metadata = {
+        transport: 'fetch',
+        method: 'GET',
+        host: 'api.comfy.org',
+        route: '/customers/balance',
+        attempts: 2,
+        final_status: 503,
+        outcome
+      } as const
+
+      new SentryTelemetryProvider().trackFetchStatusRetry(metadata)
+
+      expect(mocks.addBreadcrumb).toHaveBeenCalledExactlyOnceWith({
+        category: 'fetch.status_retry',
+        message: outcome,
+        level,
+        data: metadata
+      })
+    }
+  )
 })

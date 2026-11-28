@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const UPDATED_SUBGRAPH_TITLE = 'Updated Subgraph Title'
 
@@ -125,9 +125,7 @@ test.describe('Subgraph Navigation', { tag: ['@slow', '@subgraph'] }, () => {
         }
       ])
 
-      await comfyPage.page.reload()
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup()
+      await comfyPage.workflow.reloadAndWaitForApp()
       await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')

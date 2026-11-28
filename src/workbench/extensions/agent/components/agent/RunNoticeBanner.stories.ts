@@ -41,6 +41,10 @@ export const BoundToWorkflow: Story = {
   args: { workflowName: 'portrait' }
 }
 
+export const Unavailable: Story = {
+  args: { context: 'unavailable' }
+}
+
 /**
  * The name is underlined inline, so a long one has to wrap inside the panel
  * without pushing the dismiss button off the row.

@@ -10,8 +10,8 @@ description: 'Write or update Storybook stories for Vue components in ComfyUI_fr
 1. !!!!IMPORTANT Confirm the worktree is on a `feat/*` or `fix/*` branch. Base PRs on the local `main`, not a fork branch.
 2. Read the component source first. Understand props, emits, slots, exposed methods, and any supporting types or composables.
 3. Read nearby stories before writing anything.
-   - Search stories: `rg --files src apps | rg '\.stories\.ts$'`
-   - Inspect title patterns: `rg -n "title:\\s*'" src apps --glob '*.stories.ts'`
+   - Search stories: `rg --files src apps packages | rg '\.stories\.ts$'`
+   - Inspect title patterns: `rg -n "title:\\s*'" src apps packages --glob '*.stories.ts'`
 4. If a Figma link is provided, list the states you need to cover before writing stories.
 5. Co-locate the story file with the component: `ComponentName.stories.ts`.
 6. Sort every variation into a control or a scenario before writing exports (see "Controls Versus Scenarios"). Hover, focus, and active come from the implementation and never get a story.
@@ -49,18 +49,7 @@ A file whose exports differ by one prop value each is the pattern to fix, not co
 
 ## Title Patterns
 
-Do not invent titles from scratch when a close sibling story already exists. Match the nearest domain pattern.
-
-| Component area                                          | Typical title pattern             |
-| ------------------------------------------------------- | --------------------------------- |
-| `src/components/ui/button/Button.vue`                   | `Components/Button/Button`        |
-| `src/components/ui/input/Input.vue`                     | `Components/Input`                |
-| `src/components/ui/search-input/SearchInput.vue`        | `Components/Input/SearchInput`    |
-| `src/components/common/SearchBox.vue`                   | `Components/Input/SearchBox`      |
-| `src/renderer/extensions/vueNodes/widgets/components/*` | `Widgets/<WidgetName>`            |
-| `src/platform/assets/components/*`                      | `Platform/Assets/<ComponentName>` |
-
-If multiple patterns seem plausible, follow the closest sibling story in the same folder tree.
+Do not invent titles. Copy the `title` pattern of the closest sibling story in the same folder tree; the title search in step 3 lists them.
 
 ## Common Story Shapes
 
@@ -165,6 +154,7 @@ export const AllVariants: Story = {
 
 ## Component-Specific Notes
 
+- Stories under `packages/design-system` cannot import from `@/`; use package-relative imports and package-local fixtures, and check them with `pnpm -C packages/design-system typecheck`.
 - Widget components often need a minimal `SimplifiedWidget` object. Build it in `setup()` and use `computed()` when `args` change `widget.options`.
 - Input and search components often need a width-constrained wrapper so they render at realistic sizes.
 - Asset and platform cards often need background decorators such as `bg-base-background` and fixed-width containers.
@@ -180,9 +170,8 @@ export const AllVariants: Story = {
 - [ ] Every export is a scenario from the "Controls Versus Scenarios" table, not a single prop value
 - [ ] Add `tags: ['autodocs']`
 - [ ] Keep the story co-located with the component
-- [ ] Run `pnpm storybook`
-- [ ] Run `pnpm typecheck`
-- [ ] Run `pnpm lint`
+- [ ] Run `pnpm storybook` and check each story renders
+- [ ] `git add` new story files, then run `pnpm lint:unstaged:fix`; it skips untracked files. The pre-commit hook formats, lints and typechecks what you stage. Do not run repo-wide `pnpm lint` or `pnpm typecheck`
 
 ## Avoid
 

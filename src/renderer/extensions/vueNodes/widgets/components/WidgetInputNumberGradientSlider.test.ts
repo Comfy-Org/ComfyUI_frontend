@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ColorStop } from '@/lib/litegraph/src/interfaces'
-import type { IWidgetGradientSliderOptions } from '@/lib/litegraph/src/types/widgets'
+import type { ColorStop } from '@comfyorg/graph-model/interfaces'
+import type { IWidgetGradientSliderOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberGradientSlider from './WidgetInputNumberGradientSlider.vue'

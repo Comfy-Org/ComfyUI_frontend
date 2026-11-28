@@ -8,8 +8,7 @@ export function getPnpmInvocation(
     )
   }
 
-  return {
-    command: process.execPath,
-    args: [pnpmEntry, ...args]
-  }
+  return /\.[cm]?js$/.test(pnpmEntry)
+    ? { command: process.execPath, args: [pnpmEntry, ...args] }
+    : { command: pnpmEntry, args }
 }

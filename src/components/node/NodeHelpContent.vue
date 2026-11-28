@@ -72,10 +72,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
-import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
+import { flattenInputSpecs } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const { node } = defineProps<{

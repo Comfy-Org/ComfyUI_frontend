@@ -3,10 +3,7 @@ import type { Request } from '@playwright/test'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
-import {
-  WORKSPACE_SWITCHER_REMOTE_CONFIG,
-  WORKSPACE_SWITCHER_WORKSPACES
-} from '@e2e/fixtures/data/workspaceSwitcher'
+import { WORKSPACE_SWITCHER_WORKSPACES } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
 
@@ -37,7 +34,6 @@ export const hostSessionPartnerNodeTest = workspaceSwitcherTest.extend<{
     await page.route('**/api/features', (route) =>
       route.fulfill(
         jsonRoute({
-          ...WORKSPACE_SWITCHER_REMOTE_CONFIG,
           partner_node_token: true
         } satisfies RemoteConfig)
       )

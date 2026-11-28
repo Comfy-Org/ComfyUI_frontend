@@ -16,10 +16,10 @@
           "
           :surface="item.dialogComponentProps.headless ? 'none' : 'card'"
           :maximized="!!item.dialogComponentProps.maximized"
+          :grows-down="!!item.dialogComponentProps.growsDown"
           :data-dialog-key="item.key"
           @escape-key-down="
-            (e) =>
-              item.dialogComponentProps.closable === false && e.preventDefault()
+            (e) => onRekaEscapeKeyDown(item.dialogComponentProps, e)
           "
           @pointer-down-outside="
             (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
@@ -99,19 +99,28 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { provide } from 'vue'
 
-import Dialog from '@/components/ui/dialog/Dialog.vue'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
-import DialogContent from '@/components/ui/dialog/DialogContent.vue'
-import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
-import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
-import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
-import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
-import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import { LocalAgentPanelPortKey } from '@/platform/openOnCloud/localAgentPanelPort'
+import { useOpenAgentPanel } from '@/workbench/extensions/agent/composables/agent/useOpenAgentPanel'
+
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogFooter from '@comfyorg/design-system/dialog/DialogFooter'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import {
+  onRekaEscapeKeyDown,
+  onRekaPointerDownOutside
+} from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
+
+provide(LocalAgentPanelPortKey, useOpenAgentPanel('cloud_button'))
 
 const dialogStore = useDialogStore()
 

@@ -17,7 +17,7 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Prerequisites & Technology Stack
 
 - **Required Software**:
-  - Node.js (see `.nvmrc` for the required version) and pnpm
+  - Node.js (see `.nvmrc` for the required version), pnpm, and jq (used by `tools/ci/src/cicd/check-json.sh` and its unit test)
   - Git for version control
   - A running ComfyUI backend instance (otherwise, you can use `pnpm dev:cloud`)
   - Docker, if you want to use the containerized test backend
@@ -170,16 +170,10 @@ When you fix a bug that affects a version in feature freeze, we use an automated
 
 #### How to Backport Your Fix
 
-1. Create your PR fixing the bug on `main` branch as usual
-2. Before merging, add these labels to your PR:
-   - `needs-backport` - triggers the automated backport workflow
-   - `core/1.24` - targets the `core/1.24` release candidate branch
-3. Merge your PR normally
-4. The automated workflow will:
-   - Create a new branch from `core/1.24`
-   - Apply your changes to that branch
-   - Open a new PR to `core/1.24`
-   - Comment on your original PR with a link to the backport PR
+Add `needs-backport` to your fix PR on `main`. After merge, the workflow
+tries the fix on every eligible core release branch. Close any generated
+backport PR you don't need. See [Backporting](docs/release-process.md#backporting)
+for conflicts and retries.
 
 #### When to Use Backporting
 
@@ -251,7 +245,7 @@ pnpm format
 ### Styling
 
 - Use Tailwind CSS classes instead of custom CSS
-- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [style.css](packages/design-system/src/css/style.css) like `bg-node-component-surface`
+- NEVER use `dark:` or `dark-theme:` tailwind variants. Instead use a semantic value from the [theme.css](packages/design-system/src/css/theme.css) like `bg-node-component-surface`
 
 ## Design Team Approval (Required for Notable UI Changes)
 
@@ -266,13 +260,14 @@ Changes that materially affect the default UI must be approved or requested by o
 
 ## Icons
 
-The project supports three types of icons, all with automatic imports (no manual imports needed):
+The project uses two types of icons, both with automatic imports (no manual imports needed):
 
-1. **PrimeIcons** - The PrimeIcons icon font, using CSS classes: `<i class="pi pi-plus" />`
-2. **Iconify Icons** - 200,000+ icons from various libraries: `<i class="icon-[lucide--settings]" />`, `<i class="icon-[mdi--folder]" />`
-3. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
+1. **Lucide Icons** - The only third-party icon set, through Iconify: `<i class="icon-[lucide--settings]" />`
+2. **Custom Icons** - Your own SVG icons: `<i-comfy:workflow />`
 
-Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Tailwind CSS icon classes (`icon-[comfy--template]`) are provided by `@iconify/tailwind4`, configured in `packages/design-system/src/css/style.css`. Custom icons are stored in `packages/design-system/src/icons/` and loaded via `from-folder` at build time.
+Don't add icons from other sets. PrimeIcons (`pi pi-*`) and Material Design Icons (`mdi`) are being phased out. Don't add new uses, in first-party code or extensions.
+
+Icons are powered by the unplugin-icons system, which automatically discovers and imports icons as Vue components. Tailwind CSS icon classes (`icon-[comfy--template]`) are provided by `@iconify/tailwind4`, configured in `packages/design-system/src/css/theme.css`. Custom icons are stored in `packages/design-system/src/icons/` and loaded via `from-folder` at build time.
 
 For detailed instructions and code examples, see [packages/design-system/src/icons/README.md](packages/design-system/src/icons/README.md).
 

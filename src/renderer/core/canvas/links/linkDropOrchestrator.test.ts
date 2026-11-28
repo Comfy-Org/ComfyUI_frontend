@@ -6,10 +6,10 @@ import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConn
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { SlotLayout } from '@comfyorg/graph-model/layout'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
-import { toNodeId } from '@/types/nodeId'
-import type { SlotId } from '@/types/slotId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SlotId } from '@comfyorg/graph-model/slotId'
 
 import {
   resolveNodeSurfaceSlotCandidate,
@@ -87,7 +87,7 @@ describe('resolveSlotTargetCandidate', () => {
     expect(isInputValidDrop).toHaveBeenCalledWith(NODE_ID, 1)
   })
 
-  it('does not target an advanced widget input that was not rendered', () => {
+  it('targets a node-surface input only once the node layout anchors it', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
     node.id = NODE_ID
@@ -111,5 +111,41 @@ describe('resolveSlotTargetCandidate', () => {
     expect(candidate).toBeNull()
     expect(isInputValidDrop).not.toHaveBeenCalled()
     expect(getGraphSlotLayout).not.toHaveBeenCalled()
+
+    layoutStore.setDerivedSlotAnchors(graph.rootGraph.id, NODE_ID, {
+      input: new Map([[0, { x: 0, y: 40 }]]),
+      output: new Map()
+    })
+    getGraphSlotLayout.mockReturnValue(createSlotLayout())
+
+    expect(
+      resolveNodeSurfaceSlotCandidate(target, {
+        adapter,
+        graph,
+        session: createSlotLinkDragContext()
+      })
+    ).toEqual({ layout: createSlotLayout(), compatible: true })
+  })
+
+  it('targets a Reroute body input without a derived anchor', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Reroute')
+    node.type = 'Reroute'
+    node.id = NODE_ID
+    node.addInput('', 'number')
+    graph.add(node)
+    getGraphSlotLayout.mockReturnValue(createSlotLayout())
+
+    const target = document.createElement('div')
+    target.dataset.nodeId = String(NODE_ID)
+    const { adapter } = createAdapter()
+
+    expect(
+      resolveNodeSurfaceSlotCandidate(target, {
+        adapter,
+        graph,
+        session: createSlotLinkDragContext()
+      })
+    ).toEqual({ layout: createSlotLayout(), compatible: true })
   })
 })

@@ -4,10 +4,11 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import { TelemetryRegistry } from './TelemetryRegistry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditUsageExposureMetadata,
   AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
@@ -21,11 +22,12 @@ import type {
   AgentPanelOpenedMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentSkillSavedMetadata,
+  AgentSkillSelectedMetadata,
   AgentStarterPromptClickedMetadata,
-  AgentStarterPromptExposureMetadata,
   AgentWorkflowAppliedMetadata,
   TelemetryProvider
-} from './types'
+} from '@comfyorg/telemetry/types'
 
 type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 
@@ -120,6 +122,38 @@ describe('TelemetryRegistry', () => {
     registry.trackSsoEvent(event)
 
     expect(a.trackSsoEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches a Run on Cloud event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackRunOnCloudEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'app:run_on_cloud_save_first_blocked',
+      properties: { action: 'copy_prompt', reason: 'unsaved' }
+    } as const
+    registry.trackRunOnCloudEvent(event)
+
+    expect(a.trackRunOnCloudEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
+  it('dispatches a custom deployment event to every provider that records it', () => {
+    const a: TelemetryProvider = { trackCustomDeploymentEvent: vi.fn() }
+    const b: TelemetryProvider = {}
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event = {
+      name: 'platform:deployment_link_clicked',
+      properties: { kind: 'manage_deployments', workspace_id: 'ws-1' }
+    } as const
+    registry.trackCustomDeploymentEvent(event)
+
+    expect(a.trackCustomDeploymentEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
   it('dispatches unified auth retry outcomes to supporting providers', () => {
@@ -301,6 +335,47 @@ describe('TelemetryRegistry', () => {
     )
   })
 
+  it('dispatches prompt editor experiment events to every registered provider', () => {
+    const providers = [0, 1].map((): TelemetryProvider => ({
+      trackPromptEditorExposure: vi.fn(),
+      trackPromptEditorOpened: vi.fn(),
+      trackPromptEditorClosed: vi.fn()
+    }))
+    const registry = new TelemetryRegistry()
+    providers.forEach((provider) => registry.registerProvider(provider))
+    const exposure = {
+      variant: 'panel' as const,
+      '$feature/prompt-editor-surface': 'panel' as const
+    }
+    const opened = {
+      surface: 'panel' as const,
+      trigger: 'expand_button' as const,
+      '$feature/prompt-editor-surface': 'panel' as const
+    }
+    const closed = {
+      ...opened,
+      end_reason: 'close' as const,
+      duration_ms: 1200,
+      input_count: 4,
+      node_switch_count: 2
+    }
+
+    registry.trackPromptEditorExposure(exposure)
+    registry.trackPromptEditorOpened(opened)
+    registry.trackPromptEditorClosed(closed)
+
+    expect(
+      providers.map((provider) => ({
+        exposure: vi.mocked(provider.trackPromptEditorExposure!).mock.calls,
+        opened: vi.mocked(provider.trackPromptEditorOpened!).mock.calls,
+        closed: vi.mocked(provider.trackPromptEditorClosed!).mock.calls
+      }))
+    ).toEqual([
+      { exposure: [[exposure]], opened: [[opened]], closed: [[closed]] },
+      { exposure: [[exposure]], opened: [[opened]], closed: [[closed]] }
+    ])
+  })
+
   describe('agent telemetry dispatch', () => {
     const feedbackMetadata = {
       message_id: 'm1',
@@ -321,6 +396,7 @@ describe('TelemetryRegistry', () => {
     const messageSentMetadata = {
       attachment_count: 1,
       node_tag_count: 2,
+      skill_count: 1,
       thread_id: 'th-1',
       workflow_id: 'w1',
       client_message_id: 'cm-1',
@@ -338,9 +414,6 @@ describe('TelemetryRegistry', () => {
       click_id: 'click-1',
       draft_was_empty: true
     } satisfies AgentStarterPromptClickedMetadata
-    const starterPromptExposureMetadata = {
-      '$feature/agent-starter-prompt-set': 'test'
-    } satisfies AgentStarterPromptExposureMetadata
     const consentShownMetadata = {
       trigger: 'button_click'
     } satisfies AgentConsentShownMetadata
@@ -350,11 +423,21 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentConsentResolvedMetadata
     const onboardingStepMetadata = {
       step: 2,
+      card: 'workflow',
+      total: 3,
       action: 'next'
     } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
-      source: 'mention_picker'
+      source: 'mention_picker',
+      node_count: 1
     } satisfies AgentNodeTaggedMetadata
+    const skillSelectedMetadata = {
+      source: 'slash_picker'
+    } satisfies AgentSkillSelectedMetadata
+    const skillSavedMetadata = {
+      mode: 'add',
+      outcome: 'saved'
+    } satisfies AgentSkillSavedMetadata
     const workflowAppliedMetadata = {
       workflow_id: 'w1',
       target: 'active_tab_open'
@@ -385,6 +468,10 @@ describe('TelemetryRegistry', () => {
     const creditTransitionNoticeMetadata = {
       action: 'shown'
     } satisfies AgentCreditTransitionNoticeMetadata
+    const creditUsageExposureMetadata = {
+      variant: 'treatment',
+      '$feature/agent-credit-usage-summary': 'treatment'
+    } satisfies AgentCreditUsageExposureMetadata
 
     const cases = [
       {
@@ -411,6 +498,12 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentCreditTransitionNotice(
             creditTransitionNoticeMetadata
           )
+      },
+      {
+        method: 'trackAgentCreditUsageExposure',
+        expected: { ...creditUsageExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditUsageExposure(creditUsageExposureMetadata)
       },
       {
         method: 'trackAgentMessageFeedback',
@@ -460,14 +553,6 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentStarterPromptClicked(starterPromptClickedMetadata)
       },
       {
-        method: 'trackAgentStarterPromptExposure',
-        expected: { ...starterPromptExposureMetadata },
-        invoke: (registry) =>
-          registry.trackAgentStarterPromptExposure(
-            starterPromptExposureMetadata
-          )
-      },
-      {
         method: 'trackAgentConsentShown',
         expected: { ...consentShownMetadata },
         invoke: (registry) =>
@@ -494,6 +579,17 @@ describe('TelemetryRegistry', () => {
         method: 'trackAgentNodeTagged',
         expected: { ...nodeTaggedMetadata },
         invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
+      },
+      {
+        method: 'trackAgentSkillSelected',
+        expected: { ...skillSelectedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentSkillSelected(skillSelectedMetadata)
+      },
+      {
+        method: 'trackAgentSkillSaved',
+        expected: { ...skillSavedMetadata },
+        invoke: (registry) => registry.trackAgentSkillSaved(skillSavedMetadata)
       },
       {
         method: 'trackAgentAttachButtonClicked',
@@ -557,20 +653,63 @@ describe('TelemetryRegistry', () => {
       },
       {
         method: 'trackAgentRunApprovalShown',
-        expected: { turn_id: 't1', workflow_id: 'w1' },
+        expected: { ask_id: 'a1', turn_id: 't1', workflow_id: 'w1' },
         invoke: (registry) =>
           registry.trackAgentRunApprovalShown({
+            ask_id: 'a1',
             turn_id: 't1',
             workflow_id: 'w1'
           })
       },
       {
         method: 'trackAgentRunApprovalResolved',
-        expected: { decision: 'run', time_to_decide_ms: 120 },
+        expected: {
+          ask_id: 'a1',
+          turn_id: 't1',
+          decision: 'run',
+          time_to_decide_ms: 120
+        },
         invoke: (registry) =>
           registry.trackAgentRunApprovalResolved({
+            ask_id: 'a1',
+            turn_id: 't1',
             decision: 'run',
             time_to_decide_ms: 120
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalAnswerFailed',
+        expected: { ask_id: 'a1', turn_id: 't1' },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalAnswerFailed({
+            ask_id: 'a1',
+            turn_id: 't1'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalRecoveryAttempted',
+        expected: { ask_id: 'a1', turn_id: 't1', cause: 'reconnect' },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalRecoveryAttempted({
+            ask_id: 'a1',
+            turn_id: 't1',
+            cause: 'reconnect'
+          })
+      },
+      {
+        method: 'trackAgentRunApprovalRecoveryOutcome',
+        expected: {
+          ask_id: 'a1',
+          turn_id: 't1',
+          cause: 'reconnect',
+          outcome: 'restored'
+        },
+        invoke: (registry) =>
+          registry.trackAgentRunApprovalRecoveryOutcome({
+            ask_id: 'a1',
+            turn_id: 't1',
+            cause: 'reconnect',
+            outcome: 'restored'
           })
       },
       {
@@ -597,13 +736,13 @@ describe('TelemetryRegistry', () => {
       {
         method: 'trackAgentConsentOfferExited',
         expected: {
-          exit: 'already_offered',
+          exit: 'card_already_seen',
           stage: 'offer',
           retry_armed: false
         },
         invoke: (registry) =>
           registry.trackAgentConsentOfferExited({
-            exit: 'already_offered',
+            exit: 'card_already_seen',
             stage: 'offer',
             retry_armed: false
           })
@@ -629,6 +768,42 @@ describe('TelemetryRegistry', () => {
         expected: { reason: 'app_mode' },
         invoke: (registry) =>
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
+      },
+      {
+        method: 'trackAgentTargetUnavailable',
+        expected: {
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentTargetUnavailable({
+            cause: 'restore_not_listed',
+            workflow_id: 'wf-1',
+            startup_tab_restore_settled: false
+          })
+      },
+      {
+        method: 'trackAgentSendGated',
+        expected: {
+          gate: 'coach',
+          outcome: 'held',
+          reason: null,
+          client_message_id: 'client-message-1',
+          held_ms: null,
+          thread_id: 'thread-1',
+          client_session_id: 'client-session-1'
+        },
+        invoke: (registry) =>
+          registry.trackAgentSendGated({
+            gate: 'coach',
+            outcome: 'held',
+            reason: null,
+            client_message_id: 'client-message-1',
+            held_ms: null,
+            thread_id: 'thread-1',
+            client_session_id: 'client-session-1'
+          })
       },
       {
         method: 'trackAgentPaywallShown',
@@ -664,7 +839,7 @@ describe('TelemetryRegistry', () => {
     })
 
     it.for(cases)(
-      'dispatches $method to every registered provider',
+      'dispatches $method with $expected to every registered provider',
       ({ method, expected, invoke }) => {
         const a: TelemetryProvider = { [method]: vi.fn() }
         const b: TelemetryProvider = { [method]: vi.fn() }

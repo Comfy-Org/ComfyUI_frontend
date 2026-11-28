@@ -20,24 +20,24 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 
 import type { ComfyExtension } from '@/types/comfy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentConsentTrigger } from '@/platform/telemetry/types'
-import type { useExtensionService } from '@/services/extensionService'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -45,8 +45,8 @@ import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
-import { toNodeId } from '@/types/nodeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 let agentStore: Mocked<ReturnType<typeof useAgentPanelStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>
@@ -63,6 +63,7 @@ const gettingStartedVisible = computed(
 const firstRunHoldsScreen = computed(
   () => firstRunScreenState.value !== 'released'
 )
+const isLocalFirstRun = ref(false)
 const activeTour = ref<EntryPath | null>(null)
 let startupDecision: Promise<boolean> = Promise.resolve(true)
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
@@ -81,29 +82,29 @@ function beginFirstRunScreenHandoff(): void {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(
   import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
-  () => {
-    const consent = fromPartial<ReturnType<typeof useAgentConsent>>({
-      withConsent: vi.fn(
-        async (
-          _trigger: AgentConsentTrigger,
-          onAccept: () => void,
-          hooks?: ConsentOfferHooks
-        ) => {
-          if (hooks?.canShow?.() === false) return
-          hooks?.onShown?.()
-          onAccept()
-        }
-      )
-    })
-    const CONSENT_DIALOG_KEY = 'agent-consent' as const
-    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
-  }
+  { spy: true }
 )
+
+const mockedConsent = fromPartial<ReturnType<typeof useAgentConsent>>({
+  withConsent: vi.fn(
+    async (
+      _trigger: AgentConsentTrigger,
+      onAccept: () => void,
+      hooks?: ConsentOfferHooks
+    ) => {
+      if (hooks?.canShow?.() === false) return
+      onAccept()
+    }
+  ),
+  resumeAcceptAfterReload: vi.fn(async () => {})
+})
+let realResumeAcceptAfterReload: ReturnType<
+  typeof useAgentConsent
+>['resumeAcceptAfterReload']
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
@@ -130,12 +131,13 @@ vi.mock(
       fromPartial<ReturnType<typeof useFirstRunEntry>>({
         gettingStartedVisible,
         firstRunHoldsScreen,
+        isLocalFirstRun,
         whenStartupDecided: () => startupDecision
       })
   })
 )
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (ext: ComfyExtension) => {
@@ -184,13 +186,13 @@ const flush = (): Promise<void> =>
 
 const notOffered = async () =>
   vi.mocked(
-    (await import('@/platform/telemetry')).useTelemetry()!
+    (await import('@comfyorg/telemetry')).useTelemetry()!
       .trackAgentConsentNotOffered
   )
 
 const offerExited = async () =>
   vi.mocked(
-    (await import('@/platform/telemetry')).useTelemetry()!
+    (await import('@comfyorg/telemetry')).useTelemetry()!
       .trackAgentConsentOfferExited
   )
 
@@ -235,6 +237,8 @@ describe('AgentPanel extension flag gate', () => {
     currentUser.value = { id: 'account-a' }
     isAuthInitialized.value = true
     consentStore = useAgentConsentStore()
+    realResumeAcceptAfterReload = useAgentConsent().resumeAcceptAfterReload
+    vi.mocked(useAgentConsent).mockReturnValue(mockedConsent)
     workspaceStore = useTeamWorkspaceStore()
     Object.assign(workspaceStore, {
       activeWorkspaceId: 'workspace-a',
@@ -252,6 +256,7 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.isOpen = true
     setAgentReady(false)
     releaseFirstRunScreen()
+    isLocalFirstRun.value = false
     activeTour.value = null
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
@@ -265,30 +270,161 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  describe('Desktop consent introduction', () => {
+  describe.for([
+    { platform: 'Cloud', cloud: true, desktop: false },
+    { platform: 'Desktop', cloud: false, desktop: true }
+  ])('startup consent card on $platform', ({ cloud, desktop }) => {
     beforeEach(() => {
-      mocks.isCloud = false
-      mocks.isDesktop = true
+      mocks.isCloud = cloud
+      mocks.isDesktop = desktop
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
       agentStore.isOpen = false
       vi.mocked(useAgentConsent().withConsent).mockImplementation(
         async (_trigger, _onAccept, hooks) => {
           if (hooks?.canShow?.() === false) return
-          hooks?.onShown?.()
         }
       )
     })
 
-    it('keeps Local introduction and its locked panel independent of Cloud refusal', async () => {
-      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
-        true
-      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+    it('does not show the startup card once the agent stops being ready before it mounts', async () => {
+      currentUser.value = null
+      let canShow: boolean | undefined
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_trigger, _onAccept, hooks) => {
+          setAgentReady(false)
+          await nextTick()
+          canShow = hooks?.canShow?.()
+        }
+      )
+
       await loadEntryAndSetup()
       await flush()
 
-      expect(agentStore.isVisible).toBe(true)
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(canShow).toBe(false)
+    })
+
+    it('reports nothing after the panel-opening launches for a scope that already answered', async () => {
+      currentUser.value = { id: 'account-a' }
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+        'true'
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await offerExited()).not.toHaveBeenCalled()
+    })
+
+    it('does not introduce the agent after the user signs out during the page', async () => {
+      currentUser.value = { id: 'account-a' }
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+
+      currentUser.value = null
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    })
+
+    it('reports nothing when a user past the automatic launches signs out', async () => {
+      currentUser.value = { id: 'account-a' }
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+        'true'
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+      currentUser.value = null
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await offerExited()).not.toHaveBeenCalled()
+    })
+
+    it('does not introduce the agent when the user signs out before the startup decision', async () => {
+      currentUser.value = { id: 'account-a' }
+      let decideStartup!: (decided: boolean) => void
+      startupDecision = new Promise((resolve) => {
+        decideStartup = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      currentUser.value = null
+      await flush()
+      decideStartup(true)
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
+    it('does not show a queued card after the user signs out', async () => {
+      currentUser.value = { id: 'account-a' }
+      let canShow: boolean | undefined
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_trigger, _onAccept, hooks) => {
+          currentUser.value = null
+          await nextTick()
+          canShow = hooks?.canShow?.()
+        }
+      )
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      expect(canShow).toBe(false)
+    })
+
+    it('drops a held offer once its scope has answered', async () => {
+      currentUser.value = { id: 'account-a' }
+      activeTour.value = 'appMode'
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(consentStore.load).toHaveBeenCalledOnce()
+
+      localStorage.setItem(
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+        'true'
+      )
+      setAgentReady(false)
+      await nextTick()
+      setAgentReady(true)
+      await flush()
+      vi.mocked(consentStore.load).mockClear()
+
+      activeTour.value = null
+      await flush()
+
+      expect(consentStore.load).not.toHaveBeenCalled()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    })
+
+    it('shows no startup card after the panel-opening launches, even with the panel left open', async () => {
+      currentUser.value = { id: 'account-a' }
+      localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+      agentStore.isOpen = true
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(await offerExited()).toHaveBeenCalledWith({
+        exit: 'activation_window_complete',
+        stage: 'startup',
+        retry_armed: false
+      })
     })
 
     it.for([
@@ -299,18 +435,13 @@ describe('AgentPanel extension flag gate', () => {
         visits: '0'
       },
       {
-        session: 'signed in after discovery',
+        session: 'signed in on second visit',
         user: { id: 'account-a' },
-        visits: '2'
-      },
-      { session: 'signed out after discovery', user: null, visits: '2' }
+        visits: '1'
+      }
     ])('offers consent on startup when $session', async ({ user, visits }) => {
       currentUser.value = user
       localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, visits)
-      localStorage.setItem(
-        'Comfy.AgentConsent.AutoShown.account-a.workspace-a',
-        'true'
-      )
 
       await loadEntryAndSetup()
       await flush()
@@ -321,6 +452,23 @@ describe('AgentPanel extension flag gate', () => {
         'first_load'
       )
     })
+
+    it.for([
+      { session: 'signed out', user: null },
+      { session: 'signed in', user: { id: 'account-a' } }
+    ])(
+      'leaves the panel and card closed when $session after the two activation visits',
+      async ({ user }) => {
+        currentUser.value = user
+        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+
+        await loadEntryAndSetup()
+        await flush()
+
+        expect(agentStore.isVisible).toBe(false)
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      }
+    )
 
     it.for([
       { surface: 'dialog', hold: openDialog, release: closeDialog },
@@ -369,7 +517,7 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-      expect(agentStore.isVisible).toBe(true)
+      expect(agentStore.isVisible).toBe(false)
       expect(
         localStorage.getItem(
           'Comfy.AgentConsent.IntroductionResponded.signed-out'
@@ -391,7 +539,7 @@ describe('AgentPanel extension flag gate', () => {
         workspaceId: null
       }
     ])(
-      'keeps only the locked panel when initial $restore arrives late after an earlier Skip',
+      'opens only the startup panel when initial $restore arrives late after an earlier Skip',
       async ({ user, initialized, workspaceId }) => {
         currentUser.value = user
         isAuthInitialized.value = initialized
@@ -401,7 +549,7 @@ describe('AgentPanel extension flag gate', () => {
           'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
           'true'
         )
-        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
         await loadEntryAndSetup()
         await flush()
 
@@ -438,43 +586,39 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it.for([
-      { session: 'signed out', user: null, scope: 'signed-out' },
-      {
-        session: 'signed in',
-        user: { id: 'account-a' },
-        scope: 'account-a.workspace-a'
-      }
+      { session: 'signed out', user: null },
+      { session: 'signed in', user: { id: 'account-a' } }
     ])(
-      'opens the locked panel on every $session launch after Skip',
-      async ({ user, scope }) => {
+      'remembers a $session Skip across launches and opens the panel only for the two activation visits',
+      async ({ user }) => {
         currentUser.value = user
-        localStorage.setItem(
-          `Comfy.AgentConsent.IntroductionResponded.${scope}`,
-          'true'
+        vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+          async (_trigger, _onAccept, hooks) => {
+            if (hooks?.canShow?.() === false) return
+            useAgentConsentIntroductionStore().markResponded()
+          }
         )
-        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
-        openDialog()
+        const relaunch = async (): Promise<void> => {
+          agentStore.close('close_button')
+          setupScope.stop()
+          setupScope = effectScope()
+          await loadEntryAndSetup()
+          await flush()
+        }
 
         await loadEntryAndSetup()
         await flush()
-        expect(agentStore.isVisible).toBe(false)
-
-        closeDialog()
-        await flush()
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
         expect(agentStore.isVisible).toBe(true)
-        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
 
-        agentStore.close('close_button')
-        setAgentReady(true)
-        await flush()
-        expect(agentStore.isVisible).toBe(false)
-        setupScope.stop()
-        setupScope = effectScope()
-
-        await loadEntryAndSetup()
-        await flush()
+        await relaunch()
         expect(agentStore.isVisible).toBe(true)
         expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+
+        await relaunch()
+        expect(agentStore.isVisible).toBe(false)
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
       }
     )
 
@@ -487,7 +631,6 @@ describe('AgentPanel extension flag gate', () => {
       async ({ agent }) => {
         currentUser.value = null
         Object.assign(agentStore, { comfyAgent: agent, flagsSettled: true })
-        localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
 
         await loadEntryAndSetup()
         await flush()
@@ -503,14 +646,11 @@ describe('AgentPanel extension flag gate', () => {
 
     it('offers again on a later startup when the earlier card was only dismissed', async () => {
       currentUser.value = null
-      vi.mocked(useAgentConsent().withConsent).mockImplementation(
-        async (_trigger, _onAccept, hooks) => {
-          hooks?.onShown?.()
-          openDialog(CONSENT_DIALOG_KEY)
-          await nextTick()
-          closeDialog(CONSENT_DIALOG_KEY)
-        }
-      )
+      vi.mocked(useAgentConsent().withConsent).mockImplementation(async () => {
+        openDialog(CONSENT_DIALOG_KEY)
+        await nextTick()
+        closeDialog(CONSENT_DIALOG_KEY)
+      })
 
       await loadEntryAndSetup()
       await flush()
@@ -623,12 +763,211 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
+  describe("a new local user's first session", () => {
+    const DEFERRED_KEY = 'Comfy.AgentPanel.firstSessionDeferred.default'
+    const deferredReports = async () =>
+      (await notOffered()).mock.calls.filter(
+        ([metadata]) => metadata.reason === 'first_session_deferred'
+      )
+
+    beforeEach(() => {
+      mocks.isCloud = false
+      mocks.isDesktop = true
+      isLocalFirstRun.value = true
+      currentUser.value = null
+      setAgentReady(true)
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      agentStore.isOpen = false
+      vi.mocked(useAgentConsent().withConsent).mockImplementation(
+        () => new Promise(() => {})
+      )
+    })
+
+    it('keeps the panel closed and the card unoffered without spending an activation visit', async () => {
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY),
+        'the two automatic opens belong to the following launches'
+      ).toBeNull()
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'first_session_deferred'
+      })
+      expect(localStorage.getItem(DEFERRED_KEY)).not.toBeNull()
+    })
+
+    it('stays quiet when the templates dialog closes', async () => {
+      openDialog('global-templates')
+
+      await loadEntryAndSetup()
+      await flush()
+      closeDialog('global-templates')
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(agentStore.open).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet after the user signs in during the session', async () => {
+      await loadEntryAndSetup()
+      await flush()
+
+      currentUser.value = { id: 'account-a' }
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await flush()
+      await flush()
+
+      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect((await notOffered()).mock.calls).toEqual(await deferredReports())
+    })
+
+    it('never shows a panel restored open by an earlier profile, and keeps it for the next launch', async () => {
+      agentStore.isOpen = true
+      let decide: (decided: boolean) => void = () => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(agentStore.isVisible, 'hidden before startup decides').toBe(false)
+
+      decide(true)
+      await flush()
+
+      expect(agentStore.isVisible).toBe(false)
+      expect(agentStore.isOpen, 'the stored preference survives').toBe(true)
+      expect(useTelemetry()?.trackAgentPanelOpened).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackAgentPanelClosed).not.toHaveBeenCalled()
+    })
+
+    it('keeps a restored-open panel hidden when startup times out', async () => {
+      agentStore.isOpen = true
+      startupDecision = Promise.resolve(false)
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isVisible).toBe(false)
+      expect(agentStore.isOpen).toBe(true)
+    })
+
+    it('shows a restored-open panel once startup turns out not to be a first run', async () => {
+      isLocalFirstRun.value = false
+      agentStore.isOpen = true
+      let decide: (decided: boolean) => void = () => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      expect(agentStore.isVisible).toBe(false)
+
+      decide(true)
+      await flush()
+
+      expect(agentStore.isVisible).toBe(true)
+      expect(localStorage.getItem(DEFERRED_KEY)).toBeNull()
+    })
+
+    it('shows a restored-open panel at once for a user who finished the tutorial', async () => {
+      isLocalFirstRun.value = false
+      agentStore.isOpen = true
+      const settingStore = useSettingStore()
+      const get = settingStore.get.bind(settingStore)
+      const spy = vi
+        .spyOn(settingStore, 'get')
+        .mockImplementation((key) =>
+          key === 'Comfy.TutorialCompleted' ? true : get(key)
+        )
+      onTestFinished(() => spy.mockRestore())
+      startupDecision = new Promise(() => {})
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.isVisible).toBe(true)
+    })
+
+    it('defers only one launch', async () => {
+      localStorage.setItem(DEFERRED_KEY, 'true')
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+      expect(await deferredReports()).toEqual([])
+    })
+
+    it('defers independently for each local user', async () => {
+      localStorage.setItem(DEFERRED_KEY, 'true')
+      localStorage.setItem('Comfy.userId', 'local-user-b')
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(agentStore.open).not.toHaveBeenCalled()
+      expect(
+        localStorage.getItem(
+          'Comfy.AgentPanel.firstSessionDeferred.local-user-b'
+        )
+      ).toBe('true')
+    })
+
+    it('does not defer when the deferral cannot be remembered', async () => {
+      const setItem = localStorage.setItem.bind(localStorage)
+      const write = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (key === DEFERRED_KEY) throw new DOMException('denied')
+          setItem(key, value)
+        })
+      onTestFinished(() => write.mockRestore())
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+      expect(await deferredReports()).toEqual([])
+    })
+
+    it('leaves cloud alone', async () => {
+      mocks.isCloud = true
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
+      )
+    })
+
+    it('still resumes an accept the sign-in reload interrupted', async () => {
+      currentUser.value = { id: 'account-a' }
+      sessionStorage.setItem(
+        'Comfy.AgentPanel.PendingSignInAccept',
+        JSON.stringify({ draft: 'make it blue', savedAt: Date.now() })
+      )
+      onTestFinished(() =>
+        sessionStorage.removeItem('Comfy.AgentPanel.PendingSignInAccept')
+      )
+
+      await loadEntryAndSetup()
+
+      expect(
+        useAgentConsent().resumeAcceptAfterReload
+      ).toHaveBeenCalledExactlyOnceWith({ draft: 'make it blue' })
+    })
+  })
+
   it('attributes automatic acceptance with a restored open preference to the consent card', async () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, onAccept, hooks) => {
-        hooks?.onShown?.()
+      async (_trigger, onAccept) => {
         await Promise.resolve().then(() => {
           Object.assign(consentStore, { accepted: true })
         })
@@ -658,6 +997,9 @@ describe('AgentPanel extension flag gate', () => {
     currentUser.value = user
     Object.assign(consentStore, { accepted: false, isChecking: false })
     agentStore.isOpen = false
+    vi.mocked(useAgentConsent().withConsent).mockImplementation(
+      () => new Promise(() => {})
+    )
 
     await loadEntryAndSetup()
     await vi.waitFor(() =>
@@ -666,12 +1008,13 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(agentStore.isVisible).toBe(true)
     expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('1')
-    if (user)
-      expect(await offerExited()).toHaveBeenCalledWith({
-        exit: 'activation_opened_panel',
-        stage: 'offer',
-        retry_armed: false
-      })
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledWith(
+        'first_load',
+        expect.any(Function),
+        expect.any(Object)
+      )
+    )
   })
 
   it('waits for the general onboarding decision before activation', async () => {
@@ -762,7 +1105,8 @@ describe('AgentPanel extension flag gate', () => {
       finish = resolve
     })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, onAccept) => {
+      async (_trigger, onAccept, hooks) => {
+        hooks?.canShow?.()
         accept = onAccept
         await pending
       }
@@ -775,6 +1119,7 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
     )
+    expect(agentStore.isOpen).toBe(true)
 
     agentStore.close('close_button')
     accept()
@@ -783,6 +1128,39 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(agentStore.isOpen).toBe(false)
     expect(agentStore.open).not.toHaveBeenCalled()
+  })
+
+  it('opens the panel on Agree when the second-visit card first appears over a closed panel', async () => {
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '1')
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    agentStore.isOpen = true
+    let show = () => {}
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_trigger, onAccept, hooks) => {
+        await new Promise<void>((resolve) => {
+          show = () => {
+            if (hooks?.canShow?.() !== false) onAccept()
+            resolve()
+          }
+        })
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await vi.waitFor(() =>
+      expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+    )
+
+    agentStore.close('close_button')
+    show()
+    await flush()
+
+    expect(agentStore.open).toHaveBeenCalledWith('automatic_consent')
+    expect(agentStore.isOpen).toBe(true)
   })
 
   it('does not reopen a dismissed activation panel after flag synchronization', async () => {
@@ -832,37 +1210,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
   })
 
-  it('records the automatic offer only after the card is displayed', async () => {
-    setAgentReady(true)
-    Object.assign(consentStore, { accepted: false, isChecking: false })
-    const key = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
-    let show = () => {}
-    let finish = () => {}
-    const pending = new Promise<void>((resolve) => {
-      finish = resolve
-    })
-    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_trigger, _onAccept, hooks) => {
-        show = hooks?.onShown ?? show
-        await pending
-      }
-    )
-
-    await loadEntryAndSetup()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
-    expect(localStorage.getItem(key)).not.toBe('true')
-    await nextTick()
-    await flush()
-    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-
-    show()
-    expect(localStorage.getItem(key)).toBe('true')
-    finish()
-    await pending
-  })
-
   it('offers once the gate flips on after starting off', async () => {
     Object.assign(consentStore, { accepted: false, isChecking: false })
 
@@ -878,8 +1225,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
   })
 
-  const AUTO_SHOWN_KEY = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
-
   it.for([
     {
       surface: 'the Getting Started screen is up',
@@ -893,23 +1238,19 @@ describe('AgentPanel extension flag gate', () => {
       surface: 'the desktop sign-in approval is open',
       arrange: () => openDialog()
     }
-  ])(
-    'withholds the automatic offer while $surface, leaving the auto-shown key untouched',
-    async ({ arrange }) => {
-      setAgentReady(true)
-      arrange()
-      Object.assign(consentStore, { accepted: false, isChecking: false })
+  ])('withholds the automatic offer while $surface', async ({ arrange }) => {
+    setAgentReady(true)
+    arrange()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
 
-      await loadEntryAndSetup()
-      await nextTick()
-      await flush()
+    await loadEntryAndSetup()
+    await nextTick()
+    await flush()
 
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
-      expect(agentStore.open).not.toHaveBeenCalled()
-      expect(consentStore.load).toHaveBeenCalledOnce()
-    }
-  )
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(agentStore.open).not.toHaveBeenCalled()
+    expect(consentStore.load).toHaveBeenCalledOnce()
+  })
 
   it('offers in the same session once the Getting Started screen closes', async () => {
     setAgentReady(true)
@@ -922,13 +1263,11 @@ describe('AgentPanel extension flag gate', () => {
     expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
       reason: 'first_run_screen'
     })
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
 
     releaseFirstRunScreen()
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('keeps waiting when Getting Started closes straight into the first-run tour', async () => {
@@ -963,7 +1302,6 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
 
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
     expect(await notOffered()).not.toHaveBeenCalled()
   })
 
@@ -996,7 +1334,6 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
     expect(consentStore.load).toHaveBeenCalledOnce()
   })
 
@@ -1014,7 +1351,6 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('waits for the startup decision before re-offering after a tour ends', async () => {
@@ -1074,7 +1410,6 @@ describe('AgentPanel extension flag gate', () => {
         activeTour.value = 'appMode'
         await flush()
         if (hooks?.canShow?.() === false) return
-        hooks?.onShown?.()
       }
     )
 
@@ -1083,14 +1418,12 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
     await flush()
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
     expect(agentStore.open).not.toHaveBeenCalled()
 
     activeTour.value = null
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
     expect(agentStore.open).not.toHaveBeenCalled()
   })
 
@@ -1211,11 +1544,11 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     })
 
-    it('reports an in-flight tour against the workspace the offer was made for', async () => {
+    it('reports nothing for an in-flight tour once the current scope has answered', async () => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
       localStorage.setItem(
-        'Comfy.AgentConsent.AutoShown.account-a.workspace-b',
+        'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-b',
         'true'
       )
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
@@ -1233,9 +1566,7 @@ describe('AgentPanel extension flag gate', () => {
       )
       await flush()
 
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'tour_active'
-      })
+      expect(await notOffered()).not.toHaveBeenCalled()
     })
 
     it('reports a reason again for a second workspace', async () => {
@@ -1260,12 +1591,6 @@ describe('AgentPanel extension flag gate', () => {
         name: 'the account or workspace is still unknown',
         arrange: () => {
           Object.assign(workspaceStore, { activeWorkspaceId: null })
-        }
-      },
-      {
-        name: 'the one-shot offer already happened',
-        arrange: () => {
-          localStorage.setItem(AUTO_SHOWN_KEY, 'true')
         }
       }
     ])('reports nothing for a held offer when $name', async ({ arrange }) => {
@@ -1302,26 +1627,6 @@ describe('AgentPanel extension flag gate', () => {
         arrange: () => {
           Object.assign(consentStore, { accepted: true })
         }
-      },
-      {
-        exit: 'workspace_unresolved',
-        arrange: () => {
-          Object.assign(workspaceStore, { activeWorkspaceId: null })
-        }
-      },
-      {
-        exit: 'workspace_switching',
-        arrange: () => {
-          Object.assign(workspaceStore, { isSwitching: true })
-        }
-      },
-      {
-        // The one-shot key silences `agent_consent_not_offered` outright, so
-        // this is the case that most needs its own event rather than a reason.
-        exit: 'already_offered',
-        arrange: () => {
-          localStorage.setItem(AUTO_SHOWN_KEY, 'true')
-        }
       }
     ] as const)(
       'reports $exit once however often the offer re-runs',
@@ -1343,50 +1648,6 @@ describe('AgentPanel extension flag gate', () => {
         expect(await notOffered()).not.toHaveBeenCalled()
       }
     )
-
-    it('reports a signed-out offer separately from an unresolved account', async () => {
-      setAgentReady(true)
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      const { useCurrentUser } =
-        await import('@/composables/auth/useCurrentUser')
-      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => false)
-
-      await loadEntryAndSetup()
-      await flush()
-
-      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
-        exit: 'signed_out',
-        stage: 'offer',
-        retry_armed: false
-      })
-    })
-
-    it('reports an account that went missing after the consent read succeeded', async () => {
-      // `isLoggedIn` true with no resolved id is the API-key rail before its
-      // user is known - the only way these two conditions come apart, and the
-      // reason they are separate values rather than one.
-      setAgentReady(true)
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      const { useCurrentUser } =
-        await import('@/composables/auth/useCurrentUser')
-      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
-      let decide = (_: boolean) => {}
-      startupDecision = new Promise<boolean>((resolve) => {
-        decide = resolve
-      })
-
-      await loadEntryAndSetup()
-      await flush()
-      currentUser.value = null
-      decide(true)
-      await flush()
-
-      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
-        exit: 'account_unresolved',
-        stage: 'offer',
-        retry_armed: false
-      })
-    })
 
     it('reports an offer refused because another attempt is still in flight', async () => {
       setAgentReady(true)
@@ -1615,70 +1876,6 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  describe('after the user explicitly refused the consent card', () => {
-    it('makes no automatic offer, and leaves the one-shot key unspent', async () => {
-      setAgentReady(true)
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
-        true
-
-      await loadEntryAndSetup()
-      const exited = await offerExited()
-      await vi.waitFor(() =>
-        expect(exited).toHaveBeenCalledExactlyOnceWith({
-          exit: 'consent_declined',
-          stage: 'startup',
-          retry_armed: false
-        })
-      )
-
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
-    })
-
-    it('reports retry_armed and makes no offer when a held offer is refused', async () => {
-      setAgentReady(true)
-      openDialog()
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-
-      await loadEntryAndSetup()
-      const held = await notOffered()
-      await vi.waitFor(() =>
-        expect(held).toHaveBeenCalledExactlyOnceWith({
-          reason: 'dialog_open'
-        })
-      )
-
-      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
-        true
-      closeDialog()
-      const exited = await offerExited()
-      await vi.waitFor(() =>
-        expect(exited).toHaveBeenCalledExactlyOnceWith({
-          exit: 'consent_declined',
-          stage: 'startup',
-          retry_armed: true
-        })
-      )
-
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
-    })
-
-    it('does not suppress panel activation', async () => {
-      setAgentReady(true)
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
-        true
-      agentStore.isOpen = false
-
-      await loadEntryAndSetup()
-      await vi.waitFor(() =>
-        expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
-      )
-    })
-  })
-
   it('offers in the same session once the dialog that held it closes', async () => {
     setAgentReady(true)
     openDialog()
@@ -1693,7 +1890,6 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('keeps the held offer when the retry cannot be made, and offers on the next clear screen', async () => {
@@ -1728,7 +1924,6 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('keeps waiting when a tour ends while a dialog is still open', async () => {
@@ -1758,7 +1953,6 @@ describe('AgentPanel extension flag gate', () => {
         openDialog()
         await flush()
         if (hooks?.canShow?.() === false) return
-        hooks?.onShown?.()
       }
     )
 
@@ -1767,14 +1961,12 @@ describe('AgentPanel extension flag gate', () => {
       expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
     )
     await flush()
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
     expect(agentStore.open).not.toHaveBeenCalled()
 
     closeDialog()
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('re-offers after a withheld in-flight offer settles on a clear screen', async () => {
@@ -1806,7 +1998,6 @@ describe('AgentPanel extension flag gate', () => {
     await vi.waitFor(() =>
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
     )
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
   it('does not re-offer after the user declines a manually opened card', async () => {
@@ -1826,7 +2017,6 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
   })
 
   it('skips the automatic offer for the session once the user has seen the card', async () => {
@@ -1909,18 +2099,16 @@ describe('AgentPanel extension flag gate', () => {
     {
       outcome: 'succeeds',
       load: () => Promise.resolve(false),
-      offers: 2,
-      shown: 'true'
+      offers: 2
     },
     {
       outcome: 'fails',
       load: () => Promise.reject(new Error('offline')),
-      offers: 1,
-      shown: null
+      offers: 1
     }
   ])(
     'rechecks a missed account change once when the next consent load $outcome',
-    async ({ load, offers, shown }) => {
+    async ({ load, offers }) => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
       let finish = () => {}
@@ -1944,11 +2132,6 @@ describe('AgentPanel extension flag gate', () => {
       await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledTimes(2))
 
       expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(offers)
-      expect(
-        localStorage.getItem(
-          'Comfy.AgentConsent.AutoShown.account-b.workspace-a'
-        )
-      ).toBe(shown)
     }
   )
 
@@ -1961,8 +2144,7 @@ describe('AgentPanel extension flag gate', () => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_trigger, _onAccept, hooks) => {
-          hooks?.onShown?.()
+        async () => {
           openDialog(CONSENT_DIALOG_KEY)
           await flush()
           closeDialog(CONSENT_DIALOG_KEY)
@@ -1989,24 +2171,121 @@ describe('AgentPanel extension flag gate', () => {
     }
   )
 
-  it.for(['getItem', 'setItem'] as const)(
-    'skips the automatic offer when storage %s fails',
-    async (method) => {
-      setAgentReady(true)
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      vi.spyOn(localStorage, method).mockImplementation(() => {
-        throw new Error('Storage unavailable')
-      })
+  it('withholds the automatic card when storage cannot be written', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
 
-      await loadEntryAndSetup()
-      await flush()
+    await loadEntryAndSetup()
+    await flush()
 
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'storage_unavailable'
-      })
-    }
-  )
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'storage_unavailable'
+    })
+  })
+
+  it('withholds the automatic card when storage cannot fit the introduction response', async () => {
+    const entryLength =
+      'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a'.length +
+      'true'.length
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    const setItem = localStorage.setItem.bind(localStorage)
+    vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key.length + value.length >= entryLength)
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      setItem(key, value)
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+      reason: 'storage_unavailable'
+    })
+  })
+
+  it('stays silent for an answered scope when storage cannot be written', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    localStorage.setItem(
+      'Comfy.AgentConsent.IntroductionResponded.account-a.workspace-a',
+      'true'
+    )
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).not.toHaveBeenCalled()
+  })
+
+  it('reports the finished launch window, not a storage failure, when writes fail after it', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('Storage unavailable')
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+  })
+
+  it('treats unreadable storage as past the automatic launches', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.spyOn(safeLocalStorage, 'backend', 'get').mockReturnValue('memory')
+
+    await loadEntryAndSetup()
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+  })
+
+  it('keeps a saved visit count that later cannot be read past the automatic launches', async () => {
+    setAgentReady(true)
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, '2')
+    const nativeGetItem = Storage.prototype.getItem
+    vi.spyOn(localStorage, 'getItem').mockImplementation((key) => {
+      if (key === ACTIVATION_VISITS_STORAGE_KEY)
+        throw new DOMException('blocked', 'SecurityError')
+      return nativeGetItem.call(localStorage, key)
+    })
+
+    await loadEntryAndSetup()
+    await flush()
+    vi.mocked(localStorage.getItem).mockRestore()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await offerExited()).toHaveBeenCalledWith({
+      exit: 'activation_window_complete',
+      stage: 'startup',
+      retry_armed: false
+    })
+    expect(localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY)).toBe('2')
+  })
 
   it('stays silent when the saved consent cannot be read', async () => {
     setAgentReady(true)
@@ -2238,6 +2517,234 @@ describe('AgentPanel extension flag gate', () => {
     await extension!.afterLoadGraph!(fromPartial({ rootGraph: graph }))
 
     expect(composer.nodes).toEqual([{ id: '12', title: 'Original title' }])
+  })
+
+  describe('an accept the sign-in reload interrupted', () => {
+    const PENDING_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
+    const resume = () => vi.mocked(useAgentConsent().resumeAcceptAfterReload)
+    const storePending = (savedAt = Date.now()) =>
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: 'make it blue', savedAt })
+      )
+
+    beforeEach(() => {
+      sessionStorage.clear()
+      storePending()
+      setAgentReady(true)
+    })
+
+    afterEach(() => {
+      useAgentConsentIntroductionStore().isContinuingSignIn = false
+      sessionStorage.removeItem(PENDING_KEY)
+    })
+
+    it('is finished before consent is read', async () => {
+      let finishResume = () => {}
+      resume().mockImplementationOnce(
+        () => new Promise<void>((resolve) => (finishResume = resolve))
+      )
+
+      await loadEntryAndSetup()
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await nextTick()
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+      expect(consentStore.load).not.toHaveBeenCalled()
+
+      finishResume()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('hands the Ask agent error context back with the draft', async () => {
+      const errorContext = {
+        scope: 'single',
+        count: 1,
+        label: 'Missing model',
+        severity: 'error',
+        problems: [{ category: 'missing_model', message: 'model missing' }],
+        workflowPath: 'workflows/errored.json'
+      }
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: '', errorContext, savedAt: Date.now() })
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: '',
+        errorContext
+      })
+    })
+
+    it.for([
+      { case: 'problems is not a list', problems: 'not a list' },
+      { case: 'a problem is null', problems: [null] }
+    ])(
+      'keeps the draft but drops an error context when $case',
+      async ({ problems }) => {
+        sessionStorage.setItem(
+          PENDING_KEY,
+          JSON.stringify({
+            draft: 'make it blue',
+            errorContext: {
+              scope: 'card',
+              count: 1,
+              label: 'Missing media',
+              severity: 'warning',
+              problems
+            },
+            savedAt: Date.now()
+          })
+        )
+
+        await loadEntryAndSetup()
+
+        expect(resume()).toHaveBeenCalledExactlyOnceWith({
+          draft: 'make it blue'
+        })
+      }
+    )
+
+    it('keeps the draft but drops an error context with a non-finite count', async () => {
+      sessionStorage.setItem(
+        PENDING_KEY,
+        `{"draft":"make it blue","errorContext":{"scope":"card","count":1e400,"label":"Missing media","severity":"warning","problems":[]},"savedAt":${Date.now()}}`
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
+    })
+
+    it('keeps the draft but drops an error context that is not one', async () => {
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({
+          draft: 'make it blue',
+          errorContext: { scope: 'card', problems: 'not a list' },
+          savedAt: Date.now()
+        })
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
+    })
+
+    it('is resumed before the Agent is ready', async () => {
+      setAgentReady(false)
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('is dropped on sign-out before the Agent is ready', async () => {
+      setAgentReady(false)
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('waits for the signed-in account to resolve', async () => {
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => true)
+      currentUser.value = null
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+
+      currentUser.value = { id: 'account-a' }
+      await nextTick()
+
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('waits for a workspace switch to finish', async () => {
+      Object.assign(workspaceStore, { isSwitching: true })
+      Object.assign(consentStore, { identity: null })
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(consentStore.load).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+
+      Object.assign(workspaceStore, { isSwitching: false })
+      Object.assign(consentStore, { identity: 'account-a/workspace-a' })
+      await nextTick()
+
+      expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('is kept while auth has not settled on signed out', async () => {
+      currentUser.value = null
+      isAuthInitialized.value = false
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('is only looked at when the page starts, so one written in this page waits for the reload', async () => {
+      currentUser.value = null
+      await loadEntryAndSetup()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+
+      storePending()
+      currentUser.value = { id: 'account-a' }
+      await nextTick()
+      Object.assign(consentStore, { identity: 'account-a/workspace-b' })
+      await nextTick()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).not.toBeNull()
+    })
+
+    it('drops it when another account takes over during the switch wait, through the real resume', async () => {
+      resume().mockImplementation(realResumeAcceptAfterReload)
+      vi.mocked(consentStore.ensureScope).mockResolvedValue(
+        'account-b/workspace-a'
+      )
+      vi.mocked(consentStore.accept).mockResolvedValue(true)
+      Object.assign(workspaceStore, { isSwitching: true })
+      Object.assign(consentStore, { identity: null })
+
+      await loadEntryAndSetup()
+      currentUser.value = { id: 'account-b' }
+      await nextTick()
+      Object.assign(workspaceStore, { isSwitching: false })
+      Object.assign(consentStore, { identity: 'account-b/workspace-a' })
+      await nextTick()
+      await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalled())
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(consentStore.accept).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
+
+    it('ignores and drops one older than ten minutes', async () => {
+      storePending(Date.now() - 11 * 60 * 1000)
+
+      await loadEntryAndSetup()
+
+      expect(resume()).not.toHaveBeenCalled()
+      expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
+    })
   })
 
   it('does not self-register when its module is imported', () => {

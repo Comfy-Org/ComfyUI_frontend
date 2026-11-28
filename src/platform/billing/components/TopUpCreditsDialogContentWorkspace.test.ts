@@ -11,7 +11,7 @@ import {
   fakeBillingSdk,
   settledTopup
 } from '@/platform/billing/sdk/billingSdkTestUtils'
-import type { BillingSdk } from '@/platform/billing/sdk/createBillingSdk'
+import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -27,25 +27,32 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import {
+  autoTopUpCard,
+  loadedAutoTopUp
+} from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
+import {
+  autoTopUpEnabledFact,
+  canManageAutoTopUpFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
-import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -55,7 +62,7 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction: mockRumAddAction }
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -70,14 +77,20 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
+vi.mock(
+  import('@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'),
+  () =>
+    import('@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard')
+)
+
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
-vi.mock(import('@/platform/billing/sdk/createBillingSdk'), () => ({
+vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
@@ -585,22 +598,23 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('shows the purchase disclosure before confirming without charging', async () => {
+  it('shows the plan-required line under the presets and drops it on Confirm without charging', async () => {
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'never_subscribed')
     renderDialog()
 
+    const line = screen.getByTestId('top-up-plan-credit-line')
+    expect(line).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud."
+    )
     expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+      screen.getByRole('button', { name: '$100' }).compareDocumentPosition(line)
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 
     await clickAddCredits()
 
-    expect(
-      screen.getByText(
-        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
-      )
-    ).toBeVisible()
+    expect(screen.queryByTestId('top-up-plan-credit-line')).toBeNull()
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Total due today')).toBeInTheDocument()
     expect(screen.getByText('$50.00')).toBeInTheDocument()
@@ -611,6 +625,31 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'intent',
       outcome: 'pending'
     })
+  })
+
+  it('says Subscribe keeps runs going while the served free runs remain', () => {
+    useRemoteConfigStore().acceptConfig(
+      { free_tier_balance: { allowance: 5, remaining: 3, used: 2 } },
+      false
+    )
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'never_subscribed')
+    renderDialog()
+
+    expect(screen.getByTestId('top-up-plan-credit-line')).toHaveTextContent(
+      "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    )
+  })
+
+  it('shows no plan line for an active plan', () => {
+    const billing = mockBillingContext()
+    billing.isInitialized.value = true
+    billing.subscriptionState = computed(() => 'active')
+    renderDialog()
+
+    expect(screen.getByRole('button', { name: '$50' })).toBeVisible()
+    expect(screen.queryByTestId('top-up-plan-credit-line')).toBeNull()
   })
 
   function renderWithBalance(overrides: Partial<BalanceInfo>) {
@@ -690,18 +729,177 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
   })
 
-  it('explains that the top-up covers a negative balance first', () => {
-    renderWithBalance({
+  const NEGATIVE_BALANCE: Partial<BalanceInfo> = {
+    amountMicros: -10_000,
+    effectiveBalanceMicros: -10_000,
+    suggestedTopupAmountCents: 11_400
+  }
+
+  it.for<{
+    name: string
+    quoted: { balance_after_credits: number; runs_paused_after: boolean }
+    afterLine: string
+    warns: boolean
+  }>([
+    {
+      name: 'a top-up that clears the balance',
+      quoted: { balance_after_credits: 2_954, runs_paused_after: false },
+      afterLine: 'After this top-up: 2,954 credits.',
+      warns: false
+    },
+    {
+      name: 'a top-up that leaves runs paused',
+      quoted: { balance_after_credits: -840, runs_paused_after: true },
+      afterLine: 'Still negative after this top-up: −840 credits.',
+      warns: true
+    },
+    {
+      name: 'a non-negative balance that still keeps runs paused',
+      quoted: { balance_after_credits: 5, runs_paused_after: true },
+      afterLine: 'After this top-up: 5 credits.',
+      warns: true
+    }
+  ])(
+    'shows the served balance after $name',
+    async ({ quoted, afterLine, warns }) => {
+      const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
+        amount_cents: 11_400,
+        credits: 24_054,
+        expires_at: '2027-11-02T00:00:00Z',
+        ...quoted
+      })
+      renderWithBalance(NEGATIVE_BALANCE)
+
+      expect(await screen.findByText(afterLine)).toBeInTheDocument()
+      expect(quote).toHaveBeenCalledWith(11_400, expect.any(AbortSignal))
+      expect(
+        screen.getByText('Your balance is −21,100 credits.')
+      ).toBeInTheDocument()
+      expect(
+        screen
+          .getByTestId('topup-negative-balance')
+          .classList.contains('text-warning')
+      ).toBe(warns)
+    }
+  )
+
+  it('requotes the balance after when the current balance changes', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(-840))
+    const balance = ref<BalanceInfo>({
       amountMicros: -10_000,
+      currency: 'usd',
       effectiveBalanceMicros: -10_000,
+      effectiveBalanceAuthoritative: true,
       suggestedTopupAmountCents: 11_400
     })
+    Object.assign(mockBillingContext(), { balance })
+    renderDialog()
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    balance.value = {
+      ...balance.value,
+      amountMicros: -13_794,
+      effectiveBalanceMicros: -13_794
+    }
+
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByText('After this top-up: 2,954 credits.')
+      ).not.toBeInTheDocument()
+    )
+    expect(
+      await screen.findByText('Still negative after this top-up: −840 credits.')
+    ).toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(2)
+  })
+
+  it('requotes the balance after when this tab switches workspace', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(-840))
+    renderWithBalance(NEGATIVE_BALANCE)
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    useTeamWorkspaceStore().resetForIdentityChange()
 
     expect(
-      screen.getByText(
-        'Your balance is −21,100 credits. This top-up covers that first.'
-      )
+      await screen.findByText('Still negative after this top-up: −840 credits.')
     ).toBeInTheDocument()
+    expect(
+      screen.queryByText('After this top-up: 2,954 credits.')
+    ).not.toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(2)
+  })
+
+  it('requotes once the switched workspace is authenticated, not when the switch starts', async () => {
+    const quoteFor = (balanceAfter: number) => ({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z',
+      balance_after_credits: balanceAfter,
+      runs_paused_after: balanceAfter <= 0
+    })
+    const quote = vi
+      .spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce(quoteFor(2_954))
+      .mockResolvedValueOnce(quoteFor(1_111))
+      .mockResolvedValueOnce(quoteFor(-840))
+    renderWithBalance(NEGATIVE_BALANCE)
+    expect(
+      await screen.findByText('After this top-up: 2,954 credits.')
+    ).toBeInTheDocument()
+
+    const workspace = useTeamWorkspaceStore()
+    Object.assign(workspace, { workspaceTransitionGeneration: 1 })
+    expect(
+      await screen.findByText('After this top-up: 1,111 credits.')
+    ).toBeInTheDocument()
+
+    Object.assign(workspace, { activeWorkspaceId: 'workspace-2' })
+
+    expect(
+      await screen.findByText('Still negative after this top-up: −840 credits.')
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('After this top-up: 1,111 credits.')
+    ).not.toBeInTheDocument()
+    expect(quote).toHaveBeenCalledTimes(3)
+  })
+
+  it('shows only the current balance when the quote has no balance after', async () => {
+    const quote = vi.spyOn(billingApi, 'quoteTopup').mockResolvedValue({
+      amount_cents: 11_400,
+      credits: 24_054,
+      expires_at: '2027-11-02T00:00:00Z'
+    })
+    renderWithBalance(NEGATIVE_BALANCE)
+
+    await vi.waitFor(() => expect(quote).toHaveBeenCalled())
+    expect(screen.getByTestId('topup-negative-balance')).toHaveTextContent(
+      /^Your balance is −21,100 credits\.$/
+    )
   })
 
   it.for<{ name: string; balance: Partial<BalanceInfo> }>([
@@ -717,9 +915,94 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   ])('says nothing about the balance for $name', ({ balance }) => {
     renderWithBalance(balance)
 
-    expect(
-      screen.queryByText(/This top-up covers that first/)
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText(/Your balance is/)).not.toBeInTheDocument()
+  })
+
+  const SERVED_MINIMUM: Partial<BalanceInfo> = {
+    minTopupCents: 2_500,
+    minTopupCredits: 5_275
+  }
+  const SERVED_MAXIMUM: Partial<BalanceInfo> = {
+    maxTopupCents: 5_000,
+    maxTopupCredits: 10_550
+  }
+
+  it.for<{
+    name: string
+    balance: Partial<BalanceInfo>
+    preset: string
+    message: RegExp
+  }>([
+    {
+      name: 'below the served minimum',
+      balance: SERVED_MINIMUM,
+      preset: '$10',
+      message: /5,275 credits minimum/
+    },
+    {
+      name: 'above the served maximum',
+      balance: SERVED_MAXIMUM,
+      preset: '$100',
+      message: /10,550 credits maximum/
+    }
+  ])(
+    'blocks an amount $name and names the bound',
+    async ({ balance, preset, message }) => {
+      renderWithBalance(balance)
+
+      await userEvent.click(screen.getByRole('button', { name: preset }))
+
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeDisabled()
+      expect(screen.getByText(message)).toBeVisible()
+    }
+  )
+
+  it.for<{ name: string; balance: Partial<BalanceInfo>; preset: string }>([
+    { name: 'at the served minimum', balance: SERVED_MINIMUM, preset: '$25' },
+    { name: 'above $5 when no minimum is served', balance: {}, preset: '$10' },
+    {
+      name: 'above $5 when the minimum has no served credits',
+      balance: { minTopupCents: 2_500 },
+      preset: '$10'
+    },
+    { name: 'at the served maximum', balance: SERVED_MAXIMUM, preset: '$50' },
+    {
+      name: 'under $10,000 when no maximum is served',
+      balance: {},
+      preset: '$100'
+    },
+    {
+      name: 'under $10,000 when the maximum has no served credits',
+      balance: { maxTopupCents: 5_000 },
+      preset: '$100'
+    }
+  ])('allows an amount $name', async ({ balance, preset }) => {
+    renderWithBalance(balance)
+
+    await userEvent.click(screen.getByRole('button', { name: preset }))
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    expect(screen.queryByText(/credits minimum/)).not.toBeInTheDocument()
+  })
+
+  it.for<{ name: string; balance: Partial<BalanceInfo>; cap: string }>([
+    {
+      name: 'the served maximum credits',
+      balance: SERVED_MAXIMUM,
+      cap: '10550'
+    },
+    {
+      name: '$10,000 in credits when no maximum is served',
+      balance: {},
+      cap: '2110000'
+    }
+  ])('caps the credits input at $name', ({ balance, cap }) => {
+    renderWithBalance(balance)
+
+    expect(screen.getByRole('spinbutton', { name: 'Credits' })).toHaveAttribute(
+      'aria-valuemax',
+      cap
+    )
   })
 
   describe('without a default payment method', () => {
@@ -752,7 +1035,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
 
     function checkoutOpensAt(url: string) {
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockResolvedValue({
+      vi.spyOn(billingApi, 'createTopupCheckout').mockResolvedValue({
         checkout_url: url
       })
     }
@@ -760,7 +1043,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('offers hosted checkout for the selected amount instead of a dead-end error', async () => {
       refuseForNoPaymentMethod()
       const createCheckout = vi
-        .spyOn(workspaceApi, 'createTopupCheckout')
+        .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       const { tab, open } = stubCheckoutTab()
       const { continueButton } = await payAndGetRefused()
@@ -777,7 +1060,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(createCheckout).toHaveBeenCalledWith(
         5000,
         window.location.href,
-        expect.any(AbortSignal)
+        expect.any(AbortSignal),
+        undefined
       )
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(
@@ -902,10 +1186,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('hands checkout to the Desktop host and returns it to the billing-web return page', async () => {
       refuseForNoPaymentMethod()
       const createCheckout = vi
-        .spyOn(workspaceApi, 'createTopupCheckout')
+        .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       window.__comfyDesktop2 = {}
-      remoteConfig.value = { billing_web_url: 'https://testbilling.comfy.org' }
+      useRemoteConfigStore().acceptConfig(
+        { billing_web_url: 'https://testbilling.comfy.org' },
+        false
+      )
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       const appUrl = window.location.href
 
@@ -920,13 +1207,13 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
           'https://testbilling.comfy.org/return/topup',
-          expect.any(AbortSignal)
+          expect.any(AbortSignal),
+          undefined
         )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
       } finally {
         delete window.__comfyDesktop2
-        remoteConfig.value = {}
       }
     })
 
@@ -953,7 +1240,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         trigger: 'Set a default card',
         session: () =>
           vi
-            .spyOn(workspaceApi, 'getPaymentPortalUrl')
+            .spyOn(billingApi, 'getPaymentPortalUrl')
             .mockResolvedValue({ url: portalUrl })
       }
     ])(
@@ -991,7 +1278,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('mints the checkout session only once Open checkout gets a tab', async () => {
       refuseForNoPaymentMethod()
       const createCheckout = vi
-        .spyOn(workspaceApi, 'createTopupCheckout')
+        .spyOn(billingApi, 'createTopupCheckout')
         .mockResolvedValue({ checkout_url: checkoutUrl })
       const checkoutTab = newCheckoutTab()
       const open = vi
@@ -1021,7 +1308,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     it('returns to Pay when the blocked checkout fails to start a session', async () => {
       refuseForNoPaymentMethod()
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
+      vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
         new WorkspaceApiError('Checkout down', 502)
       )
       vi.spyOn(window, 'open')
@@ -1064,7 +1351,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('abandons a checkout still opening once this tab starts switching workspace, then opens the next attempt', async () => {
       refuseForNoPaymentMethod()
       const handedSignals: AbortSignal[] = []
-      vi.spyOn(workspaceApi, 'createTopupCheckout')
+      vi.spyOn(billingApi, 'createTopupCheckout')
         .mockImplementationOnce((_amountCents, _returnUrl, signal) => {
           if (signal) handedSignals.push(signal)
           return new Promise((_resolve, reject) =>
@@ -1113,7 +1400,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }) {
         refuseForNoPaymentMethod()
         const createCheckout = vi
-          .spyOn(workspaceApi, 'createTopupCheckout')
+          .spyOn(billingApi, 'createTopupCheckout')
           .mockResolvedValueOnce({ checkout_url: checkoutUrl })
           .mockImplementationOnce(reopened)
         const open = vi
@@ -1319,7 +1606,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     it('abandons a checkout that resolves after the dialog was dismissed', async () => {
       refuseForNoPaymentMethod()
       let resolveCheckout: (value: { checkout_url: string }) => void = () => {}
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockReturnValue(
+      vi.spyOn(billingApi, 'createTopupCheckout').mockReturnValue(
         new Promise((resolve) => {
           resolveCheckout = resolve
         })
@@ -1337,9 +1624,27 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
+    it('shows the sentence the server wrote when it refuses the checkout for now', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
+        new WorkspaceApiError(
+          'Credit purchases are paused right now. Try again later or contact support.',
+          403,
+          'TOPUP_PURCHASES_PAUSED'
+        )
+      )
+      stubCheckoutTab()
+
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Credit purchases are paused right now. Try again later or contact support.'
+      )
+    })
+
     it('keeps the dialog open and explains a checkout that could not start', async () => {
       refuseForNoPaymentMethod()
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
+      vi.spyOn(billingApi, 'createTopupCheckout').mockRejectedValue(
         new WorkspaceApiError('Bad return url', 400, 'INVALID_RETURN_URL')
       )
       const { tab } = stubCheckoutTab()
@@ -1360,7 +1665,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     describe('setting a default card', () => {
       function portalOpensAt(url: string) {
         return vi
-          .spyOn(workspaceApi, 'getPaymentPortalUrl')
+          .spyOn(billingApi, 'getPaymentPortalUrl')
           .mockResolvedValue({ url })
       }
 
@@ -1370,9 +1675,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         )
       }
 
-      it('re-sends Pay for the same amount when the customer returns from the portal', async () => {
+      it('offers Pay again without charging when the customer returns from the portal', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(workspaceApi, 'listSavedPaymentMethods')
+        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         const getPortal = portalOpensAt(portalUrl)
         const { tab, open } = stubCheckoutTab()
         await payAndGetRefused()
@@ -1385,29 +1690,62 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           window.location.href,
           'payment_method_update'
         )
-        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
         vi.mocked(mockBillingContext().topup).mockResolvedValue(
           topupResponse('completed')
         )
         window.dispatchEvent(new Event('focus'))
 
+        const pay = await screen.findByRole('button', { name: 'Pay $50.00' })
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+        await userEvent.click(pay)
+
         await waitFor(() =>
           expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
             key: 'top-up-credits'
           })
         )
+        expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
         expect(mockBillingContext().topup).toHaveBeenLastCalledWith(5000)
-        expect(useToast().success).toHaveBeenCalledWith(
-          'Credits added successfully!',
-          { duration: 5000 }
-        )
         expect(listCards).not.toHaveBeenCalled()
       })
 
-      it('keeps the refusal when the retried Pay still has no default card', async () => {
+      it('never charges on later returns to a dialog left open behind another tab', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(workspaceApi, 'listSavedPaymentMethods')
+        portalOpensAt(portalUrl)
+        const createCheckout = vi.spyOn(billingApi, 'createTopupCheckout')
+        const { tab } = stubCheckoutTab()
+        await payAndGetRefused()
+        await clickSetDefaultCard()
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+        const visibility = vi.spyOn(document, 'visibilityState', 'get')
+
+        const returns = [
+          () => {
+            window.dispatchEvent(new Event('blur'))
+            window.dispatchEvent(new Event('focus'))
+          },
+          () => {
+            visibility.mockReturnValue('hidden')
+            document.dispatchEvent(new Event('visibilitychange'))
+            visibility.mockReturnValue('visible')
+            document.dispatchEvent(new Event('visibilitychange'))
+          }
+        ]
+        for (const returnToTab of [...returns, ...returns]) {
+          returnToTab()
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        }
+
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(createCheckout).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      })
+
+      it('shows the refusal again when Pay after the portal still finds no default card', async () => {
+        refuseForNoPaymentMethod()
         portalOpensAt(portalUrl)
         const { tab } = stubCheckoutTab()
         await payAndGetRefused()
@@ -1415,30 +1753,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await waitFor(() => expect(tab.location.href).toBe(portalUrl))
 
         window.dispatchEvent(new Event('focus'))
-        await waitFor(() =>
-          expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
         )
+
         await waitFor(() =>
           expect(
             screen.getByRole('button', { name: 'Set a default card' })
           ).toBeEnabled()
         )
-        expect(useToast().error).not.toHaveBeenCalled()
-        expect(listCards).not.toHaveBeenCalled()
-        window.dispatchEvent(new Event('focus'))
         expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
-
-        vi.mocked(mockBillingContext().topup).mockResolvedValue(
-          topupResponse('completed')
-        )
-        window.dispatchEvent(new Event('blur'))
-        window.dispatchEvent(new Event('focus'))
-        await waitFor(() =>
-          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-            key: 'top-up-credits'
-          })
-        )
-        expect(mockBillingContext().topup).toHaveBeenCalledTimes(3)
+        expect(useToast().error).not.toHaveBeenCalled()
       })
 
       it('does not retry Pay after this tab switches workspace', async () => {
@@ -1490,7 +1815,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           failure: 'a rejected request',
           arrange: () =>
             vi
-              .spyOn(workspaceApi, 'getPaymentPortalUrl')
+              .spyOn(billingApi, 'getPaymentPortalUrl')
               .mockRejectedValue(new WorkspaceApiError('Portal down', 502))
         },
         {
@@ -1526,7 +1851,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           resolve: (_value: { url: string }) => {},
           reject: (_error: Error) => {}
         }
-        vi.spyOn(workspaceApi, 'getPaymentPortalUrl').mockReturnValue(
+        vi.spyOn(billingApi, 'getPaymentPortalUrl').mockReturnValue(
           new Promise((resolve, reject) => {
             settle.resolve = resolve
             settle.reject = reject
@@ -1594,9 +1919,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(useToast().error).not.toHaveBeenCalled()
       })
 
-      it('re-sends Pay once a customer who followed the blocked portal link comes back', async () => {
+      it('offers Pay without charging once a customer who followed the blocked portal link comes back', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(workspaceApi, 'listSavedPaymentMethods')
         portalOpensAt(portalUrl)
         blockNewTabs()
         stopBrowserFollowingLinks()
@@ -1606,18 +1930,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await userEvent.click(
           await screen.findByRole('link', { name: 'Open payment page' })
         )
-        vi.mocked(mockBillingContext().topup).mockResolvedValue(
-          topupResponse('completed')
-        )
         window.dispatchEvent(new Event('focus'))
 
-        await waitFor(() =>
-          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-            key: 'top-up-credits'
-          })
-        )
-        expect(mockBillingContext().topup).toHaveBeenLastCalledWith(5000)
-        expect(listCards).not.toHaveBeenCalled()
+        await screen.findByRole('button', { name: 'Pay $50.00' })
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       })
 
       it.for([
@@ -1625,7 +1942,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           failure: 'a rejected request',
           arrange: () =>
             vi
-              .spyOn(workspaceApi, 'getPaymentPortalUrl')
+              .spyOn(billingApi, 'getPaymentPortalUrl')
               .mockRejectedValue(new WorkspaceApiError('Portal down', 502))
         },
         {
@@ -1712,6 +2029,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     open.mockRestore()
   })
 
+  it('says when to verify by while the top-up serves its authentication deadline', () => {
+    setTopupActionOperation({
+      opId: 'op-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token',
+      authenticationDeadline: '2026-10-30T15:40:00Z'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank is waiting for you to confirm it. Verify it by October 30, 3:40 PM to finish this top-up.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the open-ended verification copy when no deadline is served', () => {
+    setTopupActionOperation({
+      opId: 'op-no-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank requires additional verification to complete this payment.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Verify by/)).not.toBeInTheDocument()
+  })
+
   it('reopens in verification while the action URL is loading', () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
@@ -1779,6 +2130,27 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     await waitFor(() =>
       expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
         description: expect.stringContaining('credit purchase is still open')
+      })
+    )
+  })
+
+  it('shows the sentence the server wrote when it rate-limits the purchase', async () => {
+    vi.mocked(mockBillingContext().topup).mockRejectedValue(
+      new WorkspaceApiError(
+        'Too many top-ups in a short time. Try again later or contact support.',
+        429,
+        'TOPUP_RATE_LIMITED'
+      )
+    )
+
+    renderDialog()
+    await clickAddCredits()
+    await userEvent.click(screen.getByRole('button', { name: 'Pay $50.00' }))
+
+    await waitFor(() =>
+      expect(useToast().error).toHaveBeenCalledWith('Purchase Failed', {
+        description:
+          'Too many top-ups in a short time. Try again later or contact support.'
       })
     )
   })
@@ -2365,7 +2737,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue(
           result
         )
-        vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
+        vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
 
         renderDialog()
         await clickAddCredits()
@@ -2406,7 +2778,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         status: 'ok',
         url: checkoutUrl
       })
-      vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
+      vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
       const tab = { opener: window, location: { href: '' }, close: vi.fn() }
       vi.spyOn(window, 'open').mockReturnValue(tab as never)
 
@@ -2423,6 +2795,144 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         returnUrl: window.location.href,
         signal: expect.any(AbortSignal)
       })
+    })
+  })
+
+  function serveProcessingCheckout(paymentAmountCents: number | null) {
+    vi.spyOn(billingApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [
+        {
+          amount_cents: 2500,
+          created_at: '2026-10-20T00:00:00Z',
+          session_id: 'cs_bank'
+        }
+      ],
+      next_cursor: null
+    })
+    vi.spyOn(billingApi, 'getTopupCheckout').mockResolvedValue({
+      amount_cents: 2500,
+      payment_amount_cents: paymentAmountCents,
+      session_id: 'cs_bank',
+      state: 'payment_processing'
+    })
+  }
+
+  describe('the auto top-up card', () => {
+    const AUTO_TOP_UP_PROMPT = 'Running low on credits? Turn on auto top-up.'
+
+    beforeEach(() => {
+      const capabilities = useBillingCapabilities()
+      capabilities.autoTopUpEnabled = autoTopUpEnabledFact(true)
+      capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
+      capabilities.autoTopUpSetup = computed(() => ({
+        state: 'ready' as const
+      }))
+      vi.mocked(useBillingAutoTopUpCard).mockReturnValue(
+        autoTopUpCard(loadedAutoTopUp('off'))
+      )
+    })
+
+    it('sits above Add credits on the amount step', () => {
+      renderDialog()
+
+      const setUp = screen.getByRole('link', { name: 'Set up' })
+      expect(screen.getByText(AUTO_TOP_UP_PROMPT)).toBeInTheDocument()
+      expect(
+        setUp.compareDocumentPosition(
+          screen.getByRole('button', { name: 'Add credits' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
+    it('is gone on the payment step', async () => {
+      renderDialog()
+
+      await clickAddCredits()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay $50.00' })
+      ).toBeInTheDocument()
+      expect(screen.queryByText(AUTO_TOP_UP_PROMPT)).not.toBeInTheDocument()
+    })
+
+    it('gives way to the payment processing notice', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      await screen.findByRole('status')
+      expect(screen.queryByText(AUTO_TOP_UP_PROMPT)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('a top-up payment still processing', () => {
+    it('keeps add credits available and names the served amount', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      const notice = await screen.findByRole('status')
+      expect(notice).toHaveTextContent('A $25 payment is still processing')
+      expect(notice).toHaveTextContent('No need to pay again.')
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: '$50' })).toBeEnabled()
+    })
+
+    it('places the notice between the amount choices and Add credits', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      const notice = await screen.findByRole('status')
+      const preset = screen.getByRole('button', { name: '$50' })
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(
+        preset.compareDocumentPosition(notice) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+      expect(
+        notice.compareDocumentPosition(addCredits) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
+    it('drops the amount when the server does not serve one', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(null)
+      renderDialog()
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'A payment is still processing'
+      )
+    })
+
+    it('leaves the dialog unchanged while unified billing settings are off', () => {
+      const list = vi.spyOn(billingApi, 'listTopupCheckouts')
+      renderDialog()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+      expect(list).not.toHaveBeenCalled()
+    })
+
+    it('hides the notice when the checkout list cannot be read', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      vi.spyOn(billingApi, 'listTopupCheckouts').mockRejectedValue(
+        new WorkspaceApiError('unavailable', 503)
+      )
+      renderDialog()
+
+      await waitFor(() =>
+        expect(mockReportError).toHaveBeenCalledWith(
+          expect.any(WorkspaceApiError),
+          {
+            errorType: 'failure_reading_topup_checkout',
+            surface: 'billing'
+          }
+        )
+      )
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
     })
   })
 })

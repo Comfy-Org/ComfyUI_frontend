@@ -26,6 +26,10 @@ For real Cloud billing E2E setup and account prerequisites, see [Cloud billing E
 Its dedicated runner requires real authentication and a dedicated sandbox account;
 the live suite is excluded from the ordinary browser test configurations.
 
+The signed-out staging release gate needs neither: see
+[Staging smoke gate](../docs/testing/staging-smoke-gate.md) and run it with
+`pnpm smoke:staging`.
+
 **CRITICAL**: Start the ComfyUI backend with `--multi-user`:
 
 ```bash
@@ -288,6 +292,30 @@ Run the first spec after the dev server starts with one worker, the
 parallel workers against a cold server time out in `beforeEach` with
 `app never became ready`.
 
+To collect diagnostics for a local failure, rerun the affected spec with
+`--trace on`. Add `RECORD_VIDEO=true` when you also need video:
+
+```bash
+RECORD_VIDEO=true pnpm test:browser:local widget.spec.ts --trace on
+```
+
+For larger local runs, use a bundled test frontend instead of `dev:test`.
+Keep the backend running, stop the dev server, then run:
+
+```bash
+pnpm build:test
+pnpm preview:test
+```
+
+Run `pnpm test:browser:local` in another terminal. Use `--workers=4` to try
+parallel execution on a machine with spare CPU capacity; the default remains
+one worker. Rebuild after changing frontend code because preview has no HMR.
+
+The test bundle preserves development-only feature-flag overrides and the
+legacy default graph. A normal production build does not preserve those
+overrides. Keep `dev:test` for interactive edits and small test selections
+where a build would cost more than it saves. This mode does not change CI.
+
 **Use UI mode while developing.** It provides:
 
 - **Locator picker** — click an element to get its exact locator code
@@ -399,8 +427,15 @@ guide covers the Playwright and ComfyUI mechanics.
 2. **Read the fixture code.** APIs live in `fixtures/` — read them directly
    instead of guessing.
 3. **Use premade JSON workflow assets** instead of building graphs
-   programmatically. Assets live in `assets/`; create new ones by copying
-   `assets/default.json` and editing the JSON.
+   programmatically. Assets live in `assets/`. Reuse an existing asset first:
+   when a test needs a node field, such as a widget value, `mode`, or
+   `flags`, or a top-level field, such as `id` or `extra`, to differ, pass the
+   change to `loadWorkflow` instead of copying the asset:
+   `loadWorkflow('nodes/webcam_capture', { nodes: { 1: { widgets_values: [...] } } })`
+   or `loadWorkflow('subgraphs/basic-subgraph', { workflow: { id } })`. Set
+   `fileName` when the test switches between tabs opened from the same asset.
+   Create a new asset, by copying `assets/default.json`, only when its graph
+   itself is the scenario.
 
 ### Before changing an existing test
 
@@ -642,7 +677,7 @@ the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
-`@node`, `@widget`, `@subgraph`, `@ui`. Apply them so a test is
+`@node`, `@widget`, `@subgraph`, `@ui`, `@a11y`. Apply them so a test is
 findable by its area; add a project-routing tag whenever the test must run in
 that project.
 
@@ -813,6 +848,12 @@ PLAYWRIGHT_LOCAL=1 PLAYWRIGHT_TEST_URL=http://127.0.0.1:8188 DISTRIBUTION=cloud 
   pnpm exec playwright test browser_tests/tests/agent/ --project=cloud
 ```
 
+`vueDirectiveSentryAttribution.spec.ts` needs the same production build for the
+same kind of reason: the dev server initialises Sentry with `enabled: false`, so
+no envelope is ever sent and the spec waits out its timeout. CI runs it in the
+`mobile-safari` project against the `frontend-dist-cloud` artifact. Locally,
+build and serve as above and run it with `--project=mobile-safari`.
+
 When a fix changes how the agent's turns affect the app (graph edits,
 CRDT frames, panel state), add a conversation replay case alongside the
 fix so the bug stays fixed:
@@ -869,19 +910,19 @@ await page.route('**/api/object_info', (route) =>
 The three generated-type packages are auto-generated from OpenAPI specs — prefer
 them for any mock targeting their endpoints:
 
-| Endpoint category                                 | Type source                                                                        |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                 |
-| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                             |
-| Manager (queue tasks, packages)                   | `generatedManagerTypes.ts` (`src/workbench/extensions/manager/types/`)             |
-| Local webserver responses that differ from ingest | `src/platform/remote/comfyui/types.ts`                                             |
-| WebSocket messages and custom-node outputs        | `src/platform/remote/comfyui/execution/types.ts`                                   |
-| Frontend settings                                 | `src/platform/settings/types.ts`                                                   |
-| Node definitions                                  | `src/schemas/nodeDefSchema.ts`, `src/schemas/nodeDef/nodeDefSchemaV2.ts`           |
-| Templates                                         | `src/platform/workflow/templates/types/template.ts`                                |
-| Jobs API                                          | `src/platform/remote/comfyui/jobs/jobTypes.ts` (`zJobDetail`, `zJobsListResponse`) |
-| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                       |
-| Asset metadata                                    | `src/types/metadataTypes.ts`                                                       |
+| Endpoint category                                 | Type source                                                                            |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Cloud-only (hub, billing, workflows)              | `@comfyorg/ingest-types` (`packages/ingest-types`)                                     |
+| Registry (releases, nodes, publishers)            | `@comfyorg/registry-types` (`packages/registry-types`)                                 |
+| Manager (queue tasks, packages)                   | `@comfyorg/api-client/generatedManagerTypes`                                           |
+| Local webserver responses that differ from ingest | `@comfyorg/api-client/types`                                                           |
+| WebSocket messages and custom-node outputs        | `@comfyorg/api-client/executionTypes`                                                  |
+| Frontend settings                                 | `@comfyorg/settings-core/types`                                                        |
+| Node definitions                                  | `@comfyorg/object-info-parser`, `@comfyorg/object-info-parser/schemas/nodeDefSchemaV2` |
+| Templates                                         | `@comfyorg/api-client/templateTypes`                                                   |
+| Jobs API                                          | `@comfyorg/api-client/jobTypes` (`zJobDetail`, `zJobsListResponse`)                    |
+| Workflow validation                               | `src/platform/workflow/validation/schemas/workflowSchema.ts`                           |
+| Asset metadata                                    | `src/types/metadataTypes.ts`                                                           |
 
 ```typescript
 // ✅ Import the type and annotate mock data
@@ -948,7 +989,7 @@ Before merging a flaky-test fix, confirm all of these:
   `toHaveText`, `toHaveCount`, `toHaveClass`).
 - **Single async value** → `expect.poll(() => asyncFn()).toBe(expected)`.
 - **Multiple assertions that must settle together** → `expect(async () => {
-... }).toPass()`.
+  ... }).toPass()`.
 - Never make immediate assertions right after async UI mutations, settings
   writes, clipboard writes, or graph updates.
 - Never use `waitForTimeout()` to hide a race — it is always wrong.
@@ -1112,6 +1153,72 @@ test before the shot rather than regenerating. Regenerate only when the
 product changed, and open the diff to confirm the change is the one you made
 rather than a viewport shift.
 
+## Accessibility Testing
+
+`tests/accessibility/` scans app surfaces with
+[axe](https://github.com/dequelabs/axe-core) through `@axe-core/playwright`,
+following Playwright's
+[accessibility testing guide](https://playwright.dev/docs/accessibility-testing).
+The specs carry the `@a11y` tag and run in the regular projects, so CI gates on
+them.
+
+Merge `accessibilityFixture` into the test and scan after the surface is ready:
+
+```typescript
+import { mergeTests } from '@playwright/test'
+
+import { accessibilityFixture } from '@e2e/fixtures/accessibilityFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+
+const test = mergeTests(comfyPageFixture, accessibilityFixture)
+
+test(
+  'settings dialog',
+  { tag: '@a11y' },
+  async ({ comfyPage, accessibility }) => {
+    await comfyPage.settingDialog.open()
+
+    await accessibility.expectOnlyKnownViolations({})
+  }
+)
+```
+
+- **Wait before scanning.** axe reads the DOM as it is when the scan starts.
+  Open the surface through its page object and assert the state it must reach,
+  as for a screenshot. The helper itself waits for running animations and
+  transitions to end, because axe measures the contrast of a surface that is
+  still fading in from its half-transparent colors.
+- **Rules.** The scan runs axe's WCAG 2.0, 2.1, and 2.2 A/AA rules and its
+  best-practice rules against the whole page, so it also reports what a
+  surface does to the page behind it, such as a second `main` landmark.
+- **Known violations.** `expectOnlyKnownViolations({ 'color-contrast': 2 })`
+  allows that axe rule ID to fail on exactly two elements of the surface and
+  fails on any other rule. A rule that fails on more elements fails the scan,
+  so a new element cannot hide behind a known one. A rule that fails on fewer
+  also fails, so a fix must lower its count, or delete the entry at zero, and
+  a later regression cannot hide behind a stale one. Never add a rule ID or
+  raise a count to make a new failure pass; fix the component. The record
+  counts elements instead of naming them, because axe's generated selectors
+  are utility-class chains that change with unrelated styling edits.
+- **Narrower scans.** Pass a builder as the second argument to scan one region
+  or tune rules: `accessibility.makeAxeBuilder().include('[role="dialog"]')`.
+  `exclude()` drops an element and all its descendants from every rule; prefer
+  a known rule ID.
+- **Reading a failure.** The assertion lists each rule that fails on more
+  elements than its known count, with its help URL, the known count, and every
+  failing element; the count cannot say which of them is new. The
+  `axe-violations` attachment on the test holds every violation axe reported,
+  known ones included.
+- **Adding a surface.** Add a test to the spec in `tests/accessibility/` that
+  matches the surface, or integrate a scan into an existing feature test with
+  the same fixture.
+
+An automated scan finds only part of the problems. axe cannot see nodes drawn
+on the LiteGraph canvas, and it does not check keyboard operation, focus order,
+or screen-reader output. Cover those with behavioral tests and manual checks,
+for example with
+[Accessibility Insights for Web](https://accessibilityinsights.io/docs/web/overview/).
+
 ## Debugging in CI
 
 1. Download artifacts from the failed run.
@@ -1137,8 +1244,8 @@ the video inline per test — to the same `comfyui-playwright-chromium`
 Cloudflare Pages project, on its own branch. The link is posted alongside
 the other browser report links in the PR comment. It's scoped to added
 files only — the existing suite always runs without video — to keep CI cost
-and time bounded. Recording is opt-in via `RECORD_VIDEO=true` (set only by
-that CI job; see `playwright.config.ts`) and slowed down with `SLOW_MO` so
+and time bounded. The job enables recording via `RECORD_VIDEO=true` and
+slows actions with `SLOW_MO` so
 the result is legible for reviewers. Files containing no tests eligible for
 the `chromium` project, such as `@perf`-only specs, are skipped with an
 explanation in the workflow summary. Newly added `@audit` tests fail this

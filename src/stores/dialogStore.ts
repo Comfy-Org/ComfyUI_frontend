@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { markRaw, ref } from 'vue'
 import type { Component, Ref } from 'vue'
 
-import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
+import type { DialogContentSize } from '@comfyorg/design-system/lib/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export interface DialogComponentProps {
@@ -13,6 +13,8 @@ export interface DialogComponentProps {
    * sections, so the dialog frame adds no padding around them.
    */
   flush?: boolean
+  /** Keeps the top where the dialog opened, so a taller state grows downward. */
+  growsDown?: boolean
   /** The component renders the whole panel: its surface, size and close button. */
   headless?: boolean
   maximizable?: boolean

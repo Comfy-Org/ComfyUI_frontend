@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -13,8 +13,8 @@ import type { BillingReadRail } from './useBillingReadRail'
 import { useBillingCapabilities } from './useBillingCapabilities'
 
 vi.mock(import('firebase/auth'), { spy: true })
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@/platform/billing/api/billingApi'))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
@@ -36,6 +36,8 @@ function capabilitiesFor(
   isOwner: boolean
 ): BillingCapabilitiesResponse {
   return {
+    auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     resolved_for: {
       user_id: canonicalUserId,
       workspace_id: TEAM_WORKSPACE_ID
@@ -56,11 +58,16 @@ function capabilitiesFor(
       can_manage_partner_node_access: isOwner,
       can_view_pending_invites: isOwner,
       can_view_team_usage: isOwner,
+      can_view_workspace_usage: isOwner,
       can_edit_workspace: isOwner,
       can_manage_auto_top_up: isOwner,
+      can_view_auto_top_up: isOwner,
+      can_view_auto_top_up_member_notice: !isOwner,
       can_manage_subscription: isOwner,
       can_open_plans: isOwner,
       can_run_workflows: isOwner,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: isOwner
     },
     rollout_defaults_applied: {
@@ -103,7 +110,7 @@ function heldCapabilityReads(rail: 'legacy' | 'sdk') {
     })
 
   if (rail === 'legacy') {
-    vi.mocked(workspaceApi.getBillingCapabilities).mockImplementation(() =>
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementation(() =>
       nextRead().catch(() => {
         throw new Error('capabilities outage')
       })

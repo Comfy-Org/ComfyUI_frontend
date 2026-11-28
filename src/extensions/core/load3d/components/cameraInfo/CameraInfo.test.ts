@@ -1,10 +1,14 @@
 import { render, screen } from '@testing-library/vue'
+import * as VueUse from '@vueuse/core'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { resolveSubjectModelFile } from '@/extensions/core/load3d/cameraInfo/subjectModelFile'
+import type { ComponentWidget } from '@/types/domWidget'
 
 const i18n = createI18n({
   legacy: false,
@@ -46,7 +50,8 @@ vi.mock<unknown>(
       handleMouseLeave: vi.fn(),
       setGizmosVisible: vi.fn(),
       setTransformGizmoMode: vi.fn(),
-      setLookThrough: vi.fn()
+      setLookThrough: vi.fn(),
+      showSubjectModel: vi.fn()
     }
     holder.modeRef = modeRef
     holder.api = api
@@ -54,31 +59,63 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(import('@vueuse/core'), () => ({
-  createSharedComposable: (composable: () => unknown) => composable,
-  useDocumentVisibility: () => ref('visible'),
-  useElementSize: () => ({ width: ref(600), height: ref(400) }),
-  useStorage: (_key: string, defaultValue: unknown) => ref(defaultValue)
+vi.mock(import('@/extensions/core/load3d/cameraInfo/subjectModelFile'))
+
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(VueUse.useElementSize).mockReturnValue({
+    width: ref(600),
+    height: ref(400),
+    stop: vi.fn()
+  })
+})
+
+const liveGraphNodes = vi.hoisted(() => ({
+  reloads: new Set<() => void>()
 }))
+
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: (resolve) => {
+      const node = shallowRef(resolve() ?? undefined)
+      const reload = () => (node.value = resolve() ?? undefined)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadLiveGraphNodes() {
+  for (const reload of liveGraphNodes.reloads) reload()
+}
 
 import CameraInfo from './CameraInfo.vue'
 
-function makeWidget(): SimplifiedWidget {
-  return {
-    name: 'camera_info_state',
-    type: 'cameraInfo',
-    value: [],
-    options: {}
-  }
-}
+type WidgetNode = ComponentWidget<string[]>['node']
 
 function renderComponent() {
-  return render(CameraInfo, {
-    props: { widget: makeWidget() },
+  let node: WidgetNode | undefined = fromPartial<WidgetNode>({})
+  const widget = fromPartial<ComponentWidget<string[]>>({
+    name: 'camera_info_state',
+    type: 'cameraInfo',
+    get node() {
+      return node
+    }
+  })
+  const rendered = render(CameraInfo, {
+    props: { widget },
     global: {
       plugins: [i18n]
     }
   })
+  function reloadGraph({ nodeKept }: { nodeKept: boolean }) {
+    node = nodeKept ? fromPartial<WidgetNode>({}) : undefined
+    reloadLiveGraphNodes()
+  }
+  return { ...rendered, reloadGraph }
 }
 
 function setMode(value: string) {
@@ -119,6 +156,58 @@ describe('CameraInfo toolbar', () => {
     await user.click(screen.getByRole('button', { name: 'Camera view' }))
 
     expect(api().setLookThrough).toHaveBeenCalledWith(true)
+  })
+
+  it('initializes the viewport again, keeping the toolbar state, for the node a reloaded graph holds', async () => {
+    const { reloadGraph } = renderComponent()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Hide gizmos' }))
+    Object.values(api()).forEach((fn) => fn.mockClear())
+
+    reloadGraph({ nodeKept: true })
+    await nextTick()
+
+    expect(api().initialize).toHaveBeenCalledOnce()
+    expect(api().setGizmosVisible).toHaveBeenCalledWith(false)
+  })
+
+  it('cleans up the viewport when a reload leaves no node behind', async () => {
+    const { reloadGraph } = renderComponent()
+    api().cleanup.mockClear()
+
+    reloadGraph({ nodeKept: false })
+    await nextTick()
+
+    expect(api().cleanup).toHaveBeenCalledOnce()
+  })
+})
+
+describe('CameraInfo subject model', () => {
+  beforeEach(() => {
+    setMode('orbit')
+  })
+
+  it('shows the model file feeding the mesh input on mount', () => {
+    vi.mocked(resolveSubjectModelFile).mockReturnValue('3d/frog.obj')
+
+    renderComponent()
+
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith('3d/frog.obj')
+  })
+
+  it('follows the model file as it changes and clears', async () => {
+    const modelFile = ref<string>()
+    vi.mocked(resolveSubjectModelFile).mockImplementation(() => modelFile.value)
+    renderComponent()
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith(undefined)
+
+    modelFile.value = 'robot.glb'
+    await nextTick()
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith('robot.glb')
+
+    modelFile.value = undefined
+    await nextTick()
+    expect(api().showSubjectModel).toHaveBeenLastCalledWith(undefined)
   })
 })
 
@@ -165,6 +254,7 @@ describe('CameraInfo transform gizmo reconciliation', () => {
   it('keeps the selected gizmo when the new mode still supports it', async () => {
     setMode('orbit')
     renderComponent()
+    api().setTransformGizmoMode.mockClear()
     const user = userEvent.setup()
 
     await user.click(screen.getByRole('button', { name: 'Target' }))

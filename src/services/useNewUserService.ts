@@ -1,7 +1,9 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 function hasV2DraftHistory(raw: string | null): boolean {
   if (!raw) return false
@@ -25,6 +27,16 @@ function hasV2DraftHistory(raw: string | null): boolean {
   return orderLength > 0 || entriesCount > 0
 }
 
+function hasV2DraftHistoryInAnyWorkspace(): boolean {
+  return safeLocalStorage
+    .keys()
+    .some(
+      (key) =>
+        key.startsWith(StorageKeys.prefixes.draftIndex) &&
+        hasV2DraftHistory(safeLocalStorage.getItem(key))
+    )
+}
+
 function _useNewUserService() {
   const settingStore = useSettingStore()
   const pendingCallbacks = shallowRef<Array<() => Promise<void>>>([])
@@ -42,30 +54,19 @@ function _useNewUserService() {
       Object.keys(settingStore.settingValues).length === 0 ||
       !settingStore.get('Comfy.TutorialCompleted')
 
-    // Legacy keys (pre-V1 and V1 persistence)
     const hasNoLegacyWorkflow =
-      !localStorage.getItem('workflow') &&
-      !localStorage.getItem('Comfy.PreviousWorkflow')
+      !safeLocalStorage.getItem('workflow') &&
+      !safeLocalStorage.getItem('Comfy.PreviousWorkflow')
 
-    // V1 draft store keys
     const hasNoV1Drafts =
-      !localStorage.getItem('Comfy.Workflow.Drafts') &&
-      !localStorage.getItem('Comfy.Workflow.DraftOrder')
-
-    // V2 draft index key (scoped to personal workspace; cloud workspace id
-    // comes from sessionStorage which may not be set yet at this point).
-    // Check for actual draft history rather than key existence: an empty
-    // index can be written for genuine new users during startup, so key
-    // presence alone is not evidence of prior usage.
-    const hasNoV2DraftIndex = !hasV2DraftHistory(
-      localStorage.getItem('Comfy.Workflow.DraftIndex.v2:personal')
-    )
+      !safeLocalStorage.getItem('Comfy.Workflow.Drafts') &&
+      !safeLocalStorage.getItem('Comfy.Workflow.DraftOrder')
 
     return (
       isNewUserSettings &&
       hasNoLegacyWorkflow &&
       hasNoV1Drafts &&
-      hasNoV2DraftIndex
+      !hasV2DraftHistoryInAnyWorkspace()
     )
   }
 

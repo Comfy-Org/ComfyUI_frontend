@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'
 import { useLogsTerminalTab } from '@/composables/bottomPanelTabs/useTerminalTabs'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
@@ -28,8 +28,6 @@ vi.mock(import('@/composables/bottomPanelTabs/useTerminalTabs'), () => ({
   useLogsTerminalTab: vi.fn(() => stubTab('logs', 'terminal')),
   useCommandTerminalTab: () => stubTab('command', 'terminal')
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)

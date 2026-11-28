@@ -9,8 +9,6 @@ import { api } from '@/scripts/api'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'))
-
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
@@ -159,8 +157,12 @@ describe('MessageFeedback', () => {
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
     await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
-    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
-    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=a.png', {
+      onAuthCredential: expect.any(Function)
+    })
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb', {
+      onAuthCredential: expect.any(Function)
+    })
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 

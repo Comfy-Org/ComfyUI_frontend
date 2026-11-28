@@ -7,20 +7,24 @@ import type {
   Reroute,
   SubgraphInputNode,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import type {
   LinkSegment,
-  Point,
   Positionable
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  CompassCorners,
+  PointTuple as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
+import { resizeCornerAt } from '@comfyorg/graph-model/arrange/cornerResize'
 
 import {
   LinkMarkerShape,
   LinkRenderType
-} from '@/lib/litegraph/src/types/globalEnums'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+} from '@comfyorg/graph-model/globalEnums'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint
@@ -33,12 +37,12 @@ import {
 export type PointerTarget =
   | { kind: 'node'; node: LGraphNode }
   | { kind: 'linkBadge'; link: LLink }
-  | { kind: 'linkBadgeStack'; stackKey: string }
+  | { kind: 'linkBadgeStack'; stackKey: string; links: LLink[] }
   | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
   | { kind: 'linkCentre'; segment: LinkSegment }
-  | { kind: 'groupResize'; group: LGraphGroup }
+  | { kind: 'groupResize'; group: LGraphGroup; corner: CompassCorners }
   | { kind: 'groupTitle'; group: LGraphGroup }
   | { kind: 'group'; group: LGraphGroup }
   | { kind: 'empty' }
@@ -49,13 +53,15 @@ export function resolvePointerTarget(
   e: CanvasPointerEvent,
   node: LGraphNode | undefined
 ): PointerTarget {
+  const point: Point = [e.canvasX, e.canvasY]
+  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
+  if (ioNode) return { kind: 'subgraphIO', ioNode }
+
   if (node && (canvas.allow_interaction || node.flags.allow_interaction))
     return { kind: 'node', node }
 
-  const point: Point = [e.canvasX, e.canvasY]
-
   const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
-  if (stack) return { kind: 'linkBadgeStack', stackKey: stack.stackKey }
+  if (stack) return { kind: 'linkBadgeStack', ...stack }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(
     canvas,
@@ -64,9 +70,6 @@ export function resolvePointerTarget(
     point[1]
   )
   if (badgeLink) return { kind: 'linkBadge', link: badgeLink }
-
-  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
-  if (ioNode) return { kind: 'subgraphIO', ioNode }
 
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
     const reroute = findReroute(canvas, graph, point)
@@ -78,8 +81,10 @@ export function resolvePointerTarget(
 
   const group = graph.getGroupOnPos(point[0], point[1])
   if (!group) return { kind: 'empty' }
-  if (group.isInResize(point[0], point[1]))
-    return { kind: 'groupResize', group }
+  const corner = group.pinned
+    ? undefined
+    : resizeCornerAt(group.boundingRect, point[0], point[1])
+  if (corner) return { kind: 'groupResize', group, corner }
   const inTitle = group.isPointInTitlebar(point[0], point[1])
   return { kind: inTitle ? 'groupTitle' : 'group', group }
 }

@@ -101,9 +101,8 @@
       </div>
       <p class="m-0 text-muted-foreground">
         {{
-          $t('subscription.retentionOffer.renewsAt', {
-            regular: regularAmount,
-            date: fullPriceDate
+          $t('subscription.retentionOffer.renewsAfterOffer', {
+            regular: regularAmount
           })
         }}
       </p>
@@ -188,8 +187,8 @@ import type {
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import CancellationStepLayout from '@/platform/billing/subscription/components/CancellationStepLayout.vue'
 import { useCancellationPlan } from '@/platform/billing/subscription/composables/useCancellationPlan'
@@ -200,7 +199,6 @@ import type {
 } from '@/platform/billing/subscription/utils/retentionOffer'
 import {
   discountedAmount,
-  fullPriceRenewal,
   outcomeOnClose
 } from '@/platform/billing/subscription/utils/retentionOffer'
 import { formatCurrencyCents } from '@/utils/numberUtil'
@@ -255,9 +253,6 @@ const savings = computed(() =>
 )
 const discountStartDate = computed(() =>
   formatDate(new Date(subscription.period_end * 1000))
-)
-const fullPriceDate = computed(() =>
-  formatDate(fullPriceRenewal(subscription.period_end, months))
 )
 
 const keepMessage = computed(() => {

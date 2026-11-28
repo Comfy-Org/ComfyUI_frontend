@@ -42,7 +42,7 @@ Write a test that reproduces the bug. **Do NOT write any fix code.**
 | Logic, utils, stores, composables | Vitest     | `src/**/*.test.ts` (colocated)  |
 | UI interaction, canvas, workflows | Playwright | `browser_tests/tests/*.spec.ts` |
 
-For Playwright tests, follow the `/writing-playwright-tests` skill for patterns, fixtures, and tags.
+Follow `docs/guidance/testing-principles.md` for test design, `docs/guidance/vitest.md` for unit tests, and the `/writing-playwright-tests` skill for Playwright patterns, fixtures, and tags.
 
 ### Rules
 
@@ -51,65 +51,27 @@ For Playwright tests, follow the `/writing-playwright-tests` skill for patterns,
 - Do NOT include any fix, workaround, or behavioral change
 - Do NOT add unrelated tests or refactor existing tests
 - Keep the test minimal — only what is needed to reproduce the bug
-- Avoid common anti-patterns — see `reference/testing-anti-patterns.md`
-
-### Vitest Example
-
-```typescript
-// src/utils/pathUtil.test.ts
-import { describe, expect, it } from 'vitest'
-import { resolveModelPath } from './pathUtil'
-
-describe('resolveModelPath', () => {
-  it('handles absolute paths from folder_paths API', () => {
-    const result = resolveModelPath(
-      '/absolute/models',
-      '/absolute/models/checkpoints'
-    )
-    expect(result).toBe('/absolute/models/checkpoints')
-  })
-})
-```
-
-### Playwright Example
-
-```typescript
-import {
-  comfyPageFixture as test,
-  comfyExpect as expect
-} from '../fixtures/ComfyPage'
-
-test.describe('Model Download', { tag: ['@smoke'] }, () => {
-  test('downloads model when path is absolute', async ({ comfyPage }) => {
-    await comfyPage.workflow.loadWorkflow('missing-model')
-    const downloadBtn = comfyPage.page.getByTestId('download-model-button')
-    await downloadBtn.click()
-    await expect(comfyPage.page.getByText('Download complete')).toBeVisible()
-  })
-})
-```
 
 ### Verify Locally First
 
 Run the test locally before pushing to confirm it fails for the right reason:
 
 ```bash
-# Vitest
 pnpm test:unit <test-file>
-
-# Playwright
 pnpm test:browser:local -- --grep "<test name>"
 ```
+
+The first runs a Vitest file; the second runs a Playwright test against a local backend (see `browser_tests/README.md` for setup).
 
 If the test passes locally, it does not reproduce the bug — revisit your test before pushing.
 
 ### Quality Checks and Commit
 
-```bash
-pnpm typecheck
-pnpm lint
-pnpm format:check
+Check only the files you changed. Do not run repo-wide `pnpm lint`, `pnpm typecheck` or `pnpm format`; the pre-commit hook formats, lints and typechecks what you stage, and CI runs the rest.
 
+```bash
+git add <test-files-only>
+pnpm lint:unstaged:fix
 git add <test-files-only>
 git commit -m "test: add failing test for <concise bug description>"
 git push -u origin HEAD
@@ -142,10 +104,8 @@ Write the minimum code change needed to make the failing test pass.
 ### Quality Checks and Commit
 
 ```bash
-pnpm typecheck
-pnpm lint
-pnpm format
-
+git add <fix-files-only>
+pnpm lint:unstaged:fix
 git add <fix-files-only>
 git commit -m "fix: <concise bug description>"
 git push
@@ -168,24 +128,17 @@ gh pr create --title "fix: <description>" --body "$(cat <<'EOF'
 
 <Brief explanation of the bug and root cause>
 
-- Fixes #<issue-number>
+Fixes #<issue-number>
 
-## Red-Green Verification
+## Verification
 
-| Commit | CI Status | Purpose |
-|--------|-----------|---------|
-| `test: ...` | :red_circle: Red | Proves the test catches the bug |
-| `fix: ...` | :green_circle: Green | Proves the fix resolves the bug |
-
-## Test Plan
-
-- [ ] CI red on test-only commit
-- [ ] CI green on fix commit
-- [ ] Added/updated E2E regression under `browser_tests/` or explained why not applicable
-- [ ] Manual verification (if applicable)
+- `test: ...` commit: CI red, proving the test catches the bug
+- `fix: ...` commit: CI green, proving the fix resolves it
 EOF
 )"
 ```
+
+The body follows `.github/pull_request_template.md`.
 
 ## Gotchas
 
@@ -207,15 +160,15 @@ If main itself is red, branch from the last green commit or fix the pre-existing
 
 ## Reference
 
-| Resource              | Path                                               |
-| --------------------- | -------------------------------------------------- |
-| Unit test framework   | Vitest (`src/**/*.test.ts`)                        |
-| E2E test framework    | Playwright (`browser_tests/tests/*.spec.ts`)       |
-| E2E fixtures          | `browser_tests/fixtures/`                          |
-| E2E assets            | `browser_tests/assets/`                            |
-| Playwright skill      | `.claude/skills/writing-playwright-tests/SKILL.md` |
-| Unit CI               | `.github/workflows/ci-tests-unit.yaml`             |
-| E2E CI                | `.github/workflows/ci-tests-e2e.yaml`              |
-| Lint CI               | `.github/workflows/ci-lint-format.yaml`            |
-| Testing anti-patterns | `reference/testing-anti-patterns.md`               |
-| Related skill         | `.claude/skills/perf-fix-with-proof/SKILL.md`      |
+| Resource            | Path                                               |
+| ------------------- | -------------------------------------------------- |
+| Unit test framework | Vitest (`src/**/*.test.ts`)                        |
+| E2E test framework  | Playwright (`browser_tests/tests/*.spec.ts`)       |
+| E2E fixtures        | `browser_tests/fixtures/`                          |
+| E2E assets          | `browser_tests/assets/`                            |
+| Playwright skill    | `.claude/skills/writing-playwright-tests/SKILL.md` |
+| Unit CI             | `.github/workflows/ci-tests-unit.yaml`             |
+| E2E CI              | `.github/workflows/ci-tests-e2e.yaml`              |
+| Lint CI             | `.github/workflows/ci-lint-format.yaml`            |
+| Testing principles  | `docs/guidance/testing-principles.md`              |
+| Related skill       | `.claude/skills/perf-fix-with-proof/SKILL.md`      |

@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
-import type { DialogPanelProps } from '@/components/ui/dialog/types'
+import DialogPanel from '@comfyorg/design-system/dialog/DialogPanel'
+import type { DialogPanelProps } from '@comfyorg/design-system/lib/dialog/types'
 
 const {
   size = 'default',

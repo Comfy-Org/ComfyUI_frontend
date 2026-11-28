@@ -51,7 +51,7 @@
           class="m-0 mt-1 flex items-center gap-2 text-sm/4 font-normal text-muted-foreground"
         >
           <i
-            class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning"
+            class="icon-[lucide--circle-alert] text-warning"
             aria-hidden="true"
           />
           <span>{{ $t('workspacePanel.partnerNodes.allowAllOffHint') }}</span>
@@ -129,10 +129,7 @@
               :disabled="isSaving || !canEditPolicy"
             >
               {{ $t('workspacePanel.partnerNodes.disableAll') }}
-              <i
-                class="icon-[lucide--chevron-down] size-4"
-                aria-hidden="true"
-              />
+              <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
             </Button>
           </template>
         </Menu>
@@ -173,9 +170,7 @@
               >
                 {{ $t('workspacePanel.partnerNodes.columns.provider') }}
                 <i
-                  :class="
-                    cn('size-4 transition-transform', sortIcon('provider'))
-                  "
+                  :class="cn('transition-transform', sortIcon('provider'))"
                   aria-hidden="true"
                 />
               </Button>
@@ -193,7 +188,7 @@
               >
                 {{ $t('workspacePanel.partnerNodes.columns.models') }}
                 <i
-                  :class="cn('size-4 transition-transform', sortIcon('models'))"
+                  :class="cn('transition-transform', sortIcon('models'))"
                   aria-hidden="true"
                 />
               </Button>
@@ -212,7 +207,7 @@
               >
                 {{ $t('workspacePanel.partnerNodes.columns.state') }}
                 <i
-                  :class="cn('size-4 transition-transform', sortIcon('state'))"
+                  :class="cn('transition-transform', sortIcon('state'))"
                   aria-hidden="true"
                 />
               </Button>
@@ -240,7 +235,7 @@
                   <i
                     :class="
                       cn(
-                        'size-4 shrink-0 text-muted-foreground transition-transform',
+                        'text-muted-foreground transition-transform',
                         'icon-[lucide--chevron-down]',
                         !isProviderExpanded(provider) && '-rotate-90'
                       )
@@ -356,20 +351,20 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Menu from '@/components/ui/menu/Menu.vue'
-import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import Button from '@comfyorg/design-system/button/Button'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import Switch from '@comfyorg/design-system/switch/Switch'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -583,6 +578,7 @@ function confirmDisableAll() {
     headerProps: { title: t('workspacePanel.partnerNodes.disableAllTitle') },
     props: { promptText: t('workspacePanel.partnerNodes.disableAllMessage') },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('workspacePanel.partnerNodes.disableAll'),
       confirmVariant: 'destructive',
       optionsDisabled: isSaving,
@@ -653,6 +649,7 @@ function confirmAccessModeChange(
       )}`
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.confirm'),
       confirmVariant: 'secondary',
       optionsDisabled: isSaving,

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect, comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -15,8 +15,6 @@ import {
 } from '@e2e/fixtures/utils/promotedWidgets'
 
 const DUPLICATE_IDS_WORKFLOW = 'subgraphs/subgraph-nested-duplicate-ids'
-const LEGACY_PREFIXED_WORKFLOW =
-  'subgraphs/nested-subgraph-legacy-prefixed-proxy-widgets'
 const PRIMITIVE_FANOUT_MULTI_HOST_WORKFLOW =
   'subgraphs/subgraph-primitive-fanout-multi-host'
 const UNRESOLVABLE_PROXY_WORKFLOW =
@@ -354,7 +352,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-multiple-promoted-widgets'
+        'subgraphs/subgraph-three-promoted-widgets'
       )
 
       const initialWidgets = await getPromotedWidgets(comfyPage, '11')
@@ -440,20 +438,16 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-legacy-reordered-links'
         )
-        const width = comfyPage.vueNodes.getWidgetByName(
+        const widthInput = comfyPage.vueNodes.getWidgetByName(
           'New Subgraph',
           'width'
         )
-        await expect(width).toBeVisible()
-        const widthInput =
-          comfyPage.vueNodes.getInputNumberControls(width).input
+        await expect(widthInput).toBeVisible()
         await expect(widthInput).toHaveValue('512')
-        const batch = comfyPage.vueNodes.getWidgetByName(
+        const batchInput = comfyPage.vueNodes.getWidgetByName(
           'New Subgraph',
           'batch_size'
         )
-        const batchInput =
-          comfyPage.vueNodes.getInputNumberControls(batch).input
         await expect(batchInput).toHaveValue('1')
       }
     )
@@ -481,7 +475,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-multiple-promoted-widgets'
+        'subgraphs/subgraph-three-promoted-widgets'
       )
 
       const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')
@@ -703,7 +697,11 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         )
 
         try {
-          await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
+          await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW, {
+            nodes: {
+              5: { properties: { proxyWidgets: [['6', '6: 3: string_a']] } }
+            }
+          })
 
           comfyExpect(warnings).toEqual([])
         } finally {
@@ -714,7 +712,11 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       test('Legacy-prefixed promoted widget renders with the normalized label after load', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
+        await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW, {
+          nodes: {
+            5: { properties: { proxyWidgets: [['6', '6: 3: string_a']] } }
+          }
+        })
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()
@@ -729,7 +731,11 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       test('No legacy-prefixed or disconnected widgets remain on the node', async ({
         comfyPage
       }) => {
-        await comfyPage.workflow.loadWorkflow(LEGACY_PREFIXED_WORKFLOW)
+        await comfyPage.workflow.loadWorkflow(DUPLICATE_IDS_WORKFLOW, {
+          nodes: {
+            5: { properties: { proxyWidgets: [['6', '6: 3: string_a']] } }
+          }
+        })
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('5')
         await expect(outerNode).toBeVisible()

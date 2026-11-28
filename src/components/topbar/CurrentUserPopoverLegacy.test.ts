@@ -1,6 +1,7 @@
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -33,6 +34,8 @@ beforeEach(() => {
   billing.balance = computed(() => mockBalance.value)
   billing.isLoading = mockIsLoading
   billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  mockBalanceReadFailed.value = false
+  billing.balanceReadFailed = computed(() => mockBalanceReadFailed.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   window.open = vi.fn()
@@ -68,6 +71,7 @@ const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
+const mockBalanceReadFailed = ref(false)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
 
@@ -79,7 +83,7 @@ vi.mock(import('@/base/credits/comfyCredits'), () => ({
   formatCreditsFromCents: vi.fn(({ cents }) => (cents / 100).toString())
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 describe('CurrentUserPopoverLegacy', () => {
   beforeEach(() => {
@@ -138,6 +142,22 @@ describe('CurrentUserPopoverLegacy', () => {
     renderComponent()
 
     expect(useBillingContext().fetchBalance).toHaveBeenCalled()
+  })
+
+  it('reports a failed balance read once instead of leaving it unhandled', async () => {
+    const failure = new Error('Balance temporarily unavailable')
+    vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
+
+    renderComponent()
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_balance',
+        level: 'warning'
+      })
+    )
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   describe('subscription tier badge', () => {
@@ -366,19 +386,39 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('1000')).toBeInTheDocument()
     })
 
-    it('falls back to 0 when the facade reports no balance', () => {
+    it('shows a failed balance read as unavailable, not as 0 credits', () => {
+      mockBalance.value = null
+      mockBalanceReadFailed.value = true
+
+      renderComponent()
+
+      expect(
+        screen.getByTestId('credits-balance-unavailable')
+      ).toHaveTextContent('—')
+      expect(
+        screen.getByText("Couldn't load your balance.")
+      ).toBeInTheDocument()
+      expect(screen.queryByText('0')).not.toBeInTheDocument()
+    })
+
+    it('does not report an unread balance as failed before any read failed', () => {
       mockBalance.value = null
 
       renderComponent()
 
-      expect(formatCreditsFromCents).toHaveBeenCalledWith({
-        cents: 0,
-        locale: 'en',
-        numberOptions: {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2
-        }
-      })
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps a known zero balance as 0', () => {
+      mockBalance.value = { amountMicros: 0, currency: 'usd' }
+
+      renderComponent()
+
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
       expect(screen.getByText('0')).toBeInTheDocument()
     })
   })

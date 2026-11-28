@@ -1,11 +1,11 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { getMinimapExecutionStates } from '@/renderer/extensions/minimap/data/minimapExecutionState'
 
+import type { SizedExtents as MinimapBounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
-  MinimapBounds,
   MinimapGroupData,
   MinimapLinkData,
   MinimapNodeData,
@@ -29,15 +29,14 @@ export class MinimapDataSource {
     const graph = this.graph
     if (!graph) return []
 
-    const nodeProgressStates = this.nodeProgressStates
-    const containingSubgraphId = graph.isRootGraph ? null : graph.id
+    const executionStates = getMinimapExecutionStates(
+      this.nodeProgressStates,
+      graph.isRootGraph ? null : graph.id
+    )
 
     return graph._nodes.map((node) => {
       const [width, height] = node.renderingSize
-      const locatorId = createNodeLocatorId(containingSubgraphId, node.id)
-      const executionState = Object.hasOwn(nodeProgressStates, locatorId)
-        ? nodeProgressStates[locatorId].state
-        : null
+      const executionState = executionStates.get(node.id) ?? null
 
       return {
         id: node.id,

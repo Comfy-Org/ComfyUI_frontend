@@ -1,4 +1,4 @@
-import type { CanvasColour, ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { CanvasColour, ISlotType } from '@comfyorg/graph-model/interfaces'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 
 /**

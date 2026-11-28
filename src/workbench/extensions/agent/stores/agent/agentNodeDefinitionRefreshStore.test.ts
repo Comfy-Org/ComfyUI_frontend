@@ -1,14 +1,13 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentNodeDefinitionRefreshStore } from './agentNodeDefinitionRefreshStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 function toolCall(
@@ -28,6 +27,7 @@ function toolCall(
 }
 
 const restartSucceeded = toolCall('restart_comfyui', 'success')
+const catalogRefreshSucceeded = toolCall('refresh_catalog', 'success')
 const RESTART_WINDOW_MS = 10 * 60_000
 
 function registerRefreshCommand(
@@ -40,7 +40,45 @@ function registerRefreshCommand(
   return refresh
 }
 
+function startsWithBootId(bootId: string) {
+  api.serverFeatureFlags.value = { server_boot_id: bootId }
+  onTestFinished(() => {
+    api.serverFeatureFlags.value = {}
+  })
+}
+
+function socketReconnects() {
+  api.serverFeatureFlagsSettled.value = false
+  api.dispatchCustomEvent('reconnected')
+}
+
+function serverReplies(flags: Record<string, unknown>) {
+  api.serverFeatureFlags.value = flags
+  api.dispatchCustomEvent('feature_flags', flags)
+  api.serverFeatureFlagsSettled.value = true
+}
+
+function flagsSettleWithoutReply() {
+  api.serverFeatureFlagsSettled.value = true
+}
+
 describe('agentNodeDefinitionRefreshStore', () => {
+  beforeEach(() => {
+    api.serverFeatureFlagsSettled.value = true
+  })
+
+  it('refreshes node definitions without reloading the workflow after the agent refreshes its catalog', async () => {
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(
+      catalogRefreshSucceeded
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
   it('waits for ComfyUI to reconnect after a restart, then refreshes node definitions before reloading the open workflow', async () => {
     const order: string[] = []
     registerRefreshCommand(
@@ -136,6 +174,65 @@ describe('agentNodeDefinitionRefreshStore', () => {
 
     expect(refresh).toHaveBeenCalledTimes(2)
     expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the restart refresh to the core reconnect refresh when the restarted server reports a boot id', async () => {
+    startsWithBootId('boot-1')
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    socketReconnects()
+    serverReplies({ server_boot_id: 'boot-2' })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('waits for feature flags to settle before trusting a stale boot id on reconnect', async () => {
+    startsWithBootId('boot-1')
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    socketReconnects()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(refresh).not.toHaveBeenCalled()
+
+    serverReplies({})
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('refreshes when the restarted server never answers the feature flags, leaving a stale boot id in place', async () => {
+    startsWithBootId('boot-1')
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(restartSucceeded)
+    socketReconnects()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(refresh).not.toHaveBeenCalled()
+
+    flagsSettleWithoutReply()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('still refreshes after a catalog refresh when the server reports a boot id', async () => {
+    api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
+    onTestFinished(() => {
+      api.serverFeatureFlags.value = {}
+    })
+    const refresh = registerRefreshCommand()
+
+    useAgentNodeDefinitionRefreshStore().observeAgentEvent(
+      catalogRefreshSucceeded
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(refresh).toHaveBeenCalledOnce()
   })
 
   it('does not refresh on a ComfyUI reconnect when no restart was seen', async () => {

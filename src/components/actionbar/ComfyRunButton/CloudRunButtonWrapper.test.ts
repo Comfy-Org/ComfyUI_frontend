@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus } from '@comfyorg/billing-core'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 

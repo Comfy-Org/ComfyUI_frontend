@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { toNodeId } from '@/types/nodeId'
+import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -86,7 +86,6 @@ test.describe(
 
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.sendMessage('set the prompt and steps')
       await agentPanel.expectUserMessages(['set the prompt and steps'])
       await hostSocket.waitForSubscribe()

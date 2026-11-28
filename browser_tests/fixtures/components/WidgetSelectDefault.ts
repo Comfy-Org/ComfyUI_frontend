@@ -8,6 +8,10 @@ export class WidgetSelectDefaultFixture {
   public readonly menu: Locator
   public readonly options: Locator
   public readonly searchInput: Locator
+  public readonly folderLock: Locator
+  public readonly folderBack: Locator
+  public readonly previous: Locator
+  public readonly next: Locator
 
   constructor(
     public readonly root: Locator,
@@ -19,6 +23,18 @@ export class WidgetSelectDefaultFixture {
     this.searchInput = root
       .page()
       .getByTestId(TestIds.widgets.selectDefaultSearchInput)
+    this.folderLock = root
+      .page()
+      .getByRole('button', { name: /^(Lock|Unlock) folder:/ })
+    this.folderBack = root.page().getByRole('button', { name: /^Back: / })
+    this.previous = root.getByRole('button', {
+      name: `${widgetName}: Previous`,
+      exact: true
+    })
+    this.next = root.getByRole('button', {
+      name: `${widgetName}: Next`,
+      exact: true
+    })
   }
 
   async open(): Promise<void> {

@@ -1,4 +1,5 @@
-import type { AuditLog } from '@/services/customerEventsService'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
 const STORAGE_KEY = 'pending_topup_timestamp'
 const MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
@@ -9,7 +10,7 @@ interface CompletedTopup {
 }
 
 function getPendingTopupTimestamp(): number | null {
-  const timestampStr = localStorage.getItem(STORAGE_KEY)
+  const timestampStr = safeLocalStorage.getItem(STORAGE_KEY)
   if (timestampStr === null) return null
 
   const timestamp = Number(timestampStr)
@@ -18,7 +19,7 @@ function getPendingTopupTimestamp(): number | null {
     return timestamp
   }
 
-  localStorage.removeItem(STORAGE_KEY)
+  safeLocalStorage.removeItem(STORAGE_KEY)
   return null
 }
 
@@ -30,7 +31,7 @@ function getPendingTopupTimestamp(): number | null {
 export function usePendingTopup() {
   // Mark a top-up as pending before opening the Stripe checkout window.
   function startPendingTopup(): void {
-    localStorage.setItem(STORAGE_KEY, Date.now().toString())
+    safeLocalStorage.setItem(STORAGE_KEY, Date.now().toString())
   }
 
   // The top-up a later credit_added completed, if any; clears the marker on hit.
@@ -43,13 +44,14 @@ export function usePendingTopup() {
 
     const completedTopup = events.find(
       (e) =>
-        e.event_type === 'credit_added' &&
+        (e.event_type === 'credit_added' ||
+          e.event_type === 'topup_completed') &&
         e.createdAt &&
         new Date(e.createdAt).getTime() > timestamp
     )
 
     if (!completedTopup) return null
-    localStorage.removeItem(STORAGE_KEY)
+    if (!safeLocalStorage.remove(STORAGE_KEY).ok) return null
     return { startedAtMs: timestamp }
   }
 
@@ -60,7 +62,7 @@ export function usePendingTopup() {
 
   // Clear any pending top-up marker.
   function clearPendingTopup(): void {
-    localStorage.removeItem(STORAGE_KEY)
+    safeLocalStorage.removeItem(STORAGE_KEY)
   }
 
   return {
