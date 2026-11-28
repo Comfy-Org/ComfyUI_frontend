@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import ColorPicker from './ColorPicker.vue'
+import ColorPickerSaturationValue from './ColorPickerSaturationValue.vue'
 
 const labels = {
   hexLabel: 'Hex',
@@ -172,5 +173,28 @@ describe('ColorPicker', () => {
     expect(
       screen.getByRole('button', { name: '255 0 0 50%' })
     ).toBeInTheDocument()
+  })
+})
+
+describe('ColorPickerSaturationValue', () => {
+  it('keeps the individual model updates alongside the atomic update', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(ColorPickerSaturationValue, {
+      props: { hue: 0, saturation: 100, value: 100 }
+    })
+    const slider = screen.getByRole('slider')
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 100, 100)
+    )
+
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: slider,
+      coords: { clientX: 50, clientY: 50 }
+    })
+
+    expect(emitted('update')).toEqual([[50, 50]])
+    expect(emitted('update:saturation')).toEqual([[50]])
+    expect(emitted('update:value')).toEqual([[50]])
   })
 })

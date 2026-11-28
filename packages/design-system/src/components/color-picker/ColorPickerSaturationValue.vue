@@ -7,6 +7,8 @@ const { hue, saturation, value } = defineProps<{
 }>()
 const emit = defineEmits<{
   update: [saturation: number, value: number]
+  'update:saturation': [saturation: number]
+  'update:value': [value: number]
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
@@ -24,7 +26,11 @@ function updateFromPointer(e: PointerEvent) {
   const rect = el.getBoundingClientRect()
   const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
-  emit('update', Math.round(x * 100), Math.round((1 - y) * 100))
+  const saturation = Math.round(x * 100)
+  const value = Math.round((1 - y) * 100)
+  emit('update', saturation, value)
+  emit('update:saturation', saturation)
+  emit('update:value', value)
 }
 
 function handlePointerDown(e: PointerEvent) {
