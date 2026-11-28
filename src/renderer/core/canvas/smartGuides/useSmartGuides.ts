@@ -5,6 +5,7 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { createSmartGuidesProvider } from './dragSnapSession'
+import { useLitegraphSmartGuides } from './useLitegraphSmartGuides'
 
 const SMART_GUIDES_EXTENSION = 'nomadoor.SmartGuides'
 
@@ -12,6 +13,7 @@ const SMART_GUIDES_EXTENSION = 'nomadoor.SmartGuides'
 export function useSmartGuides() {
   const settingStore = useSettingStore()
   const extensionStore = useExtensionStore()
+  useLitegraphSmartGuides()
 
   function extensionActive() {
     return (

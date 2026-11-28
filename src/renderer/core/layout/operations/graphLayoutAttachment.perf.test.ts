@@ -132,6 +132,37 @@ describe('renderer geometry boundary complexity', () => {
     size[1] = 105
     expect([...node.pos]).toEqual([55, 40])
     expect([...node.size]).toEqual([220, 105])
+
+    pos.fill(70)
+    size.fill(150)
+    expect([...node.pos]).toEqual([70, 70])
+    expect([...node.size]).toEqual([150, 150])
+    expect(
+      layoutStore.getNodeLayoutRef(node.graph!.rootGraph.id, node.id).value
+    ).toMatchObject({
+      position: { x: 70, y: 70 },
+      size: { width: 150, height: 150 }
+    })
+
+    pos.forEach((_value, index, array) => {
+      array[index] = 90
+    })
+    expect(
+      layoutStore.getNodeLayoutRef(node.graph!.rootGraph.id, node.id).value
+        ?.position
+    ).toEqual({ x: 90, y: 90 })
+
+    const readX = pos.at
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: node.graph!.rootGraph.id,
+      nodeId: node.id,
+      position: { x: 15, y: 25 },
+      timestamp: Date.now(),
+      source: LayoutSource.Canvas,
+      actor: 'test'
+    })
+    expect(readX(0)).toBe(15)
   })
 
   test('preserves widget-backed slot identity and reactive trigger behavior', () => {

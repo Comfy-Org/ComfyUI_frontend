@@ -75,6 +75,7 @@ export function useSettingUI(
       Object.values(settingStore.settingsById).filter(
         (setting: SettingParams) =>
           setting.type !== 'hidden' &&
+          !setting.deprecated &&
           !(shouldRenderVueNodes.value && setting.hideInVueNodes)
       ),
       (setting: SettingParams) => setting.category || setting.id.split('.')

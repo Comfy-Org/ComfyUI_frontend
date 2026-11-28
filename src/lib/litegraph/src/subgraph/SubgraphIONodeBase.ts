@@ -405,8 +405,7 @@ export abstract class SubgraphIONodeBase<
         this.subgraph.id,
         this.id,
         index,
-        slotDirection,
-        'expanded'
+        slotDirection
       )
       if (port) {
         anchorX = x + port.x + (port.width + anchorSide * slotHeight) / 2

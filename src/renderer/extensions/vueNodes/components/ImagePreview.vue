@@ -11,6 +11,9 @@
       ref="gridEl"
       data-testid="image-grid"
       data-image-preview-grid
+      :data-count="items.length"
+      :data-columns="gridCols"
+      :data-thumbnail-aspect-ratio="imageAspectRatio"
       class="relative grid w-full flex-1 gap-1 rounded-sm p-1 contain-size"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
@@ -293,7 +296,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
-import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
+import {
+  IMAGE_PREVIEW_CONTENT_MIN_HEIGHT,
+  imageGridColumns
+} from './imagePreviewLayout'
 
 const DISPLAY_MAX_EDGE = 1024
 const PRELOAD_MIN_SCALE = 1
@@ -402,10 +408,14 @@ const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
   return !!node && hasMultipleOutputs(node)
 })
-const gridCols = computed(() => {
-  const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
-  return Math.max(Math.round(Math.sqrt(items.length * bias)), 1)
-})
+const gridCols = computed(() =>
+  imageGridColumns({
+    count: items.length,
+    width: gridWidth.value,
+    height: gridHeight.value,
+    aspectRatio: imageAspectRatio.value
+  })
+)
 
 const { camera } = useTransformState()
 const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)

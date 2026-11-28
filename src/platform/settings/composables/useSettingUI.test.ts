@@ -80,6 +80,7 @@ interface MockSettingParams {
   type: string
   defaultValue: unknown
   category?: string[]
+  deprecated?: boolean
 }
 
 const i18n = createI18n({
@@ -214,6 +215,35 @@ describe('useSettingUI', () => {
       )
     }
   )
+
+  it('omits groups whose only settings are hidden or deprecated', () => {
+    Object.assign(useSettingStore(), {
+      settingsById: {
+        ...mockSettings,
+        'Comfy.Graph.Old': {
+          id: 'Comfy.Graph.Old',
+          name: 'Old',
+          type: 'boolean',
+          defaultValue: true,
+          deprecated: true
+        },
+        'Comfy.Secret.Value': {
+          id: 'Comfy.Secret.Value',
+          name: 'Value',
+          type: 'hidden',
+          defaultValue: ''
+        }
+      }
+    })
+
+    const { settingCategories } = useSettingUI()
+
+    const comfyGroups = findCategory(
+      settingCategories.value,
+      'Comfy'
+    )?.children?.map((group) => group.label)
+    expect(comfyGroups).toEqual(['Locale'])
+  })
 
   it('gives defaultPanel precedence over scrollToSettingId', () => {
     const { defaultCategory } = useSettingUI('about', 'Comfy.Locale')
