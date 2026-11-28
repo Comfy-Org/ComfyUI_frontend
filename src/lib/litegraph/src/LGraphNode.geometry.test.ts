@@ -13,6 +13,27 @@ describe('layout geometry projection', () => {
     layoutStore.resetForTests()
   })
 
+  test('configure commits the saved position and size once each', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    node.pos = [10, 10]
+    node.size = [140, 80]
+    const moves: unknown[] = []
+    const resizes: unknown[] = []
+    const stop = layoutStore.onChange(({ operation }) => {
+      if (operation.type === 'moveNode') moves.push(operation.position)
+      if (operation.type === 'resizeNode') resizes.push(operation.size)
+    })
+
+    node.configure({ ...node.serialize(), pos: [300, 400], size: [220, 160] })
+    await Promise.resolve()
+    stop()
+
+    expect(moves).toEqual([{ x: 300, y: 400 }])
+    expect(resizes).toEqual([{ width: 220, height: 160 }])
+  })
+
   test('applies a resize and position change through one attached update', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')

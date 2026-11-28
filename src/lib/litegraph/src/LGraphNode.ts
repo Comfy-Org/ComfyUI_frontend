@@ -270,6 +270,12 @@ function configureCanonicalField(
     target[key] = incoming
     return
   }
+  // pos and size read as views that commit to the layout store on every
+  // element write; assigning the whole value commits it once.
+  if (key === 'pos' || key === 'size') {
+    target[key] = LiteGraph.cloneObject(incoming)
+    return
+  }
   const current = target[key]
   if (
     current &&
