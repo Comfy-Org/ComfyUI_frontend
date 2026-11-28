@@ -545,6 +545,7 @@ beforeEach(() => {
   for (const nodeType of [
     TestOverflowWidgets,
     TestGrowingWidgets,
+    TestPromptOnlyGrowingWidgets,
     TestTwoGrowing,
     TestNestedGrowing,
     TestPrototypeNamedWidget

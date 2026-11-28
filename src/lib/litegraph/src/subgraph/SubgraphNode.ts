@@ -579,7 +579,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         (widget) => widget.name === input.widget?.name
       )
       return owned &&
-        (owned.serialize !== false || owned.options.serialize === true)
+        (owned.serialize !== false || owned.options.serialize !== false)
         ? [{ input, value: owned.value }]
         : []
     })

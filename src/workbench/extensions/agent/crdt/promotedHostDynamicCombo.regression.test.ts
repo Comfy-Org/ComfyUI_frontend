@@ -280,7 +280,7 @@ describe('promoted writes on a host that owns a dynamic combo', () => {
     const { host } = buildHost('two speakers', 2)
     const mode = widget(host, 'mode')
     mode.serialize = false
-    mode.options.serialize = true
+    delete mode.options.serialize
 
     const promoted = promotedHostInputs(host)
 
