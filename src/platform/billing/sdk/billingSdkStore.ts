@@ -434,13 +434,12 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     signal: AbortSignal
   ): Promise<TopupQuoteFacts | null> {
     const quoted = await sdk.topup.quoteTopup({ amountCents, signal })
-    return quoted.status === 'ok'
-      ? {
-          credits: quoted.value.credits,
-          paymentConfigured:
-            quoted.value.paymentMethodConfigurationId !== undefined
-        }
-      : null
+    if (quoted.status !== 'ok') return null
+    const { credits, paymentMethodConfigurationId, balanceAfter } = quoted.value
+    const paymentConfigured = paymentMethodConfigurationId !== undefined
+    return balanceAfter === undefined
+      ? { credits, paymentConfigured }
+      : { credits, paymentConfigured, balanceAfter }
   }
 
   async function openTopupPurchase(

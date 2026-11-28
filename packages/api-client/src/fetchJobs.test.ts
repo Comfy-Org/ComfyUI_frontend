@@ -9,10 +9,8 @@ import {
   fetchJobDetail,
   fetchQueue
 } from './fetchJobs'
-import type { RawJobListItem, zJobsListResponse } from './jobTypes'
-import type { z } from 'zod'
+import type { RawJobListItem, JobsListResponse } from './jobTypes'
 
-type JobsListResponse = z.infer<typeof zJobsListResponse>
 type JobsFetchApi = Parameters<typeof fetchHistory>[0]
 
 function createMockJob(
@@ -187,6 +185,103 @@ describe('fetchJobs', () => {
       expect(result[0].id).toBe('image-job')
       expect(result[1].id).toBe('text-job')
       expect(result[2].id).toBe('no-preview-job')
+    })
+
+    const contractNodeErrors = {
+      '4': {
+        class_type: 'CheckpointLoaderSimple',
+        dependent_outputs: ['9'],
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Value not in list',
+            details: 'ckpt_name: missing.safetensors',
+            extra_info: {
+              input_name: 'ckpt_name',
+              received_value: 'missing.safetensors'
+            }
+          }
+        ]
+      }
+    }
+    const rawComfyNodeErrors = {
+      '4': {
+        class_type: 'LoadImage',
+        dependent_outputs: ['9'],
+        errors: [
+          {
+            type: 'value_not_in_list',
+            message: 'Value not in list',
+            details: 'image',
+            extra_info: { input_name: 'image', received_value: ['a.png'] }
+          }
+        ]
+      }
+    }
+
+    it.for([
+      {
+        name: 'keeps node errors in the contract shape',
+        nodeErrors: contractNodeErrors,
+        expected: contractNodeErrors
+      },
+      {
+        name: 'keeps a node whose errors are outside the contract shape, without those errors',
+        nodeErrors: rawComfyNodeErrors,
+        expected: { '4': { ...rawComfyNodeErrors['4'], errors: [] } }
+      },
+      {
+        name: 'keeps a malformed node with its parts outside the contract emptied',
+        nodeErrors: {
+          ...contractNodeErrors,
+          '7': {
+            class_type: 'LoadImage',
+            errors: contractNodeErrors['4'].errors
+          },
+          '8': null
+        },
+        expected: {
+          ...contractNodeErrors,
+          '7': {
+            class_type: 'LoadImage',
+            dependent_outputs: [],
+            errors: contractNodeErrors['4'].errors
+          },
+          '8': { class_type: '', dependent_outputs: [], errors: [] }
+        }
+      },
+      {
+        name: 'drops node errors that are not a node map and keeps the job',
+        nodeErrors: ['not', 'a', 'map'],
+        expected: undefined
+      }
+    ])('$name', async ({ nodeErrors, expected }) => {
+      const failedJob = {
+        ...createMockJob('job1', 'failed'),
+        execution_error: {
+          node_id: '4',
+          node_type: 'CheckpointLoaderSimple',
+          exception_message: 'Prompt outputs failed validation',
+          exception_type: 'ValidationError',
+          traceback: [],
+          node_errors: nodeErrors
+        }
+      }
+      const mockFetch = vi.fn<JobsFetchApi>().mockResolvedValue(
+        Response.json({
+          ...createMockResponse([createMockJob('job2', 'completed')]),
+          jobs: [failedJob, createMockJob('job2', 'completed')]
+        })
+      )
+
+      const result = await fetchHistory(mockFetch)
+
+      expect(result.map((job) => job.id)).toEqual(['job1', 'job2'])
+      expect(result[0].execution_error).toMatchObject({
+        exception_type: 'ValidationError',
+        exception_message: 'Prompt outputs failed validation'
+      })
+      expect(result[0].execution_error?.node_errors).toEqual(expected)
     })
 
     it('returns server pagination metadata for history pages', async () => {

@@ -1562,7 +1562,8 @@ describe('useWorkflowPersistenceV2', () => {
         { owner: 'b' },
         true,
         true,
-        'AccountB.json'
+        'AccountB.json',
+        { opening: 'reopened' }
       )
     })
     expect(workflowStore.activeWorkflow).toBeNull()

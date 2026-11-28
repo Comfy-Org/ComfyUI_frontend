@@ -225,7 +225,10 @@ import {
 } from './utils/sessionTitle'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
-import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
+import {
+  isCreditTransitionNoticeShown,
+  isInitialNoGrant
+} from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
@@ -543,6 +546,21 @@ const showCreditTransitionNotice = computed(
     canAccessSubscriptionFeatures.value &&
     agentScopedHasFunds.value === false &&
     agentHasFunds.value === true
+)
+
+const showAgentCostNotice = computed(
+  () =>
+    isInitialNoGrant(
+      agentPanelStore.creditTransitionNotice,
+      billingIdentity.value
+    ) &&
+    consentAccepted.value &&
+    capabilityReadSettled.value &&
+    subscription.value?.agentScopedHasFundsAuthoritative === true &&
+    agentScopedHasFunds.value === false &&
+    agentHasFunds.value !== undefined &&
+    !unresolvedPaywallPending.value &&
+    !showStandingPaywall.value
 )
 
 function onDismissCreditTransitionNotice(): void {
@@ -3604,7 +3622,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
   <AgentGraphActivityBar :canvas="canvasStore.canvas" />
   <div
     id="agent-panel-root"
-    class="relative size-full"
+    class="agent-scope relative size-full"
     @dragenter="onPanelDragEnter"
     @dragleave="onPanelDragLeave"
     @dragover="onPanelDragOver"
@@ -3673,6 +3691,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       "
       :retry-blocked="savingReferenceForCurrentDraft"
       :free-use-placement="freeUsePlacement"
+      :show-agent-cost-notice="showAgentCostNotice"
       @free-use-notice="onFreeUseNotice"
       @send="handleComposerSend"
       @stop="onStop"

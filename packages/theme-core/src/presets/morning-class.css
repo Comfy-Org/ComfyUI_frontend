@@ -176,6 +176,7 @@
       margin: -2px 24px 0;
       padding-bottom: 0;
 
+      &:is(button),
       > button {
         height: auto;
         padding-block: 4px 5px;

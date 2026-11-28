@@ -28,6 +28,25 @@ const unconfirmedCanvasWrite = computed(() =>
           toolCanMutateCanvas(part.name)))
   )
 )
+
+const durationSeconds = computed(() => {
+  const durationMs = parts.reduce(
+    (total, part) => total + (part.durationMs ?? 0),
+    0
+  )
+  return durationMs > 0 ? Math.ceil(durationMs / 1000) : undefined
+})
+
+const workedLabel = computed(() => {
+  if (unconfirmedCanvasWrite.value) return t('agent.workedNotConfirmedOnCanvas')
+  if (durationSeconds.value === undefined) return t('agent.worked')
+
+  const minutes = Math.floor(durationSeconds.value / 60)
+  const seconds = durationSeconds.value % 60
+  return minutes > 0
+    ? t('agent.workedForMinutes', { minutes, seconds })
+    : t('agent.workedForSeconds', { seconds })
+})
 </script>
 
 <template>
@@ -44,11 +63,7 @@ const unconfirmedCanvasWrite = computed(() =>
           class="icon-[lucide--triangle-alert]"
           data-testid="agent-canvas-unconfirmed"
         />
-        <span class="text-left">{{
-          unconfirmedCanvasWrite
-            ? t('agent.workedNotConfirmedOnCanvas')
-            : t('agent.worked')
-        }}</span>
+        <span class="text-left">{{ workedLabel }}</span>
         <i
           aria-hidden="true"
           class="icon-[lucide--chevron-down] transition-transform group-data-[state=open]:rotate-180"

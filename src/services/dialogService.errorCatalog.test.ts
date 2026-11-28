@@ -240,6 +240,35 @@ describe('legacy error dialog catalog', () => {
     expect(dialog).not.toHaveTextContent('return_type_mismatch details')
   })
 
+  it('explains node input failures a cloud validation error sends as structured node_errors', () => {
+    useDialogService().showExecutionErrorDialog({
+      exception_type: 'ValidationError',
+      node_type: 'SAM3_Detect',
+      node_id: '9',
+      exception_message:
+        'Prompt outputs failed validation. node 9 (SAM3_Detect): mask — required_input_missing: Required input is missing (mask).',
+      node_errors: {
+        '9': {
+          class_type: 'SAM3_Detect',
+          dependent_outputs: ['12'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing',
+              details: 'mask',
+              extra_info: { input_name: 'mask' }
+            }
+          ]
+        }
+      }
+    })
+    renderOpenedDialog()
+
+    expect(screen.getByTestId('error-dialog')).toHaveTextContent(
+      'SAM3_Detect (#9) is missing a required input: mask'
+    )
+  })
+
   it('preserves original errors in reports and issue searches', async () => {
     const user = userEvent.setup()
     const error = new PromptExecutionError(sam3ValidationResponse())

@@ -451,7 +451,7 @@ describe('ErrorGroupList selection emphasis', () => {
 
       expect(
         within(hero).queryByText(
-          "Add these to production's build on Platform, then deploy a new release."
+          "Add these to production's build on Platform, then deploy a new version."
         ) !== null
       ).toBe(sendsToBuild)
       expect(
@@ -509,7 +509,7 @@ describe('ErrorGroupList selection emphasis', () => {
 
     expect(
       within(hero).getByText(
-        "Add these to R&D's studio's build on Platform, then deploy a new release."
+        "Add these to R&D's studio's build on Platform, then deploy a new version."
       )
     ).toBeInTheDocument()
   })

@@ -18,7 +18,7 @@ import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPi
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useDialogService } from '@/services/dialogService'
+import { showUnsavedWorkDialog } from '@/platform/workspace/showUnsavedWorkDialog'
 import { useAuthStore } from '@/stores/authStore'
 
 import { useReleaseNoticeStore } from '@/platform/workspace/stores/releaseNoticeStore'
@@ -52,7 +52,7 @@ vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/showUnsavedWorkDialog'))
 vi.mock(import('@/platform/workspace/platformWorkflowHandoff'), () => ({
   captureOpenWorkflow: vi.fn(() => ({
     filename: 'portrait.json',
@@ -250,6 +250,30 @@ describe('usePlatformFrameStore', () => {
     receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
 
     expect(store.contentHeight).toBeNull()
+  })
+
+  it('forgets the step Platform moved to when the frame loads a new page', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'preinstall', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+    receive({ type: 'step-shown', step: 'models' }, frame)
+    expect(store.session?.shownStep).toBe('models')
+
+    receive({ type: 'ready', signedIn: true, userId: 'uid-ben' }, frame)
+
+    expect(store.session?.shownStep).toBeUndefined()
+  })
+
+  it('takes a shown step only on the pre-install screen', () => {
+    const store = usePlatformFrameStore()
+    const { frame } = framedWindow()
+    store.open({ step: 'models', deploymentId: 'dep-1' }, 'errors_panel')
+    store.attach(frame)
+
+    receive({ type: 'step-shown', step: 'models' }, frame)
+
+    expect(store.session?.shownStep).toBeUndefined()
   })
 
   it('keeps the frame without the fallback once the page says it is ready', async () => {
@@ -702,7 +726,7 @@ describe('following a build after the dialog closes', () => {
     useToast().toasts[0].actions[0].onClick()
 
     await vi.waitFor(() =>
-      expect(useDialogService().confirm).toHaveBeenCalledWith(
+      expect(showUnsavedWorkDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           title: 'Save your workflows before reloading?',
           denyLabel: 'Reload without saving',

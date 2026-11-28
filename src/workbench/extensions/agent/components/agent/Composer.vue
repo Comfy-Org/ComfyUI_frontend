@@ -418,21 +418,26 @@ const skillsRetryVisible = computed(
   () => mentionSection.value === 'skills' && skills.loadFailed
 )
 const skillsMenuStatus = useSkillCatalogStatus()
+const skillsMenuStatusMessage = computed(() =>
+  skillsMenuStatus.value === 'failed' ? skills.loadFailureReason : undefined
+)
 const emptyMentionLabel = computed(() =>
   mentionSection.value === 'skills'
-    ? t(
-        skills.loading
-          ? 'agent.skillsLoading'
-          : skills.loadFailed
-            ? 'agent.skillsLoadError'
-            : 'agent.noSkillsFound'
-      )
+    ? skillsEmptyLabel()
     : t(
         mentionSection.value === 'workflows'
           ? 'agent.noWorkflowsToReference'
           : 'agent.noNodesToReference'
       )
 )
+
+function skillsEmptyLabel(): string {
+  if (skills.loading) return t('agent.skillsLoading')
+  if (skills.loadFailed)
+    return skills.loadFailureReason ?? t('agent.skillsLoadError')
+  if (skills.catalogUnavailable) return t('agent.skillsUnavailable')
+  return t('agent.noSkillsFound')
+}
 
 function openReferenceMenu(): void {
   const editor = editorRef.value
@@ -800,6 +805,7 @@ defineExpose({
               :skills-enabled="skills.enabled"
               :skills="skills.packs"
               :skills-status="skillsMenuStatus"
+              :skills-status-message="skillsMenuStatusMessage"
               @select-nodes="onSelectNodes"
               @attach="emit('attach')"
               @open-assets="emit('openAssets')"

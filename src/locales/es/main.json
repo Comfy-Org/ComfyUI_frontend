@@ -62,6 +62,7 @@
       "body": "Abre Facturación para comprobar que la recarga automática esté activada.",
       "title": "Créditos añadidos"
     },
+    "balanceAfter": "Después de esta recarga: {credits} créditos.",
     "blocked": {
       "action": "Abrir el proceso de pago",
       "body": "Tu navegador bloqueó la nueva pestaña. Abre el proceso de pago para terminar de pagar.",
@@ -84,7 +85,7 @@
       "title": "Tu pago de {amount} necesita verificación",
       "titleNoAmount": "Tu pago necesita verificación"
     },
-    "negativeBalance": "Tu saldo es de −{credits} créditos. Esta recarga cubre eso primero.",
+    "negativeBalance": "Tu saldo es de −{credits} créditos.",
     "notAllowed": {
       "body": "Consulta la configuración de Facturación para ver por qué.",
       "title": "No puedes añadir créditos en este momento"
@@ -127,6 +128,7 @@
       "bodyNoWait": "Inténtalo de nuevo más tarde o {support}.",
       "title": "Has alcanzado el límite de recargas por ahora"
     },
+    "stillNegativeAfter": "Sigue siendo negativo después de esta recarga: −{credits} créditos.",
     "title": "Añadir créditos",
     "wait": {
       "day": "un día",
@@ -142,6 +144,8 @@
     "addNodesFromGraph": "Menciona nodos del grafo",
     "addSkill": "Añadir habilidad",
     "addToPrompt": "Añadir al prompt",
+    "agentCostNotice": "Comfy Agent utiliza los créditos de tu espacio de trabajo. Los costes varían según el modelo y la solicitud.",
+    "agentCostNoticeLabel": "Aviso sobre el coste del agente",
     "askUnavailable": "El agente está esperando un paso que este panel no puede mostrar.",
     "askUser": {
       "answerRejected": "El agente no pudo aceptar esa respuesta. Cambia tus opciones o detén el turno.",
@@ -285,10 +289,10 @@
       "restartHint": "Esto surtirá efecto después de que ComfyUI se reinicie. Recarga esta página después del reinicio."
     },
     "feedbackCaption": "Comparte tus comentarios",
+    "firstChatFreeNotice": "¡Prueba tu primer chat gratis!",
     "focusNode": "Mostrar en el lienzo",
     "focusNodeLabel": "Mostrar {node} en el lienzo",
     "followedChatOpenFailed": "No se pudo abrir el chat de {workflowName}.",
-    "freeUseNotice": "¡Prueba tu primer chat gratis!",
     "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "amigo",
     "gotIt": "Entendido",
@@ -409,7 +413,6 @@
       "answerUncertain": "No se pudo confirmar que tu respuesta llegara al agente. Es posible que se haya aplicado de todos modos; recarga la página para ver cuál es el estado.",
       "cancel": "Cancelar",
       "estimateAtLeast": "Coste estimado: al menos {credits} créditos",
-      "estimateUnavailable": "Coste estimado: no disponible para este flujo de trabajo",
       "lead": "Comfy Agent quiere ejecutar el flujo de trabajo:",
       "leadBound": "Comfy Agent quiere ejecutar este flujo de trabajo.",
       "question": "¿Lo apruebas?",
@@ -507,7 +510,6 @@
     },
     "switchWorkflowForNodes": "Cambia a {workflowName} para añadir nodos.",
     "takeTour": "Hacer el recorrido",
-    "targetForThisChat": "Destino del agente para este chat",
     "targetNavigationUnavailable": "Este destino del flujo de trabajo ya no está disponible.",
     "targetWorkflowOpenFailed": "No se pudo abrir el workflow de destino.",
     "targetWorkflowUnavailable": "El workflow de destino ya no está disponible.",
@@ -784,7 +786,8 @@
     "uploadModelHelpVideo": "Video de ayuda para importar modelos",
     "uploadModelHowDoIFindThis": "¿Cómo encuentro esto?",
     "uploadSuccess": "¡Modelo importado con éxito!",
-    "uploadingModel": "Importando modelo..."
+    "uploadingModel": "Importando modelo...",
+    "useDisabledNoProvider": "Este tipo de modelo aún no es compatible"
   },
   "auth": {
     "accountChanged": {
@@ -1543,6 +1546,7 @@
         "setUp": "Configurar"
       },
       "awaitingBankApprovalBody": "Tu banco debe aprobar este pago antes de que se añadan tus créditos. Puedes completarlo desde la aplicación de tu banco o el enlace de pago de esta compra. No se puede iniciar una nueva recarga hasta que esta se complete o caduque.",
+      "balanceAfterTopup": "Después de esta recarga: {credits} crédito. | Después de esta recarga: {credits} créditos.",
       "buy": "Comprar",
       "buyCredits": "Continuar al pago",
       "buyNow": "Comprar ahora",
@@ -1573,7 +1577,7 @@
       "minRequired": "Mínimo {credits} créditos",
       "minimumPurchase": "Mínimo ${amount} ({credits} créditos)",
       "needMore": "¿Necesitas más?",
-      "negativeBalanceNotice": "Tu saldo es de −{credits} crédito. Esta recarga lo cubre primero. | Tu saldo es de −{credits} créditos. Esta recarga lo cubre primero.",
+      "negativeBalanceNotice": "Tu saldo es de −{credits} crédito. | Tu saldo es de −{credits} créditos.",
       "noPaymentMethodCheckoutHint": "Este espacio de trabajo no tiene una tarjeta guardada para recargas con un clic. Paga en una página de pago o establece una tarjeta predeterminada para que se carguen directamente las futuras recargas.",
       "openCheckout": "Abrir página de pago",
       "openPaymentPage": "Abrir página de pago",
@@ -1596,6 +1600,7 @@
       "setDefaultCard": "Establecer una tarjeta predeterminada",
       "setDefaultCardError": "No se pudo abrir la configuración de la tarjeta",
       "startOver": "Empezar de nuevo",
+      "stillNegativeAfterTopup": "Sigue siendo negativo después de esta recarga: −{credits} crédito. | Sigue siendo negativo después de esta recarga: −{credits} créditos.",
       "templateNote": "*Generado con la plantilla Wan Fun Control",
       "topUp": "Recargar",
       "unknownError": "Ocurrió un error desconocido",
@@ -1793,7 +1798,7 @@
     "linkWorkspaceRefused": "No se pudo cambiar a ese espacio de trabajo. Aún estás en {workspaceName}.",
     "lookupUnavailable": "No se pudo comprobar en qué implementación se ejecuta este editor.",
     "lookupUnavailableDetail": "Los modelos mostrados son los de Comfy Cloud. Recarga para intentarlo de nuevo.",
-    "manageDeployments": "Gestionar despliegues",
+    "manageBuilds": "Administrar builds",
     "manageDeploymentsTooltip": "Gestiona tus compilaciones y sus despliegues en la Plataforma para desarrolladores.",
     "membersStartOn": "Los miembros sin una selección propia comienzan en",
     "missingNodes": "Falta {count} nodo | Faltan {count} nodos",
@@ -1877,20 +1882,18 @@
     "versionChanged": "{deployment} ahora ejecuta v{version}. Recarga para usar sus nodos.",
     "versionChangedNoVersion": "{deployment} ahora ejecuta una versión diferente. Recarga para usar sus nodos.",
     "workflowNeedsDeployment": {
-      "andMore": "{names} y {count} más",
-      "buildOnPlatform": "Crear un Build en Platform",
+      "createBody": "Una compilación personalizada añade lo que le falta a Comfy Cloud para que este flujo de trabajo simplemente se ejecute.",
       "createCustomBuild": "Crear una Custom Build",
-      "installBody": "Crea una Custom Build para añadir los nodos personalizados y modelos que Comfy Cloud no tiene. La configuras en Platform y aparece en «Ejecutar en» para tu espacio de trabajo.",
-      "installTitle": "Instala los nodos personalizados que faltan",
+      "createTitle": "Crea una compilación personalizada para ejecutar este flujo de trabajo",
       "missingModels": "{count} modelo faltante | {count} modelos faltantes",
       "missingNodes": "{count} nodo faltante | {count} nodos faltantes",
       "missingPacks": "{count} paquete de nodos faltante | {count} paquetes de nodos faltantes",
-      "noneRunIt": "Ningún despliegue de este espacio de trabajo tiene todos estos nodos.",
+      "more": "+{count} más",
+      "pointBilling": "Paga solo mientras la GPU esté en ejecución, más el almacenamiento",
+      "showLess": "Mostrar menos",
       "switch": "Cambiar",
       "switchBody": "A Comfy Cloud le faltan estos elementos. Cambia a un despliegue que los tenga y sigue trabajando desde allí.",
-      "title": "Ejecutar este flujo de trabajo en una compilación personalizada",
-      "titleNoneRunIt": "Crea un despliegue para ejecutar este flujo de trabajo en Comfy Cloud",
-      "titleNoneRunItCustomBuild": "Crea una Custom Build para ejecutar este flujo de trabajo en Comfy Cloud"
+      "title": "Ejecutar este flujo de trabajo en una compilación personalizada"
     },
     "workspaceDefault": "Valor predeterminado del espacio de trabajo"
   },
@@ -2399,11 +2402,15 @@
   },
   "errorOverlay": {
     "askAgent": "Preguntar al agente",
+    "createCustomBuild": "Crear compilación personalizada",
     "missingMedia": "A algunos nodos les faltan entradas requeridas",
     "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
     "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
+    "missingNodesOnCloud": "Los nodos personalizados requeridos no son compatibles con Cloud.",
     "multipleIssueCount": "Se encontró {count} problema | Se encontraron {count} problemas",
     "multipleIssuesMessage": "Resuelve estos problemas antes de ejecutar el flujo de trabajo.",
+    "switchBuild": "Cambiar de compilación",
+    "switchBuildTo": "Cambiar a {build}",
     "viewDetails": "Ver detalles"
   },
   "errorPanelSurvey": {
@@ -2475,10 +2482,12 @@
     "agentCreated": "Creado por el agente",
     "agentExtensionAdded": "Tu agente añadió {name}",
     "agentExtensionDisableFailed": "No se pudo desactivar la extensión. Inténtalo de nuevo.",
+    "agentFinishedUnseen": "El agente respondió",
     "agentInputNeededShort": "Se necesita información",
     "agentModified": "El agente actualizó este flujo de trabajo",
     "agentNeedsApproval": "El agente está esperando tu respuesta",
     "agentWorking": "El agente está trabajando en este flujo de trabajo",
+    "agentWorkingAndWorkflowRunning": "El agente está trabajando y el flujo de trabajo se está ejecutando",
     "align": "Alinear",
     "alignBottom": "Alinear los bordes inferiores",
     "alignHorizontalCenters": "Alinear los centros horizontales",
@@ -2759,6 +2768,7 @@
     "openLayerEditor": "Abrir editor de capas",
     "openManager": "Abrir administrador",
     "openNewIssue": "Abrir nuevo problema",
+    "openWorkflows": "Abrir flujos de trabajo",
     "or": "o",
     "output": "Salida",
     "overwrite": "Sobrescribir",
@@ -4557,8 +4567,12 @@
     "prepareFailed": "No se pudo preparar este flujo de trabajo para Comfy Cloud",
     "prepareFailedDetail": "Revisa si hay errores en el flujo de trabajo, guárdalo e inténtalo de nuevo.",
     "runDialog": {
+      "askAgainNotSaved": "Comfy Cloud preguntará antes de cada comprobación hasta que recargues, pero podría dejar de preguntar después de eso.",
       "body": "Abre este flujo de trabajo en Comfy Cloud o despliega tu configuración local como una compilación si necesita nodos personalizados.",
       "checkCompatibility": "Comprobar compatibilidad",
+      "consentNotSaved": "No se pudo guardar tu elección de comprobación de Comfy Cloud",
+      "dontAskAgain": "No volver a preguntar",
+      "dontAskAgainNotSaved": "Comfy Cloud podría volver a preguntar la próxima vez que abras ComfyUI.",
       "openOnCloud": "Abrir en Comfy Cloud",
       "pointApi": "Úsalo en ComfyUI o llámalo como una API",
       "ready": "Comfy Cloud tiene todos los nodos y modelos que utiliza este flujo de trabajo. Se abre en una pestaña nueva, listo para ejecutarse.",
@@ -4624,7 +4638,7 @@
   },
   "platformFrame": {
     "buildFailed": "La compilación falló. {deployment} no se desplegó.",
-    "buildStep": "paso {step} de {of}",
+    "buildStep": "Paso {step} de {of}",
     "buildTakesMinutes": "Esto tarda unos minutos. Puedes seguir trabajando.",
     "building": "Compilando {deployment}",
     "deployFailed": "El despliegue falló. {deployment} se compiló, pero no se desplegó.",
@@ -4747,14 +4761,16 @@
   },
   "rightSidePanel": {
     "addFavorite": "Favorito",
+    "addMissingItems": "Añadir elementos faltantes a la Build",
     "addMissingModelsToBuild": "Añadir los modelos que faltan a la compilación",
-    "addToDeploymentBuild": "Añade estos a la compilación de {deployment} en la Plataforma y, después, despliega una nueva versión.",
+    "addToDeploymentBuild": "Añade estos elementos a la build de {deployment} en Platform y, luego, implementa una nueva versión.",
     "advancedInputs": "ENTRADAS AVANZADAS",
     "askAgent": "Preguntar al agente",
     "askAgentAbout": "Preguntar al agente sobre {title}",
     "askAgentAboutAll": "Preguntar al agente sobre {count} problema | Preguntar al agente sobre los {count} problemas",
     "blockedLastRun": "Bloqueado en la última ejecución",
     "bypass": "Omitir",
+    "cloudLacksCustomNodes": "Comfy Cloud no tiene estos nodos personalizados",
     "collapse": "Colapsar",
     "color": "Color del nodo",
     "editBuildOnPlatform": "Editar compilación en la Plataforma",
@@ -4896,6 +4912,7 @@
     "seeError": "Ver error",
     "selectedNodeErrors": "{node} — {count} problema | {node} — {count} problemas",
     "selectedNodesErrors": "{nodes} nodos seleccionados — {count} problema | {nodes} nodos seleccionados — {count} problemas",
+    "setUpCustomDeployment": "Configurar una Build personalizada",
     "settings": "Configuración",
     "setupFilter": "Se requiere configurar {count}",
     "setupNodeSummary": "{nodes} nodo — {count} elemento | {nodes} nodo — {count} elementos",
@@ -5144,6 +5161,7 @@
     "Canvas Navigation": "Navegación del lienzo",
     "ColorPalette": "Paleta de Colores",
     "Comfy": "Comfy",
+    "Comfy Cloud": "Comfy Cloud",
     "Comfy-Desktop": "Comfy-Desktop",
     "ContextMenu": "Menú Contextual",
     "Credits": "Créditos",
@@ -5446,6 +5464,15 @@
       "dirtyCloseHint": "Mantén presionada la tecla Shift para cerrar sin preguntar",
       "dirtyCloseTitle": "¿Guardar cambios?",
       "renamedButBookmarksNotUpdated": "El flujo de trabajo se renombró, pero no se pudieron actualizar tus marcadores",
+      "status": {
+        "agentReplied": "El agente respondió",
+        "agentWorking": "Agente trabajando",
+        "runFailed": "La ejecución falló",
+        "runFinished": "Ejecución finalizada",
+        "unsavedChanges": "Cambios sin guardar",
+        "waitingForAnswer": "El agente está esperando tu respuesta",
+        "workflowRunning": "Flujo de trabajo en ejecución"
+      },
       "workflowTreeType": {
         "bookmarks": "Marcadores",
         "browse": "Explorar",
@@ -5454,6 +5481,7 @@
     },
     "workflows": "Flujos de trabajo",
     "workspaceLibrary": {
+      "blockedByModelRules": "Bloqueado por las reglas de modelo de esta Build",
       "empty": "No hay modelos en la biblioteca de tu espacio de trabajo.",
       "explainer": "Modelos de tu espacio de trabajo. Los que no están en esta compilación se descargan cuando un trabajo los necesita.",
       "fromWorkspace": "Desde tu espacio de trabajo",
@@ -6643,7 +6671,7 @@
         "available": "Disponibles",
         "availableUntil": "Disponible hasta el {date}",
         "inUse": "En uso ahora",
-        "overdrawn": "Tus ejecuciones usaron {count} crédito más del que tenías. | Tus ejecuciones usaron {count} créditos más de los que tenías.",
+        "overdrawn": "Usaste {count} crédito más del que tenías. Agrega créditos para seguir ejecutando. | Usaste {count} créditos más de los que tenías. Agrega créditos para seguir ejecutando.",
         "plan": "Plan",
         "planOfPool": "{remaining} de {total}",
         "planTooltip": "Los créditos del plan se usan antes que los créditos de recarga.",

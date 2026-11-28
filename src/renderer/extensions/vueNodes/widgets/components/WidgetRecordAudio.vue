@@ -1,15 +1,13 @@
 <template>
   <div class="relative" @pointerdown.stop>
-    <div class="mb-4">
-      <Button
-        class="w-full border-0"
-        :disabled="isRecording || readonly"
-        @click="handleStartRecording"
-      >
-        {{ t('g.startRecording', 'Start Recording') }}
-        <i-lucide:mic class="ml-1" />
-      </Button>
-    </div>
+    <Button
+      class="mb-4 flex w-full border-0"
+      :disabled="isRecording || readonly"
+      @click="handleStartRecording"
+    >
+      {{ t('g.startRecording', 'Start Recording') }}
+      <i-lucide:mic class="ml-1" />
+    </Button>
     <div
       v-if="isRecording || isPlaying || recordedURL"
       class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-node px-3 text-muted-foreground"
