@@ -544,6 +544,9 @@ function finishWithPersistedParts(
   const persistedHasThinking = persistedParts.some(
     (part) => part.type === 'thinking'
   )
+  const persistedAskIds = new Set<string | undefined>(
+    persistedParts.map(askIdOf).filter((askId) => askId !== undefined)
+  )
   message.parts = interleaveLocalParts(
     preserveLiveToolStartTimes(
       preserveCanvasVerdicts(
@@ -554,7 +557,11 @@ function finishWithPersistedParts(
       message.parts
     ),
     anchorLocalParts(message.parts)
-      .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
+      .filter(
+        ({ part }) =>
+          (!persistedHasThinking || part.type !== 'thinking') &&
+          !persistedAskIds.has(askIdOf(part))
+      )
       .map((anchor) => ({
         ...anchor,
         toolCount: alignment.toolCountOf(anchor.toolCount)
