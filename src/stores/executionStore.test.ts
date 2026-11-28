@@ -2234,7 +2234,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.activeJobId).toBe('job-1')
       expect(store.queuedJobs['job-1']).toEqual({
         nodes: {},
-        executionStartedAt: expect.any(Number)
+        executionStartedAt: expect.any(Number),
+        executionStartedAtEpochMs: expect.any(Number)
       })
     })
 

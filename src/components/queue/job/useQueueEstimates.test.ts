@@ -17,8 +17,12 @@ const makeHistoryTask = (
     executionTimeInSeconds
   }) as TaskItemImpl
 
-const makeRunningTask = (executionStartTimestamp?: number): TaskItemImpl =>
+const makeRunningTask = (
+  executionStartTimestamp?: number,
+  jobId = 'job-1'
+): TaskItemImpl =>
   ({
+    jobId,
     executionStartTimestamp
   }) as TaskItemImpl
 
@@ -226,5 +230,36 @@ describe('useQueueEstimates', () => {
     harness.firstSeenRef.value = undefined
 
     expect(harness.timeElapsedValue.value).toBe('')
+  })
+
+  it('times a running job from when it started, not when it was queued', () => {
+    const harness = createHarness({
+      executionStore: createExecutionStore({
+        queuedJobs: { 'job-1': { nodes: {}, executionStartedAtEpochMs: 30000 } }
+      }),
+      task: makeRunningTask(undefined, 'job-1'),
+      jobState: 'running',
+      firstSeenTs: 1000,
+      now: 35000
+    })
+
+    expect(harness.timeElapsedValue.value).toBe('0m 5s')
+  })
+
+  it('estimates the remaining time of a running job from when it started', () => {
+    const queueStore = createQueueStore({
+      historyTasks: [makeHistoryTask(20)],
+      runningTasks: [makeRunningTask(undefined, 'job-1')]
+    })
+    const harness = createHarness({
+      queueStore,
+      executionStore: createExecutionStore({
+        queuedJobs: { 'job-1': { nodes: {}, executionStartedAtEpochMs: 30000 } }
+      }),
+      jobsAhead: 0,
+      now: 35000
+    })
+
+    expect(harness.estimateRangeSeconds.value).toEqual([15, 15])
   })
 })
