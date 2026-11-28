@@ -19,6 +19,7 @@ import { addToComboValues } from '@/utils/litegraphUtil'
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
+  appendToMediaSelection,
   isUntypedOrVideoWithoutExtension,
   isUploadableVideo,
   toMediaSelection
@@ -110,8 +111,10 @@ export const useImageUploadWidget = () => {
         })
 
         const newValue = selectionLimits
-          ? [...toMediaSelection(fileComboWidget.value), ...annotated].slice(
-              -selectionLimits.max
+          ? appendToMediaSelection(
+              fileComboWidget.value,
+              annotated,
+              selectionLimits.max
             )
           : allow_batch
             ? annotated

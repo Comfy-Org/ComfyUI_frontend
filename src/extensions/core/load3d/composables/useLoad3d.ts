@@ -15,6 +15,7 @@ import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import { recordModelChange } from '@/extensions/core/load3d/recordModelChange'
+import { chooseMediaFile } from '@/extensions/core/chooseMediaFile'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import {
   isAssetPreviewSupported,
@@ -43,6 +44,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
+import { previewedMediaFile } from '@/utils/mediaUploadUtil'
 import { useApp } from '@/scripts/appInstance'
 import { keepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
 
@@ -955,7 +957,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | undefined>) => {
         if (options?.values && !options.values.includes(uploadedPath)) {
           options.values.push(uploadedPath)
         }
-        modelWidget.value = uploadedPath
+        chooseMediaFile(node, modelWidget, uploadedPath)
         recordModelChange()
       }
     } catch (error) {
@@ -1074,7 +1076,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | undefined>) => {
       const modelWidget = node?.widgets?.find(
         (w) => w.name === 'model_file' || w.name === 'image'
       )
-      const widgetValue = modelWidget?.value
+      const widgetValue = previewedMediaFile(modelWidget?.value)
       const value =
         typeof widgetValue === 'string' && widgetValue.trim()
           ? widgetValue

@@ -176,6 +176,21 @@ describe('getMediaSelectionLimits', () => {
       name: 'both bounds',
       options: { image_upload: true, min: 0, max: 9 },
       limits: { min: 0, max: 9 }
+    },
+    {
+      name: 'an audio upload',
+      options: { audio_upload: true, min: 0, max: 3 },
+      limits: { min: 0, max: 3 }
+    },
+    {
+      name: 'a 3D model upload',
+      options: { mesh_upload: true, max: 2 },
+      limits: { min: 1, max: 2 }
+    },
+    {
+      name: 'a core file upload',
+      options: { file_upload: true, min: 2 },
+      limits: { min: 2, max: 2 }
     }
   ])('resolves $name', ({ options, limits }) => {
     expect(getMediaSelectionLimits(options)).toEqual(limits)

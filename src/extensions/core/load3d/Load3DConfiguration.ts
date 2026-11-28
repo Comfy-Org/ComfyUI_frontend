@@ -21,6 +21,7 @@ import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { previewedMediaFile } from '@/utils/mediaUploadUtil'
 
 type Load3DConfigurationSettings = {
   loadFolder: string
@@ -142,11 +143,13 @@ class Load3DConfiguration {
       cameraState,
       silentOnNotFound
     )
-    if (modelWidget.value && modelWidget.value !== LOAD3D_NONE_MODEL) {
-      void onModelWidgetUpdate(
-        modelWidget.value,
-        isKeepingLoadedModel(this.load3d)
-      )
+    const modelFile = previewedMediaFile(modelWidget.value)
+    if (
+      typeof modelFile === 'string' &&
+      modelFile &&
+      modelFile !== LOAD3D_NONE_MODEL
+    ) {
+      void onModelWidgetUpdate(modelFile, isKeepingLoadedModel(this.load3d))
     } else if (isKeepingLoadedModel(this.load3d)) {
       this.load3d.clearModel()
     }
@@ -279,13 +282,18 @@ class Load3DConfiguration {
   ) {
     let isFirstLoad = true
     return async (value: IBaseWidget['value'], keepLoadedModel = false) => {
-      if (!value || value === LOAD3D_NONE_MODEL) {
+      const modelFile = previewedMediaFile(value)
+      if (
+        typeof modelFile !== 'string' ||
+        !modelFile ||
+        modelFile === LOAD3D_NONE_MODEL
+      ) {
         this.load3d.clearModel()
         return
       }
 
       const { filepath: filename, rootFolder: folder } = parseAnnotatedPath(
-        value as string,
+        modelFile,
         loadFolder
       )
 

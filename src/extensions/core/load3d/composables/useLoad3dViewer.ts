@@ -3,6 +3,7 @@ import QuickLRU from '@alloc/quick-lru'
 
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { chooseMediaFile } from '@/extensions/core/chooseMediaFile'
 import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
@@ -847,12 +848,12 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       captureAdapterFlags(load3d)
 
       const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
-      if (modelWidget) {
+      if (node && modelWidget) {
         const options = modelWidget.options as { values?: string[] } | undefined
         if (options?.values && !options.values.includes(uploadedPath)) {
           options.values.push(uploadedPath)
         }
-        modelWidget.value = uploadedPath
+        chooseMediaFile(node, modelWidget, uploadedPath)
       }
     } catch (error) {
       console.error('Model drop failed:', error)
