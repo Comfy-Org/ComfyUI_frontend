@@ -73,6 +73,7 @@ import {
 } from '@/platform/workflow/persistence/base/storageIO'
 import type { WorkflowStorageAuthFence } from '@/platform/workflow/persistence/base/storageIO'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 
@@ -146,6 +147,7 @@ async function whenSettled(
 function resetForAccountChange(change: WebSessionAccountChange): void {
   useWorkspaceAuthStore().clearWorkspaceContext()
   useTeamWorkspaceStore().resetForIdentityChange()
+  void useAssetsStore().invalidateAll()
   void api.resetSocket()
   if (change.reason !== 'user_changed') return
   useToast().info(t('auth.accountChanged.title'), {

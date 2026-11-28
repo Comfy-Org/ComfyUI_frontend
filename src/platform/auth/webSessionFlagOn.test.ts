@@ -83,6 +83,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { createDisposablePinia } from '@/testing/pinia'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
@@ -620,6 +621,9 @@ describe('cloud app on the shared web session', () => {
     await useSessionCookie().ensureSessionCookie()
     sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE, 'ws-team')
     firebaseSignOut.mockResolvedValue()
+    const invalidateAssets = vi
+      .spyOn(useAssetsStore(), 'invalidateAll')
+      .mockResolvedValue()
 
     server.session = { userId: 'user-b' }
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
@@ -627,6 +631,7 @@ describe('cloud app on the shared web session', () => {
     expect(firebaseSignOut).toHaveBeenCalledOnce()
     expect(isStorageAvailable()).toBe(false)
     expect(api.resetSocket).toHaveBeenCalledOnce()
+    expect(invalidateAssets).toHaveBeenCalledOnce()
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
     ).toBeNull()
@@ -1043,9 +1048,11 @@ describe('cloud API requests on the shared web session', () => {
       expect(response.status).toBe(status)
       expect(signedInAfterRefusal).toBe(sessionUser)
       expect(
-        ingest.requests.map(({ path, headers }) =>
-          path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
-        )
+        ingest.requests
+          .filter(({ path }) => path !== '/api/assets')
+          .map(({ path, headers }) =>
+            path === '/api/auth/session' ? 'session' : headers['x-csrf-token']
+          )
       ).toEqual(tokens)
     }
   )
