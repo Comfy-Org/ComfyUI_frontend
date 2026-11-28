@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { categorizeBillingApiError } from '@/platform/billing/utils/billingFailureCategory'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import type { PlanCommandOutcome } from '@comfyorg/account-core/billing'
 

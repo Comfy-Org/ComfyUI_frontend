@@ -319,6 +319,14 @@
       "checks": ["src/platform/billing/stores/billingOperationStore.test.ts"]
     },
     {
+      "name": "Billing telemetry helpers name billing actions, categorize failures, and map payment intent sources",
+      "checks": [
+        "src/platform/billing/utils/billingActionNames.test.ts",
+        "src/platform/billing/utils/billingFailureCategory.test.ts",
+        "src/platform/billing/utils/paymentIntentSource.test.ts"
+      ]
+    },
+    {
       "name": "Hosted billing web URL and destination normalization accept only known destinations",
       "checks": ["src/platform/billing/billingWeb.test.ts"]
     },

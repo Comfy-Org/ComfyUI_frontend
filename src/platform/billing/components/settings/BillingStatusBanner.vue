@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import { computed, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLongDate } from '@/platform/billing/composables/useLongDate'

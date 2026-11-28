@@ -484,7 +484,7 @@ import Card from '@comfyorg/design-system/card/Card'
 import {
   BILLING_ACTION_NAME,
   planCtaActionName
-} from '@/platform/telemetry/billingActionNames'
+} from '@/platform/billing/utils/billingActionNames'
 import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'

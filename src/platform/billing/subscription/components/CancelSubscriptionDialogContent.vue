@@ -83,7 +83,7 @@ import {
 } from '@/platform/billing/subscription/utils/subscriptionCancellationTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
+import { categorizeBillingApiError } from '@/platform/billing/utils/billingFailureCategory'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useDialogStore } from '@/stores/dialogStore'

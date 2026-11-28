@@ -263,7 +263,7 @@
 
 <script setup lang="ts">
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -288,7 +288,7 @@ import SubscribeButton from '@/platform/billing/subscription/components/Subscrib
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/billing/utils/paymentIntentSource'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { addCreditsAvailability } from '@/platform/billing/legacy160/platform/billing/addCreditsAvailability'

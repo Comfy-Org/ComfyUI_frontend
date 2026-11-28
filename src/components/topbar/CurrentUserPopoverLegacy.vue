@@ -160,7 +160,7 @@
 <script setup lang="ts">
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import Badge from '@comfyorg/design-system/badge/Badge'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
+import { BILLING_ACTION_NAME } from '@/platform/billing/utils/billingActionNames'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -175,7 +175,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import { paymentIntentSourceForAddCreditsClick } from '@/platform/billing/utils/paymentIntentSource'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'

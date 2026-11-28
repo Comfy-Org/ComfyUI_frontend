@@ -13,7 +13,7 @@ import {
 
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { safeSessionStorage } from '@/base/storage/safeStorage'
-import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
+import { paymentIntentSourceForJourneyEntry } from '@/platform/billing/utils/paymentIntentSource'
 
 /**
  * One lifecycle owner for a checkout journey's frozen entry context and
