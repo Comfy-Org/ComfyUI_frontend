@@ -1,21 +1,29 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   showNodeOptions,
   toggleNodeOptions
 } from '@/composables/graph/useMoreOptionsMenu'
-import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import en from '@/locales/en/main.json'
 import fr from '@/locales/fr/main.json'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 
 import NodeContextMenu from './NodeContextMenu.vue'
+
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const i18n = createI18n({ legacy: false, locale: 'en' })
 
@@ -66,6 +74,7 @@ describe('NodeContextMenu', () => {
         .getAllByRole('menuitem')
         .map((item) => item.getAttribute('aria-label'))
     ).toEqual([
+      'Copier',
       'Renommer',
       'Copier',
       'Dupliquer',
@@ -75,8 +84,6 @@ describe('NodeContextMenu', () => {
       'Réduire le nœud',
       'Forme',
       'Couleur',
-      'Extensions',
-      'Copier',
       'Supprimer'
     ])
     expect(screen.getByRole('menuitem', { name: 'Supprimer' })).toHaveAttribute(
@@ -84,7 +91,7 @@ describe('NodeContextMenu', () => {
       'true'
     )
     await userEvent.click(
-      screen.getAllByRole('menuitem', { name: 'Copier' })[1]
+      screen.getAllByRole('menuitem', { name: 'Copier' })[0]
     )
     expect(node.title).toBe('Extension executed')
   })
@@ -175,6 +182,124 @@ describe('NodeContextMenu', () => {
     await user.click(screen.getByRole('button', { name: 'More options' }))
 
     expect(await screen.findByRole('menu')).toBeVisible()
+  })
+
+  describe('legacy extension actions', () => {
+    beforeEach(async () => {
+      const graph = new LGraph()
+      const canvas = new LGraphCanvas(createTestCanvasElement(), graph, {
+        skip_events: true,
+        skip_render: true
+      })
+      const node = new LGraphNode('Extension node')
+      node.getExtraMenuOptions = () => [
+        {
+          content: 'Native action',
+          callback(_value, _options, _event, _menu, extra) {
+            if (extra instanceof LGraphNode) extra.title = 'Legacy executed'
+          }
+        }
+      ]
+      graph.add(node)
+      const store = useCanvasStore()
+      store.canvas = canvas
+      store.currentGraph = graph
+      canvas.selectNode(node)
+      await nextTick()
+    })
+
+    it('stays closed after a second click and reopens on the next click', async () => {
+      renderWithControls()
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+      const button = screen.getByRole('button', { name: 'More options' })
+      await user.click(button)
+      expect(
+        await screen.findByRole('menuitem', { name: 'Native action' })
+      ).toBeVisible()
+      await user.click(button)
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('menuitem', { name: 'Native action' })
+        ).not.toBeInTheDocument()
+      )
+      await user.click(button)
+      expect(
+        await screen.findByRole('menuitem', { name: 'Native action' })
+      ).toBeVisible()
+    })
+
+    it('runs an undeclared callback with its node when chosen in the Vue menu', async () => {
+      renderWithControls()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'More options' })
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: 'Native action' })
+      )
+      expect(useCanvasStore().currentGraph?.nodes[0]?.title).toBe(
+        'Legacy executed'
+      )
+    })
+
+    it('keeps selection actions for a node selected with a group', async () => {
+      const store = useCanvasStore()
+      const canvas = store.getCanvas()
+      const group = new LGraphGroup()
+      store.currentGraph?.add(group)
+      canvas.selectedItems.add(group)
+      await nextTick()
+      renderWithControls()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'More options' })
+      )
+      expect(
+        await screen.findByRole('menuitem', { name: 'contextMenu.Copy' })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('menuitem', { name: 'Native action' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('keeps a node-owned menu replacement authoritative', async () => {
+      const node = useCanvasStore().currentGraph?.nodes[0]
+      assert(node)
+      node.getMenuOptions = () => [{ content: 'Node-owned replacement' }]
+      renderWithControls()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'More options' })
+      )
+      expect(
+        await screen.findByRole('menuitem', { name: 'Node-owned replacement' })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('menuitem', { name: 'contextMenu.Copy' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('opens pristine core actions when an extension mutates its menu then throws', async () => {
+      const canvas = useCanvasStore().getCanvas()
+      const previous = canvas.getNodeMenuOptions
+      const error = new Error('Extension menu failed')
+      canvas.getNodeMenuOptions = function (node) {
+        const items = previous.call(this, node)
+        items.length = 0
+        throw error
+      }
+      renderWithControls()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'More options' })
+      )
+      expect(
+        await screen.findByRole('menuitem', { name: 'contextMenu.Copy' })
+      ).toBeVisible()
+      expect(
+        screen.queryByRole('menuitem', { name: 'Native action' })
+      ).not.toBeInTheDocument()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+        surface: 'graph',
+        errorType: 'error_collecting_node_menu'
+      })
+    })
   })
 })
 

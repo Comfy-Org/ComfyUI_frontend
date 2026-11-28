@@ -243,8 +243,10 @@ test.describe(
           ]
         }, node.id)
 
-        const singleNodeMenu = await openContextMenu(comfyPage, nodeTitle)
-        const nodeOnlyAction = singleNodeMenu.getByRole('menuitem', {
+        await node.centerOnNode()
+        const fixture = await comfyPage.vueNodes.getFixtureByTitle(nodeTitle)
+        await comfyPage.contextMenu.openFor(fixture.header)
+        const nodeOnlyAction = comfyPage.page.getByRole('menuitem', {
           name: 'Node-only action',
           exact: true
         })

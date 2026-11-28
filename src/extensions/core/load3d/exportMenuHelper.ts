@@ -2,7 +2,6 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
 
@@ -13,48 +12,37 @@ const EXPORT_FORMATS = [
   { label: 'FBX', value: 'fbx' }
 ] as const
 
-/**
- * Creates export menu items for a 3D node using the new extension API.
- * Returns an array of context menu items including a separator and export submenu.
- */
 export function createExportMenuItems(
   load3d: Load3d
 ): (IContextMenuValue | null)[] {
   return [
-    null, // Separator
+    null,
     {
       content: 'Save',
       has_submenu: true,
-      callback: (_value, _options, event, prev_menu) => {
-        const submenuOptions: IContextMenuValue[] = EXPORT_FORMATS.map(
-          (format) => ({
-            content: format.label,
-            callback: () => {
-              void (async () => {
-                try {
-                  await load3d.exportModel(format.value)
-                  useToast().success(
-                    t('toastMessages.exportSuccess', {
-                      format: format.label
-                    })
-                  )
-                } catch (error) {
-                  console.error('Export failed:', error)
-                  useToast().warning(
-                    t('toastMessages.failedToExportModel', {
-                      format: format.label
-                    })
-                  )
-                }
-              })()
-            }
-          })
-        )
-
-        new LiteGraph.ContextMenu(submenuOptions, {
-          event,
-          parentMenu: prev_menu
-        })
+      submenu: {
+        options: EXPORT_FORMATS.map((format) => ({
+          content: format.label,
+          callback: () => {
+            void (async () => {
+              try {
+                await load3d.exportModel(format.value)
+                useToast().success(
+                  t('toastMessages.exportSuccess', {
+                    format: format.label
+                  })
+                )
+              } catch (error) {
+                console.error('Export failed:', error)
+                useToast().warning(
+                  t('toastMessages.failedToExportModel', {
+                    format: format.label
+                  })
+                )
+              }
+            })()
+          }
+        }))
       }
     }
   ]

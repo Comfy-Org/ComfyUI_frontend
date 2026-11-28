@@ -1,10 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import {
-  buildStructuredMenu,
-  convertContextMenuToOptions
-} from '@/composables/graph/contextMenuConverter'
 import type { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import type {
   IContextMenuValue,
@@ -15,7 +11,6 @@ import type { ContextMenuDivElement } from '@/lib/litegraph/src/types/contextMen
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { ComfyApp, app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
 
 vi.mock(import('@/scripts/app'))
 
@@ -84,32 +79,17 @@ describe('Comfy.MaskEditor getExtraMenuOptions', () => {
     expect(openMaskEditorMock).toHaveBeenCalledWith(node)
   })
 
-  it('keeps preview-only image nodes editable through the Vue menu', async () => {
+  it('keeps preview-only image nodes editable through the legacy menu', async () => {
     const nodeType = await registerNodeType()
     const node = createMockLGraphNode({ previewMediaType: 'image', imgs: [] })
-    const options = buildStructuredMenu(
-      convertContextMenuToOptions(menuOptions(nodeType, node), node),
-      'Extensions'
-    )
+    const options = menuOptions(nodeType, node)
 
-    expect(options.map((option) => option.label)).toEqual([
+    expect(options.map((option) => option?.content)).toEqual([
       'Open in MaskEditor | Image Canvas'
     ])
-    options[0].action?.()
+    const menuElement: ContextMenuDivElement = document.createElement('div')
+    await options[0]?.callback?.call(menuElement)
     expect(openMaskEditorMock).toHaveBeenCalledWith(node)
-  })
-
-  it('marks the item as a preview action', async () => {
-    const nodeType = await registerNodeType()
-    const items = menuOptions(nodeType, imageNode())
-
-    expect(items).toHaveLength(1)
-    expect(
-      filterUnavailableCoreMediaMenuActions(items, new Set(['preview']))
-    ).toEqual([])
-    expect(
-      filterUnavailableCoreMediaMenuActions(items, new Set(['input']))
-    ).toEqual(items)
   })
 
   it('appends after the existing handler and keeps its return value', async () => {

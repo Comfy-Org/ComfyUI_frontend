@@ -70,9 +70,6 @@
       "path": "src/composables/useRefreshableSelection.ts"
     },
     {
-      "path": "src/utils/coreMediaMenuActionUtils.ts"
-    },
-    {
       "path": "src/utils/nodeFilterUtil.ts"
     }
   ],
@@ -101,8 +98,7 @@
         "src/composables/graph/useSelectionMenuOptions.test.ts",
         "src/composables/graph/contextMenuConverter.test.ts",
         "src/composables/graph/useGroupContextMenu.test.ts",
-        "src/composables/useContextMenuTranslation.test.ts",
-        "src/utils/coreMediaMenuActionUtils.test.ts"
+        "src/composables/useContextMenuTranslation.test.ts"
       ]
     },
     {

@@ -15,7 +15,7 @@ export interface MenuOption {
   isShapePicker?: boolean
 }
 
-export interface SubMenuOption {
+interface SubMenuOption {
   label: string
   icon?: string
   action: () => void

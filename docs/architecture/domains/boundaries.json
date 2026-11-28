@@ -1596,8 +1596,6 @@
           "src/composables/useContextMenuTranslation.ts",
           "src/composables/useContextMenuTranslation.test.ts",
           "src/composables/useRefreshableSelection.ts",
-          "src/utils/coreMediaMenuActionUtils.ts",
-          "src/utils/coreMediaMenuActionUtils.test.ts",
           "src/utils/nodeFilterUtil.ts",
           "src/utils/nodeFilterUtil.test.ts",
           "src/components/common/BackgroundImageUpload.vue",

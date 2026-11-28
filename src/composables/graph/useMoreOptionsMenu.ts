@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputsExport } from '@/platform/assets/integration/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -10,16 +11,14 @@ import {
   shouldHideLinkedCoreMediaInputPreview
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
+import { getNodeMenuCallbackId } from '@/lib/litegraph/src/types/nodeMenu'
+import { clipspace, pasteFromClipspace } from '@/scripts/clipspace'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
-import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
-import {
-  buildStructuredMenu,
-  convertContextMenuToOptions
-} from './contextMenuConverter'
+import { buildStructuredMenu } from './contextMenuConverter'
 import { useGroupMenuOptions } from './useGroupMenuOptions'
 import { useImageMenuOptions } from './useImageMenuOptions'
 import { useNodeMenuOptions } from './useNodeMenuOptions'
@@ -142,7 +141,6 @@ export function useMoreOptionsMenu() {
         : null
     const hasSubgraphsSelected = hasSubgraphs.value
 
-    const litegraphOptions: MenuOption[] = []
     const node: LGraphNode | undefined =
       (invocationContext.value === undefined
         ? undefined
@@ -158,31 +156,6 @@ export function useMoreOptionsMenu() {
           nodeOutputStore.getNodeOutputs(node)
         )
       : false
-    const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
-    if (hideLinkedInputActions) unavailableCoreMediaActionKinds.add('input')
-    if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
-    if (
-      selectedNodes.value.length === 1 &&
-      node &&
-      !groupContext &&
-      canvasStore.canvas
-    ) {
-      try {
-        const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
-        litegraphOptions.push(
-          ...convertContextMenuToOptions(
-            filterUnavailableCoreMediaMenuActions(
-              rawItems,
-              unavailableCoreMediaActionKinds
-            ),
-            node
-          )
-        )
-      } catch (error) {
-        console.error('Error getting LiteGraph menu items:', error)
-      }
-    }
-
     const options: MenuOption[] = []
 
     options.push(...getBasicSelectionOptions())
@@ -224,6 +197,40 @@ export function useMoreOptionsMenu() {
       options.push(getGroupColorOptions(groupContext, bump))
     }
 
+    if (node?.hasAdvancedWidgets()) {
+      options.push({
+        id: 'advanced',
+        label: node.showAdvanced
+          ? t('contextMenu.Hide Advanced')
+          : t('contextMenu.Show Advanced'),
+        action: () => {
+          node.graph?.beforeChange()
+          for (const selected of selectedNodes.value) selected.toggleAdvanced()
+          node.graph?.afterChange()
+          bump()
+        }
+      })
+    }
+    if (node instanceof SubgraphNode) {
+      options.push({
+        id: 'editSubgraphWidgets',
+        label: t('contextMenu.Edit Subgraph Widgets'),
+        action: () => usePropertiesPanelStore().openPanel('subgraph')
+      })
+    }
+    if (
+      node &&
+      !hideLinkedInputActions &&
+      !clipspace.returnNode &&
+      clipspace.current !== null
+    ) {
+      options.push({
+        id: 'pasteClipspace',
+        label: t('contextMenu.Paste (Clipspace)'),
+        action: () => pasteFromClipspace(node)
+      })
+    }
+
     if (
       (hasImageNode.value && selectedNodes.value.length > 0) ||
       (isSingleNode.value && hasMultipleOutputs(selectedNodes.value[0]))
@@ -243,9 +250,20 @@ export function useMoreOptionsMenu() {
     const widgetName = invocationContext.value?.widgetName
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (node && widget) {
-      const widgetOptions = convertContextMenuToOptions(
-        getExtraOptionsForWidget(node, widget),
-        node
+      const widgetOptions = getExtraOptionsForWidget(node, widget).map(
+        (item) => {
+          const callback = item.callback
+          return {
+            id: callback
+              ? (getNodeMenuCallbackId(callback) ?? undefined)
+              : undefined,
+            label: item.content,
+            disabled: item.disabled,
+            action: callback
+              ? () => Reflect.apply(callback, undefined, [])
+              : undefined
+          }
+        }
       )
       options.push(...widgetOptions)
     }
@@ -258,10 +276,7 @@ export function useMoreOptionsMenu() {
       )
     )
 
-    return buildStructuredMenu(
-      [...litegraphOptions, ...options],
-      t('contextMenu.Extensions')
-    )
+    return buildStructuredMenu(options, t('contextMenu.Extensions'))
   })
 
   const menuOptionsWithSubmenu = computed(() =>
@@ -270,6 +285,7 @@ export function useMoreOptionsMenu() {
 
   return {
     menuOptions,
+    invocationContext,
     menuOptionsWithSubmenu,
     bump,
     hasSubgraphs,

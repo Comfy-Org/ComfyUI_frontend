@@ -153,8 +153,8 @@ describe('useSelectionMenuOptions - subgraph options', () => {
     })
 
     const labels = options.map((option) => option.label)
-    expect(labels).not.toContain('contextMenu.Convert to Subgraph')
     expect(labels).toEqual([
+      'contextMenu.Convert to Subgraph',
       'contextMenu.Add Subgraph to Library',
       'contextMenu.Unpack Subgraph'
     ])

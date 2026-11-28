@@ -43,6 +43,7 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
+import { getNodeMenuSource } from '@/lib/litegraph/src/canvas/nodeMenuSource'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -90,7 +91,6 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { copyImageToClipboard } from '@/renderer/core/clipboard/mediaClipboard'
-import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -627,18 +627,13 @@ export const useLitegraphService = () => {
       return [
         {
           content: 'Copy Image',
-          callback: markNodeMenuCallback(
-            markCoreMediaMenuCallback(
-              () => copyImageToClipboard(img),
-              'preview'
-            ),
-            null
-          )
+          callback: () => copyImageToClipboard(img)
         }
       ]
     }
 
     node.prototype.getExtraMenuOptions = function (canvas, options) {
+      if (getNodeMenuSource(canvas)) return []
       if (this.imgs) {
         let img
         if (this.imageIndex != null) {
@@ -650,31 +645,23 @@ export const useLitegraphService = () => {
           options.unshift(
             {
               content: 'Open Image',
-              callback: markNodeMenuCallback(
-                markCoreMediaMenuCallback(() => {
-                  const url = getImageFileUrl(img)
-                  void openFileInNewTab(url.toString())
-                }, 'preview'),
-                null
-              )
+              callback: () => {
+                const url = getImageFileUrl(img)
+                void openFileInNewTab(url.toString())
+              }
             },
             ...getCopyImageOption(img),
             {
               content: 'Save Image',
-              callback: markNodeMenuCallback(
-                markCoreMediaMenuCallback(() => {
-                  const url = getImageFileUrl(img)
-                  const filename = new URLSearchParams(url.search).get(
-                    'filename'
-                  )
-                  downloadFile(
-                    url.toString(),
-                    filename ?? undefined,
-                    'canvas_menu'
-                  )
-                }, 'preview'),
-                null
-              )
+              callback: () => {
+                const url = getImageFileUrl(img)
+                const filename = new URLSearchParams(url.search).get('filename')
+                downloadFile(
+                  url.toString(),
+                  filename ?? undefined,
+                  'canvas_menu'
+                )
+              }
             }
           )
         }
@@ -682,29 +669,26 @@ export const useLitegraphService = () => {
 
       options.push({
         content: 'Bypass',
-        callback: markNodeMenuCallback(() => {
+        callback: () => {
           toggleSelectedNodesMode(LGraphEventMode.BYPASS)
           canvas.setDirty(true, true)
-        }, null)
+        }
       })
 
       if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
-          callback: markNodeMenuCallback(() => {
+          callback: () => {
             copyToClipspace(this)
-          }, null)
+          }
         })
 
         if (clipspace.current != null) {
           options.push({
             content: 'Paste (Clipspace)',
-            callback: markNodeMenuCallback(
-              markCoreMediaMenuCallback(() => {
-                pasteFromClipspace(this)
-              }, 'input'),
-              'pasteClipspace'
-            )
+            callback: () => {
+              pasteFromClipspace(this)
+            }
           })
         }
       }
@@ -712,16 +696,16 @@ export const useLitegraphService = () => {
         options.unshift(
           {
             content: 'Edit Subgraph Widgets',
-            callback: markNodeMenuCallback(() => {
+            callback: () => {
               usePropertiesPanelStore().openPanel('subgraph')
-            }, 'editSubgraphWidgets')
+            }
           },
           {
             content: 'Unpack Subgraph',
-            callback: markNodeMenuCallback(() => {
+            callback: () => {
               const { unpackSubgraph } = useSubgraphOperations()
               unpackSubgraph()
-            }, null)
+            }
           }
         )
       }

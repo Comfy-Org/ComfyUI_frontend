@@ -78,6 +78,15 @@ function createImageNode(
 
 describe('useImageMenuOptions', () => {
   describe('getImageMenuOptions', () => {
+    it('keeps preview-only image nodes editable', () => {
+      const node = createImageNode({ previewMediaType: 'image', imgs: [] })
+      const { getImageMenuOptions } = mountComposable()
+
+      expect(getImageMenuOptions(node).map((option) => option.id)).toContain(
+        'maskEditor'
+      )
+    })
+
     it('includes Paste Image option when node supports paste', () => {
       const node = createImageNode()
       const { getImageMenuOptions } = mountComposable()

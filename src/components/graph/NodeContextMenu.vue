@@ -27,46 +27,31 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, shallowRef } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
 import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
-import type {
-  MenuItem,
-  MenuItemAction,
-  MenuItemRadioGroup,
-  MenuItemSeparator,
-  MenuItemSubmenu
-} from '@comfyorg/design-system/lib/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu
 } from '@/composables/graph/useMoreOptionsMenu'
-import type { MenuOption } from '@/composables/graph/menuOption'
+import {
+  projectNodeMenu,
+  toLegacyNodeMenu
+} from '@/composables/graph/nodeMenuBoundary'
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
+import { withNodeMenuSource } from '@/lib/litegraph/src/canvas/nodeMenuSource'
+import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
-const { menuOptions, bump } = useMoreOptionsMenu()
+const { menuOptions, invocationContext, bump } = useMoreOptionsMenu()
 const { getCurrentShape } = useNodeCustomization()
 const canvasStore = useCanvasStore()
-
-interface NodeMenuMetadata {
-  color?: string
-}
-
-type NodeMenuAction = MenuItemAction & NodeMenuMetadata
-
-type NodeMenuSubmenu = Omit<MenuItemSubmenu, 'items'> &
-  NodeMenuMetadata & {
-    items: NodeMenuItem[]
-  }
-
-type NodeMenuItem =
-  | MenuItemSeparator
-  | NodeMenuAction
-  | NodeMenuSubmenu
-  | MenuItemRadioGroup
 
 function getItemColor(item: MenuItem): string | undefined {
   return 'color' in item && typeof item.color === 'string'
@@ -91,57 +76,10 @@ const menuReference = {
   }
 }
 
-function convertToMenuItem(option: MenuOption): NodeMenuItem {
-  if (option.type === 'divider') return { separator: true }
-
-  if (option.isShapePicker && option.submenu) {
-    return {
-      label: option.label,
-      icon: option.icon,
-      radioGroup: {
-        value: getCurrentShape()?.localizedName ?? '',
-        options: option.submenu.map((sub) => ({
-          value: sub.label,
-          label: sub.label,
-          command: sub.action
-        }))
-      }
-    }
-  }
-
-  if (option.hasSubmenu && option.submenu) {
-    return {
-      label: option.label,
-      icon: option.icon,
-      disabled: option.disabled,
-      shortcut: option.shortcut,
-      items: option.submenu.map((sub) => ({
-        label: sub.label,
-        icon: sub.icon,
-        color: sub.color,
-        disabled: sub.disabled,
-        command: sub.action
-      }))
-    }
-  }
-
-  return {
-    label: option.label,
-    icon: option.icon,
-    disabled: option.disabled,
-    shortcut: option.shortcut,
-    command: option.action
-  }
-}
-
-const menuItems = computed<MenuItem[]>(() =>
-  menuOptions.value.map(convertToMenuItem)
-)
+const menuItems = shallowRef<MenuItem[]>([])
 
 function placeAtEvent(event: Event) {
   if (event.type === 'contextmenu') event.preventDefault()
-  bump()
-
   const { x, y } = getMenuAnchorPosition(event)
   const { left, top } = lgCanvas.canvas.getBoundingClientRect()
   const { scale, offset } = lgCanvas.ds
@@ -154,10 +92,54 @@ function placeAtEvent(event: Event) {
 const {
   open: isOpen,
   menuProps,
-  show,
+  show: showMenu,
   hide,
-  toggle
+  toggle: toggleMenu
 } = usePointMenu(placeAtEvent)
+
+function collectNodeMenu(node: LGraphNode | null | undefined) {
+  const source = () =>
+    toLegacyNodeMenu(menuOptions.value, getCurrentShape()?.localizedName ?? '')
+  const fallback = source()
+  if (
+    !node ||
+    canvasStore.selectedItems.length !== 1 ||
+    !isLGraphNode(canvasStore.selectedItems[0])
+  ) {
+    return fallback
+  }
+  try {
+    return withNodeMenuSource(lgCanvas, source, () =>
+      lgCanvas.getNodeMenuOptions(node)
+    )
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_collecting_node_menu'
+    })
+    return fallback
+  }
+}
+
+function prepare() {
+  bump()
+  const selected = canvasStore.selectedItems.filter(isLGraphNode)
+  const node = invocationContext.value
+    ? canvasStore.currentGraph?.getNodeById(invocationContext.value.nodeId)
+    : selected[0]
+  if (node) LGraphCanvas.active_node = node
+  menuItems.value = projectNodeMenu(collectNodeMenu(node), node ?? undefined)
+}
+
+function show(event: Event) {
+  prepare()
+  showMenu(event)
+}
+
+function toggle(event: Event) {
+  if (!isOpen.value) prepare()
+  toggleMenu(event)
+}
 
 onMounted(() => {
   registerNodeOptionsInstance({ toggle, show, hide, isOpen })
