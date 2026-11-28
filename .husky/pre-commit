@@ -4,3 +4,4 @@ set -e
 pnpm exec lint-staged
 pnpm exec tsx scripts/check-unused-i18n-keys.ts
 pnpm exec tsx scripts/check-frozen-dirs.ts
+pnpm exec tsx scripts/check-text-encoding.ts
