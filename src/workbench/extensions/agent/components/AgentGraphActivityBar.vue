@@ -5,8 +5,9 @@ import { useI18n } from 'vue-i18n'
 import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@comfyorg/design-system/button/Button'
 import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
-import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
+import { measuredVisibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { nodeBox } from '@/lib/litegraph/src/utils/arrange'
 import { useApp } from '@/scripts/appInstance'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -61,6 +62,12 @@ const liveNodes = computed(() => {
     return locator && node?.graph === graph ? [node] : []
   })
 })
+const liveNodeRects = computed(() =>
+  liveNodes.value.map((node) => {
+    const { x, y, width, height } = nodeBox(node)
+    return { pos: [x, y] as const, size: [width, height] as const }
+  })
+)
 
 const FRAME_PADDING = 40
 const BATCH_SETTLE_MS = 150
@@ -90,7 +97,10 @@ function uncoveredViewport(): ReadOnlyRect | null {
     panelRect.width,
     panelRect.height
   ]
-  return intersectViewports(panelViewport, visibleCanvasViewport(canvas))
+  const visibleViewport = measuredVisibleCanvasViewport(canvas)
+  return visibleViewport
+    ? intersectViewports(panelViewport, visibleViewport)
+    : null
 }
 
 function uncoveredViewportInGraphSpace(): ReadOnlyRect | null {
@@ -111,7 +121,7 @@ function uncoveredViewportInGraphSpace(): ReadOnlyRect | null {
 function viewNodes(): boolean {
   const graph = displayedGraph.value
   const viewport = uncoveredViewport()
-  const bounds = createPositionBounds(liveNodes.value, FRAME_PADDING)
+  const bounds = createPositionBounds(liveNodeRects.value, FRAME_PADDING)
   if (!canvas || !graph || canvas.graph !== graph || !viewport || !bounds)
     return false
   canvas.animateToBounds(bounds, { viewport })
@@ -136,7 +146,7 @@ function frameBatchIfUnseen(): void {
   if (activity.currentTurnFramed) return
   const batchIds = new Set(nodes.map((node) => node.id))
   const frame = shouldFrameAgentBatch({
-    batch: nodes,
+    batch: liveNodeRects.value,
     nodesNotInBatch: graph.nodes.filter((node) => !batchIds.has(node.id))
       .length,
     viewport: uncoveredViewportInGraphSpace()

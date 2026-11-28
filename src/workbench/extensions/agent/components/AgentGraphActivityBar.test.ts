@@ -33,6 +33,19 @@ const secondNode = createMockLGraphNode({
   pos: [7400, 6500],
   size: [100, 80]
 })
+for (const graphNode of [node, secondNode]) {
+  Object.defineProperties(graphNode, {
+    boundingRect: {
+      get: () => [
+        graphNode.pos[0],
+        graphNode.pos[1],
+        graphNode.size[0],
+        graphNode.size[1]
+      ]
+    },
+    boundingOffset: { value: [0, 0] }
+  })
+}
 const graph = markRaw(
   fromPartial<LGraph>({ id: 'graph-1', nodes: [node, secondNode] })
 )
@@ -75,7 +88,6 @@ function mount(displayedGraph: LGraph = graph) {
 let graphCanvasPanel: HTMLElement
 
 function mountGraphCanvasPanel() {
-  document.body.innerHTML = ''
   graphCanvasPanel = document.createElement('div')
   graphCanvasPanel.className = 'graph-canvas-panel'
   document.body.appendChild(graphCanvasPanel)
@@ -192,18 +204,6 @@ describe('AgentGraphActivityBar', () => {
     view.unmount()
   })
 
-  it('leaves the camera alone when the batch is already on screen', async () => {
-    secondNode.pos = [120, 20]
-    const view = mount()
-    const activity = useAgentGraphActivityStore()
-    activity.startTurn()
-    activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
-    await settle()
-
-    expect(canvas.animateToBounds).not.toHaveBeenCalled()
-    view.unmount()
-  })
-
   it('does not reframe an initially visible batch when the turn completes', async () => {
     secondNode.pos = [120, 20]
     const view = mount()
@@ -225,8 +225,8 @@ describe('AgentGraphActivityBar', () => {
   it('frames a batch that landed only under the docked agent panel', async () => {
     dragAndScale.scale = 2
     dragAndScale.offset = [100, 50]
-    node.pos = [500, 100]
-    secondNode.pos = [600, 100]
+    node.pos = [300, 100]
+    secondNode.pos = [350, 100]
     const view = mount()
     const activity = useAgentGraphActivityStore()
     activity.startTurn()
@@ -251,6 +251,24 @@ describe('AgentGraphActivityBar', () => {
     await settle()
 
     expect(canvas.animateToBounds).toHaveBeenCalledTimes(1)
+    view.unmount()
+  })
+
+  it('does not spend framing when the responsive agent overlay covers the canvas', async () => {
+    node.pos = [600, 100]
+    secondNode.pos = [700, 100]
+    const overlay = document.createElement('div')
+    overlay.dataset.testid = 'docked-agent-panel'
+    overlay.getBoundingClientRect = () => new DOMRect(0, 0, 1200, 800)
+    document.body.appendChild(overlay)
+    const view = mount()
+    const activity = useAgentGraphActivityStore()
+    activity.startTurn()
+    activity.recordMaterialized(TARGET, [toNodeId(1), toNodeId(2)])
+    await settle()
+
+    expect(canvas.animateToBounds).not.toHaveBeenCalled()
+    expect(activity.currentTurnFramed).toBe(false)
     view.unmount()
   })
 
