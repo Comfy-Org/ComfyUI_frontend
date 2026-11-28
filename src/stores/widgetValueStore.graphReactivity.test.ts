@@ -187,20 +187,21 @@ describe('Nested promoted widget mapping', () => {
         { name: 'second_seed', type: '*' }
       ]
     })
+    const [firstSeed, secondSeed] = subgraph.inputs
 
     const firstNode = new LGraphNode('FirstNode')
     const firstInput = firstNode.addInput('seed', '*')
     firstNode.addWidget('number', 'seed', 1, () => undefined)
     firstInput.widget = { name: 'seed' }
     subgraph.add(firstNode)
-    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
+    firstSeed.connect(firstInput, firstNode)
 
     const secondNode = new LGraphNode('SecondNode')
     const secondInput = secondNode.addInput('seed', '*')
     secondNode.addWidget('number', 'seed', 2, () => undefined)
     secondInput.widget = { name: 'seed' }
     subgraph.add(secondNode)
-    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
+    secondSeed.connect(secondInput, secondNode)
 
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 100 })
     const graph = subgraphNode.graph as LGraph

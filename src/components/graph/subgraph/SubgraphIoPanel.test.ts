@@ -7,7 +7,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -58,18 +58,28 @@ const edits: {
   }
 ]
 
-async function renderInputNode(side: 'inputNode' | 'outputNode' = 'inputNode') {
+async function renderInputNode(
+  side: 'inputNode' | 'outputNode' = 'inputNode',
+  inputs = ['first', 'second'],
+  widgetInputs: string[] = []
+) {
   stubCanvasGetContext()
   const graph = createTestSubgraph({
-    inputs: [
-      { name: 'first', type: 'STRING' },
-      { name: 'second', type: 'STRING' }
-    ],
+    inputs: inputs.map((name) => ({ name, type: 'STRING' })),
     outputs: [
       { name: 'image', type: 'IMAGE' },
       { name: 'mask', type: 'MASK' }
     ]
   })
+  for (const name of widgetInputs) {
+    const interior = new LGraphNode(`Interior ${name}`)
+    const slot = interior.addInput('text', 'STRING')
+    slot.widget = {
+      name: interior.addWidget('text', 'text', '', () => {}).name
+    }
+    graph.add(interior)
+    graph.inputs.find((input) => input.name === name)?.connect(slot, interior)
+  }
   const host = createTestSubgraphNode(graph)
   graph.rootGraph.add(host)
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph.rootGraph)
@@ -232,6 +242,24 @@ describe('subgraph input node ports', () => {
     expect(host.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
   })
 
+  it('drops a handle drag that is released after the input order changes', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
+    const { host } = await renderInputNode()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const [firstHandle] = screen.getAllByRole('button', { name: /^Reorder / })
+    vi.advanceTimersByTime(1)
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: firstHandle, coords: { y: 0 } },
+      { target: firstHandle, coords: { y: 30 } }
+    ])
+    reorderSubgraphInputs(host.subgraph, [1, 0])
+    await nextTick()
+    await user.pointer({ keys: '[/MouseLeft]', target: firstHandle })
+
+    expect(host.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
+  })
+
   it('drops a handle drag that is released after the canvas turns read-only', async () => {
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
     const { host } = await renderInputNode()
@@ -248,5 +276,92 @@ describe('subgraph input node ports', () => {
     await user.pointer({ keys: '[/MouseLeft]', target: document.body })
 
     expect(host.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
+  })
+
+  it('lists widgetless inputs above widget inputs', async () => {
+    await renderInputNode(
+      'inputNode',
+      ['image', 'seed', 'mask', 'steps'],
+      ['seed', 'steps']
+    )
+
+    expect(
+      screen
+        .getAllByTestId('subgraph-input-port')
+        .map((port) => port.getAttribute('aria-label'))
+    ).toEqual(['image', 'mask', 'seed', 'steps'])
+  })
+
+  it.for([
+    {
+      name: 'a widgetless input down into the widget inputs',
+      handle: 'mask',
+      key: 'ArrowDown'
+    },
+    {
+      name: 'a widget input up into the widgetless inputs',
+      handle: 'seed',
+      key: 'ArrowUp'
+    }
+  ])('does not move $name with Alt+arrow', async ({ handle, key }) => {
+    const { graph } = await renderInputNode(
+      'inputNode',
+      ['image', 'seed', 'mask', 'steps'],
+      ['seed', 'steps']
+    )
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    screen.getByRole('button', { name: `Reorder ${handle}` }).focus()
+    await user.keyboard(`{Alt>}{${key}}{/Alt}`)
+
+    expect(graph.inputs.map(({ name }) => name)).toEqual([
+      'image',
+      'mask',
+      'seed',
+      'steps'
+    ])
+  })
+
+  it('stores the displayed order when a widget input moves within its section', async () => {
+    const { graph } = await renderInputNode(
+      'inputNode',
+      ['image', 'seed', 'mask', 'steps'],
+      ['seed', 'steps']
+    )
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    screen.getByRole('button', { name: 'Reorder steps' }).focus()
+    await user.keyboard('{Alt>}{ArrowUp}{/Alt}')
+
+    expect(graph.inputs.map(({ name }) => name)).toEqual([
+      'image',
+      'mask',
+      'steps',
+      'seed'
+    ])
+  })
+
+  it('drops a widgetless input dragged past the widget inputs at the end of its section', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
+    const { graph } = await renderInputNode(
+      'inputNode',
+      ['first', 'second', 'seed'],
+      ['seed']
+    )
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const handle = screen.getByRole('button', { name: 'Reorder first' })
+    vi.advanceTimersByTime(1)
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: handle, coords: { y: 0 } },
+      { target: handle, coords: { y: 100 } },
+      { keys: '[/MouseLeft]', target: handle, coords: { y: 100 } }
+    ])
+
+    expect(graph.inputs.map(({ name }) => name)).toEqual([
+      'second',
+      'first',
+      'seed'
+    ])
   })
 })
