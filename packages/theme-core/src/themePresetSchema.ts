@@ -86,13 +86,14 @@ export const comfyBaseSchema = z.object({
   ['interface-button-hover-surface']: z.string().optional()
 })
 
-const pxLength = z.string().regex(/^-?\d+(\.\d+)?px$/)
+const pxLength = z.string().regex(/^\d+(\.\d+)?px$/)
+const signedPxLength = z.string().regex(/^-?\d+(\.\d+)?px$/)
 
 const pxThemeTokenSchemas = {
   ['node-header-height']: pxLength,
   ['node-slot-inset']: pxLength,
-  ['node-slot-block-margin-bottom']: pxLength,
-  ['node-socket-row-overlap']: pxLength
+  ['node-slot-block-margin-bottom']: signedPxLength,
+  ['node-socket-row-overlap']: signedPxLength
 }
 
 /** Theme tokens that layout code reads as numbers; each holds a px length. */
@@ -161,6 +162,16 @@ const completedPresetSchema = themePresetSchema.extend({ colors: colorsSchema })
 
 export type Colors = z.infer<typeof colorsSchema>
 export type ThemeTokens = z.infer<typeof themeSchema>
+
+/** The tokens whose values satisfy their theme schema field; unknown tokens are kept. */
+export function validThemeTokens(tokens: ThemeTokens = {}): ThemeTokens {
+  const fields: Partial<Record<string, z.ZodType>> = themeSchema.shape
+  return Object.fromEntries(
+    Object.entries(tokens).filter(
+      ([name, value]) => fields[name]?.safeParse(value).success ?? true
+    )
+  )
+}
 
 /** The px value of a resolved theme length token. */
 export function themePx(tokens: ThemeTokens, name: PxThemeToken): number {
