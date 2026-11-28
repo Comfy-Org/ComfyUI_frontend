@@ -284,6 +284,65 @@ describe('fetchJobs', () => {
       expect(result[0].execution_error?.node_errors).toEqual(expected)
     })
 
+    const offContractJobs = [
+      {
+        name: 'a fractional outputs_count',
+        job: { ...createMockJob('bad'), outputs_count: 1.5 }
+      },
+      {
+        name: 'an unknown status',
+        job: { ...createMockJob('bad'), status: 'archived' }
+      },
+      { name: 'no id', job: { status: 'completed', create_time: 1 } },
+      {
+        name: 'an execution error without a message',
+        job: {
+          ...createMockJob('bad', 'failed'),
+          execution_error: {
+            node_id: '4',
+            node_type: 'KSampler',
+            exception_type: 'RuntimeError'
+          }
+        }
+      },
+      { name: 'a null entry', job: null }
+    ]
+
+    function fetchWithJobBetweenTwoGoodOnes(job: unknown) {
+      return vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...createMockResponse([], 3),
+            jobs: [createMockJob('job1'), job, createMockJob('job3')]
+          })
+      })
+    }
+
+    it.for(offContractJobs)(
+      'keeps the other jobs when one has $name',
+      async ({ job }) => {
+        const result = await fetchHistory(fetchWithJobBetweenTwoGoodOnes(job))
+
+        expect(result.map(({ id }) => id)).toEqual(['job1', 'job3'])
+        expect(console.warn).toHaveBeenCalledExactlyOnceWith(
+          expect.any(String),
+          [expect.objectContaining({ index: 1 })]
+        )
+      }
+    )
+
+    it.for(offContractJobs)(
+      'rejects the whole list when one has $name and throwOnError is set',
+      async ({ job }) => {
+        await expect(
+          fetchHistory(fetchWithJobBetweenTwoGoodOnes(job), 200, 0, {
+            throwOnError: true
+          })
+        ).rejects.toThrow()
+      }
+    )
+
     it('returns server pagination metadata for history pages', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
