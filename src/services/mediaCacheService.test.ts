@@ -5,7 +5,7 @@ import { disposeMediaCache, useMediaCache } from './mediaCacheService'
 vi.hoisted(() => vi.spyOn(window, 'addEventListener'))
 
 function unloadCalls(calls: unknown[][]) {
-  return calls.filter(([type]) => type === 'beforeunload')
+  return calls.filter(([type]) => type === 'pagehide')
 }
 
 const unloadListenersAddedAtImport = unloadCalls(
@@ -32,9 +32,25 @@ describe('mediaCacheService', () => {
 
       disposeMediaCache()
       expect(unloadCalls(removeListener.mock.calls)).toEqual([
-        ['beforeunload', unloadCalls(addListener.mock.calls)[0][1]]
+        ['pagehide', unloadCalls(addListener.mock.calls)[0][1]]
       ])
       expect(vi.getTimerCount()).toBe(0)
+    })
+
+    it('keeps cached media through a beforeunload that leaves the page in place, and releases it when the page hides', async () => {
+      vi.mocked(fetch).mockResolvedValue(new Response(new Blob(['image'])))
+      const revoke = vi.spyOn(URL, 'revokeObjectURL')
+      const { getCachedMedia, acquireUrl } = useMediaCache()
+      const { objectUrl } = await getCachedMedia('/api/view?filename=a.png')
+
+      window.dispatchEvent(new Event('beforeunload'))
+
+      expect(revoke).not.toHaveBeenCalled()
+      expect(acquireUrl('/api/view?filename=a.png')).toBe(objectUrl)
+
+      window.dispatchEvent(new Event('pagehide'))
+
+      expect(revoke).toHaveBeenCalledWith(objectUrl)
     })
   })
 

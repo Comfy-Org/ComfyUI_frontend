@@ -4,7 +4,7 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
-import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import { useAgentAppLaunch } from '@/platform/workflow/deploy/composables/useAgentAppLaunch'
 import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
@@ -14,6 +14,7 @@ type BriefHandoff = Pick<CustomDeploymentPitch, 'brief' | 'workflow'>
 export function useDeploymentBriefHandoff(handoff: () => BriefHandoff) {
   const toast = useToast()
   const { copyToClipboard } = useCopyToClipboard()
+  const { launchAgentApp } = useAgentAppLaunch()
 
   function prepareDownload(): { download: () => void } | null {
     const { workflow } = handoff()
@@ -55,12 +56,12 @@ export function useDeploymentBriefHandoff(handoff: () => BriefHandoff) {
     }
   }
 
-  function openBriefIn(app: AgentApp): void {
+  async function openBriefIn(app: AgentApp): Promise<void> {
     try {
       const prepared = prepareDownload()
       if (!prepared) return
       prepared.download()
-      openAgentApp(app, handoff().brief)
+      await launchAgentApp(app, handoff().brief)
     } catch (error) {
       reportHandoffFailure(error)
     }

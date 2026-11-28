@@ -10,8 +10,8 @@ import { t } from '@/i18n'
 import { DISTRIBUTION } from '@/platform/distribution/types'
 import type { Distribution } from '@/platform/distribution/types'
 import { runOnCloudPrompt } from '@/platform/openOnCloud/runOnCloudPrompt'
+import { useAgentAppLaunch } from '@/platform/workflow/deploy/composables/useAgentAppLaunch'
 import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
-import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -41,6 +41,7 @@ export function useRunOnCloudHandoff(
   const userStore = useUserStore()
   const toast = useToast()
   const { copyToClipboard } = useCopyToClipboard()
+  const { launchAgentApp } = useAgentAppLaunch()
   const save = useErrorHandling().wrapWithErrorHandlingAsync(
     useWorkflowService().saveWorkflow
   )
@@ -162,13 +163,7 @@ export function useRunOnCloudHandoff(
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
-      const copying = copyToClipboard(handoff.brief, {
-        toastOnSuccess: false,
-        toastOnError: false
-      })
-      openAgentApp(app, handoff.brief)
-      if (await copying)
-        toast.info(t('openOnCloud.agentMenu.promptCopiedForSignIn'))
+      await launchAgentApp(app, handoff.brief)
     } catch (error) {
       reportHandoffFailure(error)
     }

@@ -9,7 +9,7 @@ import {
   buildAgentHandoffDocument,
   handoffFileName
 } from '@/platform/workflow/deploy/utils/agentHandoff'
-import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import { useAgentAppLaunch } from '@/platform/workflow/deploy/composables/useAgentAppLaunch'
 import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { deriveBuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
@@ -23,6 +23,7 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
   const toast = useToast()
   const modelToNodeStore = useModelToNodeStore()
   const { copyToClipboard } = useCopyToClipboard()
+  const { launchAgentApp } = useAgentAppLaunch()
 
   function modelInputsByLoader(): ReadonlyMap<
     string,
@@ -103,11 +104,11 @@ export function useAgentHandoff(distribution: Distribution = DISTRIBUTION) {
     }
   }
 
-  function openBriefIn(app: AgentApp): void {
+  async function openBriefIn(app: AgentApp): Promise<void> {
     try {
       const { brief, downloadWorkflow } = prepareHandoff()
       downloadWorkflow()
-      openAgentApp(app, brief)
+      await launchAgentApp(app, brief)
     } catch (error) {
       reportHandoffFailure(error, 'error_opening_deploy_agent_brief')
     }

@@ -128,10 +128,10 @@ describe('useAgentHandoff', () => {
     { app: 'codex', distribution: 'desktop', downloads: 0 }
   ] as const)(
     'opens the brief in the $app desktop app, downloading the workflow $downloads times on $distribution',
-    ({ app, distribution, downloads }) => {
+    async ({ app, distribution, downloads }) => {
       setActiveWorkflow()
 
-      useAgentHandoff(distribution).openBriefIn(app)
+      const opening = useAgentHandoff(distribution).openBriefIn(app)
 
       expect(openAgentApp).toHaveBeenCalledExactlyOnceWith(
         app,
@@ -140,10 +140,11 @@ describe('useAgentHandoff', () => {
         )
       )
       expect(downloadBlob).toHaveBeenCalledTimes(downloads)
+      await opening
     }
   )
 
-  it('downloads the workflow before opening the agent app', () => {
+  it('downloads the workflow before opening the agent app', async () => {
     setActiveWorkflow()
     const order: string[] = []
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
@@ -153,19 +154,20 @@ describe('useAgentHandoff', () => {
       order.push('open')
     })
 
-    useAgentHandoff('cloud').openBriefIn('claude')
+    const opening = useAgentHandoff('cloud').openBriefIn('claude')
 
     expect(order).toEqual(['download', 'open'])
+    await opening
   })
 
-  it('reports a failed download and leaves the agent app closed', () => {
+  it('reports a failed download and leaves the agent app closed', async () => {
     setActiveWorkflow()
     const downloadError = new Error('download blocked')
     vi.mocked(downloadBlob).mockImplementationOnce(() => {
       throw downloadError
     })
 
-    useAgentHandoff('cloud').openBriefIn('claude')
+    await useAgentHandoff('cloud').openBriefIn('claude')
 
     expect(openAgentApp).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledExactlyOnceWith(downloadError, {

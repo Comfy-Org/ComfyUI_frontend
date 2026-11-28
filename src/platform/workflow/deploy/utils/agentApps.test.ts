@@ -1,16 +1,16 @@
-// @vitest-environment happy-dom
-// @vitest-environment-options {"settings":{"disableIframePageLoading":false,"enableIframePageLoading":true}}
 import { describe, expect, it, vi } from 'vitest'
+
+import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 
 import { openAgentApp } from './agentApps'
 
-function recordFrameNavigations() {
-  const navigations: { url: string; hidden: boolean }[] = []
-  vi.spyOn(HTMLIFrameElement.prototype, 'src', 'set').mockImplementation(
-    function (this: HTMLIFrameElement, url: string) {
-      navigations.push({ url, hidden: this.hidden && this.isConnected })
-    }
-  )
+function recordPageNavigations() {
+  const navigations: { url: string; leavePromptSkipped: boolean }[] = []
+  vi.stubGlobal('location', {
+    assign: vi.fn((url: string) => {
+      navigations.push({ url, leavePromptSkipped: takeLeavePromptSkip() })
+    })
+  })
   return navigations
 }
 
@@ -19,18 +19,18 @@ describe('openAgentApp', () => {
     { app: 'claude', url: 'claude://code/new?q=a%20b%0Ac%26d%3D1%23e' },
     { app: 'codex', url: 'codex://new?prompt=a%20b%0Ac%26d%3D1%23e' }
   ] as const)(
-    'hands the whole prompt, encoded, to the $app app from a hidden frame',
+    'opens the whole prompt, encoded, in the $app app by navigating the page',
     ({ app, url }) => {
-      const navigations = recordFrameNavigations()
+      const navigations = recordPageNavigations()
 
       openAgentApp(app, 'a b\nc&d=1#e')
 
-      expect(navigations).toEqual([{ url, hidden: true }])
+      expect(navigations).toEqual([{ url, leavePromptSkipped: true }])
     }
   )
 
   it('replaces a lone surrogate instead of throwing, and keeps a pair whole', () => {
-    const navigations = recordFrameNavigations()
+    const navigations = recordPageNavigations()
 
     openAgentApp('codex', '\uD800 build \uDC00 🙂')
 
@@ -39,16 +39,22 @@ describe('openAgentApp', () => {
     ])
   })
 
-  it('reuses one frame for every launch', () => {
-    const navigations = recordFrameNavigations()
+  it('keeps the leave prompt for later unloads when the navigation runs no unload check', () => {
+    vi.stubGlobal('location', { assign: vi.fn() })
 
-    openAgentApp('claude', 'first')
-    openAgentApp('codex', 'second')
+    openAgentApp('claude', 'Deploy')
 
-    expect(navigations.map(({ url }) => url)).toEqual([
-      'claude://code/new?q=first',
-      'codex://new?prompt=second'
-    ])
-    expect(document.querySelectorAll('iframe')).toHaveLength(1)
+    expect(takeLeavePromptSkip()).toBe(false)
+  })
+
+  it('keeps the leave prompt for later unloads when the navigation throws', () => {
+    vi.stubGlobal('location', {
+      assign: vi.fn(() => {
+        throw new DOMException('Navigation refused', 'SecurityError')
+      })
+    })
+
+    expect(() => openAgentApp('claude', 'Deploy')).toThrow('Navigation refused')
+    expect(takeLeavePromptSkip()).toBe(false)
   })
 })
