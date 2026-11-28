@@ -5,7 +5,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, toValue } from 'vue'
 
 import type { AssetItem } from '@comfyorg/assets-core/schema'
@@ -14,22 +14,19 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-vi.mock(
-  import('@/platform/assets/composables/useJobOutputHistory'),
-  async () => {
-    const { mockPagedList } = await import('@/utils/__tests__/pagedListUtils')
-    const { onTestFinished } = await import('vitest')
-    const history = mockPagedList<AssetItem>({})
-    return {
-      useJobOutputHistory: vi.fn(() => {
-        onTestFinished(() => {
-          history.items = []
-        })
-        return history
-      })
-    }
-  }
-)
+const { history } = await vi.hoisted(async () => {
+  const { mockPagedList } = await import('@/utils/__tests__/pagedListUtils')
+  return { history: mockPagedList<AssetItem>({}) }
+})
+
+vi.mock(import('@/platform/assets/composables/useJobOutputHistory'), () => ({
+  useJobOutputHistory: vi.fn(() => {
+    onTestFinished(() => {
+      history.items = []
+    })
+    return history
+  })
+}))
 
 vi.mock(import('@/platform/assets/adapters/outputAssetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
