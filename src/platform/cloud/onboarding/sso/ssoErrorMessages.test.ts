@@ -6,22 +6,6 @@ import { readSsoError } from '@comfyorg/account-core/sso'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { SSO_ERROR_MESSAGE_KEY } from '@/platform/cloud/onboarding/sso/ssoErrorMessages'
 
-/**
- * `SSO_ERROR_MESSAGE_KEY` is typed `Record<SsoErrorCode, string>`, so TypeScript
- * already proves it names every code and no others. What it cannot prove is that
- * the string on the right reaches real copy, because the message keys are plain
- * strings: a key with no entry renders as a raw `auth.sso.errors.…`, and a bad
- * i18n literal such as `{@}` instead of `{'@'}` throws in the message compiler.
- * Either one lands on the single screen that tells a person why they cannot sign
- * in, so copy is resolved here through vue-i18n rather than by reading the JSON,
- * which would accept both.
- *
- * Several codes share a key on purpose, so asserting only that a key resolves
- * would let one code be remapped onto another's wording unnoticed. The table
- * below holds the rendered answer for every code instead. It covers `en` only:
- * no other locale carries `auth.sso.errors` yet, and whoever lands the first
- * translation should parameterise this over locales.
- */
 const { t } = createI18n({
   legacy: false,
   locale: 'en',
