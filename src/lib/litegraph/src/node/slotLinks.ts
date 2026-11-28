@@ -179,6 +179,27 @@ export function captureInputLayout(node: LGraphNode): InputLayoutSnapshot {
   return { inputs: [...node.inputs], links }
 }
 
+/**
+ * Keeps the node's floating input links on their inputs: a floating link records
+ * a slot index, so it follows its input to the input's slot in the final layout.
+ * A floating link whose input is not in the final layout keeps its index.
+ */
+function moveFloatingInputLinks(
+  node: LGraphNode,
+  previousInputs: readonly INodeInputSlot[],
+  finalInputs: readonly INodeInputSlot[]
+): void {
+  const graph = node.graph
+  if (!graph) return
+  const finalSlots = new Map(finalInputs.map((input, slot) => [input, slot]))
+  for (const floatingLink of graph.floatingLinks.values()) {
+    if (floatingLink.target_id !== node.id) continue
+    const input = previousInputs[floatingLink.target_slot]
+    const slot = input ? finalSlots.get(input) : undefined
+    if (slot !== undefined) floatingLink.target_slot = slot
+  }
+}
+
 export function replaceNodeInputs(
   node: LGraphNode,
   previous: InputLayoutSnapshot,
@@ -238,6 +259,7 @@ export function replaceNodeInputs(
         keepReroutes
       )
     }
+    moveFloatingInputLinks(node, previous.inputs, finalInputs)
   } else if (finalAssignments.length) {
     throw new Error('Cannot assign input links to a node without a graph')
   } else {

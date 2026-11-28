@@ -159,6 +159,50 @@ describe('slotLinks', () => {
     expect(target.getInputLink(1)).toBe(first)
   })
 
+  it('moves a floating input link with its input when inputs are reordered', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    graph.add(target)
+    graph.createReroute([0, 0], source.connect(0, target, 1)!)
+    graph.remove(source)
+    const [floatingLink] = graph.floatingLinks.values()
+    expect(floatingLink.target_slot).toBe(1)
+
+    replaceNodeInputs(
+      target,
+      captureInputLayout(target),
+      target.inputs.toReversed()
+    )
+
+    expect(target.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
+    expect(floatingLink.target_slot).toBe(0)
+  })
+
+  it('shifts a floating input link once when an earlier input is removed', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'INT')
+    graph.add(source)
+    const target = new LGraphNode('Target')
+    target.addInput('first', 'INT')
+    target.addInput('second', 'INT')
+    target.addInput('third', 'INT')
+    graph.add(target)
+    graph.createReroute([0, 0], source.connect(0, target, 2)!)
+    graph.remove(source)
+    const [floatingLink] = graph.floatingLinks.values()
+
+    target.removeInput(0)
+
+    expect(floatingLink.target_slot).toBe(1)
+    expect(target.inputs[floatingLink.target_slot].name).toBe('third')
+  })
+
   it('exposes the committed layout to reentrant disconnect callbacks', () => {
     const graph = new LGraph()
     const source = new LGraphNode('Source')
