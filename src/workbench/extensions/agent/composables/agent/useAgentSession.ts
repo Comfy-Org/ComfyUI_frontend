@@ -1835,8 +1835,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId: string | undefined,
     boundAtSend: string | null,
     tabStillOpen: boolean,
-    turnOrigin: TurnOrigin,
-    cloudListingComplete: boolean
+    turnOrigin: TurnOrigin
   ): boolean {
     if (workflowTargetChanged(originContext, wfContext, tabStillOpen)) {
       failTargetUnavailable(
@@ -1848,7 +1847,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return true
     }
     if (
-      cloudListingComplete &&
       wfContext?.id === undefined &&
       workflow?.ambiguousTarget?.(turnOrigin)
     ) {
@@ -2914,7 +2912,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       missedCause: initialSendMissedCause()
     })
     try {
-      const cloudListingComplete = await prepareWorkflow(clientMessageId)
+      await prepareWorkflow(clientMessageId)
       const wfContext = workflow?.current(resolved.turnOrigin)
       const draft = workflow?.draft?.(resolved.turnOrigin)
       if (
@@ -2927,8 +2925,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           clientMessageId,
           boundAtSend,
           workflow?.hasTab?.(resolved.turnOrigin) ?? false,
-          resolved.turnOrigin,
-          cloudListingComplete
+          resolved.turnOrigin
         )
       )
         return false
