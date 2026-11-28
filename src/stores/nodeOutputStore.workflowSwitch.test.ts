@@ -10,7 +10,10 @@ import type {
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 
 const { WORKFLOW_A, WORKFLOW_B } = vi.hoisted(() => ({
   WORKFLOW_A: 'workflows/a.json',
@@ -65,8 +68,6 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     revokeObjectURL = vi
       .spyOn(URL, 'revokeObjectURL')
       .mockImplementation(() => {})
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
     useWorkflowStore().activeWorkflow = fromPartial({ path: WORKFLOW_A })
     Object.assign(useWorkflowStore(), {
       openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }]
@@ -255,6 +256,23 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
 
     expect(store.getNodePreviews(node)).toEqual([previewUrl])
     expect(revokeObjectURL).not.toHaveBeenCalledWith(previewUrl)
+  })
+
+  it('keeps the restored workflow preview when a revoke scheduled before the switch fires', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode(5)
+    switchToWorkflow(WORKFLOW_B)
+    const workflowBPreview = createBlobUrl()
+    store.setNodePreviewsByNodeId(node.id, [workflowBPreview])
+    switchToWorkflow(WORKFLOW_A)
+    store.setNodePreviewsByNodeId(node.id, [createBlobUrl()])
+
+    store.revokePreviewsByExecutionId(createNodeExecutionId([node.id]))
+    switchToWorkflow(WORKFLOW_B)
+    vi.runAllTimers()
+
+    expect(store.getNodePreviews(node)).toEqual([workflowBPreview])
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(workflowBPreview)
   })
 
   it('still revokes previews when the workflow is cleared in place', () => {

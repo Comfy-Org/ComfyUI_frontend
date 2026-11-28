@@ -4,7 +4,6 @@ import type { Raw } from 'vue'
 import { assert } from '@/base/assert'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { withGraphIntentSourceForRootGraph } from '@/lib/litegraph/src/graphIntents'
-import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { UserFileSaveOptions } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -12,6 +11,7 @@ import type { MissingModelCandidate } from '@/platform/workflowErrors/missingMod
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeOutputLayers } from '@/utils/nodeOutputUtil'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -73,7 +73,7 @@ export interface WorkflowChangeTracker {
   readonly hasPreview: boolean
   _restoringState: boolean
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
+  nodeOutputs?: NodeOutputLayers
   reset(state?: ComfyWorkflowJSON): void
   store(): void
   deactivate(): void

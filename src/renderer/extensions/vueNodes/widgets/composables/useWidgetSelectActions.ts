@@ -78,7 +78,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   function setPreviewImage(image: ResultItem) {
     const locatorId = toValue(options.locatorId)
     if (locatorId)
-      useNodeOutputStore().nodeOutputs[locatorId] = { images: [image] }
+      useNodeOutputStore().setOutputsByLocatorId(locatorId, { images: [image] })
   }
 
   const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(

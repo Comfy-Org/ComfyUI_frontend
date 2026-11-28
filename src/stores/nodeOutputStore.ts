@@ -1,13 +1,14 @@
 import { useTimeoutFn } from '@vueuse/core'
-import { mapKeys } from 'es-toolkit'
+import { isEqual, mapKeys, mapValues, pickBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { ref, toRaw } from 'vue'
+import { onScopeDispose, ref, toRaw } from 'vue'
 
 import type {
   LGraph,
   LGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -23,7 +24,8 @@ import { clone } from '@/scripts/utils'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   createNodeLocatorId,
-  parseNodeLocatorId
+  parseNodeLocatorId,
+  tryNormalizeNodeExecutionId
 } from '@comfyorg/graph-model/nodeIdentification'
 import type {
   NodeExecutionId,
@@ -43,6 +45,7 @@ import {
   resolveNode
 } from '@/utils/litegraphUtil'
 import { isInputPreviewOutput, mergeNodeOutput } from '@/utils/nodeOutputUtil'
+import type { NodeOutputLayers } from '@/utils/nodeOutputUtil'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
@@ -90,6 +93,13 @@ interface SetOutputOptions {
 }
 
 type NodePreviewMap = Partial<Record<string, string[]>>
+type InstanceMap<T> = Partial<Record<string, Partial<Record<string, T>>>>
+type InstancePreviewMap = InstanceMap<string[]>
+type RevokeTimers = Partial<Record<string, { stop: () => void }>>
+interface PreviewStash {
+  shared: NodePreviewMap
+  instances: InstancePreviewMap
+}
 type RuntimeOutput = Pick<ExecutedWsMessage['output'], 'animated'> & {
   images?: (ResultItem | null)[]
 }
@@ -102,27 +112,110 @@ function locatesInGraph(
   return !subgraphUuid || !!rootGraph?.subgraphs.has(subgraphUuid)
 }
 
+function isInteriorLocator(nodeLocatorId: NodeLocatorId): boolean {
+  return !!parseNodeLocatorId(nodeLocatorId)?.subgraphUuid
+}
+
+function readInstanceEntry<T>(
+  shared: Partial<Record<string, T>>,
+  instances: InstanceMap<T>,
+  nodeLocatorId: NodeLocatorId,
+  executionId: NodeExecutionId
+): T | undefined {
+  const group = instances[nodeLocatorId]
+  return group && isInteriorLocator(nodeLocatorId)
+    ? group[executionId]
+    : shared[nodeLocatorId]
+}
+
+function preserveInputPreviewImages(
+  existingOutput: ExecutedWsMessage['output'] | undefined,
+  outputs: ExecutedWsMessage['output'] | ResultItem
+): ExecutedWsMessage['output'] {
+  const incomingImages = 'images' in outputs ? outputs.images : undefined
+  if (Array.isArray(incomingImages) && incomingImages.length > 0) return outputs
+  return isInputPreviewOutput(existingOutput)
+    ? { ...outputs, images: existingOutput.images }
+    : outputs
+}
+
+function inputPreviewOf(
+  output: ExecutedWsMessage['output'] | undefined
+): ExecutedWsMessage['output'] | undefined {
+  return isInputPreviewOutput(output) ? { images: output.images } : undefined
+}
+
+function mergeOutput(
+  existingOutput: ExecutedWsMessage['output'] | undefined,
+  outputs: ExecutedWsMessage['output'] | ResultItem,
+  { merge }: SetOutputOptions
+): ExecutedWsMessage['output'] {
+  const merged =
+    merge && existingOutput ? mergeNodeOutput(existingOutput, outputs) : outputs
+  return preserveInputPreviewImages(existingOutput, merged)
+}
+
+/** Writes one execution's output into both layers and returns the node's new shared output. */
+export function writeExecutedOutput(
+  layers: NodeOutputLayers,
+  nodeLocatorId: NodeLocatorId,
+  executionId: NodeExecutionId,
+  outputs: ExecutedWsMessage['output'] | ResultItem,
+  options: SetOutputOptions
+): ExecutedWsMessage['output'] {
+  const shared = layers.shared[nodeLocatorId]
+  const merged = mergeOutput(shared, outputs, options)
+  layers.shared[nodeLocatorId] = merged
+  if (isInteriorLocator(nodeLocatorId)) {
+    const instances = (layers.instances[nodeLocatorId] ??= {})
+    instances[executionId] = mergeOutput(
+      instances[executionId] ?? inputPreviewOf(shared),
+      outputs,
+      options
+    )
+  }
+  return merged
+}
+
+function forEachDetachedInstance<T>(
+  rootGraph: LGraph | undefined,
+  instances: InstanceMap<T>,
+  visit: (group: Partial<Record<string, T>>, executionId: string) => void
+) {
+  for (const [nodeLocatorId, group = {}] of Object.entries(instances)) {
+    for (const executionId of Object.keys(group)) {
+      if (executionIdToNodeLocatorId(rootGraph, executionId) !== nodeLocatorId)
+        visit(group, executionId)
+    }
+  }
+}
+
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const workflowStore = useWorkflowStore()
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = workflowStore
-  const scheduledRevoke: Partial<Record<NodeLocatorId, { stop: () => void }>> =
-    {}
+  const sharedRevokes: RevokeTimers = {}
+  const instanceRevokes: RevokeTimers = {}
   const latestPreview = ref<string[]>([])
   /**
    * Previews belonging to open-but-inactive workflows, keyed by workflow path.
    * The stash owns the object URL retain taken when the previews were set.
    */
-  const stashedPreviews = new Map<string, NodePreviewMap>()
+  const stashedPreviews = new Map<string, PreviewStash>()
 
-  function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
-    scheduledRevoke[locator]?.stop()
+  function scheduleRevoke(timers: RevokeTimers, key: string, cb: () => void) {
+    timers[key]?.stop()
 
     const { stop } = useTimeoutFn(() => {
-      delete scheduledRevoke[locator]
+      delete timers[key]
       cb()
     }, PREVIEW_REVOKE_DELAY_MS)
 
-    scheduledRevoke[locator] = { stop }
+    timers[key] = { stop }
+  }
+
+  function cancelRevoke(timers: RevokeTimers, key: string) {
+    timers[key]?.stop()
+    delete timers[key]
   }
 
   const nodeOutputs = ref<Partial<Record<string, ExecutedWsMessage['output']>>>(
@@ -137,6 +230,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       )
     )
   )
+  const instanceOutputs = ref<InstanceMap<ExecutedWsMessage['output']>>({})
+  const instancePreviewImages = ref<InstancePreviewMap>({})
 
   function getNodeOutputs(
     node: LGraphNode
@@ -238,26 +333,39 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return buildImageUrls(node, getNodeOutputs(node))
   }
 
+  function resolveLocator(
+    executionId: NodeExecutionId
+  ): NodeLocatorId | undefined {
+    return executionIdToNodeLocatorId(
+      useApp().rootGraphOrUndefined,
+      executionId
+    )
+  }
+
   function getNodeOutputByExecutionId(
     executionId: NodeExecutionId
   ): ExecutedWsMessage['output'] | undefined {
-    const locatorId = executionIdToNodeLocatorId(
-      useApp().rootGraph,
+    const locatorId = resolveLocator(executionId)
+    if (!locatorId) return undefined
+    return readInstanceEntry(
+      nodeOutputs.value,
+      instanceOutputs.value,
+      locatorId,
       executionId
     )
-    if (!locatorId) return undefined
-    return nodeOutputs.value[locatorId]
   }
 
   function getNodePreviewImagesByExecutionId(
     executionId: NodeExecutionId
   ): string[] | undefined {
-    const locatorId = executionIdToNodeLocatorId(
-      useApp().rootGraph,
+    const locatorId = resolveLocator(executionId)
+    if (!locatorId) return undefined
+    return readInstanceEntry(
+      nodePreviewImages.value,
+      instancePreviewImages.value,
+      locatorId,
       executionId
     )
-    if (!locatorId) return undefined
-    return nodePreviewImages.value[locatorId]
   }
 
   function getNodeImageUrlsByExecutionId(
@@ -270,6 +378,15 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return buildImageUrls(node, getNodeOutputByExecutionId(executionId))
   }
 
+  function writeSharedOutputs(
+    nodeLocatorId: NodeLocatorId,
+    outputs: ExecutedWsMessage['output']
+  ) {
+    nodeOutputs.value[nodeLocatorId] = outputs
+    useApp().nodeOutputs[nodeLocatorId] = clone(outputs)
+  }
+
+  /** Sets outputs that belong to the node rather than one execution, for every instance. */
   function setOutputsByLocatorId(
     nodeLocatorId: NodeLocatorId,
     outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
@@ -277,26 +394,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (outputs == null) return
 
-    const incomingImages = 'images' in outputs ? outputs.images : undefined
-    const hasIncomingImages =
-      Array.isArray(incomingImages) && incomingImages.length > 0
-    const existingOutput = nodeOutputs.value[nodeLocatorId]
-    if (!hasIncomingImages && isInputPreviewOutput(existingOutput)) {
-      outputs = {
-        ...outputs,
-        images: existingOutput.images
-      }
-    }
-
-    if (options.merge && existingOutput) {
-      const mergedOutput = mergeNodeOutput(existingOutput, outputs)
-      nodeOutputs.value[nodeLocatorId] = mergedOutput
-      useApp().nodeOutputs[nodeLocatorId] = clone(mergedOutput)
-      return
-    }
-
-    nodeOutputs.value[nodeLocatorId] = outputs
-    useApp().nodeOutputs[nodeLocatorId] = clone(outputs)
+    delete instanceOutputs.value[nodeLocatorId]
+    writeSharedOutputs(
+      nodeLocatorId,
+      mergeOutput(nodeOutputs.value[nodeLocatorId], outputs, options)
+    )
   }
 
   function setNodeOutputs(
@@ -381,11 +483,30 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const emptyTextOutput =
       outputs == null &&
       (node?.comfyClass === 'PreviewAny' || node?.comfyClass === 'SaveText')
-    setOutputsByLocatorId(
+    writeExecutedOutputs(
       nodeLocatorId,
+      executionId,
       emptyTextOutput ? {} : outputs,
       emptyTextOutput ? {} : options
     )
+  }
+
+  function writeExecutedOutputs(
+    nodeLocatorId: NodeLocatorId,
+    executionId: NodeExecutionId,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
+    options: SetOutputOptions
+  ) {
+    if (outputs == null) return
+
+    const shared = writeExecutedOutput(
+      { shared: nodeOutputs.value, instances: instanceOutputs.value },
+      nodeLocatorId,
+      executionId,
+      outputs,
+      options
+    )
+    useApp().nodeOutputs[nodeLocatorId] = clone(shared)
   }
 
   function reportUnresolvedExecutionId(
@@ -418,32 +539,44 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     executionId: NodeExecutionId,
     previewImages: string[]
   ) {
-    const nodeLocatorId = executionIdToNodeLocatorId(
-      useApp().rootGraph,
-      executionId
-    )
+    const nodeLocatorId = resolveLocator(executionId)
     if (!nodeLocatorId) return
-    setNodePreviewsByLocatorId(nodeLocatorId, previewImages)
+    writeSharedPreviews(nodeLocatorId, previewImages)
+    if (isInteriorLocator(nodeLocatorId)) {
+      cancelRevoke(instanceRevokes, executionId)
+      const instances = (instancePreviewImages.value[nodeLocatorId] ??= {})
+      releaseUrls(instances[executionId])
+      instances[executionId] = retainUrls(previewImages)
+    }
     latestPreview.value = [...previewImages]
   }
 
+  function retainUrls(urls: string[]): string[] {
+    for (const url of urls) retainSharedObjectUrl(url)
+    return [...urls]
+  }
+
+  function releaseUrls(urls: string[] | undefined) {
+    for (const url of urls ?? []) releaseSharedObjectUrl(url)
+  }
+
+  function writeSharedPreviews(
+    nodeLocatorId: NodeLocatorId,
+    previewImages: string[]
+  ) {
+    cancelRevoke(sharedRevokes, nodeLocatorId)
+    releaseUrls(nodePreviewImages.value[nodeLocatorId])
+    nodePreviewImages.value[nodeLocatorId] = retainUrls(previewImages)
+    useApp().nodePreviewImages[nodeLocatorId] = [...previewImages]
+  }
+
+  /** Sets previews that belong to the node rather than one execution, for every instance. */
   function setNodePreviewsByLocatorId(
     nodeLocatorId: NodeLocatorId,
     previewImages: string[]
   ) {
-    const existingPreviews = nodePreviewImages.value[nodeLocatorId]
-    scheduledRevoke[nodeLocatorId]?.stop()
-    delete scheduledRevoke[nodeLocatorId]
-    if (existingPreviews) {
-      for (const url of existingPreviews) {
-        releaseSharedObjectUrl(url)
-      }
-    }
-    for (const url of previewImages) {
-      retainSharedObjectUrl(url)
-    }
-    nodePreviewImages.value[nodeLocatorId] = [...previewImages]
-    useApp().nodePreviewImages[nodeLocatorId] = [...previewImages]
+    releaseInstancePreviews(nodeLocatorId)
+    writeSharedPreviews(nodeLocatorId, previewImages)
   }
 
   function setNodePreviewsByNodeId(nodeId: NodeId, previewImages: string[]) {
@@ -451,26 +584,48 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function revokePreviewsByExecutionId(executionId: NodeExecutionId) {
-    const nodeLocatorId = executionIdToNodeLocatorId(
-      useApp().rootGraph,
-      executionId
-    )
+    const nodeLocatorId = resolveLocator(executionId)
     if (!nodeLocatorId) return
-    scheduleRevoke(nodeLocatorId, () =>
-      revokePreviewsByLocatorId(nodeLocatorId)
-    )
+    const sharedFrame = nodePreviewImages.value[nodeLocatorId]
+    const instances = instancePreviewImages.value[nodeLocatorId]
+    const instanceFrame = instances?.[executionId]
+
+    if (!instances || isEqual(sharedFrame, instanceFrame))
+      scheduleRevoke(sharedRevokes, nodeLocatorId, () => {
+        if (nodePreviewImages.value[nodeLocatorId] === sharedFrame)
+          releaseSharedPreviews(nodeLocatorId)
+      })
+    if (!instanceFrame) return
+
+    scheduleRevoke(instanceRevokes, executionId, () => {
+      const current = instancePreviewImages.value[nodeLocatorId]
+      if (current?.[executionId] !== instanceFrame) return
+      releaseUrls(instanceFrame)
+      delete current[executionId]
+    })
   }
 
-  function revokePreviewsByLocatorId(nodeLocatorId: NodeLocatorId) {
+  function releaseSharedPreviews(nodeLocatorId: NodeLocatorId) {
     const previews = nodePreviewImages.value[nodeLocatorId]
     if (!previews) return
 
-    for (const url of previews) {
-      releaseSharedObjectUrl(url)
-    }
-
+    releaseUrls(previews)
     delete nodePreviewImages.value[nodeLocatorId]
     delete useApp().nodePreviewImages[nodeLocatorId]
+  }
+
+  function releaseInstancePreviews(nodeLocatorId: NodeLocatorId) {
+    const instances = instancePreviewImages.value[nodeLocatorId]
+    if (!instances) return
+
+    for (const urls of Object.values(instances)) releaseUrls(urls)
+    delete instancePreviewImages.value[nodeLocatorId]
+  }
+
+  /** Removes the node's previews from every instance. */
+  function revokePreviewsByLocatorId(nodeLocatorId: NodeLocatorId) {
+    releaseInstancePreviews(nodeLocatorId)
+    releaseSharedPreviews(nodeLocatorId)
   }
 
   function releasePreviewUrls(previews: NodePreviewMap) {
@@ -483,10 +638,21 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     }
   }
 
+  function releaseInstancePreviewUrls(instances: InstancePreviewMap) {
+    for (const group of Object.values(instances))
+      releasePreviewUrls(group ?? {})
+  }
+
+  function clearLivePreviews() {
+    nodePreviewImages.value = {}
+    instancePreviewImages.value = {}
+    useApp().nodePreviewImages = {}
+  }
+
   function revokeAllPreviews() {
     releasePreviewUrls(nodePreviewImages.value)
-    nodePreviewImages.value = {}
-    useApp().nodePreviewImages = {}
+    releaseInstancePreviewUrls(instancePreviewImages.value)
+    clearLivePreviews()
   }
 
   /** Release the previews held for a workflow that is going away. */
@@ -495,7 +661,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!stashed) return
 
     stashedPreviews.delete(workflowPath)
-    releasePreviewUrls(stashed)
+    releasePreviewUrls(stashed.shared)
+    releaseInstancePreviewUrls(stashed.instances)
   }
 
   function discardClosedWorkflowPreviews() {
@@ -508,13 +675,18 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function stashPreviewsForWorkflow(workflowPath: string) {
     discardClosedWorkflowPreviews()
 
-    const previews = nodePreviewImages.value
-    if (Object.keys(previews).length) {
-      discardPreviewsForWorkflow(workflowPath)
-      stashedPreviews.set(workflowPath, previews)
+    const stash: PreviewStash = {
+      shared: nodePreviewImages.value,
+      instances: instancePreviewImages.value
     }
-    nodePreviewImages.value = {}
-    useApp().nodePreviewImages = {}
+    if (
+      Object.keys(stash.shared).length ||
+      Object.keys(stash.instances).length
+    ) {
+      discardPreviewsForWorkflow(workflowPath)
+      stashedPreviews.set(workflowPath, stash)
+    }
+    clearLivePreviews()
   }
 
   function addLivePreviewsToStash(workflowPath: string) {
@@ -524,19 +696,24 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       return
     }
 
-    const superseded: Record<string, string[]> = {}
-    for (const [nodeLocatorId, urls] of Object.entries(
-      nodePreviewImages.value
-    )) {
-      if (!urls) continue
+    const superseded: string[][] = []
+    function moveInto(target: NodePreviewMap, live: NodePreviewMap) {
+      for (const [key, urls] of Object.entries(live)) {
+        if (!urls) continue
 
-      const replaced = stashed[nodeLocatorId]
-      if (replaced) superseded[nodeLocatorId] = replaced
-      stashed[nodeLocatorId] = urls
+        const replaced = target[key]
+        if (replaced) superseded.push(replaced)
+        target[key] = urls
+      }
     }
-    releasePreviewUrls(superseded)
-    nodePreviewImages.value = {}
-    useApp().nodePreviewImages = {}
+    moveInto(stashed.shared, nodePreviewImages.value)
+    for (const [nodeLocatorId, group] of Object.entries(
+      instancePreviewImages.value
+    )) {
+      moveInto((stashed.instances[nodeLocatorId] ??= {}), group ?? {})
+    }
+    for (const urls of superseded) releaseUrls(urls)
+    clearLivePreviews()
   }
 
   function restorePreviewsForWorkflow(workflowPath: string | undefined) {
@@ -546,27 +723,71 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!stashed) return
     stashedPreviews.delete(workflowPath)
 
-    const live = nodePreviewImages.value
     const rootGraph = useApp().rootGraphOrUndefined
-    const released: Record<string, string[]> = {}
-    for (const [nodeLocatorId, urls] of Object.entries(stashed)) {
-      if (!urls) continue
+    const released: string[][] = []
+    function restoreInto(
+      live: NodePreviewMap,
+      stashedMap: NodePreviewMap,
+      nodeLocatorIdOf: (key: string) => string
+    ) {
+      for (const [key, urls] of Object.entries(stashedMap)) {
+        if (!urls) continue
 
-      if (live[nodeLocatorId] || !locatesInGraph(rootGraph, nodeLocatorId))
-        released[nodeLocatorId] = urls
-      else live[nodeLocatorId] = urls
+        if (live[key] || !locatesInGraph(rootGraph, nodeLocatorIdOf(key)))
+          released.push(urls)
+        else live[key] = urls
+      }
     }
-    releasePreviewUrls(released)
+
+    const live = nodePreviewImages.value
+    restoreInto(live, stashed.shared, (key) => key)
+    const liveInstances = instancePreviewImages.value
+    for (const [nodeLocatorId, group] of Object.entries(stashed.instances)) {
+      restoreInto(
+        (liveInstances[nodeLocatorId] ??= {}),
+        group ?? {},
+        () => nodeLocatorId
+      )
+    }
+    for (const urls of released) releaseUrls(urls)
     nodePreviewImages.value = { ...live }
+    instancePreviewImages.value = { ...liveInstances }
     useApp().nodePreviewImages = clone(nodePreviewImages.value)
   }
+
+  function pruneDetachedInstances() {
+    const rootGraph = useApp().rootGraphOrUndefined
+    forEachDetachedInstance(
+      rootGraph,
+      instanceOutputs.value,
+      (group, executionId) => {
+        delete group[executionId]
+      }
+    )
+    forEachDetachedInstance(
+      rootGraph,
+      instancePreviewImages.value,
+      (group, executionId) => {
+        cancelRevoke(instanceRevokes, executionId)
+        releaseUrls(group[executionId])
+        delete group[executionId]
+      }
+    )
+  }
+
+  onScopeDispose(
+    onGraphIntent((intent) => {
+      if (intent.type === 'remove_node' && intent.node.isSubgraphNode())
+        pruneDetachedInstances()
+    })
+  )
 
   function revokeSubgraphPreviews(subgraphNode: SubgraphNode, graph: LGraph) {
     revokePreviewsByLocatorId(
       createNodeLocatorId(graph.isRootGraph ? null : graph.id, subgraphNode.id)
     )
     for (const node of subgraphNode.subgraph.nodes) {
-      revokePreviewsByLocatorId(
+      releaseSharedPreviews(
         createNodeLocatorId(subgraphNode.subgraph.id, node.id)
       )
     }
@@ -575,16 +796,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function removeOutputsByLocatorId(nodeLocatorId: NodeLocatorId) {
     const hadOutputs = !!nodeOutputs.value[nodeLocatorId]
     delete nodeOutputs.value[nodeLocatorId]
+    delete instanceOutputs.value[nodeLocatorId]
     delete useApp().nodeOutputs[nodeLocatorId]
-
-    const previews = nodePreviewImages.value[nodeLocatorId]
-    if (previews) {
-      for (const url of previews) {
-        releaseSharedObjectUrl(url)
-      }
-      delete nodePreviewImages.value[nodeLocatorId]
-      delete useApp().nodePreviewImages[nodeLocatorId]
-    }
+    revokePreviewsByLocatorId(nodeLocatorId)
 
     return hadOutputs
   }
@@ -599,12 +813,20 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return removeOutputsByLocatorId(nodeToNodeLocatorId(node))
   }
 
-  function snapshotOutputs(): Record<string, ExecutedWsMessage['output']> {
-    return Object.fromEntries(
-      Object.entries(nodeOutputs.value).flatMap(([id, output]) =>
-        output ? [[id, clone(output)]] : []
-      )
-    )
+  /** Both output layers, detached from the store. */
+  function snapshotOutputs(): NodeOutputLayers {
+    return clone({
+      shared: pickBy(
+        toRaw(nodeOutputs.value),
+        (_, locatorId) => !outlivedEveryInstance(locatorId)
+      ),
+      instances: toRaw(instanceOutputs.value)
+    })
+  }
+
+  function outlivedEveryInstance(locatorId: string) {
+    const instances = instanceOutputs.value[locatorId]
+    return !!instances && Object.keys(instances).length === 0
   }
 
   function replaceOutputsFromLegacy(
@@ -615,6 +837,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       (_, id) => executionIdToNodeLocatorId(useApp().rootGraph, id) ?? id
     )
     nodeOutputs.value = { ...parsedOutputs }
+    instanceOutputs.value = pickBy(
+      instanceOutputs.value,
+      (_, nodeLocatorId) => nodeLocatorId in parsedOutputs
+    )
   }
 
   function setOutputFromLegacy(
@@ -628,13 +854,29 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function removeOutputFromLegacy(id: string): void {
     const locatorId = executionIdToNodeLocatorId(useApp().rootGraph, id) ?? id
     delete nodeOutputs.value[locatorId]
+    delete instanceOutputs.value[locatorId]
   }
 
-  function restoreOutputs(
+  /** Restores a {@link snapshotOutputs} record, keeping each instance's outputs apart. */
+  function restoreOutputs({ shared, instances }: NodeOutputLayers) {
+    nodeOutputs.value = clone(shared)
+    instanceOutputs.value = clone(instances)
+    pruneDetachedInstances()
+    useApp().nodeOutputs = clone(shared)
+  }
+
+  /** Replaces every output with a job's outputs keyed by execution ID. */
+  function restoreJobOutputs(
     outputs: Partial<Record<string, ExecutedWsMessage['output']>>
   ) {
-    replaceOutputsFromLegacy(outputs)
-    useApp().nodeOutputs = snapshotOutputs()
+    const layers: NodeOutputLayers = { shared: {}, instances: {} }
+    for (const [id, output] of Object.entries(outputs)) {
+      const executionId = tryNormalizeNodeExecutionId(id)
+      const nodeLocatorId = executionId && resolveLocator(executionId)
+      if (output && executionId && nodeLocatorId)
+        writeExecutedOutput(layers, nodeLocatorId, executionId, output, {})
+    }
+    restoreOutputs(layers)
   }
 
   function refreshNodeOutputs(node: LGraphNode) {
@@ -645,10 +887,17 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!outputs) return
 
     nodeOutputs.value[locatorId] = { ...outputs }
+    const instances = instanceOutputs.value[locatorId]
+    if (instances)
+      instanceOutputs.value[locatorId] = mapValues(
+        instances,
+        (output) => output && { ...output }
+      )
   }
 
   function resetAllOutputsAndPreviews() {
     nodeOutputs.value = {}
+    instanceOutputs.value = {}
     useApp().nodeOutputs = {}
     revokeAllPreviews()
   }
@@ -681,6 +930,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getPreviewParam,
 
     setNodeOutputs,
+    setOutputsByLocatorId,
     setNodeOutputImages,
     replaceNodeOutputImages,
     setNodeOutputsByExecutionId,
@@ -705,6 +955,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setOutputFromLegacy,
     removeOutputFromLegacy,
     restoreOutputs,
+    restoreJobOutputs,
     resetAllOutputsAndPreviews,
 
     nodeOutputs,

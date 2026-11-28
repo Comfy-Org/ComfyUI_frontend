@@ -7,6 +7,14 @@ type InputPreviewOutput = Pick<NodeExecutionOutput, 'images'> & {
   images: ResultItem[]
 }
 
+/** Outputs keyed by locator, plus each subgraph instance's own outputs grouped by locator and keyed by execution ID. */
+export interface NodeOutputLayers {
+  shared: Partial<Record<string, NodeExecutionOutput>>
+  instances: Partial<
+    Record<string, Partial<Record<string, NodeExecutionOutput>>>
+  >
+}
+
 export function isInputPreviewOutput(
   output: Pick<NodeExecutionOutput, 'images'> | undefined
 ): output is InputPreviewOutput {

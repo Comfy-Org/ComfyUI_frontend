@@ -569,6 +569,25 @@ describe('LGraphNode', () => {
     )
   })
 
+  it('resolves a replacement graph node when node state is rebuilt with the same id', async () => {
+    mockData.mockLgraphNode = {
+      ...baseLgraphNodeMock,
+      hideOutputImages: true
+    }
+    seedNodeOutputs([{ filename: 'output.png', type: 'output' }])
+    const { rerender } = renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
+
+    mockData.mockLgraphNode = {
+      ...baseLgraphNodeMock,
+      hideOutputImages: false
+    }
+    await rerender({ nodeData: { ...mockNodeData } })
+
+    expect(screen.getByTestId('node-content')).toHaveTextContent('output.png')
+  })
+
   it('keeps legacy video files without adding text outputs to the preview', () => {
     const outputs = seedNodeOutputs([])
     outputs.nodeOutputs['test-node-123'] = {

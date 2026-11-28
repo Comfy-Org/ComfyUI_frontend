@@ -910,6 +910,7 @@
           "src/stores/jobPreviewStore.test.ts",
           "src/stores/nodeOutputStore.ts",
           "src/stores/nodeOutputStore.insertWorkflowOutputs.test.ts",
+          "src/stores/nodeOutputStore.instances.test.ts",
           "src/stores/nodeOutputStore.test.ts",
           "src/stores/nodeOutputStore.workflowSwitch.test.ts",
           "src/utils/__tests__/executionErrorTestUtils.ts",
