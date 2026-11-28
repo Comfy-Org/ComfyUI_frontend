@@ -167,7 +167,6 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   IColorable,
-  INodeSlot,
   ISlotType,
   LinkSegment,
   NullableProperties,
@@ -396,6 +395,21 @@ const temp_vec2: Point = [0, 0]
 const tmp_area = new Rectangle()
 const margin_area = new Rectangle()
 const link_bounding = new Rectangle()
+
+function addFloatingRerouteAtSlot(
+  canvas: LGraphCanvas,
+  node: LGraphNode,
+  slot: INodeInputSlot | INodeOutputSlot,
+  pos: Point
+): void {
+  canvas.emitBeforeChange()
+  try {
+    node.connectFloatingReroute(pos, slot)
+    canvas.setDirty(false, true)
+  } finally {
+    canvas.emitAfterChange()
+  }
+}
 
 function searchBoxOutputSlotIndex(
   node: LGraphNode | SubgraphInputNode,
@@ -3454,13 +3468,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !this.connecting_links &&
       !node.flags.collapsed
     ) {
-      // not dragging mouse to connect two slots
-      let mClikSlot: INodeSlot | false = false
+      let mClikSlot: INodeInputSlot | INodeOutputSlot | false = false
       let mClikSlot_index: number | false = false
       let mClikSlot_isOut: boolean = false
       const { inputs, outputs } = node
 
-      // search for outputs
       for (const [i, output] of outputs.entries()) {
         const link_pos = node.getOutputPos(i)
         if (
@@ -3480,7 +3492,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
       }
 
-      // search for inputs
       for (const [i, input] of inputs.entries()) {
         const link_pos = node.getInputPos(i)
         if (
@@ -3499,15 +3510,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           break
         }
       }
-      // Middle clicked a slot
       if (mClikSlot && mClikSlot_index !== false) {
         const alphaPosY =
           0.5 -
           (mClikSlot_index + 1) /
             (mClikSlot_isOut ? outputs.length : inputs.length)
         const node_bounding = node.getBounding()
-        // estimate a position: this is a bad semi-bad-working mess .. REFACTOR with
-        // a correct autoplacement that knows about the others slots and nodes
         const posRef: Point = [
           !mClikSlot_isOut
             ? node_bounding[0]
@@ -3515,21 +3523,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           e.canvasY - 80
         ]
 
+        const slot = mClikSlot
         pointer.onClick = () =>
-          this.createDefaultNodeForSlot({
-            nodeFrom: !mClikSlot_isOut ? null : node,
-            slotFrom: !mClikSlot_isOut ? null : mClikSlot_index,
-            nodeTo: !mClikSlot_isOut ? node : null,
-            slotTo: !mClikSlot_isOut ? mClikSlot_index : null,
-            position: posRef,
-            nodeType: 'AUTO',
-            posAdd: [!mClikSlot_isOut ? -30 : 30, -alphaPosY * 130],
-            posSizeFix: [!mClikSlot_isOut ? -1 : 0, 0]
-          })
+          LiteGraph.prefer_link_reroutes
+            ? addFloatingRerouteAtSlot(this, node, slot, [
+                posRef[0] + (mClikSlot_isOut ? 80 : -80),
+                e.canvasY
+              ])
+            : this.createDefaultNodeForSlot({
+                nodeFrom: !mClikSlot_isOut ? null : node,
+                slotFrom: !mClikSlot_isOut ? null : mClikSlot_index,
+                nodeTo: !mClikSlot_isOut ? node : null,
+                slotTo: !mClikSlot_isOut ? mClikSlot_index : null,
+                position: posRef,
+                nodeType: 'AUTO',
+                posAdd: [!mClikSlot_isOut ? -30 : 30, -alphaPosY * 130],
+                posSizeFix: [!mClikSlot_isOut ? -1 : 0, 0]
+              })
       }
     }
 
-    // Drag canvas using middle mouse button
     if (this.allow_dragcanvas) {
       pointer.onDragStart = () => (this.dragging_canvas = true)
       pointer.finally = () => (this.dragging_canvas = false)
@@ -7002,8 +7015,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
       const { name } = slotX
       iSlotConn = nodeX.slots.findIndex((s) => s.name === name)
-      // If it's not found in the main slots, it might be the empty slot from a Subgraph node.
-      // In that case, the original `slotX` object is the correct one, so don't overwrite it.
       if (iSlotConn !== -1) {
         slotX = nodeX.slots[iSlotConn]
       }
@@ -7021,7 +7032,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             return
           }
 
-          // ok slotX
           iSlotConn = isFrom
             ? nodeX.findOutputSlot(slotX.name)
             : nodeX.findInputSlot(slotX.name)
@@ -7042,7 +7052,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options.push('Search', null)
     }
 
-    // get defaults nodes for this slottype
     const fromSlotType =
       slotX.type == LiteGraph.EVENT ? '_event_' : slotTypeKey(slotX.type)
     const slotTypesDefault = isFrom
@@ -7056,11 +7065,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const slotDefault of defaults) {
         const nodeType =
           typeof slotDefault === 'string' ? slotDefault : slotDefault.node
-        if (nodeType) options.push(nodeType)
+        if (nodeType && !LiteGraph.registered_node_types[nodeType]?.skip_list)
+          options.push(nodeType)
       }
     }
 
-    // build menu
     const menu = new LiteGraph.ContextMenu<string>(options, {
       event: opts.e,
       extra: slotX,
@@ -7072,7 +7081,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     return menu
 
-    // callback
     function inner_clicked(
       this: LGraphCanvas,
       v: string | undefined,
@@ -7096,7 +7104,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 { afterRerouteId }
               )
               if (!slot) console.warn('Failed to make new connection.')
-              // }
             } else {
               if (!opts.nodeTo)
                 throw new TypeError(

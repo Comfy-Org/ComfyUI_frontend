@@ -327,7 +327,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
    * Register the core node definition filters.
    */
   function registerCoreNodeDefFilters() {
-    // Deprecated nodes filter
     registerNodeDefFilter({
       id: 'core.deprecated',
       name: t('nodeFilters.hideDeprecated'),
@@ -335,7 +334,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       predicate: (nodeDef) => showDeprecated.value || !nodeDef.deprecated
     })
 
-    // Experimental nodes filter
     registerNodeDefFilter({
       id: 'core.experimental',
       name: t('nodeFilters.hideExperimental'),
@@ -343,7 +341,6 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
     })
 
-    // Dev-only nodes filter
     registerNodeDefFilter({
       id: 'core.dev_only',
       name: t('nodeFilters.hideDevOnly'),
@@ -351,14 +348,20 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       predicate: (nodeDef) => showDevOnly.value || !nodeDef.dev_only
     })
 
-    // Subgraph nodes filter
-    // Filter out litegraph typed subgraphs, saved blueprints are added in separately
+    registerNodeDefFilter({
+      id: 'core.rerouteNode',
+      name: t('nodeFilters.hideRerouteNode'),
+      description: t('nodeFilters.hideRerouteNodeDescription'),
+      predicate: (nodeDef) =>
+        nodeDef.name !== 'Reroute' ||
+        !settingStore.get('LiteGraph.Reroute.PreferLinkReroutes')
+    })
+
     registerNodeDefFilter({
       id: 'core.subgraph',
       name: t('nodeFilters.hideSubgraph'),
       description: t('nodeFilters.hideSubgraphDescription'),
       predicate: (nodeDef) => {
-        // Hide subgraph nodes (identified by category='subgraph' and python_module='nodes')
         return !(
           nodeDef.category === 'subgraph' && nodeDef.python_module === 'nodes'
         )

@@ -1140,6 +1140,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.10.5'
   },
   {
+    id: 'LiteGraph.Reroute.PreferLinkReroutes',
+    name: 'Use link reroutes instead of Reroute nodes',
+    tooltip:
+      'Converts supported Reroute nodes to link reroutes when a workflow loads, hides the Reroute node from node search, and makes reroute shortcuts create link reroutes.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.62.0'
+  },
+  {
     id: 'LiteGraph.Reroute.SplineOffset',
     name: 'Reroute spline offset',
     tooltip: 'The bezier control point offset from the reroute centre point',

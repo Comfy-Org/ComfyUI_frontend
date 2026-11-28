@@ -18,6 +18,8 @@ import {
   convertContextMenuToOptions
 } from './contextMenuConverter'
 
+const labels = { extensions: 'Extensions', repair: 'Repair' }
+
 describe('node menu assembly', () => {
   it.for(['en', 'fr'])(
     'keeps media first, core sections ordered, extensions intact and Delete last in %s',
@@ -42,7 +44,10 @@ describe('node menu assembly', () => {
         { id: 'openImage', label: t('contextMenu.Open Image') }
       ]
 
-      const result = buildStructuredMenu(options, t('contextMenu.Extensions'))
+      const result = buildStructuredMenu(options, {
+        extensions: t('contextMenu.Extensions'),
+        repair: t('contextMenu.Repair')
+      })
 
       expect(
         result.map((option) => option.id ?? option.type ?? option.label)
@@ -86,7 +91,7 @@ describe('node menu assembly', () => {
     } satisfies MenuOption
     const extension = { label: 'Désépingler', action: extensionAction }
 
-    const result = buildStructuredMenu([native, extension, vue], 'Extensions')
+    const result = buildStructuredMenu([native, extension, vue], labels)
 
     expect(result.filter((option) => option.action)).toEqual([vue, extension])
     result[0].action?.()
@@ -107,7 +112,7 @@ describe('node menu assembly', () => {
         { id: 'copy', label: 'Copy' },
         { id: 'delete', label: 'Delete' }
       ],
-      'Extensions'
+      labels
     )
 
     expect(result.map((option) => option.label ?? option.type)).toEqual([
@@ -136,17 +141,50 @@ describe('node menu assembly', () => {
       name: 'extensions only',
       options: [{ label: 'Custom' }],
       expected: ['Extensions', 'Custom']
+    },
+    {
+      name: 'repairs only',
+      options: [{ id: 'repair:convert', label: 'Convert' }],
+      expected: ['Repair', 'Convert']
     }
   ] satisfies { name: string; options: MenuOption[]; expected: string[] }[])(
     'avoids empty sections and stray dividers for $name',
     ({ options, expected }) => {
       expect(
-        buildStructuredMenu(options, 'Extensions').map(
+        buildStructuredMenu(options, labels).map(
           (option) => option.label ?? option.type
         )
       ).toEqual(expected)
     }
   )
+
+  it('puts repairs in their own section between core actions and Extensions', () => {
+    const result = buildStructuredMenu(
+      [
+        { id: 'delete', label: 'Delete' },
+        { label: 'Custom', action: vi.fn() },
+        { id: 'repair:convertRerouteNodes', label: 'Convert' },
+        { id: 'pin', label: 'Pin' }
+      ],
+      labels
+    )
+
+    expect(result.map((option) => option.label ?? option.type)).toEqual([
+      'Pin',
+      'divider',
+      'Repair',
+      'Convert',
+      'divider',
+      'Extensions',
+      'Custom',
+      'divider',
+      'Delete'
+    ])
+    expect(result.find((option) => option.label === 'Repair')).toMatchObject({
+      type: 'category',
+      disabled: true
+    })
+  })
 
   it('keeps legacy-only core actions and scoped widget actions outside Extensions', () => {
     const firstWidget = {
@@ -166,7 +204,7 @@ describe('node menu assembly', () => {
         { id: 'advanced', label: 'Show Advanced' },
         { id: 'editSubgraphWidgets', label: 'Edit Subgraph Widgets' }
       ],
-      'Extensions'
+      labels
     )
 
     expect(result.map((option) => option.label ?? option.type)).toEqual([

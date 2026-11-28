@@ -89,7 +89,7 @@ describe('Comfy.MaskEditor getExtraMenuOptions', () => {
     const node = createMockLGraphNode({ previewMediaType: 'image', imgs: [] })
     const options = buildStructuredMenu(
       convertContextMenuToOptions(menuOptions(nodeType, node), node),
-      'Extensions'
+      { extensions: 'Extensions', repair: 'Repair' }
     )
 
     expect(options.map((option) => option.label)).toEqual([

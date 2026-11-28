@@ -7,6 +7,11 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  getCanvasRepairItems,
+  getNodeRepairItems,
+  toLitegraphRepairSection
+} from '@/platform/graphRepair/repairMenu'
 import { useApp } from '@/scripts/appInstance'
 
 export function translateContextMenuItems(
@@ -66,13 +71,11 @@ export const useContextMenuTranslation = () => {
       args
     )
 
-    // Add items from new extension API
     const newApiItems = useApp().collectCanvasMenuItems(this)
     for (const item of newApiItems) {
       res.push(item)
     }
 
-    // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
       'getCanvasMenuOptions',
       this,
@@ -81,8 +84,8 @@ export const useContextMenuTranslation = () => {
     for (const item of legacyItems) {
       res.push(item)
     }
+    res.push(...toLitegraphRepairSection(getCanvasRepairItems(this)))
 
-    // Translate all items
     for (const item of res) {
       if (item?.content) {
         item.content = st(`contextMenu.${item.content}`, item.content)
@@ -111,14 +114,12 @@ export const useContextMenuTranslation = () => {
   ) {
     const res = nodeMenuFn.apply(this, args) as (IContextMenuValue | null)[]
 
-    // Add items from new extension API
     const node = args[0]
     const newApiItems = useApp().collectNodeMenuItems(node)
     for (const item of newApiItems) {
       res.push(item)
     }
 
-    // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
       'getNodeMenuOptions',
       this,
@@ -127,6 +128,7 @@ export const useContextMenuTranslation = () => {
     for (const item of legacyItems) {
       res.push(item)
     }
+    res.push(...toLitegraphRepairSection(getNodeRepairItems(this, node)))
 
     return res
   }

@@ -128,6 +128,7 @@ export type Settings = {
   'Comfy.Canvas.SelectionToolbox': boolean
   'LiteGraph.Node.TooltipDelay': number
   'LiteGraph.ContextMenu.Scaling': boolean
+  'LiteGraph.Reroute.PreferLinkReroutes': boolean
   'LiteGraph.Reroute.SplineOffset': number
   'LiteGraph.Canvas.LowQualityRenderingZoomThreshold': number
   'Comfy.Toast.DisableReconnectingToast': boolean

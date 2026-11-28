@@ -231,6 +231,7 @@ import {
   migrateLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
+import { convertRerouteNodesOnLoad } from '@/platform/graphRepair/rerouteNodeRepair'
 import { deserialiseAndCreate } from '@/core/graph/clipboard/vintageClipboard'
 
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
@@ -1553,6 +1554,7 @@ export class ComfyApp implements IComfyApp {
         }
         if (
           checkForRerouteMigration &&
+          !useSettingStore().get('LiteGraph.Reroute.PreferLinkReroutes') &&
           graphData.version === 0.4 &&
           findLegacyRerouteNodes(graphData).length &&
           noNativeReroutes(graphData)
@@ -1833,6 +1835,11 @@ export class ComfyApp implements IComfyApp {
             configureContext
           )
         )
+        if (
+          !options.restoreHistory &&
+          useSettingStore().get('LiteGraph.Reroute.PreferLinkReroutes')
+        )
+          withGraphIntentSource('load', () => convertRerouteNodesOnLoad(graph))
         if (isCurrent?.() === false) {
           await cancelReplacedLoad()
           return { loaded: false }
