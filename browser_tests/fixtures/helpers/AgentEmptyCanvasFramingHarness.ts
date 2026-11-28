@@ -70,11 +70,7 @@ function templateAddNodeOps() {
   })
 }
 
-/**
- * Every node id, with whether its rect is drawn inside the part of the canvas
- * no panel covers. `ds.visible_area` is the whole canvas element, including the
- * strip under the docked agent panel, so it is not what the user can see.
- */
+/** Reports whether each node overlaps the uncovered canvas panel. */
 export async function nodeVisibility(
   page: Page,
   ids: readonly number[]
@@ -120,10 +116,7 @@ export async function nodePositions(
   }, ids.map(String))
 }
 
-/**
- * Drives one agent turn that inserts a template onto the user's empty tab,
- * with the doc host under the test's control.
- */
+/** Drives a controlled agent turn that inserts a template into an empty tab. */
 export class AgentEmptyCanvasFramingHarness {
   private readonly host: HostDoc
   private readonly hostSocket: AgentFollowerHostSocket
@@ -176,15 +169,6 @@ export class AgentEmptyCanvasFramingHarness {
     )
   }
 
-  /**
-   * The user's own blank tab, with the camera where a fresh tab leaves it.
-   *
-   * Asserted rather than assumed: the app boots with the default workflow on
-   * the canvas, and a batch landing beside *that* is the populated-canvas case
-   * ADR-CRDT-PLACEMENT-0035 already covers. Without this the spec silently
-   * measures the wrong scenario — it did, and the template's nodes came back
-   * translated to [1660, 110].
-   */
   private async emptyTheCanvas(): Promise<void> {
     await this.page.evaluate(() => {
       const app = window.app!

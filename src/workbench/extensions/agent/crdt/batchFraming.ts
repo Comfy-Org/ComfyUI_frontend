@@ -6,14 +6,8 @@ import type {
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 
 interface BatchFramingInput {
-  /** The nodes this batch added, in graph coordinates. */
   batch: readonly { pos: Readonly<PointTuple>; size: Readonly<PointTuple> }[]
-  /** How many nodes are on this graph that the batch did not add. */
   nodesNotInBatch: number
-  /**
-   * The part of the canvas no panel covers, in graph coordinates, or null
-   * when it has not been measured.
-   */
   viewport: ReadOnlyRect | null
 }
 
@@ -28,13 +22,7 @@ function isMeasured(rect: ReadOnlyRect): boolean {
   )
 }
 
-/**
- * Whether the camera should be moved to an agent batch that just landed: true
- * only when the batch is the entire content of the graph, the viewport has
- * been measured, and no node of the batch is drawn inside it.
- *
- * ADR-AGENT-VIEWPORT-0062.
- */
+/** Returns whether a whole-graph batch is outside the measured viewport. */
 export function shouldFrameAgentBatch({
   batch,
   nodesNotInBatch,
