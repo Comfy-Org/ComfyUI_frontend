@@ -1517,23 +1517,30 @@ export class LiveGraphApplier {
       return 'updated'
     }
     if (replacement) {
-      if (
-        graph.getNodeById(toNodeId(id)) !== live ||
-        !replacement.isCurrent()
-      ) {
-        replacement.cancelUnattachedSubscriptions()
-        return 'skipped'
+      try {
+        if (
+          graph.getNodeById(toNodeId(id)) !== live ||
+          !replacement.isCurrent()
+        )
+          return 'skipped'
+        const preservedLayout = layoutOf(live)
+        graph.remove(live)
+        if (!replacement.isCurrent()) return 'skipped'
+        this.createNode(
+          graph,
+          docNode,
+          mode,
+          context,
+          preservedLayout,
+          replacement.node
+        )
+      } finally {
+        if (
+          graph.getNodeById(replacement.node.id) !== replacement.node ||
+          replacement.node.graph !== graph
+        )
+          replacement.cancelUnattachedSubscriptions()
       }
-      const preservedLayout = layoutOf(live)
-      graph.remove(live)
-      this.createNode(
-        graph,
-        docNode,
-        mode,
-        context,
-        preservedLayout,
-        replacement.node
-      )
     } else {
       graph.remove(live)
       this.createNode(graph, docNode, mode, context)

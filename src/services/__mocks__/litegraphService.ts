@@ -14,7 +14,6 @@ export const getExtraOptionsForWidget = vi.fn<
 const litegraphService: ReturnType<typeof realUseLitegraphService> = {
   registerNodeDef: vi.fn(async () => {}),
   registerSubgraphNodeDef: vi.fn(),
-  reportMissingSubgraphTarget: vi.fn(),
   addNodeOnGraph: vi.fn(() => null),
   addNodeInput: vi.fn(),
   getCanvasCenter: vi.fn(() => [0, 0] satisfies [number, number]),

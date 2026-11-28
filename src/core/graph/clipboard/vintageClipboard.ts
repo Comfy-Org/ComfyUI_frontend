@@ -7,11 +7,6 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
-export interface DeserialisedGraphNodes {
-  createdNodes: LGraphNode[]
-  nodesBySourceIndex: (LGraphNode | null)[]
-}
-
 function topLeftPosition(
   nodes: readonly { pos?: Readonly<Vector2> }[],
   fallback: Readonly<Vector2>
@@ -26,11 +21,11 @@ function topLeftPosition(
     : [fallback[0], fallback[1]]
 }
 
-export function deserialiseIntoGraphWithSourceIndices(
+export function deserialiseIntoGraph(
   data: string,
   graph: LGraph,
   position: Readonly<Vector2>
-): DeserialisedGraphNodes {
+): LGraphNode[] {
   const deserialised = JSON.parse(data)
   const nodesBySourceIndex: (LGraphNode | null)[] = []
   const topLeft = topLeftPosition(deserialised.nodes, position)
@@ -63,17 +58,7 @@ export function deserialiseIntoGraphWithSourceIndices(
   const createdNodes = nodesBySourceIndex.filter(
     (node): node is LGraphNode => node !== null
   )
-  return { createdNodes, nodesBySourceIndex }
-}
-
-/** Creates serialised nodes and links in `graph` at `position`; returns created nodes in source order. */
-export function deserialiseIntoGraph(
-  data: string,
-  graph: LGraph,
-  position: Readonly<Vector2>
-): LGraphNode[] {
-  return deserialiseIntoGraphWithSourceIndices(data, graph, position)
-    .createdNodes
+  return createdNodes
 }
 
 /** Inserts legacy relative-index payloads, configuring nodes before graph attachment. */

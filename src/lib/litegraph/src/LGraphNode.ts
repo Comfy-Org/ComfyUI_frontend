@@ -18,11 +18,7 @@ import type {
   SubgraphOutputNode
 } from '@comfyorg/graph-model/entityRegistry'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
-import {
-  NODE_CREATION_GRAPH_FACTORY,
-  NODE_CREATION_TARGET_SUBGRAPH_ID,
-  nodeDefinition
-} from './nodeConstruction'
+import { NODE_CREATION_GRAPH_FACTORY, nodeDefinition } from './nodeConstruction'
 import type { NodeConstructionCapability } from './nodeConstruction'
 import { toValue } from 'vue'
 
@@ -449,7 +445,6 @@ export class LGraphNode
 {
   // Static properties used by dynamic child classes
   static [NODE_CREATION_GRAPH_FACTORY]?: NodeConstructionCapability
-  static [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
   static title?: string
   static MAX_CONSOLE?: number
   static type?: string

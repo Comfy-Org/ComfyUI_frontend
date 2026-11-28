@@ -998,6 +998,11 @@ export class GroupNodeHandler {
           }
         }
 
+        const replacedOutputTargets: {
+          groupOutputId: number
+          targetNode: LGraphNode
+          targetSlot: number
+        }[] = []
         const reconnectOutputs = () => {
           for (
             let groupOutputId = 0;
@@ -1011,9 +1016,26 @@ export class GroupNodeHandler {
               const targetNode = graph.getNodeById(link.target_id)
               const newNode = createdNodes.at(slot.node.index ?? 0)
               if (targetNode) {
+                replacedOutputTargets.push({
+                  groupOutputId,
+                  targetNode,
+                  targetSlot: link.target_slot
+                })
                 newNode?.connect(slot.slot, targetNode, link.target_slot)
               }
             }
+          }
+        }
+        const restoreOutputs = () => {
+          for (const {
+            groupOutputId,
+            targetNode,
+            targetSlot
+          } of replacedOutputTargets) {
+            if (graph.getNodeById(node.id) !== node) continue
+            if (graph.getNodeById(targetNode.id) !== targetNode) continue
+            if (targetNode.getInputLink(targetSlot)) continue
+            node.connect(groupOutputId, targetNode, targetSlot)
           }
         }
 
@@ -1035,7 +1057,11 @@ export class GroupNodeHandler {
         }
         yield { phase: 'widgets', apply: updateWidgets }
         yield { phase: 'reconnect', apply: reconnectInputs }
-        yield { phase: 'reconnect', apply: reconnectOutputs }
+        yield {
+          phase: 'reconnect',
+          apply: reconnectOutputs,
+          compensate: restoreOutputs
+        }
       }
     })
   }

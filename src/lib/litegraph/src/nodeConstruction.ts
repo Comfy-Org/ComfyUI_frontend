@@ -14,9 +14,6 @@ type NodeDefinition = Omit<
 >
 
 export const NODE_CREATION_GRAPH_FACTORY = Symbol('nodeCreationGraphFactory')
-export const NODE_CREATION_TARGET_SUBGRAPH_ID = Symbol(
-  'nodeCreationTargetSubgraphId'
-)
 
 type CreationRequest = Readonly<{
   type: string
@@ -34,7 +31,6 @@ type NodeCreationRefusal =
       kind: 'refused'
       reason: 'missing-owned-definition'
       type: string
-      targetSubgraphId: string
       report: () => void
     }
 

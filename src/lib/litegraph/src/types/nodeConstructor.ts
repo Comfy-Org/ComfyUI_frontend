@@ -4,7 +4,6 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parse
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type {
   NODE_CREATION_GRAPH_FACTORY,
-  NODE_CREATION_TARGET_SUBGRAPH_ID,
   NodeConstructionCapability
 } from '@/lib/litegraph/src/nodeConstruction'
 import type { SizeTuple as Size } from '@comfyorg/shared-frontend-utils/geometry'
@@ -14,7 +13,6 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   new (title: string, type?: string): T
 
   [NODE_CREATION_GRAPH_FACTORY]?: NodeConstructionCapability
-  [NODE_CREATION_TARGET_SUBGRAPH_ID]?: string
   title?: string
   desc?: string
   priority?: number

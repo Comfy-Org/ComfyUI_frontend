@@ -17,14 +17,13 @@ test.describe(
       await comfyPage.workflow.openPersistedWorkflow('background-target')
       await comfyPage.workflow.switchToTab('background-target')
       const backgroundSubgraph = await comfyPage.nodeOps.getNodeRefById(2)
+      await backgroundSubgraph.centerOnNode()
       await backgroundSubgraph.navigateIntoSubgraph()
       const backgroundSampler = await comfyPage.nodeOps.getNodeRefById(1)
       await backgroundSampler.centerOnNode()
       const backgroundSeed = await backgroundSampler.getWidgetByName('seed')
       await backgroundSeed.click()
-      await comfyPage.page.keyboard.press('ControlOrMeta+A')
-      await comfyPage.page.keyboard.type('24680')
-      await comfyPage.page.keyboard.press('Enter')
+      await comfyPage.nodeOps.fillLegacyWidgetDialog('24680')
       await expect
         .poll(() =>
           comfyPage.page.evaluate(
@@ -63,7 +62,6 @@ test.describe(
         }
       })
       expect(graphIds.background).not.toBe(graphIds.active)
-      test.setTimeout(60_000)
 
       await test.step('restore background workflow and stale registration', async () => {
         await comfyPage.page.evaluate(async () => {
@@ -132,9 +130,7 @@ test.describe(
           await visibleSampler.centerOnNode()
           const visibleSeed = await visibleSampler.getWidgetByName('seed')
           await visibleSeed.click()
-          await comfyPage.page.keyboard.press('ControlOrMeta+A')
-          await comfyPage.page.keyboard.type('13579')
-          await comfyPage.page.keyboard.press('Enter')
+          await comfyPage.nodeOps.fillLegacyWidgetDialog('13579')
           await expect
             .poll(() =>
               comfyPage.page.evaluate(
@@ -155,8 +151,6 @@ test.describe(
         await comfyPage.workflow.switchToTab('background-target')
         const backgroundSubgraph = await comfyPage.nodeOps.getNodeRefById(2)
         await backgroundSubgraph.navigateIntoSubgraph()
-        const backgroundSampler = await comfyPage.nodeOps.getNodeRefById(1)
-        await backgroundSampler.getWidgetByName('seed')
         await expect
           .poll(() =>
             comfyPage.page.evaluate(
@@ -173,8 +167,6 @@ test.describe(
       await test.step('verify visible workflow edit survives tab return', async () => {
         await comfyPage.workflow.switchToTab('visible-target')
         await addedSubgraph.navigateIntoSubgraph()
-        const restoredVisibleSampler = await comfyPage.nodeOps.getNodeRefById(1)
-        await restoredVisibleSampler.getWidgetByName('seed')
         await expect
           .poll(() =>
             comfyPage.page.evaluate(

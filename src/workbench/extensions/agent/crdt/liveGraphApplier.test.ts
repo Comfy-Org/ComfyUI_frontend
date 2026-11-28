@@ -29,10 +29,7 @@ import {
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import {
-  NODE_CREATION_GRAPH_FACTORY,
-  NODE_CREATION_TARGET_SUBGRAPH_ID
-} from '@/lib/litegraph/src/nodeConstruction'
+import { NODE_CREATION_GRAPH_FACTORY } from '@/lib/litegraph/src/nodeConstruction'
 import type { NodeConstructionCapability } from '@/lib/litegraph/src/nodeConstruction'
 import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -47,6 +44,7 @@ import type {
   LGraphCanvas
 } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useLitegraphService } from '@/services/litegraphService'
 import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
@@ -1205,7 +1203,6 @@ describe('LiveGraphApplier', () => {
               kind: 'refused',
               reason: 'missing-owned-definition',
               type,
-              targetSubgraphId: type,
               report: () => {}
             }
           },
@@ -1302,8 +1299,6 @@ describe('LiveGraphApplier', () => {
         })
       }
 
-      static override [NODE_CREATION_TARGET_SUBGRAPH_ID] = targetId
-
       static override [NODE_CREATION_GRAPH_FACTORY]: NodeConstructionCapability =
         {
           prepare: ({ registered, graph, type }) => {
@@ -1313,7 +1308,6 @@ describe('LiveGraphApplier', () => {
                 kind: 'refused',
                 reason: 'missing-owned-definition',
                 type,
-                targetSubgraphId: targetId,
                 report: () => {}
               }
             }
@@ -1322,7 +1316,7 @@ describe('LiveGraphApplier', () => {
               construct: () =>
                 createTestSubgraphNode(target, { parentGraph: graph }),
               isCurrent: () =>
-                registered[NODE_CREATION_TARGET_SUBGRAPH_ID] === targetId &&
+                LiteGraph.registered_node_types[type] === registered &&
                 graph.rootGraph.subgraphs.get(targetId) === target,
               cancel: () => {}
             }
@@ -1357,10 +1351,87 @@ describe('LiveGraphApplier', () => {
 
     const resolved = graph.getNodeById(toNodeId(1))
     assert(resolved?.isSubgraphNode())
-    expect(resolved).not.toBe(placeholder)
     expect(resolved.type).toBe(type)
     expect(resolved.subgraph).toBe(target)
   })
+
+  it.for(['release', 'throw'] as const)(
+    'cancels an unattached replacement when placeholder removal %s exits',
+    (exit) => {
+      const type = crypto.randomUUID()
+      const docNode = (pos: [number, number]) => ({
+        id: 1,
+        type,
+        pos,
+        size: [210, 100]
+      })
+      const { graph, doc, applyCollected, applyEdit } = setup({
+        nodes: [docNode([0, 0])],
+        links: []
+      })
+      applyCollected()
+      const placeholder = graph.getNodeById(toNodeId(1))
+      assert.exists(placeholder)
+
+      const definitionData = createTestSubgraphData({ id: type })
+      const definition = graph.createSubgraph(definitionData)
+      useLitegraphService().registerSubgraphNodeDef(
+        {
+          input: { required: {} },
+          output: [],
+          output_is_list: [],
+          output_name: [],
+          name: type,
+          display_name: 'Recovery target',
+          description: 'Recovery target',
+          category: 'test',
+          output_node: false,
+          python_module: 'test'
+        },
+        definition,
+        {
+          id: -1,
+          type,
+          pos: [0, 0],
+          size: [210, 100],
+          inputs: [],
+          outputs: [],
+          flags: {},
+          order: 0,
+          mode: 0
+        }
+      )
+      const Generated = LiteGraph.registered_node_types[type]
+      assert.exists(Generated)
+      const candidates: SubgraphNode[] = []
+      class CapturingReplacement extends Generated {
+        constructor(title: string) {
+          super(title)
+          assert.instanceOf(this, SubgraphNode)
+          candidates.push(this)
+        }
+      }
+      LiteGraph.registerNodeType(type, CapturingReplacement)
+      const removalError = new Error('placeholder removal failed')
+      placeholder.onRemoved = () => {
+        if (exit === 'release') graph.releaseSubgraphs([definition])
+        else throw removalError
+      }
+
+      applyEdit(() => {
+        nodesMap(doc).set(
+          '1',
+          new Y.Map<unknown>(Object.entries(docNode([20, 30])))
+        )
+      })
+
+      const candidate = candidates[0]
+      assert.exists(candidate)
+      definition.addOutput('afterFailure', 'MASK')
+      expect(candidate.outputs).toEqual([])
+      expect(graph.getNodeById(candidate.id)).not.toBe(candidate)
+    }
+  )
 
   it('keeps a placeholder when the replacement constructor throws', () => {
     const type = 'TestThrowingConstruction'

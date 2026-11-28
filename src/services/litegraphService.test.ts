@@ -349,76 +349,89 @@ describe('useLitegraphService().registerSubgraphNodeDef ownership', () => {
     expect(direct.graph).toBe(graphB)
   })
 
-  it('stops updating an abandoned extension node without cancelling its successful sibling', () => {
-    const subgraphId = '00000000-0000-4000-8000-000000000127'
-    const graph = createTestRootGraph()
-    const definition = graph.createSubgraph(
-      createTestSubgraphData({
-        id: subgraphId,
-        inputs: [{ id: 'value', name: 'value', type: 'INT' }]
-      })
-    )
-    useLitegraphService().registerSubgraphNodeDef(
-      createNodeDefV1({ name: subgraphId, output: [] }),
-      definition,
-      subgraphInstanceData(subgraphId)
-    )
-    const Registered = LiteGraph.registered_node_types[subgraphId]
-    assert.exists(Registered)
-    const abandonedNodes: SubgraphNode[] = []
-    const cause = new Error('Extension constructor failed after super')
-    class ThrowingExtension extends Registered {
-      constructor(title: string) {
-        super(title)
-        assert.instanceOf(this, SubgraphNode)
-        abandonedNodes.push(this)
-        throw cause
+  it.for(['constructor', 'onNodeCreated'] as const)(
+    'stops updating a host abandoned during %s without cancelling its sibling',
+    (failurePhase) => {
+      const subgraphId = '00000000-0000-4000-8000-000000000127'
+      const graph = createTestRootGraph()
+      const definition = graph.createSubgraph(
+        createTestSubgraphData({
+          id: subgraphId,
+          inputs: [{ id: 'value', name: 'value', type: 'INT' }]
+        })
+      )
+      useLitegraphService().registerSubgraphNodeDef(
+        createNodeDefV1({ name: subgraphId, output: [] }),
+        definition,
+        subgraphInstanceData(subgraphId)
+      )
+      const Registered = LiteGraph.registered_node_types[subgraphId]
+      assert.exists(Registered)
+      const abandonedNodes: SubgraphNode[] = []
+      const cause = new Error('Extension constructor failed after super')
+      class ThrowingExtension extends Registered {
+        constructor(title: string) {
+          super(title)
+          assert.instanceOf(this, SubgraphNode)
+          abandonedNodes.push(this)
+          if (failurePhase === 'constructor') throw cause
+        }
+
+        override onNodeCreated() {
+          if (failurePhase === 'onNodeCreated') throw cause
+        }
       }
+      LiteGraph.registerNodeType(subgraphId, ThrowingExtension)
+      const prepared = prepareNodeConstruction(LiteGraph, {
+        type: subgraphId,
+        graph
+      })
+      assert(prepared.kind === 'ready')
+
+      expect(prepared.construct()).toEqual({
+        kind: 'failed',
+        phase: failurePhase,
+        cause
+      })
+      const [abandoned] = abandonedNodes
+      assert.exists(abandoned)
+      LiteGraph.registerNodeType(subgraphId, Registered)
+      const sibling = LiteGraph.createNode(subgraphId, undefined, {
+        targetGraph: graph
+      })
+      assert.instanceOf(sibling, SubgraphNode)
+      graph.add(sibling)
+
+      const abandonedInput = abandoned.inputs[0]
+      const replacedInput = sibling.inputs[0]
+      assert.exists(abandonedInput)
+      assert.exists(replacedInput)
+      sibling.configure(subgraphInstanceData(subgraphId))
+      const currentInput = sibling.inputs[0]
+      assert.exists(currentInput)
+      const definitionInput = definition.inputNode.slots[0]
+      assert.exists(definitionInput)
+      const interiorInput = new LGraphNode('Interior').addInput(
+        'value',
+        'INT',
+        {
+          shape: RenderShape.GRID
+        }
+      )
+      definitionInput.events.dispatch('input-connected', {
+        input: interiorInput
+      })
+      definition.addOutput('liveResult', 'MASK')
+
+      expect(currentInput.shape).toBe(RenderShape.GRID)
+      expect(replacedInput.shape).toBeUndefined()
+      expect(abandonedInput.shape).toBeUndefined()
+      expect(abandoned.outputs).toEqual([])
+      expect(sibling.outputs.map(({ name, type }) => ({ name, type }))).toEqual(
+        [{ name: 'liveResult', type: 'MASK' }]
+      )
     }
-    LiteGraph.registerNodeType(subgraphId, ThrowingExtension)
-    const prepared = prepareNodeConstruction(LiteGraph, {
-      type: subgraphId,
-      graph
-    })
-    assert(prepared.kind === 'ready')
-
-    expect(prepared.construct()).toEqual({
-      kind: 'failed',
-      phase: 'constructor',
-      cause
-    })
-    const [abandoned] = abandonedNodes
-    assert.exists(abandoned)
-    LiteGraph.registerNodeType(subgraphId, Registered)
-    const sibling = LiteGraph.createNode(subgraphId, undefined, {
-      targetGraph: graph
-    })
-    assert.instanceOf(sibling, SubgraphNode)
-    graph.add(sibling)
-
-    const abandonedInput = abandoned.inputs[0]
-    const replacedInput = sibling.inputs[0]
-    assert.exists(abandonedInput)
-    assert.exists(replacedInput)
-    sibling.configure(subgraphInstanceData(subgraphId))
-    const currentInput = sibling.inputs[0]
-    assert.exists(currentInput)
-    const definitionInput = definition.inputNode.slots[0]
-    assert.exists(definitionInput)
-    const interiorInput = new LGraphNode('Interior').addInput('value', 'INT', {
-      shape: RenderShape.GRID
-    })
-    definitionInput.events.dispatch('input-connected', { input: interiorInput })
-    definition.addOutput('liveResult', 'MASK')
-
-    expect(currentInput.shape).toBe(RenderShape.GRID)
-    expect(replacedInput.shape).toBeUndefined()
-    expect(abandonedInput.shape).toBeUndefined()
-    expect(abandoned.outputs).toEqual([])
-    expect(sibling.outputs.map(({ name, type }) => ({ name, type }))).toEqual([
-      { name: 'liveResult', type: 'MASK' }
-    ])
-  })
+  )
 
   it('refuses a prepared generated node when its owner schema is replaced under the same registered constructor', () => {
     const subgraphId = '00000000-0000-4000-8000-000000000128'

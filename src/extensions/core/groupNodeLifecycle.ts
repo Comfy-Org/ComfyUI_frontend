@@ -8,6 +8,11 @@ import type { NodeConstructionResult } from '@/lib/litegraph/src/nodeConstructio
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
 type GroupEffectPhase = 'links' | 'widgets' | 'reconnect'
+type GroupEffect = {
+  phase: GroupEffectPhase
+  apply: () => void
+  compensate?: () => void
+}
 type GroupExpansionPhase =
   | GroupEffectPhase
   | 'construction'
@@ -138,10 +143,7 @@ export function expandLegacyGroup({
   canvas: LGraphCanvas
   types: readonly (string | undefined)[]
   configure: (node: LGraphNode, index: number) => void
-  effects: (nodes: LGraphNode[]) => Iterable<{
-    phase: GroupEffectPhase
-    apply: () => void
-  }>
+  effects: (nodes: LGraphNode[]) => Iterable<GroupEffect>
 }): ConvertToNodesResult {
   const graph = group.graph
   if (!graph) return { refused: false, nodes: [] }
@@ -150,6 +152,7 @@ export function expandLegacyGroup({
 
   const staged: Extract<NodeConstructionResult, { kind: 'created' }>[] = []
   const attached = new Set<LGraphNode>()
+  const compensations: (() => void)[] = []
   let phase: GroupExpansionPhase = 'construction'
   let memberType = '<unknown>'
   const fail = (cause: unknown): ConvertToNodesResult => {
@@ -161,6 +164,13 @@ export function expandLegacyGroup({
       if (built.node.graph?.getNodeById(built.node.id) === built.node) continue
       try {
         built.cancelUnattachedSubscriptions()
+      } catch (error) {
+        cleanupErrors.push(error)
+      }
+    }
+    for (const compensate of compensations.splice(0).reverse()) {
+      try {
+        compensate()
       } catch (error) {
         cleanupErrors.push(error)
       }
@@ -208,6 +218,7 @@ export function expandLegacyGroup({
   const steps = function* (): Iterable<{
     phase: GroupExpansionPhase
     apply: () => void
+    compensate?: () => void
   }> {
     for (const [index, node] of nodes.entries()) {
       yield { phase: 'configure', apply: () => configure(node, index) }
@@ -227,6 +238,8 @@ export function expandLegacyGroup({
     if (initialFailure) return initialFailure
     for (const step of steps()) {
       phase = step.phase
+      if ('compensate' in step && step.compensate)
+        compensations.push(step.compensate)
       step.apply()
       const failure = validate()
       if (failure) return failure

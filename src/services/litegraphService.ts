@@ -108,7 +108,6 @@ import type { GraphOrSubgraph } from '@comfyorg/graph-model/entityRegistry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   NODE_CREATION_GRAPH_FACTORY,
-  NODE_CREATION_TARGET_SUBGRAPH_ID,
   nodeDefinition
 } from '@/lib/litegraph/src/nodeConstruction'
 import type { NodeConstructionCapability } from '@/lib/litegraph/src/nodeConstruction'
@@ -509,8 +508,6 @@ export const useLitegraphService = () => {
       static override title: string
       static override category: string
       static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
-      static override [NODE_CREATION_TARGET_SUBGRAPH_ID] = subgraphId
-
       static override [NODE_CREATION_GRAPH_FACTORY]: NodeConstructionCapability =
         {
           prepare: ({
@@ -525,7 +522,6 @@ export const useLitegraphService = () => {
                 kind: 'refused',
                 reason: 'missing-owned-definition',
                 type,
-                targetSubgraphId: subgraphId,
                 report: () =>
                   reportMissingSubgraphTarget(graph.rootGraph, subgraphId)
               }
@@ -567,11 +563,7 @@ export const useLitegraphService = () => {
               : instance.constructor.nodeData
         }
 
-      constructor(
-        titleOrInput?: string | SubgraphConstructionInput,
-        targetGraphOrType?: string | GraphOrSubgraph,
-        ownedSubgraph?: Subgraph
-      ) {
+      constructor(titleOrInput?: string | SubgraphConstructionInput) {
         const pendingContext =
           typeof titleOrInput === 'object'
             ? undefined
@@ -585,11 +577,8 @@ export const useLitegraphService = () => {
           typeof titleOrInput === 'object'
             ? titleOrInput
             : constructionContext?.input
-        const targetGraph =
-          typeof targetGraphOrType === 'object'
-            ? targetGraphOrType
-            : (input?.graph ?? useApp().rootGraph)
-        ownedSubgraph ??=
+        const targetGraph = input?.graph ?? useApp().rootGraph
+        const ownedSubgraph =
           input?.subgraph ?? targetGraph.rootGraph.subgraphs.get(subgraphId)
         if (!ownedSubgraph) {
           reportMissingSubgraphTarget(targetGraph.rootGraph, subgraphId)
@@ -1163,7 +1152,6 @@ export const useLitegraphService = () => {
   return {
     registerNodeDef,
     registerSubgraphNodeDef,
-    reportMissingSubgraphTarget,
     addNodeOnGraph,
     addNodeInput,
     getCanvasCenter,
