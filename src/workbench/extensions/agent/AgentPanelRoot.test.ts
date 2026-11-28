@@ -7310,7 +7310,7 @@ describe('AgentPanelRoot history', () => {
         ],
         { 'th-first': { workflowId: 'wf-first' } }
       )
-      renderWithSelectedTarget()
+      const rendered = renderWithSelectedTarget()
       await userEvent.click(
         screen.getByRole('button', {
           name: i18n.global.t('agent.showChatHistory')
@@ -7321,7 +7321,7 @@ describe('AgentPanelRoot history', () => {
         expect(userPrompts()).toEqual(['Prompt in th-first'])
       )
       await settleFollow()
-      return { first, second, loadedThreads }
+      return { first, second, loadedThreads, rendered }
     }
 
     it.for([
@@ -10333,6 +10333,462 @@ describe('AgentPanelRoot history', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(postedUrls).toHaveLength(2))
       expect(postedUrls[1]).toBe('/api/agent/threads/th-second-new/messages')
+    })
+
+    describe('PR 2 server thread deletion and workflow cascade', () => {
+      it('P2-01: deletes a chat on the server with 204, opens new-chat screen, and writes no tombstone', async () => {
+        const { first } = await openFirstChatWithHistory([])
+        const delegate = vi.mocked(fetch).getMockImplementation()!
+        vi.mocked(fetch).mockImplementation(async (input, init) => {
+          if (
+            init?.method === 'DELETE' &&
+            String(input).endsWith('/api/agent/threads/th-first')
+          ) {
+            return new Response(null, { status: 204 })
+          }
+          return delegate(input, init)
+        })
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+
+        expect(useAgentChatHistoryStore().sessions).toEqual([])
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        await vi.waitFor(() =>
+          expect(
+            fetchRequests({
+              method: 'DELETE',
+              url: /\/api\/agent\/threads\/th-first$/
+            })
+          ).toHaveLength(1)
+        )
+        expect(
+          JSON.parse(
+            localStorage.getItem(StorageKeys.agentDeletedThreads('personal')) ??
+              '[]'
+          )
+        ).toEqual([])
+        expect(useToast().toasts).toEqual([])
+      })
+
+      it('P2-02: retries 503 with Retry-After and succeeds without showing an error toast', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        try {
+          await openFirstChatWithHistory([])
+          let attempts = 0
+          const delegate = vi.mocked(fetch).getMockImplementation()!
+          vi.mocked(fetch).mockImplementation(async (input, init) => {
+            if (
+              init?.method === 'DELETE' &&
+              String(input).endsWith('/api/agent/threads/th-first')
+            ) {
+              attempts += 1
+              if (attempts === 1) {
+                return new Response(
+                  JSON.stringify({
+                    error: 'retry',
+                    code: 'cancel_not_requested',
+                    retryable: true
+                  }),
+                  {
+                    status: 503,
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Retry-After': '2'
+                    }
+                  }
+                )
+              }
+              return new Response(null, { status: 204 })
+            }
+            return delegate(input, init)
+          })
+
+          await userEvent.click(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.chatOptions')
+            })
+          )
+          await userEvent.click(
+            await screen.findByRole('menuitem', {
+              name: i18n.global.t('g.delete')
+            })
+          )
+
+          await vi.waitFor(() => expect(attempts).toBe(1))
+          await vi.advanceTimersByTimeAsync(2_000)
+          await vi.waitFor(() => expect(attempts).toBe(2))
+          expect(useAgentChatHistoryStore().sessions).toEqual([])
+          expect(useToast().toasts).toEqual([])
+        } finally {
+          vi.useRealTimers()
+        }
+      })
+
+      it("P2-03: restores chat in History and toasts Couldn't delete the chat with Retry when server delete fails", async () => {
+        await openFirstChatWithHistory([])
+        let shouldFail = true
+        const delegate = vi.mocked(fetch).getMockImplementation()!
+        vi.mocked(fetch).mockImplementation(async (input, init) => {
+          if (
+            init?.method === 'DELETE' &&
+            String(input).endsWith('/api/agent/threads/th-first')
+          ) {
+            return shouldFail
+              ? json(500, { error: 'boom' })
+              : new Response(null, { status: 204 })
+          }
+          return delegate(input, init)
+        })
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+
+        await vi.waitFor(() =>
+          expect(useToast().toasts).toContainEqual(
+            expect.objectContaining({
+              kind: 'error',
+              title: "Couldn't delete the chat"
+            })
+          )
+        )
+        expect(useAgentChatHistoryStore().sessions.map(({ id }) => id)).toEqual(
+          ['th-first']
+        )
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(
+          JSON.parse(
+            localStorage.getItem(StorageKeys.agentDeletedThreads('personal')) ??
+              '[]'
+          )
+        ).toEqual([])
+
+        shouldFail = false
+        const failureToast = useToast().toasts.find(
+          (toast) => toast.title === "Couldn't delete the chat"
+        )!
+        expect(failureToast.actions[0].label).toBe(i18n.global.t('g.retry'))
+        failureToast.actions[0].onClick()
+
+        await vi.waitFor(() =>
+          expect(useAgentChatHistoryStore().sessions).toEqual([])
+        )
+        expect(useToast().toasts).toEqual([])
+      })
+
+      it.for([404, 405])(
+        'P2-04: writes local tombstone without error toast when server answers %i',
+        async (status) => {
+          await openFirstChatWithHistory([])
+          const delegate = vi.mocked(fetch).getMockImplementation()!
+          vi.mocked(fetch).mockImplementation(async (input, init) => {
+            if (
+              init?.method === 'DELETE' &&
+              String(input).endsWith('/api/agent/threads/th-first')
+            ) {
+              return json(status, { error: 'gone' })
+            }
+            return delegate(input, init)
+          })
+
+          await userEvent.click(
+            screen.getByRole('button', {
+              name: i18n.global.t('agent.chatOptions')
+            })
+          )
+          await userEvent.click(
+            await screen.findByRole('menuitem', {
+              name: i18n.global.t('g.delete')
+            })
+          )
+
+          await vi.waitFor(() =>
+            expect(
+              JSON.parse(
+                localStorage.getItem(
+                  StorageKeys.agentDeletedThreads('personal')
+                ) ?? '[]'
+              )
+            ).toEqual(['th-first'])
+          )
+          expect(useToast().toasts).toEqual([])
+        }
+      )
+
+      it('P2-05: stops showing a running turn as live or spinning on its tab when its chat is deleted', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = second
+        useAgentWorkflowTabBindingStore().bind('wf-first', first.path)
+        useAgentWorkflowTabBindingStore().bind('wf-second', second.path)
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-first'
+            })
+          ],
+          {},
+          {
+            post: async () =>
+              json(202, {
+                thread_id: 'th-first',
+                message_id: 'msg-running',
+                workflow_id: 'wf-first'
+              })
+          }
+        )
+        renderWithSelectedTarget()
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+
+        await sendFromComposer('running turn')
+        await screen.findByRole('button', { name: 'Stop' })
+        expect(useAgentConversationStore().turnTabs).toEqual([
+          { path: first.path, awaitingApproval: false }
+        ])
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        expect(useAgentConversationStore().turnTabs).toEqual([
+          { path: first.path, awaitingApproval: false }
+        ])
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await screen.findByRole('button', { name: 'First chat' })
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+
+        expect(useAgentConversationStore().liveTurns()).toEqual([])
+        expect(useAgentConversationStore().turnTabs).toEqual([])
+        expect(
+          fetchRequests({
+            method: 'DELETE',
+            url: /\/api\/agent\/threads\/th-first$/
+          })
+        ).toHaveLength(1)
+      })
+
+      it('P2-06: workflow delete removes its chats from History at once while open bound chat shows T1-21 notice', async () => {
+        const target = addTab('workflows/current.json', {
+          delete: vi.fn(async () => {})
+        })
+        const other = addTab('workflows/other.json')
+        workflowStore.activeWorkflow = other
+        useAgentWorkflowTabBindingStore().bind('wf-42', target.path)
+        useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+        stubWorkflowBoundHistory([
+          agentThread({
+            id: 'th-wf-1',
+            title: 'Current chat on deleted wf',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-42'
+          }),
+          agentThread({
+            id: 'th-wf-2',
+            title: 'Second chat on deleted wf',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-42'
+          }),
+          agentThread({
+            id: 'th-keep',
+            title: 'Other workflow chat',
+            last_message_at: '2026-09-22T08:00:00Z',
+            workflow_id: 'wf-other'
+          })
+        ])
+        const delegate = vi.mocked(fetch).getMockImplementation()!
+        vi.mocked(fetch).mockImplementation(async (input, init) => {
+          if (String(input).includes('/api/workflows')) {
+            return json(200, {
+              data: [
+                { id: 'wf-42', name: 'current' },
+                { id: 'wf-other', name: 'other' }
+              ],
+              pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+            })
+          }
+          return delegate(input, init)
+        })
+
+        renderWithSelectedTarget()
+        await activateTabAsUser(target)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-wf-1')
+        )
+
+        await workflowStore.closeWorkflow(target)
+        await workflowStore.deleteWorkflow(target)
+
+        expect(useAgentChatHistoryStore().sessions.map(({ id }) => id)).toEqual(
+          ['th-keep']
+        )
+        const notice = await screen.findByRole('note')
+        expect(notice).toHaveTextContent(
+          i18n.global.t('agent.targetWorkflowUnavailable')
+        )
+        expect(
+          within(notice).getByRole('button', {
+            name: i18n.global.t('agent.startNewChat')
+          })
+        ).toBeVisible()
+        expect(
+          fetchRequests({ method: 'DELETE', url: /\/api\/agent\/threads\// })
+        ).toEqual([])
+      })
+
+      it('P2-07: keeps pre-existing tombstones hidden without sending DELETE requests', async () => {
+        localStorage.setItem(
+          StorageKeys.agentDeletedThreads('personal'),
+          JSON.stringify(['th-legacy-tombstone'])
+        )
+        const wf = addTab('workflows/current.json')
+        workflowStore.activeWorkflow = wf
+        useAgentWorkflowTabBindingStore().bind('wf-42', wf.path)
+        stubWorkflowBoundHistory([
+          agentThread({
+            id: 'th-legacy-tombstone',
+            title: 'Old hidden chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-42'
+          }),
+          agentThread({
+            id: 'th-visible',
+            title: 'Visible chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-42'
+          })
+        ])
+
+        renderWithSelectedTarget()
+        await vi.waitFor(() =>
+          expect(
+            useAgentChatHistoryStore().sessions.map(({ id }) => id)
+          ).toEqual(['th-visible'])
+        )
+        expect(
+          fetchRequests({ method: 'DELETE', url: /\/api\/agent\/threads\// })
+        ).toEqual([])
+      })
+
+      it('dismisses the delete-failure toast when the panel unmounts', async () => {
+        const { rendered } = await openFirstChatWithHistory([])
+        const delegate = vi.mocked(fetch).getMockImplementation()!
+        vi.mocked(fetch).mockImplementation(async (input, init) => {
+          if (
+            init?.method === 'DELETE' &&
+            String(input).endsWith('/api/agent/threads/th-first')
+          ) {
+            return json(500, { error: 'boom' })
+          }
+          return delegate(input, init)
+        })
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+
+        await vi.waitFor(() =>
+          expect(useToast().toasts).toContainEqual(
+            expect.objectContaining({
+              kind: 'error',
+              title: "Couldn't delete the chat"
+            })
+          )
+        )
+
+        rendered.unmount()
+        expect(useToast().toasts).toEqual([])
+      })
+
+      it('ends the active chat even when threadId holds another chat that failed to load', async () => {
+        await openFirstChatWithHistory([
+          agentThread({
+            id: 'th-failed',
+            title: 'Failed chat',
+            last_message_at: '2026-09-22T08:00:00Z',
+            workflow_id: 'wf-first'
+          })
+        ])
+        const delegate = vi.mocked(fetch).getMockImplementation()!
+        vi.mocked(fetch).mockImplementation(async (input, init) => {
+          const url = String(input)
+          if (url.includes('/th-failed/messages'))
+            return json(500, { error: 'boom' })
+          if (
+            init?.method === 'DELETE' &&
+            url.endsWith('/api/agent/threads/th-first')
+          )
+            return new Response(null, { status: 204 })
+          return delegate(input, init)
+        })
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Failed chat' })
+        )
+        await screen.findByRole('alert')
+        expect(useAgentChatHistoryStore().activeId).toBe('th-first')
+        expect(useAgentConversationStore().threadId).toBe('th-failed')
+
+        await userEvent.click(
+          screen.getAllByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })[0]
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(useAgentChatHistoryStore().activeId).toBeNull()
+      })
     })
   })
 

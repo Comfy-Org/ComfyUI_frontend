@@ -2077,3 +2077,50 @@ describe('postMessage request timeout', () => {
     }
   })
 })
+
+describe('deleteThread', () => {
+  it('sends DELETE to the encoded thread endpoint and accepts 204 No Content', async () => {
+    respond(new Response(null, { status: 204 }))
+
+    await expect(makeClient().deleteThread('t7/x')).resolves.toBeUndefined()
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/threads/t7%2Fx')
+    expect(init.method).toBe('DELETE')
+    expect(init.body).toBeUndefined()
+  })
+
+  it('parses Retry-After into AgentApiError on 503', async () => {
+    respond(
+      jsonResponse(
+        503,
+        {
+          error: 'cancellation was not confirmed; retry delete',
+          code: 'cancel_not_requested',
+          retryable: true
+        },
+        { 'Retry-After': '2' }
+      )
+    )
+
+    await expect(makeClient().deleteThread('t7')).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 503,
+      retryAfterSeconds: 2,
+      operation: 'delete_thread'
+    })
+  })
+
+  it.for([404, 405, 500])(
+    'throws AgentApiError with status %i on failure',
+    async (status) => {
+      respond(jsonResponse(status, { error: 'failed' }))
+
+      await expect(makeClient().deleteThread('t7')).rejects.toMatchObject({
+        name: 'AgentApiError',
+        status,
+        operation: 'delete_thread'
+      })
+    }
+  )
+})

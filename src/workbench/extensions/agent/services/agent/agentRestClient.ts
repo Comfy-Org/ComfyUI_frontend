@@ -95,6 +95,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'delete_thread'
   | 'get_agent_identity'
   | 'get_usage_status'
   | 'get_cloud_workflow'
@@ -688,14 +689,12 @@ export function createAgentRestClient() {
    * captured for this switch. Returns `undefined` when none of that applies,
    * so the caller falls through to `apiError` unchanged (BE-25360).
    */
-  async function tryOwnerHandoffRetry<T>(
+  async function tryOwnerHandoffRetry(
     apiError: AgentApiError,
     operation: AgentApiOperation,
     route: string,
-    init: Parameters<typeof api.fetchApi>[1],
-    schema: z.ZodType<T>,
-    treatBodyFailureAsUnreadable: boolean
-  ): Promise<RequestResult<T> | undefined> {
+    init: Parameters<typeof api.fetchApi>[1]
+  ): Promise<RequestResult<Response> | undefined> {
     if (
       operation === 'hand_off_owner' ||
       !isCredentialNotOwnerRefusal(apiError)
@@ -711,10 +710,7 @@ export function createAgentRestClient() {
       { allowOwnerHandoff: false }
     )
     return handoff.ok
-      ? requestResult(operation, route, init, schema, {
-          allowOwnerHandoff: false,
-          treatBodyFailureAsUnreadable
-        })
+      ? fetchAuthorized(operation, route, init, false)
       : { ok: false, cause: new AgentOwnerHandoffFailedError(handoff.cause) }
   }
 
@@ -748,24 +744,17 @@ export function createAgentRestClient() {
       : { ok: false, cause: parsed.error }
   }
 
-  async function requestResult<T>(
+  async function fetchAuthorized(
     operation: AgentApiOperation,
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
-    schema: z.ZodType<T>,
-    {
-      allowOwnerHandoff = true,
-      treatBodyFailureAsUnreadable = false
-    }: {
-      /**
-       * False only on the retried call after a successful handoff, and on the
-       * handoff call itself - both must surface their own refusal rather than
-       * recursing again (BE-25360).
-       */
-      allowOwnerHandoff?: boolean
-      treatBodyFailureAsUnreadable?: boolean
-    } = {}
-  ): Promise<RequestResult<T>> {
+    /**
+     * False only on the retried call after a successful handoff, and on the
+     * handoff call itself - both must surface their own refusal rather than
+     * recursing again (BE-25360).
+     */
+    allowOwnerHandoff = true
+  ): Promise<RequestResult<Response>> {
     let authScheme: ReportedAuthScheme = 'unreported'
     let credential: ReportedAuthCredential = 'unreported'
     let response: Response
@@ -803,15 +792,50 @@ export function createAgentRestClient() {
           apiError,
           operation,
           route,
-          init,
-          schema,
-          treatBodyFailureAsUnreadable
+          init
         )
         if (retried) return retried
       }
       return { ok: false, cause: apiError }
     }
-    return parseResponseBody(response, schema, treatBodyFailureAsUnreadable)
+    return { ok: true, value: response }
+  }
+
+  async function requestResult<T>(
+    operation: AgentApiOperation,
+    route: string,
+    init: Parameters<typeof api.fetchApi>[1],
+    schema: z.ZodType<T>,
+    {
+      allowOwnerHandoff = true,
+      treatBodyFailureAsUnreadable = false
+    }: {
+      allowOwnerHandoff?: boolean
+      treatBodyFailureAsUnreadable?: boolean
+    } = {}
+  ): Promise<RequestResult<T>> {
+    const responseResult = await fetchAuthorized(
+      operation,
+      route,
+      init,
+      allowOwnerHandoff
+    )
+    if (!responseResult.ok) return responseResult
+    return parseResponseBody(
+      responseResult.value,
+      schema,
+      treatBodyFailureAsUnreadable
+    )
+  }
+
+  async function requestEmpty(
+    operation: AgentApiOperation,
+    route: string,
+    init: Parameters<typeof api.fetchApi>[1]
+  ): Promise<void> {
+    const responseResult = await fetchAuthorized(operation, route, init)
+    if (!responseResult.ok)
+      throw rememberAgentRequestFailure(responseResult.cause, route)
   }
 
   async function request<T>(
@@ -1099,6 +1123,14 @@ export function createAgentRestClient() {
     )
   }
 
+  async function deleteThread(threadId: string): Promise<void> {
+    await requestEmpty(
+      'delete_thread',
+      `/agent/threads/${encodeURIComponent(threadId)}`,
+      { method: 'DELETE' }
+    )
+  }
+
   async function refreshCredential(): Promise<void> {
     await request(
       'refresh_credential',
@@ -1143,6 +1175,7 @@ export function createAgentRestClient() {
     getWorkflowSidebarFile,
     cancelMessage,
     answerAsk,
+    deleteThread,
     refreshCredential,
     uploadImage
   }

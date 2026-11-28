@@ -6074,5 +6074,55 @@ describe('useAgentConversationStore', () => {
         { type: 'text', text: 'Part 1 + live', state: 'streaming' }
       ])
     })
+
+    it('P2-05: dropTurnsForThread stops active, background, and pending turns for a deleted thread without touching other threads', () => {
+      const store = useAgentConversationStore()
+      const workflowStore = useWorkflowStore()
+      const tabDeleted = workflowStore.createNewTemporary('workflows/del.json')
+      const tabOther = workflowStore.createNewTemporary('workflows/other.json')
+      workflowStore.attachWorkflow(tabDeleted, 0)
+      workflowStore.attachWorkflow(tabOther, 1)
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: tabDeleted.instanceId
+      }))
+
+      store.setThreadId('th-deleted')
+      store.startTurn(toTurnId('msg-deleted'))
+      store.startPendingSend({
+        clientMessageId: 'cm-deleted',
+        origin: { kind: 'thread', threadId: 'th-deleted' },
+        text: 'pending on deleted',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.startBackgroundTurn({
+        threadId: 'th-other',
+        turnId: toTurnId('msg-other'),
+        text: 'keep running',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        tab: { status: 'known', workflowInstanceId: tabOther.instanceId }
+      })
+
+      expect(store.turnTabs).toHaveLength(2)
+
+      store.dropTurnsForThread('th-deleted')
+
+      expect(store.isStreaming).toBe(false)
+      expect(store.getPendingSend('cm-deleted')).toBeUndefined()
+      expect(store.liveTurns()).toEqual([
+        { threadId: 'th-other', messageId: toTurnId('msg-other') }
+      ])
+      expect(store.turnTabs).toEqual([
+        { path: tabOther.path, awaitingApproval: false }
+      ])
+
+      store.dropTurnsForThread('th-other')
+      expect(store.liveTurns()).toEqual([])
+      expect(store.turnTabs).toEqual([])
+    })
   })
 })
