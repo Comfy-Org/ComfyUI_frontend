@@ -121,6 +121,8 @@ import type {
   TemplateLibraryMetadata,
   TemplateMetadata,
   UiButtonClickMetadata,
+  VersionUpdateSurfaceResolvedMetadata,
+  VersionUpdateSurfaceShownMetadata,
   WidgetFavoriteToggledMetadata,
   PromptEditorClosedMetadata,
   PromptEditorExposureMetadata,
@@ -1074,6 +1076,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
     this.trackEvent(TelemetryEvents.LINK_DEDUP_DROP, metadata)
+  }
+
+  trackVersionUpdateSurfaceShown(
+    metadata: VersionUpdateSurfaceShownMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.VERSION_UPDATE_SURFACE_SHOWN, metadata)
+  }
+
+  trackVersionUpdateSurfaceResolved(
+    metadata: VersionUpdateSurfaceResolvedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.VERSION_UPDATE_SURFACE_RESOLVED, metadata)
   }
 
   trackNamedValuesShadowDiffMismatch(

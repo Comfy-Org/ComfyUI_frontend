@@ -746,6 +746,42 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards version update surface impressions to the host bridge', () => {
+    new HostTelemetrySink().trackVersionUpdateSurfaceShown({
+      surface: 'release_toast',
+      release_version: '1.2.0',
+      current_version: '1.1.0',
+      attention: 'medium'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.VERSION_UPDATE_SURFACE_SHOWN,
+      {
+        surface: 'release_toast',
+        release_version: '1.2.0',
+        current_version: '1.1.0',
+        attention: 'medium'
+      }
+    )
+  })
+
+  it('forwards version update surface resolutions to the host bridge', () => {
+    new HostTelemetrySink().trackVersionUpdateSurfaceResolved({
+      surface: 'release_toast',
+      release_version: '1.2.0',
+      action: 'skipped'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.VERSION_UPDATE_SURFACE_RESOLVED,
+      {
+        surface: 'release_toast',
+        release_version: '1.2.0',
+        action: 'skipped'
+      }
+    )
+  })
+
   it.for<RunOnCloudTelemetryEvent>([
     {
       name: 'app:run_on_cloud_dialog_shown',

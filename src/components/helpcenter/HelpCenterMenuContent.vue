@@ -637,7 +637,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
 
 const onReleaseClick = (release: ReleaseNote): void => {
   trackResourceClick('release_notes', true)
-  void releaseStore.handleShowChangelog(release.version)
+  void releaseStore.handleShowChangelog(release.version, 'red_dot')
   const versionAnchor = formatVersionAnchor(release.version)
   const changelogUrl = `${buildDocsUrl('/changelog', { includeLocale: true })}#${versionAnchor}`
   openExternalLink(changelogUrl)

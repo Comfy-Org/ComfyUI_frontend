@@ -6,6 +6,7 @@ beforeEach(() => {
   Object.assign(useReleaseStore(), { shouldShowToast: false })
   vi.mocked(useReleaseStore().handleSkipRelease).mockResolvedValue(undefined)
   vi.mocked(useReleaseStore().handleShowChangelog).mockResolvedValue(undefined)
+  vi.mocked(useReleaseStore().reportSurfaceShown).mockReturnValue(undefined)
   Object.assign(useReleaseStore(), { releases: [] })
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
@@ -104,6 +105,25 @@ describe('ReleaseNotificationToast', () => {
 
     renderComponent()
     expect(screen.getByText('1.2.3')).toBeInTheDocument()
+  })
+
+  it('reports the toast only when it is visible', async () => {
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
+
+    const { rerender } = renderComponent({ isVisible: false })
+    expect(screen.queryByText('1.2.3')).not.toBeInTheDocument()
+    expect(useReleaseStore().reportSurfaceShown).not.toHaveBeenCalled()
+
+    await rerender({ isVisible: true })
+    expect(screen.getByText('1.2.3')).toBeInTheDocument()
+    expect(
+      useReleaseStore().reportSurfaceShown
+    ).toHaveBeenCalledExactlyOnceWith('release_toast', '1.2.3')
   })
 
   it('calls handleSkipRelease when skip button is clicked', async () => {
@@ -216,7 +236,10 @@ describe('ReleaseNotificationToast', () => {
 
     await user.click(screen.getByRole('link', { name: /what's new/i }))
 
-    expect(useReleaseStore().handleShowChangelog).toHaveBeenCalledWith('1.2.3')
+    expect(useReleaseStore().handleShowChangelog).toHaveBeenCalledWith(
+      '1.2.3',
+      'release_toast'
+    )
   })
 
   it('generates correct changelog URL', () => {

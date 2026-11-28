@@ -802,6 +802,48 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures version update surface impressions with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackVersionUpdateSurfaceShown({
+        surface: 'whats_new_popup',
+        release_version: '1.2.0',
+        current_version: '1.1.0',
+        attention: 'high'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.VERSION_UPDATE_SURFACE_SHOWN,
+        {
+          surface: 'whats_new_popup',
+          release_version: '1.2.0',
+          current_version: '1.1.0',
+          attention: 'high'
+        }
+      )
+    })
+
+    it('captures version update surface resolutions with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackVersionUpdateSurfaceResolved({
+        surface: 'release_toast',
+        release_version: '1.2.0',
+        action: 'update_clicked'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.VERSION_UPDATE_SURFACE_RESOLVED,
+        {
+          surface: 'release_toast',
+          release_version: '1.2.0',
+          action: 'update_clicked'
+        }
+      )
+    })
+
     it('captures auth failure events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

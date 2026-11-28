@@ -5,6 +5,7 @@ beforeEach(() => {
   })
   Object.assign(useReleaseStore(), { shouldShowPopup: false })
   vi.mocked(useReleaseStore().handleWhatsNewSeen).mockResolvedValue(undefined)
+  vi.mocked(useReleaseStore().reportSurfaceShown).mockReturnValue(undefined)
   Object.assign(useReleaseStore(), { releases: [] as ReleaseNote[] })
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
@@ -95,6 +96,26 @@ describe('WhatsNewPopup', () => {
     const { container } = renderComponent()
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.whats-new-popup')).toBeNull()
+  })
+
+  it('reports the popup only when it is visible', async () => {
+    Object.assign(useReleaseStore(), { shouldShowPopup: true })
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote
+    })
+
+    const { rerender } = renderComponent({ isVisible: false })
+    expect(screen.queryByText('1.2.3')).not.toBeInTheDocument()
+    expect(useReleaseStore().reportSurfaceShown).not.toHaveBeenCalled()
+
+    await rerender({ isVisible: true })
+    expect(screen.getByText(/Test Release/)).toBeInTheDocument()
+    expect(
+      useReleaseStore().reportSurfaceShown
+    ).toHaveBeenCalledExactlyOnceWith('whats_new_popup', '1.2.3')
   })
 
   it('calls handleWhatsNewSeen when close button is clicked', async () => {

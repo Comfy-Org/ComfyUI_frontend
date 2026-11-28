@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import SidebarHelpCenterIcon from './SidebarHelpCenterIcon.vue'
@@ -64,8 +66,7 @@ const i18n = createI18n({
   }
 })
 
-function renderIcon() {
-  // happy-dom focuses Reka's non-focusable wrapper: https://github.com/unovue/reka-ui/issues/2803
+function renderIcon(props: { isVisible?: boolean } = {}) {
   const preventAutofocus = (event: Event) => event.preventDefault()
   document.addEventListener(
     'focusScope.autoFocusOnMount',
@@ -81,7 +82,7 @@ function renderIcon() {
   )
   const user = userEvent.setup()
   const result = render(SidebarHelpCenterIcon, {
-    props: { isSmall: false },
+    props: { isSmall: false, ...props },
     global: {
       plugins: [i18n]
     }
@@ -94,6 +95,11 @@ describe('SidebarHelpCenterIcon', () => {
     typeformState.typeformError = false
     typeformState.isValidTypeformId = true
     useCanvasStore().linearMode = true
+    Object.assign(useReleaseStore(), {
+      recentRelease: null,
+      shouldShowRedDot: false
+    })
+    vi.mocked(useReleaseStore().reportSurfaceShown).mockReturnValue(undefined)
   })
 
   it('mounts the Typeform embed container wired to the feedback form', async () => {
@@ -152,5 +158,21 @@ describe('SidebarHelpCenterIcon', () => {
     await user.click(screen.getByRole('button', { name: 'Help Center' }))
 
     expect(helpCenterSpies.toggleHelpCenter).toHaveBeenCalled()
+  })
+
+  it('reports the release red dot only from a visible graph toolbar', async () => {
+    useCanvasStore().linearMode = false
+    Object.assign(useReleaseStore(), {
+      recentRelease: { version: '1.2.3' } as ReleaseNote,
+      shouldShowRedDot: true
+    })
+
+    const { rerender } = renderIcon({ isVisible: false })
+    expect(useReleaseStore().reportSurfaceShown).not.toHaveBeenCalled()
+
+    await rerender({ isVisible: true })
+    expect(
+      useReleaseStore().reportSurfaceShown
+    ).toHaveBeenCalledExactlyOnceWith('red_dot', '1.2.3')
   })
 })

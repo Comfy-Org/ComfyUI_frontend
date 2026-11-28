@@ -1627,6 +1627,36 @@ export interface NamedValuesShadowDiffSummaryMetadata {
   distinct_pack_ids: string[]
 }
 
+export type VersionUpdateSurface =
+  | 'red_dot'
+  | 'whats_new_popup'
+  | 'release_toast'
+
+export type VersionUpdateSurfaceAction =
+  | 'changelog_opened'
+  | 'skipped'
+  | 'whats_new_seen'
+  | 'update_clicked'
+
+/**
+ * Version-update surface shown metadata
+ */
+export interface VersionUpdateSurfaceShownMetadata {
+  surface: VersionUpdateSurface
+  release_version: string
+  current_version: string
+  attention: 'low' | 'medium' | 'high'
+}
+
+/**
+ * Version-update surface resolved metadata
+ */
+export interface VersionUpdateSurfaceResolvedMetadata {
+  surface: VersionUpdateSurface
+  release_version: string
+  action: VersionUpdateSurfaceAction
+}
+
 /**
  * Help center opened metadata
  */
@@ -1969,6 +1999,13 @@ export interface TelemetryProvider {
   // Template filter tracking events
   trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
 
+  trackVersionUpdateSurfaceShown?(
+    metadata: VersionUpdateSurfaceShownMetadata
+  ): void
+  trackVersionUpdateSurfaceResolved?(
+    metadata: VersionUpdateSurfaceResolvedMetadata
+  ): void
+
   // Help center events
   trackHelpCenterOpened?(metadata: HelpCenterOpenedMetadata): void
   trackHelpResourceClicked?(metadata: HelpResourceClickedMetadata): void
@@ -2265,6 +2302,9 @@ export const TelemetryEvents = {
   // Link deduplication diagnostics
   LINK_DEDUP_DROP: 'app:link_dedup_drop',
 
+  VERSION_UPDATE_SURFACE_SHOWN: 'app:version_update_surface_shown',
+  VERSION_UPDATE_SURFACE_RESOLVED: 'app:version_update_surface_resolved',
+
   // Page View
   PAGE_VIEW: 'app:page_view',
 
@@ -2379,6 +2419,8 @@ export type TelemetryEventProperties =
   | NamedValuesShadowDiffMismatchMetadata
   | NamedValuesShadowDiffSummaryMetadata
   | LinkDedupDropMetadata
+  | VersionUpdateSurfaceShownMetadata
+  | VersionUpdateSurfaceResolvedMetadata
   | HelpCenterOpenedMetadata
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata

@@ -26,7 +26,8 @@ it('hides update popups while picking nodes and restores them afterwards', async
         Teleport: true,
         HelpCenterMenuContent: true,
         WhatsNewPopup: {
-          template: '<div>What’s New</div>'
+          props: ['isVisible'],
+          template: '<div v-if="isVisible">What’s New</div>'
         },
         ReleaseNotificationToast: {
           props: ['isVisible'],
@@ -41,7 +42,7 @@ it('hides update popups while picking nodes and restores them afterwards', async
   canvas.isPickingNodes = true
   await nextTick()
   expect(screen.getByText('Release toast visible: false')).toBeInTheDocument()
-  expect(screen.getByText('What’s New')).not.toBeVisible()
+  expect(screen.queryByText('What’s New')).not.toBeInTheDocument()
 
   canvas.stopNodePicking()
   await nextTick()
