@@ -20,13 +20,16 @@
 <script setup lang="ts" generic="T">
 import {
   useElementSize,
+  useEventListener,
   useInfiniteScroll,
   useScroll,
   whenever
 } from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
+
+import { anchorAt, scrollTopFor } from './virtualGridAnchor'
 
 type HasKeyOrId = { key: string; id?: string } | { key?: string; id: string }
 
@@ -44,6 +47,7 @@ const {
   defaultItemWidth = 200,
   maxColumns = Infinity,
   minItemWidth,
+  maxItemWidth,
   onLoadMore,
   canLoadMore = false
 } = defineProps<{
@@ -55,6 +59,7 @@ const {
   defaultItemWidth?: number
   maxColumns?: number
   minItemWidth?: number
+  maxItemWidth?: number
   onLoadMore?: () => unknown
   canLoadMore?: boolean
 }>()
@@ -79,7 +84,7 @@ const mergedGridStyle = computed<CSSProperties>(() => {
   if (maxColumns === Infinity) return gridStyle
   return {
     ...gridStyle,
-    gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`
+    gridTemplateColumns: `repeat(${cols.value}, minmax(0, ${maxItemWidth ? `${maxItemWidth}px` : '1fr'}))`
   }
 })
 
@@ -144,6 +149,39 @@ function updateItemSize(): void {
     }
   }
 }
+let pointer: { clientX: number; clientY: number } | undefined
+useEventListener(
+  container,
+  'pointermove',
+  ({ clientX, clientY }: PointerEvent) => {
+    pointer = { clientX, clientY }
+  },
+  { passive: true }
+)
+useEventListener(container, 'pointerleave', () => {
+  pointer = undefined
+})
+
+function focusPoint(el: HTMLElement): { x: number; y: number } {
+  if (!pointer) return { x: 0, y: 0 }
+  const rect = el.getBoundingClientRect()
+  return { x: pointer.clientX - rect.left, y: pointer.clientY - rect.top }
+}
+
+watch([cols, () => maxItemWidth], async ([nextCols], [prevCols]) => {
+  const el = container.value
+  if (!el || !isValidGrid.value) return
+  const anchor = anchorAt(focusPoint(el), {
+    scrollTop: el.scrollTop,
+    rowHeight: itemHeight.value,
+    cols: prevCols,
+    width: width.value
+  })
+  await nextTick()
+  updateItemSize()
+  el.scrollTop = scrollTopFor(anchor, nextCols, itemHeight.value)
+})
+
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
 watch(() => gridStyle, updateItemSize, { flush: 'post' })

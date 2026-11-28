@@ -37,12 +37,8 @@ import {
   getDefaultSortOptions
 } from './shared'
 import { AssetKindKey } from './types'
-import type {
-  FormDropdownItem,
-  LayoutMode,
-  SortOption,
-  ThumbnailSize
-} from './types'
+import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import { THUMBNAIL_SIZE } from './useThumbnailZoom'
 
 interface Props {
   inputId?: string
@@ -127,7 +123,10 @@ const assetKind = inject(AssetKindKey)
 const hasThumbnailSizes = computed(
   () => assetKind?.value === 'image' || assetKind?.value === 'video'
 )
-const thumbnailSize = ref<ThumbnailSize>('standard')
+const thumbnailSize = useSafeSessionStorage(
+  'Comfy.FormDropdown.ThumbnailSize',
+  THUMBNAIL_SIZE.default
+)
 let canvasPointerId: number | undefined
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =

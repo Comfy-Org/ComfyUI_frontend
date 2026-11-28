@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import Slider from '@comfyorg/design-system/slider/Slider'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import type {
   FilterOption,
@@ -16,7 +17,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { DROPDOWN_PANEL_CLASS } from './shared'
-import type { LayoutMode, SortOption, ThumbnailSize } from './types'
+import type { LayoutMode, SortOption } from './types'
+import { THUMBNAIL_SIZE } from './useThumbnailZoom'
 
 const { t } = useI18n()
 
@@ -34,7 +36,9 @@ const emit = defineEmits<{
 }>()
 
 const layoutMode = defineModel<LayoutMode>('layoutMode')
-const thumbnailSize = defineModel<ThumbnailSize>('thumbnailSize')
+const thumbnailSize = defineModel<number>('thumbnailSize', {
+  default: THUMBNAIL_SIZE.default
+})
 const searchQuery = defineModel<string>('searchQuery')
 const sortSelected = defineModel<string>('sortSelected')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
@@ -59,11 +63,9 @@ const layoutSwitchItemStyle =
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
 const isSortPopoverOpen = ref(false)
 const isThumbnailSizeOpen = ref(false)
-const thumbnailSizes: ThumbnailSize[] = ['compact', 'standard', 'large']
 
-function selectThumbnailSize(size: ThumbnailSize) {
-  thumbnailSize.value = size
-  isThumbnailSizeOpen.value = false
+function setThumbnailSize(value: number[] | undefined) {
+  if (value?.length) thumbnailSize.value = value[0]
 }
 
 function closeSortPopover() {
@@ -197,7 +199,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           "
         >
           <div
-            v-if="thumbnailSize !== 'standard'"
+            v-if="thumbnailSize !== THUMBNAIL_SIZE.default"
             class="absolute -top-0.5 -left-0.5 size-2 rounded-full bg-muted-foreground"
           />
           <i class="icon-[lucide--image-upscale]" aria-hidden="true" />
@@ -206,23 +208,28 @@ function handleSearchEnter(event: KeyboardEvent) {
       <PopoverContent
         align="start"
         :side-offset="12"
-        :class="actionPopoverClass"
+        :class="cn(actionPopoverClass, 'w-56')"
       >
+        <Slider
+          :model-value="[thumbnailSize]"
+          :min="THUMBNAIL_SIZE.min"
+          :max="THUMBNAIL_SIZE.max"
+          :step="1"
+          :aria-label="t('widgets.uploadSelect.thumbnailSize')"
+          class="my-2"
+          @update:model-value="setThumbnailSize"
+        />
+        <span class="text-xs">
+          {{ t('widgets.uploadSelect.thumbnailSizeHint') }}
+        </span>
         <Button
-          v-for="size in thumbnailSizes"
-          :key="size"
+          v-if="thumbnailSize !== THUMBNAIL_SIZE.default"
           variant="textonly"
           size="unset"
-          class="flex h-6 justify-between text-left"
-          :aria-pressed="thumbnailSize === size"
-          @click="selectThumbnailSize(size)"
+          class="h-6 justify-start"
+          @click="thumbnailSize = THUMBNAIL_SIZE.default"
         >
-          <span>{{ t(`widgets.uploadSelect.thumbnailSizes.${size}`) }}</span>
-          <i
-            v-if="thumbnailSize === size"
-            class="icon-[lucide--check]"
-            aria-hidden="true"
-          />
+          {{ t('g.reset') }}
         </Button>
       </PopoverContent>
     </PopoverRoot>

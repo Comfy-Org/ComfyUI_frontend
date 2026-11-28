@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { computed, toValue } from 'vue'
+import { computed, toValue, useTemplateRef } from 'vue'
 
 import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 
@@ -15,12 +15,12 @@ import type { MaybePaged } from '@/utils/pagedList'
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type {
-  FormDropdownItem,
-  LayoutMode,
-  SortOption,
-  ThumbnailSize
-} from './types'
+import type { FormDropdownItem, LayoutMode, SortOption } from './types'
+import {
+  THUMBNAIL_SIZE,
+  useThumbnailZoom,
+  zoomThumbnail
+} from './useThumbnailZoom'
 
 interface Props {
   items: MaybePaged<FormDropdownItem>
@@ -48,7 +48,8 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel
+  candidateLabel,
+  hasThumbnailSizes
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
@@ -58,7 +59,9 @@ const emit = defineEmits<{
 
 const filterSelected = defineModel<string>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
-const thumbnailSize = defineModel<ThumbnailSize>('thumbnailSize')
+const thumbnailSize = defineModel<number>('thumbnailSize', {
+  default: THUMBNAIL_SIZE.default
+})
 const sortSelected = defineModel<string>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
@@ -68,14 +71,15 @@ type LayoutConfig = {
   maxColumns: number
   itemHeight: number
   minItemWidth?: number
+  maxItemWidth?: number
   gap: string
 }
 
 const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   grid: {
-    maxColumns: 8,
+    maxColumns: 16,
     itemHeight: 120,
-    minItemWidth: 96,
+    minItemWidth: THUMBNAIL_SIZE.default,
     gap: 'var(--spacing-4) var(--spacing-2)'
   },
   list: {
@@ -90,28 +94,24 @@ const LAYOUT_CONFIGS: Record<LayoutMode, LayoutConfig> = {
   }
 }
 
-const thumbnailLayouts = {
-  compact: { maxColumns: 10, itemHeight: 104, minItemWidth: 76 },
-  standard: LAYOUT_CONFIGS.grid,
-  large: { maxColumns: 1, itemHeight: 412 }
-} satisfies Record<
-  ThumbnailSize,
-  Pick<LayoutConfig, 'maxColumns' | 'itemHeight' | 'minItemWidth'>
->
+const isZoomable = computed(
+  () => !!hasThumbnailSizes && layoutMode.value === 'grid'
+)
 
 const layoutConfig = computed<LayoutConfig>(() => {
-  const layout = layoutMode.value ?? 'grid'
-  return layout === 'grid'
-    ? {
-        ...LAYOUT_CONFIGS.grid,
-        ...thumbnailLayouts[thumbnailSize.value ?? 'standard']
-      }
-    : LAYOUT_CONFIGS[layout]
+  if (!isZoomable.value) return LAYOUT_CONFIGS[layoutMode.value ?? 'grid']
+  const tileWidth = zoomThumbnail(thumbnailSize.value, 1)
+  return {
+    ...LAYOUT_CONFIGS.grid,
+    minItemWidth: tileWidth,
+    maxItemWidth: tileWidth
+  }
 })
 
 const gridStyle = computed<CSSProperties>(() => ({
   display: 'grid',
   gap: layoutConfig.value.gap,
+  justifyContent: 'center',
   padding: '1rem',
   width: '100%'
 }))
@@ -124,17 +124,19 @@ function loadMore() {
   return isPaged(items) ? items.loadMore() : undefined
 }
 
-const onWheel = (event: WheelEvent) => {
-  if (event.ctrlKey || event.metaKey) event.preventDefault()
-}
+useThumbnailZoom(
+  useTemplateRef<HTMLElement>('menuRoot'),
+  thumbnailSize,
+  () => isZoomable.value
+)
 </script>
 
 <template>
   <div
+    ref="menuRoot"
     class="flex min-h-0 flex-1 flex-col rounded-lg bg-node py-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
     data-testid="form-dropdown-menu"
-    @wheel="onWheel"
   >
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
@@ -171,12 +173,13 @@ const onWheel = (event: WheelEvent) => {
     </div>
     <VirtualGrid
       v-else
-      :key="layoutMode === 'grid' ? thumbnailSize : layoutMode"
+      :key="layoutMode"
       :items="menuItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :min-item-width="layoutConfig.minItemWidth"
+      :max-item-width="layoutConfig.maxItemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
       :on-load-more="loadMore"

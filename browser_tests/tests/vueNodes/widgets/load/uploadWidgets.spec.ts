@@ -60,48 +60,59 @@ test.describe('Vue Upload Widgets', { tag: '@vue-nodes' }, () => {
       await expect(menu).toBeHidden()
     })
 
-    test('renders each thumbnail size and remembers it across view changes', async ({
+    test('zooms thumbnails continuously and remembers the size across view changes', async ({
       comfyPage
     }) => {
-      const { thumbnailSize, thumbnailSizes } = enMessages.widgets.uploadSelect
+      const { thumbnailSize } = enMessages.widgets.uploadSelect
       const { gridView, listView } = enMessages.assetBrowser
+      const { page } = comfyPage
       const trigger = comfyPage.vueNodes
         .getNodeByTitle('Load Image')
         .getByRole('button', { name: 'image', exact: true })
       await WidgetSelectDropdownFixture.fromTrigger(trigger).open()
 
-      const menu = comfyPage.page.getByTestId(TestIds.widgets.formDropdownMenu)
+      const menu = page.getByTestId(TestIds.widgets.formDropdownMenu)
       const image = menu.getByRole('img', { name: 'example.png', exact: true })
       const sizeButton = menu.getByRole('button', { name: thumbnailSize })
-      const preset = (name: string) =>
-        comfyPage.page.getByRole('button', { name, exact: true })
+      const slider = page.getByRole('slider', { name: thumbnailSize })
       const width = async () => (await image.boundingBox())?.width ?? 0
 
       await expect(image).toBeVisible()
-      const standardWidth = await width()
-      await sizeButton.click()
-      await expect(preset(thumbnailSizes.standard)).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      )
-      await preset(thumbnailSizes.large).click()
-      await expect.poll(width).toBeGreaterThanOrEqual(standardWidth * 4)
+      const defaultWidth = await width()
 
-      await sizeButton.click()
-      await preset(thumbnailSizes.compact).click()
-      await expect(image).toBeVisible()
-      await expect.poll(width).toBeLessThan(standardWidth)
-      const compactWidth = await width()
+      await test.step('Ctrl + wheel over the grid zooms in', async () => {
+        await image.hover()
+        await page.keyboard.down('Control')
+        await page.mouse.wheel(0, -400)
+        await page.keyboard.up('Control')
+        await expect.poll(width).toBeGreaterThan(defaultWidth * 1.2)
+      })
 
-      await menu.getByRole('button', { name: listView }).click()
-      await expect(sizeButton).toBeHidden()
-      await menu.getByRole('button', { name: gridView }).click()
-      await expect.poll(width).toBeCloseTo(compactWidth, 0)
-      await sizeButton.click()
-      await expect(preset(thumbnailSizes.compact)).toHaveAttribute(
-        'aria-pressed',
-        'true'
-      )
+      await test.step('the slider sets the smallest size', async () => {
+        await sizeButton.click()
+        await slider.focus()
+        await page.keyboard.press('Home')
+        await expect(slider).toHaveAttribute('aria-valuenow', '64')
+        await page.keyboard.press('Escape')
+        await expect.poll(width).toBeLessThan(defaultWidth)
+      })
+
+      const smallestWidth = await width()
+
+      await test.step('the size survives switching views', async () => {
+        await menu.getByRole('button', { name: listView }).click()
+        await expect(sizeButton).toBeHidden()
+        await menu.getByRole('button', { name: gridView }).click()
+        await expect.poll(width).toBeCloseTo(smallestWidth, 0)
+      })
+
+      await test.step('reset restores the default size', async () => {
+        await sizeButton.click()
+        await page
+          .getByRole('button', { name: enMessages.g.reset, exact: true })
+          .click()
+        await expect.poll(width).toBeCloseTo(defaultWidth, 0)
+      })
     })
 
     test.describe('in a viewport shorter than the image picker', () => {
