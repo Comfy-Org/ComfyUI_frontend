@@ -597,6 +597,7 @@ export default defineConfig([
     files: ['src/**/*.{ts,vue}'],
     ignores: [
       'src/lib/**',
+      '**/*.d.ts',
       '**/*.test.ts',
       '**/*.stories.ts',
       '**/__tests__/**',
