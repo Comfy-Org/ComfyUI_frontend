@@ -36,11 +36,13 @@ It either lost, or won only through the whole-document path of
 
 ## Decision
 
-1. **A counter is taken when an op is sent, not when it is queued.** The document
-   sequence is a mint-time floor, not a value the stamp must exceed: a fresh
-   sender at sequence 41 mints 41. At send, a human op stamps above the highest
-   counter in the document the follower holds and above every counter this sender
-   has already sent.
+1. **A counter is taken when an op is sent, not when it is queued.** At mint
+   time, the package Lamport clock ticks above the observed document counter
+   and this sender's last minted counter for that workflow. Before the first
+   document update, the observed counter is zero. The document sequence is
+   only a fallback when reading the document counter fails. At send, a human
+   op stamps above the highest counter in the document the follower holds and
+   above every counter this sender has already sent.
 2. **An op the wire has not carried is re-stamped on its way out.** `op_id`, actor
    and payload do not change. No host can hold the old bytes, so this is not
    changed-payload reuse of an `op_id`. One shift moves the whole batch, so its

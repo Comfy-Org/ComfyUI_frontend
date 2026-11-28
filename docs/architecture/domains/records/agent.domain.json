@@ -211,9 +211,6 @@
       "path": "src/workbench/extensions/agent/crdt/rejectedOpNotice.ts"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/schemaGuard.ts"
-    },
-    {
       "path": "src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts"
     },
     {

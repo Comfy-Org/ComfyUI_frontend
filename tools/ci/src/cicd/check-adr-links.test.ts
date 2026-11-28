@@ -77,6 +77,25 @@ describe('check-adr-links', () => {
     expect(result.stderr).toContain(danglingAdr)
   })
 
+  it.for(['', './', '../../', '/'])(
+    'ignores external ADR URLs but reports a dangling path prefixed with %s',
+    (prefix) => {
+      const { dir, git } = tempGitRepo()
+      const danglingAdr = adrPath('CRDT-TEST-0001-missing.md')
+      write(
+        dir,
+        'README.md',
+        `https://github.com/example/package/blob/main/${danglingAdr}\n${prefix}${danglingAdr}\n`
+      )
+      git('add', '.')
+
+      const result = runScript(dir)
+      expect(result.status).toBe(1)
+      expect(result.stderr).not.toContain('README.md:1')
+      expect(result.stderr).toContain(`README.md:2 -> ${danglingAdr}`)
+    }
+  )
+
   it('ignores non-adr markdown references', () => {
     const { dir, git } = tempGitRepo()
     write(dir, 'docs/architecture/ecs.md', '# ecs\n')

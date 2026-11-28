@@ -1,29 +1,20 @@
-/**
- * The human write leg's sender (plan 3.2/3.3): takes semantic
- * {@link GraphOperation}s from the mint ports, mints wire identity ONCE, and
- * drives `doc_ops` frames through the doc frame client with bounded retries
- * that never re-mint an `op_id` (changed-payload reuse rejects host-side;
- * an unchanged resend converges through the applier's idempotency gate).
- *
- * Batches are strictly serialized: one in-flight batch at a time, FIFO, so
- * op order on the wire matches mint order. `base_version` is read at mint
- * time from the follower's last observed sequence.
- */
+import { inspectOps, tickLamport } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
+import { isPlainObject } from 'es-toolkit'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { DocOp, DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
-import {
-  chunkWireOps,
-  measureWireOp,
-  mintWireOps,
-  WIRE_MAX_OPS_PER_BATCH
-} from './opEnvelope'
-import type { SizedOp } from './opEnvelope'
+import { chunkWireOps, mintWireOps, WIRE_MAX_OPS_PER_BATCH } from './opEnvelope'
 import { reportLostEdit } from './reportLostEdit'
 import type { UnboundAbortReason } from './reportLostEdit'
+
+interface SizedOp {
+  op: Op
+  wire: DocOp
+  bytes: number
+}
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -226,25 +217,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let queueHead = 0
   let open: { workflowId: string; ops: SizedOp[] } | null = null
   let inFlight: InFlight | null = null
-  // One Lamport cursor per workflow, cleared only by that doc's reset: the
-  // observed sequence reads 0 between a subscribe and its ack, so only the
-  // cursor keeps a re-bound workflow's stamps past ones this actor used there.
   const lastMintedVersions = new Map<string, number>()
   const lastSentVersions = new Map<string, number>()
   let detached = false
   let suspended = false
   let pumping = false
-  // Late-result credits: every send a batch leaves the client with may still
-  // draw a result, including the send whose silence provoked the resend and
-  // the sends of a batch that has already settled. As ANONYMOUS failures
-  // (empty id lists, no failure op_id) those are indistinguishable from the
-  // current batch's, so one is swallowed per credit rather than risk a
-  // mis-attributed settle, which poisons everything downstream of this seam.
-  // The cost is not one cycle: a credit reserved for a result that never
-  // arrives is never drained, so the next batch's own answer pays for it and
-  // reserves another on its resend. Once one result is lost, every later
-  // anonymous failure costs a RESULT_TIMEOUT_MS resend, until the host can
-  // correlate a result to the send it answers.
   let staleAnonymousBudget = 0
   const retiredOpIds = new Set<string>()
   const mayReportLostEdit = createReportBudget()
@@ -258,12 +235,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function mintBaseVersion(workflowId: string | null): number {
-    const observed = Math.max(deps.baseVersion(), observedFloor())
-    if (workflowId === null) return observed
-    const lastMinted = lastMintedVersions.get(workflowId)
-    return lastMinted === undefined
-      ? observed
-      : Math.max(observed, lastMinted + 1)
+    const observed =
+      deps.observedCounter() ?? Math.max(0, deps.baseVersion() - 1)
+    const lastMinted =
+      workflowId === null ? 0 : (lastMintedVersions.get(workflowId) ?? 0)
+    return Math.max(observed, lastMinted) === Number.MAX_SAFE_INTEGER
+      ? Number.MAX_SAFE_INTEGER + 1
+      : tickLamport(observed, lastMinted)
   }
 
   function retire(batch: InFlight, answered: number): void {
@@ -559,15 +537,33 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     rejected: Op[]
     cause: unknown
   } {
-    const measured = minted.map(measureWireOp)
-    const rejections = measured.filter((result) => !result.admitted)
-    return {
-      admitted: measured.flatMap((result) =>
-        result.admitted ? [result.sized] : []
-      ),
-      rejected: rejections.map((rejection) => rejection.op),
-      cause: rejections[0]?.cause
+    const admitted: SizedOp[] = []
+    const rejected: Op[] = []
+    let cause: unknown
+    for (const op of minted) {
+      try {
+        const [inspection] = inspectOps([op])
+        const decoded: unknown = JSON.parse(
+          new TextDecoder().decode(inspection.canonical_op)
+        )
+        if (!isPlainObject(decoded)) {
+          throw new TypeError('Operation did not serialize to a wire object')
+        }
+        const wire: Record<string, unknown> = decoded
+        if (typeof wire.op_id !== 'string' || typeof wire.actor !== 'string') {
+          throw new TypeError('Operation did not serialize to a wire object')
+        }
+        admitted.push({
+          op,
+          wire: { ...wire, op_id: wire.op_id, actor: wire.actor },
+          bytes: inspection.canonical_op.byteLength
+        })
+      } catch (error) {
+        rejected.push(op)
+        cause ??= error
+      }
     }
+    return { admitted, rejected, cause }
   }
 
   function mintAdmission(
@@ -599,11 +595,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     else open = { workflowId, ops: admitted }
   }
 
-  // Admissions in mint order. Measurement runs user-controlled toJSON and
-  // commitment runs settlement listeners; either may re-enter admit(). A
-  // re-entrant admission takes the slot after the one in progress and is
-  // committed by the outermost call, so the open group and the queue receive
-  // ops in the order their base_versions were minted.
   const admitting: Admission[] = []
   let flushDeferred = false
 
@@ -829,8 +820,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       detached = true
       try {
         drainOutstanding(notifyDetachSettlement)
-        // The listener is inert once detached. Release late-result bookkeeping
-        // even if an injected unsubscribe implementation fails below.
         staleAnonymousBudget = 0
         retiredOpIds.clear()
       } finally {
