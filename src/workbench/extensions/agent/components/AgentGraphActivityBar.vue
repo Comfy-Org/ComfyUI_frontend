@@ -1,31 +1,40 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import CanvasBanner from '@comfyorg/design-system/common/CanvasBanner'
 import Button from '@comfyorg/design-system/button/Button'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
+import { measuredVisibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { nodeBox } from '@/lib/litegraph/src/utils/arrange'
 import { useApp } from '@/scripts/appInstance'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
 
+import { shouldFrameAgentBatch } from '@/workbench/extensions/agent/crdt/batchFraming'
 import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
 
 const { t } = useI18n()
-const { canvas } = defineProps<{ canvas: LGraphCanvas | null }>()
+const { canvas, graph } = defineProps<{
+  canvas: LGraphCanvas | null
+  graph: LGraph | null
+}>()
 const activity = useAgentGraphActivityStore()
 const teleportTarget = ref<HTMLElement | null>(null)
 onMounted(() => {
   teleportTarget.value = document.querySelector('.graph-canvas-panel')
 })
 
+const displayedGraph = computed(() => graph)
 const visibleState = computed(() => {
   const state = activity.state
+  const graph = displayedGraph.value
   if (
     state.phase === 'idle' ||
-    !canvas?.graph ||
-    String(canvas.graph.id) !== state.rootGraphId
+    !graph ||
+    String(graph.id) !== state.rootGraphId
   )
     return null
   return state
@@ -45,30 +54,118 @@ const presentation = computed(() => ({
 }))
 const liveNodes = computed(() => {
   const state = visibleState.value
-  if (!state || !canvas) return []
+  const graph = displayedGraph.value
+  if (!state || !graph) return []
   return state.nodeIds.flatMap((nodeId) => {
     const locator = createNodeLocatorId(null, nodeId)
     const node = getNodeByLocatorId(useApp().rootGraph, locator)
-    return locator && node?.graph === canvas.graph ? [node] : []
+    return locator && node?.graph === graph ? [node] : []
   })
 })
-
-function viewNodes(): void {
-  const panel = document.querySelector<HTMLElement>('.graph-canvas-panel')
-  if (!canvas || !panel) return
-  const bounds = createPositionBounds(liveNodes.value, 40)
-  if (!bounds) return
-  const canvasRect = canvas.canvas.getBoundingClientRect()
-  const panelRect = panel.getBoundingClientRect()
-  canvas.animateToBounds(bounds, {
-    viewport: [
-      panelRect.left - canvasRect.left,
-      panelRect.top - canvasRect.top,
-      panelRect.width,
-      panelRect.height
-    ]
+const liveNodeRects = computed(() =>
+  liveNodes.value.map((node) => {
+    const { x, y, width, height } = nodeBox(node)
+    return { pos: [x, y] as const, size: [width, height] as const }
   })
+)
+
+const FRAME_PADDING = 40
+const BATCH_SETTLE_MS = 150
+
+function intersectViewports(
+  first: ReadOnlyRect,
+  second: ReadOnlyRect
+): ReadOnlyRect | null {
+  const left = Math.max(first[0], second[0])
+  const top = Math.max(first[1], second[1])
+  const right = Math.min(first[0] + first[2], second[0] + second[2])
+  const bottom = Math.min(first[1] + first[3], second[1] + second[3])
+  return right > left && bottom > top
+    ? [left, top, right - left, bottom - top]
+    : null
 }
+
+function uncoveredViewport(): ReadOnlyRect | null {
+  const panel = document.querySelector<HTMLElement>('.graph-canvas-panel')
+  if (!canvas || !panel) return null
+  const panelRect = panel.getBoundingClientRect()
+  if (!(panelRect.width > 0) || !(panelRect.height > 0)) return null
+  const canvasRect = canvas.canvas.getBoundingClientRect()
+  const panelViewport: ReadOnlyRect = [
+    panelRect.left - canvasRect.left,
+    panelRect.top - canvasRect.top,
+    panelRect.width,
+    panelRect.height
+  ]
+  const visibleViewport = measuredVisibleCanvasViewport(canvas)
+  return visibleViewport
+    ? intersectViewports(panelViewport, visibleViewport)
+    : null
+}
+
+function uncoveredViewportInGraphSpace(): ReadOnlyRect | null {
+  const viewport = uncoveredViewport()
+  if (!canvas || !viewport || !(canvas.ds.scale > 0)) return null
+  const [left, top] = canvas.ds.convertCanvasToOffset([
+    viewport[0],
+    viewport[1]
+  ])
+  return [
+    left,
+    top,
+    viewport[2] / canvas.ds.scale,
+    viewport[3] / canvas.ds.scale
+  ]
+}
+
+function viewNodes(): boolean {
+  const graph = displayedGraph.value
+  const viewport = uncoveredViewport()
+  const bounds = createPositionBounds(liveNodeRects.value, FRAME_PADDING)
+  if (!canvas || !graph || canvas.graph !== graph || !viewport || !bounds)
+    return false
+  canvas.animateToBounds(bounds, { viewport })
+  return true
+}
+
+let settleTimer: ReturnType<typeof setTimeout> | undefined
+
+function frameBatchIfUnseen(): void {
+  settleTimer = undefined
+  const state = visibleState.value
+  const graph = displayedGraph.value
+  const nodes = liveNodes.value
+  if (
+    !state ||
+    !canvas ||
+    !graph ||
+    canvas.graph !== graph ||
+    nodes.length === 0
+  )
+    return
+  if (activity.currentTurnFramed) return
+  const batchIds = new Set(nodes.map((node) => node.id))
+  const frame = shouldFrameAgentBatch({
+    batch: liveNodeRects.value,
+    nodesNotInBatch: graph.nodes.filter((node) => !batchIds.has(node.id))
+      .length,
+    viewport: uncoveredViewportInGraphSpace()
+  })
+  if (!frame) return
+  if (viewNodes()) activity.markCurrentTurnFramed()
+}
+
+watch(
+  [() => visibleState.value?.nodeIds ?? null, displayedGraph],
+  () => {
+    if (settleTimer !== undefined) clearTimeout(settleTimer)
+    settleTimer = setTimeout(frameBatchIfUnseen, BATCH_SETTLE_MS)
+  },
+  { flush: 'post', immediate: true }
+)
+onUnmounted(() => {
+  if (settleTimer !== undefined) clearTimeout(settleTimer)
+})
 </script>
 
 <template>

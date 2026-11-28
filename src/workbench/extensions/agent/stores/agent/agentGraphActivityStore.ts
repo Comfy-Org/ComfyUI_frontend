@@ -28,7 +28,12 @@ export const useAgentGraphActivityStore = defineStore(
     const state = ref<ActivityState>({ phase: 'idle' })
     const turnOpen = ref(false)
     const currentTurnId = ref<TurnId | null>(null)
+    const currentTurnFramed = ref(false)
     let settleTimer: ReturnType<typeof setTimeout> | undefined
+
+    function markCurrentTurnFramed(): void {
+      currentTurnFramed.value = true
+    }
 
     function startTurn(turnId: TurnId | null = null): void {
       if (turnOpen.value && currentTurnId.value === turnId) return
@@ -44,6 +49,7 @@ export const useAgentGraphActivityStore = defineStore(
         state.value = { ...previous, phase: 'running' }
         return
       }
+      currentTurnFramed.value = false
       state.value = { phase: 'idle' }
     }
 
@@ -110,6 +116,7 @@ export const useAgentGraphActivityStore = defineStore(
       if (settleTimer !== undefined) clearTimeout(settleTimer)
       settleTimer = undefined
       currentTurnId.value = null
+      currentTurnFramed.value = false
       state.value = { phase: 'idle' }
     }
 
@@ -120,6 +127,8 @@ export const useAgentGraphActivityStore = defineStore(
 
     return {
       state,
+      currentTurnFramed,
+      markCurrentTurnFramed,
       startTurn,
       recordMaterialized,
       finishTurn,

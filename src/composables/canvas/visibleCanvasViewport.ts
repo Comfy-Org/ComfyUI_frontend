@@ -8,9 +8,9 @@ function renderedRect(selector: string): DOMRect | undefined {
 }
 
 /** The CSS-pixel part of the canvas that no side panel, properties panel or agent panel covers. */
-export function visibleCanvasViewport(
+export function measuredVisibleCanvasViewport(
   canvas: Pick<LGraphCanvas, 'ds'>
-): ReadOnlyRect {
+): ReadOnlyRect | null {
   const [width, height] = canvas.ds.getViewportSize()
   const leftCover = renderedRect('#first-side-panel')
   const rightCovers = [
@@ -25,5 +25,12 @@ export function visibleCanvasViewport(
     width,
     ...rightCovers.map((rect) => rect.left - canvasLeft)
   )
-  return right > left ? [left, 0, right - left, height] : [0, 0, width, height]
+  return right > left ? [left, 0, right - left, height] : null
+}
+
+export function visibleCanvasViewport(
+  canvas: Pick<LGraphCanvas, 'ds'>
+): ReadOnlyRect {
+  const [width, height] = canvas.ds.getViewportSize()
+  return measuredVisibleCanvasViewport(canvas) ?? [0, 0, width, height]
 }

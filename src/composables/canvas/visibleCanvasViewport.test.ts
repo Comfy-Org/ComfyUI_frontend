@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { createTestDragAndScale } from '@/utils/__tests__/canvasTestUtils'
-import { visibleCanvasViewport } from './visibleCanvasViewport'
+import {
+  measuredVisibleCanvasViewport,
+  visibleCanvasViewport
+} from './visibleCanvasViewport'
 
 type Cover = { selector: string; left: number; right: number }
 
@@ -98,4 +101,10 @@ describe('visibleCanvasViewport', () => {
       expect(visibleCanvasViewport(canvasAt(canvasLeft))).toEqual(expected)
     }
   )
+
+  it('reports unavailable space when covers consume the full width', () => {
+    mountCover({ selector: AGENT_PANEL, left: 0, right: 1000 })
+
+    expect(measuredVisibleCanvasViewport(canvasAt(0))).toBeNull()
+  })
 })
