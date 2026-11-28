@@ -44,7 +44,7 @@ function createPixelCanvas(): PixelCanvas {
   }
   const at = (x: number, y: number) => y * canvas.width + x
   const ctx = fromPartial<CanvasRenderingContext2D>({
-    canvas: fromAny<HTMLCanvasElement, unknown>(canvas),
+    canvas: canvas as unknown as HTMLCanvasElement,
     save: vi.fn(),
     restore: vi.fn(),
     clearRect: (x: number, y: number, w: number, h: number) => {
