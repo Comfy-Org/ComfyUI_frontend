@@ -684,7 +684,7 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 useAgentGraphActivityPresentation({
-  graph: () => canvasStore.canvas?.graph
+  graph: () => canvasStore.currentGraph?.rootGraph
 })
 const settingStore = useSettingStore()
 const crdtLogLevel = computed({
