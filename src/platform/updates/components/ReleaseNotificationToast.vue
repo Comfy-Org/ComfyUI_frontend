@@ -90,7 +90,10 @@ const shouldShow = computed(
 
 // Generate changelog URL with version anchor (language-aware)
 const changelogUrl = computed(() => {
-  const changelogBaseUrl = buildDocsUrl('/changelog', { includeLocale: true })
+  const changelogBaseUrl = buildDocsUrl('/changelog', {
+    campaign: 'release_notification',
+    includeLocale: true
+  })
   if (latestRelease.value?.version) {
     const versionAnchor = formatVersionAnchor(latestRelease.value.version)
     return `${changelogBaseUrl}#${versionAnchor}`
@@ -179,7 +182,10 @@ const handleUpdate = async () => {
   }
 
   window.open(
-    buildDocsUrl('/installation/update_comfyui', { includeLocale: true }),
+    buildDocsUrl('/installation/update_comfyui', {
+      campaign: 'release_notification',
+      includeLocale: true
+    }),
     '_blank'
   )
   dismissToast()

@@ -30,6 +30,7 @@ import {
   tailwindScriptIgnores,
   templateFiles
 } from './scripts/eslintScope.ts'
+import productLinks from './tools/eslint-plugins/productLinks.ts'
 import templateClasses from './tools/eslint-plugins/templateClasses.ts'
 
 const extraFileExtensions = ['.vue']
@@ -591,6 +592,19 @@ export default defineConfig([
     plugins: { '@intlify/vue-i18n': i18nPlugin },
     rules: { '@intlify/vue-i18n/no-missing-keys': 'error' as const }
   })),
+  {
+    name: 'comfy/product-links',
+    files: ['src/**/*.{ts,vue}'],
+    ignores: [
+      'src/lib/**',
+      '**/*.test.ts',
+      '**/*.stories.ts',
+      '**/__tests__/**',
+      '**/__fixtures__/**'
+    ],
+    plugins: { 'product-links': productLinks },
+    rules: { 'product-links/require-utm': 'error' }
+  },
   {
     name: 'comfy/agent-platform-channels',
     files: ['src/workbench/extensions/agent/**/*.{ts,vue}'],

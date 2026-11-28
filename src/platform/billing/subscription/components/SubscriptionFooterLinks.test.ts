@@ -108,7 +108,7 @@ describe('SubscriptionFooterLinks', () => {
       screen.getByRole('button', { name: 'Partner Nodes pricing' })
     )
     expect(openSpy).toHaveBeenCalledWith(
-      'https://docs.comfy.org/tutorials/partner-nodes/pricing',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing?utm_source=comfyui_local&utm_medium=product&utm_campaign=subscription_footer',
       '_blank'
     )
   })

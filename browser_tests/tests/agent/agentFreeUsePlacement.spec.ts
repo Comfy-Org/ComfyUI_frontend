@@ -89,7 +89,7 @@ test.describe(
         notice.getByRole('link', { name: 'Learn more' })
       ).toHaveAttribute(
         'href',
-        'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
+        /^https:\/\/docs\.comfy\.org\/agent-tools\/in-app-agent\?utm_source=\w+&utm_medium=product&utm_campaign=agent_panel#what-it-costs$/
       )
     })
 
@@ -118,7 +118,7 @@ test.describe(
         notice.getByRole('link', { name: 'Learn more' })
       ).toHaveAttribute(
         'href',
-        'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
+        /^https:\/\/docs\.comfy\.org\/agent-tools\/in-app-agent\?utm_source=\w+&utm_medium=product&utm_campaign=agent_panel#what-it-costs$/
       )
     })
 

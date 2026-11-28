@@ -2389,7 +2389,7 @@ describe('useSubscription', () => {
       handleLearnMore()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://docs.comfy.org',
+        'https://docs.comfy.org/?utm_source=comfy_cloud&utm_medium=product&utm_campaign=subscription_learn_more',
         '_blank'
       )
 

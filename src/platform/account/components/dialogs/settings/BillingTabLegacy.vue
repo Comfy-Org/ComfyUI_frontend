@@ -240,7 +240,10 @@ const loadErrorKey = isCloud
 const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const partnerNodesPricingHref = computed(() =>
-  buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
+  buildDocsUrl(docsPaths.partnerNodesPricing, {
+    campaign: 'billing_settings',
+    includeLocale: true
+  })
 )
 
 const HANDOFF = {

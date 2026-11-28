@@ -13,6 +13,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - `docs/guidance/storybook.md` — Storybook story patterns
 - `docs/guidance/design-standards.md` — Figma design-standards references
 - `docs/guidance/performance-incident-runbook.md` — staged evidence-gathering procedure for frame drops, input latency, long tasks, and unexpected redraws
+- `docs/guidance/product-links.md` — UTM parameters on every comfy.org link in a product: wrap it in `productLink(url, campaign)` from `src/platform/links/productLink.ts`; the `product-links/require-utm` lint rule enforces it. The one copy of this convention for all Comfy product repositories
 
 ## Project Structure & Module Organization
 

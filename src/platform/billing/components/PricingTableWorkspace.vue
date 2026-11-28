@@ -266,6 +266,7 @@ import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import {
+  ENTERPRISE_URL,
   TIER_PRICING,
   amountForBillingCycle,
   hasActivePaidPlan,
@@ -512,6 +513,6 @@ async function handleContactUs() {
 }
 
 function handleViewEnterprise() {
-  window.open('https://comfy.org/cloud/enterprise/', '_blank')
+  window.open(ENTERPRISE_URL, '_blank')
 }
 </script>

@@ -160,7 +160,10 @@ const { captureInputs, copyBrief } = useAgentHandoff()
 const [DefineDocsLink, ReuseDocsLink] = createReusableTemplate()
 const { isCopying, copied, copyWith } = useBriefCopy()
 
-const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
+const docsUrl = buildDocsUrl('/development/overview', {
+  campaign: 'deploy_card',
+  includeLocale: true
+})
 const inputs = captureInputs()
 const platformUrl = computed(() =>
   platformSurfaceLink(

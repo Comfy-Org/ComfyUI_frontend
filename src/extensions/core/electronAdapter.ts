@@ -174,6 +174,7 @@ export async function registerElectronAdapterExtension(): Promise<boolean> {
         function() {
           window.open(
             buildDocsUrl('/installation/desktop', {
+              campaign: 'desktop_menu',
               includeLocale: true,
               platform: true
             }),

@@ -423,7 +423,10 @@ describe('BillingTab', () => {
       expect(banner).toHaveTextContent('Contact support so we can fix it.')
       expect(
         within(banner).getByRole('link', { name: 'Contact support' })
-      ).toHaveAttribute('href', 'https://comfy.org/contact/')
+      ).toHaveAttribute(
+        'href',
+        'https://comfy.org/contact/?utm_source=comfyui_local&utm_medium=product&utm_campaign=billing_banner'
+      )
     })
 
     it('hides the parked banner when the fact is absent', () => {
@@ -928,7 +931,7 @@ describe('BillingTab', () => {
       within(footer).getByRole('link', { name: 'Partner Nodes pricing' })
     ).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/tutorials/partner-nodes/pricing'
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing?utm_source=comfyui_local&utm_medium=product&utm_campaign=billing_settings'
     )
     await userEvent.click(
       within(footer).getByRole('button', { name: 'Message support' })

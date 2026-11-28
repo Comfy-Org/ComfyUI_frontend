@@ -156,7 +156,7 @@
       <p class="mt-8 text-xs text-muted-foreground">
         {{ t('auth.login.termsText') }}
         <a
-          href="https://comfy.org/terms-of-service/"
+          :href="termsUrl"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -164,7 +164,7 @@
         </a>
         {{ t('auth.login.andText') }}
         <a
-          href="https://comfy.org/privacy-policy/"
+          :href="privacyUrl"
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
@@ -208,6 +208,16 @@ import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import ApiKeyForm from './signin/ApiKeyForm.vue'
 import SignInForm from './signin/SignInForm.vue'
 import SignUpForm from './signin/SignUpForm.vue'
+import { productLink } from '@/platform/links/productLink'
+
+const termsUrl = productLink(
+  'https://comfy.org/terms-of-service/',
+  'sign_in_dialog'
+)
+const privacyUrl = productLink(
+  'https://comfy.org/privacy-policy/',
+  'sign_in_dialog'
+)
 
 const { onSuccess } = defineProps<{
   onSuccess: () => void

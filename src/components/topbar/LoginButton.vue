@@ -97,9 +97,7 @@ const { flags } = useFeatureFlags()
 const { buildDocsUrl } = useExternalLink()
 const apiNodesOverviewUrl = buildDocsUrl(
   '/tutorials/api-nodes/overview#api-nodes',
-  {
-    includeLocale: true
-  }
+  { campaign: 'login_button', includeLocale: true }
 )
 const open = ref(false)
 const buttonRef = ref<InstanceType<typeof Button> | null>(null)

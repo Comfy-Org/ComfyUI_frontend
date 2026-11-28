@@ -262,6 +262,7 @@ const moreItems = computed<MenuItem[]>(() => {
         trackResourceClick('docs', true)
         openExternalLink(
           buildDocsUrl('/installation/desktop', {
+            campaign: 'help_center',
             includeLocale: true,
             platform: true
           })
@@ -360,7 +361,9 @@ const menuItems = computed<MenuItem[]>(() => {
       action: () => {
         trackResourceClick('docs', true)
         const path = isCloud ? '/get_started/cloud' : '/'
-        openExternalLink(buildDocsUrl(path, { includeLocale: true }))
+        openExternalLink(
+          buildDocsUrl(path, { campaign: 'help_center', includeLocale: true })
+        )
         emit('close')
       }
     },
@@ -639,7 +642,7 @@ const onReleaseClick = (release: ReleaseNote): void => {
   trackResourceClick('release_notes', true)
   void releaseStore.handleShowChangelog(release.version)
   const versionAnchor = formatVersionAnchor(release.version)
-  const changelogUrl = `${buildDocsUrl('/changelog', { includeLocale: true })}#${versionAnchor}`
+  const changelogUrl = `${buildDocsUrl('/changelog', { campaign: 'help_center', includeLocale: true })}#${versionAnchor}`
   openExternalLink(changelogUrl)
   emit('close')
 }

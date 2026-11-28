@@ -88,7 +88,10 @@ const shouldShow = computed(
 
 // Generate changelog URL with version anchor (language-aware)
 const changelogUrl = computed(() => {
-  const changelogBaseUrl = buildDocsUrl('/changelog', { includeLocale: true })
+  const changelogBaseUrl = buildDocsUrl('/changelog', {
+    campaign: 'whats_new_popup',
+    includeLocale: true
+  })
   if (latestRelease.value?.version) {
     const versionAnchor = formatVersionAnchor(latestRelease.value.version)
     return `${changelogBaseUrl}#${versionAnchor}`

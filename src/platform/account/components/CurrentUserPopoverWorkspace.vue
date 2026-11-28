@@ -471,7 +471,10 @@ const handleTopUp = () => {
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
-    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
+    buildDocsUrl(docsPaths.partnerNodesPricing, {
+      campaign: 'user_menu',
+      includeLocale: true
+    }),
     '_blank'
   )
   emit('close')

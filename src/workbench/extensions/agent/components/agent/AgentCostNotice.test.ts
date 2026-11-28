@@ -30,7 +30,7 @@ describe('AgentCostNotice', () => {
     )
     expect(screen.getByRole('link', { name: 'Learn more' })).toHaveAttribute(
       'href',
-      'https://docs.comfy.org/agent-tools/in-app-agent#what-it-costs'
+      'https://docs.comfy.org/agent-tools/in-app-agent?utm_source=comfyui_local&utm_medium=product&utm_campaign=agent_panel#what-it-costs'
     )
   })
 

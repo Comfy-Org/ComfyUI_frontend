@@ -1347,7 +1347,10 @@ describe('UnifiedPricingTable unpaid signup invoice notice', () => {
     expect(mockFinishPayment).toHaveBeenCalledOnce()
     expect(
       screen.getByRole('link', { name: 'Contact support' })
-    ).toHaveAttribute('href', 'https://comfy.org/contact/')
+    ).toHaveAttribute(
+      'href',
+      'https://comfy.org/contact/?utm_source=comfyui_local&utm_medium=product&utm_campaign=pricing_table'
+    )
   })
 
   it('pre-fills the questions form with the signed-in email', () => {

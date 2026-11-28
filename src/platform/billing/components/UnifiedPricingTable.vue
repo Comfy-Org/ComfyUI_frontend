@@ -525,6 +525,7 @@ import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaym
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAuthStore } from '@/stores/authStore'
+import { productLink } from '@/platform/links/productLink'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -594,8 +595,14 @@ const authStore = useAuthStore()
 const questionsUrl = computed(() =>
   buildSupportUrl('question', { email: authStore.userEmail })
 )
-const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
-const PRICING_URL = 'https://comfy.org/cloud/pricing/'
+const CONTACT_SUPPORT_URL = productLink(
+  'https://comfy.org/contact/',
+  'pricing_table'
+)
+const PRICING_URL = productLink(
+  'https://comfy.org/cloud/pricing/',
+  'pricing_table'
+)
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */

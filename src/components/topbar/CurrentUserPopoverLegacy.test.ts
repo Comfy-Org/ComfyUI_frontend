@@ -259,7 +259,7 @@ describe('CurrentUserPopoverLegacy', () => {
     await user.click(screen.getByTestId('partner-nodes-menu-item'))
 
     expect(window.open).toHaveBeenCalledWith(
-      'https://docs.comfy.org/tutorials/partner-nodes/pricing',
+      'https://docs.comfy.org/tutorials/partner-nodes/pricing?utm_source=comfyui_local&utm_medium=product&utm_campaign=user_menu',
       '_blank'
     )
     expect(onClose).toHaveBeenCalledTimes(1)

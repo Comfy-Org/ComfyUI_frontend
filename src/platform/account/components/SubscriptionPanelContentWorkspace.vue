@@ -435,6 +435,7 @@ import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
 } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
+import { productLink } from '@/platform/links/productLink'
 
 const { handlePanelScroll } = useSettingsHeaderCollapse()
 
@@ -578,7 +579,10 @@ function handleUpgrade() {
 }
 
 function handleViewMoreDetails() {
-  window.open('https://comfy.org/cloud/pricing/', '_blank')
+  window.open(
+    productLink('https://comfy.org/cloud/pricing/', 'subscription_panel'),
+    '_blank'
+  )
 }
 
 async function handleRetry() {

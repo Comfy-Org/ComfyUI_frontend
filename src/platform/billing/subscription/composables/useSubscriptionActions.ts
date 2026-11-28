@@ -1,3 +1,4 @@
+import { productLink } from '@/platform/links/productLink'
 import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -73,7 +74,13 @@ export function useSubscriptionActions() {
   }
 
   const handleLearnMoreClick = () => {
-    window.open('https://docs.comfy.org/get_started/cloud', '_blank')
+    window.open(
+      productLink(
+        'https://docs.comfy.org/get_started/cloud',
+        'subscription_learn_more'
+      ),
+      '_blank'
+    )
   }
 
   return {

@@ -83,6 +83,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { productLink } from '@/platform/links/productLink'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { t } = useI18n()
@@ -109,16 +110,11 @@ function onExplore() {
     element_group: 'cloud_notification'
   })
 
-  const params = new URLSearchParams({
-    utm_source: 'desktop',
-    utm_medium: 'onload-modal',
-    utm_campaign: 'local-to-cloud-conversion',
-    utm_id: 'desktop-onload-modal',
-    utm_source_platform: 'mac-desktop'
-  })
-
   window.open(
-    `https://comfy.org/cloud/?${params}`,
+    productLink(
+      'https://comfy.org/cloud/?utm_id=desktop-onload-modal&utm_source_platform=mac-desktop',
+      'cloud_notification'
+    ),
     '_blank',
     'noopener,noreferrer'
   )

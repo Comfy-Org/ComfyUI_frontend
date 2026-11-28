@@ -1107,7 +1107,7 @@ describe('BillingStatusBanner', () => {
         screen.getByRole('button', { name: 'Contact sales' })
       )
       expect(open).toHaveBeenCalledWith(
-        'https://comfy.org/cloud/enterprise/',
+        'https://comfy.org/cloud/enterprise/?utm_source=comfyui_local&utm_medium=product&utm_campaign=contact_sales',
         '_blank',
         'noopener,noreferrer'
       )
@@ -1207,7 +1207,7 @@ describe('BillingStatusBanner', () => {
       )
 
       expect(open).toHaveBeenCalledWith(
-        'https://comfy.org/cloud/enterprise/',
+        'https://comfy.org/cloud/enterprise/?utm_source=comfyui_local&utm_medium=product&utm_campaign=contact_sales',
         '_blank',
         'noopener,noreferrer'
       )

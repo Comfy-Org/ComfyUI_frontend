@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useExternalLink } from '@/composables/useExternalLink'
+import { productLink } from '@/platform/links/productLink'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
@@ -38,7 +39,9 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
           ? 'v' + electronAPI().getComfyUIVersion()
           : formatCommitHash(coreVersion.value)
       }`,
-      url: isCloud ? staticUrls.comfyOrg : staticUrls.github,
+      url: isCloud
+        ? productLink('https://comfy.org/', 'about_panel')
+        : staticUrls.github,
       icon: isCloud ? 'icon-[lucide--cloud]' : 'icon-[lucide--github]'
     },
     {
@@ -65,7 +68,7 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
     },
     {
       label: 'ComfyOrg',
-      url: staticUrls.comfyOrg,
+      url: productLink('https://comfy.org/', 'about_panel'),
       icon: 'icon-[lucide--globe]'
     }
   ])

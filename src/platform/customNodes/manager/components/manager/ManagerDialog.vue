@@ -545,6 +545,7 @@ const retrySearch = () => void packs.loadNew()
 const onClickWarningLink = () => {
   window.open(
     buildDocsUrl('/troubleshooting/custom-node-issues', {
+      campaign: 'node_manager',
       includeLocale: true
     }),
     '_blank'

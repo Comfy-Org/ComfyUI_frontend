@@ -352,6 +352,7 @@
 
 <script setup lang="ts">
 import Badge from '@comfyorg/design-system/badge/Badge'
+import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
@@ -607,7 +608,7 @@ function requestAccessModeToggle() {
 }
 
 function openEnterprisePage() {
-  window.open('https://comfy.org/cloud/enterprise/', '_blank')
+  window.open(ENTERPRISE_URL, '_blank')
 }
 
 function confirmEnterpriseUpsell() {
