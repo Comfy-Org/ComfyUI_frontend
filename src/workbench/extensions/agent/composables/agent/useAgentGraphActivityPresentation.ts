@@ -31,16 +31,8 @@ export function useAgentGraphActivityPresentation({
       const events = currentGraph.events as EventTarget
       const onNodeRemoved: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const state = activity.state
-        if (
-          state.phase === 'idle' ||
-          currentGraph.rootGraph.id !== state.rootGraphId
-        )
-          return
-        const rawNodeId = event.detail?.node?.id
-        if (rawNodeId === null || rawNodeId === undefined) return
-        const nodeId = parseNodeId(String(rawNodeId))
-        if (nodeId !== null) activity.removeNodes([nodeId])
+        const nodeId = parseNodeId(String(event.detail.node?.id))
+        if (nodeId) activity.removeNodes([nodeId])
       }
       events.addEventListener('node:removed', onNodeRemoved)
       onCleanup(() => events.removeEventListener('node:removed', onNodeRemoved))
@@ -65,15 +57,8 @@ export function useAgentGraphActivityPresentation({
         enter: 'pop'
       }))
     )
-    if (state.phase === 'running' && !settings.get('Comfy.Minimap.Visible')) {
-      void settings.set('Comfy.Minimap.Visible', true).catch((error) =>
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'failure_showing_minimap_for_agent_graph_activity',
-          level: 'warning'
-        })
-      )
-    }
+    if (state.phase === 'running' && !settings.get('Comfy.Minimap.Visible'))
+      void settings.set('Comfy.Minimap.Visible', true)
   }
 
   watch(() => activity.state, syncMinimapLayer, { immediate: true })
