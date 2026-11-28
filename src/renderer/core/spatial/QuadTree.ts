@@ -14,6 +14,15 @@ interface QuadTreeItem<T> {
   data: T
 }
 
+function boundsIntersect(a: Bounds, b: Bounds): boolean {
+  return !(
+    a.x + a.width < b.x ||
+    b.x + b.width < a.x ||
+    a.y + a.height < b.y ||
+    b.y + b.height < a.y
+  )
+}
+
 interface QuadTreeOptions {
   maxDepth?: number
   maxItemsPerNode?: number
@@ -192,12 +201,7 @@ class QuadNode<T> {
   }
 
   private boundsIntersect(a: Bounds, b: Bounds): boolean {
-    return !(
-      a.x + a.width < b.x ||
-      b.x + b.width < a.x ||
-      a.y + a.height < b.y ||
-      b.y + b.height < a.y
-    )
+    return boundsIntersect(a, b)
   }
 
   // Debug helper to get tree structure
@@ -215,6 +219,8 @@ class QuadNode<T> {
 export class QuadTree<T> {
   private root: QuadNode<T>
   private itemMap: Map<string, QuadTreeItem<T>> = new Map()
+  /** Items not fully inside the root bounds; queries scan them directly. */
+  private outside: Map<string, QuadTreeItem<T>> = new Map()
   private options: Required<QuadTreeOptions>
 
   constructor(bounds: Bounds, options: QuadTreeOptions = {}) {
@@ -240,18 +246,16 @@ export class QuadTree<T> {
       this.remove(id)
     }
 
-    const success = this.root.insert(item)
-    if (success) {
-      this.itemMap.set(id, item)
-    }
-    return success
+    if (!this.root.insert(item)) this.outside.set(id, item)
+    this.itemMap.set(id, item)
+    return true
   }
 
   remove(id: string): boolean {
     const item = this.itemMap.get(id)
     if (!item) return false
 
-    const success = this.root.remove(item)
+    const success = this.outside.delete(id) || this.root.remove(item)
     if (success) {
       this.itemMap.delete(id)
     }
@@ -270,6 +274,9 @@ export class QuadTree<T> {
 
   query(searchBounds: Bounds): T[] {
     const items = this.root.query(searchBounds)
+    for (const item of this.outside.values()) {
+      if (boundsIntersect(item.bounds, searchBounds)) items.push(item)
+    }
     return items.map((item) => item.data)
   }
 
@@ -281,6 +288,7 @@ export class QuadTree<T> {
       this.options.maxItemsPerNode
     )
     this.itemMap.clear()
+    this.outside.clear()
   }
 
   get size(): number {

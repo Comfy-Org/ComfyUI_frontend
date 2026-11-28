@@ -1011,6 +1011,19 @@ describe('layoutStore link layout updates', () => {
     expect(layoutStore.getLinkLayout(toLinkId(1))?.bounds.x).toBe(10)
   })
 
+  it('finds a link segment far outside the spatial index default bounds', () => {
+    layoutStore.updateLinkLayout(toLinkId(1), baseLink())
+    layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
+      path: stubPath(),
+      bounds: { x: 50_000, y: 50_000, width: 5, height: 5 },
+      centerPos: { x: 50_001, y: 50_001 }
+    })
+
+    expect(
+      layoutStore.queryLinkSegmentAtPoint({ x: 50_001, y: 50_001 })
+    ).toEqual({ linkId: toLinkId(1), rerouteId: null })
+  })
+
   it('deleteLinkLayout removes the link and its segment layouts', () => {
     layoutStore.updateLinkLayout(toLinkId(1), baseLink())
     layoutStore.updateLinkSegmentLayout(toLinkId(1), null, {
