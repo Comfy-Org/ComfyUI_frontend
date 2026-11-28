@@ -4636,11 +4636,7 @@
       "placeholderUnknown": "Select media...",
       "maxSelectionReached": "Maximum selection limit reached",
       "thumbnailSize": "Thumbnail size",
-      "thumbnailSizes": {
-        "compact": "Compact",
-        "standard": "Standard",
-        "large": "Large"
-      },
+      "thumbnailSizeHint": "Pinch, or hold Ctrl and scroll over the thumbnails, to resize them",
       "topResult": "Top result: {result}"
     },
     "valueControl": {

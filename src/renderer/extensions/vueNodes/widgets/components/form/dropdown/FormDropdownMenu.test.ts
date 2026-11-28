@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { useElementSize } from '@vueuse/core'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -175,20 +175,24 @@ describe('FormDropdownMenu', () => {
   it.for([
     { name: 'ctrlKey', modifier: 'ctrlKey' as const },
     { name: 'metaKey', modifier: 'metaKey' as const }
-  ])('suppresses browser default for pinch-zoom ($name)', ({ modifier }) => {
-    render(FormDropdownMenu, {
-      props: defaultProps,
-      global: globalConfig
-    })
+  ])(
+    'suppresses browser default for pinch-zoom ($name)',
+    async ({ modifier }) => {
+      render(FormDropdownMenu, {
+        props: defaultProps,
+        global: globalConfig
+      })
+      await nextTick()
 
-    const root = screen.getByTestId('form-dropdown-menu')
-    const event = new WheelEvent('wheel', { bubbles: true, cancelable: true })
-    Object.defineProperty(event, modifier, { value: true })
-    Object.defineProperty(event, 'deltaY', { value: -10 })
-    root.dispatchEvent(event)
+      const root = screen.getByTestId('form-dropdown-menu')
+      const event = new WheelEvent('wheel', { bubbles: true, cancelable: true })
+      Object.defineProperty(event, modifier, { value: true })
+      Object.defineProperty(event, 'deltaY', { value: -10 })
+      root.dispatchEvent(event)
 
-    expect(event.defaultPrevented).toBe(true)
-  })
+      expect(event.defaultPrevented).toBe(true)
+    }
+  )
 
   /** Stub that surfaces `uploadable` as a data attribute and exposes a button
    *  that emits `show-picker`, so the parent's prop-forwarding and event

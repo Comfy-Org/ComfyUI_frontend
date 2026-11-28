@@ -4,7 +4,7 @@
     class="h-full scrollbar-thin scrollbar-thumb-(--muted) scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto [overflow-anchor:none]"
   >
     <div :style="topSpacerStyle" />
-    <div :style="mergedGridStyle">
+    <div ref="grid" :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
         :key="item.key ?? item.id"
@@ -20,13 +20,16 @@
 <script setup lang="ts" generic="T">
 import {
   useElementSize,
+  useEventListener,
   useInfiniteScroll,
   useScroll,
   whenever
 } from '@vueuse/core'
 import { clamp, debounce } from 'es-toolkit/compat'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
+
+import { anchorAt, scrollTopFor } from './virtualGridAnchor'
 
 type HasKeyOrId = { key: string; id?: string } | { key?: string; id: string }
 
@@ -44,6 +47,7 @@ const {
   defaultItemWidth = 200,
   maxColumns = Infinity,
   minItemWidth,
+  maxItemWidth,
   onLoadMore,
   canLoadMore = false
 } = defineProps<{
@@ -55,13 +59,18 @@ const {
   defaultItemWidth?: number
   maxColumns?: number
   minItemWidth?: number
+  maxItemWidth?: number
   onLoadMore?: () => unknown
   canLoadMore?: boolean
 }>()
 
 const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
+const rowGap = ref(0)
+const rowTop = ref(0)
+const rowPitch = computed(() => itemHeight.value + rowGap.value)
 const container = ref<HTMLElement | null>(null)
+const grid = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
 const { y: scrollY } = useScroll(container, {
   eventListenerOptions: { passive: true }
@@ -79,12 +88,14 @@ const mergedGridStyle = computed<CSSProperties>(() => {
   if (maxColumns === Infinity) return gridStyle
   return {
     ...gridStyle,
-    gridTemplateColumns: `repeat(${cols.value}, minmax(0, 1fr))`
+    gridTemplateColumns: `repeat(${cols.value}, minmax(0, ${maxItemWidth ? `${maxItemWidth}px` : '1fr'}))`
   }
 })
 
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
+const offsetRows = computed(() =>
+  Math.floor(Math.max(0, scrollY.value - rowTop.value) / rowPitch.value)
+)
 const isValidGrid = computed(() => height.value && width.value && items?.length)
 
 const state = computed<GridState>(() => {
@@ -112,7 +123,7 @@ const renderedItems = computed(() =>
 
 function rowsToHeight(itemsCount: number): string {
   const rows = Math.ceil(itemsCount / cols.value)
-  return `${rows * itemHeight.value}px`
+  return `${rows * rowPitch.value}px`
 }
 const topSpacerStyle = computed<CSSProperties>(() => ({
   height: rowsToHeight(state.value.start)
@@ -142,8 +153,71 @@ function updateItemSize(): void {
     if (itemWidth.value !== firstItem.clientWidth) {
       itemWidth.value = firstItem.clientWidth
     }
+    if (grid.value) {
+      const style = getComputedStyle(grid.value)
+      rowGap.value = pixels(style.rowGap)
+      rowTop.value = pixels(style.paddingTop)
+    }
   }
 }
+let pointer: { clientX: number; clientY: number } | undefined
+useEventListener(
+  container,
+  'pointermove',
+  ({ clientX, clientY }: PointerEvent) => {
+    pointer = { clientX, clientY }
+  },
+  { passive: true }
+)
+useEventListener(container, 'pointerleave', () => {
+  pointer = undefined
+})
+
+function focusPoint(el: HTMLElement): { x: number; y: number } {
+  if (!pointer) return { x: 0, y: 0 }
+  const rect = el.getBoundingClientRect()
+  return { x: pointer.clientX - rect.left, y: pointer.clientY - rect.top }
+}
+
+function pixels(length: string): number {
+  const value = Number.parseFloat(length)
+  return Number.isFinite(value) ? value : 0
+}
+
+function trackGeometry(
+  el: HTMLElement,
+  trackCols: number
+): { trackLeft: number; stride: number } {
+  const firstItem = grid.value?.querySelector('[data-virtual-grid-item]')
+  if (!grid.value || !firstItem) {
+    return { trackLeft: 0, stride: width.value / trackCols }
+  }
+  const itemRect = firstItem.getBoundingClientRect()
+  return {
+    trackLeft: itemRect.left - el.getBoundingClientRect().left,
+    stride: itemRect.width + pixels(getComputedStyle(grid.value).columnGap)
+  }
+}
+
+watch([cols, () => maxItemWidth], async ([nextCols], [prevCols]) => {
+  const el = container.value
+  if (!el || !isValidGrid.value) return
+  const anchor = anchorAt(focusPoint(el), {
+    scrollTop: el.scrollTop,
+    rowTop: rowTop.value,
+    rowPitch: rowPitch.value,
+    cols: prevCols,
+    ...trackGeometry(el, prevCols)
+  })
+  await nextTick()
+  updateItemSize()
+  await nextTick()
+  el.scrollTop = scrollTopFor(anchor, nextCols, {
+    rowTop: rowTop.value,
+    rowPitch: rowPitch.value
+  })
+})
+
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
 watch(() => gridStyle, updateItemSize, { flush: 'post' })
