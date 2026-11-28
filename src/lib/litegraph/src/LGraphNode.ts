@@ -55,6 +55,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWidgetComponents } from '@/stores/widgetComponents'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import {
   connect,
@@ -3198,21 +3199,38 @@ export class LGraphNode
     slot: number | string,
     target_node: LGraphNode | number | null,
     target_slot: number | string,
-    afterRerouteId?: RerouteId
+    afterRerouteId?: RerouteId,
+    options?: { requestedId: LinkId }
   ): LLink | null {
-    return connect(this, slot, target_node, target_slot, afterRerouteId)
+    return connect(
+      this,
+      slot,
+      target_node,
+      target_slot,
+      afterRerouteId,
+      options
+    )
   }
 
   connectSlots(
     output: INodeOutputSlot,
     inputNode: LGraphNode,
     input: INodeInputSlot,
-    afterRerouteId: RerouteId | undefined
+    afterRerouteId: RerouteId | undefined,
+    options?: { requestedId: LinkId }
   ): LLink | null | undefined {
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    return connectSlots(graph, this, output, inputNode, input, afterRerouteId)
+    return connectSlots(
+      graph,
+      this,
+      output,
+      inputNode,
+      input,
+      afterRerouteId,
+      options
+    )
   }
 
   connectFloatingReroute(
