@@ -211,6 +211,7 @@ watch([cols, () => maxItemWidth], async ([nextCols], [prevCols]) => {
   })
   await nextTick()
   updateItemSize()
+  await nextTick()
   el.scrollTop = scrollTopFor(anchor, nextCols, {
     rowTop: rowTop.value,
     rowPitch: rowPitch.value
