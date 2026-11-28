@@ -961,7 +961,7 @@ const nodeMediaParts = computed((): NodeMediaPart[] => {
   if (
     !node ||
     display.value === 'hidden' ||
-    node.hideOutputImages !== false ||
+    (display.value === 'auto' && node.hideOutputImages !== false) ||
     hideExecutedOutput.value
   )
     return []

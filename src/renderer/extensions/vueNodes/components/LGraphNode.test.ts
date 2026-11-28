@@ -553,21 +553,36 @@ describe('LGraphNode', () => {
   })
 
   it.for([
-    { hideOutputImages: undefined, previewCount: 0 },
-    { hideOutputImages: true, previewCount: 0 },
-    { hideOutputImages: false, previewCount: 1 }
+    { hideOutputImages: undefined, chosen: undefined, previewCount: 0 },
+    { hideOutputImages: true, chosen: undefined, previewCount: 0 },
+    { hideOutputImages: false, chosen: undefined, previewCount: 1 },
+    { hideOutputImages: true, chosen: 'shown' as const, previewCount: 1 },
+    { hideOutputImages: false, chosen: 'hidden' as const, previewCount: 0 }
   ])(
-    'renders $previewCount default previews with hideOutputImages=$hideOutputImages',
-    ({ hideOutputImages, previewCount }) => {
+    'renders $previewCount default previews with hideOutputImages=$hideOutputImages and display $chosen',
+    ({ hideOutputImages, chosen, previewCount }) => {
+      const rootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => mockData.mockLgraphNode,
+        subgraphs: new Map()
+      }
+      rootGraph.rootGraph = rootGraph
+      useCanvasStore().currentGraph = fromAny(rootGraph)
       mockData.mockLgraphNode = {
         ...baseLgraphNodeMock,
+        graph: rootGraph,
         hideOutputImages,
         widgets: [{ name: 'custom_widget', type: 'custom' }],
         onDrawBackground: vi.fn()
       }
+      if (chosen)
+        useWidgetPreviewDisplayStore().set(
+          widgetId('graph-test', mockNodeData.id, CANVAS_IMAGE_PREVIEW_WIDGET),
+          { mode: chosen }
+        )
       seedNodeOutputs([{ filename: 'comparison.png', type: 'temp' }])
 
-      renderLGraphNode({ nodeData: mockNodeData })
+      renderLGraphNode({ nodeData: { ...mockNodeData, graphId: 'graph-test' } })
 
       expect(screen.queryAllByTestId('node-content')).toHaveLength(previewCount)
     }
