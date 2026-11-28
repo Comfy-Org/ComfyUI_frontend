@@ -48,20 +48,32 @@ interface MediaFit {
   aspectRatioAt: (minHeight: number) => number
 }
 
-function soleMediaFit(region: HTMLElement): MediaFit | undefined {
-  if (region.querySelector('[data-image-preview-grid]')) return undefined
-  const media = region.querySelectorAll<HTMLImageElement | HTMLVideoElement>(
-    'img, video'
-  )
-  if (media.length !== 1) return undefined
-  const [element] = media
+function mediaAspectRatio(element: HTMLImageElement | HTMLVideoElement) {
   const [width, height] =
     element instanceof HTMLVideoElement
       ? [element.videoWidth, element.videoHeight]
       : [element.naturalWidth, element.naturalHeight]
-  return width && height
-    ? { element, aspectRatioAt: () => width / height }
-    : undefined
+  return width && height ? width / height : undefined
+}
+
+function soleMediaFit(region: HTMLElement): MediaFit | undefined {
+  if (region.querySelector('[data-image-preview-grid]')) return undefined
+  const overlay = region.querySelector<HTMLElement>('[data-media-overlay]')
+  const media = (overlay ?? region).querySelectorAll<
+    HTMLImageElement | HTMLVideoElement
+  >('img, video')
+  if (overlay) {
+    const ratios = Array.from(media, mediaAspectRatio).filter(
+      (ratio) => ratio !== undefined
+    )
+    return ratios.length
+      ? { element: overlay, aspectRatioAt: () => Math.min(...ratios) }
+      : undefined
+  }
+  if (media.length !== 1) return undefined
+  const [element] = media
+  const ratio = mediaAspectRatio(element)
+  return ratio ? { element, aspectRatioAt: () => ratio } : undefined
 }
 
 function px(value: string) {
