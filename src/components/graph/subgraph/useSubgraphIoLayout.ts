@@ -4,6 +4,8 @@ import type { Ref } from 'vue'
 
 import type {
   Bounds,
+  CompassCorners,
+  Point2D,
   PointTuple,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
@@ -11,6 +13,7 @@ import type {
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -117,22 +120,39 @@ export function useSubgraphIoLayout(
   )
 
   let resizeOrigin: PointTuple = [0, 0]
-  const { startResize: resize } = useNodeResize(({ size: next }) => {
-    const node = ioNode()
-    node.pos = resizeOrigin
-    node.size = [next.width, next.height]
-    report(next)
-  })
+  const { startResize: resize, nudgeResize } = useNodeResize(
+    ({ size: next }) => {
+      const node = ioNode()
+      node.pos = resizeOrigin
+      node.size = [next.width, next.height]
+      report(next)
+    }
+  )
 
-  function startResize(event: PointerEvent) {
+  function resizableOrigin() {
     const panel = element.value
     const node = ioNode()
-    if (event.button !== 0 || !panel || canvasStore.isReadOnly || node.pinned)
-      return
+    if (!panel || canvasStore.isReadOnly || node.pinned) return
     const [x, y] = node.boundingRect
     resizeOrigin = [x, y]
-    resize(event, 'SE', { element: panel, position: { x, y } })
+    return { element: panel, position: { x, y } }
   }
 
-  return { style, startResize }
+  function startResize(event: PointerEvent, corner: CompassCorners) {
+    const origin = event.button === 0 && resizableOrigin()
+    if (origin) resize(event, corner, origin)
+  }
+
+  function nudgeSize(
+    event: KeyboardEvent,
+    corner: CompassCorners,
+    delta: Point2D
+  ) {
+    const origin = resizableOrigin()
+    if (!origin) return
+    nudgeResize(event, corner, delta, origin)
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  }
+
+  return { style, startResize, nudgeSize }
 }

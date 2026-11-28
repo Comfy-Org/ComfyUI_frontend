@@ -130,7 +130,7 @@ export class VueNodeFixture {
 
   /** Locator for the resize handle at the given corner, scoped to this node. */
   getResizeHandle(corner: CompassCorners): Locator {
-    return this.root.locator(`[data-corner="${corner}"]`)
+    return this.root.locator(`[data-resize-direction="${corner}"]`)
   }
 
   /** Locator for the widget row whose control is labelled `name`. */

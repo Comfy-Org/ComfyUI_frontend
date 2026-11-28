@@ -9,72 +9,62 @@ describe('resizePanel', () => {
   it.for([
     {
       name: 'left corner grows left and down below the trigger',
-      handle: 'left-corner',
+      direction: 'SW',
       pointer: { x: -50, y: 30 },
-      growsUp: false,
       max: roomy,
       expected: { width: 450, height: 630 }
     },
     {
       name: 'left corner grows left and up above the trigger',
-      handle: 'left-corner',
+      direction: 'NW',
       pointer: { x: -50, y: -30 },
-      growsUp: true,
       max: roomy,
       expected: { width: 450, height: 630 }
     },
     {
       name: 'left corner shrinks when dragged down above the trigger',
-      handle: 'left-corner',
+      direction: 'NW',
       pointer: { x: 20, y: 30 },
-      growsUp: true,
       max: roomy,
       expected: { width: 380, height: 570 }
     },
     {
       name: 'right corner grows right and down below the trigger',
-      handle: 'right-corner',
+      direction: 'SE',
       pointer: { x: 50, y: 30 },
-      growsUp: false,
       max: roomy,
       expected: { width: 450, height: 630 }
     },
     {
       name: 'left edge changes only the width',
-      handle: 'left-edge',
+      direction: 'W',
       pointer: { x: -50, y: 30 },
-      growsUp: false,
       max: roomy,
       expected: { width: 450, height: 600 }
     },
     {
       name: 'free edge changes only the height above the trigger',
-      handle: 'free-edge',
+      direction: 'N',
       pointer: { x: -50, y: -30 },
-      growsUp: true,
       max: roomy,
       expected: { width: 400, height: 630 }
     },
     {
       name: 'stops at the minimum size',
-      handle: 'left-corner',
+      direction: 'SW',
       pointer: { x: 300, y: -500 },
-      growsUp: false,
       max: roomy,
       expected: { width: 320, height: 320 }
     },
     {
       name: 'stops at the available space',
-      handle: 'right-corner',
+      direction: 'SE',
       pointer: { x: 500, y: 500 },
-      growsUp: false,
       max: { width: 600, height: 700 },
       expected: { width: 600, height: 700 }
     }
-  ] as const)('$name', ({ handle, pointer, growsUp, max, expected }) => {
-    expect(resizePanel(start, pointer, { handle, growsUp, max })).toEqual(
-      expected
-    )
+  ] as const)('$name', ({ direction, pointer, max, expected }) => {
+    expect(resizePanel(start, pointer, { direction, max })).toEqual(expected)
   })
 })
 
@@ -85,31 +75,25 @@ describe('roomInViewport', () => {
   it.for([
     {
       name: 'left corner below the trigger reaches the left and bottom edges',
-      handle: 'left-corner',
-      growsUp: false,
+      direction: 'SW',
       expected: { width: 692, height: 792 }
     },
     {
       name: 'right corner above the trigger reaches the right and top edges',
-      handle: 'right-corner',
-      growsUp: true,
+      direction: 'NE',
       expected: { width: 972, height: 632 }
     },
     {
       name: 'left edge leaves the height unbounded',
-      handle: 'left-edge',
-      growsUp: false,
+      direction: 'W',
       expected: { width: 692, height: Infinity }
     },
     {
       name: 'free edge leaves the width unbounded',
-      handle: 'free-edge',
-      growsUp: true,
+      direction: 'N',
       expected: { width: Infinity, height: 632 }
     }
-  ] as const)('$name', ({ handle, growsUp, expected }) => {
-    expect(roomInViewport(rect, viewport, { handle, growsUp })).toEqual(
-      expected
-    )
+  ] as const)('$name', ({ direction, expected }) => {
+    expect(roomInViewport(rect, viewport, direction)).toEqual(expected)
   })
 })

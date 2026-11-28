@@ -16,7 +16,11 @@ import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSafeSessionStorage } from '@/platform/storage/useSafeStorage'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import ResizeHandle from '@/renderer/extensions/vueNodes/components/ResizeHandle.vue'
+import { isCorner } from '@/renderer/extensions/vueNodes/interactions/resize/resizeDirection'
+import type { ResizeDirection } from '@/renderer/extensions/vueNodes/interactions/resize/resizeDirection'
 
 import type {
   FilterOption,
@@ -28,14 +32,14 @@ import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import FormDropdownResizeHandle from './FormDropdownResizeHandle.vue'
 import { atLeastMinimumSize } from './resizePanel'
-import type { PanelSide, PanelSize, ResizeHandle } from './resizePanel'
+import type { PanelSide, PanelSize } from './resizePanel'
 import {
   DROPDOWN_PANEL_CLASS,
   defaultSearcher,
   getDefaultSortOptions
 } from './shared'
+import { usePanelResize } from './usePanelResize'
 import { AssetKindKey } from './types'
 import type {
   FormDropdownItem,
@@ -143,15 +147,24 @@ const panelSize = useSafeSessionStorage<PanelSize | undefined>(
 const shownPanelSize = computed(
   () => panelSize.value && atLeastMinimumSize(panelSize.value)
 )
-const RESIZE_HANDLES: ResizeHandle[] = [
-  'left-edge',
-  'free-edge',
-  'left-corner',
-  'right-corner'
+const PANEL_RESIZE_DIRECTIONS: ResizeDirection[] = [
+  'W',
+  'S',
+  'N',
+  'SW',
+  'SE',
+  'NW',
+  'NE'
 ]
 const alignOffset = ref(0)
 const panelSide = ref<PanelSide>()
-const isResizing = ref(false)
+const panelResize = usePanelResize({
+  size: panelSize,
+  alignOffset,
+  side: panelSide,
+  anchor: () => triggerRef.value?.anchor
+})
+const { isResizing } = panelResize
 whenever(
   () => !isOpen.value,
   () => {
@@ -465,15 +478,27 @@ const dropdownItems = computed(() =>
         @item-click="handleSelection"
         @show-picker="showPicker"
       />
-      <FormDropdownResizeHandle
-        v-for="handle in RESIZE_HANDLES"
-        :key="handle"
-        v-model:size="panelSize"
-        v-model:align-offset="alignOffset"
-        v-model:side="panelSide"
-        v-model:resizing="isResizing"
-        :handle
-        :anchor="triggerRef?.anchor"
+      <ResizeHandle
+        v-for="direction in PANEL_RESIZE_DIRECTIONS"
+        :key="direction"
+        :direction
+        :title="$t('widgets.uploadSelect.resizeHint')"
+        :class="
+          cn(
+            'z-10',
+            isCorner(direction)
+              ? '-m-4 size-8'
+              : direction === 'W'
+                ? 'inset-y-4 -ml-1 w-2'
+                : 'inset-x-4 -my-1 h-2',
+            direction.includes('N') &&
+              'group-data-[side=bottom]/dropdown:hidden',
+            direction.includes('S') && 'group-data-[side=top]/dropdown:hidden'
+          )
+        "
+        @resize="panelResize.startResize"
+        @nudge="panelResize.nudge"
+        @fit="panelResize.reset"
       />
     </PopoverContent>
   </PopoverRoot>

@@ -492,4 +492,34 @@ describe('useNodeResize', () => {
       expect(el.style.getPropertyValue('--node-width')).toBe('350px')
     })
   })
+
+  describe('keyboard nudge', () => {
+    const origin = () => ({
+      element: nodeElement,
+      position: { x: 100, y: 200 }
+    })
+    const keyEvent = () => new KeyboardEvent('keydown', { key: 'ArrowLeft' })
+
+    it('resizes once as if the corner were dragged by the step', () => {
+      const { nudgeResize } = useNodeResize(callback)
+
+      nudgeResize(keyEvent(), 'NW', { x: -16, y: -16 }, origin())
+
+      expect(callback).toHaveBeenCalledExactlyOnceWith(
+        { size: { width: 316, height: 416 }, position: { x: 84, y: 184 } },
+        nodeElement
+      )
+    })
+
+    it('ends a pointer drag that is still in progress', () => {
+      const { startResize, nudgeResize } = useNodeResize(callback)
+      startResizeAt(startResize, handle, 'SE')
+
+      nudgeResize(keyEvent(), 'SE', { x: 16, y: 0 }, origin())
+      callback.mockClear()
+      simulateMove(50, 30)
+
+      expect(callback).not.toHaveBeenCalled()
+    })
+  })
 })

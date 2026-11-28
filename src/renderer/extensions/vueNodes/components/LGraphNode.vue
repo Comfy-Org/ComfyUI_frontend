@@ -240,11 +240,13 @@
           !isSelectMode
         "
       >
-        <NodeResizeHandle
-          v-for="handle in RESIZE_HANDLES"
-          :key="handle.corner"
-          :handle
+        <ResizeHandle
+          v-for="corner in NODE_RESIZE_CORNERS"
+          :key="corner"
+          :direction="corner"
+          class="pointer-events-auto z-30 -m-1 size-5 opacity-0 group-hover/node:opacity-100 focus-visible:opacity-100"
           @resize="handleResizePointerDown"
+          @nudge="handleResizeNudge"
           @fit="handleResizeDoubleClick"
         />
       </template>
@@ -273,7 +275,10 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
-import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  CompassCorners,
+  Point2D
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
@@ -350,14 +355,14 @@ import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { NODE_RESIZE_CORNERS } from '@/renderer/extensions/vueNodes/interactions/resize/resizeDirection'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
 import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
-import NodeResizeHandle from './NodeResizeHandle.vue'
+import ResizeHandle from './ResizeHandle.vue'
 import NodeProgressBar from './NodeProgressBar.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
@@ -594,7 +599,7 @@ function fillsWithUnsizedRow() {
   )
 }
 
-const { startResize } = useNodeResize((result) => {
+const { startResize, nudgeResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   resizeNodeTo(
     result.size.height,
@@ -603,19 +608,33 @@ const { startResize } = useNodeResize((result) => {
   )
 })
 
-const handleResizePointerDown = (
-  event: PointerEvent,
-  corner: CompassCorners
-) => {
-  if (event.button !== 0 || !canResizeNode.value) return
+function resizeOrigin() {
   const element = nodeRef.value
-  if (element)
-    startResize(event, corner, {
+  return (
+    element && {
       element,
       position: position.value,
       rowSlack: () => bodyLayout.value?.slack ?? 0,
       snapItem: resolveLGraphNode() ?? undefined
-    })
+    }
+  )
+}
+
+function handleResizePointerDown(event: PointerEvent, corner: CompassCorners) {
+  const origin = resizeOrigin()
+  if (event.button === 0 && canResizeNode.value && origin)
+    startResize(event, corner, origin)
+}
+
+function handleResizeNudge(
+  event: KeyboardEvent,
+  corner: CompassCorners,
+  delta: Point2D
+) {
+  const origin = resizeOrigin()
+  if (!canResizeNode.value || !origin) return
+  nudgeResize(event, corner, delta, origin)
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
 }
 
 const mediaRegions = computed(() => [

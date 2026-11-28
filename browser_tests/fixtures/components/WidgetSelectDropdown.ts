@@ -21,10 +21,10 @@ export class WidgetSelectDropdownFixture {
     this.menu = page.getByTestId(TestIds.widgets.formDropdownMenu)
     this.popover = page.getByRole('dialog').filter({ has: this.menu })
     this.leftResizeCorner = this.popover.getByRole('button', {
-      name: 'Resize from left corner'
+      name: /^Resize from (bottom|top)-left corner$/
     })
     this.rightResizeCorner = this.popover.getByRole('button', {
-      name: 'Resize from right corner'
+      name: /^Resize from (bottom|top)-right corner$/
     })
   }
 

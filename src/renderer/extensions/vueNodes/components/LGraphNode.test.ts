@@ -143,7 +143,7 @@ vi.mock(
       mockData.resizeCallback = resizeCallback
       return {
         startResize: vi.fn(),
-        isResizing: ref(false)
+        nudgeResize: vi.fn()
       }
     })
   })

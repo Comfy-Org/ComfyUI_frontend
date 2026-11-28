@@ -10,7 +10,7 @@ export function useNodeSnap() {
   const gridSize = computed(() => settingStore.get('Comfy.SnapToGrid.GridSize'))
   const alwaysSnap = computed(() => settingStore.get('pysssss.SnapToGrid'))
 
-  function shouldSnap(event: PointerEvent): boolean {
+  function shouldSnap(event: Pick<MouseEvent, 'shiftKey'>): boolean {
     return event.shiftKey || alwaysSnap.value
   }
 

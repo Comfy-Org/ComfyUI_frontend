@@ -24,9 +24,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
-import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
+import ResizeHandle from '@/renderer/extensions/vueNodes/components/ResizeHandle.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
-import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { getNodeByState } from '@/utils/graphTraversalUtil'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -190,7 +189,7 @@ function isDimmed(port: TNode['allSlots'][number]) {
 }
 
 const panel = useTemplateRef('panel')
-const { style, startResize } = useSubgraphIoLayout(
+const { style, startResize, nudgeSize } = useSubgraphIoLayout(
   () => ioNode,
   panel,
   () => slots.value
@@ -378,10 +377,12 @@ function forwardUnlessOnButton(event: PointerEvent) {
       "
       :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
     />
-    <NodeResizeHandle
+    <ResizeHandle
       v-if="isInputNode"
-      :handle="RESIZE_HANDLES[0]"
+      direction="SE"
+      class="pointer-events-auto z-30 -m-1 size-5 opacity-0 group-hover/node:opacity-100 focus-visible:opacity-100"
       @resize="startResize"
+      @nudge="nudgeSize"
     />
   </div>
 </template>

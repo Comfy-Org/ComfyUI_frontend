@@ -6,7 +6,7 @@ import {
   hasNorthEdge,
   hasWestEdge
 } from '@comfyorg/graph-model/arrange/cornerResize'
-import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { NODE_RESIZE_CORNERS } from '@/renderer/extensions/vueNodes/interactions/resize/resizeDirection'
 
 test.describe(
   'Vue Node Resizing',
@@ -30,10 +30,10 @@ test.describe(
       const getWidth = async () => (await node.boundingBox())?.width ?? -1
       const getHeight = async () => (await node.boundingBox())?.height ?? -1
 
-      const cornerCases = RESIZE_HANDLES.map((h) => ({
-        corner: h.corner,
-        dragX: hasWestEdge(h.corner) ? -50 : 50,
-        dragY: hasNorthEdge(h.corner) ? -40 : 40
+      const cornerCases = NODE_RESIZE_CORNERS.map((corner) => ({
+        corner,
+        dragX: hasWestEdge(corner) ? -50 : 50,
+        dragY: hasNorthEdge(corner) ? -40 : 40
       }))
 
       for (const { corner, dragX, dragY } of cornerCases) {
@@ -67,6 +67,35 @@ test.describe(
           await expect(node.root).toHaveBounds(box)
         })
       }
+    })
+
+    test('Resizing with arrow keys from a focused corner', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const box = (await node.boundingBox())!
+      const getBounds = async () => (await node.boundingBox())!
+
+      await node.getResizeHandle('NW').focus()
+      await comfyPage.page.keyboard.press('ArrowLeft')
+      await comfyPage.page.keyboard.press('ArrowUp')
+
+      await expect
+        .poll(async () => (await getBounds()).width)
+        .toBeCloseTo(box.width + 16, 0)
+      await expect
+        .poll(async () => (await getBounds()).height)
+        .toBeCloseTo(box.height + 16, 0)
+      await expect
+        .poll(async () => (await getBounds()).x)
+        .toBeCloseTo(box.x - 16, 0)
+      await expect
+        .poll(async () => (await getBounds()).y)
+        .toBeCloseTo(box.y - 16, 0)
+
+      await comfyPage.keyboard.undo()
+      await comfyPage.keyboard.undo()
+      await expect(node.root).toHaveBounds(box)
     })
 
     test('should keep a resized width across a save and reload', async ({
