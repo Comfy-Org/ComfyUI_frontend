@@ -24,9 +24,11 @@ function updateFromPointer(e: PointerEvent) {
   const rect = el.getBoundingClientRect()
   const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
-  saturation.value = Math.round(x * 100)
-  value.value = Math.round((1 - y) * 100)
-  emit('update', saturation.value, value.value)
+  const nextSaturation = Math.round(x * 100)
+  const nextValue = Math.round((1 - y) * 100)
+  saturation.value = nextSaturation
+  value.value = nextValue
+  emit('update', nextSaturation, nextValue)
 }
 
 function handlePointerDown(e: PointerEvent) {

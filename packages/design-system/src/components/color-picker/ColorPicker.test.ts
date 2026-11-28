@@ -177,25 +177,38 @@ describe('ColorPicker', () => {
 })
 
 describe('ColorPickerSaturationValue', () => {
-  it('keeps the individual model updates alongside the atomic update', async () => {
-    const user = userEvent.setup()
-    const { emitted } = render(ColorPickerSaturationValue, {
-      props: { hue: 0, saturation: 100, value: 100 }
-    })
-    const slider = screen.getByRole('slider')
-    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(
-      new DOMRect(0, 0, 100, 100)
-    )
+  it.for([
+    { mode: 'local', modelListeners: {}, displayedValue: '25%, 40%' },
+    {
+      mode: 'controlled',
+      modelListeners: {
+        'onUpdate:saturation': () => undefined,
+        'onUpdate:value': () => undefined
+      },
+      displayedValue: '100%, 100%'
+    }
+  ])(
+    'keeps individual and atomic updates with $mode models',
+    async ({ modelListeners, displayedValue }) => {
+      const user = userEvent.setup()
+      const { emitted } = render(ColorPickerSaturationValue, {
+        props: { hue: 0, saturation: 100, value: 100, ...modelListeners }
+      })
+      const slider = screen.getByRole('slider')
+      vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, 100, 100)
+      )
 
-    await user.pointer({
-      keys: '[MouseLeft>]',
-      target: slider,
-      coords: { clientX: 25, clientY: 60 }
-    })
+      await user.pointer({
+        keys: '[MouseLeft>]',
+        target: slider,
+        coords: { clientX: 25, clientY: 60 }
+      })
 
-    expect(emitted('update')).toEqual([[25, 40]])
-    expect(emitted('update:saturation')).toEqual([[25]])
-    expect(emitted('update:value')).toEqual([[40]])
-    expect(slider).toHaveAttribute('aria-valuetext', '25%, 40%')
-  })
+      expect(emitted('update')).toEqual([[25, 40]])
+      expect(emitted('update:saturation')).toEqual([[25]])
+      expect(emitted('update:value')).toEqual([[40]])
+      expect(slider).toHaveAttribute('aria-valuetext', displayedValue)
+    }
+  )
 })
