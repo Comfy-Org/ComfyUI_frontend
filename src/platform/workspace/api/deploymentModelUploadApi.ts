@@ -238,13 +238,15 @@ async function removeAfter(
     : { ...stopped, modelId, stillListed: true }
 }
 
-async function addToDeployment(
+type CreatedUpload =
+  | { ok: true; blobId: string; parts?: readonly DeploymentModelUploadPart[] }
+  | UploadStopped
+
+async function createUpload(
   file: File,
-  target: DeploymentModelTarget,
-  options: DeploymentModelUploadOptions
-): Promise<DeploymentModelUploadResult> {
-  const { workspaceId, deploymentId } = target
-  const { signal } = options
+  { workspaceId, deploymentId }: DeploymentModelTarget,
+  signal: AbortSignal
+): Promise<CreatedUpload> {
   const sha256 = await fileSha256(file, signal)
   if (sha256 === undefined) return { ok: false, reason: 'cancelled' }
   const { blobId, deduplicated, parts } =
@@ -254,20 +256,38 @@ async function addToDeployment(
       { filename: file.name, sizeBytes: file.size, sha256, parts: true },
       signal
     )
-  if (!deduplicated && !parts?.length) {
+  if (deduplicated) return { ok: true, blobId }
+  if (!parts?.length) {
     return { ok: false, reason: 'failed', cause: 'upload has no pieces' }
   }
+  return { ok: true, blobId, parts }
+}
+
+async function fillUpload(
+  file: File,
+  target: DeploymentModelTarget,
+  { blobId, parts }: Extract<CreatedUpload, { ok: true }>,
+  options: DeploymentModelUploadOptions
+): Promise<UploadStopped | undefined> {
+  if (options.signal.aborted) return { ok: false, reason: 'cancelled' }
+  if (!parts) return undefined
+  return sendPieces(file, target, { blobId, parts }, options)
+}
+
+async function addToDeployment(
+  file: File,
+  target: DeploymentModelTarget,
+  options: DeploymentModelUploadOptions
+): Promise<DeploymentModelUploadResult> {
+  const created = await createUpload(file, target, options.signal)
+  if (!created.ok) return created
   const added = await workspaceApi.addDeploymentModel(
-    workspaceId,
-    deploymentId,
-    { blobId, type: options.type }
+    target.workspaceId,
+    target.deploymentId,
+    { blobId: created.blobId, type: options.type }
   )
   if (added === 'notOn') return { ok: false, reason: 'notOn' }
-  if (signal.aborted) {
-    return removeAfter(target, added.id, { ok: false, reason: 'cancelled' })
-  }
-  if (deduplicated || !parts) return { ok: true, modelId: added.id }
-  const stopped = await sendPieces(file, target, { blobId, parts }, options)
+  const stopped = await fillUpload(file, target, created, options)
   return stopped
     ? removeAfter(target, added.id, stopped)
     : { ok: true, modelId: added.id }
@@ -287,6 +307,7 @@ async function uploadModelToDeployment(
 
 function pause(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
+    if (signal.aborted) return resolve()
     const done = () => {
       clearTimeout(timer)
       signal.removeEventListener('abort', done)
@@ -297,20 +318,27 @@ function pause(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-async function readModel<T>(
+async function readOnce<T>(
   { workspaceId, deploymentId }: DeploymentModelTarget,
   modelId: string,
   signal: AbortSignal,
   answer: (entry: DeploymentModelEntry | undefined) => T | undefined
 ): Promise<T | undefined> {
+  const models = await workspaceApi
+    .listDeploymentModels(workspaceId, deploymentId, signal)
+    .catch(() => undefined)
+  if (signal.aborted || !models) return undefined
+  return answer(models.find((model) => model.id === modelId))
+}
+
+async function readModel<T>(
+  target: DeploymentModelTarget,
+  modelId: string,
+  signal: AbortSignal,
+  answer: (entry: DeploymentModelEntry | undefined) => T | undefined
+): Promise<T | undefined> {
   while (!signal.aborted) {
-    const models = await workspaceApi
-      .listDeploymentModels(workspaceId, deploymentId, signal)
-      .catch(() => undefined)
-    if (signal.aborted) break
-    const settled = models
-      ? answer(models.find((model) => model.id === modelId))
-      : undefined
+    const settled = await readOnce(target, modelId, signal, answer)
     if (settled !== undefined) return settled
     await pause(LIST_POLL_MS, signal)
   }

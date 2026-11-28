@@ -483,13 +483,15 @@ export function useUploadModelFile(
   }
 
   async function uploadToDeployment(
-    file: File,
+    current: ReadyToSend,
     type: string,
     target: DeploymentModelTarget,
     run: number,
-    signal: AbortSignal,
-    listedModelId: string | undefined
+    signal: AbortSignal
   ): Promise<UploadModelSuccess | null> {
+    const { file } = current
+    const listedModelId =
+      current.status === 'failed' ? current.listedModelId : undefined
     if (
       listedModelId &&
       !(await clearListedModel(file, target, listedModelId, run, signal))
@@ -518,22 +520,13 @@ export function useUploadModelFile(
     return { filename: file.name, modelType: type, status: 'processing' }
   }
 
-  async function upload(): Promise<UploadModelSuccess | null> {
-    const current = state.value
-    if (current.status !== 'chosen' && current.status !== 'failed') return null
-
-    const { run, signal } = beginAttempt()
+  async function uploadToLibrary(
+    current: ReadyToSend,
+    type: string,
+    run: number,
+    signal: AbortSignal
+  ): Promise<UploadModelSuccess | null> {
     const { file } = current
-    const type = modelType.value
-
-    const target = goesToDeployment.value ? deploymentTarget.value : undefined
-    if (target) {
-      stopFollowing()
-      const listedModelId =
-        current.status === 'failed' ? current.listedModelId : undefined
-      return uploadToDeployment(file, type, target, run, signal, listedModelId)
-    }
-
     const followed = followedTaskOf(current)
     if (followed && !(await settleFollowedTask(followed, run, signal))) {
       return null
@@ -562,6 +555,18 @@ export function useUploadModelFile(
       taskId: result.taskId,
       status: 'processing'
     }
+  }
+
+  async function upload(): Promise<UploadModelSuccess | null> {
+    const current = state.value
+    if (current.status !== 'chosen' && current.status !== 'failed') return null
+
+    const { run, signal } = beginAttempt()
+    const type = modelType.value
+    const target = goesToDeployment.value ? deploymentTarget.value : undefined
+    if (!target) return uploadToLibrary(current, type, run, signal)
+    stopFollowing()
+    return uploadToDeployment(current, type, target, run, signal)
   }
 
   function cancel() {

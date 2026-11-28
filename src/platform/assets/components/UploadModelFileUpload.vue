@@ -38,16 +38,25 @@
         <span>{{ $t('assetBrowser.modelTypeSelectorLabel') }}</span>
         <AppSingleSelect
           v-model="modelType"
-          :label="
-            isLoading
-              ? $t('g.loading')
-              : $t('assetBrowser.modelTypeSelectorPlaceholder')
-          "
+          :label="typeSelectorLabel"
           :accessible-label="$t('assetBrowser.modelTypeSelectorLabel')"
           :options="typeOptions"
           :disabled="isLoading"
           data-attr="upload-model-file-type-selector"
         />
+        <div v-if="typesUnavailable" class="flex items-center gap-2">
+          <p role="alert" class="m-0 text-destructive">
+            {{ $t('assetBrowser.fileUpload.typesNotLoaded') }}
+          </p>
+          <Button
+            variant="muted-textonly"
+            size="sm"
+            data-attr="upload-model-file-types-retry-button"
+            @click="fetchModelTypes"
+          >
+            {{ $t('assetBrowser.fileUpload.tryAgain') }}
+          </Button>
+        </div>
       </div>
 
       <div v-else-if="state.status === 'done'" class="flex flex-col gap-2">
@@ -178,7 +187,17 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const { modelTypes, isLoading } = useModelTypes()
+const { modelTypes, isLoading, fetchModelTypes } = useModelTypes()
+
+const typesUnavailable = computed(
+  () => !isLoading.value && folders.length === 0
+)
+
+const typeSelectorLabel = computed(() =>
+  isLoading.value
+    ? t('g.loading')
+    : t('assetBrowser.modelTypeSelectorPlaceholder')
+)
 
 const isTransferring = computed(
   () => state.status === 'uploading' || state.status === 'reconnecting'

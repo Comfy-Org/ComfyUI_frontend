@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { DeploymentModelUploadPart } from '@/platform/workspace/api/workspaceApi'
+import type {
+  DeploymentModelEntry,
+  DeploymentModelUploadPart
+} from '@/platform/workspace/api/workspaceApi'
 
 import { deploymentModelUploadApi } from './deploymentModelUploadApi'
 
@@ -279,6 +282,18 @@ describe('deploymentModelUploadApi.uploadModelToDeployment', () => {
     expect(ingest.complete).not.toHaveBeenCalled()
   })
 
+  it('adds nothing and sends no piece when the upload comes back without pieces', async () => {
+    const ingest = ingestAnswers([])
+
+    await expect(upload(modelFile(1)).result).resolves.toEqual({
+      ok: false,
+      reason: 'failed',
+      cause: 'upload has no pieces'
+    })
+    expect(ingest.add).not.toHaveBeenCalled()
+    expect(StorageRequest.sent).toHaveLength(0)
+  })
+
   it("passes comfy-deploy's sentence on a refused add and sends no piece", async () => {
     const ingest = ingestAnswers([piece(1)])
     const message = 'This deployment already has a model named my_style_v2.'
@@ -536,6 +551,30 @@ describe('deploymentModelUploadApi.waitForDeploymentModel', () => {
     )
     await vi.advanceTimersByTimeAsync(0)
     controller.abort()
+
+    await expect(answer).resolves.toBeUndefined()
+    expect(list).toHaveBeenCalledOnce()
+  })
+
+  it('answers nothing, without waiting to read again, when the signal aborts while the list is read', async () => {
+    let answerList!: (models: DeploymentModelEntry[]) => void
+    const list = vi
+      .spyOn(workspaceApi, 'listDeploymentModels')
+      .mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            answerList = resolve
+          })
+      )
+    const controller = new AbortController()
+
+    const answer = deploymentModelUploadApi.waitForDeploymentModel(
+      target,
+      MODEL_ID,
+      controller.signal
+    )
+    controller.abort()
+    answerList([entry('ready')])
 
     await expect(answer).resolves.toBeUndefined()
     expect(list).toHaveBeenCalledOnce()

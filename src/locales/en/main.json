@@ -4961,6 +4961,7 @@
       "toLibrary": "Workspace library",
       "transferEstimate": "{rate}/s · {time} left",
       "tryAgain": "Try again",
+      "typesNotLoaded": "Couldn't load model types.",
       "unsupportedType": "Cloud can't store this model type yet. Choose another type.",
       "upload": "Upload",
       "uploadToLibrary": "Upload to the workspace library",

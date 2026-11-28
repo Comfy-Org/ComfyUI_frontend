@@ -180,6 +180,29 @@ describe('UploadModelDialog destination', () => {
     )
   })
 
+  it.for([
+    { answer: 'fails', first: () => Promise.reject(new Error('offline')) },
+    { answer: 'lists none', first: () => Promise.resolve([]) }
+  ])(
+    "says the model types didn't load when the request $answer, and loads them again on Try again",
+    async ({ first }) => {
+      pickDeployment()
+      vi.mocked(api.getModelFolders).mockImplementationOnce(first)
+      const user = userEvent.setup()
+      renderDialog({ initialDestination: 'deployment' })
+
+      await user.upload(screen.getByTestId('upload-model-file-input'), lora)
+      expect(await screen.findByText(copy.typesNotLoaded)).toBeInTheDocument()
+      const uploadButton = screen.getByRole('button', { name: copy.upload })
+      expect(uploadButton).toBeDisabled()
+
+      await user.click(screen.getByRole('button', { name: copy.tryAgain }))
+
+      await vi.waitFor(() => expect(uploadButton).toBeEnabled())
+      expect(screen.queryByText(copy.typesNotLoaded)).not.toBeInTheDocument()
+    }
+  )
+
   it('names this deployment on the button again once it is chosen back after the library fallback', async () => {
     pickDeployment()
     vi.spyOn(
