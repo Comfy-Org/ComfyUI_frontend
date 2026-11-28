@@ -42,18 +42,32 @@ function withCollapsedHeights<T>(
   return result
 }
 
-function soleMediaAspectRatio(region: HTMLElement) {
-  if (region.querySelector('[data-image-preview-grid]')) return undefined
-  const media = region.querySelectorAll<HTMLImageElement | HTMLVideoElement>(
-    'img, video'
-  )
-  if (media.length !== 1) return undefined
-  const [element] = media
+function mediaAspectRatio(element: HTMLImageElement | HTMLVideoElement) {
   const [width, height] =
     element instanceof HTMLVideoElement
       ? [element.videoWidth, element.videoHeight]
       : [element.naturalWidth, element.naturalHeight]
-  return width && height ? { element, aspectRatio: width / height } : undefined
+  return width && height ? width / height : undefined
+}
+
+function mediaFitTarget(region: HTMLElement) {
+  if (region.querySelector('[data-image-preview-grid]')) return undefined
+  const overlay = region.querySelector<HTMLElement>('[data-media-overlay]')
+  const media = (overlay ?? region).querySelectorAll<
+    HTMLImageElement | HTMLVideoElement
+  >('img, video')
+  if (overlay) {
+    const ratios = Array.from(media, mediaAspectRatio).filter(
+      (ratio) => ratio !== undefined
+    )
+    return ratios.length
+      ? { element: overlay, aspectRatio: Math.min(...ratios) }
+      : undefined
+  }
+  if (media.length !== 1) return undefined
+  const [element] = media
+  const aspectRatio = mediaAspectRatio(element)
+  return aspectRatio ? { element, aspectRatio } : undefined
 }
 
 const TEXT_FIT_MIN_LINES = 3
@@ -111,7 +125,7 @@ interface RegionBounds {
 }
 
 type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> &
-  NonNullable<ReturnType<typeof soleMediaAspectRatio>>
+  NonNullable<ReturnType<typeof mediaFitTarget>>
 
 function regionAt(event: Event, key: string, declaredMinHeight?: number) {
   const target = closestNodeElement(event)
@@ -166,7 +180,7 @@ export function useGrowableRegions({
       nodeElement.querySelectorAll<HTMLElement>('[data-media-region]')
     ).flatMap((region) => {
       const key = region.dataset.mediaRegion
-      const media = soleMediaAspectRatio(region)
+      const media = mediaFitTarget(region)
       return key && media ? [{ key, region, ...media }] : []
     })
     if (mediaRegions.length) fitMedia(nodeElement, mediaRegions, NODE_FLOOR)
@@ -288,7 +302,7 @@ export function useGrowableRegions({
     const text =
       target.region.querySelector<HTMLElement>('[data-markdown-preview]') ??
       target.region.querySelector('textarea')
-    const media = text ? undefined : soleMediaAspectRatio(target.region)
+    const media = text ? undefined : mediaFitTarget(target.region)
     if (text) fitText(target, text)
     else if (media) fitMedia(target.nodeElement, [{ ...target, ...media }])
     else if (regionId(target.key)) setHeight(target.key, undefined)
